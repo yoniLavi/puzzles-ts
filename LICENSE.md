@@ -5,12 +5,12 @@ License. Copyright is held by the respective contributors of each layer:
 
 - Copyright © 2004–2024 Simon Tatham and the upstream Portable Puzzle
   Collection contributors. See
-  [`licences/sgt-puzzles-LICENCE`](./licences/sgt-puzzles-LICENCE) for the
+  [`licenses/sgt-puzzles-LICENSE`](./licenses/sgt-puzzles-LICENSE) for the
   full list of upstream contributors.
 - Copyright © 2011–2025 Lennard Sprong, for the
   [puzzles-unreleased](https://github.com/x-sheep/puzzles-unreleased) puzzles
   that thirteen of the games here are ported from. See
-  [`licences/puzzles-unreleased-LICENCE`](./licences/puzzles-unreleased-LICENCE).
+  [`licenses/puzzles-unreleased-LICENSE`](./licenses/puzzles-unreleased-LICENSE).
 - Copyright © 2025–2026 Mike Edmunds, for the
   [puzzles-web](https://github.com/medmunds/puzzles-web) PWA shell that this
   project forks from.

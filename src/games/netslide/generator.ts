@@ -5,7 +5,7 @@
  * because the differential asserts the desc byte-for-byte against C for the
  * same seed (see the port's design.md, D6):
  *
- *   1. Grow the solved grid outward from the centre as a spanning tree.
+ *   1. Grow the solved grid outward from the center as a spanning tree.
  *   2. Shuffle it with random slides.
  *   3. Choose barrier locations.
  *
@@ -73,8 +73,8 @@ function shuffle(
   rs: RandomState,
 ): void {
   const { w, h } = p;
-  const cols = w - 1; // the centre column cannot be slid
-  const rows = h - 1; // nor the centre row
+  const cols = w - 1; // the center column cannot be slid
+  const rows = h - 1; // nor the center row
   const moves = p.movetarget || cols * rows * 2;
 
   let prevdir = -1;
@@ -88,7 +88,7 @@ function shuffle(
 
     if (dir % 2 === 0) {
       let col = randomUpto(rs, cols);
-      if (col >= cx) col += 1; // skip the un-slidable centre column
+      if (col >= cx) col += 1; // skip the un-slidable center column
       if (col === prevrowcol) {
         if (dir === 2 - prevdir) continue; // undoes the last slide
         if (dir === prevdir && (nrepeats + 1) * 2 > h) continue; // the long way round
@@ -97,7 +97,7 @@ function shuffle(
       rowcol = col;
     } else {
       let row = randomUpto(rs, rows);
-      if (row >= cy) row += 1; // skip the un-slidable centre row
+      if (row >= cy) row += 1; // skip the un-slidable center row
       if (row === prevrowcol) {
         if (dir === 4 - prevdir) continue; // undoes the last slide
         if (dir === prevdir && (nrepeats + 1) * 2 > w) continue; // the long way round

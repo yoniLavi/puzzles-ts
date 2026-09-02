@@ -27,7 +27,7 @@ import { dimensionParamConfig, parseLeadingInt } from "../../engine/params.ts";
  *
  * `amin` / `omin` are the per-type minimum sizes: both dimensions must be at
  * least `amin`, and at least one must be at least `omin`. They live here rather
- * than in the geometry because they are a *game* judgement about what makes a
+ * than in the geometry because they are a *game* judgment about what makes a
  * playable board — `gridValidateParams` deliberately implements only the
  * maximum-size guards.
  */
@@ -233,7 +233,7 @@ function presetTitle(p: LoopyParams): string {
 /**
  * The **two-level** preset menu — unusual in this collection. The top level
  * holds the common grids, and a "More..." submenu holds the exotic tilings.
- * The app shell flattens submenus into a labelled section (a divider plus an
+ * The app shell flattens submenus into a labeled section (a divider plus an
  * `<h3>` heading followed by the section's entries — see
  * `puzzle-type-menu.ts`), so the nesting renders as a titled group rather than
  * a nested flyout. That is a faithful and readable rendering of the intent, so

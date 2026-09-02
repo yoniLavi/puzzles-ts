@@ -86,7 +86,7 @@ small games may collapse files):
 
 | File | Holds |
 | --- | --- |
-| `index.ts` | The `Game<…>` object + glue: move logic, `interpretMove`/`executeMove`, presets, `colours()`, optional `hint`/`findMistakes`, `registerGame(...)`. |
+| `index.ts` | The `Game<…>` object + glue: move logic, `interpretMove`/`executeMove`, presets, `colors()`, optional `hint`/`findMistakes`, `registerGame(...)`. |
 | `state.ts` | Immutable state type + params, encode/decode/validate desc + params, `newState`, `cloneState`, the move/UI types. |
 | `solver.ts` | The deductive solver (used by the generator for uniqueness, by `solve`, and by `hint`/`findMistakes`). |
 | `generator.ts` | `newDesc`: board generation + retry-to-target-difficulty. |
@@ -118,12 +118,12 @@ A game (or a change to one) is done when **all** of these hold:
 - [ ] A game with difficulty tiers declares `Game.difficulty` and passes the
       cross-game contract guards ([`mechanics.md`](./mechanics.md)
       § "Difficulty is a declared contract").
-- [ ] Behavioural tests at the lowest fitting tier; new render code ships a
+- [ ] Behavioral tests at the lowest fitting tier; new render code ships a
       tier-2.5 test; heavy tests are seed-deterministic and never clock-gated
       ([`testing.md`](./testing.md)).
 - [ ] An explained hint meeting the quality bar ([`hints.md`](./hints.md)) —
       or its own follow-up change, opened, not implied.
-- [ ] **Owner-accepted** full behavioural parity/quality — rendering,
+- [ ] **Owner-accepted** full behavioral parity/quality — rendering,
       animation, input — never a green suite alone (§ "The acceptance gate").
 - [ ] The openspec change kept current and archived on acceptance
       (§ "Close out").
@@ -182,13 +182,13 @@ new game:
   accepted (a solubility check missing after the final singleton removal).
   Probe the parameter space's edges before trusting the advertised range;
   where a size provably cannot generate, reject it in `validateParams` and
-  cover the boundary with a behavioural test
+  cover the boundary with a behavioral test
   ([solver & generator](./solver-and-generator.md) § "Unlucky, impossible,
   and load-bearing validation").
 
 ## The acceptance gate
 
-**A game-facing change ships on owner-accepted behavioural quality —
+**A game-facing change ships on owner-accepted behavioral quality —
 rendering, animation, input — never on a green suite alone.** A suite
 asserting only state transitions can be fully green while the game does not
 render; that happened, and the doctrine is spec-enforced (the authoritative
@@ -210,8 +210,9 @@ substantial game change:
 
 Keep the openspec change current as you go (tasks ticked, decisions recorded in
 `design.md`). The pre-commit gate — `tsc -b --noEmit` → biome → the
-probe-anchor check → `vitest run` → `vite build` — must pass; **never bypass
-it**. On owner acceptance, archive the change
+probe-anchor check → the spelling guard (American English; see `AGENTS.md`
+§ "Code conventions") → `openspec validate` → `vitest run` → `vite build` —
+must pass; **never bypass it**. On owner acceptance, archive the change
 (`openspec archive <change-id> --yes`), committing work and archive together.
 A follow-up the work surfaced gets its own change opened there and then, while
 the measurement is in hand.
@@ -223,7 +224,7 @@ C engine, its build system, and finally the `puzzles/` tree entirely
 (`retire-c-engine` → `rehome-upstream-help-sources`, 2026-08-01). The C is
 readable in git history (`git show pre-ts-pivot:puzzles/<game>.c`); there is no
 running build to ask new questions of, so a new question is answered
-behaviourally. The 48 frozen JSON differentials still run and are the
+behaviorally. The 48 frozen JSON differentials still run and are the
 refactoring net — do not delete them, and do not try to re-baseline one (you
 cannot; see [`testing.md`](./testing.md) § "The frozen differentials").
 Byte-parity with upstream was a porting tool, released on 2026-08-01: diverge

@@ -3,7 +3,7 @@
 exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HINT_CELL evidence ring, incl. a diagonal 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 288,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -19,7 +19,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -28,7 +28,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -37,7 +37,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 8,
   },
   {
-    "colour": 9,
+    "color": 9,
     "op": "line",
     "rgb": "rgb(21, 113, 233)",
     "thickness": 2,
@@ -47,7 +47,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y2": 36,
   },
   {
-    "colour": 9,
+    "color": 9,
     "op": "line",
     "rgb": "rgb(21, 113, 233)",
     "thickness": 2,
@@ -149,7 +149,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -169,7 +169,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -178,7 +178,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -309,7 +309,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -329,7 +329,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -338,7 +338,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -469,7 +469,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -489,7 +489,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -498,7 +498,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -589,7 +589,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -609,7 +609,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -618,7 +618,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -627,7 +627,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 80,
   },
   {
-    "colour": 9,
+    "color": 9,
     "op": "line",
     "rgb": "rgb(21, 113, 233)",
     "thickness": 2,
@@ -759,7 +759,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -779,7 +779,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -788,7 +788,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -797,7 +797,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 80,
   },
   {
-    "colour": 9,
+    "color": 9,
     "op": "line",
     "rgb": "rgb(21, 113, 233)",
     "thickness": 2,
@@ -989,7 +989,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1009,7 +1009,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1018,7 +1018,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1209,7 +1209,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1229,7 +1229,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1238,7 +1238,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1369,7 +1369,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1389,7 +1389,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1398,7 +1398,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1407,7 +1407,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 152,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -1539,7 +1539,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1559,7 +1559,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1568,7 +1568,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1577,7 +1577,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 152,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -1769,7 +1769,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1789,7 +1789,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1798,7 +1798,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1807,7 +1807,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 152,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -1999,7 +1999,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2019,7 +2019,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2028,7 +2028,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2037,7 +2037,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 152,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2169,7 +2169,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2189,7 +2189,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2198,7 +2198,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2207,7 +2207,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 224,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2217,7 +2217,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y2": 252,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2227,7 +2227,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y2": 180,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2319,7 +2319,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2339,7 +2339,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2348,7 +2348,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2357,7 +2357,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 224,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2489,7 +2489,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2509,7 +2509,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2518,7 +2518,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2527,7 +2527,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 224,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2659,7 +2659,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2679,7 +2679,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2688,7 +2688,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2697,7 +2697,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 224,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2707,7 +2707,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y2": 252,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2717,7 +2717,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y2": 180,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2809,7 +2809,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2829,7 +2829,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2838,7 +2838,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 64,
   },
   {
-    "colour": 9,
+    "color": 9,
     "op": "line",
     "rgb": "rgb(21, 113, 233)",
     "thickness": 2,
@@ -2858,7 +2858,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2877,7 +2877,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2896,7 +2896,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 136,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2915,7 +2915,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 136,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2934,7 +2934,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 136,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2953,7 +2953,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 208,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2962,7 +2962,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 208,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,
@@ -2982,7 +2982,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 208,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3001,7 +3001,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 208,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3010,7 +3010,7 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "y": 208,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 2,

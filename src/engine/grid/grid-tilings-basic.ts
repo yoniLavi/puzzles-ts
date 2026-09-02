@@ -28,7 +28,7 @@ import {
 } from "./grid-tilings.ts";
 
 /**
- * Honeycomb: one hexagonal face per cell, centred at `(3a·x, 2b·y)` with odd
+ * Honeycomb: one hexagonal face per cell, centered at `(3a·x, 2b·y)` with odd
  * columns pushed down half a cell. Mirrors `grid_new_honeycomb`.
  */
 export function gridNewHoneycomb(width: number, height: number): Grid {
@@ -38,7 +38,7 @@ export function gridNewHoneycomb(width: number, height: number): Grid {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      // Face centre; odd columns are offset downwards.
+      // Face center; odd columns are offset downwards.
       const cx = 3 * a * x;
       let cy = 2 * b * y;
       if (x % 2) cy += b;
@@ -222,7 +222,7 @@ export function gridNewSnubsquare(width: number, height: number): Grid {
 
 /**
  * Cairo: a horizontal and a vertical pentagon per cell (each emitted only
- * where its neighbour cell exists), reflected on `(x + y)` parity.
+ * where its neighbor cell exists), reflected on `(x + y)` parity.
  * Mirrors `grid_new_cairo`.
  */
 export function gridNewCairo(width: number, height: number): Grid {

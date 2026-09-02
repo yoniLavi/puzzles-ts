@@ -39,10 +39,10 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -220,8 +220,8 @@ function findMistakes(state: SlantState): readonly SlantMistake[] {
  * forces (blue `COL_HINT`, no slash preview); `siblings` are the same
  * firing's still-to-do squares (also blue — they share its fate); `area`
  * is the deduction's evidence to shade light-blue (a clue's decided
- * neighbours, a loop chain, the trapped dead-end components); `ref` rings a
- * cited already-filled square (an equivalence anchor); `clue` recolours a
+ * neighbors, a loop chain, the trapped dead-end components); `ref` rings a
+ * cited already-filled square (an equivalence anchor); `clue` recolors a
  * driving clue's digit. */
 export interface SlantHint {
   target: { x: number; y: number };
@@ -234,7 +234,7 @@ export interface SlantHint {
 const SLASH_WORD = (v: number): string => (v < 0 ? "a backslash" : "a forward slash");
 
 /** The up-to-four square indices around a clue vertex, geometrically. */
-function clueNeighbourSquares(
+function clueNeighborSquares(
   cx: number,
   cy: number,
   w: number,
@@ -248,7 +248,7 @@ function clueNeighbourSquares(
   return out;
 }
 
-/** The up-to-four squares touching a grid point (its "neighbourhood"). */
+/** The up-to-four squares touching a grid point (its "neighborhood"). */
 function incidentSquares(
   px: number,
   py: number,
@@ -356,10 +356,10 @@ function buildHighlights(
     case "clue-empty": {
       if (firing.clue) {
         hint.clue = { x: firing.clue.x, y: firing.clue.y };
-        // Evidence: the clue's already-decided neighbours (its context) —
+        // Evidence: the clue's already-decided neighbors (its context) —
         // the squares NOT being placed by this firing.
         const inFiring = new Set(firing.moves.map((s) => s.y * w + s.x));
-        hint.area = clueNeighbourSquares(firing.clue.x, firing.clue.y, w, h).filter(
+        hint.area = clueNeighborSquares(firing.clue.x, firing.clue.y, w, h).filter(
           (s) => !inFiring.has(s.y * w + s.x) && firing.grid[s.y * w + s.x] !== 0,
         );
       }
@@ -543,7 +543,7 @@ export const slantGame: Game<
     },
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SlantParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

@@ -66,7 +66,7 @@ remaining delta in place), and `"off"` otherwise.
 - **THEN** the planner returns a plan of one or more slide moves whose steps
   each land the highlighted tile exactly on that step's highlighted target,
   and the current step renders the tile, target, and slide arrow in the hint
-  colour
+  color
 
 #### Scenario: A local-minimum endgame still yields a plan
 

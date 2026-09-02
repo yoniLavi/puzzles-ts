@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Sokoban port.
+ * Behavioral tests for the Sokoban port.
  *
  * Tier 1 — the codec, move classification, push/pit mechanics, the
  * "cannot become more complete" win rule, and generator determinism.
@@ -54,7 +54,7 @@ type SokobanMidend = Midend<
 /** Redraw a midend to a recording and return its ops (a render-equivalence
  * probe — the Midend exposes state only through drawing). */
 function renderOps(me: SokobanMidend) {
-  const dr = new RecordingDrawing(sokobanGame.colours(DEFAULT_BACKGROUND));
+  const dr = new RecordingDrawing(sokobanGame.colors(DEFAULT_BACKGROUND));
   me.redraw(dr);
   return dr.ops;
 }
@@ -146,7 +146,7 @@ describe("Sokoban desc codec", () => {
   });
 
   it("validateDesc accepts pits, deep pits and labelled barrels (hand IDs)", () => {
-    // A labelled barrel 'A' and a pit 'p' — the random generator never emits
+    // A labeled barrel 'A' and a pit 'p' — the random generator never emits
     // these, but hand-authored level IDs use them (design D7).
     expect(validateDesc(p5, "w6uAtw2p3w2s3w6")).toBeNull();
     expect(validateDesc(p5, "w6ubdw2s3w2s3w6")).toBeNull();
@@ -378,7 +378,7 @@ describe("Sokoban render", () => {
     expect(ops.some((o) => o.op === "line")).toBe(true);
     // Wall bevel triangles (polygons).
     expect(ops.some((o) => o.op === "polygon")).toBe(true);
-    // The player is a green disc — a circle with a fill colour.
+    // The player is a green disc — a circle with a fill color.
     expect(ops.some((o) => o.op === "circle")).toBe(true);
     expect(recording.ops).toMatchSnapshot();
   });

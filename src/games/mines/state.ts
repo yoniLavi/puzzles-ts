@@ -21,7 +21,7 @@ import {
 } from "../../engine/random/index.ts";
 
 // --- grid value encoding (upstream `signed char *grid`) ----------------
-// 0..8 : open, that many neighbouring mines
+// 0..8 : open, that many neighboring mines
 export const FLAG = -1; // marked as a mine
 export const COVERED = -2; // unknown / covered
 export const QUERY = -3; // question mark (unused by this frontend, kept for text format)
@@ -84,7 +84,7 @@ export interface MinesState {
 }
 
 export interface MinesUi {
-  /** Mouse-down highlight centre / radius (a render-only overlay, design D8). */
+  /** Mouse-down highlight center / radius (a render-only overlay, design D8). */
   hx: number;
   hy: number;
   hradius: number;
@@ -360,7 +360,7 @@ export function cloneState(s: MinesState): MinesState {
   };
 }
 
-// --- ui serialisation (mines.c encode_ui/decode_ui:2492) ---------------
+// --- ui serialization (mines.c encode_ui/decode_ui:2492) ---------------
 
 /** `D<deaths>` optionally followed by `C` (completed) — the only two ui
  * fields upstream preserves across a save (design D7). */

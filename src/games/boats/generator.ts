@@ -170,10 +170,10 @@ function createBorderClues(b: BoatsBoard): void {
 
 /**
  * Upstream `validate_params`' fleet-fit test: can this fleet be placed at all?
- * Upstream normalises the board to `min(w,h) × max(w,h)` first, so the verdict
+ * Upstream normalizes the board to `min(w,h) × max(w,h)` first, so the verdict
  * is orientation-independent.
  *
- * This is not an optimisation — it is the **only** guard against a hang.
+ * This is not an optimization — it is the **only** guard against a hang.
  * `newBoatsDesc` retries fleet placement in an unbounded loop, so an
  * unfittable fleet (the default 3,2,1 in 5×4, measured) would spin for ever.
  */

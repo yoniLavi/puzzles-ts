@@ -6,10 +6,10 @@
  * last thirds of the flash.
  */
 
-import { BLACK, TEAL_BOLD, TEAL_WASH, WHITE } from "../../engine/colour/colours.ts";
-import { CURSOR, clueDoneColour, ERROR } from "../../engine/colour/palette.ts";
+import { BLACK, TEAL_BOLD, TEAL_WASH, WHITE } from "../../engine/color/colors.ts";
+import { CURSOR, clueDoneColor, ERROR } from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   type MosaicMistake,
   type MosaicParams,
@@ -37,14 +37,14 @@ export const COL_CURSOR = 7;
 const COL_TEXT_DARK = COL_MARKED;
 const COL_TEXT_LIGHT = COL_BLANK;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_UNMARKED] = TEAL_WASH;
   out[COL_GRID] = TEAL_BOLD;
   out[COL_MARKED] = BLACK;
   out[COL_BLANK] = WHITE;
-  out[COL_TEXT_SOLVED] = clueDoneColour(defaultBackground);
+  out[COL_TEXT_SOLVED] = clueDoneColor(defaultBackground);
   out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = CURSOR;
   return out;
@@ -127,25 +127,25 @@ function drawCell(
   }
 
   if (!(cell & (DRAWFLAG_MARGIN_R | DRAWFLAG_MARGIN_D))) {
-    let colour: number;
-    let textColour: number;
+    let color: number;
+    let textColor: number;
     if (cell & STATE_MARKED) {
-      colour = COL_MARKED;
-      textColour = COL_TEXT_LIGHT;
+      color = COL_MARKED;
+      textColor = COL_TEXT_LIGHT;
     } else if (cell & STATE_BLANK) {
-      colour = COL_BLANK;
-      textColour = COL_TEXT_DARK;
+      color = COL_BLANK;
+      textColor = COL_TEXT_DARK;
     } else {
-      colour = COL_UNMARKED;
-      textColour = COL_TEXT_DARK;
+      color = COL_UNMARKED;
+      textColor = COL_TEXT_DARK;
     }
-    if (cell & STATE_ERROR) textColour = COL_ERROR;
-    else if (cell & STATE_SOLVED) textColour = COL_TEXT_SOLVED;
+    if (cell & STATE_ERROR) textColor = COL_ERROR;
+    else if (cell & STATE_SOLVED) textColor = COL_TEXT_SOLVED;
 
-    dr.drawRect({ x: startX, y: startY, w: ts - 1, h: ts - 1 }, colour);
+    dr.drawRect({ x: startX, y: startY, w: ts - 1, h: ts - 1 }, color);
 
     if (cell & DRAWFLAG_MISTAKE) {
-      // Mistake overlay: an inset error-coloured outline.
+      // Mistake overlay: an inset error-colored outline.
       const t = Math.max(1, Math.floor(ts / 16));
       const inset = Math.max(1, Math.floor(ts / 8));
       const sx = startX + inset;
@@ -166,7 +166,7 @@ function drawCell(
           fontType: "variable",
           size: Math.floor((ts * 3) / 5),
         },
-        textColour,
+        textColor,
         String(clueVal),
       );
     }

@@ -46,10 +46,10 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
     const encodedBackgroundColor = encodeURIComponent(backgroundColor);
 
     const arrowImage = timelineArrowSvg
-      .replace("grey", encodedTimelineColor)
+      .replace("gray", encodedTimelineColor)
       .replace("white", encodedBackgroundColor);
     const dotImage = timelineDotSvg
-      .replace("grey", encodedTimelineColor)
+      .replace("gray", encodedTimelineColor)
       .replace("white", encodedBackgroundColor);
 
     this.timelineImageStyles = {

@@ -83,9 +83,9 @@ finding here, not a premise.
 - [ ] 5.1 `secondaryButtonHoldTime` (350 ms) and `secondaryButtonDragThreshold`
       (8 px) are inherited defaults, never measured against a thumb. Both are
       user-settable, so the question is whether the *default* is right.
-- [ ] 5.2 If either wants changing, `src/utils/touch.test.ts` pins the behaviour
+- [ ] 5.2 If either wants changing, `src/utils/touch.test.ts` pins the behavior
       they drive, so the change is cheap and guarded. Note in the report which
-      device the judgement was made on — a threshold is device-dependent and a
+      device the judgment was made on — a threshold is device-dependent and a
       single phone is not a population.
 
 ## 6. Close out

@@ -56,10 +56,10 @@ met, the change may end at §1.
 ## 5. Tests + registration (stage 1)
 
 - [ ] 5.1 Tier-1 solver/generator/codec tests; tier-2.5 render scenarios.
-      Assurance is behavioural (generated boards are uniquely solvable), not a
+      Assurance is behavioral (generated boards are uniquely solvable), not a
       C differential — there is no C game or solver to match.
 - [ ] 5.2 Register in `ts-ported-ids.ts` + `games/index.ts`; add a catalog entry
-      + two new icon PNGs (path was never catalogued).
+      + two new icon PNGs (path was never cataloged).
 - [ ] 5.3 Full gate green; `openspec validate add-path-ts-port --strict`;
       dev-verify in the browser.
 
@@ -69,5 +69,5 @@ met, the change may end at §1.
       is playable; `catalog-registry.test.ts` holds catalog and registry together.
       (This task used to read "delete `puzzles/unfinished/path.c` and its build
       entry" — there is no build entry, and the source now lives at
-      `reference/path.c` in this change, travelling into the archive with it.)
+      `reference/path.c` in this change, traveling into the archive with it.)
 - [ ] 6.2 Archive, then commit game + archive together.

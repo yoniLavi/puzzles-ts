@@ -105,12 +105,12 @@ depends on this hook and SHALL refuse to save while any mistake is present.
 `interpretMove` SHALL support: a left-drag drawing a rectangle outline, a
 right-drag erasing interior edges, a click near an edge toggling that single
 edge, and a half-grid keyboard cursor with press-to-drag — with the
-corner/centre/edge click allocation of `coord_round` ported exactly. A drag or
+corner/center/edge click allocation of `coord_round` ported exactly. A drag or
 click that changes no edge SHALL produce no move. `redraw` SHALL render the grid,
-number text, the three edge colours (black solid line, red drag-draw preview,
-blue drag-erase preview), the computed corner pixels, the grey correct-rectangle
-fill, the cursor tile, the flagged-mistake edge colour, and the completion
-flash, with the palette index-for-index against the upstream colour enum and a
+number text, the three edge colors (black solid line, red drag-draw preview,
+blue drag-erase preview), the computed corner pixels, the gray correct-rectangle
+fill, the cursor tile, the flagged-mistake edge color, and the completion
+flash, with the palette index-for-index against the upstream color enum and a
 `BORDER` of 1 (NARROW_BORDERS).
 
 #### Scenario: A drag draws a rectangle outline

@@ -92,17 +92,17 @@ describe("Galaxies desc encode/decode", () => {
 
 describe("checkComplete", () => {
   it("trivially complete: a single-dot puzzle with the dot at centre", () => {
-    // 3x3 with one white dot at the centre (3,3). Outer border edges
+    // 3x3 with one white dot at the center (3,3). Outer border edges
     // are already set; no interior edges means everything is one
     // region centered on (3,3), which is symmetric.
     const s = blankGame(3, 3);
     s.flags[idx(s, 3, 3)] |= F_DOT;
     s.dots = rebuildDots(s);
-    const { complete, colours } = checkComplete(s, true);
+    const { complete, colors } = checkComplete(s, true);
     expect(complete).toBe(true);
-    expect(colours).toBeDefined();
-    if (!colours) return;
-    expect(Array.from(colours)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(colors).toBeDefined();
+    if (!colors) return;
+    expect(Array.from(colors)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it("clone preserves completion state", () => {

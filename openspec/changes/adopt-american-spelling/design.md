@@ -171,27 +171,45 @@ player already has, and it is the reason phase 2 is not folded into phase 1.
 
 ## D6. The guard: a stem scan that reads the table, counts its inputs, and has been seen to fail
 
-`src/spelling.test.ts` — at `src/` root beside `module-layering.test.ts`,
-`help-coverage.test.ts` and `asset-integrity.test.ts`, because the gate's
-vitest include is `src/**/*.test.ts` and `scripts/checks/` is the advisory
-`npm run diff` config that the gate never runs — scans the swept areas for any
-stem in the D3 table, case-insensitively, as a substring — the widest key, per
-`AGENTS.md` "A scan that keys on a name finds only the games that were named
-that way" — and:
+**Where it lives changed during implementation.** This was scoped as
+`src/spelling.test.ts`, a vitest file at `src/` root — and that cannot work,
+for a reason the repo already states: `src/gate-scope.test.ts` fails any test
+that *reads* `docs/`, `openspec/` or `AGENTS.md`, because the gate's
+documentation-only shortcut skips `vitest run` on the strength of nothing
+reading those paths. A vitest guard over `docs/` would either trip that test
+or, if exempted, be skipped on exactly the commits most likely to reintroduce
+a British spelling. So the guard is **`scripts/checks/spelling.mjs`, a node
+script in the gate's fast prefix** (`scripts/gate.sh`, after the probe-anchor
+check and before the shortcut), ~1 s, and the `build-pipeline` gate
+requirement gains the step. That also settles task 1.1 trivially: the table is
+`scripts/checks/spelling-table.mjs`, a plain module beside the guard and the
+fold, and nothing under `src/` is involved.
+
+It lists tracked files (`git ls-files`, skipping the `CLAUDE.md` symlink, which
+is `AGENTS.md` twice), scans each for any stem in the D3 table,
+case-insensitively, as a substring — the widest key, per `AGENTS.md` "A scan
+that keys on a name finds only the games that were named that way" — and:
 
 - **excludes** `openspec/changes/archive/`, `openspec/postmortems/`, the two
-  notice files' contents, `node_modules/`, `dist/`, and the recorded bytes of
-  fixtures (`__fixtures__/*.json` payloads — the keys are checked, the values
-  are not);
-- **allows** an explicit list of upstream-symbol quotations (`game_colours`,
-  `midend_colours`, `frontend_default_colour`, `print_*_colour`, and the like),
-  each with the file it is expected in, so an allowance cannot silently cover
-  a new occurrence elsewhere;
+  notice files' contents, the upstream C under a change's `reference/` (the
+  sweep folded `numgame.c` and `path.c` before this exclusion existed — the
+  scope report caught it), `package-lock.json`, `metrics/` and the render
+  snapshots (generated; their generators are scanned), the spelling tooling
+  itself (whose comments explain the stems by example), and this change's own
+  directory while it is pending;
+- **allows** a name this project does not own — upstream C symbols
+  (`game_colours`, `frontend_default_colour`, `grid_find_incentre` …) and a
+  third-party API member (`@sentry/browser`'s `behaviour` option, which the
+  sweep respelled and `tsc` caught) — each with the files it is expected in,
+  matched as a whole `[A-Za-z0-9_-]+` token so an allowance for `LICENCE`
+  does not cover `sgt-puzzles-LICENCE`; and any archived change's id, derived
+  from the archive directory, since a live document may cite the record;
 - **asserts the count of files it scanned** is above a floor (the vacuity
-  guard: an unmatched glob yields `{}` and reports health);
-- **is proved to fail** before it is trusted: plant `colour` in a comment in
-  `src/engine/midend.ts`, run it, watch it go red, revert. That step is a task,
-  not a suggestion.
+  guard: a broken listing reports health over nothing);
+- **is proved to fail** before it is trusted: `colour` and `game_colours`
+  planted in a comment in `src/engine/midend.ts` were both reported
+  (`midend.ts:4: colour`, `midend.ts:4: game_colours` — the second proving the
+  allowance is per file), then reverted.
 
 The guard is what makes the convention a rule rather than a sweep that decays:
 the next port written from the C will spell `colour` on its first line, and
@@ -279,3 +297,52 @@ report must be empty.
   not touched.
 - Not a reason to rename `COL_*` constants, the `-c6` param letters, or
   anything else that merely contains a `c`. The table is the scope.
+
+## D10. How phase 1 leaves the player's words alone: string literals are the seam
+
+Phase 2 (D5) is "the words a player reads", and in source those live in string
+literals — catalog objectives, labels, validation messages, hint narrations.
+Rather than classify ~600 literals by hand, phase 1 draws the line
+mechanically: **in a JS/TS file, the contents of string literals are not
+swept and not scanned** (`scripts/checks/spelling-strings.mjs` splits a file
+into code and string segments — comments are code, template holes are code,
+and **regex literals are strings**: the first gate run failed 26 tests where a
+folded `/unrecognized/` met a message still saying `unrecognised`, because a
+regex in a test matches the narration or error it sits beside and belongs to
+the same half; the twelve folded regexes were restored, except the three that
+match *source* — an import path, a `colors[COL_X] =` line — which stay
+folded), with three exceptions that are identifiers wearing quotes and not
+prose:
+
+1. **Path fragments naming a moved file** (`engine/colour/`, `colour-token`,
+   `licences/`, `-LICENCE`, `grid-incentre`, the recorder's `colour#` label),
+   so imports resolve and `tsc`/`vite build` stay green.
+2. **Identifier-shaped literals** — a single `[A-Za-z_$][A-Za-z0-9_$]*` token:
+   `"colour" in op`, `Record<"colour", …>`, the `centreCount` reason keys, the
+   `GREY` colour-name key, Map's `op: "colour"` discriminator, the three config
+   `kw`s. `tsc` found the first of these (a key respelled in code but not in
+   its `in` check); the rule found the rest, including
+   `history.ts`'s `.replace("grey", …)` over the timeline SVG whose `stroke`
+   the sweep had already respelled — a silent runtime break no test names.
+3. **`{kw}` placeholders in a format string** (`augmentation.ts`'s
+   `"{colours} colours"` becomes `"{colors} colours"`), because the kw it
+   names was respelled by rule 2.
+
+Player prose has spaces or punctuation and none of these rules touch it, so
+the interim state is exact: every identifier is American, every sentence a
+player reads is as it was. `scripts/feedback-probe-cases.mjs` is the one file
+swept strings-and-all, since its strings are source excerpts — and the one
+anchor quoting a narration (`pencilling`) was put back by hand, which is what
+`--verify` is for. The segmenter and the guard's string skip are deleted by
+phase 2, together with `help/`'s exclusion; the docstring of
+`spelling-strings.mjs` says so.
+
+**The config `kw`s, answered (task 7.2).** `kw: "colours"` (Flood, Guess) and
+`kw: "no-of-colours"` (Samegame) are `ParamConfigItem`s, not `GamePref`s. A
+pref's `kw` is what `Midend.prefValues` and `src/store/settings.ts` persist per
+puzzle; a params item's `kw` only round-trips the "Custom type…" form —
+`getCustomParamsConfig` → dialog → `paramsFromCustomValues` — and what is
+persisted is the encoded params string (`12x12c6m5`). No IndexedDB row, URL or
+game ID carries it. So the rename is free, and rule 2 above took the two
+identifier-shaped ones in phase 1; `no-of-colours` follows in phase 2 with its
+label.

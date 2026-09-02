@@ -6,7 +6,7 @@
  *
  * Because generation gates every fill attempt and every clue removal on
  * `sticksSolveGame`, one byte-match validates the generator (the symmetric
- * black placement, the fill/clue draws, the minimisation shuffle), the
+ * black placement, the fill/clue draws, the minimization shuffle), the
  * contradiction solver's exact deductive power, and the run-length codec
  * together. The `extra` check also round-trips each C desc through
  * `validateDesc` + `newState` + `encodeDesc` (codec inverse property).

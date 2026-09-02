@@ -40,7 +40,7 @@ interface MineCtx {
   rs: RandomState;
 }
 
-/** Open a square: mine-count of its neighbours, or -1 for *bang* (upstream
+/** Open a square: mine-count of its neighbors, or -1 for *bang* (upstream
  * `mineopen`, mines.c:1373). */
 function mineopen(ctx: MineCtx, x: number, y: number): number {
   if (ctx.grid[y * ctx.w + x]) return -1; // *bang*

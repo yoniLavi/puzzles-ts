@@ -1,6 +1,6 @@
 // Tier-2 render test: drive Fifteen's `redraw` against a recording
 // `GameDrawing` double and assert the structure of the draw calls — a
-// first-draw background fill + recessed border, one numbered bevelled
+// first-draw background fill + recessed border, one numbered beveled
 // tile per non-gap cell, and a mid-slide animation frame that draws a
 // moving tile at an interpolated coordinate.
 import { describe, expect, it } from "vitest";
@@ -11,7 +11,7 @@ import { type FifteenState, newState } from "./state.ts";
 
 interface Op {
   op: string;
-  colour?: number;
+  color?: number;
   x?: number;
   y?: number;
   w?: number;
@@ -29,15 +29,15 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
+      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
     drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", colour: c }),
+      ops.push({ op: "drawLine", color: c }),
     drawPolygon: (p: { x: number; y: number }[], f: number) =>
-      ops.push({ op: "drawPolygon", colour: f, x: p[0].x, y: p[0].y }),
+      ops.push({ op: "drawPolygon", color: f, x: p[0].x, y: p[0].y }),
     drawCircle: (_p: unknown, _r: number, f: number) =>
-      ops.push({ op: "drawCircle", colour: f }),
+      ops.push({ op: "drawCircle", color: f }),
     drawText: (p: { x: number; y: number }, _o: unknown, c: number, text: string) =>
-      ops.push({ op: "drawText", colour: c, x: p.x, y: p.y, text }),
+      ops.push({ op: "drawText", color: c, x: p.x, y: p.y, text }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},
@@ -83,7 +83,7 @@ describe("Fifteen rendering", () => {
     // The two recessed-border bevels are drawn (highlight=2, lowlight=3)
     // before any tiles.
     const firstPolys = ops.filter((o) => o.op === "drawPolygon").slice(0, 2);
-    expect(firstPolys.map((o) => o.colour)).toEqual([2, 3]);
+    expect(firstPolys.map((o) => o.color)).toEqual([2, 3]);
     // One number per non-gap cell (15 of 16).
     const numbers = ops.filter((o) => o.op === "drawText").map((o) => o.text);
     expect(numbers.length).toBe(15);
@@ -103,7 +103,7 @@ describe("Fifteen rendering", () => {
     redraw(dr, ds, prev, state, 1, UI, 0.13 / 2, 0);
 
     // Tile "15" is drawn at an x between its old column (2) and home
-    // column (3): its settled centre is coord(3)+ts/2 = 192; mid-slide it
+    // column (3): its settled center is coord(3)+ts/2 = 192; mid-slide it
     // sits to the left of that.
     const moving = ops.find((o) => o.op === "drawText" && o.text === "15");
     expect(moving).toBeDefined();
@@ -119,8 +119,8 @@ describe("Fifteen rendering", () => {
     const { dr, ops } = recordingDrawing();
     // flashTime within the first frame → COL_HIGHLIGHT (2) background.
     redraw(dr, ds, null, state, 0, UI, 0, 0.05);
-    // The gap cell is repainted with the flash background colour.
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === 2)).toBe(true);
+    // The gap cell is repainted with the flash background color.
+    expect(ops.some((o) => o.op === "drawRect" && o.color === 2)).toBe(true);
   });
 });
 
@@ -160,7 +160,7 @@ describe("the hint mark while the hinted slide animates", () => {
       const { dr, ops } = recordingDrawing();
       redraw(dr, ds, state, after, 1, UI, anim / 2, 0, step);
 
-      // The hint fill is drawTile's centre rect (inset by hw = ts/20 = 2),
+      // The hint fill is drawTile's center rect (inset by hw = ts/20 = 2),
       // drawn at the tile's interpolated position — half a cell from its
       // origin toward the gap it slides into.
       const hw = 2;
@@ -174,7 +174,7 @@ describe("the hint mark while the hinted slide animates", () => {
       const fills = ops.filter(
         (o) =>
           o.op === "drawRect" &&
-          o.colour === 4 &&
+          o.color === 4 &&
           o.w === TS - 2 * hw &&
           o.h === TS - 2 * hw,
       );

@@ -346,7 +346,7 @@ const INVALID_CLUESIZE = 3;
  * run, which at `erun === 26` produces `'z'` — a character its decoder reads as
  * "26 gaps and **no** following wall", losing a wall — and past 26 produces
  * characters outside `'a'..'z'` that the decoder rejects outright. Gap runs of
- * 26+ therefore have no defined behaviour upstream (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1), so this
+ * 26+ therefore have no defined behavior upstream (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1), so this
  * chunks them into `'z'` units (26 gaps, no wall — exactly what the reader
  * already means by `'z'`) and lets the residue, or the following wall run, carry
  * the wall. Output is character-for-character identical to the C for every run

@@ -13,7 +13,7 @@
  * corrupted values were data, not types.
  *
  * It cannot be a gate step, because only the author knows a diff was *meant* to
- * be a pure rename. A commit that deliberately changes behaviour alongside a
+ * be a pure rename. A commit that deliberately changes behavior alongside a
  * move would fail it for being what it says it is. So it is run on demand, by
  * the session doing the sweep, before committing.
  *
@@ -28,12 +28,12 @@
  *    perspective and is prose, not code.
  * 2. **Scope** — *did any file change that has nothing to do with the move?*
  *    Shape cannot see this: a specifier that gained a `.ts` extension is a
- *    perfectly well-formed import line. Seven files were quietly normalised that
+ *    perfectly well-formed import line. Seven files were quietly normalized that
  *    way, and this is what found them.
  *
  * ## Usage
  *
- *   node scripts/check-rename-shape.mjs --moved engine/grid/ --moved engine/colour/
+ *   node scripts/check-rename-shape.mjs --moved engine/grid/ --moved engine/color/
  *   node scripts/check-rename-shape.mjs --moved src/games/ --kind any
  *
  * `--moved <fragment>` may be repeated; a changed file none of whose changed

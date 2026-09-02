@@ -1,7 +1,7 @@
 /**
  * Tier-1 tests for the Guess Game glue: move execution + purity,
  * win/lose/reveal transitions, the `changedState` hold-carry, the
- * hint-fills-the-working-row behaviour (played end-to-end), and key
+ * hint-fills-the-working-row behavior (played end-to-end), and key
  * input mapping.
  */
 import { describe, expect, it } from "vitest";
@@ -56,7 +56,7 @@ describe("executeMove", () => {
   it("a wrong guess advances next_go and stores feedback", () => {
     const { state } = freshGame();
     const wrong = state.solution.slice();
-    wrong[0] = (wrong[0] % state.params.ncolours) + 1; // perturb one peg
+    wrong[0] = (wrong[0] % state.params.ncolors) + 1; // perturb one peg
     const next = guessGame.executeMove(state, submit(wrong));
     expect(next.solved).toBe(0);
     expect(next.nextGo).toBe(1);
@@ -67,7 +67,7 @@ describe("executeMove", () => {
     const params = { ...defaultParams(), nguesses: 1 };
     const { state } = freshGame("oneshot", params);
     const wrong = state.solution.slice();
-    wrong[0] = (wrong[0] % params.ncolours) + 1;
+    wrong[0] = (wrong[0] % params.ncolors) + 1;
     const next = guessGame.executeMove(state, submit(wrong));
     expect(next.solved).toBe(-1);
     expect(status(next)).toBe("lost");
@@ -94,7 +94,7 @@ describe("changedState (hold-carry)", () => {
   it("carries held pegs into the next working row, clears the rest", () => {
     const { state, ui } = freshGame();
     const guess = state.solution.slice();
-    guess[1] = (guess[1] % state.params.ncolours) + 1; // ensure not a win
+    guess[1] = (guess[1] % state.params.ncolors) + 1; // ensure not a win
     const holds = [true, false, false, false];
     const next = guessGame.executeMove(state, submit(guess, holds));
     guessGame.changedState?.(ui, state, next);
@@ -119,7 +119,7 @@ describe("changedState (hold-carry)", () => {
     const { state, ui } = freshGame();
     ui.hint = [1, 1, 1, 1];
     const wrong = state.solution.slice();
-    wrong[0] = (wrong[0] % state.params.ncolours) + 1;
+    wrong[0] = (wrong[0] % state.params.ncolors) + 1;
     const next = guessGame.executeMove(state, submit(wrong)); // nextGo 0 -> 1
     guessGame.changedState?.(ui, next, state); // simulate undo: new < old
     expect(ui.hint).toBeNull();
@@ -159,11 +159,11 @@ describe("hint (compute_hint)", () => {
     guessGame.interpretMove(s1, ui, sizedDrawState(guessGame, s1), ZERO, 0x68);
     // Re-score the hint row against the prior guess; it must reproduce
     // that guess's feedback (the definition of "consistent").
-    // Use the same maxcolour bound compute_hint uses (here ncolours).
+    // Use the same maxcolor bound compute_hint uses (here ncolors).
     const hintRow = ui.currPegs.slice();
     // markPegs(hintRow, priorGuessPegs) equals priorGuess feedback.
     // (compute_hint guarantees this for the recorded feedback.)
-    expect(hintRow.every((c) => c >= 1 && c <= params.ncolours)).toBe(true);
+    expect(hintRow.every((c) => c >= 1 && c <= params.ncolors)).toBe(true);
   });
 });
 

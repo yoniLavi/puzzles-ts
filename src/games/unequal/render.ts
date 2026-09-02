@@ -5,14 +5,14 @@
  * The board is an `order × order` grid of tiles with a half-tile gap between
  * cells. The clues live in those gaps: in Unequal mode a greater-than polygon
  * (`draw_gt`) pointing toward the smaller cell; in Adjacent mode a bar
- * (`draw_adjs`). Each clue is coloured red when currently violated, grey when
+ * (`draw_adjs`). Each clue is colored red when currently violated, gray when
  * struck through ("spent"), else normal. Filled cells show their number; empty
  * cells show their pencil marks in an auto-sized grid. Cells are diffed against
  * a per-tile cache (number + composed flag word + pencil bitmap + mistake +
  * pencil-mode overlay).
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import {
   ERROR,
   FLASH,
@@ -22,9 +22,9 @@ import {
   highlightWash,
   INK,
   PENCIL_BODY,
-  pencilColour,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
+  pencilColor,
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
@@ -37,7 +37,7 @@ import {
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import { type GridCursor, newCursor } from "../../engine/pointer.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { UnequalMove } from "./state.ts";
 import {
   checkComplete,
@@ -86,16 +86,16 @@ export const COL_FLASH = 11;
  * Upstream drew it in the bevel highlight. */
 export const COL_CURSOR = 12;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
   const bg = background;
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = GRID_MID;
   out[COL_TEXT] = INK;
-  out[COL_GUESS] = playerEntryColour(bg);
+  out[COL_GUESS] = playerEntryColor(bg);
   out[COL_ERROR] = ERROR;
-  out[COL_PENCIL] = pencilColour(bg);
+  out[COL_PENCIL] = pencilColor(bg);
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_FLASH] = FLASH;
@@ -107,7 +107,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
   // Both hint marks are outlines drawn beside the cell, so both take a strong
-  // colour and differ in shape rather than in weight — a clue pair's contour
+  // color and differ in shape rather than in weight — a clue pair's contour
   // against one cell's ring. `HINT_EVIDENCE` covers the chain ordinal too; see
   // its doc comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
@@ -115,7 +115,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 }
 
 /** Highlight payload an Unequal hint step carries (built in `index.ts`). The
- * element-type legend (docs/games/hints.md § "The element-type colour legend"): the driving clue's cells shaded
+ * element-type legend (docs/games/hints.md § "The element-type color legend"): the driving clue's cells shaded
  * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
  * shown struck. */
 export interface UnequalHint {
@@ -216,7 +216,7 @@ export function setTileSize(ds: UnequalDrawState, ts: number): void {
  * and pencil marks nothing.
  *
  * That gap belongs to no cell — `drawGts`/`drawAdjs` repaint their own band only
- * where a clue flag is set — so `HintMarks` is told the resting colour and undoes
+ * where a clue flag is set — so `HintMarks` is told the resting color and undoes
  * a mark that moved itself.
  */
 function markBand(ds: UnequalDrawState, x: number, y: number): MarkBand {
@@ -230,8 +230,8 @@ function markBand(ds: UnequalDrawState, x: number, y: number): MarkBand {
 
 // --- inter-cell clue drawing -----------------------------------------------
 
-/** Colour for a clue direction: error (red) > spent (grey) > the normal `fg`. */
-function clueColour(f: number, errBit: number, spentBit: number, fg: number): number {
+/** Color for a clue direction: error (red) > spent (gray) > the normal `fg`. */
+function clueColor(f: number, errBit: number, spentBit: number, fg: number): number {
   if (f & errBit) return COL_ERROR;
   if (f & spentBit) return COL_SPENT;
   return fg;
@@ -287,7 +287,7 @@ function drawGts(
       -g2,
       g2,
       g2,
-      clueColour(f, F_ERROR_UP, F_SPENT_UP, fg),
+      clueColor(f, F_ERROR_UP, F_SPENT_UP, fg),
     );
     dr.drawUpdate({ x: ox, y: oy - g, w: ts, h: g });
   }
@@ -301,7 +301,7 @@ function drawGts(
       g2,
       -g2,
       g2,
-      clueColour(f, F_ERROR_RIGHT, F_SPENT_RIGHT, fg),
+      clueColor(f, F_ERROR_RIGHT, F_SPENT_RIGHT, fg),
     );
     dr.drawUpdate({ x: ox + ts, y: oy, w: g, h: ts });
   }
@@ -315,7 +315,7 @@ function drawGts(
       g2,
       g2,
       -g2,
-      clueColour(f, F_ERROR_DOWN, F_SPENT_DOWN, fg),
+      clueColor(f, F_ERROR_DOWN, F_SPENT_DOWN, fg),
     );
     dr.drawUpdate({ x: ox, y: oy + ts, w: ts, h: g });
   }
@@ -329,7 +329,7 @@ function drawGts(
       g2,
       g2,
       g2,
-      clueColour(f, F_ERROR_LEFT, F_SPENT_LEFT, fg),
+      clueColor(f, F_ERROR_LEFT, F_SPENT_LEFT, fg),
     );
     dr.drawUpdate({ x: ox - g, y: oy, w: g, h: ts });
   }
@@ -354,7 +354,7 @@ function drawAdjs(
     if (f & F_ADJ_RIGHT) {
       dr.drawRect(
         { x: ox + ts + g38, y: oy, w: g4, h: ts },
-        clueColour(f, F_ERROR_RIGHT, F_SPENT_RIGHT, fg),
+        clueColor(f, F_ERROR_RIGHT, F_SPENT_RIGHT, fg),
       );
     } else {
       rectOutline(dr, ox + ts + g38, oy, g4, ts, COL_ERROR);
@@ -368,7 +368,7 @@ function drawAdjs(
     if (f & F_ADJ_DOWN) {
       dr.drawRect(
         { x: ox, y: oy + ts + g38, w: ts, h: g4 },
-        clueColour(f, F_ERROR_DOWN, F_SPENT_DOWN, fg),
+        clueColor(f, F_ERROR_DOWN, F_SPENT_DOWN, fg),
       );
     } else {
       rectOutline(dr, ox, oy + ts + g38, ts, g4, COL_ERROR);
@@ -386,7 +386,7 @@ function rectOutline(
   y: number,
   w: number,
   h: number,
-  colour: number,
+  color: number,
 ): void {
   dr.drawPolygon(
     [
@@ -396,7 +396,7 @@ function rectOutline(
       { x, y: y + h },
     ],
     -1,
-    colour,
+    color,
   );
 }
 
@@ -424,7 +424,7 @@ function drawCell(
   const oy = coord(y, ts);
   const hon = ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y;
 
-  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): both
+  // Hint overlay (docs/games/hints.md § "The element-type color legend"): both
   // cell-level marks are read in `redraw`, which rings the target and outlines
   // the evidence region in the gap around the cell, so a hint never paints over
   // the digits it is talking about. What is left here is `struck`, the set of
@@ -458,7 +458,7 @@ function drawCell(
   else drawGts(dr, ts, ox, oy, flags, COL_TEXT);
 
   if (num > 0) {
-    const colour =
+    const color =
       flags & DF_IMMUTABLE ? COL_TEXT : flags & F_ERROR ? COL_ERROR : COL_GUESS;
     dr.drawText(
       { x: ox + Math.floor(ts / 2), y: oy + Math.floor(ts / 2) },
@@ -468,7 +468,7 @@ function drawCell(
         fontType: "variable",
         size: Math.floor((3 * ts) / 4),
       },
-      colour,
+      color,
       n2c(num, o),
     );
   } else {
@@ -497,8 +497,8 @@ function drawCell(
 
 /** Pencil-mark grid (upstream `draw_hints`, stolen from solo). A candidate in
  * `struck` (bit `1 << n`) is a hint-ruled-out mark, drawn in its normal pencil
- * colour with a same-colour strikethrough — high-contrast, reads as a real note,
- * and the line is the "ruled out" cue (docs/games/hints.md § "The element-type colour legend"). */
+ * color with a same-color strikethrough — high-contrast, reads as a real note,
+ * and the line is the "ruled out" cue (docs/games/hints.md § "The element-type color legend"). */
 function drawHints(
   dr: GameDrawing,
   ts: number,
@@ -667,9 +667,9 @@ export function redraw(
   }
   ds.marks.paint(dr, targets, evidence, {
     band: (x, y) => markBand(ds, x, y),
-    targetColour: COL_HINT,
-    evidenceColour: COL_HINT_CELL,
-    gutterColour: COL_BACKGROUND,
+    targetColor: COL_HINT,
+    evidenceColor: COL_HINT_CELL,
+    gutterColor: COL_BACKGROUND,
   });
 
   // Pencil-mode indicator (fork addition).

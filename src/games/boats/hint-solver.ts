@@ -84,7 +84,7 @@ import {
   FE_FLEET,
   FE_MISMATCH,
   fleetShipCount,
-  neighbours,
+  neighbors,
   validateFullState,
   validateGridClues,
 } from "./validate.ts";
@@ -149,16 +149,16 @@ export type BoatsTechnique =
   | { kind: "lineForced"; line: BoatsLine }
   /** Every square of water is accounted for, so the rest is fleet. */
   | { kind: "allWaterPlaced" }
-  /** A centre segment with water to one side must run along the other axis. */
-  | { kind: "centreForced"; vertical: boolean }
+  /** A center segment with water to one side must run along the other axis. */
+  | { kind: "centerForced"; vertical: boolean }
   /** Every 1-boat is placed, so a square hemmed in on all four sides is water. */
   | { kind: "isolated" }
   /** Every 1-boat is placed, so a segment hemmed in on three sides continues
    * into the fourth. */
   | { kind: "mustExtend" }
   // --- Normal ---
-  /** A centre segment's line cannot take the two more ships that direction needs. */
-  | { kind: "centreCount"; line: BoatsLine; vertical: boolean }
+  /** A center segment's line cannot take the two more ships that direction needs. */
+  | { kind: "centerCount"; line: BoatsLine; vertical: boolean }
   /** Filling a square would join runs into a boat longer than any left. */
   | { kind: "growTooLong"; joined: number; largest: number }
   /** Every boat of this length is placed, so an unfinished one must be longer. */
@@ -170,8 +170,8 @@ export type BoatsTechnique =
    * as there are such boats, so every one of them is used. */
   | { kind: "onlyRunsLeft"; size: number; missing: number; runs: number }
   // --- Tricky ---
-  /** Two squares in a nearly-full line share diagonal neighbours; one of them is
-   * a ship either way, so the shared neighbours are water. */
+  /** Two squares in a nearly-full line share diagonal neighbors; one of them is
+   * a ship either way, so the shared neighbors are water. */
   | { kind: "sharedDiagonal"; line: BoatsLine; room: number }
   // --- Hard ---
   /** The opposite placement immediately contradicts the board. */
@@ -444,20 +444,20 @@ function findAllWaterPlaced(ctx: Ctx): BoatsFiring | null {
   return firing(ctx, { kind: "allWaterPlaced" }, forced, []);
 }
 
-/** Whether a given centre clue still needs its boat's direction settled. */
-function unsettledCentre(b: BoatsBoard, x: number, y: number): boolean {
+/** Whether a given center clue still needs its boat's direction settled. */
+function unsettledCenter(b: BoatsBoard, x: number, y: number): boolean {
   if (b.gridClues[y * b.w + x] !== SHIP_CENTER) return false;
-  const { left, right, up, down } = neighbours(b, x, y);
+  const { left, right, up, down } = neighbors(b, x, y);
   return !((isShip(left) && isShip(right)) || (isShip(up) && isShip(down)));
 }
 
 /** Upstream `boats_solver_centers_trivial`. */
-function findCentreForced(ctx: Ctx): BoatsFiring | null {
+function findCenterForced(ctx: Ctx): BoatsFiring | null {
   const { b } = ctx;
   for (let x = 0; x < b.w; x++) {
     for (let y = 0; y < b.h; y++) {
-      if (!unsettledCentre(b, x, y)) continue;
-      const { left, right, up, down } = neighbours(b, x, y);
+      if (!unsettledCenter(b, x, y)) continue;
+      const { left, right, up, down } = neighbors(b, x, y);
 
       let forced: BoatsSquare[];
       let vertical: boolean;
@@ -480,7 +480,7 @@ function findCentreForced(ctx: Ctx): BoatsFiring | null {
         continue;
       }
 
-      const f = firing(ctx, { kind: "centreForced", vertical }, forced, evidence);
+      const f = firing(ctx, { kind: "centerForced", vertical }, forced, evidence);
       if (f) return f;
     }
   }
@@ -499,7 +499,7 @@ function findSingles(ctx: Ctx, wantExtend: boolean): BoatsFiring | null {
     for (let y = 0; y < b.h; y++) {
       const cell = b.grid[y * b.w + x];
       if (cell === WATER) continue;
-      const { left, right, up, down } = neighbours(b, x, y);
+      const { left, right, up, down } = neighbors(b, x, y);
       const walls = [left, right, up, down].filter((n) => n === WATER).length;
 
       if (!wantExtend && cell === EMPTY && walls === 4) {
@@ -540,20 +540,20 @@ function findSingles(ctx: Ctx, wantExtend: boolean): BoatsFiring | null {
 // --- Normal tier ------------------------------------------------------------
 
 /** Upstream `boats_solver_centers_normal`. */
-function findCentreCount(ctx: Ctx): BoatsFiring | null {
+function findCenterCount(ctx: Ctx): BoatsFiring | null {
   const { b, shipCounts } = ctx;
   for (let x = 0; x < b.w; x++) {
     for (let y = 0; y < b.h; y++) {
-      if (!unsettledCentre(b, x, y)) continue;
+      if (!unsettledCenter(b, x, y)) continue;
 
-      // A horizontal boat through the centre needs two more ships in this row.
+      // A horizontal boat through the center needs two more ships in this row.
       if (
         b.borderClues[y + b.w] !== NO_CLUE &&
         b.borderClues[y + b.w] - shipCounts[y + b.w] < 2
       ) {
         const f = firing(
           ctx,
-          { kind: "centreCount", line: lineOf(ctx, true, y), vertical: true },
+          { kind: "centerCount", line: lineOf(ctx, true, y), vertical: true },
           [{ x: x + 1, y, ship: false }],
           [{ x, y }, ...lineCells(b, true, y)],
         );
@@ -562,7 +562,7 @@ function findCentreCount(ctx: Ctx): BoatsFiring | null {
       if (b.borderClues[x] !== NO_CLUE && b.borderClues[x] - shipCounts[x] < 2) {
         const f = firing(
           ctx,
-          { kind: "centreCount", line: lineOf(ctx, false, x), vertical: false },
+          { kind: "centerCount", line: lineOf(ctx, false, x), vertical: false },
           [{ x, y: y + 1, ship: false }],
           [{ x, y }, ...lineCells(b, false, x)],
         );
@@ -822,12 +822,12 @@ function findSharedDiagonal(ctx: Ctx): BoatsFiring | null {
         const crossSlot = horizontal ? k : k + b.w;
 
         const front = k > 0 && at(k - 1) === EMPTY ? 1 : 0;
-        const centre =
+        const center =
           at(k) === EMPTY && b.borderClues[crossSlot] - shipCounts[crossSlot] === 1
             ? 1
             : 0;
         const back = k < span - 1 && at(k + 1) === EMPTY ? 1 : 0;
-        if (front + centre + back <= target) continue;
+        if (front + center + back <= target) continue;
 
         const here = cellAt(k);
         const forced: BoatsSquare[] = horizontal
@@ -1051,11 +1051,11 @@ function findRefuted(ctx: Ctx): BoatsFiring | null {
     }
   }
 
-  // Upstream `boats_solver_centers_attempt`: an orientation of a centre clue
+  // Upstream `boats_solver_centers_attempt`: an orientation of a center clue
   // that immediately contradicts the board rules itself out.
   for (let x = 0; x < b.w; x++) {
     for (let y = 0; y < b.h; y++) {
-      if (!unsettledCentre(b, x, y)) continue;
+      if (!unsettledCenter(b, x, y)) continue;
 
       for (const vertical of [false, true]) {
         const trial = cloneBoard(b);
@@ -1109,7 +1109,7 @@ function nextBoatsFiring(ctx: Ctx): BoatsFiring | null {
     findNeverTouch(ctx) ??
     findLineCount(ctx, true) ??
     (ctx.hasNoClue ? findAllWaterPlaced(ctx) : null) ??
-    findCentreForced(ctx) ??
+    findCenterForced(ctx) ??
     findSingles(ctx, true) ??
     findLineCount(ctx, false) ??
     findSingles(ctx, false);
@@ -1123,7 +1123,7 @@ function nextBoatsFiring(ctx: Ctx): BoatsFiring | null {
   const runs = collectRuns(b);
   const normal =
     findOnlyRunsLeft(ctx, runs, true) ??
-    findCentreCount(ctx) ??
+    findCenterCount(ctx) ??
     findGrowTooLong(ctx) ??
     findRunTooShort(ctx, runs) ??
     // Last in the rung deliberately: `mustGrow` is a **safety net, not a

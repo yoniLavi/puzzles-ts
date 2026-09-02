@@ -46,7 +46,7 @@ import {
   type PenroseWhich,
   penroseTilingGenerate,
   penroseTilingParamsInvalid,
-  penroseTilingRandomise,
+  penroseTilingRandomize,
   penroseValidLetter,
 } from "./penrose.ts";
 
@@ -160,7 +160,7 @@ export function penroseNewDesc(
 ): string {
   const size = apiSizePenrose(width, height, which);
   // The generator's w/h are `size.h`/`size.w`: see `apiSizePenrose`.
-  const params = penroseTilingRandomise(which, size.h, size.w, rng);
+  const params = penroseTilingRandomize(which, size.h, size.w, rng);
   return `${params.orientation}${params.startVertex}${params.coords.join("")}`;
 }
 
@@ -220,7 +220,7 @@ export function gridNewPenrose(
         // run through the whole tiling, and `-0` survives `===` *and* the
         // dot-dedup key, so a grid carrying one is structurally perfect and
         // visible only to a comparison like the differential's `toEqual`.
-        // Normalise here, where exact arithmetic becomes a pixel, rather than
+        // Normalize here, where exact arithmetic becomes a pixel, rather than
         // sprinkling `|| 0` through code where it cannot be reviewed.
         return [gx === 0 ? 0 : gx, gy === 0 ? 0 : gy];
       }),
@@ -235,7 +235,7 @@ export function gridNewPenrose(
   gridTrimVigorously(g);
   makeConsistent(g);
 
-  // Centre the surviving patch in the rectangle originally promised by
+  // Center the surviving patch in the rectangle originally promised by
   // `gridComputeSize`. `Math.trunc`, not `Math.floor`: the numerator goes
   // negative whenever the patch came out wider than the promise, and there the
   // two differ by one — enough to shift the whole grid a pixel.

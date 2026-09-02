@@ -21,7 +21,7 @@
  * sources and the harness — see `engine/testing/differential.ts`.
  *
  * **What this cannot cover**, and where to look instead: the C *aborts* on a
- * degenerate Penrose patch and *hangs* on an unfavourable one, so no fixture
+ * degenerate Penrose patch and *hangs* on an unfavorable one, so no fixture
  * can be recorded for either. Those paths are the TS port's own recovery (see
  * `grid-build.ts` and `generator.ts`) and are covered by `loopy.test.ts`.
  */

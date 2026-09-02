@@ -7,11 +7,11 @@
  * Two per-tile `Int32Array`s (`flags` + `flagsDrag`) mirror upstream's
  * committed-vs-drag-preview drawstate; the `findMistakes` overlay rides an
  * `OverlaySidecar` so it is part of the diff key (docs/games/rendering.md § "Overlay sidecars"). The palette
- * is index-for-index with the C colour enum.
+ * is index-for-index with the C color enum.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BROWN, GREY } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BROWN, GRAY } from "../../engine/color/colors.ts";
 import {
   CURSOR,
   DRAG_ADD,
@@ -20,11 +20,11 @@ import {
   FLASH,
   INK,
   PAPER,
-} from "../../engine/colour/palette.ts";
-import { tracksGrid } from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/palette.ts";
+import { tracksGrid } from "../../engine/color/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
+import type { Color, Point, Rect, Size } from "../../engine/types.ts";
 import { copyAndApplyDrag } from "./moves.ts";
 import {
   ALLDIR,
@@ -51,7 +51,7 @@ import {
 export const PREFERRED_TILE_SIZE = 33;
 export const FLASH_TIME = 0.5;
 
-// --- palette (mirrors the tracks.c colour enum index-for-index) -----------
+// --- palette (mirrors the tracks.c color enum index-for-index) -----------
 export const COL_BACKGROUND = 0;
 export const COL_TRACK_BACKGROUND = 1;
 export const COL_GRID = 2;
@@ -66,17 +66,17 @@ export const COL_ERROR = 10;
 export const COL_FLASH = 11;
 export const COL_ERROR_BACKGROUND = 12;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_TRACK_BACKGROUND] = highlight;
   // Kept a derivation: the grid sits between the board and the track bed drawn
-  // in its highlight, and the rails below are grey, which a grey grid would be.
+  // in its highlight, and the rails below are gray, which a gray grid would be.
   out[COL_GRID] = tracksGrid(background, highlight);
   out[COL_TRACK_CLUE] = INK;
-  // The rails are grey; that is the colour, not a grid role.
-  out[COL_TRACK] = GREY;
+  // The rails are gray; that is the color, not a grid role.
+  out[COL_TRACK] = GRAY;
   out[COL_CLUE] = INK;
   out[COL_CURSOR] = CURSOR;
   // White behind a red clue digit, so the red pops; a red wash would sit red
@@ -171,12 +171,12 @@ function thickLine(
   y1: number,
   x2: number,
   y2: number,
-  colour: number,
+  color: number,
 ): void {
   dr.drawLine(
     { x: x1, y: y1 },
     { x: x2, y: y2 },
-    colour,
+    color,
     Math.max(1, Math.round(thickness)),
   );
 }
@@ -213,7 +213,7 @@ function thickCircleOutline(
   cx: number,
   cy: number,
   r: number,
-  colour: number,
+  color: number,
 ): void {
   const circ4 = 0.5 * Math.PI * r;
   const nseg = Math.floor(circ4 / 4) * 4;
@@ -229,7 +229,7 @@ function thickCircleOutline(
       cy + r * Math.sin(th),
       cx + r * Math.cos(th2),
       cy + r * Math.sin(th2),
-      colour,
+      color,
     );
   }
 }
@@ -313,9 +313,9 @@ function drawTracksSpecific(
   }
 }
 
-/** Pick which of the committed vs drag bits to draw and the drag colour
+/** Pick which of the committed vs drag bits to draw and the drag color
  * (upstream `best_bits`). Returns the bits and, when the two differ, the
- * drag-on / drag-off colour. */
+ * drag-on / drag-off color. */
 function bestBits(
   flags: number,
   flagsDrag: number,
@@ -347,7 +347,7 @@ function drawSquare(
 
   dr.clip({ x: ox, y: oy, w: m.tile, h: m.tile });
 
-  // Background (in the drag colour when the drag toggles this square's track).
+  // Background (in the drag color when the drag toggles this square's track).
   const bg = bestBits(
     (flags & DS_TRACK) === DS_TRACK ? 1 : 0,
     (flagsDrag & DS_TRACK) === DS_TRACK ? 1 : 0,
@@ -364,7 +364,7 @@ function drawSquare(
     bg,
   );
 
-  // Cursor outline (centre, or nudged onto an edge).
+  // Cursor outline (center, or nudged onto an edge).
   if (flags & DS_CURSOR) {
     const off = t16;
     let curx = ox + off;
@@ -443,12 +443,12 @@ function drawSquare(
 }
 
 /** A one-pixel rectangle outline (upstream `draw_rect_outline`). */
-function rectOutline(dr: GameDrawing, rect: Rect, colour: number): void {
+function rectOutline(dr: GameDrawing, rect: Rect, color: number): void {
   const { x, y, w, h } = rect;
-  dr.drawRect({ x, y, w, h: 1 }, colour);
-  dr.drawRect({ x, y: y + h - 1, w, h: 1 }, colour);
-  dr.drawRect({ x, y, w: 1, h }, colour);
-  dr.drawRect({ x: x + w - 1, y, w: 1, h }, colour);
+  dr.drawRect({ x, y, w, h: 1 }, color);
+  dr.drawRect({ x, y: y + h - 1, w, h: 1 }, color);
+  dr.drawRect({ x, y, w: 1, h }, color);
+  dr.drawRect({ x: x + w - 1, y, w: 1, h }, color);
 }
 
 function drawClue(

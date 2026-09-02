@@ -5,7 +5,7 @@
  * one-tile border of sighting clues. Each interior cell draws a mirror (a thick
  * diagonal), a placed monster (a drawn ghost/vampire/zombie shape, or a letter
  * in ASCII mode), or a 2×2 grid of pencil notes. The count blocks and edge clues
- * recolour red on error and dim when complete / struck. Cells are diffed against
+ * recolor red on error and dim when complete / struck. Cells are diffed against
  * a per-monster-cell cache; the Check & Save mistake overlay rides a sidecar in
  * the diff key (docs/games/rendering.md § "The tile cache and the diff key"). The fork pencil-mode indicator sits in the
  * top-right border corner.
@@ -17,7 +17,7 @@
  */
 
 import {
-  clueDoneColour,
+  clueDoneColor,
   ERROR,
   FLASH,
   HINT_ACTION,
@@ -25,12 +25,12 @@ import {
   highlightWash,
   INK,
   PENCIL_BODY,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import {
   undeadGhost,
   undeadVampire,
   undeadZombie,
-} from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import {
@@ -40,7 +40,7 @@ import {
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import { type GridCursor, newCursor } from "../../engine/pointer.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   CELL_MIRROR_L,
   COUNT_STYLE_PLACED_TOTAL,
@@ -56,7 +56,7 @@ import {
 } from "./state.ts";
 
 /** Highlight payload an Undead hint step carries (built in `index.ts`). See
- * docs/games/hints.md § "The element-type colour legend" for the element-type legend. Coordinates are interior
+ * docs/games/hints.md § "The element-type color legend" for the element-type legend. Coordinates are interior
  * (1-based) grid cells, matching `redraw`/`findMistakes`. */
 export interface UndeadHint {
   /** The driving sightline's bounce path, shaded `COL_HINT_CELL` (evidence). */
@@ -88,13 +88,13 @@ export const COL_DONE = 9;
 // Fork additions, appended past the upstream enum; Undead has no dark-mode
 // paletteOverrides, so a plain append is safe.
 export const COL_PENCIL_BODY = 10;
-// The explained-hint legend (docs/games/hints.md § "The element-type colour legend").
+// The explained-hint legend (docs/games/hints.md § "The element-type color legend").
 export const COL_HINT = 11; // the cell(s)/candidate(s) the deduction acts on
 export const COL_HINT_CELL = 12; // the driving sightline's bounce path (evidence)
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const bg = defaultBackground;
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = INK;
   out[COL_TEXT] = INK;
@@ -104,11 +104,11 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GHOST] = undeadGhost(bg);
   out[COL_ZOMBIE] = undeadZombie(bg);
   out[COL_VAMPIRE] = undeadVampire(bg);
-  out[COL_DONE] = clueDoneColour(bg);
+  out[COL_DONE] = clueDoneColor(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
   // Both hint marks are outlines on the cell's border, so both take a strong
-  // colour: a wash is sized to be read *through*, an outline is read *against*.
+  // color: a wash is sized to be read *through*, an outline is read *against*.
   // See `HINT_EVIDENCE` for why the role is teal's bold step.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
@@ -276,13 +276,13 @@ function drawCircleOrPoint(
   cx: number,
   cy: number,
   radius: number,
-  colour: number,
+  color: number,
 ): void {
-  if (radius > 0) dr.drawCircle({ x: cx, y: cy }, radius, colour, colour);
-  else dr.drawRect({ x: cx, y: cy, w: 1, h: 1 }, colour);
+  if (radius > 0) dr.drawCircle({ x: cx, y: cy }, radius, color, color);
+  else dr.drawRect({ x: cx, y: cy, w: 1, h: 1 }, color);
 }
 
-/** Draw a monster shape centred at `(x, y)` into a `ts`-wide box (upstream
+/** Draw a monster shape centered at `(x, y)` into a `ts`-wide box (upstream
  * `draw_monster`). `ts` is the monster's own display size, not the tile size. */
 function drawMonster(
   dr: GameDrawing,
@@ -455,7 +455,7 @@ function drawMonster(
 
 // --- cell + furniture drawing ----------------------------------------------
 
-function cellCentre(
+function cellCenter(
   ds: UndeadDrawState,
   x: number,
   y: number,
@@ -477,13 +477,13 @@ function cellCentre(
  * is what `HintMarks` paints back when a mark moves; the rest lies inside the
  * cell, where the cell's own repaint undoes it.
  *
- * The inner reach is bounded by the pencil glyphs rather than chosen: a pencilled
- * monster is a circle of radius `2/5` of its `TILESIZE/2` box, centred a quarter
+ * The inner reach is bounded by the pencil glyphs rather than chosen: a penciled
+ * monster is a circle of radius `2/5` of its `TILESIZE/2` box, centered a quarter
  * of a tile in, so it clears the cell edge by `TILESIZE/20`.
  */
 function markBand(ds: UndeadDrawState, x: number, y: number): MarkBand {
   const ts = ds.tilesize;
-  const { dx, dy } = cellCentre(ds, x, y);
+  const { dx, dy } = cellCenter(ds, x, y);
   return {
     box: { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 },
     outer: 1,
@@ -500,7 +500,7 @@ function drawCellBackground(
   hintBg = -1,
 ): void {
   const ts = ds.tilesize;
-  const { dx, dy } = cellCentre(ds, x, y);
+  const { dx, dy } = cellCenter(ds, x, y);
   const hon = ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y;
   // A hint background overrides the cursor highlight (the hint is what to act on).
   const bg = hintBg >= 0 ? hintBg : hon && !ui.hpencil ? COL_HIGHLIGHT : COL_BACKGROUND;
@@ -531,7 +531,7 @@ function drawMirror(
   mirror: number,
 ): void {
   const ts = ds.tilesize;
-  const { dx, dy } = cellCentre(ds, x, y);
+  const { dx, dy } = cellCenter(ds, x, y);
   let mx1: number;
   let my1: number;
   let mx2: number;
@@ -566,7 +566,7 @@ function drawBigMonster(
   ascii: boolean,
 ): void {
   const ts = ds.tilesize;
-  const { dx, dy } = cellCentre(ds, x, y);
+  const { dx, dy } = cellCenter(ds, x, y);
   if (ascii) {
     const buf =
       monster === MON_GHOST
@@ -704,7 +704,7 @@ function drawMonsterCount(
     buf = `${placed}/${total}`;
   } else if (ds.countStyle === COUNT_STYLE_REMAINING_TOTAL) {
     // remaining-to-place / total-needed; a negative remaining (over-placed) shows
-    // a proper minus sign and renders red via the colour logic below.
+    // a proper minus sign and renders red via the color logic below.
     const remaining = total - placed;
     const left = remaining < 0 ? `−${-remaining}` : String(remaining);
     buf = `${left}/${total}`;
@@ -728,7 +728,7 @@ function drawMonsterCount(
       bufm,
     );
   }
-  const colour =
+  const color =
     state.countErrors[c] || placed > total
       ? COL_ERROR
       : hflash
@@ -739,7 +739,7 @@ function drawMonsterCount(
   dr.drawText(
     { x: dx + msize + padding, y: dy + f(dh / 2) },
     { align: "left", baseline: "mathematical", fontType: "variable", size: fontsize },
-    colour,
+    color,
     buf,
   );
   dr.drawUpdate({ x: dx, y: dy, w: dw + gap, h: dh });
@@ -750,7 +750,7 @@ function drawPathHint(
   ds: UndeadDrawState,
   x: number,
   y: number,
-  colour: number,
+  color: number,
   hint: number,
 ): void {
   const ts = ds.tilesize;
@@ -770,7 +770,7 @@ function drawPathHint(
       fontType: "variable",
       size: idiv(ts, 2),
     },
-    colour,
+    color,
     String(hint),
   );
   dr.drawUpdate({ x: dx, y: dy, w: textSize, h: textSize });
@@ -782,7 +782,7 @@ function rectOutline(
   y: number,
   w: number,
   h: number,
-  colour: number,
+  color: number,
 ): void {
   dr.drawPolygon(
     [
@@ -792,7 +792,7 @@ function rectOutline(
       { x, y: y + h },
     ],
     -1,
-    colour,
+    color,
   );
 }
 
@@ -902,7 +902,7 @@ export function redraw(
     }
     return ret;
   };
-  const hintColour = (index: number): number => {
+  const hintColor = (index: number): number => {
     if (state.hintErrors[index]) return COL_ERROR;
     if (hflash) return COL_FLASH;
     if (state.hintsDone[index]) return COL_DONE;
@@ -911,11 +911,11 @@ export function redraw(
   for (const path of common.paths) {
     if (isHintStale(path.gridStart)) {
       const g = rangeCell(path.gridStart, common.w, common.h);
-      drawPathHint(dr, ds, g.x, g.y, hintColour(path.gridStart), path.sightingsStart);
+      drawPathHint(dr, ds, g.x, g.y, hintColor(path.gridStart), path.sightingsStart);
     }
     if (isHintStale(path.gridEnd)) {
       const g = rangeCell(path.gridEnd, common.w, common.h);
-      drawPathHint(dr, ds, g.x, g.y, hintColour(path.gridEnd), path.sightingsEnd);
+      drawPathHint(dr, ds, g.x, g.y, hintColor(path.gridEnd), path.sightingsEnd);
     }
   }
 
@@ -973,7 +973,7 @@ export function redraw(
           drawPencils(dr, ds, x, y, state.pencils[xi], ui.ascii, struck);
         }
         if (ds.wrong.at(xy)) {
-          const { dx, dy } = cellCentre(ds, x, y);
+          const { dx, dy } = cellCenter(ds, x, y);
           for (const inset of [2, 3]) {
             rectOutline(
               dr,
@@ -1010,9 +1010,9 @@ export function redraw(
   }
   ds.marks.paint(dr, targets, evidence, {
     band: (x, y) => markBand(ds, x, y),
-    targetColour: COL_HINT,
-    evidenceColour: COL_HINT_CELL,
-    gutterColour: COL_GRID,
+    targetColor: COL_HINT,
+    evidenceColor: COL_HINT_CELL,
+    gutterColor: COL_GRID,
   });
 
   // Pencil-mode indicator (fork addition).

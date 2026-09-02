@@ -5,8 +5,8 @@
  * the generator/solver only, so this uses idiomatic rounding.
  */
 
-import { BLUE_BOLD, PURPLE } from "../../engine/colour/colours.ts";
-import { ERROR, GRID_MID, HELD, INK } from "../../engine/colour/palette.ts";
+import { BLUE_BOLD, PURPLE } from "../../engine/color/colors.ts";
+import { ERROR, GRID_MID, HELD, INK } from "../../engine/color/palette.ts";
 import {
   SIGNPOST_NUMBER_SET_MID,
   SIGNPOST_ON_REGION_FAINT,
@@ -14,10 +14,10 @@ import {
   SIGNPOST_REGION_BACKGROUNDS,
   signpostArrowDim,
   signpostWashedRegion,
-} from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/palette-games.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Point } from "../../engine/types.ts";
+import type { Color, Point } from "../../engine/types.ts";
 import { dragReleaseMove, executeMove } from "./moves.ts";
 import {
   FLAG_ERROR,
@@ -30,7 +30,7 @@ import {
   whichDir,
 } from "./state.ts";
 
-// --- colour indices (index-for-index with the C enum) ----------------
+// --- color indices (index-for-index with the C enum) ----------------
 
 const COL_BACKGROUND = 0;
 const COL_HIGHLIGHT = 1;
@@ -67,7 +67,7 @@ const F_DIM = 0x040;
 // --- palette ----------------------------------------------------------
 
 /**
- * Port of `game_colours`: 12 named colours + four 16-entry ramps.
+ * Port of `game_colours`: 12 named colors + four 16-entry ramps.
  *
  * Every value comes from the token table. Upstream builds all seventy-six
  * entries by arithmetic on eight hex constants; here the arithmetic that does not
@@ -76,11 +76,11 @@ const F_DIM = 0x040;
  * that has to match the C enum and the part a renderer actually needs.
  */
 export function buildPalette(
-  background: Colour,
-  highlight: Colour,
-  lowlight: Colour,
-): Colour[] {
-  const ret: Colour[] = new Array(COL_X0 + NBACKGROUNDS);
+  background: Color,
+  highlight: Color,
+  lowlight: Color,
+): Color[] {
+  const ret: Color[] = new Array(COL_X0 + NBACKGROUNDS);
 
   ret[COL_BACKGROUND] = background;
   ret[COL_HIGHLIGHT] = highlight;

@@ -19,7 +19,7 @@
  * `computeSize` subtracts `GRIDEXTRA * 2` back off because the outer grid
  * outline is drawn inside the border area (docs/games/rendering.md § "The tile cache and the diff key").
  *
- * ## Colours
+ * ## Colors
  *
  * The palette is upstream's, index for index, derived from the host
  * background with no luminance adjustment: `puzzle-view.ts` hands the engine
@@ -27,20 +27,20 @@
  * work, then adapts the returned palette itself (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLUE, BLUE_BOLD } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLUE, BLUE_BOLD } from "../../engine/color/colors.ts";
 import {
   ERROR,
   ERROR_WASH,
   INK,
-  pencilColour,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
-import { romeGoalBackground } from "../../engine/colour/palette-games.ts";
+  pencilColor,
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
+import { romeGoalBackground } from "../../engine/color/palette-games.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { RomeMistake } from "./index.ts";
 import {
   EMPTY,
@@ -96,17 +96,17 @@ export const COL_ERRORBG = 9;
 export const COL_GOALBG = 10;
 export const COL_GOAL = 11;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BORDER] = INK;
   out[COL_ARROW_FIXED] = INK;
-  out[COL_ARROW_GUESS] = playerEntryColour(background);
+  out[COL_ARROW_GUESS] = playerEntryColor(background);
   out[COL_ARROW_ERROR] = ERROR;
-  out[COL_ARROW_PENCIL] = pencilColour(background);
+  out[COL_ARROW_PENCIL] = pencilColor(background);
   out[COL_ARROW_ENTRY] = BLUE;
   out[COL_ERRORBG] = ERROR_WASH;
   out[COL_GOALBG] = romeGoalBackground(background);
@@ -166,19 +166,19 @@ function line(
   y1: number,
   x2: number,
   y2: number,
-  colour: number,
+  color: number,
 ): void {
   dr.drawLine(
     { x: Math.round(x1), y: Math.round(y1) },
     { x: Math.round(x2), y: Math.round(y2) },
-    colour,
+    color,
     thick,
   );
 }
 
 /**
- * An arrow centred on `(tx, ty)` with half-length `size`: a shaft plus two
- * head strokes. `ink` of `-1` picks the colour from the cell's own bits — an
+ * An arrow centered on `(tx, ty)` with half-length `size`: a shaft plus two
+ * head strokes. `ink` of `-1` picks the color from the cell's own bits — an
  * in-progress mouse entry is blue, a fixed clue black, a duplicated arrow red,
  * and a player's own arrow green.
  */
@@ -192,7 +192,7 @@ export function drawArrow(
 ): void {
   const thick = size <= 8 ? 1 : 2;
   const sd = size * SIDE_SIZE;
-  const colour =
+  const color =
     ink !== -1
       ? ink
       : data & FD_ENTRY
@@ -203,24 +203,24 @@ export function drawArrow(
             ? COL_ARROW_ERROR
             : COL_ARROW_GUESS;
 
-  if (data & (FM_UP | FM_DOWN)) line(dr, thick, tx, ty - size, tx, ty + size, colour);
-  else line(dr, thick, tx - size, ty, tx + size, ty, colour);
+  if (data & (FM_UP | FM_DOWN)) line(dr, thick, tx, ty - size, tx, ty + size, color);
+  else line(dr, thick, tx - size, ty, tx + size, ty, color);
 
   if (data & FM_UP) {
-    line(dr, thick, tx, ty - size, tx - sd, ty, colour);
-    line(dr, thick, tx, ty - size, tx + sd, ty, colour);
+    line(dr, thick, tx, ty - size, tx - sd, ty, color);
+    line(dr, thick, tx, ty - size, tx + sd, ty, color);
   }
   if (data & FM_LEFT) {
-    line(dr, thick, tx, ty - sd, tx - size, ty, colour);
-    line(dr, thick, tx, ty + sd, tx - size, ty, colour);
+    line(dr, thick, tx, ty - sd, tx - size, ty, color);
+    line(dr, thick, tx, ty + sd, tx - size, ty, color);
   }
   if (data & FM_RIGHT) {
-    line(dr, thick, tx, ty - sd, tx + size, ty, colour);
-    line(dr, thick, tx, ty + sd, tx + size, ty, colour);
+    line(dr, thick, tx, ty - sd, tx + size, ty, color);
+    line(dr, thick, tx, ty + sd, tx + size, ty, color);
   }
   if (data & FM_DOWN) {
-    line(dr, thick, tx, ty + size, tx - sd, ty, colour);
-    line(dr, thick, tx, ty + size, tx + sd, ty, colour);
+    line(dr, thick, tx, ty + size, tx - sd, ty, color);
+    line(dr, thick, tx, ty + size, tx + sd, ty, color);
   }
 }
 
@@ -313,9 +313,9 @@ export function redraw(
       let ch = ts - 1;
       dr.drawUpdate({ x: cx, y: cy, w: cw, h: ch });
 
-      let colour: number;
+      let color: number;
       if (flash === -1) {
-        colour =
+        color =
           ui.sloops && grid[i1] & FE_LOOP
             ? COL_ERRORBG
             : ui.sgoals && grid[i1] & FD_TOGOAL
@@ -324,10 +324,10 @@ export function redraw(
                 ? COL_ERRORBG
                 : COL_BACKGROUND;
         if (cursorShown && onHighlight) {
-          colour = ui.kmode === KEYMODE_PLACE ? COL_HIGHLIGHT : COL_LOWLIGHT;
+          color = ui.kmode === KEYMODE_PLACE ? COL_HIGHLIGHT : COL_LOWLIGHT;
         }
       } else {
-        colour =
+        color =
           (x + y) % 3 === flash
             ? COL_BACKGROUND
             : (x + y + 1) % 3 === flash
@@ -347,7 +347,7 @@ export function redraw(
       }
       if (y === h - 1 || !regions.equivalent(i1, i1 + w)) ch -= GRIDEXTRA * 2;
 
-      dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, colour);
+      dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, color);
 
       const midX = BORDER + x * ts + Math.floor(ts / 2);
       const midY = BORDER + y * ts + Math.floor(ts / 2);
@@ -425,7 +425,7 @@ export function redraw(
       // Check & Save's mistake overlay. Upstream already reds a duplicated
       // arrow and an off-grid arrow's background as you play; the inset ring
       // is what makes the *other* kind visible — a legal-looking arrow that
-      // contradicts the unique solution has nothing to recolour.
+      // contradicts the unique solution has nothing to recolor.
       if (ds.mistakes.packed[i1] & HB_MISTAKE) {
         const inset = Math.max(2, Math.floor(ts / 10));
         drawRectOutline(

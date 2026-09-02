@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Crossing port (add-crossing-ts-port): the params
+ * Behavioral tests for the Crossing port (add-crossing-ts-port): the params
  * and desc codecs (including upstream's exact validation messages and its
  * deliberate leniency), run collection, the two-technique solver, the
  * solver-gated generator's tier-1 properties, Solo-style input with the sticky
@@ -19,7 +19,7 @@ import {
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
-import { colourToOKLCH } from "../../engine/testing/oklch.ts";
+import { colorToOKLCH } from "../../engine/testing/oklch.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
@@ -42,7 +42,7 @@ import {
   COL_SELECTED,
   COL_WALL_M,
   layoutNumbers,
-  NCOLOURS,
+  NCOLORS,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
@@ -116,8 +116,8 @@ function press(
   );
 }
 
-/** Pixel centre of cell (x, y) — the half-tile margin plus half a tile. */
-const cellCentre = (x: number, y: number): { x: number; y: number } => ({
+/** Pixel center of cell (x, y) — the half-tile margin plus half a tile. */
+const cellCenter = (x: number, y: number): { x: number; y: number } => ({
   x: (x + 1) * TS,
   y: (y + 1) * TS,
 });
@@ -311,7 +311,7 @@ describe("crossing generator", () => {
 
   it("never leaves a cell that no clue can reach", () => {
     // Upstream's first generator TODO is "Some puzzles have isolated squares
-    // (1x1 areas)": an open cell with no open neighbour lies in no run, so it
+    // (1x1 areas)": an open cell with no open neighbor lies in no run, so it
     // stays blank on a finished board — and since the completion check only
     // inspects runs, a player can type any digit into it and still win.
     for (const [label, params] of [
@@ -384,7 +384,7 @@ describe("crossing input", () => {
     const [ox, oy] = [plain % 5, Math.floor(plain / 5)];
 
     const ui = newUi();
-    const c = cellCentre(ox, oy);
+    const c = cellCenter(ox, oy);
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
     expect(ui).toMatchObject({ cursor: newCursor(ox, oy, true), cpencil: false });
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
@@ -395,7 +395,7 @@ describe("crossing input", () => {
     const state = newState(P5, FIX.desc);
     const ui = newUi();
     const wall = state.puzzle.walls.indexOf(1);
-    const c = cellCentre(wall % 5, Math.floor(wall / 5));
+    const c = cellCenter(wall % 5, Math.floor(wall / 5));
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
     expect(ui.cursor.visible).toBe(false);
   });
@@ -405,12 +405,12 @@ describe("crossing input", () => {
     const ui = newUi();
     expect(ui.pencilSticky).toBe(true);
     const open = state.puzzle.walls.indexOf(0);
-    const c = cellCentre(open % 5, Math.floor(open / 5));
+    const c = cellCenter(open % 5, Math.floor(open / 5));
 
     expect(press(state, ui, RIGHT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
     expect(ui).toMatchObject({ cpencil: true, cursor: { visible: true } });
     // A left-click elsewhere keeps pencil mode on.
-    const other = cellCentre(
+    const other = cellCenter(
       state.puzzle.walls.lastIndexOf(0) % 5,
       Math.floor(state.puzzle.walls.lastIndexOf(0) / 5),
     );
@@ -426,7 +426,7 @@ describe("crossing input", () => {
     const ui = newUi();
     ui.pencilSticky = false;
     const open = state.puzzle.walls.indexOf(0);
-    const c = cellCentre(open % 5, Math.floor(open / 5));
+    const c = cellCenter(open % 5, Math.floor(open / 5));
     press(state, ui, RIGHT_BUTTON, c.x, c.y);
     expect(ui).toMatchObject({ cpencil: true, cursor: { visible: true } });
     press(state, ui, RIGHT_BUTTON, c.x, c.y);
@@ -447,7 +447,7 @@ describe("crossing input", () => {
     const ui = newUi();
     const open = state.puzzle.walls.indexOf(0);
     const [ox, oy] = [open % 5, Math.floor(open / 5)];
-    const c = cellCentre(ox, oy);
+    const c = cellCenter(ox, oy);
     press(state, ui, LEFT_BUTTON, c.x, c.y);
 
     expect(press(state, ui, 0x35, 0, 0)).toEqual({
@@ -476,7 +476,7 @@ describe("crossing input", () => {
     const ui = newUi();
     const open = state.puzzle.walls.indexOf(0);
     const [ox, oy] = [open % 5, Math.floor(open / 5)];
-    const c = cellCentre(ox, oy);
+    const c = cellCenter(ox, oy);
     press(state, ui, RIGHT_BUTTON, c.x, c.y);
 
     expect(press(state, ui, 0x33, 0, 0)).toEqual({
@@ -513,7 +513,7 @@ describe("crossing input", () => {
 
 describe("crossing cursor auto-advance", () => {
   // The game's own docs call one-cell-at-a-time entry "fairly tedious" and ask
-  // for automatic cursor movement; these pin the behaviour that answers it.
+  // for automatic cursor movement; these pin the behavior that answers it.
 
   /** A horizontal run of the fixture board, and its first cell. */
   function acrossRun(): { x: number; y: number; len: number } {
@@ -528,7 +528,7 @@ describe("crossing cursor auto-advance", () => {
     const state = newState(P5, FIX.desc);
     const ui = newUi();
     const { x, y, len } = acrossRun();
-    const c = cellCentre(x, y);
+    const c = cellCenter(x, y);
     press(state, ui, LEFT_BUTTON, c.x, c.y);
     expect(ui).toMatchObject({ cursor: { x: x, y: y }, dir: "across" });
 
@@ -548,7 +548,7 @@ describe("crossing cursor auto-advance", () => {
 
   it("does not advance on a clear, on a pencil mark, or with the pref off", () => {
     const { x, y } = acrossRun();
-    const c = cellCentre(x, y);
+    const c = cellCenter(x, y);
 
     const filled = crossingGame.executeMove(newState(P5, FIX.desc), {
       kind: "set",
@@ -588,7 +588,7 @@ describe("crossing cursor auto-advance", () => {
     expect(crossX).toBeGreaterThanOrEqual(0);
 
     const ui = newUi();
-    const c = cellCentre(crossX, crossY);
+    const c = cellCenter(crossX, crossY);
     press(state, ui, LEFT_BUTTON, c.x, c.y);
     const first = ui.dir;
     press(state, ui, LEFT_BUTTON, c.x, c.y);
@@ -611,7 +611,7 @@ describe("crossing cursor auto-advance", () => {
     if (onlyDown < 0) return; // fixture-dependent; the assertion below is the point
     const ui = newUi();
     ui.dir = "across";
-    const c = cellCentre(onlyDown % 5, Math.floor(onlyDown / 5));
+    const c = cellCenter(onlyDown % 5, Math.floor(onlyDown / 5));
     press(state, ui, LEFT_BUTTON, c.x, c.y);
     expect(ui.dir).toBe("down");
   });
@@ -632,8 +632,8 @@ describe("crossing number-list placement", () => {
   // The author's scrapped idea was dragging whole numbers onto the grid; this
   // is that, with clicks: pick a clue up from the list, drop it in a run.
 
-  /** Pixel centre of clue number `l` in the panel. */
-  function numberCentre(l: number): { x: number; y: number } {
+  /** Pixel center of clue number `l` in the panel. */
+  function numberCenter(l: number): { x: number; y: number } {
     const { slots } = layoutNumbers(TS, 5, 5, newState(P5, FIX.desc).puzzle.numbers);
     const b = slots[l].hit;
     return { x: b.x + Math.floor(b.w / 2), y: b.y + Math.floor(b.h / 2) };
@@ -685,10 +685,10 @@ describe("crossing number-list placement", () => {
     const cells = state.puzzle.runs[run].cells;
     const ui = newUi();
     ui.dir = state.puzzle.runs[run].horizontal ? "across" : "down";
-    const cell = cellCentre(cells[0] % 5, Math.floor(cells[0] / 5));
+    const cell = cellCenter(cells[0] % 5, Math.floor(cells[0] / 5));
     press(state, ui, LEFT_BUTTON, cell.x, cell.y);
 
-    const at = numberCentre(number);
+    const at = numberCenter(number);
     const move = press(state, ui, LEFT_BUTTON, at.x, at.y);
     expect(move).toEqual({ kind: "place", run, number });
 
@@ -704,7 +704,7 @@ describe("crossing number-list placement", () => {
     const { run, number } = fittingPair();
     const ui = newUi();
 
-    const at = numberCentre(number);
+    const at = numberCenter(number);
     expect(press(state, ui, LEFT_BUTTON, at.x, at.y)).toBe(UI_UPDATE);
     expect(ui.heldNumber).toBe(number);
     // Clicking it again puts it back.
@@ -713,7 +713,7 @@ describe("crossing number-list placement", () => {
 
     press(state, ui, LEFT_BUTTON, at.x, at.y);
     const cells = state.puzzle.runs[run].cells;
-    const cell = cellCentre(cells[0] % 5, Math.floor(cells[0] / 5));
+    const cell = cellCenter(cells[0] % 5, Math.floor(cells[0] / 5));
     const move = press(state, ui, LEFT_BUTTON, cell.x, cell.y);
     expect(move).toMatchObject({ kind: "place", number });
     expect(ui.heldNumber).toBeNull();
@@ -749,7 +749,7 @@ describe("crossing number-list placement", () => {
   }
 
   function paintWith(st: CrossingState, ui: CrossingUi): RecordingDrawing {
-    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
     const ds = newDrawState(st);
     setTileSize(ds, TS);
     const dr = new RecordingDrawing(palette);
@@ -757,18 +757,18 @@ describe("crossing number-list placement", () => {
     return dr;
   }
 
-  /** How many *cells* carry the candidate wash (a bevelled tile paints its mid
-   * colour twice, so count distinct tiles rather than rects). */
+  /** How many *cells* carry the candidate wash (a beveled tile paints its mid
+   * color twice, so count distinct tiles rather than rects). */
   const washedCells = (dr: RecordingDrawing): number =>
     new Set(
       dr.ops.flatMap((o) =>
-        o.op === "rect" && (o.colour === COL_ACROSS || o.colour === COL_DOWN)
+        o.op === "rect" && (o.color === COL_ACROSS || o.color === COL_DOWN)
           ? [`${Math.floor(o.x / TS)},${Math.floor(o.y / TS)}`]
           : [],
       ),
     ).size;
   const ghostDigits = (dr: RecordingDrawing): string[] =>
-    dr.ops.flatMap((o) => (o.op === "text" && o.colour === COL_GHOST ? [o.text] : []));
+    dr.ops.flatMap((o) => (o.op === "text" && o.color === COL_GHOST ? [o.text] : []));
 
   it("washes every run a held clue could still go in", () => {
     const state = newState(P5, FIX.desc);
@@ -782,7 +782,7 @@ describe("crossing number-list placement", () => {
     expect(washedCells(dr)).toBe(cells.size);
     // …and the clue itself is boxed in the list (held is a shape, not a hue,
     // because the hues are spoken for by the two dimensions).
-    expect(dr.ops.some((o) => o.op === "line" && o.colour === COL_HELD)).toBe(true);
+    expect(dr.ops.some((o) => o.op === "line" && o.color === COL_HELD)).toBe(true);
   });
 
   it("previews the digits only when a single run could take the clue", () => {
@@ -829,13 +829,13 @@ describe("crossing number-list placement", () => {
 
   it("splits the list by where each clue could go from the selected cell", () => {
     const state = newState(P5, FIX.desc);
-    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
-    const textColours = (ui: CrossingUi): Map<string, number> => {
+    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
+    const textColors = (ui: CrossingUi): Map<string, number> => {
       const dr = paintWith(state, ui);
       const m = new Map<string, number>();
       for (const o of dr.ops) {
         if (o.op === "text" && state.puzzle.numbers.includes(o.text)) {
-          m.set(o.text, o.colour);
+          m.set(o.text, o.color);
         }
       }
       return m;
@@ -843,7 +843,7 @@ describe("crossing number-list placement", () => {
     void palette;
 
     // Nothing selected: every clue reads as available.
-    for (const c of textColours(newUi()).values()) expect(c).toBe(COL_GRID);
+    for (const c of textColors(newUi()).values()) expect(c).toBe(COL_GRID);
 
     // Select a cell that lies in both a horizontal and a vertical run.
     const puzzle = state.puzzle;
@@ -860,25 +860,25 @@ describe("crossing number-list placement", () => {
     const activeLen = puzzle.runs[puzzle.acrossRun[cell]].cells.length;
     const crossLen = puzzle.runs[puzzle.downRun[cell]].cells.length;
 
-    const colours = textColours(ui);
-    for (const [text, colour] of colours) {
+    const colors = textColors(ui);
+    for (const [text, color] of colors) {
       if (text.length === activeLen) {
         // Fits the horizontal run through the cell (dir is "across" here).
-        expect(colour).toBe(COL_ACROSSFIT);
+        expect(color).toBe(COL_ACROSSFIT);
       } else if (text.length === crossLen) {
         // Fits the vertical run instead — still one click from being placed,
-        // so it takes that dimension's colour rather than being dimmed away.
-        expect(colour).toBe(COL_DOWNFIT);
+        // so it takes that dimension's color rather than being dimmed away.
+        expect(color).toBe(COL_DOWNFIT);
       } else {
-        expect(colour).toBe(COL_LOWLIGHT);
+        expect(color).toBe(COL_LOWLIGHT);
       }
     }
     // Both directions really are represented (the cell is a crossing).
-    expect([...colours.values()]).toContain(COL_ACROSSFIT);
-    if (activeLen !== crossLen) expect([...colours.values()]).toContain(COL_DOWNFIT);
+    expect([...colors.values()]).toContain(COL_ACROSSFIT);
+    if (activeLen !== crossLen) expect([...colors.values()]).toContain(COL_DOWNFIT);
 
     // The preference turns the whole aid off.
-    const off = textColours({ ...ui, fitHighlight: false });
+    const off = textColors({ ...ui, fitHighlight: false });
     for (const c of off.values()) expect(c).toBe(COL_GRID);
   });
 
@@ -900,17 +900,16 @@ describe("crossing number-list placement", () => {
     });
 
     /** The rgb() string the renderer actually emitted for a palette index. */
-    const painted = (colour: number): string => {
+    const painted = (color: number): string => {
       const op = dr.ops.find(
-        (o) => (o.op === "rect" || o.op === "text") && o.colour === colour,
+        (o) => (o.op === "rect" || o.op === "text") && o.color === color,
       );
-      if (!op || (op.op !== "rect" && op.op !== "text"))
-        throw new Error(`no ${colour}`);
+      if (!op || (op.op !== "rect" && op.op !== "text")) throw new Error(`no ${color}`);
       return op.rgb;
     };
     const oklch = (rgbString: string): [number, number, number] => {
       const [r, g, b] = (rgbString.match(/\d+/g) ?? []).map((v) => Number(v) / 255);
-      return colourToOKLCH([r, g, b]);
+      return colorToOKLCH([r, g, b]);
     };
 
     for (const [across, down] of [
@@ -920,7 +919,7 @@ describe("crossing number-list placement", () => {
       const [la, ca] = oklch(painted(across));
       const [ld, cd] = oklch(painted(down));
       expect(la).toBeCloseTo(ld, 2); // same lightness
-      expect(ca).toBeCloseTo(cd, 2); // same colourfulness
+      expect(ca).toBeCloseTo(cd, 2); // same colorfulness
     }
   });
 
@@ -935,28 +934,28 @@ describe("crossing number-list placement", () => {
       ...newUi(),
       cursor: newCursor(cell % 5, Math.floor(cell / 5), true),
     };
-    const listColoured = (ui: CrossingUi): boolean =>
+    const listColored = (ui: CrossingUi): boolean =>
       paintWith(state, ui).ops.some(
         (o) =>
-          o.op === "text" && (o.colour === COL_ACROSSFIT || o.colour === COL_DOWNFIT),
+          o.op === "text" && (o.color === COL_ACROSSFIT || o.color === COL_DOWNFIT),
       );
 
     expect(washedCells(paintWith(state, base))).toBeGreaterThan(0);
-    expect(listColoured(base)).toBe(true);
+    expect(listColored(base)).toBe(true);
 
-    // The board wash goes without taking the list colouring with it…
+    // The board wash goes without taking the list coloring with it…
     const noRuns = { ...base, highlightRuns: false };
     expect(washedCells(paintWith(state, noRuns))).toBe(0);
-    expect(listColoured(noRuns)).toBe(true);
+    expect(listColored(noRuns)).toBe(true);
 
     // …and vice versa.
     const noList = { ...base, fitHighlight: false };
     expect(washedCells(paintWith(state, noList))).toBeGreaterThan(0);
-    expect(listColoured(noList)).toBe(false);
+    expect(listColored(noList)).toBe(false);
   });
 
   it("crosses a clue off the list once it is on the board, without dimming alone", () => {
-    // "Already used" and "cannot go in this run" both grey out, so the used
+    // "Already used" and "cannot go in this run" both gray out, so the used
     // ones are struck through — the distinction the owner lost otherwise.
     const state = newState(P5, FIX.desc);
     const { run, number } = fittingPair();
@@ -964,11 +963,11 @@ describe("crossing number-list placement", () => {
 
     const before = paintWith(state, newUi());
     expect(
-      before.ops.filter((o) => o.op === "line" && o.colour === COL_LOWLIGHT),
+      before.ops.filter((o) => o.op === "line" && o.color === COL_LOWLIGHT),
     ).toEqual([]);
 
     const dr = paintWith(after, newUi());
-    const struck = dr.ops.filter((o) => o.op === "line" && o.colour === COL_LOWLIGHT);
+    const struck = dr.ops.filter((o) => o.op === "line" && o.color === COL_LOWLIGHT);
     expect(struck).toHaveLength(1);
     // The strike sits on the clue that was placed.
     const { slots } = layoutNumbers(TS, 5, 5, after.puzzle.numbers);
@@ -1149,7 +1148,7 @@ describe("crossing rendering", () => {
       digit: ((k + 7) % 9) + 1,
     }));
     const errRects = (r: { recording: RecordingDrawing }): number =>
-      r.recording.ops.filter((o) => o.op === "rect" && o.colour === COL_ERROR).length;
+      r.recording.ops.filter((o) => o.op === "rect" && o.color === COL_ERROR).length;
 
     expect(errRects(renderScenario({ game: crossingGame, id: FIX_ID }))).toBe(0);
     const dirty = renderScenario({ game: crossingGame, id: FIX_ID, moves });
@@ -1173,12 +1172,12 @@ describe("crossing rendering", () => {
     const mistakes = findCrossingMistakes(dirty);
     expect(mistakes).toHaveLength(1);
 
-    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
     const ds = newDrawState(dirty);
     setTileSize(ds, TS);
     const ui = newUi();
     const errLines = (dr: RecordingDrawing): number =>
-      dr.ops.filter((o) => o.op === "line" && o.colour === COL_ERROR).length;
+      dr.ops.filter((o) => o.op === "line" && o.color === COL_ERROR).length;
 
     // Frame 1 warms the cache with no overlay…
     const first = new RecordingDrawing(palette);
@@ -1198,7 +1197,7 @@ describe("crossing rendering", () => {
 
   it("highlights the selected cell and marks a keyboard cursor", () => {
     const state = newState(P5, FIX.desc);
-    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
     const open = state.puzzle.walls.indexOf(0);
     const paint = (ui: CrossingUi): RecordingDrawing => {
       const ds = newDrawState(state);
@@ -1210,32 +1209,32 @@ describe("crossing rendering", () => {
 
     const idle = paint(newUi());
     expect(
-      idle.ops.filter((o) => o.op === "rect" && o.colour === COL_SELECTED),
+      idle.ops.filter((o) => o.op === "rect" && o.color === COL_SELECTED),
     ).toHaveLength(0);
 
     const selected = {
       ...newUi(),
       cursor: newCursor(open % 5, Math.floor(open / 5), true),
     };
-    // Its own colour, NOT the bevel highlight: the highlight is mkhighlight's
+    // Its own color, NOT the bevel highlight: the highlight is mkhighlight's
     // near-white and the dark-mode pass inverts it, so the one square that should
     // be the most inviting on the board came out pure black.
     expect(
-      paint(selected).ops.filter((o) => o.op === "rect" && o.colour === COL_SELECTED)
+      paint(selected).ops.filter((o) => o.op === "rect" && o.color === COL_SELECTED)
         .length,
     ).toBe(1);
     expect(
-      paint(selected).ops.filter((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT),
+      paint(selected).ops.filter((o) => o.op === "rect" && o.color === COL_HIGHLIGHT),
     ).toHaveLength(0);
 
     // The keyboard cursor draws corner brackets rather than a filled highlight.
     const keyed = { ...selected, ckey: true };
     const keyedOps = paint(keyed).ops;
     expect(
-      keyedOps.filter((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT),
+      keyedOps.filter((o) => o.op === "rect" && o.color === COL_HIGHLIGHT),
     ).toHaveLength(0);
     expect(
-      keyedOps.filter((o) => o.op === "line" && o.colour === COL_HIGHLIGHT).length,
+      keyedOps.filter((o) => o.op === "line" && o.color === COL_HIGHLIGHT).length,
     ).toBe(8);
   });
 
@@ -1248,7 +1247,7 @@ describe("crossing rendering", () => {
       y: Math.floor(open / 5),
       digit: 4,
     });
-    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
     const ds = newDrawState(noted);
     setTileSize(ds, TS);
     const dr = new RecordingDrawing(palette);
@@ -1261,22 +1260,22 @@ describe("crossing rendering", () => {
       (s2, mv) => crossingGame.executeMove(s2, mv),
       newState(P5, FIX.desc),
     );
-    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
-    const frameColours = (flashTime: number): number[] => {
+    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
+    const frameColors = (flashTime: number): number[] => {
       const ds = newDrawState(solved);
       setTileSize(ds, TS);
       const dr = new RecordingDrawing(palette);
       redraw(dr, ds, null, solved, 1, ui0(), 0, flashTime);
       return [
-        ...new Set(dr.ops.flatMap((o) => (o.op === "rect" ? [o.colour] : []))),
+        ...new Set(dr.ops.flatMap((o) => (o.op === "rect" ? [o.color] : []))),
       ].sort((a, b) => a - b);
     };
-    // A settled board paints no tile in the flash colours; two different flash
+    // A settled board paints no tile in the flash colors; two different flash
     // phases paint *different* cells with them, so the wave is really moving.
-    const settled = frameColours(0);
+    const settled = frameColors(0);
     expect(settled).not.toContain(COL_HIGHLIGHT);
-    const early = frameColours(0.7);
-    const late = frameColours(0.3);
+    const early = frameColors(0.7);
+    const late = frameColors(0.3);
     expect(early).toContain(COL_HIGHLIGHT);
     expect(late).toContain(COL_HIGHLIGHT);
 
@@ -1286,37 +1285,37 @@ describe("crossing rendering", () => {
       const dr = new RecordingDrawing(palette);
       redraw(dr, ds, null, solved, 1, ui0(), 0, flashTime);
       return dr.ops.flatMap((o) =>
-        o.op === "rect" && o.colour === COL_HIGHLIGHT ? [`${o.x},${o.y}`] : [],
+        o.op === "rect" && o.color === COL_HIGHLIGHT ? [`${o.x},${o.y}`] : [],
       );
     };
     expect(litCells(0.7)).not.toEqual(litCells(0.3));
   });
 
   it("paints entered digits on one neutral tile, not nine colours", () => {
-    // The per-digit colours upstream drew were a leftover from a scrapped
+    // The per-digit colors upstream drew were a leftover from a scrapped
     // drag-and-drop design; its author asked for them to go.
     const withDigits = solutionMoves()
       .slice(0, 4)
       .reduce((s2, mv) => crossingGame.executeMove(s2, mv), newState(P5, FIX.desc));
-    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
-    expect(palette).toHaveLength(NCOLOURS);
+    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
+    expect(palette).toHaveLength(NCOLORS);
 
     const ds = newDrawState(withDigits);
     setTileSize(ds, TS);
     const dr = new RecordingDrawing(palette);
     redraw(dr, ds, null, withDigits, 1, ui0(), 0, 0);
 
-    // Every digit is drawn in the same (grid) colour…
-    const digitColours = dr.ops.flatMap((o) =>
-      o.op === "text" && /^[1-9]$/.test(o.text) && o.size > TS / 3 ? [o.colour] : [],
+    // Every digit is drawn in the same (grid) color…
+    const digitColors = dr.ops.flatMap((o) =>
+      o.op === "text" && /^[1-9]$/.test(o.text) && o.size > TS / 3 ? [o.color] : [],
     );
-    expect(digitColours.length).toBeGreaterThan(0);
-    expect(new Set(digitColours)).toEqual(new Set([COL_GRID]));
+    expect(digitColors.length).toBeGreaterThan(0);
+    expect(new Set(digitColors)).toEqual(new Set([COL_GRID]));
     // …and no tile is painted in anything outside the neutral palette.
-    const tileColours = new Set(
-      dr.ops.flatMap((o) => (o.op === "rect" ? [o.colour] : [])),
+    const tileColors = new Set(
+      dr.ops.flatMap((o) => (o.op === "rect" ? [o.color] : [])),
     );
-    for (const c of tileColours) {
+    for (const c of tileColors) {
       expect([
         COL_OUTERBG,
         COL_INNERBG,

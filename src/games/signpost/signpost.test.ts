@@ -1,5 +1,5 @@
 /**
- * Tier-1 behavioural tests for the Signpost port: params/desc codecs,
+ * Tier-1 behavioral tests for the Signpost port: params/desc codecs,
  * generator solvability, solver, findMistakes, and a render smoke.
  */
 import { describe, expect, it } from "vitest";

@@ -131,7 +131,7 @@ export function newUntangleDesc(
 
       // Candidate endpoints: vertices *after* j in the order (the edges
       // before it were already tried the other way round), excluding
-      // full ones and existing neighbours, sorted by squared distance
+      // full ones and existing neighbors, sorted by squared distance
       // then index.
       const vlist: { vindex: number; dist: number }[] = [];
       for (let k = i + 1; k < n; k++) {

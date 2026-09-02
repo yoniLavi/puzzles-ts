@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the hat aperiodic monotile.
+ * Behavioral tests for the hat aperiodic monotile.
  *
  * The heavy lifting is done by `grid-aperiodic-differential.test.ts`, which
  * byte-matches both the generated desc and the resulting grid against the C.

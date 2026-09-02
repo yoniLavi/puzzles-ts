@@ -6,7 +6,7 @@
  * See `openspec/specs/ts-engine/spec.md` for the capability contract.
  */
 
-export { mkhighlight, mkhighlightBackground } from "./colour/colour-mkhighlight.ts";
+export { mkhighlight, mkhighlightBackground } from "./color/color-mkhighlight.ts";
 export { type BevelBounds, drawRecessedBorder, drawRectOutline } from "./draw.ts";
 export { Dsf } from "./dsf.ts";
 export type {

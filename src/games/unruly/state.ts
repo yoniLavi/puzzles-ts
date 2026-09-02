@@ -1,10 +1,10 @@
 /**
  * Unruly state, params, and desc codec — idiomatic TS port of the state
  * half of `unruly.c` (the binary puzzle Binairo / Tohu-wa-Vohu: fill a
- * grid with two colours so no row or column has a run of three equal
+ * grid with two colors so no row or column has a run of three equal
  * cells and each row/column holds equally many of each).
  *
- * Colour/value mapping is upstream's and worth stating once: a cell is
+ * Color/value mapping is upstream's and worth stating once: a cell is
  * `EMPTY`, `ONE`, or `ZERO`, where **`ONE` renders dark ("black") and
  * `ZERO` renders light ("white")** (see `render.ts`).
  */
@@ -63,7 +63,7 @@ export interface UnrulyUi {
   cursor: GridCursor;
 }
 
-/** A player-placed cell whose colour contradicts the unique solution
+/** A player-placed cell whose color contradicts the unique solution
  * (the mistake-checking divergence; surfaced by Check & Save). */
 export interface UnrulyMistake {
   x: number;

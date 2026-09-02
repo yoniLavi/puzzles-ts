@@ -15,7 +15,7 @@ implementation, MIT-licensed, and still actively maintained.
 - Source: <https://git.tartarus.org/?p=simon/puzzles.git>
 - Mirror / website: <https://www.chiark.greenend.org.uk/~sgtatham/puzzles/>
 - Contributors: see
-  [`licences/sgt-puzzles-LICENCE`](./licences/sgt-puzzles-LICENCE) for the
+  [`licenses/sgt-puzzles-LICENSE`](./licenses/sgt-puzzles-LICENSE) for the
   canonical list (Simon Tatham plus a long roster of contributors).
 
 This repository used to carry a `puzzles/` subtree of upstream's C sources,
@@ -24,8 +24,8 @@ help material it was left holding, the per-puzzle overview text was adopted
 into this project's own pages under [`help/games/`](./help/games), keeping
 Simon's words (`retire-the-upstream-help-tree`); the long-form desktop manual
 was deleted rather than served, because it documents his desktop builds and not
-this app. The MIT notice is preserved verbatim in [`licences/`](./licences) to
-honour the obligation.
+this app. The MIT notice is preserved verbatim in [`licenses/`](./licenses) to
+honor the obligation.
 
 ## Third-party puzzles: `puzzles-unreleased` by Lennard Sprong (x-sheep)
 
@@ -37,8 +37,8 @@ Their in-app help pages under [`help/games/`](./help/games) are adapted from
 the documentation shipped with that project.
 
 - Source: <https://github.com/x-sheep/puzzles-unreleased>
-- Copyright © 2011–2025 Lennard Sprong. Licence:
-  [`licences/puzzles-unreleased-LICENCE`](./licences/puzzles-unreleased-LICENCE).
+- Copyright © 2011–2025 Lennard Sprong. License:
+  [`licenses/puzzles-unreleased-LICENSE`](./licenses/puzzles-unreleased-LICENSE).
 
 ## Direct parent: `puzzles-web` by Mike Edmunds
 

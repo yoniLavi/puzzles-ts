@@ -1,4 +1,4 @@
-/** Tier-1 behavioural tests for the Magnets port. */
+/** Tier-1 behavioral tests for the Magnets port. */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
 import { newMagnetsDesc } from "./generator.ts";

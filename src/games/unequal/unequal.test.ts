@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Unequal port (tier 1 + tier 2.5).
+ * Behavioral tests for the Unequal port (tier 1 + tier 2.5).
  */
 
 import { describe, expect, it } from "vitest";

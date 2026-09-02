@@ -22,7 +22,7 @@ generator rather than inherited, and SHALL carry a reason the Custom-type dialog
 can display, naming the mode it applies to. Where a bound remains it SHALL
 reflect whichever stage is actually the limit — the region fill or the
 clue-stripping loop. The retry loops below any bound SHALL be finite, so a
-divergence fails with a labelled error rather than running forever.
+divergence fails with a labeled error rather than running forever.
 
 **The bound SHALL be per mode, because the two modes are stopped by different
 things and the distinction is not a matter of degree.** Tectonic's limit is
@@ -183,7 +183,7 @@ pencil-mode indicator.
 
 Rendering SHALL draw the region boundaries, the placed numbers, and the pencil
 marks, SHALL highlight a duplicate-in-region or a keep-apart violation in an error
-colour as it is entered, and SHALL flash on completion. There SHALL be no move
+color as it is entered, and SHALL flash on completion. There SHALL be no move
 animation.
 
 #### Scenario: A digit above the region size is rejected

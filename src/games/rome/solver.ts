@@ -76,7 +76,7 @@ import {
  * loop allocates nothing per iteration (upstream reuses the forest and `sets`
  * but re-allocates `seterrs` each call — an unobservable inefficiency). */
 export interface ValidateScratch {
-  /** Arrow connectivity, reinitialised on every call. */
+  /** Arrow connectivity, reinitialized on every call. */
   dsf: Dsf;
   /** Arrows already placed, per region canonical root. */
   sets: Int32Array;
@@ -166,7 +166,7 @@ export function validateGame(
     // Mark every square whose arrows lead to a goal. Upstream expresses this
     // as `dsf_minimal(dsf, x) == dsf_minimal(dsf, i)`, which is exactly a
     // same-component test (its scan from the class minimum is an
-    // optimisation, not a semantic).
+    // optimization, not a semantic).
     for (let i = 0; i < s; i++) {
       if (!(grid[i] & FM_GOAL)) continue;
       for (let x = 0; x < s; x++) {
@@ -295,7 +295,7 @@ function solverDoubles(board: RomeBoard, sets: Int32Array): number {
  *
  * The bounds guards are provably redundant — {@link romeSolve} clears the
  * border-illegal candidates before the fixpoint starts, so the off-grid
- * neighbour is never reached — but upstream relies on that silently and reads
+ * neighbor is never reached — but upstream relies on that silently and reads
  * out of bounds if it ever stops holding. */
 function solverLoops(board: RomeBoard, dsf: Dsf): number {
   const { w, h, marks } = board;
@@ -450,7 +450,7 @@ function solverExpand(board: RomeBoard, dsf: Dsf): number {
  * single up and single down, and one of them would have to be spent twice.
  * Likewise for left/right.
  *
- * The neighbours are always in range: a square on the top row has had `FM_UP`
+ * The neighbors are always in range: a square on the top row has had `FM_UP`
  * cleared, so its candidate set can never equal exactly `FM_UP|FM_DOWN`, and
  * symmetrically on the other three edges. */
 function solverOpposites(board: RomeBoard): number {

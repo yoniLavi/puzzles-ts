@@ -28,7 +28,7 @@ export interface SaveEnvelope {
    * log from it would re-apply a click already baked into the board. Absent ⇒
    * `desc` reconstructs state 0 faithfully, as it does for every other game. */
   privDesc?: string;
-  /** Serialised move log; `moves[i]` turns history[i] into history[i+1]. */
+  /** Serialized move log; `moves[i]` turns history[i] into history[i+1]. */
   moves: unknown[];
   /** History cursor at save time (for save-then-undo round-trips). */
   pos: number;
@@ -38,7 +38,7 @@ export interface SaveEnvelope {
    * game's state spells it (`ts-engine`, "One completion vocabulary across
    * games"); `v: 1` saves called it `usedSolve` and are upgraded on read. */
   cheated: boolean;
-  /** Serialised `Ui` state that must survive a save but cannot be rebuilt by
+  /** Serialized `Ui` state that must survive a save but cannot be rebuilt by
    * replaying the move log (upstream `encode_ui`; Mines' death counter and
    * completion flag). Present only for a game with an `encodeUi` hook. */
   ui?: string;

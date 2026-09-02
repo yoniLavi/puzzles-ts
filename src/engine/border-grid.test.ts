@@ -40,7 +40,7 @@ const ui = (x = 1, y = 1, show = false): BorderGridUi => ({
   cursor: newCursor(x, y, show),
 });
 
-/** Centre of the edge between cell (x,y) and its neighbour in direction dir. */
+/** Center of the edge between cell (x,y) and its neighbor in direction dir. */
 const edgeMidpoint = (x: number, y: number, dir: number) => {
   const m = Math.floor(TS / 2);
   const cx = m + x * TS + TS / 2;
@@ -66,7 +66,7 @@ describe("border vocabulary", () => {
 
   it("initBorders walls the rim and nothing else", () => {
     const b = initBorders(3, 3);
-    // The centre cell of a 3x3 touches no rim.
+    // The center cell of a 3x3 touches no rim.
     expect(b[4]).toBe(0);
     // Every other cell has at least one rim wall.
     for (const i of [0, 1, 2, 3, 5, 6, 7, 8]) expect(b[i]).not.toBe(0);
@@ -99,7 +99,7 @@ describe("pointerEdge", () => {
   it("left button cycles undecided → wall → undecided", () => {
     const s = grid(3, 3);
     const u = ui();
-    const p = edgeMidpoint(1, 1, 1); // right edge of the centre cell
+    const p = edgeMidpoint(1, 1, 1); // right edge of the center cell
 
     const first = pointerEdge(s, u, p.x, p.y, TS, true);
     expect(first).not.toBeNull();
@@ -128,16 +128,16 @@ describe("pointerEdge", () => {
   });
 
   it("breaks the tie toward the down edge at an exact tile centre", () => {
-    // Not a rejection. At the exact centre both axes are equidistant, so each
+    // Not a rejection. At the exact center both axes are equidistant, so each
     // `<` test is false: the left and up bits go first, then left|right go
-    // again, leaving down. Pinned because a centre click is a genuinely
+    // again, leaving down. Pinned because a center click is a genuinely
     // reachable input (a precise click, or a synthetic tap at a tile's midpoint)
     // and the alternative — resolving to nothing — would put a dead zone in the
     // middle of every tile.
     const s = grid(3, 3);
     const m = Math.floor(TS / 2);
-    const centre = { x: m + TS + TS / 2, y: m + TS + TS / 2 };
-    const r = pointerEdge(s, ui(), centre.x, centre.y, TS, true);
+    const center = { x: m + TS + TS / 2, y: m + TS + TS / 2 };
+    const r = pointerEdge(s, ui(), center.x, center.y, TS, true);
     expect(r?.[0]).toEqual({ x: 1, y: 1, flag: BORDER(2) });
     expect(r?.[1]).toEqual({ x: 1, y: 2, flag: BORDER(FLIP(2)) });
   });
@@ -168,7 +168,7 @@ describe("selectEdge", () => {
   });
 
   it("does nothing on a corner or a tile centre", () => {
-    // Both coordinates odd = a tile centre; both even = a corner. The mechanic
+    // Both coordinates odd = a tile center; both even = a corner. The mechanic
     // rejects each because `px === py`.
     expect(selectEdge(grid(3, 3), ui(3, 3, true), false)).toBeNull();
     expect(selectEdge(grid(3, 3), ui(2, 2, true), false)).toBeNull();

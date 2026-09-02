@@ -57,24 +57,24 @@ placed.
 `SignpostState` SHALL maintain, in addition to the immutable arrows and
 clues, the player's `next`/`prev` links, a disjoint-set forest binding
 linked cells into regions, and a derived per-cell sequence number and
-region colour group. On every move the derived numbering SHALL be
+region color group. On every move the derived numbering SHALL be
 recomputed (upstream `update_numbers` / `head_number` / `connect_numbers`):
-merging two regions SHALL keep the larger region's colour group, adding a
-blank cell to a numbered region SHALL inherit that region's colour and
+merging two regions SHALL keep the larger region's color group, adding a
+blank cell to a numbered region SHALL inherit that region's color and
 extend its numbering, and joining two blank cells SHALL pick the lowest
-unused colour group. State SHALL be immutable and cloned per move (typed
+unused color group. State SHALL be immutable and cloned per move (typed
 arrays + disjoint-set forest, no explicit free).
 
 #### Scenario: Linking renumbers a region
 
 - **WHEN** the player links a cell numbered `k` to a blank cell it points at
 - **THEN** the blank cell derives number `k+1` and the two cells share one
-  region and colour group
+  region and color group
 
-#### Scenario: Merging keeps the dominant colour
+#### Scenario: Merging keeps the dominant color
 
-- **WHEN** two differently-coloured regions are joined
-- **THEN** the merged region takes the colour group of the larger of the two
+- **WHEN** two differently-colored regions are joined
+- **THEN** the merged region takes the color group of the larger of the two
 
 ### Requirement: Signpost ports the deductive solver faithfully
 
@@ -138,23 +138,23 @@ wrong ones.
 ### Requirement: Signpost renders to full parity with a blitter drag sprite
 
 `render.ts` SHALL draw the board with palette indices matching the C enum,
-including the four 16-entry HSV colour ramps for region backgrounds and mid
-/ dim arrow colours. The drawstate SHALL key a per-cell packed `Int32Array`
-cache (region colour group, sequence number, arrow direction, and the
+including the four 16-entry HSV color ramps for region backgrounds and mid
+/ dim arrow colors. The drawstate SHALL key a per-cell packed `Int32Array`
+cache (region color group, sequence number, arrow direction, and the
 immutable / error / cursor / drag-origin / flash / findMistakes-overlay
 bits) diffed against the previous frame, with every overlay rebuilt each
 frame so it is in the diff key. The drag sprite SHALL use a blitter
 (save-restore under the moving arrow), as the Pegs port does. The win-flash
-SHALL spin the arrows, honouring the `flash-type` preference (unidirectional
+SHALL spin the arrows, honoring the `flash-type` preference (unidirectional
 vs meshing gears). The engine SHALL paint no pixels of its own; the
 first-draw branch fills the background.
 
-#### Scenario: Region colours repaint after linking
+#### Scenario: Region colors repaint after linking
 
 - **WHEN** a render scenario links a sequence of cells
 - **THEN** the recorded draw ops show each region's cells drawn with its
-  assigned background-ramp colour, and a subsequent link that merges regions
-  repaints the affected cells with the surviving colour
+  assigned background-ramp color, and a subsequent link that merges regions
+  repaints the affected cells with the surviving color
 
 #### Scenario: A wrong link renders red
 

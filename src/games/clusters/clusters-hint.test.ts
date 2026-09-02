@@ -5,7 +5,7 @@
  * fires with a true, checkable premise; the plan solves the board; the plan is
  * recompute-stable; refusals are honest. Deductions are located by a
  * fixed-seed scan over generated boards (docs/games/hints.md § "Verifying a hint in-process"'s idiom) rather
- * than hand-crafted grids: the ≥2-same-neighbours rule makes small valid
+ * than hand-crafted grids: the ≥2-same-neighbors rule makes small valid
  * mid-game boards fiddly to craft, and a property checked on a real firing is
  * the stronger assertion anyway.
  *
@@ -16,7 +16,7 @@
  * from `engine/testing/hint-games.ts` enrollment, not here.
  */
 import { describe, expect, it } from "vitest";
-import { CONTRADICTION_UNLOCALISED } from "../../engine/hint-refusal.ts";
+import { CONTRADICTION_UNLOCALIZED } from "../../engine/hint-refusal.ts";
 import { Midend } from "../../engine/midend.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
@@ -84,7 +84,7 @@ function findDeduction(
   return null;
 }
 
-const neighboursOf = (i: number, w: number, h: number): number[] => {
+const neighborsOf = (i: number, w: number, h: number): number[] => {
   const x = i % w;
   const y = (i - x) / w;
   const out: number[] = [];
@@ -95,8 +95,8 @@ const neighboursOf = (i: number, w: number, h: number): number[] => {
   return out;
 };
 
-const sameNeighbours = (grid: Uint8Array, i: number, w: number, h: number): number =>
-  neighboursOf(i, w, h).filter((n) => (grid[n] & COLMASK) === (grid[i] & COLMASK))
+const sameNeighbors = (grid: Uint8Array, i: number, w: number, h: number): number =>
+  neighborsOf(i, w, h).filter((n) => (grid[n] & COLMASK) === (grid[i] & COLMASK))
     .length;
 
 describe("deduceHintPlan", () => {
@@ -134,7 +134,7 @@ describe("deduceHintPlan", () => {
     );
     expect(hit).not.toBeNull();
     if (!hit) return;
-    for (const n of neighboursOf(hit.d.index, P.w, P.h)) {
+    for (const n of neighborsOf(hit.d.index, P.w, P.h)) {
       expect(hit.grid[n] & COLMASK).toBe(hit.d.fill);
     }
   });
@@ -148,8 +148,8 @@ describe("deduceHintPlan", () => {
     );
     expect(hit).not.toBeNull();
     if (!hit) return;
-    // At most one neighbour could ever share the refuted colour.
-    const friendly = neighboursOf(hit.d.index, P.w, P.h).filter(
+    // At most one neighbor could ever share the refuted color.
+    const friendly = neighborsOf(hit.d.index, P.w, P.h).filter(
       (n) => hit.grid[n] === 0 || (hit.grid[n] & COLMASK) === hit.d.refuted,
     );
     expect(friendly.length).toBeLessThanOrEqual(1);
@@ -162,10 +162,10 @@ describe("deduceHintPlan", () => {
     expect(hit).not.toBeNull();
     if (!hit) return;
     const dot = hit.d.reason.at.cell;
-    expect(neighboursOf(hit.d.index, P.w, P.h)).toContain(dot);
+    expect(neighborsOf(hit.d.index, P.w, P.h)).toContain(dot);
     expect(hit.grid[dot] & F_SINGLE).toBeTruthy();
     expect(hit.grid[dot] & COLMASK).toBe(hit.d.refuted);
-    expect(sameNeighbours(hit.grid, dot, P.w, P.h)).toBe(1);
+    expect(sameNeighbors(hit.grid, dot, P.w, P.h)).toBe(1);
   });
 
   it("a chain firing: what-if cells are empty, distinct, and the end is adjacent to the last mark", () => {
@@ -178,9 +178,9 @@ describe("deduceHintPlan", () => {
     expect(new Set(indices).size).toBe(indices.length);
     for (const s of steps) expect(hit.grid[s.index]).toBe(0);
     // The contradiction surfaces where the last hypothetical fill landed:
-    // at that cell or one of its neighbours.
+    // at that cell or one of its neighbors.
     const last = indices[indices.length - 1];
-    expect([last, ...neighboursOf(last, P.w, P.h)]).toContain(at.cell);
+    expect([last, ...neighborsOf(last, P.w, P.h)]).toContain(at.cell);
   });
 });
 
@@ -213,9 +213,9 @@ describe("hint", () => {
       // A bare "this cell" points at nothing once a *second* mark is on the
       // board — owner-reported on a frame showing a solid target and a ringed
       // tile side by side. Wherever a second mark exists the sentence must tie
-      // the target to it, and the tie is geometric rather than a colour name
-      // (`hints.md`: colour is never the only cue). `beside this cell` / `its
-      // ringed … neighbour` for the adjacent break, `forced in turn from it`
+      // the target to it, and the tie is geometric rather than a color name
+      // (`hints.md`: color is never the only cue). `beside this cell` / `its
+      // ringed … neighbor` for the adjacent break, `forced in turn from it`
       // for a chain, whose break is adjacent to the last link instead.
       const secondMark = hl.danger !== undefined || hl.chain.length > 0;
       if (secondMark) {
@@ -224,7 +224,7 @@ describe("hint", () => {
           `${step.explanation} — a second mark is shown but "this cell" is not tied to it`,
         ).toBe(true);
       }
-      // The conclusion names the forced colour in the necessity voice.
+      // The conclusion names the forced color in the necessity voice.
       expect(step.explanation).toContain(
         `must be ${d.fill === F_COLOR_0 ? "red" : "blue"}`,
       );
@@ -244,7 +244,7 @@ describe("hint", () => {
   });
 
   it("refuses on a rule-violating board, pointing at Check & Save's overlay", () => {
-    // Painting the refuted colour of a *direct* firing trips the rule
+    // Painting the refuted color of a *direct* firing trips the rule
     // immediately, so findMistakes flags it.
     const hit = findDeduction((d) => d.reason.kind === "direct");
     expect(hit).not.toBeNull();
@@ -259,7 +259,7 @@ describe("hint", () => {
   });
 
   it("refuses honestly on a wrong-but-locally-clean board", () => {
-    // Painting a *chain* firing's refuted colour breaks no local rule (the
+    // Painting a *chain* firing's refuted color breaks no local rule (the
     // contradiction needs the lookahead), so findMistakes stays empty — but
     // the plan runs into the contradiction and the hint must say so, not
     // deduce onward from a doomed position.
@@ -273,7 +273,7 @@ describe("hint", () => {
     const res = clustersGame.hint?.(wrong);
     expect(res?.ok).toBe(false);
     if (res?.ok !== false) return;
-    expect(res.error).toBe(CONTRADICTION_UNLOCALISED);
+    expect(res.error).toBe(CONTRADICTION_UNLOCALIZED);
   });
 });
 
@@ -337,16 +337,16 @@ describe("hint through the midend", () => {
 
 describe("hint rendering (tier 2.5)", () => {
   // The palette itself, before any frame. Every other assertion in this block
-  // compares a recorded op's `colour` against a `COL_*` **index**, which is a
+  // compares a recorded op's `color` against a `COL_*` **index**, which is a
   // proxy: the hint target was painted `COL_HINT` throughout the period when
-  // `COL_HINT` resolved to the very same blue as `COL_1`, the tile colour a
+  // `COL_HINT` resolved to the very same blue as `COL_1`, the tile color a
   // player paints — so the cell the whole deduction starts from was
   // indistinguishable from a placed tile, and on a firing concluding *red* the
   // board contradicted the sentence. Nothing failed, because an index is not a
-  // colour. `colour-collide.test.ts` had been reporting the pair all along and
+  // color. `color-collide.test.ts` had been reporting the pair all along and
   // is advisory. This is the non-proxy form.
   it("every hint role is a colour the board does not already use", () => {
-    const palette = clustersGame.colours([1, 1, 1]);
+    const palette = clustersGame.colors([1, 1, 1]);
     const key = (i: number) => palette[i].join(",");
     const roles = [COL_HINT, COL_HINT_CELL, COL_HINT_DANGER];
     for (const role of roles) {
@@ -376,7 +376,7 @@ describe("hint rendering (tier 2.5)", () => {
     });
     expect(result.hint).toBeDefined();
     const ops = result.recording.ops;
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HINT)).toBe(true);
     expect(result.recording.ops).toMatchSnapshot();
   });
 
@@ -403,13 +403,13 @@ describe("hint rendering (tier 2.5)", () => {
     expect(hl.chain.length).toBeGreaterThan(0);
     const ops = result.recording.ops;
     // Every what-if cell shades COL_HINT_CELL and carries its small mark in
-    // the tile colour the hypothesis would force.
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
+    // the tile color the hypothesis would force.
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HINT_CELL)).toBe(true);
     expect(
-      ops.some((o) => o.op === "rect" && (o.colour === COL_0 || o.colour === COL_1)),
+      ops.some((o) => o.op === "rect" && (o.color === COL_0 || o.color === COL_1)),
     ).toBe(true);
     if (hl.danger) {
-      expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_DANGER)).toBe(
+      expect(ops.some((o) => o.op === "rect" && o.color === COL_HINT_DANGER)).toBe(
         true,
       );
     }
@@ -421,7 +421,7 @@ describe("hint rendering (tier 2.5)", () => {
     // that numbers only its first cell, numbers from 0, or repeats a digit
     // fails — the count is the guard that a snapshot re-baseline cannot erase.
     const digits = ops
-      .flatMap((o) => (o.op === "text" && o.colour === COL_HINT_CELL ? [o.text] : []))
+      .flatMap((o) => (o.op === "text" && o.color === COL_HINT_CELL ? [o.text] : []))
       .sort();
     expect(digits).toEqual(
       Array.from({ length: hl.chain.length }, (_, i) => String(i + 1)).sort(),

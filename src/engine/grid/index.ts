@@ -14,7 +14,7 @@
  *   generators, the size dispatch (`gridSizeFor`, all 18 tilings) and
  *   `gridValidateParams`. Pure integer, no RNG.
  * - [`grid-geometry.ts`](./grid-geometry.ts) — `gridNearestEdge` (input
- *   hit-testing) and `gridFindIncentre` (label placement). The only floating
+ *   hit-testing) and `gridFindIncenter` (label placement). The only floating
  *   point in the module, and display/input only — never desc, generation or
  *   solving.
  * - [`grid-desc.ts`](./grid-desc.ts) — `gridNewDesc` / `gridValidateDesc`.
@@ -41,7 +41,7 @@ export {
   makeConsistent,
 } from "./grid-core.ts";
 export { gridNewDesc, gridValidateDesc } from "./grid-desc.ts";
-export { gridFindIncentre, gridNearestEdge } from "./grid-geometry.ts";
+export { gridFindIncenter, gridNearestEdge } from "./grid-geometry.ts";
 export {
   ALL_GRID_TYPES,
   APERIODIC_GRID_TYPES,

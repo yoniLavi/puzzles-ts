@@ -1,22 +1,22 @@
 /**
- * Dark-mode adaptation: the rule is that a colour keeps its RELATIONSHIP TO THE
+ * Dark-mode adaptation: the rule is that a color keeps its RELATIONSHIP TO THE
  * BACKGROUND across the scheme flip.
  *
  * These are not "the numbers happen to be these" snapshots — each asserts the
  * property the rule exists to provide, so they stay meaningful if the constants
  * are retuned. The regression they guard is real and was measured: before
- * `hand-author-dark-palette`, chromatic colours were compressed into a fixed
- * lightness band with no reference to the background, and 150 colours across 45
+ * `hand-author-dark-palette`, chromatic colors were compressed into a fixed
+ * lightness band with no reference to the background, and 150 colors across 45
  * of the 57 games turned from a subtle tint of the board into a bright patch on
  * it (Slide's target zone was the reported symptom).
  */
 import { describe, expect, it } from "vitest";
-import { colourToOKLCH, darkModeColor, type OKLCH, oklchToCSSColor } from "./color.ts";
+import { colorToOKLCH, darkModeColor, type OKLCH, oklchToCSSColor } from "./color.ts";
 
 /** The lightness a dark-mode board background sits at. */
 const BGL = 0.2;
 
-/** Light-mode lightness of the game background these colours are drawn on. */
+/** Light-mode lightness of the game background these colors are drawn on. */
 const LIGHT_BG = 0.827;
 
 const dark = (lch: OKLCH): OKLCH => darkModeColor(lch, BGL);
@@ -57,25 +57,25 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
   });
 
   it("treats a chromatic colour the same way it treats a grey", () => {
-    // The actual defect was the SPLIT: greys went through an
-    // inversion relative to the background, chromatic colours through a
+    // The actual defect was the SPLIT: grays went through an
+    // inversion relative to the background, chromatic colors through a
     // background-blind compression. Same lightness in must give same lightness
     // out, whatever the chroma.
     const l = 0.9;
-    const grey: OKLCH = [l, 0, 0];
+    const gray: OKLCH = [l, 0, 0];
     const chromatic: OKLCH = [l, 0.1, GREEN];
-    expect(darkL(chromatic)).toBeCloseTo(darkL(grey), 5);
+    expect(darkL(chromatic)).toBeCloseTo(darkL(gray), 5);
   });
 
   it("preserves hue, and keeps chroma out of neon territory", () => {
-    const colour: OKLCH = [0.6, 0.2, GREEN];
-    const [, c, h] = dark(colour);
+    const color: OKLCH = [0.6, 0.2, GREEN];
+    const [, c, h] = dark(color);
     expect(h).toBe(GREEN);
     expect(c).toBeLessThanOrEqual(0.25);
   });
 
   it("never returns a colour darker than the background", () => {
-    // bgl is the floor: a colour below it would be invisible on the board.
+    // bgl is the floor: a color below it would be invisible on the board.
     for (const l of [0, 0.25, 0.5, 0.75, 1]) {
       expect(darkL([l, 0.15, GREEN])).toBeGreaterThanOrEqual(BGL);
       expect(darkL([l, 0, 0])).toBeGreaterThanOrEqual(BGL);
@@ -94,7 +94,7 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
 
   it("puts a light-mode background-coloured cell at the dark background", () => {
     // The game is handed pure white in dark mode, so its own background arrives
-    // as L=1 and must come back as the board colour itself.
+    // as L=1 and must come back as the board color itself.
     expect(darkL([1, 0, 0])).toBeCloseTo(BGL, 5);
     void LIGHT_BG;
   });
@@ -102,15 +102,15 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
   it("adapts a pure white that came through the sRGB conversion", () => {
     // The case above hand-writes `[1, 0, 0]`, and a hand-written 1 is not the
     // number production supplies: a palette entry is an RGB triple, and
-    // `colourToOKLCH([1, 1, 1])` returns 1.0000000000000002 — float drift in
+    // `colorToOKLCH([1, 1, 1])` returns 1.0000000000000002 — float drift in
     // the OKLab round trip. `1 - l` is then a hair *below* zero, and the
-    // fractional `boost` power of a negative base is NaN, which serialises to
+    // fractional `boost` power of a negative base is NaN, which serializes to
     // `oklch(NaN% 0 0)` and is then rejected by the canvas SILENTLY (the
-    // previous fillStyle stays, so the shape paints in the wrong colour with
+    // previous fillStyle stays, so the shape paints in the wrong color with
     // nothing logged). 57 palette entries across 42 games were resolving that
     // way. Driving the conversion rather than a literal is the whole point of
     // this test — the assertion above is identical and cannot fail.
-    const white = colourToOKLCH([1, 1, 1]);
+    const white = colorToOKLCH([1, 1, 1]);
     expect(white[0]).toBeGreaterThan(1); // the drift is real; if it stops being
     // real this test still holds, but the one above stops being redundant.
     expect(darkL(white)).toBeCloseTo(BGL, 5);
@@ -118,8 +118,8 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
   });
 
   it("yields a resolvable CSS colour for every reachable lightness", () => {
-    // The general form: no input a palette can hold may produce a colour string
-    // a canvas will refuse. Sweeping the sRGB extremes and their neighbourhood
+    // The general form: no input a palette can hold may produce a color string
+    // a canvas will refuse. Sweeping the sRGB extremes and their neighborhood
     // is cheap and covers the drift band on both sides of both endpoints.
     for (const v of [0, 1e-12, 0.001, 0.5, 0.999, 1 - 1e-12, 1]) {
       for (const rgb of [
@@ -127,7 +127,7 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
         [v, 0, 0],
         [1, 1, v],
       ] as const) {
-        const css = String(oklchToCSSColor(dark(colourToOKLCH([...rgb]))));
+        const css = String(oklchToCSSColor(dark(colorToOKLCH([...rgb]))));
         expect(css, `rgb ${rgb.join(",")}`).not.toContain("NaN");
       }
     }

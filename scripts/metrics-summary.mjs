@@ -118,7 +118,7 @@ try {
   /* absent */
 }
 if (cc) {
-  // metrics.sh distils biome's report to {file, line, score} rows before this
+  // metrics.sh distills biome's report to {file, line, score} rows before this
   // runs, dropping the suppression noise the measuring config manufactures.
   const rows = (cc.diagnostics ?? []).map((d) => ({
     file: d.file ?? "?",

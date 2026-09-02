@@ -474,7 +474,7 @@ describe("inertia hint rendering", () => {
       ),
     ).toBe(true);
 
-    // The arrow: the route arrow's own shape and colour — both mean "the solver
+    // The arrow: the route arrow's own shape and color — both mean "the solver
     // says go this way".
     expect(
       result.recording.ops.some((o) => o.op === "polygon" && o.fill === COL_HINT),

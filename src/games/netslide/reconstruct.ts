@@ -12,23 +12,23 @@
  *
  * - **The tiles are the same tiles.** A slide only ever permutes them, so the
  *   finished grid uses exactly this multiset of wire masks.
- * - **The centre tile has not moved.** Neither the centre row nor the centre
+ * - **The center tile has not moved.** Neither the center row nor the center
  *   column can be slid, so whatever sits in the middle sits there in the
  *   solution too.
  * - **Wires must meet.** A tile's wire pointing right must be answered by its
- *   neighbour's wire pointing left — a dangling end would leave that neighbour
+ *   neighbor's wire pointing left — a dangling end would leave that neighbor
  *   unpowered — and no wire may cross a barrier.
  * - **The network is a tree.** It has to connect all `n` tiles, and the tiles
  *   between them carry exactly `n − 1` edges' worth of wire, so there is no slack
  *   for a loop. Any edge that closes one is therefore illegal.
  *
- * Every neighbour already placed *determines* one of a tile's wires, so filling
+ * Every neighbor already placed *determines* one of a tile's wires, so filling
  * the grid most-hemmed-in cell first leaves very little to guess at, and the tree
  * rule prunes what is left. Under a millisecond on most boards; ~30 ms on the
  * worst 5×5.
  *
  * One property worth stating, because a great deal rests on it: the answer
- * depends only on the **tile multiset, the barriers and the centre tile**, and a
+ * depends only on the **tile multiset, the barriers and the center tile**, and a
  * slide changes none of those. So the grid recovered here is the *same grid for
  * the whole game*, however the player scrambles the board — which is exactly the
  * stability a recomputed hint needs, obtained by construction rather than
@@ -71,21 +71,21 @@ export function findSolutions(
 ): Uint8Array[] {
   const { w, h, cx, cy, tiles, barriers } = s;
   const n = w * h;
-  const centre = cy * w + cx;
+  const center = cy * w + cx;
 
-  // The tiles we have to place, counted by mask. The centre one is spoken for.
+  // The tiles we have to place, counted by mask. The center one is spoken for.
   const available = new Int32Array(16);
   for (let cell = 0; cell < n; cell++) available[tiles[cell]]++;
-  available[tiles[centre]]--;
+  available[tiles[center]]--;
 
   const grid = new Uint8Array(n);
-  grid[centre] = tiles[centre];
+  grid[center] = tiles[center];
 
   const solutions: Uint8Array[] = [];
   const trees = new Dsf(n);
 
   /** The wire bits a tile in `cell` is *forced* to have, and the ones it is
-   * forbidden. Read off the neighbours already placed and the barriers. */
+   * forbidden. Read off the neighbors already placed and the barriers. */
   const constraints = (cell: number, placed: Uint8Array) => {
     const x = cell % w;
     const y = Math.floor(cell / w);
@@ -102,7 +102,7 @@ export function findSolutions(
       const nb = offset(x, y, dir, w, h);
       const other = nb.y * w + nb.x;
       if (!placed[other]) continue; // not decided yet — this wire is still free
-      // The neighbour has spoken: our wire must answer its wire, or its absence.
+      // The neighbor has spoken: our wire must answer its wire, or its absence.
       if (grid[other] & opposite(dir)) required |= dir;
       else forbidden |= dir;
     }
@@ -110,11 +110,11 @@ export function findSolutions(
   };
 
   const placed = new Uint8Array(n);
-  placed[centre] = 1;
+  placed[center] = 1;
 
   /**
-   * Which cell to decide next: the one hemmed in by the most neighbours already
-   * placed, since every placed neighbour *forces* one of its wires. Ties go to
+   * Which cell to decide next: the one hemmed in by the most neighbors already
+   * placed, since every placed neighbor *forces* one of its wires. Ties go to
    * the lowest cell index.
    *
    * Filling the grid in reading order instead is the obvious thing and is far
@@ -123,12 +123,12 @@ export function findSolutions(
    * row and the first not until the very end — so the search builds most of a
    * grid before discovering it never fitted (measured: ~1 s typical, 3.2 s worst
    * on 5×5 wrapping, against under a millisecond this way). Always taking the
-   * most-constrained cell keeps the wrap-around neighbours in play from the
+   * most-constrained cell keeps the wrap-around neighbors in play from the
    * start. It depends only on the geometry, so the enumeration order stays fixed.
    */
   const mostConstrained = (): number => {
     let best = -1;
-    let bestNeighbours = -1;
+    let bestNeighbors = -1;
     for (let cell = 0; cell < n; cell++) {
       if (placed[cell]) continue;
       const x = cell % w;
@@ -138,8 +138,8 @@ export function findSolutions(
         const nb = offset(x, y, dir, w, h);
         if (placed[nb.y * w + nb.x]) count++;
       }
-      if (count > bestNeighbours) {
-        bestNeighbours = count;
+      if (count > bestNeighbors) {
+        bestNeighbors = count;
         best = cell;
       }
     }
@@ -152,7 +152,7 @@ export function findSolutions(
     if (remaining === 0) {
       // Every tile placed, every wire answered, no loop closed anywhere: with
       // n − 1 edges and no cycles this is a spanning tree, so every tile is
-      // powered from the centre.
+      // powered from the center.
       const found = Uint8Array.from(grid);
       if (accept(found)) solutions.push(found);
       return;
@@ -166,7 +166,7 @@ export function findSolutions(
       if ((mask & required) !== required) continue;
       if (mask & forbidden) continue;
 
-      // Placing this tile joins it to every already-placed neighbour it wires to.
+      // Placing this tile joins it to every already-placed neighbor it wires to.
       // Joining two tiles already in the same component would close a loop, and
       // the wire budget has no room for one.
       const x = cell % w;
@@ -264,15 +264,15 @@ export function isReachable(s: NetslideState, target: Uint8Array): boolean {
   if (w % 2 === 0 || h % 2 === 0) return true;
 
   const n = w * h;
-  const centre = cy * w + cx;
-  if (target[centre] !== tiles[centre]) return false; // the centre cannot move
+  const center = cy * w + cx;
+  if (target[center] !== tiles[center]) return false; // the center cannot move
 
-  // The rearrangement is over the cells that can *move*, so the centre is not one
+  // The rearrangement is over the cells that can *move*, so the center is not one
   // of them — and neither is it a source of the parity flip below. A duplicate
-  // that merely matches the centre tile buys nothing: swapping with the centre is
+  // that merely matches the center tile buys nothing: swapping with the center is
   // not a rearrangement a player can make.
   const movable: number[] = [];
-  for (let cell = 0; cell < n; cell++) if (cell !== centre) movable.push(cell);
+  for (let cell = 0; cell < n; cell++) if (cell !== center) movable.push(cell);
 
   const seen = new Int32Array(16);
   for (const cell of movable) {
@@ -314,7 +314,7 @@ export function isReachable(s: NetslideState, target: Uint8Array): boolean {
  * The finished grid to plan against, for a board that did not come with one: the
  * first that the board can actually be slid into.
  *
- * Deterministic, and — because the tile multiset, the barriers and the centre
+ * Deterministic, and — because the tile multiset, the barriers and the center
  * tile are all untouched by sliding — the *same grid for the whole game*, however
  * the player scrambles the board.
  */

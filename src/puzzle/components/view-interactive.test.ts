@@ -293,7 +293,7 @@ describe("Escape delivery", () => {
 
 describe("pointer coordinates", () => {
   // Both terms of the canvas-relative subtraction are fractional in general: a
-  // pointer reports a sub-pixel position, and a centred canvas routinely lands
+  // pointer reports a sub-pixel position, and a centered canvas routinely lands
   // on a half-pixel edge. Games draw with whole-pixel arithmetic that has no
   // slack for the difference -- Map's drag blob saves a TILESIZE+3 blitter that
   // is exactly flush with the circle it covers at even tile sizes, so a

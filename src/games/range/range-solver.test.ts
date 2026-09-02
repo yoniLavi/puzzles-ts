@@ -18,7 +18,7 @@ const PRESETS: RangeParams[] = [
 
 describe("deductive rules", () => {
   it("whitens the orthogonal neighbours of a black cell (adjacency)", () => {
-    // 3x3, no clues, one black in the centre.
+    // 3x3, no clues, one black in the center.
     const grid = Int8Array.from([
       EMPTY,
       EMPTY,

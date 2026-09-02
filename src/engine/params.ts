@@ -114,7 +114,7 @@ const DEFAULT_DIMENSION_FIELDS = { w: "w", h: "h" };
 
 /**
  * The two `width`/`height` `ParamConfigItem`s that virtually every grid
- * game's "Custom type…" dialog needs — the params analogue of the shared
+ * game's "Custom type…" dialog needs — the params analog of the shared
  * dimension *parser* above. A plain w/h game declares its whole custom
  * form as `paramConfig: dimensionParamConfig()`; a variant game spreads
  * these first and appends its own fields.

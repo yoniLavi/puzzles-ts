@@ -52,7 +52,7 @@ export const BORDER = (dir: number): number => 1 << dir;
 /** The "known not to be a wall" companion bit for a border bit. */
 export const DISABLED = (border: number): number => border << 4;
 
-/** The direction facing `dir` from the neighbouring cell. */
+/** The direction facing `dir` from the neighboring cell. */
 export const FLIP = (dir: number): number => dir ^ 2;
 
 export const DX = [0, +1, 0, -1] as const;
@@ -92,7 +92,7 @@ export interface BorderGridState {
 }
 
 /** The cursor state this mechanic maintains: the collection's shared
- * {@link GridCursor}, but read in HALF-cells — `(2x+1, 2y+1)` is the centre of
+ * {@link GridCursor}, but read in HALF-cells — `(2x+1, 2y+1)` is the center of
  * cell `(x,y)`, so an even coordinate names an edge and both-even a corner.
  * That is what lets one cursor address cells and the edges between them without
  * a second state variable, and it is why the traversal below is this module's
@@ -120,7 +120,7 @@ export type BorderGridInput = BorderEdit[] | "ui" | null;
  * Left button cycles undecided → wall → undecided; right button cycles
  * undecided → not-a-wall → undecided. Returns the paired edits for the two
  * cells the edge separates, or `null` if the press did not land on exactly one
- * edge (a corner, the centre of a tile, or outside the grid).
+ * edge (a corner, the center of a tile, or outside the grid).
  *
  * Mutates `ui` to park the cursor on the edge that was hit and hide it, which is
  * what makes a subsequent keyboard press continue from where the mouse was.
@@ -143,7 +143,7 @@ export function pointerEdge(
   // *always* survives — the three masks are not independent. The first leaves
   // one of {L,R}, the second one of {U,D}, and the third clears exactly one of
   // those two surviving pairs. So every click inside a cell resolves to an
-  // edge, including one exactly on a corner or a centre (which the tie-break
+  // edge, including one exactly on a corner or a center (which the tie-break
   // test pins), and the `dir === 4` exit below is defensive, not a rejection.
   let possible = BORDER_MASK;
   let px = (px0 - margin(ts)) % ts;
@@ -177,7 +177,7 @@ export function pointerEdge(
   if ((cur === NO) !== (next === NO)) gdiff |= DISABLED(BORDER(dir));
   if (gdiff === 0) return null;
 
-  // The neighbour's bits are the same toggles seen from the other side: shift
+  // The neighbor's bits are the same toggles seen from the other side: shift
   // each nibble from `dir` to the facing direction.
   const hdiff =
     ((gdiff >> dir) << FLIP(dir)) | ((gdiff >> (dir + 4)) << (FLIP(dir) + 4));
@@ -189,7 +189,7 @@ export function pointerEdge(
 
 /** Move the half-cell cursor by one step, clamped inside the grid. Named apart
  * from `pointer.ts`'s `moveCursor` because the traversal genuinely differs: a
- * step here crosses half a cell, from an edge to a centre or back. */
+ * step here crosses half a cell, from an edge to a center or back. */
 export function moveBorderCursor(
   ui: BorderGridUi,
   d: { dx: number; dy: number },
@@ -207,7 +207,7 @@ export function moveBorderCursor(
  * The first press only reveals a hidden cursor. On an edge, `select` toggles the
  * wall and `select2` toggles the not-a-wall mark — except that either press on
  * an edge already marked the *other* way clears it, which is what the key table
- * below encodes. A corner or tile centre means nothing.
+ * below encodes. A corner or tile center means nothing.
  */
 export function selectEdge(
   state: BorderGridState,
@@ -228,7 +228,7 @@ export function selectEdge(
     ui.cursor.visible = true;
     return "ui";
   }
-  if (px === py) return null; // a corner or centre: no edge
+  if (px === py) return null; // a corner or center: no edge
 
   const key =
     (isSelect2 ? 1 : 0) |

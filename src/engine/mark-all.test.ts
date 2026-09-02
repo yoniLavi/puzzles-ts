@@ -69,8 +69,8 @@ it("every game offering the press is enrolled here", () => {
    * **Both directions, and both derived from the registry.** The miss worth
    * catching is a game that ships `canMarkAll` with no row here, because that
    * game is silently unguarded by every property below — and it is precisely the
-   * game a loop over `MARK_ALL_GAMES` never visits. An enrolment check that
-   * reads only the enrolment list is a statement about the list, not about the
+   * game a loop over `MARK_ALL_GAMES` never visits. An enrollment check that
+   * reads only the enrollment list is a statement about the list, not about the
    * collection.
    */
   const offering = registeredGameIds()

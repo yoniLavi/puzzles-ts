@@ -1,20 +1,20 @@
 /**
- * Twiddle rendering: bevelled numbered tiles, the subsquare rotation
- * animation (the one render piece with no analogue in the other ported
- * grid games), the per-edge bevel recolouring through a turn, the cursor
+ * Twiddle rendering: beveled numbered tiles, the subsquare rotation
+ * animation (the one render piece with no analog in the other ported
+ * grid games), the per-edge bevel recoloring through a turn, the cursor
  * region highlight, and the completion flash. Faithful port of
  * `twiddle.c`'s `game_redraw` / `draw_tile` / `rotate` / `highlight_colour`.
  */
 
-import { CURSOR, INK } from "../../engine/colour/palette.ts";
+import { CURSOR, INK } from "../../engine/color/palette.ts";
 import {
   twiddleGentleHighlight,
   twiddleGentleLowlight,
-} from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/palette-games.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { TwiddleParams, TwiddleState, TwiddleUi } from "./state.ts";
 
 // --- constants --------------------------------------------------------
@@ -24,7 +24,7 @@ export const ANIM_PER_BLKSIZE_UNIT = 0.13;
 export const FLASH_FRAME = 0.13;
 const HIGHLIGHT_WIDTH_DIV = 20;
 
-// --- colour indices ---------------------------------------------------
+// --- color indices ---------------------------------------------------
 
 export const COL_BACKGROUND = 0;
 export const COL_TEXT = 1;
@@ -34,7 +34,7 @@ export const COL_LOWLIGHT = 4;
 export const COL_LOWLIGHT_GENTLE = 5;
 export const COL_HIGHCURSOR = 6;
 export const COL_LOWCURSOR = 7;
-export const NCOLOURS = 8;
+export const NCOLORS = 8;
 
 // --- cursor edge flags ------------------------------------------------
 
@@ -77,7 +77,7 @@ export interface TwiddleDrawState {
   started: boolean;
   w: number;
   h: number;
-  bgcolour: number;
+  bgcolor: number;
   /** Per-cell cache of the packed `number*4 + orient`; `-1` forces a
    * redraw (unknown, or inside the animating block). */
   cache: Int32Array;
@@ -92,7 +92,7 @@ export function newDrawState(state: TwiddleState): TwiddleDrawState {
     started: false,
     w: state.w,
     h: state.h,
-    bgcolour: COL_BACKGROUND,
+    bgcolor: COL_BACKGROUND,
     cache: new Int32Array(state.w * state.h).fill(-1),
     tilesize: 0,
     curX: -state.n,
@@ -129,9 +129,9 @@ function rotate(px: number, py: number, rot: Rotation | null): Point {
 }
 
 /** Upstream `highlight_colour`: map a (radian) edge angle to one of the
- * five bevel colours so the four sides of a turning tile recolour
+ * five bevel colors so the four sides of a turning tile recolor
  * smoothly through the rotation. */
-function highlightColour(angle: number): number {
+function highlightColor(angle: number): number {
   // Indices into [low, low_gentle×3, high_gentle×3, high×9, high_gentle×3,
   // low_gentle×3, low×8] — the 32-entry table from twiddle.c.
   const table = [
@@ -183,7 +183,7 @@ function drawTile(
   py: number,
   num: number,
   orient: number,
-  flashColour: number,
+  flashColor: number,
   rotIn: Rotation | null,
   cedges: number,
 ): void {
@@ -201,7 +201,7 @@ function drawTile(
   if (rot) dr.clip({ x: rot.cx, y: rot.cy, w: rot.cw, h: rot.ch });
 
   // The four bevel edges, each a triangle from a pair of corners to the
-  // centre. During a rotation they all differ in colour.
+  // center. During a rotation they all differ in color.
   const cc = rotate(px + ts / 2, py + ts / 2, rot);
   const c00 = rotate(px, py, rot);
   const c10 = rotate(px + ts - 1, py, rot);
@@ -233,7 +233,7 @@ function drawTile(
     rot ? rot.tc : cedges & CUR_TOP ? COL_HIGHCURSOR : COL_HIGHLIGHT,
   );
 
-  // The blank centre area.
+  // The blank center area.
   if (rot) {
     dr.drawPolygon(
       [
@@ -242,14 +242,11 @@ function drawTile(
         rotate(px + ts - 1 - hw, py + ts - 1 - hw, rot),
         rotate(px + ts - 1 - hw, py + hw, rot),
       ],
-      flashColour,
-      flashColour,
+      flashColor,
+      flashColor,
     );
   } else {
-    dr.drawRect(
-      { x: px + hw, y: py + hw, w: ts - 2 * hw, h: ts - 2 * hw },
-      flashColour,
-    );
+    dr.drawRect({ x: px + hw, y: py + hw, w: ts - 2 * hw, h: ts - 2 * hw }, flashColor);
   }
 
   // Orientation triangle.
@@ -299,9 +296,9 @@ function drawTile(
     );
   }
 
-  const textCentre = rotate(px + ts / 2, py + ts / 2, rot);
+  const textCenter = rotate(px + ts / 2, py + ts / 2, rot);
   dr.drawText(
-    textCentre,
+    textCenter,
     { align: "center", baseline: "mathematical", fontType: "variable", size: ts / 3 },
     COL_TEXT,
     String(num),
@@ -347,10 +344,10 @@ export function redraw(
   const cy = ui.cursor.visible ? ui.cursor.y : -n;
   const cmoved = cx !== ds.curX || cy !== ds.curY;
 
-  let bgcolour = COL_BACKGROUND;
+  let bgcolor = COL_BACKGROUND;
   if (flashTime > 0) {
     const frame = Math.floor(flashTime / FLASH_FRAME);
-    bgcolour = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
+    bgcolor = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
   }
 
   if (!ds.started) {
@@ -363,7 +360,7 @@ export function redraw(
   }
 
   // Set up the rotation parameters if we're animating, and clear the
-  // rotated region to the background colour first.
+  // rotated region to the background color first.
   let rot: Rotation | null = null;
   let lastx = -1;
   let lasty = -1;
@@ -393,12 +390,12 @@ export function redraw(
         oy: rcy + cw / 2,
         c: Math.cos(angle),
         s: Math.sin(angle),
-        lc: highlightColour(Math.PI + angle),
-        rc: highlightColour(angle),
-        tc: highlightColour(Math.PI / 2 + angle),
-        bc: highlightColour(-Math.PI / 2 + angle),
+        lc: highlightColor(Math.PI + angle),
+        rc: highlightColor(angle),
+        tc: highlightColor(Math.PI / 2 + angle),
+        bc: highlightColor(-Math.PI / 2 + angle),
       };
-      dr.drawRect({ x: rcx, y: rcy, w: cw, h: cw }, bgcolour);
+      dr.drawRect({ x: rcx, y: rcy, w: cw, h: cw }, bgcolor);
     }
   }
 
@@ -430,7 +427,7 @@ export function redraw(
     }
 
     if (
-      ds.bgcolour !== bgcolour ||
+      ds.bgcolor !== bgcolor ||
       ds.cache[i] !== t ||
       ds.cache[i] === -1 ||
       t === -1 ||
@@ -453,7 +450,7 @@ export function redraw(
         y,
         state.numbers[i],
         state.orient[i],
-        bgcolour,
+        bgcolor,
         rot,
         cedges,
       );
@@ -461,14 +458,14 @@ export function redraw(
     }
   }
 
-  ds.bgcolour = bgcolour;
+  ds.bgcolor = bgcolor;
   ds.curX = cx;
   ds.curY = cy;
 }
 
 // --- palette ----------------------------------------------------------
 
-function clampColour(c: Colour): Colour {
+function clampColor(c: Color): Color {
   return [
     Math.max(0, Math.min(1, c[0])),
     Math.max(0, Math.min(1, c[1])),
@@ -478,16 +475,16 @@ function clampColour(c: Colour): Colour {
 
 /** Build the Twiddle palette from a base background + highlight/lowlight
  * (the gentle bevels and the cursor). */
-export function buildColours(bg: Colour, hi: Colour, lo: Colour): Colour[] {
-  const out: Colour[] = new Array(NCOLOURS);
+export function buildColors(bg: Color, hi: Color, lo: Color): Color[] {
+  const out: Color[] = new Array(NCOLORS);
   out[COL_BACKGROUND] = bg;
   out[COL_TEXT] = INK;
   out[COL_HIGHLIGHT] = hi;
-  out[COL_HIGHLIGHT_GENTLE] = clampColour(twiddleGentleHighlight(bg));
+  out[COL_HIGHLIGHT_GENTLE] = clampColor(twiddleGentleHighlight(bg));
   out[COL_LOWLIGHT] = lo;
-  out[COL_LOWLIGHT_GENTLE] = clampColour(twiddleGentleLowlight(bg));
+  out[COL_LOWLIGHT_GENTLE] = clampColor(twiddleGentleLowlight(bg));
   // The cursor is the *outline* of the bevel triangles along the block's
-  // edges, over their ordinary fill — a line, so one authored colour serves
+  // edges, over their ordinary fill — a line, so one authored color serves
   // both the lit and the shaded sides. Two slots survive because the dark-mode
   // swap table keys them by index.
   out[COL_HIGHCURSOR] = CURSOR;

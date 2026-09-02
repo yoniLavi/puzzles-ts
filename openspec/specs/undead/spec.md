@@ -89,10 +89,10 @@ SHALL be uniquely solvable (verified against the brute-force oracle).
 
 Every board Undead accepts SHALL be solvable by the deductive ladder alone — **zero
 guessing or recursion** — per the fork's guess-free generation policy. A board that
-requires recursion (nested hypothesising) SHALL be rejected at generation.
+requires recursion (nested hypothesizing) SHALL be rejected at generation.
 
 Undead's top tier is named **`Unreasonable`**, because the forcing rung that
-defines it hypothesises a candidate and runs the arc-consistency + counting
+defines it hypothesizes a candidate and runs the arc-consistency + counting
 fixpoint from it. That is not nested recursion — the re-grade measurement
 (≈6,800 candidate boards across all tiers) found a **zero** uniquely-solvable
 recursion residual, and that finding stands — but it is a search from the
@@ -123,7 +123,7 @@ tiers remain plain deduction.
 
 #### Scenario: Recursion-only boards are rejected
 
-- **WHEN** a candidate board is solvable only by recursion (nested hypothesising)
+- **WHEN** a candidate board is solvable only by recursion (nested hypothesizing)
 - **THEN** it is rejected at generation (such boards are non-unique)
 
 #### Scenario: Solve fills the unique solution
@@ -175,7 +175,7 @@ frame they are computed.
 #### Scenario: Over-placing a monster type reddens it live
 
 - **WHEN** the player places more zombies than the zombie total
-- **THEN** the zombie count and every placed zombie cell render in the error colour
+- **THEN** the zombie count and every placed zombie cell render in the error color
 
 #### Scenario: Check & Save flags a wrong placement
 
@@ -191,7 +191,7 @@ frame they are computed.
 `redraw` SHALL draw the monster-count row at the top (three blocks G/V/Z whose
 numbers follow the selected count-display style — Total, Remaining, Placed/Total,
 or **Left/Total** (remaining-to-place over total, e.g. `3/8`; the default, a
-deliberate divergence from upstream's Total default) — and colour dimmed when
+deliberate divergence from upstream's Total default) — and color dimmed when
 complete (0 left) or red on error), the sighting clue
 numbers around the grid edge (dimmed when struck through, red on error), and each
 interior cell as either a mirror (a thick diagonal), a placed monster (a drawn
@@ -206,7 +206,7 @@ a per-cell diff cache.
 - **WHEN** the player cycles the count-display style and toggles the letters display
 - **THEN** the count blocks re-render in the new style and monsters render as letters
 - **AND** the same options are available through the preferences dialog
-- **AND** the default style is Left/Total, dimming a type's block to grey once 0
+- **AND** the default style is Left/Total, dimming a type's block to gray once 0
   remain to place
 
 #### Scenario: Pencil-mark UX
@@ -249,8 +249,8 @@ fold away.
 
 The hint SHALL render with `COL_HINT` (placement target / acted-on marking) and
 `COL_HINT_CELL` (sightline evidence shade) appended to the palette, following the
-element-type colour legend: the placement target is a solid `COL_HINT` fill with no
-pre-rendered monster glyph; a struck candidate is drawn in its normal pencil colour
+element-type color legend: the placement target is a solid `COL_HINT` fill with no
+pre-rendered monster glyph; a struck candidate is drawn in its normal pencil color
 with a strikethrough on a non-`COL_HINT` background so it stays legible; the sightline
 evidence is shaded `COL_HINT_CELL`. The hint signature SHALL be folded into the
 per-cell draw-state cache so the overlay repaints and clears correctly.
@@ -316,8 +316,8 @@ so a hint refused for mistakes highlights those cells for free.
 ### Requirement: Undead provides on-screen key labels
 
 Undead SHALL implement `requestKeys()` returning its four monster-entry keys —
-`G` labelled `"Ghost"`, `V` labelled `"Vampire"`, `Z` labelled `"Zombie"` — followed
-by a clear key (button code `8`, labelled `"Clear"`), reproducing upstream
+`G` labeled `"Ghost"`, `V` labeled `"Vampire"`, `Z` labeled `"Zombie"` — followed
+by a clear key (button code `8`, labeled `"Clear"`), reproducing upstream
 `game_request_keys` so the keypad matches the C build. (The keys carry the monster
 letters regardless of the pictures/letters display preference, matching upstream.)
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { findLoops } from "./findloop.ts";
 
-/** Build a neighbour callback from an undirected edge list. */
+/** Build a neighbor callback from an undirected edge list. */
 function graph(n: number, edges: [number, number][]) {
   const adj: number[][] = Array.from({ length: n }, () => []);
   for (const [a, b] of edges) {

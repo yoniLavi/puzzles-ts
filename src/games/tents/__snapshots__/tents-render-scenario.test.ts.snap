@@ -3,7 +3,7 @@
 exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 291,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -12,7 +12,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -22,7 +22,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 1,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -32,7 +32,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 33,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -42,7 +42,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 65,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -52,7 +52,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 97,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -62,7 +62,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 129,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -72,7 +72,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 161,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -82,7 +82,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 193,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -92,7 +92,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 225,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -102,7 +102,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 257,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -112,7 +112,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 257,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -122,7 +122,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 257,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -132,7 +132,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 257,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -142,7 +142,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 257,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -152,7 +152,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 257,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -162,7 +162,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 257,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -172,7 +172,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 257,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -182,7 +182,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y2": 257,
   },
   {
-    "colour": 1,
+    "color": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -199,7 +199,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -208,7 +208,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -217,7 +217,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 2,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -286,7 +286,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -295,7 +295,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -314,7 +314,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -323,7 +323,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -342,7 +342,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -351,7 +351,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -370,7 +370,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -379,7 +379,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -398,7 +398,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -407,7 +407,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -426,7 +426,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -435,7 +435,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -454,7 +454,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -463,7 +463,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 1,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -482,7 +482,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -491,7 +491,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -510,7 +510,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -519,7 +519,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -538,7 +538,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -547,7 +547,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -566,7 +566,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -575,7 +575,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -584,7 +584,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 34,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -653,7 +653,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -662,7 +662,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -681,7 +681,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -690,7 +690,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -709,7 +709,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -718,7 +718,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -727,7 +727,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 34,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -796,7 +796,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -805,7 +805,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 33,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -824,7 +824,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -833,7 +833,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -852,7 +852,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -861,7 +861,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -880,7 +880,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -889,7 +889,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -908,7 +908,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -917,7 +917,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -936,7 +936,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -945,7 +945,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -964,7 +964,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -973,7 +973,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -982,7 +982,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 66,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -1051,7 +1051,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1060,7 +1060,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1079,7 +1079,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1088,7 +1088,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 65,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1107,7 +1107,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1116,7 +1116,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1135,7 +1135,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1144,7 +1144,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1163,7 +1163,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1172,7 +1172,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -1181,7 +1181,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 98,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -1250,7 +1250,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1259,7 +1259,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1278,7 +1278,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1287,7 +1287,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1306,7 +1306,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1315,7 +1315,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1334,7 +1334,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1343,7 +1343,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1362,7 +1362,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1371,7 +1371,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 97,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1390,7 +1390,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1399,7 +1399,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1418,7 +1418,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1427,7 +1427,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1446,7 +1446,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1455,7 +1455,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1474,7 +1474,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1483,7 +1483,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1502,7 +1502,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1511,7 +1511,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1530,7 +1530,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1539,7 +1539,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -1548,7 +1548,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 130,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -1617,7 +1617,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1626,7 +1626,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1645,7 +1645,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1654,7 +1654,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 129,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1673,7 +1673,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1682,7 +1682,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1701,7 +1701,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1710,7 +1710,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -1719,7 +1719,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 162,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -1788,7 +1788,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1797,7 +1797,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1816,7 +1816,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1825,7 +1825,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1844,7 +1844,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1853,7 +1853,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -1862,7 +1862,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 162,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -1931,7 +1931,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1940,7 +1940,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1959,7 +1959,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1968,7 +1968,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1987,7 +1987,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1996,7 +1996,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 161,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2015,7 +2015,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2024,7 +2024,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -2033,7 +2033,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 194,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -2102,7 +2102,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2111,7 +2111,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2130,7 +2130,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2139,7 +2139,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2158,7 +2158,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2167,7 +2167,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2186,7 +2186,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2195,7 +2195,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2214,7 +2214,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2223,7 +2223,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2242,7 +2242,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2251,7 +2251,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2270,7 +2270,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2279,7 +2279,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 193,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -2288,7 +2288,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 194,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -2357,7 +2357,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2366,7 +2366,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2385,7 +2385,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2394,7 +2394,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2413,7 +2413,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2422,7 +2422,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2441,7 +2441,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2450,7 +2450,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2469,7 +2469,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2478,7 +2478,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -2487,7 +2487,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 226,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -2556,7 +2556,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2565,7 +2565,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2584,7 +2584,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2593,7 +2593,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(163, 206, 168)",
@@ -2602,7 +2602,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 226,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 19,
     "op": "rect",
     "rgb": "rgb(114, 67, 16)",
@@ -2671,7 +2671,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2680,7 +2680,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 225,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2692,7 +2692,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "op": "unclip",
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 33,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2703,7 +2703,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "center",
     "baseline": "alphabetic",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2713,7 +2713,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 289,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 33,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2724,7 +2724,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "center",
     "baseline": "alphabetic",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2734,7 +2734,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 289,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 33,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2745,7 +2745,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "center",
     "baseline": "alphabetic",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2755,7 +2755,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 289,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 33,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2766,7 +2766,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "center",
     "baseline": "alphabetic",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2776,7 +2776,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 289,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 33,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2787,7 +2787,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "center",
     "baseline": "alphabetic",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2797,7 +2797,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 289,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 33,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2808,7 +2808,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "center",
     "baseline": "alphabetic",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2818,7 +2818,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 289,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 33,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2829,7 +2829,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "center",
     "baseline": "alphabetic",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2839,7 +2839,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 289,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 33,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2850,7 +2850,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "center",
     "baseline": "alphabetic",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2860,7 +2860,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 289,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2871,7 +2871,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "right",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2881,7 +2881,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 17,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2892,7 +2892,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "right",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2902,7 +2902,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 49,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2913,7 +2913,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "right",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2923,7 +2923,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 81,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2934,7 +2934,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "right",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2944,7 +2944,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 113,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2955,7 +2955,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "right",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2965,7 +2965,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 145,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2976,7 +2976,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "right",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2986,7 +2986,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 177,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2997,7 +2997,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "right",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3007,7 +3007,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
     "y": 209,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3018,7 +3018,7 @@ exports[`tents render scenarios > opener frame: grid lines, a tree, edge numbers
   {
     "align": "right",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",

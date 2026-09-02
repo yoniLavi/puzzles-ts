@@ -1,5 +1,5 @@
 /**
- * Tier-1 behavioural tests for the Untangle port: the exact integer
+ * Tier-1 behavioral tests for the Untangle port: the exact integer
  * crossing primitive, crossing/completion derivation, generation
  * invariants (planar / degree-capped / starts tangled), the
  * drag→executeMove round-trip, the 8-symmetry Solve, and the

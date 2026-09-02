@@ -11,7 +11,7 @@ interface LineOp {
   op: "line";
   a: { x: number; y: number };
   b: { x: number; y: number };
-  colour: number;
+  color: number;
 }
 type Op = PolyOp | LineOp;
 
@@ -23,8 +23,8 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     drawLine: (
       a: { x: number; y: number },
       b: { x: number; y: number },
-      colour: number,
-    ) => ops.push({ op: "line", a: { ...a }, b: { ...b }, colour }),
+      color: number,
+    ) => ops.push({ op: "line", a: { ...a }, b: { ...b }, color }),
   } as unknown as GameDrawing;
   return { dr, ops };
 }
@@ -84,6 +84,6 @@ describe("drawRectOutline", () => {
     expect(Math.max(...ys)).toBe(26);
     expect(Math.min(...xs)).toBe(5);
     expect(Math.min(...ys)).toBe(7);
-    for (const o of ops) expect((o as LineOp).colour).toBe(3);
+    for (const o of ops) expect((o as LineOp).color).toBe(3);
   });
 });

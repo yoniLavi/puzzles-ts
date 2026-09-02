@@ -75,11 +75,11 @@ describe("Palisade render scenarios", () => {
   it("reaches the equivalentEdges hint frame in-process and paints it", () => {
     const { result } = equivalentEdgesFrame();
     const ops = result.recording.ops;
-    const rectsOf = (colour: number): number =>
-      ops.filter((o) => o.op === "rect" && o.colour === colour).length;
+    const rectsOf = (color: number): number =>
+      ops.filter((o) => o.op === "rect" && o.color === color).length;
 
     // Both forced edges paint COL_HINT (they share a fate, so they share a
-    // colour) — at least two blue rects — over a COL_HINT_CELL-shaded region.
+    // color) — at least two blue rects — over a COL_HINT_CELL-shaded region.
     expect(rectsOf(COL_HINT)).toBeGreaterThanOrEqual(2);
     expect(rectsOf(COL_HINT_CELL)).toBeGreaterThan(0);
 
@@ -108,7 +108,7 @@ describe("Palisade render scenarios", () => {
     });
 
     expect(hint).toBeDefined();
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_HINT)).toBe(
       true,
     );
     expect(recording.ops).toMatchSnapshot();

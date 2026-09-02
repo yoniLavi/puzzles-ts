@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Slant port (tier 1 logic + tier 2 render ops +
+ * Behavioral tests for the Slant port (tier 1 logic + tier 2 render ops +
  * tier 2.5 render scenario; the C-vs-TS byte-match lives in
  * slant-differential.test.ts).
  */
@@ -69,8 +69,8 @@ function ui(over: Partial<SlantUi> = {}): SlantUi {
   };
 }
 
-/** Centre of square (x, y) at the default 32px tile (border = 11). */
-function centre(x: number, y: number) {
+/** Center of square (x, y) at the default 32px tile (border = 11). */
+function center(x: number, y: number) {
   return { x: 11 + x * 32 + 16, y: 11 + y * 32 + 16 };
 }
 
@@ -134,7 +134,7 @@ describe("slant desc codec", () => {
 
 describe("slant errors and completion", () => {
   it("flags a closed loop on every participating diagonal", () => {
-    // The minimal diamond loop around the centre vertex of a 2x2 grid.
+    // The minimal diamond loop around the center vertex of a 2x2 grid.
     let s = newState(P22, "i");
     s = applyAll(s, [set(0, 0, 1), set(1, 0, -1), set(0, 1, -1), set(1, 1, 1)]);
     expect(Array.from(s.loopErrors)).toEqual([1, 1, 1, 1]);
@@ -149,7 +149,7 @@ describe("slant errors and completion", () => {
   });
 
   it("flags a clue vertex that can no longer be satisfied", () => {
-    // Clue 4 at the centre vertex (index 4 of the 3x3 vertex grid); a
+    // Clue 4 at the center vertex (index 4 of the 3x3 vertex grid); a
     // forward slash in (0,0) avoids it, capping its degree at 3.
     let s = newState(P22, "d4d");
     s = executeMove(s, set(0, 0, 1));
@@ -197,7 +197,7 @@ describe("slant input", () => {
       state,
       u,
       sizedDrawState(slantGame, state),
-      centre(0, 0),
+      center(0, 0),
       LEFT_BUTTON,
     );
     expect(m1).toEqual(set(0, 0, -1));
@@ -206,7 +206,7 @@ describe("slant input", () => {
       s1,
       u,
       sizedDrawState(slantGame, s1),
-      centre(0, 0),
+      center(0, 0),
       LEFT_BUTTON,
     );
     expect(m2).toEqual(set(0, 0, 1));
@@ -215,7 +215,7 @@ describe("slant input", () => {
       s2,
       u,
       sizedDrawState(slantGame, s2),
-      centre(0, 0),
+      center(0, 0),
       LEFT_BUTTON,
     );
     expect(m3).toEqual(set(0, 0, 0));
@@ -226,7 +226,7 @@ describe("slant input", () => {
       state,
       ui(),
       sizedDrawState(slantGame, state),
-      centre(1, 1),
+      center(1, 1),
       RIGHT_BUTTON,
     );
     expect(m).toEqual(set(1, 1, 1));
@@ -237,7 +237,7 @@ describe("slant input", () => {
       state,
       ui({ swapButtons: true }),
       sizedDrawState(slantGame, state),
-      centre(0, 0),
+      center(0, 0),
       LEFT_BUTTON,
     );
     expect(m).toEqual(set(0, 0, 1));
@@ -258,7 +258,7 @@ describe("slant input", () => {
       state,
       u,
       sizedDrawState(slantGame, state),
-      centre(0, 0),
+      center(0, 0),
       LEFT_BUTTON,
     );
     expect(u.cursor.visible).toBe(false);
@@ -480,7 +480,7 @@ describe("slant rendering", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBe(1);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_ERROR)).toBe(
       true,
     );
   });
@@ -493,7 +493,7 @@ describe("slant rendering", () => {
     const wrong0 = FIXTURE.aux[0] === "\\" ? 1 : -1;
     s = executeMove(s, set(0, 0, wrong0 as -1 | 1));
 
-    const palette = slantGame.colours(DEFAULT_BACKGROUND);
+    const palette = slantGame.colors(DEFAULT_BACKGROUND);
     const dr = new RecordingDrawing(palette);
     const ds = newDrawState(s);
     slantGame.setTileSize?.(ds, 32);
@@ -501,7 +501,7 @@ describe("slant rendering", () => {
     slantGame.redraw?.(dr, ds, null, s, 1, u, 0, 0, undefined, undefined);
     dr.ops.length = 0;
     slantGame.redraw?.(dr, ds, null, s, 1, u, 0, 0, undefined, [{ x: 0, y: 0 }]);
-    expect(dr.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(true);
+    expect(dr.ops.some((o) => o.op === "rect" && o.color === COL_ERROR)).toBe(true);
   });
 
   it("fades grounded diagonals only when the pref is on", () => {
@@ -509,14 +509,14 @@ describe("slant rendering", () => {
     let s = newState(p, FIXTURE.desc);
     s = executeMove(s, set(0, 0, -1)); // touches the border: grounded
 
-    const palette = slantGame.colours(DEFAULT_BACKGROUND);
+    const palette = slantGame.colors(DEFAULT_BACKGROUND);
     for (const fade of [false, true]) {
       const dr = new RecordingDrawing(palette);
       const ds = newDrawState(s);
       slantGame.setTileSize?.(ds, 32);
       slantGame.redraw?.(dr, ds, null, s, 1, ui({ fadeGrounded: fade }), 0, 0);
       const groundedLines = dr.ops.filter(
-        (o) => o.op === "line" && o.colour === COL_GROUNDED,
+        (o) => o.op === "line" && o.color === COL_GROUNDED,
       );
       expect(groundedLines.length > 0).toBe(fade);
     }

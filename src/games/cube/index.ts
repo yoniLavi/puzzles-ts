@@ -28,7 +28,7 @@ import { newDesc } from "./generator.ts";
 import { Direction } from "./grid.ts";
 import {
   type CubeDrawState,
-  colours,
+  colors,
   computeSize,
   newDrawState,
   PREFERRED_TILE_SIZE,
@@ -158,14 +158,14 @@ export function executeMove(from: CubeState, move: CubeMove): CubeState {
 
   // Map the face permutation the roll induced: the rolled solid is
   // congruent to the original with faces permuted, so each original
-  // face's colour follows the rolled face whose normal matches it.
-  const faceColours = new Int32Array(solid.nfaces).fill(-1);
+  // face's color follows the rolled face whose normal matches it.
+  const faceColors = new Int32Array(solid.nfaces).fill(-1);
   for (let i = 0; i < solid.nfaces; i++) {
     for (let j = 0; j < poly.nfaces; j++) {
       let dist = 0;
       for (let k = 0; k < 3; k++)
         dist += sqr(poly.normals[j * 3 + k] - solid.normals[i * 3 + k]);
-      if (dist < 0.1) faceColours[i] = from.faceColours[j];
+      if (dist < 0.1) faceColors[i] = from.faceColors[j];
     }
   }
 
@@ -177,12 +177,12 @@ export function executeMove(from: CubeState, move: CubeMove): CubeState {
   // already complete (a finished solid may roll freely as a small reward).
   if (!completed) {
     const lf = lowestFace(solid);
-    const tmp = faceColours[lf];
-    faceColours[lf] = blue[dest];
+    const tmp = faceColors[lf];
+    faceColors[lf] = blue[dest];
     blue[dest] = tmp;
 
     let allBlue = 0;
-    for (let i = 0; i < solid.nfaces; i++) if (faceColours[i]) allBlue++;
+    for (let i = 0; i < solid.nfaces; i++) if (faceColors[i]) allBlue++;
     if (allBlue === solid.nfaces) completed = movecount;
   }
 
@@ -193,7 +193,7 @@ export function executeMove(from: CubeState, move: CubeMove): CubeState {
   return {
     ...from,
     current: dest,
-    faceColours,
+    faceColors,
     blue,
     completed,
     movecount,
@@ -301,8 +301,8 @@ function interpretMove(
 }
 
 /** Pick a roll direction from a left-click bearing relative to the
- * current square's centre. Mirrors the `LEFT_BUTTON` branch of
- * `interpret_move`. Returns null for a dead-centre click. */
+ * current square's center. Mirrors the `LEFT_BUTTON` branch of
+ * `interpret_move`. Returns null for a dead-center click. */
 function directionFromClick(
   state: CubeState,
   ds: CubeDrawState,
@@ -426,7 +426,7 @@ export const cubeGame: Game<CubeParams, CubeState, CubeMove, CubeUi, CubeDrawSta
 
   statusbarText,
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize,

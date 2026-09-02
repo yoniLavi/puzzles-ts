@@ -50,7 +50,7 @@ export interface Mark {
  * "no note"), and Salad's note alphabet (`nums` symbols + one "might be empty"
  * mark) is *shorter* than its grid order. Supplying the encoding is strictly
  * cheaper than a game re-deriving the helpers, and omitting it reproduces
- * today's behaviour exactly — so every existing call site is untouched.
+ * today's behavior exactly — so every existing call site is untouched.
  *
  * **What this deliberately is *not*.** `add-salad-hint`'s design proposed a
  * richer `CandidateVocabulary` with a *many-to-one* arm (`valuesFor(bit)`), for
@@ -304,7 +304,7 @@ export function regionDuplicateMarks(
 }
 
 /** The next basic-region cleanup: the first filled cell (in grid order) whose value
- * still appears as a live pencil mark in one of its uniqueness regions. Generalises
+ * still appears as a live pencil mark in one of its uniqueness regions. Generalizes
  * the per-game `basicLatinStrike` (row+col) / `basicRegionStrike`
  * (row+col+block+diag) to a single scan over `regionsOf` — the basic-region opening
  * a given or auto-pencil-off placement leaves behind (docs/games/hints.md § "Persist, populate, and the moves"). Returns
@@ -338,7 +338,7 @@ export function findRegionDuplicate(
 }
 
 /** The whole-board "obvious candidate" strikes for the adaptive mark-all cleanup:
- * for every empty cell, each pencilled value that already sits as a *placed* value
+ * for every empty cell, each penciled value that already sits as a *placed* value
  * in one of that cell's uniqueness regions (per `regionsOf`). "Obvious" is always
  * judged against a placed value, never another pencil mark, so the result is a pure
  * function of the placed grid and pressing repeatedly converges (design D2).
@@ -385,13 +385,13 @@ export function obviousCandidateMarks(
 
 /** Narration for the populate opener — shared verbatim across the candidate
  * games modulo the game's own noun ("number", "height", …). Undead's opener
- * ("pencilling every monster into…") is structurally different and stays
+ * ("penciling every monster into…") is structurally different and stays
  * game-local. */
 export function populateText(noun: string, cell = "cell"): string {
   return `Start by pencilling in every candidate ${noun} in each empty ${cell}, so the eliminations that follow have something to cross out.`;
 }
 
-/** Narration for the obvious-cleanup step, parameterised by the game's noun,
+/** Narration for the obvious-cleanup step, parameterized by the game's noun,
  * its placement verb ("standing", "placed"), its region phrase ("row or
  * column", "row, column or block") — and what it calls a board position, which
  * defaults to "cell" but is Salad's "square" (see {@link populateText}: the two
@@ -408,7 +408,7 @@ export function cleanObviousText(
 
 /** The populate/mark-all opener step. It deliberately declares **no board
  * marks** — the banner narration is the whole display, and the cross-game
- * guards (`hint-overlay.test.ts`, `hint-quality.test.ts`) recognise exactly
+ * guards (`hint-overlay.test.ts`, `hint-quality.test.ts`) recognize exactly
  * this shape as the one step allowed to paint nothing. Building it here keeps
  * that contract in one place. */
 export function populateStep<M, H>(move: M, explanation: string): HintStep<M, H> {
@@ -554,7 +554,7 @@ function adapterOf<M>(adapter?: CandidateMoveAdapter<M>): CandidateMoveAdapter<M
 
 /** Emit the one-shot "clear the obvious candidates" step into a candidate-
  * elimination hint plan — the bulk equivalent of the adaptive Mark-all second
- * press. Strikes every {@link obviousCandidateMarks} (each pencilled value already
+ * press. Strikes every {@link obviousCandidateMarks} (each penciled value already
  * placed in one of the cell's `regionsOf` regions) as one `pencilStrike`, applies
  * the marks to the working `pencil`, and pushes the step. The step is flagged
  * `continuesPrevious` when it directly follows the populate fill, so "fill, then

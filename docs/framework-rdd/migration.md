@@ -39,7 +39,7 @@ incremental and abortable.
    than what the playbook would have produced?", answered on a real game.
    Numgame is the second data point. Given the dozens-of-new-games ambition
    (see the README), greenfield-first is also simply the value stream.
-2. **The conformance suite over the registry**, replacing the hand-enrolment
+2. **The conformance suite over the registry**, replacing the hand-enrollment
    lists for framework games; non-framework games keep today's guards.
 3. **Re-expression exemplars, one per family, opt-in** — one Latin game
    (Towers), one edge game (Palisade), one planner game (Sixteen), one
@@ -57,7 +57,7 @@ incremental and abortable.
    change by 57), then proceeds family by family, mechanical by that point.
    A handful of games (Untangle, Cube) adopt the *definition* while keeping
    bespoke input/render hatches — the hatches are part of the framework,
-   and even those games gain conformance enrolment.
+   and even those games gain conformance enrollment.
 
    Two rules make 57 re-expressions tractable without diluting the
    acceptance doctrine:
@@ -67,7 +67,7 @@ incremental and abortable.
      byte-clean, render snapshots untouched — is machine-provably invisible
      and gets batched spot acceptance; one that re-baselines even a single
      snapshot takes the full owner-acceptance gate. The scarce resource is
-     owner time, not AI labour, and this spends it only where behaviour
+     owner time, not AI labor, and this spends it only where behavior
      could have moved.
    - **A capability-manifest diff per game.** The characteristic sweep risk
      is silent capability loss (the repo's known silent-shrink shape at
@@ -85,9 +85,9 @@ incremental and abortable.
   wording assertions pass unchanged, byte-for-byte, or the re-expression is
   wrong. (An exemplar hint never loses a word to an abstraction — the rule
   that has already survived eleven Latin games survives this too.)
-- **Render output is stable where behaviour is.** Tier-2.5 snapshots move
+- **Render output is stable where behavior is.** Tier-2.5 snapshots move
   only where a change is *intended*; the mechanical review rule from the
-  colour work (every changed snapshot line is explainable by the declared
+  color work (every changed snapshot line is explainable by the declared
   change) applies to each adoption diff.
 - **No approval-free framework-scale pivots.** Each family exemplar is its
   own openspec change with owner acceptance; the scene-graph postmortem's

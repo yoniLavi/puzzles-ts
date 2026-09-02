@@ -1,5 +1,5 @@
 /**
- * A thin SVG serialiser of a captured {@link DrawOp} record — the
+ * A thin SVG serializer of a captured {@link DrawOp} record — the
  * convenience view for the rare case an agent or human wants to *see*
  * the composited frame rather than read draw ops.
  *
@@ -23,7 +23,7 @@ interface SvgSize {
   h: number;
 }
 
-/** A palette index below 0 is upstream's "no colour" sentinel (e.g. an
+/** A palette index below 0 is upstream's "no color" sentinel (e.g. an
  * outline-less polygon); map it to SVG `none`. */
 const paint = (index: number, rgb: string): string => (index < 0 ? "none" : rgb);
 
@@ -54,7 +54,7 @@ function opToSvg(op: DrawOp): string {
   }
 }
 
-/** Serialise a draw record to a standalone SVG string. */
+/** Serialize a draw record to a standalone SVG string. */
 export function toSvg(ops: readonly DrawOp[], size: SvgSize): string {
   const body = ops
     .map(opToSvg)

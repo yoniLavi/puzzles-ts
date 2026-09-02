@@ -22,7 +22,7 @@
  * pass and the in-place adjacency swap during the DFS — decides *which boards
  * exist*, not whether the matching is correct. A matching's cardinality is
  * order-independent, so every assertion below is blind to it by construction,
- * and that is the right division of labour rather than a gap in it.
+ * and that is the right division of labor rather than a gap in it.
  *
  * `repo-layout` requires that split to be verified, not stated, so it was:
  * disabling the DFS adjacency swap (`if (rs && adjsizes[L] - j > 1)` → `false`)

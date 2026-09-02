@@ -12,7 +12,7 @@ import { newState, type TwiddleParams, type TwiddleState } from "./state.ts";
 
 interface Op {
   op: string;
-  colour?: number;
+  color?: number;
   outline?: number;
   x?: number;
   y?: number;
@@ -29,15 +29,15 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y }),
+      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y }),
     drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", colour: c }),
+      ops.push({ op: "drawLine", color: c }),
     drawPolygon: (p: { x: number; y: number }[], f: number, o: number) =>
-      ops.push({ op: "drawPolygon", colour: f, outline: o, x: p[0].x, y: p[0].y }),
+      ops.push({ op: "drawPolygon", color: f, outline: o, x: p[0].x, y: p[0].y }),
     drawCircle: (_p: unknown, _r: number, f: number) =>
-      ops.push({ op: "drawCircle", colour: f }),
+      ops.push({ op: "drawCircle", color: f }),
     drawText: (p: { x: number; y: number }, _o: unknown, c: number, text: string) =>
-      ops.push({ op: "drawText", colour: c, x: p.x, y: p.y, text }),
+      ops.push({ op: "drawText", color: c, x: p.x, y: p.y, text }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},
@@ -84,7 +84,7 @@ describe("Twiddle rendering", () => {
     expect(ops.some((o) => o.op === "drawRect" && o.x === 0 && o.y === 0)).toBe(true);
     // The two recessed-border bevels (highlight then lowlight) before tiles.
     const firstPolys = ops.filter((o) => o.op === "drawPolygon").slice(0, 2);
-    expect(firstPolys.map((o) => o.colour)).toEqual([COL_HIGHLIGHT, COL_LOWLIGHT]);
+    expect(firstPolys.map((o) => o.color)).toEqual([COL_HIGHLIGHT, COL_LOWLIGHT]);
     // One number per cell.
     const numbers = ops.filter((o) => o.op === "drawText").map((o) => o.text);
     expect(numbers.length).toBe(9);
@@ -107,9 +107,9 @@ describe("Twiddle rendering", () => {
     // Rotation clips the block region per tile.
     expect(ops.some((o) => o.op === "clip")).toBe(true);
 
-    // "1" sits at cell (0,1) in the rotated state; its *static* centre is
+    // "1" sits at cell (0,1) in the rotated state; its *static* center is
     // coord(0)+ts/2 = 48, coord(1)+ts/2 = 96. Mid-rotation it is rotated
-    // about the block centre, so it is drawn away from (48, 96).
+    // about the block center, so it is drawn away from (48, 96).
     const moving = ops.find((o) => o.op === "drawText" && o.text === "1");
     expect(moving).toBeDefined();
     expect(moving?.x === 48 && moving?.y === 96).toBe(false);
@@ -137,8 +137,8 @@ describe("Twiddle rendering", () => {
     const { dr, ops } = recordingDrawing();
     // flashTime within the first frame → COL_HIGHLIGHT background.
     redraw(dr, ds, null, state, 0, UI, 0, 0.05);
-    // A tile centre is repainted with the flash background colour.
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_HIGHLIGHT)).toBe(
+    // A tile center is repainted with the flash background color.
+    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_HIGHLIGHT)).toBe(
       true,
     );
   });
@@ -149,8 +149,8 @@ describe("Twiddle rendering", () => {
     redraw(recordingDrawing().dr, ds, null, state, 0, UI, 0, 0);
 
     const { dr, ops } = recordingDrawing();
-    // Cursor visible at origin (0,0): the region's edge bevels recolour
-    // their *outline* to the cursor colours (COL_HIGHCURSOR=6 /
+    // Cursor visible at origin (0,0): the region's edge bevels recolor
+    // their *outline* to the cursor colors (COL_HIGHCURSOR=6 /
     // COL_LOWCURSOR=7).
     redraw(dr, ds, null, state, 0, { cursor: newCursor(0, 0, true) }, 0, 0);
     expect(

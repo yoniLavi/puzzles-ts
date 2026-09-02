@@ -1,8 +1,8 @@
-# Engine catalogue
+# Engine catalog
 
 The shared-helper reference for game work: what lives in
 [`src/engine/`](../../src/engine/), when to reach for each piece, and the traps
-that have already cost real debugging. Organised by category; each entry is
+that have already cost real debugging. Organized by category; each entry is
 deliberately short — **the module's own header comment is the authoritative
 documentation**, and the entry's job is to make sure you know the module exists
 before you re-roll it. Where a lesson below is not yet in the module's header,
@@ -40,7 +40,7 @@ API.
 the two families.** The engine is deliberately a flat namespace of independent
 helpers, because a grouping that has to be argued for gets re-litigated at
 every addition and files then land wherever the last argument ended. Exactly
-two subdirectories exist — `engine/grid/` and `engine/colour/` — and both earn
+two subdirectories exist — `engine/grid/` and `engine/color/` — and both earn
 it by the same property: their members have no readership apart from each
 other. The test for a third: *would a reader looking for this file know to
 look there without being told?* If the answer needs the rationale explained,
@@ -97,7 +97,7 @@ the sharing test worth reusing anywhere: not "are these the same text" but
 holds its two dots + two faces; a null face is the infinite exterior; faces and
 dots carry clockwise rings), all 18 tilings (14 periodic + Penrose P2/P3, hats,
 spectres under `tilings/`), plus `gridComputeSize`, `gridValidateParams`,
-`gridNearestEdge`, `gridFindIncentre`, `gridTrimVigorously` and the
+`gridNearestEdge`, `gridFindIncenter`, `gridTrimVigorously` and the
 `gridNewDesc`/`gridValidateDesc` round-trip. **Import the barrel, not the
 parts.** Consumers: Loopy (all 18 tilings), Pearl.
 
@@ -116,20 +116,20 @@ Four rules a new tiling must respect, each already paid for in debugging:
   gives `-0`, which passes `===` and stringifies to `"0"` yet fails
   `Object.is` — a structurally perfect grid that fails a structural
   differential. It bit the floret tiling; expect it wherever basis vectors are
-  signed. Normalise once at the exact-arithmetic → pixels boundary (the
+  signed. Normalize once at the exact-arithmetic → pixels boundary (the
   aperiodic four) rather than scattering guards.
 - **Emission order is observable.** Dot indices come from first-encounter
-  order, so reordering face emission within a cell is a behaviour change even
+  order, so reordering face emission within a cell is a behavior change even
   when the geometry is identical. Verify with the index-exact differentials
   (`grid-differential.test.ts`, `grid-aperiodic-differential.test.ts`), never
   by eye.
 - **A random draw is an observable side effect, not a computation.** The
   aperiodic tilings call `random_upto` *unconditionally even when the
   candidate list holds exactly one entry*. Skipping the draw when `n === 1`
-  desynchronises the stream and yields a different, entirely plausible-looking
+  desynchronizes the stream and yields a different, entirely plausible-looking
   tiling with nothing asserting. The same rule forbids "fixing" weight
   constants that look wrong (hat's `starting_hats` uses `PROB_P` for its
-  `TT_T` entry): they are what the reference drew against. This generalises to
+  `TT_T` entry): they are what the reference drew against. This generalizes to
   **any** generator that must reproduce a seed.
 
 ### `geometry.ts` — cell ↔ pixel
@@ -186,7 +186,7 @@ Consumers: Flip, Pegs, Netslide. Three rules:
 measured at **35% of total generation time** (most candidates are duplicates
 whose key is built and thrown away); a 32-bit FNV-1a hash bucketed to an exact
 byte comparison kept `memcmp` semantics with no per-candidate allocation and
-made the generator 3.4× faster. This is the safest place to optimise: the
+made the generator 3.4× faster. This is the safest place to optimize: the
 byte-match differential proves the substitution changed nothing. Exemplar:
 `hashOf`/`sameBoard` in [`slide/solver.ts`](../../src/games/slide/solver.ts).
 
@@ -222,15 +222,15 @@ connected ominoes. RNG-faithful; byte-match critical. Consumers: Solo
 ### `laydomino.ts` — random domino tiling
 
 `dominoLayout(w, h, rs)` (upstream `laydomino.c`): a random 2×1 tiling.
-RNG-faithful (candidate-list shuffle + per-BFS-node neighbour shuffle
+RNG-faithful (candidate-list shuffle + per-BFS-node neighbor shuffle
 reproduce the reference draws). Consumers: Magnets, Dominosa.
 
 ### `symmetric-blacks.ts` — symmetric black-square placement
 
 `placeSymmetricBlacks` (upstream `set_blacks`) plus the `SYMM_*` enum and
 Custom-dialog labels. Byte-match critical (region sizing, rejection-sampling
-draw order, symmetry copy order, the `SYMM_ROT4` odd-centre `<=`). Callback-
-parameterised over the caller's board; the caller clears its board first.
+draw order, symmetry copy order, the `SYMM_ROT4` odd-center `<=`). Callback-
+parameterized over the caller's board; the caller clears its board first.
 Consumers: Light Up, Sticks — the extraction was proven byte-safe by Light
 Up's differential staying green through it.
 
@@ -261,7 +261,7 @@ answer. Consumers: Guess, Black Box, Mines, Mosaic.
 `latinSolver` (candidate cube, generic deductions, guess-and-verify
 recursion), `latinGenerate`/`latinGenerateRect`, and the RNG-faithful
 bipartite `matching` (Hopcroft–Karp) — which is reusable outside the family:
-Tents drives it both ways (`rs` for randomised matchings in generation,
+Tents drives it both ways (`rs` for randomized matchings in generation,
 `rs`-less for a deterministic existence check). Usage discipline — the cube
 index space, `usersolvers`, the `seed` hook, `cubeOut`, the family's three
 generator shapes — lives in
@@ -283,14 +283,14 @@ wrapped around it is per-game and often decides which puzzles exist. See
 
 A cooperative budget ticked once per fixpoint iteration on the
 hint/recording path only; converts a progress-without-change regression from
-an in-call hang into an immediate labelled failure. Generators run unguarded
+an in-call hang into an immediate labeled failure. Generators run unguarded
 (and byte-for-byte unchanged).
 
 ### `difficulty.ts` — the cross-game difficulty contract
 
 `DifficultyContract`: what a tiered game's tiers are, `tierOf`/`withTier`
 accessors (eight games don't hold a number in their params at all), and a
-discriminated solve-at-cap verdict. Declaring it enrols the game in the shared
+discriminated solve-at-cap verdict. Declaring it enrolls the game in the shared
 guards (`difficulty-contract.test.ts`) — above all **cap-monotonicity**, which
 Boats shipped without, silently breaking Check & Save on every Easy board.
 Details: [`mechanics.md`](./mechanics.md) (declaring) and
@@ -400,7 +400,7 @@ dance.** Entry points by shape: `pack` (a hint step's highlights), `packCells`
 `drawRecessedBorder` (the two-pentagon playfield bevel), `drawRectOutline`
 (upstream `draw_rect_outline`), `drawRectCorners` (the four corner brackets
 marking a keyboard cursor — promoted from **seven** byte-identical copies; if
-you are typing eight `drawLine` calls around a centre point, it exists).
+you are typing eight `drawLine` calls around a center point, it exists).
 Extractions of drawing code are cheap to verify: emitted op order unchanged ⇒
 no render snapshot moves.
 
@@ -421,7 +421,7 @@ save envelope's flag is part of the same vocabulary.
 who uses Solve, unmakes part of it and finishes by hand has won, and gets the
 celebration. Reaching that case needs `completed` recomputed each move rather
 than latched; almost every game latches it, so for them this is exactly the
-older, stricter behaviour. Palisade and Separate recompute — the rule came from
+older, stricter behavior. Palisade and Separate recompute — the rule came from
 Palisade, which had it right first.
 
 ### `pencil-indicator.ts` — the pencil-mode glyph
@@ -432,7 +432,7 @@ answers, in preference order:**
 
 1. **A high tile-flag bit on a cache-safe cell** — one the game's own draw
    never overpaints (no piece/animation overlap) *and* that is no cell's
-   neighbour in the diff cache, so the per-tile cache repaints it on toggle
+   neighbor in the diff cache, so the per-tile cache repaints it on toggle
    for free (Towers uses the top-right clue-ring corner — its 3D towers only
    ever protrude up-left).
 2. **An explicit end-of-redraw repaint** when no cache-safe cell exists: fill
@@ -443,7 +443,7 @@ answers, in preference order:**
    board — keep the grid's own geometry untouched when you do, so `fromCoord`
    and the width stay exactly as before and only the height changes.
 
-The glyph's body colour is a palette index appended past the game's C-era
+The glyph's body color is a palette index appended past the game's C-era
 enum — safe only when the game has no dark-mode `paletteOverrides` touching
 that index (check `augmentation.ts`).
 
@@ -454,12 +454,12 @@ constraints (a game without the field fails to compile). `auto-pencil` is
 deliberately *not* unconditioned — its label names per-game regions, so the
 sentence is passed in.
 
-### `colour/` — the palette
+### `color/` — the palette
 
-Three layers: `colours.ts` (the twelve named colours), `palette.ts` (the
+Three layers: `colors.ts` (the twelve named colors), `palette.ts` (the
 meanings — your default import), `palette-games.ts` (board-relative per-game
-colours), plus `colour-token.ts` (declaration/combination mechanism) and
-`colour-mkhighlight.ts` (upstream `game_mkhighlight` bevel derivation, with
+colors), plus `color-token.ts` (declaration/combination mechanism) and
+`color-mkhighlight.ts` (upstream `game_mkhighlight` bevel derivation, with
 the epsilon and near-extreme fixes the per-game copies shared). The
 meaning-first discipline: [`rendering.md`](./rendering.md) § "The palette: three layers, meaning first".
 
@@ -481,7 +481,7 @@ undo/redo/timer/hint+mistake lifecycles — games depend on the interface, never
 the midend); `registry.ts` (`puzzleId` → implementation;
 `catalog-registry.test.ts` holds it and the catalog together both ways);
 `save.ts` (the versioned-JSON move-log save envelope); `types.ts` (the shared
-vocabulary: `Colour`, `Point`, `Rect`, config descriptions, change
+vocabulary: `Color`, `Point`, `Rect`, config descriptions, change
 notifications); `index.ts` (the public barrel); `fake-game.ts` (the midend
 test suite's minimal game).
 
@@ -491,7 +491,7 @@ test suite's minimal game).
 `recording-drawing.ts` + `render-scenario.ts` + `svg-drawing.ts` (tier 2.5),
 `differential.ts` (`describeDescDifferential`, the byte-for-byte desc shape +
 the one statement that fixtures are frozen and unregenerable),
-`hint-games.ts` (**the enrolment list**: one line here enrols a new hinting
+`hint-games.ts` (**the enrollment list**: one line here enrolls a new hinting
 game in every cross-game hint guard at once), `slow.ts` (the
 once-per-refactoring-round expensive tier), and two deliberately-independent
 yardsticks (`oklch.ts`, `polygon-yardstick.ts` — each exists so a test cannot

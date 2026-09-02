@@ -51,12 +51,12 @@ the game, with all squares initially blank.
 
 The port SHALL implement the upstream solver with its exact deductive power
 at each difficulty. At Easy: the clue-point counting deduction (a clue whose
-remaining lines equal zero or its remaining undecided neighbours fills all
+remaining lines equal zero or its remaining undecided neighbors fills all
 of them) and immediate loop avoidance (a square whose one orientation would
 close a loop takes the other). At Hard, additionally: single-pair
 equivalence tracking around clue points (two adjacent undecided
 equivalent squares count jointly as one line; a 2-clue with two undecided
-adjacent neighbours marks them equivalent), slash-value propagation through
+adjacent neighbors marks them equivalent), slash-value propagation through
 equivalence classes, dead-end avoidance (never connect two non-border
 vertex groups that each have at most one remaining exit), and the v-shape
 bitmap deductions (placed slashes, 1-clues and 3-clues rule out v-shapes;
@@ -167,27 +167,27 @@ empty list when the board is not uniquely solvable.
 The game SHALL expose via the `Game.prefs` hook: `left-button` (choices —
 "Left \, right /" default, "Left /, right \") mapping to the click-cycle
 swap, and `fade-grounded` (boolean, default off) fading diagonals in the
-border-connected component to a dimmed colour so unfixable loop candidates
+border-connected component to a dimmed color so unfixable loop candidates
 stand out.
 
 #### Scenario: Fade-grounded dims border-connected diagonals
 
 - **WHEN** `fade-grounded` is enabled and a diagonal is connected to the
   border
-- **THEN** it renders in the grounded colour instead of its slash colour
+- **THEN** it renders in the grounded color instead of its slash color
 
 ### Requirement: Slant renders to full parity with the C build
 
-`redraw` SHALL render: chessboard-coloured thick diagonals (colour parity
-`(x^y)&1`), grid lines, corner dots where neighbouring squares' diagonals
-meet the tile, clue circles with parity-coloured rings and ink numbers,
-red error colouring for loop-edge slashes (including their corner dots) and
+`redraw` SHALL render: chessboard-colored thick diagonals (color parity
+`(x^y)&1`), grid lines, corner dots where neighboring squares' diagonals
+meet the tile, clue circles with parity-colored rings and ink numbers,
+red error coloring for loop-edge slashes (including their corner dots) and
 unmet clue circles, a filled-square background tint, the cursor highlight,
 the grounded fade (per pref), and the upstream 3-phase completion flash.
 The drawstate SHALL diff a `(w+2) × (h+2)` packed `Int32Array` covering the
 border ring, with the findMistakes overlay carried in the diff key (a
 packed bit of the per-frame-rebuilt word). The palette SHALL be
-index-for-index with the C colour enum.
+index-for-index with the C color enum.
 
 #### Scenario: A mistake overlay repaints an unchanged tile
 
@@ -211,7 +211,7 @@ generator's solve path byte-identical (the byte-match differential unchanged).
 
 Each step SHALL name its technique and, for the glance-able techniques
 (clue-counting, loop avoidance, dead-end avoidance), meet the Palisade quality
-bar: lead with the recognisable indication, state why the move is forced,
+bar: lead with the recognizable indication, state why the move is forced,
 conclude in the necessity voice. One deduction firing = one journey; a clue
 firing that forces several squares SHALL be one multi-leg journey
 (`continuesPrevious` legs), not several independent hints. The equivalence
@@ -219,15 +219,15 @@ technique (a square locked to the same slant as an already-filled square) MAY
 use the honest non-local "locked-slant" narration — naming the technique and
 citing the anchor square without reconstructing the full v-shape/pairing chain
 — since it is not a single glance-able step and Slant has no on-board mark to
-externalise the chain. No displayed step SHALL be a generic, un-narrated
+externalize the chain. No displayed step SHALL be a generic, un-narrated
 fallback: the plan draws only on the four move-producing techniques of the
 ported solver.
 
 #### Scenario: A clue-counting firing is explained and grouped
 
 - **WHEN** the plan reaches a clue whose remaining lines equal its remaining
-  empty neighbours (or is already satisfied)
-- **THEN** one journey fills all forced neighbours, its opening leg naming the
+  empty neighbors (or is already satisfied)
+- **THEN** one journey fills all forced neighbors, its opening leg naming the
   clue and why the count forces the slant, concluding with a necessity modal,
   and continuation legs flagged `continuesPrevious`
 
@@ -254,18 +254,18 @@ ported solver.
 The displayed hint SHALL highlight, not perform: target square(s) filled
 `COL_HINT` blue with **no slash preview** (the diagonal is drawn only once
 auto-hint applies the move), the deduction's evidence — the clue's
-neighbourhood, the loop chain, the trapped components, or the locked
+neighborhood, the loop chain, the trapped components, or the locked
 equivalence class, computed against the board as that step fires — shaded
-`COL_HINT_CELL`, the driving clue's digit recoloured `COL_HINT`, and a cited
-filled anchor ringed `COL_HINT_REF`. Hint colours SHALL be appended past the
-upstream colour enum (the dark-mode overrides target other indices), and every
+`COL_HINT_CELL`, the driving clue's digit recolored `COL_HINT`, and a cited
+filled anchor ringed `COL_HINT_REF`. Hint colors SHALL be appended past the
+upstream color enum (the dark-mode overrides target other indices), and every
 hint bit SHALL participate in the per-tile render-cache diff key.
 
 #### Scenario: Evidence is visible as an area
 
 - **WHEN** a clue-counting step is displayed
 - **THEN** the target square(s) render `COL_HINT` with no slash drawn, the
-  clue's digit recolours `COL_HINT`, and the reasoned neighbourhood renders
+  clue's digit recolors `COL_HINT`, and the reasoned neighborhood renders
   `COL_HINT_CELL`
 
 #### Scenario: Every step carries visible evidence

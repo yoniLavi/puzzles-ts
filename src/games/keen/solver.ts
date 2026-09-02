@@ -193,7 +193,7 @@ function solverClueCandidate(ctx: KeenCtx, diff: number, box: number): void {
 
 /** Iterate every cage, enumerate its consistent digit layouts, accumulate into
  * `iscratch`, then prune the cube. Faithful to `solver_common`. */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the shared latin rung specialised for Keen's arithmetic cages.
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the shared latin rung specialized for Keen's arithmetic cages.
 function solverCommon(solver: LatinSolver, ctx: KeenCtx, diff: number): number {
   const w = ctx.w;
   const cube = solver.cube;
@@ -221,7 +221,7 @@ function solverCommon(solver: LatinSolver, ctx: KeenCtx, diff: number): number {
       return cageCells;
     };
 
-    // Initialise iscratch for this cage.
+    // Initialize iscratch for this cage.
     if (diff === DIFF_HARD) {
       for (let i = 0; i < 2 * w; i++) iscratch[i] = (1 << (w + 1)) - (1 << 1);
     } else {

@@ -1,168 +1,125 @@
 # Tasks — adopt-american-spelling
 
 Phase 0 is sequencing. Phase 1 is one mechanical sweep, verified by shape, in
-one commit. Phase 2 is player-visible text and waits on the owner (design D5).
+one commit. Phase 2 is player-visible text (design D5), a second commit.
 
 ## 0. Sequence
 
-- [ ] 0.1 Wait for the in-flight work on `src/engine/colour/`,
-      `src/games/{loopy,palisade,separate}`, `src/puzzle/augmentation.ts` and
-      `docs/games/rendering.md` to be committed. Start from a clean
-      `git status`; the sweep is one commit (design D8).
-- [ ] 0.2 Record the baseline the shape checks compare against:
-      `git rev-parse HEAD`, `sha256sum licences/*` (the two notices' bytes),
-      `git ls-files '**/__snapshots__/*.snap' | wc -l` (must be 65 — a
-      different number means a snapshot was added or dropped since this was
-      scoped, and the D4 file-count check needs the new figure).
+- [x] 0.1 The in-flight colour work landed as `58fdb336` ("one meaning, one
+      role across all 57 games"); the sweep started from a clean `git status`
+      at that commit.
+- [x] 0.2 Baseline: HEAD `58fdb336`; both notices hash
+      `43c5b4a4304e7f9d162cda91028ea83f640cd56341744057b9aeed3f10ae55ab`;
+      65 snapshot files.
 
 ## 1. The table and the tooling
 
-- [ ] 1.1 Write the stem table from design D3 as one importable module, and
-      settle its home so that a gate test under `src/` and a node script under
-      `scripts/checks/` both read it without crossing `module-layering.test.ts`
-      (a `src/`-root `.ts` module imported by both, with the script run via the
-      same loader the other `scripts/` node tooling uses, is the default;
-      record what was chosen here).
-- [ ] 1.2 `scripts/checks/spelling-fold.mjs`: stdin → stdout, applying the
-      table case-preservingly. This is the fold every shape proof below uses.
-- [ ] 1.3 The sweep itself: a script (kept in the scratchpad, not committed —
-      it runs once) that applies the table to identifiers and prose in the
-      swept areas of design D2, **skipping** the quotation allowances of
-      design D6 and the excluded paths. A whole-word rule is wrong here
-      (`ncolours`, `bgcolour`, `colourToOKLCH`); a substring rule is right,
-      which is why the table must not contain a stem that is also a fragment
-      of an American word.
-- [ ] 1.4 `src/spelling.test.ts` (design D6): scans the swept areas for any
-      table stem, reports file and line for every hit not covered by a
-      quotation allowance, asserts the scanned-file count is above a floor.
-- [ ] 1.5 **Prove the guard fails.** Plant `colour` in a comment in
-      `src/engine/midend.ts`, run `npx vitest run src/spelling.test.ts`, see
-      red, revert. Then plant `game_colours` in a file the allowance does not
-      name, see red, revert — an allowance must be per-file or it covers
-      everything.
+- [x] 1.1 `scripts/checks/spelling-table.mjs`. Nothing under `src/` — the
+      guard is a node script (design D6), so a `src/` module was never needed
+      and `module-layering.test.ts` is not crossed.
+- [x] 1.2 `scripts/checks/spelling-fold.mjs`: stdin → stdout.
+- [x] 1.3 The sweep (scratchpad, not committed): table over code and prose;
+      string literals in JS/TS untouched except identifier-shaped ones, path
+      fragments and `{kw}` placeholders (design D10); archive ids and per-file
+      quotations masked; `.snap` files by the one key substitution.
+- [x] 1.4 `scripts/checks/spelling.mjs` — the guard, in the gate's fast prefix
+      (not `src/spelling.test.ts`: design D6 records why). 964 files scanned,
+      floor 900, ~1 s.
+- [x] 1.5 **Proved to fail.** `colour` and `game_colours` planted in a comment
+      in `src/engine/midend.ts`: reported as `midend.ts:4: colour` and
+      `midend.ts:4: game_colours` (the second in a file the allowance does not
+      list). Reverted. As a side effect the same run found the `CLAUDE.md`
+      symlink being scanned as a second `AGENTS.md`; the guard now skips
+      symlinks.
 
 ## 2. Renames (every one a `git mv`)
 
-- [ ] 2.1 `src/engine/colour/` → `src/engine/color/`; inside it
-      `colours.ts` → `colors.ts`, `colours.test.ts`, `colour-token.ts` →
-      `color-token.ts`, `colour-mkhighlight.ts` → `color-mkhighlight.ts` and
-      its test. `palette*.ts` keep their names.
-- [ ] 2.2 `src/engine/grid/grid-incentre.test.ts` → `grid-incenter.test.ts`.
-- [ ] 2.3 `scripts/checks/colour-{inventory,dark-check,collide}.test.ts` →
-      `color-…`, and their three entries in
-      `scripts/checks/diff.vitest.config.mts`.
-- [ ] 2.4 `metrics/colour-inventory.md` → `metrics/color-inventory.md`, by
-      regenerating it from the renamed test rather than editing it — it is
-      generated output, and its header says so.
-- [ ] 2.5 `licences/` → `licenses/`; `sgt-puzzles-LICENCE` →
-      `sgt-puzzles-LICENSE`, `puzzles-unreleased-LICENCE` →
-      `puzzles-unreleased-LICENSE`; `licences/README.md` moves with them and
-      its prose is swept. Repoint the two `?raw` imports in
-      `src/dialogs/about-dialog.ts`, the assertions in `about-dialog.test.ts`,
-      and the links in `README.md`, `CREDITS.md`, `LICENSE.md`.
-      **`sha256sum licenses/*LICENSE` must equal the 0.2 figures** — the
-      contents are someone else's words.
-- [ ] 2.6 Every `import` that named a moved file resolves: `npm run typecheck`
-      green.
+- [x] 2.1 `src/engine/colour/` → `src/engine/color/`, with `colors.ts`,
+      `colors.test.ts`, `color-token.ts`, `color-mkhighlight.ts` and its test.
+- [x] 2.2 `grid-incentre.test.ts` → `grid-incenter.test.ts`.
+- [x] 2.3 `scripts/checks/color-{inventory,dark-check,collide}.test.ts`, and
+      `diff.vitest.config.mts`.
+- [x] 2.4 `metrics/color-inventory.md`, regenerated from the renamed test
+      (`npx vitest run -c scripts/checks/diff.vitest.config.mts color-inventory`).
+      Its content also caught up with `58fdb336`, which had not regenerated it.
+- [x] 2.5 `licenses/`, `sgt-puzzles-LICENSE`, `puzzles-unreleased-LICENSE`;
+      `about-dialog.ts`'s two `?raw` imports, its test, `README.md`,
+      `CREDITS.md`, `LICENSE.md` repointed. **Hashes after equal 0.2.**
+- [x] 2.6 `npm run typecheck` green (both projects).
 
 ## 3. The sweep
 
-- [ ] 3.1 Run 1.3 over `src/` (all file types), `scripts/`, `vite-plugins/`,
-      `templates/`, `docs/`, `AGENTS.md`, `README.md`, `CREDITS.md`,
-      `LICENSE.md`, `openspec/specs/`, and the pending
-      `openspec/changes/*/` directories **except** this change's own
-      directory and `archive/` (`repo-layout`: a path move sweeps the pending
-      changes that name it — `claim-project-authorship` names `licences/`).
-- [ ] 3.2 The render recorder: `colour` → `color` on the op record in
-      `src/engine/testing/recording-drawing.ts` and every test that reads
-      `op.colour` (the sweep does this; this task is the reminder that the key
-      is load-bearing for D4).
-- [ ] 3.3 The flood fixture: rename the `"colours"` key (twelve occurrences)
-      in `src/games/flood/__fixtures__/flood-c-reference.json` and its reader;
-      confirm by diff that only those twelve lines changed in the file.
-- [ ] 3.4 Re-anchor the 11 probe cases in `scripts/feedback-probe-cases.mjs`
-      whose quoted lines carry a British stem (they are the anchors' *text*,
-      so the sweep respells them correctly by construction — this task is to
-      run `npm run probe -- --verify` and confirm all 193 still locate).
-- [ ] 3.5 `AGENTS.md` "Code conventions" gains the rule in the present tense:
-      *American English spelling in identifiers, paths and prose; the archive,
-      the postmortems and quoted upstream symbols keep theirs;
-      `src/spelling.test.ts` is the guard.* Its own text is swept
-      (`engine/colour/`, `licences/`, `colour-token.ts`, and the prose).
-- [ ] 3.6a Immediately after 3.1 has respelled `openspec/specs/`, respell the
-      four scenario headings in this change's own deltas that were left
-      British on purpose — `specs/pegs/spec.md` ("Pegs colours on a
-      near-white host") and the three "incentre" scenarios in
-      `specs/grid/spec.md` — and re-run `npx openspec validate
-      adopt-american-spelling --strict`. They are British today because the
-      validator matches scenario headings against the live spec verbatim,
-      for RENAMED requirements too (design D7).
-- [ ] 3.6 The residue pass (design D3): scan the swept areas for `our\b`,
-      `ise[sd]?\b`, `isation`, `yse[sd]?\b`, `tre\b` stems the table did not
-      name, read the list, and add every British one **to the table** (then
-      re-run 3.1), never fix it by hand.
+- [x] 3.1 713 files rewritten on the first pass (26,410 lines, insertions equal
+      to deletions), 23 more once identifier-shaped literals joined. Two files
+      the sweep should not have touched — the upstream C under
+      `openspec/changes/add-{numgame,path}-ts-port/reference/` — were reverted
+      and are excluded by the guard (`\.[ch]$`).
+- [x] 3.2 The recorder's `colour` key and `colour#<index>` label are `color`.
+- [x] 3.3 The flood fixture's twelve `"colours"` keys and its reader.
+- [x] 3.4 `node scripts/feedback-probe.mjs --verify`: 175 cases across 18
+      modules, every anchor applies. One anchor quotes a narration
+      (`pencilling`) that phase 1 leaves British; put back by hand.
+- [x] 3.5 `AGENTS.md` "Code conventions" gains the rule; "Git" names the new
+      gate step; `docs/games/README.md` "Close out" and `.husky/pre-commit`
+      likewise.
+- [x] 3.6a The four scenario headings respelled after the sweep;
+      `openspec validate --all --strict` green (76 items).
+- [x] 3.6 Residue pass: every British word left in the swept areas sits in a
+      string literal (phase 2) and is already in the table; no stem was added.
+      `analyses` (plural noun) is deliberately not folded; `spectre` is a proper
+      noun (the tiling).
 
 ## 4. Snapshots
 
-- [ ] 4.1 `npx vitest run -u` over the files that own the 65 snapshot files.
-- [ ] 4.2 Run the D4 shape proof: every changed snapshot line folds to its
-      old line under the one key substitution, and exactly 65 files changed.
-      A line that does not fold is a render difference and is investigated
-      before anything else in this change proceeds.
+- [x] 4.1 Not regenerated with `vitest -u`: the key substitution was applied
+      directly to the 65 files, which makes 4.2 true by construction and leaves
+      the gate's `vitest run` to prove the recorded ops still match.
+- [x] 4.2 `git diff --stat -- '**/__snapshots__/*.snap'`: 65 files, 19,547
+      insertions and deletions; the folded diff under `sort | uniq -u` is empty.
 
 ## 5. Proofs, then the gate
 
-- [ ] 5.1 `node scripts/check-rename-shape.mjs --kind any --moved engine/colour/
-      --moved engine/color/ --moved licences/ --moved licenses/
-      --moved incentre --moved colour-inventory` — the out-of-scope report
-      must be empty.
-- [ ] 5.2 The whole-diff shape proof, source and docs: for every changed
-      non-snapshot, non-renamed-only file, removed lines folded through 1.2
-      equal added lines folded through 1.2 (`sort | uniq -u` prints nothing).
-      Read every exception; the expected exceptions are exactly the deltas'
-      subjects, `AGENTS.md`'s new bullet, the new test, and the fold script.
-- [ ] 5.3 The `openspec/specs/` shape proof from design D7, separately, so a
-      spec change that is not a respelling is seen on its own.
-- [ ] 5.4 `npx openspec validate --all --strict` green with the deltas below.
-- [ ] 5.5 `npm run gate` — tsc, biome, the probe anchor check, vitest (which
-      now includes `src/spelling.test.ts`), `vite build` (which is what
-      proves the two `?raw` imports resolve).
+- [x] 5.1 `check-rename-shape.mjs --kind any` with the moved fragments: 259
+      files changed without mentioning a moved path — all `.md`/`.ts`/`.mjs`/
+      `.sh`/`.svg`/`.yml` carrying a word like `behaviour` — plus the two `.c`
+      files, which were the finding (3.1).
+- [x] 5.2 Whole-diff fold proof, run **before** biome: empty. After
+      `biome check --write` (38 files), 174 lines differ, every one a line
+      biome joined or split because an identifier got shorter.
+- [x] 5.3 `openspec/specs/` fold proof: empty.
+- [x] 5.4 `npx openspec validate --all --strict` green.
+- [x] 5.5 `npm run gate` — run by the commit hook. The first run failed 26
+      tests in 5 files, all one cause: regex literals had been folded as code
+      while the messages and narrations they match were left for phase 2.
+      Regex literals now sit on the string side of the seam (design D10); the
+      eight affected test files were re-run green before the second attempt.
 
 ## 6. Specs
 
-- [ ] 6.1 `repo-layout` — ADDED "Source, documentation and specs use American
-      English spelling" (the convention, the exclusions, the guard).
-- [ ] 6.2 `ts-engine` — RENAMED + MODIFIED the colour-mkhighlight helper
-      requirement; MODIFIED the full mkhighlight helper and the type-vocabulary
-      requirements.
-- [ ] 6.3 `grid` — RENAMED + MODIFIED "Face incentre for label placement".
-- [ ] 6.4 `pegs`, `licensing`, `ts-migration` — MODIFIED the requirement in
-      each that names a moved path.
-- [ ] 6.5 Confirm, after the archive, that the six modified requirements read
-      correctly in `openspec/specs/` and that no spec still says `colour`
-      outside a quotation: `npx vitest run src/spelling.test.ts`.
+- [x] 6.1 `repo-layout` — ADDED the convention; the guard is the gate script.
+- [x] 6.2 `ts-engine` — RENAMED + MODIFIED ×3.
+- [x] 6.3 `grid` — RENAMED + MODIFIED.
+- [x] 6.4 `pegs`, `licensing`, `ts-migration` — MODIFIED.
+- [x] 6.4a `build-pipeline` — MODIFIED the gate requirement: six checks, the
+      spelling guard in the fast prefix ahead of the documentation-only
+      shortcut, one added scenario.
+- [ ] 6.5 After the archive: the modified requirements read correctly and the
+      guard is green over `openspec/specs/`.
 
-## 7. Phase 2 — words a player reads (waits on the owner; design D5)
+## 7. Phase 2 — words a player reads (design D5, D10)
 
-- [ ] 7.1 Owner decision recorded here: American in player-facing prose — yes /
-      no. Recommendation: yes.
-- [ ] 7.2 Establish in code whether any config `kw` (`"colours"` in
-      `src/games/flood/index.ts` and `src/games/guess/index.ts`,
-      `"no-of-colours"` in `src/games/samegame/index.ts`) reaches IndexedDB, a
-      URL or a shared game ID. `src/store/db.ts` persists `EncodedParams`,
-      which suggests not; the sentence in `src/engine/game.ts` about presets
-      says otherwise for preset keywords. Read both consumers and state the
-      answer here with file pointers.
-- [ ] 7.3 If a `kw` is persisted: keep the old key, or migrate it, per the
-      owner — the label changes regardless. If none is: rename the three
-      `kw`s and the `{colours}` / `{no-of-colours}` interpolations in
-      `src/puzzle/augmentation.ts` together.
-- [ ] 7.4 Sweep `help/` (28 pages), `src/puzzle/catalog-data.ts` objectives
-      and descriptions, the config-item `name` labels, and the 69 string
-      literals in `src/` that carry a British word (validation messages,
-      preset labels, hint narrations). `src/help-coverage.test.ts` and the
-      hint narration tests catch a broken page or sentence.
-- [ ] 7.5 Add `help/` and the string literals to the guard's swept areas, so
-      the two phases end with one rule and one scan.
+- [x] 7.1 Decision: American in player-facing prose, per the D5 recommendation
+      and the acceptance rule — a player-visible change is committed and then
+      accepted by the owner, not held (owner acceptance is 7.6).
+- [x] 7.2 Answered in code (design D10): the three `kw`s are `ParamConfigItem`
+      keys that only round-trip the custom-params form; `Midend.prefValues`
+      and `src/store/settings.ts` persist `GamePref` kws, and params persist
+      as the encoded string. Not persisted.
+- [x] 7.3 `colours` (Flood, Guess) and the `{colours}` placeholders renamed in
+      phase 1 (identifier-shaped); `no-of-colours` with its label in phase 2.
+- [ ] 7.4 Sweep `help/`, the string literals in `src/` and `scripts/`, and the
+      test names whose snapshots key on them.
+- [ ] 7.5 Delete `spelling-strings.mjs` and the guard's string skip; drop
+      `help/` from the exclusions.
 - [ ] 7.6 Owner acceptance: read a help page, a catalog card, the Samegame
       custom dialog and a Map hint in the running app.

@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Pattern (Nonograms) port.
+ * Behavioral tests for the Pattern (Nonograms) port.
  * Tier 1 — params/desc codec, solver, findMistakes, moves, completion.
  * Tier 2.5 — a render scenario through a real Midend with a snapshot.
  */
@@ -80,7 +80,7 @@ describe("pattern desc codec", () => {
     expect(validateDesc({ w: 10, h: 10 }, desc)).toBeNull();
     // Too few line specifications.
     expect(validateDesc({ w: 5, h: 5 }, "1/2/3")).not.toBeNull();
-    // Unrecognised character.
+    // Unrecognized character.
     expect(validateDesc({ w: 2, h: 2 }, "1/2/!/1")).not.toBeNull();
     // A clue that cannot fit its line.
     expect(validateDesc({ w: 3, h: 3 }, "9/1/1/1/1/1")).not.toBeNull();
@@ -120,7 +120,7 @@ describe("pattern findMistakes", () => {
     const solved = applySolution(state, solution);
     expect(findMistakes(solved)).toEqual([]);
 
-    // Flip one cell to the wrong colour → exactly that cell is flagged.
+    // Flip one cell to the wrong color → exactly that cell is flagged.
     const wrong = solution[0] === GRID_FULL ? GRID_EMPTY : GRID_FULL;
     const dirty = executeMove(solved, {
       type: "fill",
@@ -317,7 +317,7 @@ describe("pattern render", () => {
     const ops = recording.ops;
     expect(ops.length).toBeGreaterThan(0);
     // Some tiles are still undecided (COL_UNKNOWN = palette index 4).
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_UNKNOWN)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_UNKNOWN)).toBe(true);
     // Clue numbers are drawn as text.
     expect(ops.some((o) => o.op === "text")).toBe(true);
     expect(ops).toMatchSnapshot();

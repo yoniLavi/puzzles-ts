@@ -40,12 +40,12 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
 import { newBridgesDesc } from "./generator.ts";
 import {
   type BridgesDrawState,
   border,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -110,7 +110,7 @@ const prefs: GamePref<BridgesUi>[] = [
     },
   },
   {
-    // Fork aid: auto-grey islands whose clue is satisfied (visual only, no lock).
+    // Fork aid: auto-gray islands whose clue is satisfied (visual only, no lock).
     kw: "auto-mark-complete",
     name: "Highlight islands once their bridge count is met",
     type: "boolean",
@@ -686,8 +686,8 @@ export const bridgesGame: Game<
   textFormat,
   prefs,
 
-  colours(defaultBackground: Colour): Colour[] {
-    return colours(defaultBackground);
+  colors(defaultBackground: Color): Color[] {
+    return colors(defaultBackground);
   },
   computeSize(p: BridgesParams, tileSize: number): Size {
     return computeSize(p, tileSize);

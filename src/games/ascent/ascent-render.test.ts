@@ -49,7 +49,7 @@ describe("ascent render", () => {
       id: id(RECT, "render-rect"),
     });
     const ops = recording.ops;
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_MIDLIGHT)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_MIDLIGHT)).toBe(true);
     expect(ops.some((o) => o.op === "polygon" && o.outline === COL_BORDER)).toBe(true);
     expect(ops.some((o) => o.op === "text")).toBe(true);
     expect(ops).toMatchSnapshot();

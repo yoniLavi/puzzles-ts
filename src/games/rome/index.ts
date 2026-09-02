@@ -43,11 +43,11 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
 import { newRomeDesc } from "./generator.ts";
 import {
   BORDER,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -489,7 +489,7 @@ export const romeGame: Game<
     },
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: RomeParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

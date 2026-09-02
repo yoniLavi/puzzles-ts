@@ -67,13 +67,13 @@ SHALL reject any character outside the letter alphabet.
 
 Clusters SHALL provide a solver that classifies a board as complete, unfinished
 or invalid and marks the cells that break a rule. The solver SHALL fill forced
-cells by contradiction — tentatively setting each colour in an empty cell and
-taking the other colour when one makes the board invalid — and SHALL apply one
+cells by contradiction — tentatively setting each color in an empty cell and
+taking the other color when one makes the board invalid — and SHALL apply one
 level of hypothetical lookahead when asked for it. Those two rungs are the two
 difficulty tiers.
 
 The generator SHALL use the solver to keep every board uniquely solvable: it
-SHALL two-colour the grid at random, flip isolated cells until none remains,
+SHALL two-color the grid at random, flip isolated cells until none remains,
 reduce the board to dot clues, prune adjacent equal dots, and retry until the
 solver completes the board at the requested tier and, above the easiest tier, the
 tier below cannot. Generation from a given seed SHALL be reproducible. The retry
@@ -82,7 +82,7 @@ than spinning.
 
 Rejecting a candidate the generator has *completed* SHALL perturb the grid before
 retrying. The retry loop deliberately carries deduced cells between attempts and
-re-randomises only blank ones, so a completed grid would otherwise re-derive
+re-randomizes only blank ones, so a completed grid would otherwise re-derive
 itself, draw no randomness, and never terminate. The perturbation SHOULD be small
 rather than a reset: the loop is a hill-climb, and discarding it costs several
 times the generation time it saves nothing of.
@@ -126,7 +126,7 @@ interpolated move animation.
 #### Scenario: Dragging paints a run of cells
 
 - **WHEN** a drag is started and moved across several blank cells
-- **THEN** every non-given cell it passes is painted the drag colour on release
+- **THEN** every non-given cell it passes is painted the drag color on release
 
 #### Scenario: A rule-breaking cell is reported as a mistake
 
@@ -150,21 +150,21 @@ recompute-stable: deterministic scan order, so a hint recomputed after a
 followed move continues where the previous plan left off.
 
 Each hint step SHALL explain *why* the move is forced, not merely which cell to
-colour: it SHALL name the rule that the opposite colouring would violate — a
-tile wholly sealed off from its own colour, a given dot that would touch a
-second same-colour tile, or a plain tile that could no longer touch two tiles of
-its own colour — stating the premise, the contradiction, and the conclusion in
+color: it SHALL name the rule that the opposite coloring would violate — a
+tile wholly sealed off from its own color, a given dot that would touch a
+second same-color tile, or a plain tile that could no longer touch two tiles of
+its own color — stating the premise, the contradiction, and the conclusion in
 the necessity voice. The forced cell SHALL be highlighted as the hint target,
 and when the contradiction lands on a tile other than the target, that tile
 SHALL be marked with a visually distinct ring (distinct from the live-error
 frame in both hue and structure) that the narration's "ringed" refers to
 uniquely, so the reasoning is visible on the board and not only in prose. The
-hint SHALL NOT pre-place the forced colour.
+hint SHALL NOT pre-place the forced color.
 
 A deduction that forces a move only through the solver's one-level lookahead
 SHALL be presented as one step that displays the whole forcing chain statically
 on the board: the hypothesis cell as the hint target, each cell the hypothesis
-would force marked with the colour it would be forced to (in a form visually
+would force marked with the color it would be forced to (in a form visually
 distinct from a placed tile), and the tile where the contradiction lands ringed
 — never an un-narrated "only one option fits" fallback. At each lookahead stall
 the plan SHALL select the candidate firing with the shortest forcing chain
@@ -185,7 +185,7 @@ from a doomed position.
 
 - **WHEN** a hint is requested on a solvable, mistake-free board
 - **THEN** the forced cell is highlighted, and the explanation names the rule
-  (sealed off, dot overcount, or cannot-touch-two) that the opposite colour
+  (sealed off, dot overcount, or cannot-touch-two) that the opposite color
   would violate, ringing the endangered tile when it is not the target itself
 
 #### Scenario: A lookahead deduction shows its whole forcing chain
@@ -193,7 +193,7 @@ from a doomed position.
 - **WHEN** the next forced move follows only from the one-level lookahead
 - **THEN** it is presented as one hint step whose narration states the
   hypothesis and the contradiction, with every cell of the forcing chain marked
-  on the board with the colour the hypothesis would force it to
+  on the board with the color the hypothesis would force it to
 
 #### Scenario: A hint is refused on an unsolvable or mistaken board
 
@@ -218,7 +218,7 @@ rather than two.
 The difficulty SHALL be encoded in the game ID, and an ID that carries no
 difficulty SHALL decode to Easy — the majority tier among the boards Clusters
 generated before the parameter existed, and the tier whose boards a returning
-player is likeliest to recognise. A tier letter the game does not know SHALL be
+player is likeliest to recognize. A tier letter the game does not know SHALL be
 rejected by parameter validation rather than silently played as some other tier.
 
 Clusters SHALL refuse to *generate* at Tricky on a board too small to admit one,

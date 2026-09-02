@@ -3,7 +3,7 @@
  * search space the local-feedback probe anchors a case within.
  *
  * A probe case names the function (or method, class, or module-level
- * constant) whose behaviour it perturbs, and its `find` text must then match
+ * constant) whose behavior it perturbs, and its `find` text must then match
  * exactly once *within that declaration's span* rather than once in the whole
  * file. This is what makes an unrelated edit elsewhere in the module — a
  * second method listing the same field names at the same indentation, say —
@@ -61,7 +61,7 @@ export function declarationStarts(text, name) {
   const add = (re) => {
     for (const m of text.matchAll(re)) starts.add(m.index);
   };
-  // Module-level shapes are recognised at **column 0 only**: a `const` or
+  // Module-level shapes are recognized at **column 0 only**: a `const` or
   // `function` indented inside a body is a local, and a case anchored in one
   // belongs to the enclosing function, not to the local.
   // `export function name(` / `export async function* name<`
@@ -288,7 +288,7 @@ export function lineOf(text, i) {
  * The innermost declaration whose span contains offset `at` — used by the
  * migration to derive a case's location from where its anchor matches today.
  * Returns the qualified name (`Outer.inner` when nested one level), or `null`
- * when `at` sits in no declaration this module recognises.
+ * when `at` sits in no declaration this module recognizes.
  */
 export function enclosingDeclaration(source, at) {
   const candidates = [];

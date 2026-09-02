@@ -74,14 +74,14 @@ consistently whether that pair is reached from the dot or from the face, and
 this consistency SHALL be verified for every grid type, because a mismatch
 weakens the solver silently rather than failing.
 
-Two upstream behaviours SHALL be reproduced rather than corrected, because the
+Two upstream behaviors SHALL be reproduced rather than corrected, because the
 generator is solver-gated and correcting either changes which puzzles are
 generated:
 
 - the identical-lines face deduction SHALL report "no progress" even when it
   changes the board;
 - the parity deduction SHALL preserve upstream's truncating-remainder arithmetic
-  rather than normalising it to a non-negative residue.
+  rather than normalizing it to a non-negative residue.
 
 Both SHALL carry comments recording why they are not defects to be fixed.
 
@@ -161,7 +161,7 @@ input model, and the two would drift.
 The cursor SHALL be drawn from grid geometry rather than from a lattice, since
 Loopy's renderer has no lattice to draw from on an irregular tiling: a disc
 under the cursor's dot and a halo under its chosen edge, both in the
-collection's cursor colour, each painted *beneath* the mark it highlights so the
+collection's cursor color, each painted *beneath* the mark it highlights so the
 edge's own state stays legible.
 
 The cursor SHALL be held under `ui.cursor`, the collection's one name for it,
@@ -223,8 +223,8 @@ Loopy SHALL provide an auto-follow preference (off / grid-only / grid-and-state)
 which extends a click along a forced path of edges, and a preference for drawing
 excluded lines faintly.
 
-Rendering SHALL draw edges in a fixed colour order so that mistaken edges paint
-over all others, SHALL place clue text at each face's incentre, SHALL highlight
+Rendering SHALL draw edges in a fixed color order so that mistaken edges paint
+over all others, SHALL place clue text at each face's incenter, SHALL highlight
 the edges of every closed loop but the largest when more than one exists, and
 SHALL flash on completion. Clue text positions depend on tile size and SHALL be
 recomputed when it changes.

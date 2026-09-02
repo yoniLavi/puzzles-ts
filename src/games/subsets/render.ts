@@ -1,13 +1,13 @@
 /**
  * Subsets rendering — port of `game_redraw` in `puzzles/unreleased/subsets.c`.
  *
- * Each cell is a `CELL_WIDTH × CELL_HEIGHT` block of letter slots on a grey
+ * Each cell is a `CELL_WIDTH × CELL_HEIGHT` block of letter slots on a gray
  * backing: a slot is a bevel-highlight square when its letter is decided
  * (known or cleared) and an inner-background square while unknown, with the
  * letter drawn black for a given and green for a player mark. Horseshoe
  * arrows sit in the gaps between cell blocks (red when their relation is
  * violated), a violated missing-arrow edge shows a red cross, and the band
- * below the grid tallies every set-value with a colour for its placement
+ * below the grid tallies every set-value with a color for its placement
  * count (red = duplicated, lowlight = placed once, black = unplaced). All
  * error verdicts are live (recomputed from the committed state each frame,
  * as upstream). On a fresh win the slots blink to the inner background on
@@ -23,16 +23,16 @@
  * shows them.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { GREEN, ORANGE, PURPLE } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { GREEN, ORANGE, PURPLE } from "../../engine/color/colors.ts";
 import {
   ERROR,
   GRID_MID,
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
@@ -41,7 +41,7 @@ import {
   HINT_TARGET,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { SubsetsHintHighlights } from "./index.ts";
 import { candidateCells, candidateSets, subsetsValidate } from "./solver.ts";
 import {
@@ -74,7 +74,7 @@ export const COL_GUESS = 6;
 export const COL_ERROR = 7;
 export const COL_CURSOR = 8;
 // Hint / reference-aid legend (add-subsets-hint): the slot the current step
-// decides gets a bold COL_HINT frame; a highlighted neighbour cell (across a
+// decides gets a bold COL_HINT frame; a highlighted neighbor cell (across a
 // horseshoe) or highlighted tally set is COL_HINT_CELL; and the cells a
 // spotlit set can still go in (a hidden single's one home, or the player-clicked
 // reference-aid set) get a COL_HINT_SPOT frame.
@@ -90,16 +90,16 @@ const HINT_SPOT = 4;
 /** Sidecar bit: the cell a clicked *placed* set already sits in. */
 const HINT_PLACED = 8;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_OUTERBG] = defaultBackground;
   out[COL_INNERBG] = background;
   out[COL_GRID] = GRID_MID;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_FIXED] = INK;
-  out[COL_GUESS] = playerEntryColour(background);
+  out[COL_GUESS] = playerEntryColor(background);
   out[COL_ERROR] = ERROR;
   // Purple, because Subsets has spent the usual two: the hint's decided slot is
   // blue and the player's own entries are green.
@@ -216,7 +216,7 @@ export function redraw(
   }
 
   // Hint + reference-aid overlay: the current step's target slot (bold frame),
-  // highlighted neighbour cells (light frame), spotlit placement cells, and
+  // highlighted neighbor cells (light frame), spotlit placement cells, and
   // highlighted tally sets — repacked each frame so a dropped hint repaints too.
   ds.hint.clear();
   ds.hintSets.fill(0);
@@ -237,7 +237,7 @@ export function redraw(
   ) {
     // Reference aid, set→cells: a clicked tally set lights up every cell it can
     // still go in (green). If the set is already placed, its home cell is lit a
-    // distinct colour instead — where it *is*, not where it could go (#3).
+    // distinct color instead — where it *is*, not where it could go (#3).
     ds.hintSets[ui.highlightSet] = 1;
     for (const i of candidateCells(state, ui.highlightSet)) {
       const placed = state.known[i] === state.mask[i];
@@ -258,7 +258,7 @@ export function redraw(
     const size = computeSize({ w, h }, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_OUTERBG);
     dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
-    // Grey backing behind each cell block; the slot squares drawn one pixel
+    // Gray backing behind each cell block; the slot squares drawn one pixel
     // smaller leave it showing as the inner grid lines.
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
@@ -324,7 +324,7 @@ export function redraw(
           }
 
           if (slot === cn) {
-            // Keyboard cursor: corner brackets at the slot centre
+            // Keyboard cursor: corner brackets at the slot center
             // (upstream draws these via a blitter; see the header).
             const blr = Math.floor(ts * 0.4);
             drawRectCorners(
@@ -384,7 +384,7 @@ export function redraw(
         // Evidence frame: the "highlighted cell" a hint points at (light), a
         // spotlit placement a set could go in / a focused cell (green), or the
         // home of a clicked placed set (amber, #3).
-        const colour =
+        const color =
           hintBits & HINT_PLACED
             ? COL_HINT_PLACED
             : hintBits & HINT_SPOT
@@ -394,10 +394,10 @@ export function redraw(
         const by = Math.floor((y * (ch + 1) + 0.5) * ts);
         const bw = ts * cw - 1;
         const t = Math.max(1, Math.floor(ts / 10));
-        dr.drawRect({ x: bx, y: by, w: bw, h: t }, colour);
-        dr.drawRect({ x: bx, y: by, w: t, h: bw }, colour);
-        dr.drawRect({ x: bx, y: by + bw - t, w: bw, h: t }, colour);
-        dr.drawRect({ x: bx + bw - t, y: by, w: t, h: bw }, colour);
+        dr.drawRect({ x: bx, y: by, w: bw, h: t }, color);
+        dr.drawRect({ x: bx, y: by, w: t, h: bw }, color);
+        dr.drawRect({ x: bx, y: by + bw - t, w: bw, h: t }, color);
+        dr.drawRect({ x: bx + bw - t, y: by, w: t, h: bw }, color);
       }
       if (hintBits & HINT_TARGET) {
         // The slot the current step decides: a bold frame around that one slot
@@ -455,7 +455,7 @@ export function redraw(
 
         if (state.clues[i1] & f) {
           if (firstDraw || (flags[i1] & f) !== (ds.oldFlags[i1] & f)) {
-            const colour = flags[i1] & f ? COL_ERROR : COL_FIXED;
+            const color = flags[i1] & f ? COL_ERROR : COL_FIXED;
             dr.drawRect(
               {
                 x: tx - radius - 1,
@@ -465,14 +465,14 @@ export function redraw(
               },
               COL_OUTERBG,
             );
-            dr.drawCircle({ x: tx, y: ty }, radius, colour, colour);
+            dr.drawCircle({ x: tx, y: ty }, radius, color, color);
             dr.drawCircle({ x: tx, y: ty }, radius - 2, COL_OUTERBG, COL_OUTERBG);
 
             // Open one side of the ring, leaving the horseshoe legs.
             if (f & (F_ADJ_UP | F_ADJ_DOWN)) {
               if (dy > 0) ty -= radius;
               else ty += 1;
-              dr.drawRect({ x: tx - radius, y: ty, w: diameter, h: radius }, colour);
+              dr.drawRect({ x: tx - radius, y: ty, w: diameter, h: radius }, color);
               dr.drawRect(
                 { x: 2 + tx - radius, y: ty, w: diameter - 4, h: radius },
                 COL_OUTERBG,
@@ -480,7 +480,7 @@ export function redraw(
             } else {
               if (dx > 0) tx -= radius;
               else tx += 1;
-              dr.drawRect({ x: tx, y: ty - radius, w: radius, h: diameter }, colour);
+              dr.drawRect({ x: tx, y: ty - radius, w: radius, h: diameter }, color);
               dr.drawRect(
                 { x: tx, y: 2 + ty - radius, w: radius, h: diameter - 4 },
                 COL_OUTERBG,
@@ -493,7 +493,7 @@ export function redraw(
               h: diameter + 2,
             });
 
-            if (colour === COL_ERROR) ds.oldFlags[i1] |= f;
+            if (color === COL_ERROR) ds.oldFlags[i1] |= f;
             else ds.oldFlags[i1] &= ~f;
           }
         } else if (i1 < i2 && !(state.clues[i2] & fo)) {
@@ -564,7 +564,7 @@ export function redraw(
       for (let cx = 0; cx < n; cx++)
         label += cn & (1 << cx) ? String.fromCharCode(CODE_A + cx) : "_";
 
-      const colour =
+      const color =
         counts[cn] > 1 ? COL_ERROR : counts[cn] === 1 ? COL_LOWLIGHT : COL_FIXED;
 
       const slot = {
@@ -576,7 +576,7 @@ export function redraw(
       dr.drawRect(slot, COL_OUTERBG);
       // "The highlighted set": a hint **boxes** the tally entry it points at,
       // the same mark it uses on the board rather than a tint behind the label.
-      // The label's own colour is information here — error red, used-up grey,
+      // The label's own color is information here — error red, used-up gray,
       // fixed — so a fill behind it competes with exactly what it has to be read
       // against.
       if (hinted)
@@ -594,7 +594,7 @@ export function redraw(
           fontType: "fixed",
           size: Math.floor(ts / 2),
         },
-        colour,
+        color,
         label,
       );
       dr.drawUpdate({

@@ -45,7 +45,7 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   KeyLabel,
@@ -61,7 +61,7 @@ import {
 import {
   type CrossingDrawState,
   type CrossingHint,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -544,7 +544,7 @@ function hintKeepTrack(
 
 /** Validate-at-display (§7.3): a whole-run step is resolved once the run is
  * full, and shrinks its targets to the squares still to write; everything else
- * is the shared behaviour. */
+ * is the shared behavior. */
 function refreshHintStep(
   step: HintStep<CrossingMove, CrossingHint>,
   state: CrossingState,
@@ -687,7 +687,7 @@ export const crossingGame: Game<
     stickyPencilPref<CrossingUi>(),
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: CrossingParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

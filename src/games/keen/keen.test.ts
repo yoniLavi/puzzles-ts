@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Keen (KenKen) port.
+ * Behavioral tests for the Keen (KenKen) port.
  *
  * Tier 1 — pure logic: params/desc codecs, generator quality (seeded; solvable,
  * unique, correctly graded, valid cage areas), the cage solver, move
@@ -305,7 +305,7 @@ describe("keen findMistakes", () => {
 
   it("ignores a cell whose notes merely carry extra candidates", () => {
     const all = keenGame.executeMove(newState(P4, D4), { type: "pencilAll" });
-    // Every candidate pencilled in (includes the solution) — not a mistake.
+    // Every candidate penciled in (includes the solution) — not a mistake.
     expect((keenGame.findMistakes?.(all) ?? []).length).toBe(0);
   });
 });
@@ -359,7 +359,7 @@ describe("keen render", () => {
   });
 
   it("shows the pencil-mode indicator glyph when sticky pencil is on", () => {
-    const palette = keenGame.colours(DEFAULT_BACKGROUND);
+    const palette = keenGame.colors(DEFAULT_BACKGROUND);
     const ts = keenGame.preferredTileSize ?? 48;
     const render = (hpencil: boolean): RecordingDrawing => {
       const st = newState(P4, D4);
@@ -388,12 +388,12 @@ describe("keen render", () => {
     const wrong = (sol[0] % 4) + 1;
     me.playMoves([{ type: "set", x: 0, y: 0, n: wrong, pencil: false }]);
 
-    const palette = keenGame.colours(DEFAULT_BACKGROUND);
+    const palette = keenGame.colors(DEFAULT_BACKGROUND);
     me.redraw(new RecordingDrawing(palette)); // first paint: wrong digit, no overlay
     expect(me.findMistakes()).toBeGreaterThan(0);
     const after = new RecordingDrawing(palette);
     me.redraw(after);
-    expect(after.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(true);
+    expect(after.ops.some((o) => o.op === "line" && o.color === COL_ERROR)).toBe(true);
   });
 });
 

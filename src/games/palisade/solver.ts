@@ -155,7 +155,7 @@ class SolverCtx {
     return out;
   }
 
-  /** Neighbour cell in direction `dir`, or -1 if off the grid. */
+  /** Neighbor cell in direction `dir`, or -1 if off the grid. */
   nbr(i: number, dir: number): number {
     const x = (i % this.w) + DX[dir];
     const y = Math.floor(i / this.w) + DY[dir];
@@ -191,7 +191,7 @@ class SolverCtx {
     return (this.borders[i] & BORDER(dir)) !== 0;
   }
 
-  /** Are `i` and its `dir`-neighbour known to be in one region? */
+  /** Are `i` and its `dir`-neighbor known to be in one region? */
   connectedDir(i: number, dir: number): boolean {
     const j = this.nbr(i, dir);
     return j >= 0 && this.dsf.equivalent(i, j);

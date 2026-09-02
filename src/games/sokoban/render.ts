@@ -11,18 +11,12 @@
  * (design D5, docs/games/rendering.md § "The tile cache and the diff key") — the whole board is `w*TILESIZE + 1` wide.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BROWN, GREEN } from "../../engine/colour/colours.ts";
-import {
-  FLASH,
-  GRID_MID,
-  INK,
-  PAPER,
-  wallColour,
-} from "../../engine/colour/palette.ts";
-import { sokobanPit } from "../../engine/colour/palette-games.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BROWN, GREEN } from "../../engine/color/colors.ts";
+import { FLASH, GRID_MID, INK, PAPER, wallColor } from "../../engine/color/palette.ts";
+import { sokobanPit } from "../../engine/color/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   barrelLabel,
   DEEP_PIT,
@@ -65,11 +59,11 @@ const COL_WALL = 11;
 /** Appended past the upstream enum, which flashed the floor to its own bevel
  * highlight; the index-keyed swap above never reaches it. */
 const COL_FLASH = 12;
-const NCOLOURS = 13;
+const NCOLORS = 13;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = new Array<Colour>(NCOLOURS);
+  const out: Color[] = new Array<Color>(NCOLORS);
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
@@ -82,7 +76,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_DEEP_PIT] = INK;
   out[COL_TEXT] = PAPER;
   out[COL_GRID] = GRID_MID;
-  out[COL_WALL] = wallColour(background, highlight);
+  out[COL_WALL] = wallColor(background, highlight);
   out[COL_FLASH] = FLASH;
   return out;
 }
@@ -142,7 +136,7 @@ function drawTile(
   if (v === WALL) {
     const hw = Math.floor(ts / 10); // HIGHLIGHT_WIDTH
     // Bevel: a lowlight triangle bottom-right, a highlight triangle top-left,
-    // then the wall-coloured inner square.
+    // then the wall-colored inner square.
     dr.drawPolygon(
       [
         { x: tx + ts, y: ty + ts },

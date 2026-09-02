@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Seismic port.
+ * Behavioral tests for the Seismic port.
  *
  * Tiers (docs/games/testing.md § "The test tiers"): tier 1 for params / codec / solver / moves / mistakes,
  * tier 2 and 2.5 for every frame the renderer can reach.
@@ -1006,7 +1006,7 @@ describe("seismic findMistakes", () => {
   });
 
   it("flags an empty cell whose notes have crossed the solution out", () => {
-    // Notes are first-class markings (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): pencilling every value
+    // Notes are first-class markings (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): penciling every value
     // *except* the right one is as wrong as writing the wrong number.
     const state = stateOf(SMALL);
     const soln = solutionOf(SMALL);
@@ -1073,16 +1073,16 @@ describe("seismic rendering", () => {
   it("draws the opening frame: black backing, the givens, and no cursor", () => {
     const r = renderScenario({ game: seismicGame, id: idOf(SMALL) });
     const ops = r.recording.ops;
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_BORDER)).toBe(true);
-    expect(ops.some((o) => o.op === "text" && o.colour === COL_NUM_FIXED)).toBe(true);
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)).toBe(false);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_BORDER)).toBe(true);
+    expect(ops.some((o) => o.op === "text" && o.color === COL_NUM_FIXED)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HIGHLIGHT)).toBe(false);
     expect(ops).toMatchSnapshot();
   });
 
   it("inks a player's entry differently from a given", () => {
     const cell = firstFreeCell(stateOf(SMALL));
     // The solution's own value, so the entry is correct and stays green — a
-    // rule-breaking entry would be drawn in the error colour instead.
+    // rule-breaking entry would be drawn in the error color instead.
     const r = renderScenario({
       game: seismicGame,
       id: idOf(SMALL),
@@ -1097,8 +1097,8 @@ describe("seismic rendering", () => {
       ],
     });
     const ops = r.recording.ops;
-    expect(ops.some((o) => o.op === "text" && o.colour === COL_NUM_GUESS)).toBe(true);
-    expect(ops.some((o) => o.op === "text" && o.colour === COL_NUM_FIXED)).toBe(true);
+    expect(ops.some((o) => o.op === "text" && o.color === COL_NUM_GUESS)).toBe(true);
+    expect(ops.some((o) => o.op === "text" && o.color === COL_NUM_FIXED)).toBe(true);
     expect(ops).toMatchSnapshot();
   });
 
@@ -1128,13 +1128,13 @@ describe("seismic rendering", () => {
     }));
     const r = renderScenario({ game: seismicGame, id: idOf(SMALL), moves });
     expect(
-      r.recording.ops.some((o) => o.op === "text" && o.colour === COL_NUM_ERROR),
+      r.recording.ops.some((o) => o.op === "text" && o.color === COL_NUM_ERROR),
     ).toBe(true);
   });
 
   it("draws every pencil mark, including a 9", () => {
     // Upstream truncates the 9-bit mark bitmask into a `char` before drawing
-    // it, so a pencilled 9 never reaches the screen. It takes a nine-cell
+    // it, so a penciled 9 never reaches the screen. It takes a nine-cell
     // region to expose that — no *generated* board has one, because the region
     // grower would have to land all nine numbers in one region — so the board
     // is hand-built through the same codec the generator writes.
@@ -1173,11 +1173,11 @@ describe("seismic rendering", () => {
       id: `${encodeParams(p, true)}:${desc}`,
       moves: [move as SeismicMove],
     });
-    const pencilled = r.recording.ops.filter(
-      (o) => o.op === "text" && o.colour === COL_NUM_PENCIL,
+    const penciled = r.recording.ops.filter(
+      (o) => o.op === "text" && o.color === COL_NUM_PENCIL,
     );
-    expect(pencilled).toHaveLength(1);
-    expect(pencilled[0]).toMatchObject({ text: "9" });
+    expect(penciled).toHaveLength(1);
+    expect(penciled[0]).toMatchObject({ text: "9" });
   });
 
   it("shows the pencil-mode indicator only while pencil mode is on", () => {
@@ -1187,7 +1187,7 @@ describe("seismic rendering", () => {
     const ui = newUi(state);
     const ds = newDrawState(state);
     setTileSize(ds, TILE);
-    const palette = seismicGame.colours([1, 1, 1]);
+    const palette = seismicGame.colors([1, 1, 1]);
 
     const paint = () => {
       const dr = new RecordingDrawing(palette);
@@ -1230,7 +1230,7 @@ describe("seismic rendering", () => {
     // The overlay is a stroked outline, so it records as lines, not a rect
     // (docs/games/testing.md § "Render-op vocabulary").
     expect(
-      r.recording.ops.some((o) => o.op === "line" && o.colour === COL_NUM_ERROR),
+      r.recording.ops.some((o) => o.op === "line" && o.color === COL_NUM_ERROR),
     ).toBe(true);
     expect(r.recording.ops).toMatchSnapshot();
   });
@@ -1239,7 +1239,7 @@ describe("seismic rendering", () => {
     // Tier 2: the flash is a function of the clock, so drive `redraw` at three
     // points in it rather than trying to catch a frame mid-animation.
     const state = stateOf(SMALL);
-    const palette = seismicGame.colours([1, 1, 1]);
+    const palette = seismicGame.colors([1, 1, 1]);
     const phase = (flashTime: number) => {
       const ds = newDrawState(state);
       setTileSize(ds, TILE);
@@ -1247,7 +1247,7 @@ describe("seismic rendering", () => {
       redraw(dr, ds, null, state, 1, newUi(state), 0, flashTime);
       return dr.ops
         .filter((o) => o.op === "rect")
-        .map((o) => (o as Extract<DrawOp, { op: "rect" }>).colour)
+        .map((o) => (o as Extract<DrawOp, { op: "rect" }>).color)
         .join(",");
     };
 
@@ -1260,8 +1260,8 @@ describe("seismic rendering", () => {
     setTileSize(ds, TILE);
     const dr = new RecordingDrawing(palette);
     redraw(dr, ds, null, state, 1, newUi(state), 0, 0.05);
-    const colours = new Set(dr.ops.filter((o) => o.op === "rect").map((o) => o.colour));
-    expect(colours.has(COL_HIGHLIGHT)).toBe(true);
-    expect(colours.has(COL_LOWLIGHT)).toBe(true);
+    const colors = new Set(dr.ops.filter((o) => o.op === "rect").map((o) => o.color));
+    expect(colors.has(COL_HIGHLIGHT)).toBe(true);
+    expect(colors.has(COL_LOWLIGHT)).toBe(true);
   });
 });

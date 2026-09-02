@@ -19,19 +19,19 @@
  * frame, matching upstream.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLACK } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLACK } from "../../engine/color/colors.ts";
 import {
   CURSOR,
   ERROR,
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { BricksHint } from "./index.ts";
 import { bricksValidate } from "./solver.ts";
 import {
@@ -71,9 +71,9 @@ export const COL_CURSOR = 6;
 export const COL_HINT = 7; // the forced cell — ringed on its own border
 export const COL_HINT_CELL = 8; // the deduction's evidence — an inset ring
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_MIDLIGHT] = background;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_HIGHLIGHT] = highlight;
@@ -98,7 +98,7 @@ export function computeSize(p: BricksParams, ts0: number): Size {
 }
 
 /** The per-frame origin (upstream `game_set_offsets`): shift left so the
- * sheared rows centre in the canvas. Shared with `interpretMove` so pointer
+ * sheared rows center in the canvas. Shared with `interpretMove` so pointer
  * mapping and drawing agree. */
 export function offsets(h: number, ts: number): { ox: number; oy: number } {
   let ox = -(((h / 2) | 0) - 1) * ts;
@@ -178,7 +178,7 @@ function drawErrGravity(dr: GameDrawing, ts: number, x: number, y: number): void
 }
 
 // Hint-overlay bits packed into the render cache word, above the cell's own
-// bits (num/bound/colour + FE_* error/cursor flags all fit under 0x1000).
+// bits (num/bound/color + FE_* error/cursor flags all fit under 0x1000).
 const HINT_TARGET = 1 << 12; // the forced cell — painted COL_HINT
 const HINT_EVID = 1 << 13; // a deduction-evidence cell — inset COL_HINT_CELL ring
 
@@ -191,7 +191,7 @@ function drawTile(
   ty: number,
   n: number,
 ): void {
-  // The forced cell keeps its own colour and is **ringed** below. In a game
+  // The forced cell keeps its own color and is **ringed** below. In a game
   // whose move is "shade this cell or rule it out", a solid fill says with the
   // board what the narration is still proposing — and the player still has to
   // apply it.
@@ -218,7 +218,7 @@ function drawTile(
     COL_BORDER,
   );
 
-  // Three-in-a-row bar (extends toward the shaded neighbour(s)).
+  // Three-in-a-row bar (extends toward the shaded neighbor(s)).
   if (n & (FE_LINE_LEFT | FE_LINE_RIGHT)) {
     let left = tx + 1;
     let right = tx + ts - 1;
@@ -230,7 +230,7 @@ function drawTile(
   const cx = tx + (ts >> 1);
   const cy = ty + (ts >> 1);
 
-  // Clue number, or (on a coloured/error cell) the gravity diamond.
+  // Clue number, or (on a colored/error cell) the gravity diamond.
   if (!(n & (COL_MASK | F_BOUND))) {
     const num = n & NUM_MASK;
     dr.drawText(

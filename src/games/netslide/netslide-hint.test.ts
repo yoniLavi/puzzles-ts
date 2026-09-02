@@ -16,7 +16,7 @@ import { netslideGame } from "./index.ts";
 import {
   ANIM_TIME,
   COL_HINT,
-  colours,
+  colors,
   newDrawState,
   redraw,
   setTileSize,
@@ -38,7 +38,7 @@ const EASY_3X3: NetslideParams = {
   movetarget: 0,
 };
 /** An even-sized board: the source sits at ⌊4/2⌋ = 2, i.e. row 3, column 3 — the
- * board on which "the centre tile" is a claim the player can see is false. */
+ * board on which "the center tile" is a claim the player can see is false. */
 const EVEN_4X4: NetslideParams = {
   w: 4,
   h: 4,
@@ -69,7 +69,7 @@ function hintOf(state: NetslideState, aux?: string) {
  * A shared corpus of solved boards + their computed hint plans, spanning all
  * three sizes, computed **once** and reused by every test that checks a
  * *structural narration invariant* over a sample of boards (does any step ever
- * say "centre", is any sentence too long, does every step state a purpose).
+ * say "center", is any sentence too long, does every step state a purpose).
  *
  * The hint planner is the suite's single most expensive operation (~0.3s per
  * 4×4 board, ~0.6s per 5×5 — generation is <1ms), and these narration checks
@@ -313,7 +313,7 @@ describe("netslide hint narration", () => {
   it("teaches the frozen line, named by its number, when that is what the move turns on", () => {
     // The one thing Netslide can prove *about a move*: a tile sitting in the
     // source's row can only be shifted by its column (and the other way about).
-    // The line is named by its number — "the centre row" is false on an
+    // The line is named by its number — "the center row" is false on an
     // even-sized board, where the source sits at ⌊w/2⌋ and the player can see it.
     let seen = false;
     for (let i = 0; i < 40 && !seen; i++) {
@@ -349,8 +349,8 @@ describe("netslide hint narration", () => {
   });
 
   it("never calls the source the centre, and never says a tile belongs twice", () => {
-    // "Centre" is a claim the hint has not checked: the source sits at ⌊w/2⌋,
-    // ⌊h/2⌋, so on the 4×4 it is row 3, column 3 — visibly not the centre. And a
+    // "Center" is a claim the hint has not checked: the source sits at ⌊w/2⌋,
+    // ⌊h/2⌋, so on the 4×4 it is row 3, column 3 — visibly not the center. And a
     // sentence that says a tile "belongs beside the source" and then ", where it
     // belongs" reads as a stutter.
     for (const { steps } of narrationCorpus()) {
@@ -543,13 +543,11 @@ describe("netslide hint rendering", () => {
     const ui = newUi(state);
     const ds = newDrawState(state);
     setTileSize(ds, 32);
-    const palette = colours([1, 1, 1]);
+    const palette = colors([1, 1, 1]);
 
     const first = new RecordingDrawing(palette);
     redraw(first, ds, null, state, 0, ui, 0, 0);
-    expect(first.ops.some((op) => "colour" in op && op.colour === COL_HINT)).toBe(
-      false,
-    );
+    expect(first.ops.some((op) => "color" in op && op.color === COL_HINT)).toBe(false);
 
     const res = hintOf(state, aux);
     expect(res.ok).toBe(true);
@@ -571,7 +569,7 @@ describe("netslide hint rendering", () => {
     expect(
       second.ops.some(
         (op) =>
-          ("colour" in op && op.colour === COL_HINT) ||
+          ("color" in op && op.color === COL_HINT) ||
           ("fill" in op && op.fill === COL_HINT),
       ),
       "the hint did not repaint on an otherwise-unchanged board",
@@ -588,10 +586,10 @@ describe("netslide hint rendering", () => {
       showHint: true,
     });
 
-    // The tile being placed is double-ringed in the hint colour, and its
+    // The tile being placed is double-ringed in the hint color, and its
     // destination outlined in it.
     const rects = result.recording.ops.filter(
-      (op) => op.op === "rect" && op.colour === COL_HINT,
+      (op) => op.op === "rect" && op.color === COL_HINT,
     );
     expect(rects.length).toBeGreaterThan(0);
 
@@ -629,7 +627,7 @@ describe("the hint marks while the hinted slide animates", () => {
     return ops.find(
       (op) =>
         op.op === "rect" &&
-        op.colour === COL_HINT &&
+        op.color === COL_HINT &&
         op.w === TS + TILE_BORDER &&
         op.h === Math.max(2, Math.round(TS / 16)),
     );
@@ -643,7 +641,7 @@ describe("the hint marks while the hinted slide animates", () => {
     return ops.find(
       (op) =>
         op.op === "rect" &&
-        op.colour === COL_HINT &&
+        op.color === COL_HINT &&
         op.w === side &&
         op.h === thickness,
     );
@@ -671,7 +669,7 @@ describe("the hint marks while the hinted slide animates", () => {
       const after = netslideGame.executeMove(state, step.move);
       const ds = newDrawState(after);
       setTileSize(ds, TS);
-      const palette = colours([1, 1, 1]);
+      const palette = colors([1, 1, 1]);
 
       // Paint the pre-move frame first, so the draw state's cache is warm exactly as
       // it is in the app when the slide begins.

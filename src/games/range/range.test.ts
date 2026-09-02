@@ -51,7 +51,7 @@ describe("params", () => {
 
 describe("desc codec", () => {
   it("round-trips a hand-built clue grid", () => {
-    // 3x3 with clues 2 (top-left) and 5 (centre), rest blank.
+    // 3x3 with clues 2 (top-left) and 5 (center), rest blank.
     const grid = [2, 0, 0, 0, 5, 0, 0, 0, 0];
     const desc = encodeDesc(9, Int8Array.from(grid));
     const p = { w: 3, h: 3 };

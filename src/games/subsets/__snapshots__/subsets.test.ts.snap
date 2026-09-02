@@ -3,7 +3,7 @@
 exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inner background on a flash beat 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 540,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -12,7 +12,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 0,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -21,7 +21,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -30,7 +30,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -39,7 +39,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -48,7 +48,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -57,7 +57,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -66,7 +66,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -75,7 +75,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -84,7 +84,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -93,7 +93,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -102,7 +102,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -111,7 +111,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -120,7 +120,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -129,7 +129,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 341,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -138,7 +138,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 341,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -147,7 +147,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 341,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -156,7 +156,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 341,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -167,7 +167,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -177,7 +177,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 36,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -186,7 +186,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -197,7 +197,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -207,7 +207,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 72,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -218,7 +218,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -228,7 +228,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -247,7 +247,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -258,7 +258,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -268,7 +268,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 36,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -277,7 +277,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -286,7 +286,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 54,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -295,7 +295,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 54,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -314,7 +314,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -323,7 +323,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -334,7 +334,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -344,7 +344,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 36,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -353,7 +353,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 54,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -364,7 +364,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -374,7 +374,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -393,7 +393,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -402,7 +402,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -413,7 +413,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -423,7 +423,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 36,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -432,7 +432,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 54,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -441,7 +441,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 54,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -460,7 +460,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -471,7 +471,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -481,7 +481,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -492,7 +492,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -502,7 +502,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -511,7 +511,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -522,7 +522,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -532,7 +532,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -551,7 +551,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -562,7 +562,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -572,7 +572,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -583,7 +583,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -593,7 +593,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -604,7 +604,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -614,7 +614,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -623,7 +623,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -642,7 +642,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -651,7 +651,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -660,7 +660,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -671,7 +671,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -681,7 +681,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -692,7 +692,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -702,7 +702,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -721,7 +721,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -730,7 +730,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -739,7 +739,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -748,7 +748,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -757,7 +757,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -776,7 +776,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -785,7 +785,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 234,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -796,7 +796,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -806,7 +806,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 252,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -817,7 +817,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -827,7 +827,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 288,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -838,7 +838,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -848,7 +848,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -867,7 +867,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -878,7 +878,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -888,7 +888,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 252,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -897,7 +897,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 234,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -908,7 +908,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -918,7 +918,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 288,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -927,7 +927,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 270,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -946,7 +946,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -955,7 +955,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 234,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -966,7 +966,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -976,7 +976,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 252,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -987,7 +987,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -997,7 +997,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 288,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1006,7 +1006,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 270,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1025,7 +1025,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1036,7 +1036,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -1046,7 +1046,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 252,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1057,7 +1057,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -1067,7 +1067,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 252,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1076,7 +1076,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 270,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1085,7 +1085,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 270,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1104,7 +1104,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1113,7 +1113,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1122,7 +1122,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1131,7 +1131,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 378,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1142,7 +1142,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -1152,7 +1152,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 396,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1171,7 +1171,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1182,7 +1182,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -1192,7 +1192,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 360,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1203,7 +1203,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -1213,7 +1213,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 360,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1224,7 +1224,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -1234,7 +1234,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 396,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1245,7 +1245,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -1255,7 +1255,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 396,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1274,7 +1274,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1283,7 +1283,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1292,7 +1292,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1303,7 +1303,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 128, 0)",
@@ -1313,7 +1313,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 396,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1322,7 +1322,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 378,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1341,7 +1341,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1352,7 +1352,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1362,7 +1362,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 360,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1371,7 +1371,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1380,7 +1380,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 378,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1391,7 +1391,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1401,7 +1401,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 396,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1427,7 +1427,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 41,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1456,7 +1456,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1465,7 +1465,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 42,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1484,7 +1484,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1503,7 +1503,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 41,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1542,7 +1542,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 41,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1571,7 +1571,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1580,7 +1580,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 42,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1599,7 +1599,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1628,7 +1628,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1657,7 +1657,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1666,7 +1666,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1705,7 +1705,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 149,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1724,7 +1724,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1743,7 +1743,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1772,7 +1772,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1781,7 +1781,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 109,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1800,7 +1800,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 149,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1819,7 +1819,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1848,7 +1848,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1857,7 +1857,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 204,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1896,7 +1896,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 149,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1925,7 +1925,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1934,7 +1934,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 150,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1953,7 +1953,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2022,7 +2022,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 257,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2041,7 +2041,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2070,7 +2070,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2079,7 +2079,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 312,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2108,7 +2108,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 257,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2157,7 +2157,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 257,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2176,7 +2176,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2205,7 +2205,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2214,7 +2214,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 312,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2243,7 +2243,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2272,7 +2272,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2281,7 +2281,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 217,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2300,7 +2300,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2349,7 +2349,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2378,7 +2378,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2387,7 +2387,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 325,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2406,7 +2406,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 365,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2435,7 +2435,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2444,7 +2444,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 366,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2463,7 +2463,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 365,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2492,7 +2492,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2501,7 +2501,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 366,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2530,7 +2530,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 365,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2572,7 +2572,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "op": "unclip",
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2583,7 +2583,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2593,7 +2593,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2604,7 +2604,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2614,7 +2614,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2625,7 +2625,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2635,7 +2635,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2646,7 +2646,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2656,7 +2656,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2667,7 +2667,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2677,7 +2677,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2688,7 +2688,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2698,7 +2698,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2709,7 +2709,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2719,7 +2719,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2730,7 +2730,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2740,7 +2740,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2751,7 +2751,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2761,7 +2761,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2772,7 +2772,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2782,7 +2782,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2793,7 +2793,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2803,7 +2803,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2814,7 +2814,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2824,7 +2824,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2835,7 +2835,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2845,7 +2845,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 513,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2856,7 +2856,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2866,7 +2866,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 513,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2877,7 +2877,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2887,7 +2887,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
     "y": 513,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2898,7 +2898,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(170, 170, 170)",
@@ -2913,7 +2913,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
 exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement draws in the error colour 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 540,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2922,7 +2922,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 0,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2931,7 +2931,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2940,7 +2940,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2949,7 +2949,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2958,7 +2958,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2967,7 +2967,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2976,7 +2976,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2985,7 +2985,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2994,7 +2994,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3003,7 +3003,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3012,7 +3012,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3021,7 +3021,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3030,7 +3030,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3039,7 +3039,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 341,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3048,7 +3048,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 341,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3057,7 +3057,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 341,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3066,7 +3066,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 341,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3077,7 +3077,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3087,7 +3087,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 36,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3096,7 +3096,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3107,7 +3107,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3117,7 +3117,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 72,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3128,7 +3128,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3138,7 +3138,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3157,7 +3157,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 4,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -3166,7 +3166,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 71,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -3175,7 +3175,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 4,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -3184,7 +3184,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 85,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 71,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -3193,7 +3193,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3204,7 +3204,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 127, 0)",
@@ -3214,7 +3214,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 36,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3223,7 +3223,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3234,7 +3234,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 127, 0)",
@@ -3244,7 +3244,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 72,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3255,7 +3255,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 6,
+    "color": 6,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 127, 0)",
@@ -3265,7 +3265,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3284,7 +3284,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 4,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -3293,7 +3293,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 71,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -3302,7 +3302,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 4,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -3311,7 +3311,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 85,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 71,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -3320,7 +3320,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3329,7 +3329,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3338,7 +3338,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3347,7 +3347,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 54,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3356,7 +3356,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 54,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3375,7 +3375,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3384,7 +3384,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 18,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3395,7 +3395,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3405,7 +3405,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 36,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3414,7 +3414,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 54,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3423,7 +3423,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 54,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3442,7 +3442,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3451,7 +3451,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3460,7 +3460,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3469,7 +3469,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3478,7 +3478,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3497,7 +3497,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3506,7 +3506,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3515,7 +3515,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3524,7 +3524,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3533,7 +3533,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3552,7 +3552,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3561,7 +3561,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3570,7 +3570,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3579,7 +3579,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3588,7 +3588,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3607,7 +3607,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3616,7 +3616,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3625,7 +3625,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3634,7 +3634,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3643,7 +3643,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3662,7 +3662,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3671,7 +3671,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 234,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3682,7 +3682,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3692,7 +3692,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 252,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3703,7 +3703,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3713,7 +3713,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 288,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3724,7 +3724,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3734,7 +3734,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3753,7 +3753,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3764,7 +3764,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3774,7 +3774,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 252,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3783,7 +3783,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 234,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3794,7 +3794,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3804,7 +3804,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 288,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3813,7 +3813,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 270,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3832,7 +3832,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3841,7 +3841,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 234,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3852,7 +3852,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3862,7 +3862,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 252,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3873,7 +3873,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3883,7 +3883,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 288,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3892,7 +3892,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 270,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3911,7 +3911,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3920,7 +3920,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 234,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3929,7 +3929,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 234,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3938,7 +3938,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 270,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3947,7 +3947,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 270,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3966,7 +3966,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3975,7 +3975,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3984,7 +3984,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3993,7 +3993,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 378,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4002,7 +4002,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 378,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4021,7 +4021,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4030,7 +4030,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4039,7 +4039,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4048,7 +4048,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 378,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4057,7 +4057,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 378,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4076,7 +4076,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4085,7 +4085,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4094,7 +4094,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4103,7 +4103,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 378,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4112,7 +4112,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 378,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4131,7 +4131,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -4142,7 +4142,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -4152,7 +4152,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 360,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -4161,7 +4161,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 342,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -4170,7 +4170,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 378,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -4181,7 +4181,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -4191,7 +4191,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 396,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4217,7 +4217,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 41,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4246,7 +4246,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4255,7 +4255,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 42,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4274,7 +4274,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4293,7 +4293,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 41,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4332,7 +4332,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 41,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4361,7 +4361,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4370,7 +4370,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 42,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4389,7 +4389,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4418,7 +4418,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4447,7 +4447,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4456,7 +4456,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4495,7 +4495,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 149,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4514,7 +4514,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4533,7 +4533,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4562,7 +4562,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4571,7 +4571,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 109,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4590,7 +4590,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 149,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4609,7 +4609,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4638,7 +4638,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4647,7 +4647,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 204,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4686,7 +4686,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 149,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4715,7 +4715,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4724,7 +4724,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 150,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4743,7 +4743,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4812,7 +4812,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 257,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4831,7 +4831,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4860,7 +4860,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4869,7 +4869,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 312,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4898,7 +4898,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 257,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4947,7 +4947,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 257,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4966,7 +4966,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4995,7 +4995,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5004,7 +5004,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 312,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5033,7 +5033,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5062,7 +5062,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5071,7 +5071,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 217,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5090,7 +5090,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5139,7 +5139,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5168,7 +5168,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5177,7 +5177,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 325,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5196,7 +5196,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 365,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5225,7 +5225,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5234,7 +5234,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 366,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5253,7 +5253,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 365,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5282,7 +5282,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5291,7 +5291,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 366,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5320,7 +5320,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 365,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5362,7 +5362,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "op": "unclip",
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5373,7 +5373,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5383,7 +5383,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5394,7 +5394,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5404,7 +5404,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5415,7 +5415,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5425,7 +5425,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5436,7 +5436,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5446,7 +5446,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5457,7 +5457,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5467,7 +5467,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5478,7 +5478,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -5488,7 +5488,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5499,7 +5499,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -5509,7 +5509,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5520,7 +5520,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 7,
+    "color": 7,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(223, 34, 37)",
@@ -5530,7 +5530,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5541,7 +5541,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -5551,7 +5551,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5562,7 +5562,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -5572,7 +5572,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5583,7 +5583,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5593,7 +5593,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5604,7 +5604,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -5614,7 +5614,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5625,7 +5625,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5635,7 +5635,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 513,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5646,7 +5646,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5656,7 +5656,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 513,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5667,7 +5667,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5677,7 +5677,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
     "y": 513,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5688,7 +5688,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5703,7 +5703,7 @@ exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement dr
 exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; snapshot 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 540,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5712,7 +5712,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 0,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5721,7 +5721,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5730,7 +5730,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5739,7 +5739,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5748,7 +5748,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 17,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5757,7 +5757,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5766,7 +5766,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5775,7 +5775,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5784,7 +5784,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 125,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5793,7 +5793,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5802,7 +5802,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5811,7 +5811,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5820,7 +5820,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5829,7 +5829,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 341,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5838,7 +5838,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 341,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5847,7 +5847,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 341,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 73,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5856,7 +5856,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 341,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -5867,7 +5867,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5877,7 +5877,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 36,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -5886,7 +5886,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 18,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -5897,7 +5897,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5907,7 +5907,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 72,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -5918,7 +5918,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -5928,7 +5928,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5947,7 +5947,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5956,7 +5956,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5965,7 +5965,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5974,7 +5974,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 54,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5983,7 +5983,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 54,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6002,7 +6002,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6011,7 +6011,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6020,7 +6020,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 18,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6029,7 +6029,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 54,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6038,7 +6038,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 54,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6057,7 +6057,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6066,7 +6066,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 18,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6077,7 +6077,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6087,7 +6087,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 36,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6096,7 +6096,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 54,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6105,7 +6105,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 54,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6124,7 +6124,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6133,7 +6133,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6142,7 +6142,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6151,7 +6151,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6160,7 +6160,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6179,7 +6179,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6188,7 +6188,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6197,7 +6197,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6206,7 +6206,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6215,7 +6215,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6234,7 +6234,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6243,7 +6243,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6252,7 +6252,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6261,7 +6261,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6270,7 +6270,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6289,7 +6289,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6298,7 +6298,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6307,7 +6307,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 126,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6316,7 +6316,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 162,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6325,7 +6325,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6344,7 +6344,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6353,7 +6353,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 234,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6364,7 +6364,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6374,7 +6374,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 252,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6385,7 +6385,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6395,7 +6395,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 288,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6406,7 +6406,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6416,7 +6416,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6435,7 +6435,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6446,7 +6446,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6456,7 +6456,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 252,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6465,7 +6465,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 234,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6476,7 +6476,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6486,7 +6486,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 288,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6495,7 +6495,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 270,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6514,7 +6514,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6523,7 +6523,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 234,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6534,7 +6534,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6544,7 +6544,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 252,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6555,7 +6555,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6565,7 +6565,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 288,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6574,7 +6574,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 270,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6593,7 +6593,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6602,7 +6602,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 234,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6611,7 +6611,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 234,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6620,7 +6620,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 270,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6629,7 +6629,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 270,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6648,7 +6648,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6657,7 +6657,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6666,7 +6666,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6675,7 +6675,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 378,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6684,7 +6684,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 378,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6703,7 +6703,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6712,7 +6712,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6721,7 +6721,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6730,7 +6730,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 378,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6739,7 +6739,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 378,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6758,7 +6758,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6767,7 +6767,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6776,7 +6776,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 342,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6785,7 +6785,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 378,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6794,7 +6794,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 378,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6813,7 +6813,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 5,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6824,7 +6824,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6834,7 +6834,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 360,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6843,7 +6843,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 342,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6852,7 +6852,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 378,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -6863,7 +6863,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -6873,7 +6873,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 396,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 13,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6899,7 +6899,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 41,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6928,7 +6928,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6937,7 +6937,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 42,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6956,7 +6956,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6975,7 +6975,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 41,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7014,7 +7014,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 41,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7043,7 +7043,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7052,7 +7052,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 42,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7071,7 +7071,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7100,7 +7100,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7129,7 +7129,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7138,7 +7138,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7177,7 +7177,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 149,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7196,7 +7196,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7215,7 +7215,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 95,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7244,7 +7244,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7253,7 +7253,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 109,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7272,7 +7272,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 149,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7291,7 +7291,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7320,7 +7320,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7329,7 +7329,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 204,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7368,7 +7368,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 149,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7397,7 +7397,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7406,7 +7406,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 150,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7425,7 +7425,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7494,7 +7494,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 257,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7513,7 +7513,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7542,7 +7542,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7551,7 +7551,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 312,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7580,7 +7580,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 257,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7629,7 +7629,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 257,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7648,7 +7648,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7677,7 +7677,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7686,7 +7686,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 312,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7715,7 +7715,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 203,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7744,7 +7744,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7753,7 +7753,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 217,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7772,7 +7772,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7821,7 +7821,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 311,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7850,7 +7850,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7859,7 +7859,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 325,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 12,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7878,7 +7878,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 365,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7907,7 +7907,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7916,7 +7916,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 366,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7935,7 +7935,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 365,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7964,7 +7964,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "r": 10,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 25,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7973,7 +7973,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 366,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 21,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8002,7 +8002,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 365,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8044,7 +8044,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "op": "unclip",
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8055,7 +8055,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -8065,7 +8065,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8076,7 +8076,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -8086,7 +8086,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8097,7 +8097,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -8107,7 +8107,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8118,7 +8118,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -8128,7 +8128,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 432,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8139,7 +8139,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -8149,7 +8149,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8160,7 +8160,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -8170,7 +8170,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8181,7 +8181,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -8191,7 +8191,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8202,7 +8202,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -8212,7 +8212,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 459,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8223,7 +8223,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -8233,7 +8233,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8244,7 +8244,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -8254,7 +8254,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8265,7 +8265,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -8275,7 +8275,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8286,7 +8286,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(168, 168, 168)",
@@ -8296,7 +8296,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 486,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8307,7 +8307,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -8317,7 +8317,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 513,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8328,7 +8328,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -8338,7 +8338,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 513,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8349,7 +8349,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -8359,7 +8359,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
     "y": 513,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -8370,7 +8370,7 @@ exports[`subsets rendering (tier 2.5) > opening frame: slots, arrows, tally; sna
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",

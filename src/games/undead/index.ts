@@ -8,7 +8,7 @@
  * right-click toggles pencil mode (sticky, a fork divergence); G/V/Z (or 1/2/3,
  * or a click on the matching count block) place a monster; E/0/Backspace clear;
  * clicking an edge clue strikes it through ("done"); `M` fills all pencil marks.
- * Live errors recolour the counts and clues; Check & Save additionally flags
+ * Live errors recolor the counts and clues; Check & Save additionally flags
  * cells that contradict the unique solution.
  */
 
@@ -54,7 +54,7 @@ import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   KeyLabel,
@@ -63,7 +63,7 @@ import type {
 } from "../../engine/types.ts";
 import { newUndeadDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   countBlockAt,
   FLASH_TIME,
@@ -197,7 +197,7 @@ function interpretMove(
 
   const xinfo = common.xinfo;
 
-  // Real-entry mode: highlight shown, not pencilling.
+  // Real-entry mode: highlight shown, not penciling.
   if (ui.cursor.visible && !ui.hpencil) {
     const xi = xinfo[ui.cursor.x + ui.cursor.y * stride];
     if (xi >= 0 && !common.fixed[xi]) {
@@ -284,7 +284,7 @@ function interpretMove(
     }
   }
 
-  // Grid clicks (selection / mode), with the fork sticky-pencil behaviour.
+  // Grid clicks (selection / mode), with the fork sticky-pencil behavior.
   if (gx >= 1 && gx <= w && gy >= 1 && gy <= h) {
     const xi = xinfo[gx + gy * stride];
     if (xi >= 0 && !common.fixed[xi]) {
@@ -376,7 +376,7 @@ function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
     case "markAll":
       // **Additive**: fill only the cells that have no notes yet, never reset one
       // the player has narrowed (owner-reported on Salad, 2026-07-29 — resetting
-      // threw away their own deductions on any board with some pencilled cells
+      // threw away their own deductions on any board with some penciled cells
       // and some blank ones).
       for (let i = 0; i < common.numTotal; i++) {
         if (next.guess[i] === MON_NONE && next.pencils[i] === 0) next.pencils[i] = 7;
@@ -1006,7 +1006,7 @@ export const undeadGame: Game<
     },
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: UndeadParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

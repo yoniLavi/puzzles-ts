@@ -1,14 +1,14 @@
 /**
- * Types and pure state helpers for Map (`map.c`) — the four-colour puzzle.
+ * Types and pure state helpers for Map (`map.c`) — the four-color puzzle.
  *
- * Colour every region of a map so no two adjacent regions share a colour,
- * given some regions pre-coloured as immutable clues.
+ * Color every region of a map so no two adjacent regions share a color,
+ * given some regions pre-colored as immutable clues.
  *
  * The immutable board geometry lives in a shared {@link MapData} (see
  * `map-data.ts`) — the region-per-quadrant grid, the adjacency graph, the clue
  * flags and the label points — shared by reference across every cloned
  * {@link MapState} (upstream's refcounted `struct map`, GC in place of the
- * refcount; design D1). A move copies only the mutable per-region `colouring`
+ * refcount; design D1). A move copies only the mutable per-region `coloring`
  * and `pencil` arrays.
  */
 
@@ -127,14 +127,14 @@ export function validateParams(p: MapParams, _full: boolean): string | null {
 
 /** One region edit within a move (design D3). */
 export type MapOp =
-  /** Set a region's colour (`colour` null = clear); clears its pencil. */
-  | { op: "colour"; region: number; colour: number | null }
-  /** Toggle one pencil bit (0..3). Only legal on an uncoloured region. */
+  /** Set a region's color (`color` null = clear); clears its pencil. */
+  | { op: "color"; region: number; color: number | null }
+  /** Toggle one pencil bit (0..3). Only legal on an uncolored region. */
   | { op: "pencil"; region: number; bit: number };
 
 /**
  * A player move: a list of region ops (a single drag-drop can change both a
- * colour and pencil bits), optionally flagged as a solve.
+ * color and pencil bits), optionally flagged as a solve.
  */
 export interface MapMove {
   ops: MapOp[];
@@ -149,8 +149,8 @@ export const FLASH_ALL_TO_WHITE = 2;
 
 /** Persisted drag/cursor UI + preferences (upstream `game_ui`). */
 export interface MapUi {
-  /** -2 = no drag; -1 = dragging a blank; >=0 = dragging that colour. */
-  dragColour: number;
+  /** -2 = no drag; -1 = dragging a blank; >=0 = dragging that color. */
+  dragColor: number;
   /** Pencil bitmask carried by a blank drag. */
   dragPencil: number;
   /** Pixel coords of the current drag position. */
@@ -170,7 +170,7 @@ export interface MapUi {
 
 export function newUi(_state: MapState): MapUi {
   return {
-    dragColour: -2,
+    dragColor: -2,
     dragPencil: 0,
     dragx: -1,
     dragy: -1,
@@ -189,8 +189,8 @@ export interface MapState {
   readonly params: MapParams;
   /** Shared immutable geometry (region grid, graph, clues, label points). */
   readonly map: MapData;
-  /** Per-region colour: -1 (blank) or 0..3. Length `n`. */
-  readonly colouring: Int32Array;
+  /** Per-region color: -1 (blank) or 0..3. Length `n`. */
+  readonly coloring: Int32Array;
   /** Per-region pencil-mark bitmask (only meaningful when blank). Length `n`. */
   readonly pencil: Int32Array;
   readonly completed: boolean;
@@ -201,14 +201,14 @@ export function cloneState(s: MapState): MapState {
   return {
     params: s.params,
     map: s.map,
-    colouring: s.colouring.slice(),
+    coloring: s.coloring.slice(),
     pencil: s.pencil.slice(),
     completed: s.completed,
     cheated: s.cheated,
   };
 }
 
-/** A flagged region whose colour contradicts the unique solution (design D6). */
+/** A flagged region whose color contradicts the unique solution (design D6). */
 export interface MapMistake {
   region: number;
 }

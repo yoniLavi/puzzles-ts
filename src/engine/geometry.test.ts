@@ -18,7 +18,7 @@ describe("geometry coord/fromCoord", () => {
         const left = coord(c, ts, border);
         expect(fromCoord(left, ts, border)).toBe(c); // top-left edge
         expect(fromCoord(left + ts - 1, ts, border)).toBe(c); // bottom-right edge
-        expect(fromCoord(left + Math.floor(ts / 2), ts, border)).toBe(c); // centre
+        expect(fromCoord(left + Math.floor(ts / 2), ts, border)).toBe(c); // center
       }
     }
   });

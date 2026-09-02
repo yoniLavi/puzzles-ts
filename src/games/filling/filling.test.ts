@@ -1,5 +1,5 @@
 /**
- * Filling (Fillomino) behavioural tests.
+ * Filling (Fillomino) behavioral tests.
  *
  * Tier 1 (pure logic): params/desc codec, generator solvability + uniqueness,
  * solver, completion, selection moves, findMistakes. Tier 2.5: a render
@@ -225,7 +225,7 @@ describe("filling render scenario", () => {
       game: fillingGame,
       id: "9x7#filling-seed-3",
     });
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_GRID)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_GRID)).toBe(
       true,
     );
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
@@ -236,12 +236,12 @@ describe("filling render scenario", () => {
     // 3x1, all clues: "1 2 2" is complete (CORRECT_BG); "2 2 2" is overfull.
     const correct = renderScenario({ game: fillingGame, id: "3x1:122" });
     expect(
-      correct.recording.ops.some((o) => o.op === "rect" && o.colour === COL_CORRECT),
+      correct.recording.ops.some((o) => o.op === "rect" && o.color === COL_CORRECT),
     ).toBe(true);
 
     const overfull = renderScenario({ game: fillingGame, id: "3x1:222" });
     expect(
-      overfull.recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR),
+      overfull.recording.ops.some((o) => o.op === "rect" && o.color === COL_ERROR),
     ).toBe(true);
   });
 });

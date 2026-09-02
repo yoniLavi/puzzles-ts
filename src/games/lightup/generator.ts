@@ -49,7 +49,7 @@ function cleanBoard(state: LightupState, leaveBlacks: boolean): void {
   state.nlights = 0;
 }
 
-/** Randomise the black squares over the symmetry-reduced region, then
+/** Randomize the black squares over the symmetry-reduced region, then
  * mirror/rotate the region over the whole board (upstream `set_blacks`,
  * via the shared engine helper — Sticks is the second consumer). */
 export function setBlacks(
@@ -192,7 +192,7 @@ const MAX_GRIDGEN_TRIES = 20;
 const MAX_RAMP_ROUNDS = 1000;
 
 /**
- * Generate a puzzle: the most complex grid honouring a unique solution
+ * Generate a puzzle: the most complex grid honoring a unique solution
  * and the difficulty floor/ceiling, ramping the black-square percentage
  * when a layout keeps failing (upstream `new_game_desc`).
  */

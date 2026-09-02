@@ -7,27 +7,27 @@
  * This is a faithful port of the upstream packed-word draw model
  * (`bridges.c` game_redraw + draw_* helpers): each tile's cache entry is a
  * 28-bit descriptor that encodes not only the tile's own contents but the
- * bridge-stubs intruding from neighbouring islands and the island-arcs
+ * bridge-stubs intruding from neighboring islands and the island-arcs
  * intruding from adjacent island tiles. The descriptor *is* the cache key, so
  * "redraw iff `newgrid[i] != grid[i]`" falls straight out.
  *
  * Display code targets neat visuals + clean structure (not byte-fidelity), so
  * the one deliberate divergence is the mistake overlay: `findMistakes` wrong
- * bridges are recoloured with the existing red `COL_WARNING` channel, which
+ * bridges are recolored with the existing red `COL_WARNING` channel, which
  * lives inside the cache key and therefore repaints clean when the overlay
  * clears.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import {
   ERROR_WASH,
   GRID_MID,
   HELD,
   highlightWash,
   INK,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour } from "../../engine/types.ts";
+import type { Color } from "../../engine/types.ts";
 import {
   type BridgesMistake,
   type BridgesParams,
@@ -52,7 +52,7 @@ export function border(tileSize: number): number {
   return Math.floor(tileSize / 8) + 1;
 }
 
-// --- Colour enum (bridges.c lines 103-112), index-for-index with C ---
+// --- Color enum (bridges.c lines 103-112), index-for-index with C ---
 export const COL_BACKGROUND = 0;
 export const COL_FOREGROUND = 1;
 export const COL_HIGHLIGHT = 2;
@@ -63,7 +63,7 @@ export const COL_HINT = 6;
 export const COL_GRID = 7;
 export const COL_WARNING = 8;
 export const COL_CURSOR = 9;
-export const NCOLOURS = 10;
+export const NCOLORS = 10;
 
 // --- Packed draw-word fields (bridges.c lines 2262-2297) ---
 // Line data (6 bits per direction).
@@ -143,7 +143,7 @@ export function computeSize(
   return { w: p.w * tileSize + 2 * b, h: p.h * tileSize + 2 * b };
 }
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
   // COL_HINT = COL_LOWLIGHT; COL_MARK = HIGHLIGHT.
   return [
@@ -155,7 +155,7 @@ export function colours(defaultBackground: Colour): Colour[] {
     highlight, // COL_MARK (= HIGHLIGHT)
     lowlight, // COL_HINT (= LOWLIGHT): upstream's "possible bridge" line, a bevel shade, not a hint-system mark
     GRID_MID, // COL_GRID
-    ERROR_WASH, // COL_WARNING (also the mistake overlay colour)
+    ERROR_WASH, // COL_WARNING (also the mistake overlay color)
     // COL_CURSOR — not `CURSOR`: green is the island a bridge is being drawn
     // from, and the cursor *fills* the island under its clue digit, which is
     // the "you are here" wash Solo's family draws its cursor cell with.
@@ -381,7 +381,7 @@ function drawIsland(
   dr.drawCircle({ x: ox + half, y: oy + half }, irad, bg, bg);
 
   if (clue > 0) {
-    const textcolour = fg === COL_SELECTED ? COL_FOREGROUND : fg;
+    const textcolor = fg === COL_SELECTED ? COL_FOREGROUND : fg;
     dr.drawText(
       { x: ox + half, y: oy + half },
       {
@@ -390,7 +390,7 @@ function drawIsland(
         fontType: "variable",
         size: islandNumsize(clue, ts),
       },
-      textcolour,
+      textcolor,
       String(clue),
     );
   }
@@ -509,7 +509,7 @@ function drawEdgeTile(
 
 /**
  * Build the mistake mask: a per-cell bit set for every line-square on a wrong
- * bridge span, plus the two endpoint island cells, so they can be recoloured
+ * bridge span, plus the two endpoint island cells, so they can be recolored
  * red. Returns a `Uint8Array` (1 = mistake) sized w*h, or null when there are
  * no mistakes.
  */
@@ -604,7 +604,7 @@ export function redrawBridges(
         if (ui.cursor.visible && ui.cursor.x === is.x && ui.cursor.y === is.y)
           idata |= DI_BG_CURSOR;
         else if (v & G_MARK) idata |= DI_BG_MARK;
-        // Fork aid: auto-grey a satisfied island (visual only — no lock).
+        // Fork aid: auto-gray a satisfied island (visual only — no lock).
         // A satisfied island is never impossible, so this never fights the red.
         else if (ui.autoMark && s.islandCountbridges(is) === is.count)
           idata |= DI_BG_MARK;

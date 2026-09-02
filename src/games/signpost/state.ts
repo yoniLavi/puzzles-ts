@@ -4,8 +4,8 @@
  * Idiomatic port of the state core of `puzzles/signpost.c`: the
  * `next`/`prev` chain links, the `Dsf` binding linked cells into
  * regions, and the derived per-cell sequence-number + 16-way region
- * colouring (`update_numbers` / `head_number` / `connect_numbers`) that
- * renders each partial chain as a coloured gradient. The state is a
+ * coloring (`update_numbers` / `head_number` / `connect_numbers`) that
+ * renders each partial chain as a colored gradient. The state is a
  * mutable record cloned per move (`cloneState`); the engine boundary
  * treats it immutably (executeMove clones, then mutates the copy).
  */
@@ -46,7 +46,7 @@ export interface SignpostState {
    * by play (the generator mutates its own working boards). */
   dirs: Int8Array;
   /** Derived sequence number per cell: a real number 1..n, or a
-   * colour-group-encoded placeholder `START(c) + offset` (0 = blank). */
+   * color-group-encoded placeholder `START(c) + offset` (0 = blank). */
   nums: Int32Array;
   /** FLAG_IMMUTABLE | FLAG_ERROR bits per cell. */
   flags: Uint8Array;
@@ -326,9 +326,9 @@ export function unlinkCell(s: SignpostState, si: number): void {
   }
 }
 
-// --- region numbering + colouring -----------------------------------
+// --- region numbering + coloring -----------------------------------
 
-export const colourOf = (s: SignpostState, a: number): number =>
+export const colorOf = (s: SignpostState, a: number): number =>
   Math.floor(a / (s.n + 1));
 export const startOf = (s: SignpostState, c: number): number => c * (s.n + 1);
 
@@ -361,13 +361,13 @@ function headNumber(s: SignpostState, i: number): HeadMeta {
   if (head.preference) return head;
 
   if (s.nums[i] === 0 && s.nums[s.next[i]] > s.n) {
-    head.start = startOf(s, colourOf(s, s.nums[s.next[i]]));
+    head.start = startOf(s, colorOf(s, s.nums[s.next[i]]));
     head.preference = 1;
   } else if (s.nums[i] <= s.n) {
     head.start = 0;
     head.preference = 0;
   } else {
-    const c = colourOf(s, s.nums[i]);
+    const c = colorOf(s, s.nums[i]);
     let nn = 1;
     const sz = s.dsf.size(i);
     j = i;
@@ -378,10 +378,10 @@ function headNumber(s: SignpostState, i: number): HeadMeta {
         head.preference = 1;
         return head;
       }
-      if (colourOf(s, s.nums[j]) === c) {
+      if (colorOf(s, s.nums[j]) === c) {
         nn++;
       } else {
-        const startAlternate = startOf(s, colourOf(s, s.nums[j]));
+        const startAlternate = startOf(s, colorOf(s, s.nums[j]));
         if (nn < sz - nn) {
           head.start = startAlternate;
           head.preference = 1;
@@ -392,7 +392,7 @@ function headNumber(s: SignpostState, i: number): HeadMeta {
         return head;
       }
     }
-    // May have split a region; avoid re-using a colour.
+    // May have split a region; avoid re-using a color.
     if (c === 0) {
       head.start = 0;
       head.preference = 0;
@@ -417,10 +417,10 @@ function connectNumbers(s: SignpostState): void {
 }
 
 function compareHeads(a: HeadMeta, b: HeadMeta): number {
-  // Heads with preferred colours first...
+  // Heads with preferred colors first...
   if (a.preference && !b.preference) return -1;
   if (b.preference && !a.preference) return 1;
-  // ...then low colours first...
+  // ...then low colors first...
   if (a.start < b.start) return -1;
   if (a.start > b.start) return 1;
   // ...then large regions first...
@@ -433,11 +433,11 @@ function compareHeads(a: HeadMeta, b: HeadMeta): number {
 }
 
 function lowestStart(s: SignpostState, heads: HeadMeta[]): number {
-  // NB start at 1: colour 0 is real numbers.
+  // NB start at 1: color 0 is real numbers.
   for (let c = 1; c < s.n; c++) {
     let used = false;
     for (const head of heads) {
-      if (colourOf(s, head.start) === c) {
+      if (colorOf(s, head.start) === c) {
         used = true;
         break;
       }
@@ -468,7 +468,7 @@ export function updateNumbers(s: SignpostState): void {
 
   heads.sort(compareHeads);
 
-  // Remove duplicate-coloured regions (order matters: back to front).
+  // Remove duplicate-colored regions (order matters: back to front).
   for (let m = heads.length - 1; m >= 0; m--) {
     if (m !== 0 && heads[m].start === heads[m - 1].start) {
       heads[m].start = startOf(s, lowestStart(s, heads));

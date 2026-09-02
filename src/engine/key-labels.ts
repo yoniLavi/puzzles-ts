@@ -15,7 +15,7 @@ import type { KeyLabel } from "./types.ts";
 /** ASCII backspace — upstream's clear-key button code (`'\b'`). */
 export const CLEAR_BUTTON = 8;
 
-/** The clear key, labelled so `puzzle-keys` maps it to the clear icon. */
+/** The clear key, labeled so `puzzle-keys` maps it to the clear icon. */
 export const clearKey: KeyLabel = { button: CLEAR_BUTTON, label: "Clear" };
 
 /**

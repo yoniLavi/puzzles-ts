@@ -331,7 +331,7 @@ function checkLooseEnds(b: Board): number {
   return did;
 }
 
-function neighboursCount(
+function neighborsCount(
   b: Board,
   start: number,
   step: number,
@@ -348,7 +348,7 @@ function neighboursCount(
   return { onefill: toFill === 1, oneempty: toEmpty === 1 };
 }
 
-function neighboursTry(
+function neighborsTry(
   b: Board,
   x: number,
   y: number,
@@ -377,25 +377,25 @@ function neighboursTry(
   return did;
 }
 
-function checkNeighbours(b: Board, bothWays: boolean): number {
+function checkNeighbors(b: Board, bothWays: boolean): number {
   const { w, h } = b;
   let did = 0;
   for (let x = 0; x < w; x++) {
-    const { onefill, oneempty: oe } = neighboursCount(b, x, w, h, x);
+    const { onefill, oneempty: oe } = neighborsCount(b, x, w, h, x);
     const oneempty = bothWays ? oe : false;
     if (!onefill && !oneempty) continue;
     for (let y = 0; y + 1 < h; y++) {
-      did += neighboursTry(b, x, y, x, y + 1, onefill, oneempty, D);
-      did += neighboursTry(b, x, y + 1, x, y, onefill, oneempty, U);
+      did += neighborsTry(b, x, y, x, y + 1, onefill, oneempty, D);
+      did += neighborsTry(b, x, y + 1, x, y, onefill, oneempty, U);
     }
   }
   for (let y = 0; y < h; y++) {
-    const { onefill, oneempty: oe } = neighboursCount(b, y * w, 1, w, w + y);
+    const { onefill, oneempty: oe } = neighborsCount(b, y * w, 1, w, w + y);
     const oneempty = bothWays ? oe : false;
     if (!onefill && !oneempty) continue;
     for (let x = 0; x + 1 < w; x++) {
-      did += neighboursTry(b, x, y, x + 1, y, onefill, oneempty, R);
-      did += neighboursTry(b, x + 1, y, x, y, onefill, oneempty, L);
+      did += neighborsTry(b, x, y, x + 1, y, onefill, oneempty, R);
+      did += neighborsTry(b, x + 1, y, x, y, onefill, oneempty, L);
     }
   }
   return did;
@@ -451,7 +451,7 @@ function bridgeSub(b: Board, x: number, y: number, d: number, dsf: Dsf): number 
   return 1;
 }
 
-function* bridgeNeighbours(b: Board, vertex: number): Iterable<number> {
+function* bridgeNeighbors(b: Board, vertex: number): Iterable<number> {
   const { w } = b;
   const x = vertex % w;
   const y = Math.floor(vertex / w);
@@ -468,7 +468,7 @@ function* bridgeNeighbours(b: Board, vertex: number): Iterable<number> {
 function checkBridgeParity(b: Board, dsf: Dsf): number {
   const { w, h } = b;
   let did = 0;
-  const fls = findLoops(w * h, (v) => bridgeNeighbours(b, v));
+  const fls = findLoops(w * h, (v) => bridgeNeighbors(b, v));
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
       if (y + 1 < h && !fls.isLoopEdge(y * w + x, (y + 1) * w + x)) {
@@ -531,11 +531,11 @@ export function tracksSolve(b: Board, diff: number): { ret: number; maxDiff: num
       maxDiff = Math.max(maxDiff, DIFF_TRICKY);
       continue;
     }
-    if (diff >= DIFF_TRICKY && checkNeighbours(b, false)) {
+    if (diff >= DIFF_TRICKY && checkNeighbors(b, false)) {
       maxDiff = Math.max(maxDiff, DIFF_TRICKY);
       continue;
     }
-    if (diff >= DIFF_HARD && checkNeighbours(b, true)) {
+    if (diff >= DIFF_HARD && checkNeighbors(b, true)) {
       maxDiff = Math.max(maxDiff, DIFF_HARD);
       continue;
     }

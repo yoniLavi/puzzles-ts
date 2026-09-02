@@ -13,7 +13,7 @@
  * code below, is that a spectre's address is a **sequence of digits read from
  * the bottom up**: "spectre 1 of hex 3 of hex 0 of hex 4 of … of a G hex". That
  * sequence is a {@link SpectreCoords}. Walking from one spectre to its
- * neighbour across an edge is then a *carry* operation on that address: usually
+ * neighbor across an edge is then a *carry* operation on that address: usually
  * you just move to a sibling, but when you leave the parent hexagon entirely,
  * you recurse a level up, cross there, and come back down —
  * {@link SpectreContext.stepHex} and {@link SpectreContext.step} are those two
@@ -97,7 +97,7 @@ const ROT_CACHE = new Map<number, Point>();
 
 /**
  * The unit point at `s` twelfths of a turn anticlockwise — multiply by it to
- * rotate. Memoised on `s mod 12`: it is a pure function of a tiny domain and is
+ * rotate. Memoized on `s mod 12`: it is a pure function of a tiny domain and is
  * called once per vertex of every tile placed.
  */
 export function pointRot(s: number): Point {
@@ -202,7 +202,7 @@ export const UNDECIDED = -1;
  * A spectre's full address: which spectre it is within its innermost hexagon,
  * plus the chain of hexagons-within-hexagons enclosing it.
  *
- * Mutable, and cloned per neighbour during the search — a step *rewrites* the
+ * Mutable, and cloned per neighbor during the search — a step *rewrites* the
  * lower levels of the address in place, which is exactly the carry propagation
  * the substitution system performs.
  */
@@ -235,10 +235,10 @@ function hexToLetter(h: Hex): string {
  *
  * **The draw is unconditional, and that matters even when `poss` has a single
  * entry** (`poss_J` and `poss_L` both do). Consuming the random number is an
- * observable side effect: skipping it when the answer is forced desynchronises
+ * observable side effect: skipping it when the answer is forced desynchronizes
  * the stream from the C's, and the result is not an error but a *different,
  * perfectly valid tiling* — no assertion fires, nothing looks wrong, and a
- * shared game ID silently stops reproducing. Do not optimise this.
+ * shared game ID silently stops reproducing. Do not optimize this.
  */
 function choosePoss(rs: RandomState, poss: readonly Possibility[]): Possibility {
   let limit = 0;
@@ -525,7 +525,7 @@ function spectreKey(spec: Spectre): string {
  * area": that tile is not emitted and is not explored through.
  *
  * Note that a rejected tile is deliberately **not** recorded as visited, so it
- * can be rediscovered and re-tested from another neighbour. Upstream does the
+ * can be rediscovered and re-tested from another neighbor. Upstream does the
  * same, and the retest is cheap.
  */
 export function spectreGenerate(
@@ -655,11 +655,11 @@ function boundsFor(w: number, h: number): Bounds {
  *
  * This is the tiling→grid boundary: exact ℤ[d] arithmetic stops here and
  * integers headed for pixels begin. **It is therefore the one place negative
- * zero is normalised.** The y axis is flipped (screens count downwards), so
+ * zero is normalized.** The y axis is flipped (screens count downwards), so
  * `-y.cr3` produces `-0` whenever `y.cr3` is `0` — a value that compares equal
  * to `0` under `===`, keys identically in a `Map`, and stringifies the same, so
  * it can travel all the way into a dot coordinate and produce a grid that is
- * structurally perfect and still not what the C built. Normalising once, here,
+ * structurally perfect and still not what the C built. Normalizing once, here,
  * beats scattering `|| 0` through arithmetic where it is easy to under-apply
  * and impossible to review.
  */
@@ -679,7 +679,7 @@ function tileCoords(spec: Spectre, bounds: Bounds): SpectreTileCoords | null {
       return null;
     }
 
-    // `+ 0` normalises -0 to +0 and is a no-op for every other value.
+    // `+ 0` normalizes -0 to +0 and is a no-op for every other value.
     out[4 * i + 0] = bounds.xoff + x.c1 + 0;
     out[4 * i + 1] = x.cr3 + 0;
     out[4 * i + 2] = bounds.yoff - y.c1 + 0;
@@ -696,7 +696,7 @@ function tileCoords(spec: Spectre, bounds: Bounds): SpectreTileCoords | null {
  * The tiles themselves are discarded — the search runs purely to discover how
  * deep the substitution hierarchy has to go, which is what the desc records.
  */
-export function spectreTilingRandomise(
+export function spectreTilingRandomize(
   w: number,
   h: number,
   rs: RandomState,
@@ -721,7 +721,7 @@ export function spectreTilingRandomise(
 /**
  * Regenerate the patch `params` describes, calling `callback` with each tile
  * that lies entirely within the `w × h` area, in breadth-first order from the
- * centre outwards.
+ * center outwards.
  *
  * Returns the number of hierarchy levels the replay actually needed. When that
  * exceeds `params.coords.length` the desc ran out and the `"dummy"` fallback in

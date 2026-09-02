@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the ABCD port.
+ * Behavioral tests for the ABCD port.
  *
  * Tier 1 — params/desc codec, the deductive solver's three verdicts, the
  * generator, move semantics, findMistakes, completion — all pure.
@@ -351,13 +351,13 @@ describe("abcd moves through a Midend", () => {
 
     let s = abcdGame.executeMove(st, { type: "enter", x: 1, y: 1, letter: 0 });
     s = abcdGame.executeMove(s, { type: "pencilAll" });
-    // A-candidate is still noted in the neighbour (1,0) right after the fill.
+    // A-candidate is still noted in the neighbor (1,0) right after the fill.
     expect(s.pencil[cuboid(1, 0, 0, n, w)]).toBe(1);
 
     const m = abcdGame.interpretMove(s, ui, ds, { x: 0, y: 0 }, 77);
     expect((m as { type: string }).type).toBe("pencilStrike");
     const after = abcdGame.executeMove(s, m as AbcdMove);
-    // The neighbour can no longer be 'A' (adjacent to the placed A).
+    // The neighbor can no longer be 'A' (adjacent to the placed A).
     expect(after.pencil[cuboid(1, 0, 0, n, w)]).toBe(0);
   });
 
@@ -387,9 +387,9 @@ describe("abcd moves through a Midend", () => {
 
 describe("abcd input (interpretMove)", () => {
   const ts = abcdGame.preferredTileSize ?? 36;
-  // Cell (gx, gy) centre in pixels: FROMCOORD is floor(px/ts) - n, so cell x
+  // Cell (gx, gy) center in pixels: FROMCOORD is floor(px/ts) - n, so cell x
   // starts at (x + n) * ts.
-  const centre = (p: AbcdParams, gx: number, gy: number) => ({
+  const center = (p: AbcdParams, gx: number, gy: number) => ({
     x: (gx + p.n) * ts + (ts >> 1),
     y: (gy + p.n) * ts + (ts >> 1),
   });
@@ -403,27 +403,27 @@ describe("abcd input (interpretMove)", () => {
     expect(ui.pencilSticky).toBe(true); // fork default
 
     // Left-click selects a cell for ink.
-    abcdGame.interpretMove(st, ui, ds, centre(p, 2, 3), LEFT_BUTTON);
+    abcdGame.interpretMove(st, ui, ds, center(p, 2, 3), LEFT_BUTTON);
     expect(ui.cursor.visible).toBe(true);
     expect(ui.hpencil).toBe(false);
     expect([ui.cursor.x, ui.cursor.y]).toEqual([2, 3]);
 
     // Right-click toggles pencil mode ON and moves the highlight onto the cell.
-    abcdGame.interpretMove(st, ui, ds, centre(p, 1, 1), RIGHT_BUTTON);
+    abcdGame.interpretMove(st, ui, ds, center(p, 1, 1), RIGHT_BUTTON);
     expect(ui.hpencil).toBe(true);
     expect([ui.cursor.x, ui.cursor.y]).toEqual([1, 1]);
 
     // A left-click on a new cell keeps pencil mode ON (sticky).
-    abcdGame.interpretMove(st, ui, ds, centre(p, 0, 0), LEFT_BUTTON);
+    abcdGame.interpretMove(st, ui, ds, center(p, 0, 0), LEFT_BUTTON);
     expect(ui.hpencil).toBe(true);
     expect([ui.cursor.x, ui.cursor.y]).toEqual([0, 0]);
 
     // Right-click again toggles pencil mode OFF (stays on until right-clicked again).
-    abcdGame.interpretMove(st, ui, ds, centre(p, 0, 0), RIGHT_BUTTON);
+    abcdGame.interpretMove(st, ui, ds, center(p, 0, 0), RIGHT_BUTTON);
     expect(ui.hpencil).toBe(false);
 
     // A left-click on the already-highlighted cell deselects it.
-    abcdGame.interpretMove(st, ui, ds, centre(p, 0, 0), LEFT_BUTTON);
+    abcdGame.interpretMove(st, ui, ds, center(p, 0, 0), LEFT_BUTTON);
     expect(ui.cursor.visible).toBe(false);
   });
 
@@ -433,7 +433,7 @@ describe("abcd input (interpretMove)", () => {
     const ui = newUi(st);
     const ds = newDrawState(st);
     setTileSize(ds, ts);
-    abcdGame.interpretMove(st, ui, ds, centre(p, 0, 0), LEFT_BUTTON);
+    abcdGame.interpretMove(st, ui, ds, center(p, 0, 0), LEFT_BUTTON);
     // 'C' (67) → letter index 2; bare '3' (51) → index 2 as well.
     expect(abcdGame.interpretMove(st, ui, ds, { x: 0, y: 0 }, 67)).toEqual({
       type: "enter",
@@ -548,22 +548,20 @@ describe("abcd render", () => {
       y: 2,
       letter: 0,
     });
-    const palette = abcdGame.colours([0.9, 0.9, 0.9]);
+    const palette = abcdGame.colors([0.9, 0.9, 0.9]);
     const ds = newDrawState(withMark);
     setTileSize(ds, abcdGame.preferredTileSize ?? 36);
     const dr = new RecordingDrawing(palette);
     redraw(dr, ds, null, withMark, 1, ui, 0, 0);
     // The highlighted cursor cell fills its background COL_HIGHLIGHT.
-    expect(dr.ops.some((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)).toBe(
-      true,
-    );
+    expect(dr.ops.some((o) => o.op === "rect" && o.color === COL_HIGHLIGHT)).toBe(true);
     // The pencil mark 'A' is drawn as text.
     expect(dr.ops.some((o) => o.op === "text" && o.text === "A")).toBe(true);
   });
 
   it("draws the pencil-mode indicator only while pencil mode is on", () => {
     const st = newState(P(5, 5, 4), newAbcdDesc(P(5, 5, 4), randomNew("r-ind")).desc);
-    const palette = abcdGame.colours([0.9, 0.9, 0.9]);
+    const palette = abcdGame.colors([0.9, 0.9, 0.9]);
     const render = (hpencil: boolean): RecordingDrawing => {
       const ui = newUi(st);
       ui.hpencil = hpencil;
@@ -585,12 +583,12 @@ describe("abcd render", () => {
     const st = newState(P(5, 5, 4), newAbcdDesc(P(5, 5, 4), randomNew("r-adj")).desc);
     let s = abcdGame.executeMove(st, { type: "enter", x: 0, y: 0, letter: 0 });
     s = abcdGame.executeMove(s, { type: "enter", x: 1, y: 0, letter: 0 });
-    const palette = abcdGame.colours([0.9, 0.9, 0.9]);
+    const palette = abcdGame.colors([0.9, 0.9, 0.9]);
     const ds = newDrawState(s);
     setTileSize(ds, abcdGame.preferredTileSize ?? 36);
     const dr = new RecordingDrawing(palette);
     redraw(dr, ds, null, s, 1, newUi(s), 0, 0);
-    expect(dr.ops.some((o) => o.op === "text" && o.colour === COL_ERROR)).toBe(true);
+    expect(dr.ops.some((o) => o.op === "text" && o.color === COL_ERROR)).toBe(true);
   });
 
   it("runs the completion flash on a genuine solve", () => {
@@ -606,14 +604,12 @@ describe("abcd render", () => {
     const flash = abcdGame.flashLength?.(st, s, 1, newUi(s)) ?? 0;
     expect(flash).toBeGreaterThan(0);
     // A flashing frame paints highlight/lowlight stripe backgrounds.
-    const palette = abcdGame.colours([0.9, 0.9, 0.9]);
+    const palette = abcdGame.colors([0.9, 0.9, 0.9]);
     const ds = newDrawState(s);
     setTileSize(ds, abcdGame.preferredTileSize ?? 36);
     const dr = new RecordingDrawing(palette);
     redraw(dr, ds, null, s, 1, newUi(s), 0, flash);
-    expect(dr.ops.some((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)).toBe(
-      true,
-    );
+    expect(dr.ops.some((o) => o.op === "rect" && o.color === COL_HIGHLIGHT)).toBe(true);
   });
 
   it("Check & Save highlights a mistake even when the cell was already drawn", () => {
@@ -627,12 +623,12 @@ describe("abcd render", () => {
     const wrong = (sol[0] + 1) % st.params.n;
     me.playMoves([{ type: "enter", x: 0, y: 0, letter: wrong }]);
 
-    const palette = abcdGame.colours([0.9, 0.9, 0.9]);
+    const palette = abcdGame.colors([0.9, 0.9, 0.9]);
     me.redraw(new RecordingDrawing(palette)); // first paint, no overlay yet
     expect(me.findMistakes()).toBeGreaterThan(0);
     const after = new RecordingDrawing(palette);
     me.redraw(after);
-    expect(after.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(true);
+    expect(after.ops.some((o) => o.op === "line" && o.color === COL_ERROR)).toBe(true);
   });
 });
 

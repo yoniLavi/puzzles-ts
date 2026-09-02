@@ -24,7 +24,7 @@ of them can disagree.
 The board SHALL be a hexagon stored as a padded parallelogram: the actual grid
 width SHALL be the parameter width plus the ceiling of half the height minus one,
 with the two triangular corners masked as boundary cells, leaving exactly
-width-by-height playable cells. Neighbours SHALL be the fixed six-direction hex
+width-by-height playable cells. Neighbors SHALL be the fixed six-direction hex
 step set. This geometry SHALL be bespoke and SHALL NOT depend on the shared grid
 tiling engine.
 
@@ -74,7 +74,7 @@ value out of range.
 Bricks SHALL provide a solver that decides whether a grid is complete, still
 unfinished, or invalid, from three rules: no three consecutive shaded cells in a
 horizontal line, every shaded cell supported by a shaded cell below it, and every
-numbered cell's shaded-neighbour count consistent with its clue. The solver SHALL
+numbered cell's shaded-neighbor count consistent with its clue. The solver SHALL
 place cells by contradiction — tentatively shading or unshading a cell and forcing
 the opposite when that leads to an invalid grid — with bounded lookahead for the
 harder difficulties. Every difficulty tier SHALL be solvable by pure deduction; the
@@ -82,7 +82,7 @@ solver SHALL NOT rely on guessing.
 
 The generator SHALL use the solver to keep every puzzle uniquely solvable at its
 target difficulty: it SHALL fill the grid under the support and run-length
-constraints, number it, then remove numbers in a randomised order, keeping a
+constraints, number it, then remove numbers in a randomized order, keeping a
 removal only while the puzzle stays uniquely solvable. Generation from a given seed
 SHALL be reproducible.
 
@@ -104,7 +104,7 @@ hexagon-aware keyboard cursor. A numbered cell SHALL never be shadeable. Moving 
 cursor up or down SHALL alternate between an orthogonal and a diagonal step to
 follow the hexagonal grid.
 
-Because Bricks is uniquely solvable and every rule violation is localised, it SHALL
+Because Bricks is uniquely solvable and every rule violation is localized, it SHALL
 provide a `findMistakes` hook that reports the offending cells, so that Check & Save
 hard-blocks while a mistake is present. Rule violations SHALL additionally be shown
 live during play — three-in-a-row bars, gravity error diamonds, and over-count
@@ -117,7 +117,7 @@ animation.
 #### Scenario: Dragging paints a run of cells
 
 - **WHEN** the player presses on a cell and drags across further playable cells
-- **THEN** on release every dragged playable cell is set to the drag's colour in a
+- **THEN** on release every dragged playable cell is set to the drag's color in a
   single move
 
 #### Scenario: A mistake blocks Check & Save
@@ -142,13 +142,13 @@ followed move continues where the previous plan left off.
 
 Each hint step SHALL explain *why* the move is forced, not merely which cell to
 act on: for a single-cell contradiction it SHALL name the concrete rule the
-opposite colour would violate — three shaded bricks in a horizontal row, a shaded
+opposite color would violate — three shaded bricks in a horizontal row, a shaded
 brick with no shaded brick beneath it to rest on, or a clue that the change would
-push above or below its shaded-neighbour count — stating the premise, the
+push above or below its shaded-neighbor count — stating the premise, the
 contradiction, and the conclusion in the necessity voice. The forced cell SHALL
 be highlighted as the hint target and the deduction's evidence cells SHALL be
 marked distinctly on the board so the reasoning is visible and not only in prose.
-The hint SHALL NOT pre-place the forced colour. Because every Bricks deduction
+The hint SHALL NOT pre-place the forced color. Because every Bricks deduction
 forces exactly one cell, each hint step SHALL be a single self-contained journey.
 
 **The recursive lookahead rung SHALL NOT be narrated at all.** It commits a cell
@@ -157,7 +157,7 @@ narrates a search on any tier. The recorder SHALL omit it while the solver retai
 it, so grading and generation are unchanged and no description moves; where the
 single-cell rung runs out, the hint SHALL refuse rather than reach for it.
 
-The single-cell rung's own **unclassified** case — one colour placed, one
+The single-cell rung's own **unclassified** case — one color placed, one
 validator call, the board breaks at a cell none of the named rules matched — SHALL
 be narrated as what it is: the break is at a marked cell and nothing was followed
 to reach it. It SHALL NOT inherit the recursive rung's wording, which described
@@ -175,8 +175,8 @@ placed cell must be wrong rather than deduce onward from a doomed position.
   single-cell contradiction is available
 - **THEN** the forced cell is highlighted as the target, its evidence cells are
   marked, and the explanation names the rule (three-in-a-row, a brick left
-  unsupported, or a clue's neighbour count) that the opposite colour would
-  violate, without pre-placing the forced colour
+  unsupported, or a clue's neighbor count) that the opposite color would
+  violate, without pre-placing the forced color
 
 #### Scenario: The lookahead rung never reaches a narration
 

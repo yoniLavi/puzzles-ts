@@ -4,7 +4,7 @@
  * `validateParams(p, full)`'s `full` meant "these params are about to generate
  * a board", and every production call site passed a literal `true`. Sixteen
  * games gated a bound on it, three of them with a comment describing the
- * behaviour that was not happening, and it silently refused game IDs a game had
+ * behavior that was not happening, and it silently refused game IDs a game had
  * deliberately kept loadable — for months, because the symptom only appears for
  * params someone has since bounded. The flag was dead in a way that was
  * invisible until the day it mattered (`bound-abcd-generable-sizes`).

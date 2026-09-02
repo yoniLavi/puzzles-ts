@@ -40,13 +40,13 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
 import { newInertiaDesc } from "./generator.ts";
 import { hint, hintKeepTrack } from "./hint.ts";
 import {
   animLength,
   BORDER,
-  colours,
+  colors,
   computeSize,
   flashLength,
   type InertiaDrawState,
@@ -351,7 +351,7 @@ export const inertiaGame: Game<
   hint,
   hintKeepTrack,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: InertiaParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

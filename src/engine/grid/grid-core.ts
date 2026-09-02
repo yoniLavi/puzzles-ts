@@ -71,15 +71,15 @@ export class GridFace {
   edges: (GridEdge | null)[] = [];
 
   /**
-   * The face's **incentre** — the centre of the largest circle that fits
+   * The face's **incenter** — the center of the largest circle that fits
    * inside it, and so the place a clue digit or symbol most easily fits.
    *
    * Not computed when the grid is built (it is expensive and most faces never
-   * need it). `gridFindIncentre(face)` fills `ix`/`iy` in and sets
-   * `hasIncentre`; until then these are meaningless. Mirrors upstream's
+   * need it). `gridFindIncenter(face)` fills `ix`/`iy` in and sets
+   * `hasIncenter`; until then these are meaningless. Mirrors upstream's
    * `has_incentre`/`ix`/`iy` triple.
    */
-  hasIncentre = false;
+  hasIncenter = false;
   ix = 0;
   iy = 0;
 

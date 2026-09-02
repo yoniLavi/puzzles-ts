@@ -67,7 +67,7 @@ import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   KeyLabel,
@@ -76,7 +76,7 @@ import type {
 } from "../../engine/types.ts";
 import { newKeenDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -308,7 +308,7 @@ function executeMove(state: KeenState, move: KeenMove): KeenState {
       const all = (1 << (w + 1)) - (1 << 1);
       // **Additive**: fill only the cells that have no notes yet, never reset one
       // the player has narrowed. Resetting threw away their own deductions on any
-      // board with some pencilled cells and some blank ones (owner-reported on
+      // board with some penciled cells and some blank ones (owner-reported on
       // Salad, 2026-07-29); `adaptiveMarkAll`'s contract always said "fill every
       // *note-less* empty cell" — this is the games catching up with it.
       for (let i = 0; i < w * w; i++) {
@@ -769,7 +769,7 @@ export const keenGame: Game<
     pencilKeepHighlightPref<KeenUi>(),
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: KeenParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

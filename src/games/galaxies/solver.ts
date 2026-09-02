@@ -70,7 +70,7 @@ export interface Pos {
 export type GalaxiesFiring =
   /** The cells a dot physically sits on belong to it. */
   | { kind: "dotTile"; dot: Pos; tiles: Pos[] }
-  /** Two neighbours in different galaxies: a wall must run between them. */
+  /** Two neighbors in different galaxies: a wall must run between them. */
   | { kind: "separate"; edge: Pos; tiles: [Pos, Pos]; dots: [Pos, Pos] }
   /** A galaxy's boundary is symmetric, so a wall is mirrored about the dot. */
   | { kind: "mirrorWall"; edge: Pos; from: Pos; tile: Pos; opp: Pos; dot: Pos }
@@ -222,7 +222,7 @@ function solverLinesOpposite(
       const ei = idx(s, x, y);
       const tiles = tilesFromEdge(s, x, y);
 
-      // If both tile-neighbours are associated with different dots,
+      // If both tile-neighbors are associated with different dots,
       // there must be an edge between them.
       if (
         rules.separate &&
@@ -293,7 +293,7 @@ function solverLinesOpposite(
 }
 
 /** Each empty tile whose four adjacent edges are either set or
- * neighbour-an-already-associated-tile-of-the-same-dot must itself
+ * neighbor-an-already-associated-tile-of-the-same-dot must itself
  * be associated with that single dot. Mirrors
  * `solver_spaces_oneposs_cb` run across every tile. */
 function solverSpacesOneposs(s: GalaxiesState, rec?: SolverRecorder): number {
@@ -307,7 +307,7 @@ function solverSpacesOneposs(s: GalaxiesState, rec?: SolverRecorder): number {
       let dx = -1;
       let dy = -1;
       let abort = false;
-      // The ways out: neighbours reached through an unwalled side. Every one
+      // The ways out: neighbors reached through an unwalled side. Every one
       // of them belongs to the single dot below, which is the whole premise.
       const openings: Pos[] = [];
       for (let n = 0; n < 4 && !abort; n++) {
@@ -470,7 +470,7 @@ function solverExpandFromdot(
   for (let i = 0; i < end; i++) {
     const enc = scratch[i];
     // The queue is the *reachable* set; `ctx.mark` is wider than that (it also
-    // marks neighbours the pair test rejected), so a hint that shaded `mark`
+    // marks neighbors the pair test rejected), so a hint that shaded `mark`
     // would claim reach the galaxy does not have.
     reached?.push(enc);
     if (s.flags[enc] & F_TILE_ASSOC) continue;
@@ -586,17 +586,17 @@ function solverExtendExclaves(s: GalaxiesState, rec?: SolverRecorder): number {
   //
   // We count each adjacent square just once even if it borders the
   // component on multiple edges, so we walk each unassociated square
-  // and de-duplicate its neighbours (not the other way round).
+  // and de-duplicate its neighbors (not the other way round).
   //
   // Storage trick (from upstream's solver_extend_exclaves): we store
-  // the liberty count in `iscratch[i]` at the centre of each square
+  // the liberty count in `iscratch[i]` at the center of each square
   // (odd coords), and use `iscratch[i-1]` (an even-coord cell to the
   // left, which never carries any tile data itself) to remember the
   // *index* of the single liberty when there is exactly one. The
   // i-1 slot is a free sidecar — no overlap is possible because no
-  // two square centres share the same i-1 neighbour.
+  // two square centers share the same i-1 neighbor.
   //
-  // Non-canonical square centres are marked with iscratch[i] = -1,
+  // Non-canonical square centers are marked with iscratch[i] = -1,
   // so the later loop can detect "this square has since become
   // associated and is no longer the canonical dsf element it was
   // when the dsf was built" without re-walking the dsf.
@@ -909,7 +909,7 @@ export const RUNGS = {
   mirrorWall: rungOf("mirrorWall", (b, r) => solverLinesOpposite(b, r, MIRROR_ONLY)),
 };
 
-// A `refuteAssoc` lived here — hypothesise a dot for a cell, run the whole
+// A `refuteAssoc` lived here — hypothesize a dot for a cell, run the whole
 // deduction fixpoint from it, and take the survivor when every alternative
 // breaks the board. It powered a hint rung on the Unreasonable tier and was
 // removed on owner acceptance (2026-08-11): a contradiction you only reach by

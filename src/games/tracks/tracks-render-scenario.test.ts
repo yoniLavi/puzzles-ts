@@ -39,7 +39,7 @@ describe("Tracks render scenarios", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBeGreaterThan(0);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_ERROR)).toBe(
       true,
     );
   });
@@ -53,12 +53,12 @@ describe("Tracks render scenarios", () => {
     // The cursor is an outline, drawn as four thin `COL_CURSOR` rects.
     const frame = (presses: number[]) =>
       renderScenario({ game: tracksGame, id: ID, presses })
-        .recording.ops.filter((o) => o.op === "rect" && o.colour === COL_CURSOR)
+        .recording.ops.filter((o) => o.op === "rect" && o.color === COL_CURSOR)
         .map((o) => JSON.stringify(o));
 
     const first = frame([CURSOR_RIGHT]);
     // An outline is four rects; the frame carries a couple more in the same
-    // colour, so the count is a floor rather than an equality — what the test
+    // color, so the count is a floor rather than an equality — what the test
     // turns on is that the *set* of them differs.
     expect(
       first.length,
@@ -66,7 +66,7 @@ describe("Tracks render scenarios", () => {
     ).toBeGreaterThanOrEqual(4);
 
     // Where it would have been had the press only revealed it: select reveals
-    // without moving, so this is the frame the old behaviour produced.
+    // without moving, so this is the frame the old behavior produced.
     const revealOnly = frame([CURSOR_SELECT2]);
     expect(first).not.toEqual(revealOnly);
 

@@ -116,7 +116,7 @@ export function generateBoard(
     // exactly what frees the main block.
     //
     // So this is docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1 — divergence is free where the C has no
-    // defined behaviour. Running the missing final check costs nothing anywhere
+    // defined behavior. Running the missing final check costs nothing anywhere
     // the C works (those boards leave the loop early, by the branch above) and
     // draws no randomness, so every byte-matched desc is untouched; it only
     // gives an answer where upstream aborted.

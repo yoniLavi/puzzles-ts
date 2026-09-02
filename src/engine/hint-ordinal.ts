@@ -14,7 +14,7 @@
  * chain, and it was prototyped and measured before being rejected
  * (`walk-tactic-hint-chains` D5). An arrow between two cells claims *this one
  * forces that one*, which in Clusters is false in a third of links — what forces
- * a cell there is its own neighbourhood, not the cell before it in discovery
+ * a cell there is its own neighborhood, not the cell before it in discovery
  * order — and half its links are not even adjacent, so the arrows crossed the
  * board. An ordinal claims only the order, which is true in every game that
  * draws one. It also stays inside one tile, so it rides the existing
@@ -33,8 +33,8 @@ import type { Point } from "./types.ts";
  * Draw chain position `k` (1-based) in the **bottom-right** corner of the tile
  * whose top-left pixel is `at`, sized off `tilesize`.
  *
- * A corner rather than the centre: a chain cell carries content of its own — the
- * colour it would be forced to, its two surviving pencil marks — and the ordinal
+ * A corner rather than the center: a chain cell carries content of its own — the
+ * color it would be forced to, its two surviving pencil marks — and the ordinal
  * answers a different question from that content (*when*, not *what*), so
  * overlapping them blurs two claims into one mark.
  *
@@ -56,19 +56,19 @@ export function drawHintOrdinal(
   at: Point,
   tilesize: number,
   k: number,
-  colour: number,
+  color: number,
   inset = Math.max(1, Math.floor(tilesize / 12)),
 ): void {
   const size = Math.max(7, Math.floor(tilesize / 3));
   dr.drawText(
-    // `mathematical` centres the glyph vertically on `y`, so the bottom inset
+    // `mathematical` centers the glyph vertically on `y`, so the bottom inset
     // has to carry half the size or the digit is clipped by the tile edge.
     {
       x: at.x + tilesize - inset,
       y: at.y + tilesize - inset - Math.floor(size / 2),
     },
     { align: "right", baseline: "mathematical", fontType: "variable", size },
-    colour,
+    color,
     String(k),
   );
 }

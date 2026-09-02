@@ -105,7 +105,7 @@ export class MagnetsSolver {
     }
   }
 
-  /** Mark cell `i` (and, across its domino, the opposite colour on the other
+  /** Mark cell `i` (and, across its domino, the opposite color on the other
    * end) as not `which`. Returns a change count, or −1 for a contradiction. */
   private unflag(i: number, which: number): number {
     const ii = this.dominoes[i];
@@ -415,7 +415,7 @@ export class MagnetsSolver {
 
   private countdominoesNonneutral(rc: RowCol, counts: Int32Array): number {
     let didsth = 0;
-    // NB: `ndom` is deliberately NOT reset between the two colour iterations —
+    // NB: `ndom` is deliberately NOT reset between the two color iterations —
     // an upstream quirk this solver reproduces verbatim, since a stronger or
     // weaker solver would change which clues the generator strips and so
     // diverge the byte-matched desc (docs/games/solver-and-generator.md § "Solver-gated generation").

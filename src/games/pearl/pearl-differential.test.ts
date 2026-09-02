@@ -4,13 +4,13 @@
  * For each C-recorded fixture: (1) the TS `newDesc` over the same seed
  * reproduces the C desc **and** the aux solution byte-for-byte (a faithful
  * generator over the bit-identical `random.ts`, reproducing the loopgen RNG
- * order, the `corners`-array quirk and the solver-gated minimisation), and
+ * order, the `corners`-array quirk and the solver-gated minimization), and
  * (2) the TS solver grades the C board at the recorded difficulty (and, for a
  * soluble board, one rung easier fails to solve it).
  *
  * The desc byte-match is the strongest bar here because it depends on the
  * grid geometry, every RNG draw in loopgen, the bias score, and every solver
- * verdict during minimisation — a single wrong bit anywhere diverges it.
+ * verdict during minimization — a single wrong bit anywhere diverges it.
  * (Design D9 notes the one astronomically-rare loopgen tie-break that could
  * in theory not byte-match; the fixtures were chosen to byte-match.)
  */

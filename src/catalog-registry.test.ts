@@ -14,7 +14,7 @@ beforeAll(registerAllGames);
  *
  * There used to be a third — `TS_PORTED_PUZZLE_IDS`, a hand-maintained set of
  * the games served by the native engine, which fed a "TS" badge on unported
- * games' neighbours. `retire-c-engine` removed both the badge and the last
+ * games' neighbors. `retire-c-engine` removed both the badge and the last
  * unported game, at which point that set was necessarily the whole catalog:
  * a third list to keep in lockstep that could only ever say "all of them".
  * It is gone, and adding a game is now two edits (`catalog-data.ts` and
@@ -28,8 +28,8 @@ describe("catalog and registry", () => {
 
   it("catalogues every registered game", () => {
     const known = new Set(puzzleIds);
-    const uncatalogued = registeredGameIds().filter((id) => !known.has(id));
-    expect(uncatalogued).toEqual([]);
+    const uncataloged = registeredGameIds().filter((id) => !known.has(id));
+    expect(uncataloged).toEqual([]);
   });
 
   it("is not vacuous — the catalog is populated", () => {

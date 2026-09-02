@@ -13,9 +13,9 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
-  colours,
+  colors,
   computeSize,
   newDrawState,
   PREFERRED_TILE_SIZE,
@@ -71,7 +71,7 @@ function changedState(
   selClear(ui);
 }
 
-/** Upstream `sel_expand`: flood the connected same-colour region from
+/** Upstream `sel_expand`: flood the connected same-color region from
  * (tx,ty) into the selection. A lone tile (region size 1) cannot be
  * removed, so the selection collapses. */
 function selExpand(ui: SamegameUi, state: SamegameState, tx: number, ty: number): void {
@@ -282,7 +282,7 @@ export const samegameGame: Game<
   textFormat,
   statusbarText,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SamegameParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

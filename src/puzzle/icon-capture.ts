@@ -19,8 +19,8 @@ import type { Puzzle } from "./puzzle.ts";
  * old ImageMagick 8-bit-indexed pipeline, kept for path stability. */
 const ICON_SIZES = [64, 128] as const;
 
-/** Centre-crop `source` to its largest centred square and downscale to
- * a `size`×`size` PNG. Most boards are square already; the centred crop
+/** Center-crop `source` to its largest centered square and downscale to
+ * a `size`×`size` PNG. Most boards are square already; the centered crop
  * keeps non-square boards consistent with the existing icon set. */
 async function squareDownscale(source: ImageBitmap, size: number): Promise<Blob> {
   const side = Math.min(source.width, source.height);
@@ -60,7 +60,7 @@ export async function captureIcons(puzzle: Puzzle, puzzleId: string): Promise<vo
     for (const size of ICON_SIZES) {
       const blob = await squareDownscale(bitmap, size);
       downloadBlob(blob, `${puzzleId}-${size}d8.png`);
-      // Small stagger so browsers honour both downloads from the one gesture.
+      // Small stagger so browsers honor both downloads from the one gesture.
       await sleep(150);
     }
   } finally {

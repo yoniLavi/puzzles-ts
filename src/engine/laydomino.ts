@@ -7,7 +7,7 @@
  *
  * Byte-match critical: the RNG draw order reproduces C exactly — the initial
  * `shuffle` of the `2·w·h − w − h` candidate positions, then the per-BFS-node
- * `shuffle` of a cell's neighbour directions during the chessboard-parity
+ * `shuffle` of a cell's neighbor directions during the chessboard-parity
  * singleton fixup. The shared `shuffle` (engine/shuffle.ts) matches
  * `misc.c shuffle` byte-for-byte, so a faithful port over the bit-identical
  * `random.ts` reproduces the layout for a given seed.
@@ -48,7 +48,7 @@ export function dominoLayout(w: number, h: number, rs: RandomState): Int32Array 
     }
   }
 
-  // The remaining singletons come in pairs of opposite chessboard colour; deal
+  // The remaining singletons come in pairs of opposite chessboard color; deal
   // with them two at a time by finding a path between two singletons through
   // covered squares and shuffling every domino on it up by one.
   const queue = new Int32Array(wh);
@@ -81,7 +81,7 @@ export function dominoLayout(w: number, h: number, rs: RandomState): Int32Array 
       if (x + 1 < w) d.push(i + 1);
       if (y > 0) d.push(i - w);
       if (y + 1 < h) d.push(i + w);
-      // Random neighbour order to avoid directional bias.
+      // Random neighbor order to avoid directional bias.
       shuffle(d, rs);
 
       let hitSingleton = -1;

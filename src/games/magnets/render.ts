@@ -11,21 +11,21 @@
  *
  * The per-tile cache packs the cell value plus every overlay (set / error /
  * cursor / not-flags / flash / mistake) into one `Int32Array` word, so the
- * diff key covers every overlay (docs/games/rendering.md § "Overlay sidecars"); the four-border clue colours
+ * diff key covers every overlay (docs/games/rendering.md § "Overlay sidecars"); the four-border clue colors
  * diff parallel per-clue arrays.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLUE, GREEN, RED } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLUE, GREEN, RED } from "../../engine/color/colors.ts";
 import {
-  clueDoneColour,
+  clueDoneColor,
   ERROR,
   FLASH,
   highlightWash,
   INK,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   COLUMN,
   clueIndex,
@@ -49,7 +49,7 @@ import {
 export const PREFERRED_TILE_SIZE = 32;
 export const FLASH_TIME = 0.7;
 
-// --- palette (mirrors the magnets.c colour enum index-for-index) ----------
+// --- palette (mirrors the magnets.c color enum index-for-index) ----------
 export const COL_BACKGROUND = 0;
 export const COL_HIGHLIGHT = 1;
 export const COL_LOWLIGHT = 2;
@@ -64,9 +64,9 @@ export const COL_NOT = 10;
 // Fork mistake overlay, appended past the upstream enum.
 export const COL_MISTAKE = 11;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   // The slot's only use is the solved flash's tile fill; nothing bevels with it.
   out[COL_HIGHLIGHT] = FLASH;
@@ -77,7 +77,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   // "you are here" wash Solo's family uses, not the green mark — which would
   // in any case vanish on a neutral tile, whose fill is green.
   out[COL_CURSOR] = highlightWash(background);
-  out[COL_DONE] = clueDoneColour(background);
+  out[COL_DONE] = clueDoneColor(background);
   out[COL_NEUTRAL] = GREEN;
   out[COL_NEGATIVE] = INK;
   out[COL_POSITIVE] = RED;
@@ -114,9 +114,9 @@ export interface MagnetsDrawState {
   h: number;
   /** Last-drawn packed word per tile; −1 forces a draw. */
   what: Int32Array;
-  /** Last-drawn colour per column clue (3·w: [neutral,+,−]); −1 forces. */
+  /** Last-drawn color per column clue (3·w: [neutral,+,−]); −1 forces. */
   colwhat: Int32Array;
-  /** Last-drawn colour per row clue (3·h). */
+  /** Last-drawn color per row clue (3·h). */
   rowwhat: Int32Array;
 }
 
@@ -344,7 +344,7 @@ function drawNum(
   dr.drawUpdate({ x: cx, y: cy, w: ts, h: ts });
 }
 
-function getCountColour(
+function getCountColor(
   state: MagnetsState,
   rowcol: number,
   which: number,
@@ -425,19 +425,19 @@ export function redraw(
     for (let i = 0; i < w; i++) {
       const index = i * 3 + which;
       const target = colcount[index];
-      const colour = getCountColour(state, COLUMN, which, i, target);
-      if (ds.colwhat[index] !== colour) {
-        drawNum(dr, ds, COLUMN, which, i, COL_BACKGROUND, colour, target);
-        ds.colwhat[index] = colour;
+      const color = getCountColor(state, COLUMN, which, i, target);
+      if (ds.colwhat[index] !== color) {
+        drawNum(dr, ds, COLUMN, which, i, COL_BACKGROUND, color, target);
+        ds.colwhat[index] = color;
       }
     }
     for (let i = 0; i < h; i++) {
       const index = i * 3 + which;
       const target = rowcount[index];
-      const colour = getCountColour(state, ROW, which, i, target);
-      if (ds.rowwhat[index] !== colour) {
-        drawNum(dr, ds, ROW, which, i, COL_BACKGROUND, colour, target);
-        ds.rowwhat[index] = colour;
+      const color = getCountColor(state, ROW, which, i, target);
+      if (ds.rowwhat[index] !== color) {
+        drawNum(dr, ds, ROW, which, i, COL_BACKGROUND, color, target);
+        ds.rowwhat[index] = color;
       }
     }
   }

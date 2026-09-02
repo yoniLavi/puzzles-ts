@@ -135,7 +135,7 @@ glanceable steps** — *not* by whether a trial or a search was involved.
 
 | | shape | tier | hint |
 | --- | --- | --- | --- |
-| **Check** | place a value and *look*: one clue, one count, one neighbour breaks immediately | any | narrate directly |
+| **Check** | place a value and *look*: one clue, one count, one neighbor breaks immediately | any | narrate directly |
 | **Tactic** | a **bounded** chain of forced consequences to a named endpoint | Tricky / Hard / Extreme | narrate as a multi-leg walk |
 | **Search** | run the whole solver from a hypothesis, or branch and backtrack | **`Unreasonable`** | refuse |
 
@@ -258,7 +258,7 @@ ways to guarantee that, chosen per game **by measured cost**:
 is to build the missing deductive rungs, then re-grade** — not to add an
 Unreasonable tier on a hunch. The worked example is Undead
 (`strengthen-undead-deduction`), which originally graded by *how much brute
-force a board needs* and now ships a genuine ladder; it generalises to any
+force a board needs* and now ships a genuine ladder; it generalizes to any
 non-Latin candidate game:
 
 - **Exact counting** (Hall-type deductions off a global tally that is an
@@ -266,7 +266,7 @@ non-Latin candidate game:
   whose candidate cells equal its remaining need forces them all; too few
   candidate cells is a contradiction
   ([`undead/solver.ts`](../../src/games/undead/solver.ts) `countingPass`).
-- **Depth-1 forcing** (`forcingPass`): hypothesise one candidate, run the
+- **Depth-1 forcing** (`forcingPass`): hypothesize one candidate, run the
   arc-consistency + counting fixpoint, eliminate on contradiction — deduction,
   per the line above, because the inner fixpoint never forces.
 
@@ -290,7 +290,7 @@ independently against the brute-force oracle. Two lessons that transfer:
 [`Game.difficulty`](../../src/engine/difficulty.ts) — a
 `DifficultyContract`: its tier names, `tierOf`/`withTier` accessors, and a
 `solveAtCap` that runs its solver from a fresh state with the ladder capped.**
-Declaring it enrols the game in the cross-game guards
+Declaring it enrolls the game in the cross-game guards
 (`difficulty-contract.test.ts`) the moment the field exists; an untiered game
 omits it, exactly as a game without a solver omits `solve`. Read the module
 header of `difficulty.ts` for why it is accessor-shaped (eight games don't
@@ -371,11 +371,11 @@ the contract's own guards, not anticipated.)
 
 **Byte-parity with upstream was a porting tool, and the owner released it on
 2026-08-01**: *"it was only a temporary one for the porting, but now that
-we've finished porting, I'm very happy to diverge in favour of a better play
+we've finished porting, I'm very happy to diverge in favor of a better play
 experience, wherever it's worth it."* Matching the C is no longer a reason
 not to improve a game, and "it would change every board" is a cost to weigh,
 not an objection that ends the discussion. Display code was never in scope at
-all (owner, 2026-07-04): rendering, layout, geometry, animation and colours
+all (owner, 2026-07-04): rendering, layout, geometry, animation and colors
 target neat visuals and clean code, and deliberate visual improvements are
 the point of the fork. The full doctrine lives in
 [`AGENTS.md`](../../AGENTS.md) § "TS port style" and the
@@ -398,7 +398,7 @@ Three rules govern every divergence decision:
 And four decision rules, learned on `add-loopy-ts-port`, for reading a quirk
 before paying or refusing it:
 
-1. **Divergence is free where C had no defined behaviour.** Upstream aborts
+1. **Divergence is free where C had no defined behavior.** Upstream aborts
    on a degenerate Penrose patch (`dsf_new(0)`); retrying with a fresh desc
    diverges only on seeds where C crashed, so there is nothing to match —
    take it.
@@ -415,7 +415,7 @@ before paying or refusing it:
    solver *because you can* remains tidiness.
 4. **Diverge where the C shape doesn't fit a browser.** `gridTrimVigorously`'s
    C original used a dense `O(numDots²)` matrix — ~576 MB at 50×50. Structure
-   is not behaviour: an exact replacement costs no fidelity at all, and the
+   is not behavior: an exact replacement costs no fidelity at all, and the
    trap would have been transcribing it faithfully *because* it was the C's
    shape.
 
@@ -455,7 +455,7 @@ unlucky seed" — check, because the two failure modes need opposite fixes:
 - *Impossible* ⇒ **reject in `validateParams`**, where the Custom dialog can
   show a reason — and reject the *precise thing you measured* (Loopy: a
   Penrose kite/dart **width-3** bound, because 200 draws per configuration
-  showed width 3 never succeeds at any height while every neighbouring shape
+  showed width 3 never succeeds at any height while every neighboring shape
   succeeds about half the time — an `amin` bump would also have forbidden
   the sizes that work).
 
@@ -488,7 +488,7 @@ this work?"; only the tail answers "should we offer this?", and a bound
 exists to settle the second question. Whenever a bound is being set or
 raised, repeat the sizes near it across several seeds first. Two corollaries:
 
-- **Optimise first, then bound.** Slide's tail at its largest upstream preset
+- **Optimize first, then bound.** Slide's tail at its largest upstream preset
   measured 22.8 s before its visited-set hashing fix and 1.8 s after — a
   bound drawn from the first number would have forbidden a board upstream
   ships ([`slide/solver.ts`](../../src/games/slide/solver.ts)).
@@ -553,12 +553,12 @@ verdict. The lessons that stay live:
 
 **When a deliberate divergence sits on an otherwise verdict-matched path,
 don't choose between "keep the bug" and "lose the differential": put
-upstream's exact behaviour behind an option that only the differential
+upstream's exact behavior behind an option that only the differential
 sets.** Used twice, so treat it as the default technique:
 
 - Spokes ships the corrected (cleared-scratch) acceptance gate; its
-  `upstreamDirtyGate` option restores upstream's behaviour for the fixtures,
-  and a behavioural test covers the four-line divergence itself.
+  `upstreamDirtyGate` option restores upstream's behavior for the fixtures,
+  and a behavioral test covers the four-line divergence itself.
 - Seismic replaced its whole region generator (upstream's succeeded roughly
   once in 200,000 attempts at 7×7) yet keeps all 28 fixtures byte-matched
   behind `upstreamRegionGrower`
@@ -614,7 +614,7 @@ forgot it** (owner directive, 2026-07-21). The collection convention: the
 solve move's `executeMove` arm runs the completion check (so the game reports
 solved-with-help) *and* sets `cheated` (so the win flash doesn't fire on a
 solver fill). Upstream Subsets did neither and stayed "ongoing" for ever
-after Solve; that class of quirk is missing bookkeeping, not behaviour, and
+after Solve; that class of quirk is missing bookkeeping, not behavior, and
 is **not** preserved. Safe even on a verdict-matched game: the desc
 differential exercises `newDesc`/solver/codec, never `executeMove`. Assert
 both halves through a real `Midend` (status `"solved-with-help"`,
@@ -665,7 +665,7 @@ strict subset of what the re-solve knows, and the gap is the dangerous one: a
 locally-legal piece on a square the unique solution assigns otherwise breaks
 no rule yet, and a live-only hook would let Check & Save bless it. Keep the
 live errors (free, immediate) *and* base `findMistakes` on the re-solve —
-and render them so both read (Boats recolours a wrong ship red and insets an
+and render them so both read (Boats recolors a wrong ship red and insets an
 outline, which is what makes a wrong *water* square visible at all).
 Exemplar: [`boats/render.ts`](../../src/games/boats/render.ts).
 
@@ -767,8 +767,8 @@ Working rules, each earned:
 - **History (C era):** a `usersolver`'s contradiction `return -1` sometimes
   sat inside `#ifdef STANDALONE_SOLVER`, so the shipped build silently
   skipped the impossible placement — the ports preserve the shipped
-  behaviour, with comments at the sites (Group; `git log` the port change for
-  the full account). The generalisation stays useful: what a solver *doesn't*
+  behavior, with comments at the sites (Group; `git log` the port change for
+  the full account). The generalization stays useful: what a solver *doesn't*
   do can be as load-bearing as what it does.
 
 The shared hint-side machinery for this family (the recorder, reason

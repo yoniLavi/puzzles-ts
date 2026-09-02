@@ -14,7 +14,7 @@
  *  - **Untangle** — its aux-walk re-suggested a no-op move forever once a
  *    vertex sat on its (jittering) target pixel.
  *
- * The probe drives the importable scenario both bugs travelled: ask for a fresh
+ * The probe drives the importable scenario both bugs traveled: ask for a fresh
  * hint, apply only its first step, repeat. (In the app, a self-played move
  * drops any stored plan, so the next hint recomputes from the current state —
  * exactly this.) Recomputing every step exercises resumption from many

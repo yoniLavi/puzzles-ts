@@ -3,7 +3,7 @@
  * the best inscribed circle over the integer lattice — **derived from nothing
  * but a vertex ring**.
  *
- * Its entire value is what it does *not* import. `gridFindIncentre` maximises
+ * Its entire value is what it does *not* import. `gridFindIncenter` maximizes
  * the inscribed radius; these functions compute that radius from first
  * principles, sharing no line with it, so a bug in the implementation cannot
  * make a test measuring it vacuously pass. Two rules follow, and they are the
@@ -19,7 +19,7 @@
  *    than a convention a future edit can drift off.
  *
  * Written for `grid-geometry.test.ts` and hoisted here when
- * `grid-incentre.test.ts` became its second consumer — the change that replaced
+ * `grid-incenter.test.ts` became its second consumer — the change that replaced
  * that file's peer comparison against a frozen C capture with this, the real
  * quantity (`retire-the-incentre-c-fixture`). A peer bar is green whenever both
  * implementations are wrong in the same way; this one is not.
@@ -73,10 +73,10 @@ export function distanceToSegment(
 }
 
 /**
- * The radius of the largest circle centred at `(x, y)` that fits inside the
+ * The radius of the largest circle centered at `(x, y)` that fits inside the
  * polygon — the distance to the nearest side, and zero anywhere outside.
  *
- * This is the quantity the incentre exists to maximise, and comparing it is far
+ * This is the quantity the incenter exists to maximize, and comparing it is far
  * more meaningful than comparing coordinates: two quite different points can
  * admit the same circle, which is precisely the parallel-edge continuum
  * upstream notes it resolves arbitrarily.
@@ -97,9 +97,9 @@ export function inscribedRadius(poly: Ring, x: number, y: number): number {
  * The best {@link inscribedRadius} over every integer point of the polygon's
  * bounding box — a brute-force yardstick owing nothing to the implementation.
  *
- * The lattice is the same one the implementation's answer is quantised onto, so
+ * The lattice is the same one the implementation's answer is quantized onto, so
  * the comparison is like for like: the returned value is by construction an
- * upper bound on the radius any stored (integer) incentre can admit, and the
+ * upper bound on the radius any stored (integer) incenter can admit, and the
  * shortfall is therefore a pure measure of the search, with no rounding term
  * smuggled into it.
  *

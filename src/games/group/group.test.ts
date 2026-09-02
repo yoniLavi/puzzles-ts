@@ -1,5 +1,5 @@
 /**
- * Group behavioural tests (tier 1, pure logic): params codec, generation +
+ * Group behavioral tests (tier 1, pure logic): params codec, generation +
  * unique-solvability at target difficulty, desc round-trip, move transitions
  * (multifill, reorder, divider), completion, and findMistakes. The byte-match
  * differential against the C reference lives in `group-differential.test.ts`.
@@ -10,7 +10,7 @@ import { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE } from "../../engine/latin.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { newGameDesc } from "./generator.ts";
 import { groupGame } from "./index.ts";
-import { colours, newDrawState, redraw, setTileSize } from "./render.ts";
+import { colors, newDrawState, redraw, setTileSize } from "./render.ts";
 import { solveGroup } from "./solver.ts";
 import {
   cloneState,
@@ -246,7 +246,7 @@ describe("rendering smoke", () => {
     const rng = randomNew("render");
     const { desc } = newGameDesc(p, rng);
     const state = newState(p, desc);
-    const pal = colours([0.9, 0.9, 0.9]);
+    const pal = colors([0.9, 0.9, 0.9]);
     // 8 upstream + COL_HINT / COL_HINT_CELL. The chain ordinal shares
     // `COL_HINT_CELL`: a number saying where a cell falls in the chain is an
     // index into the evidence, not a hint role of its own.

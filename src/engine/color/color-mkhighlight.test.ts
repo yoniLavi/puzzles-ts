@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { Colour } from "../types.ts";
+import type { Color } from "../types.ts";
 import {
   mkhighlight,
   mkhighlightBackground,
   mkhighlightSpecific,
-} from "./colour-mkhighlight.ts";
-import { darkValue, token } from "./colour-token.ts";
+} from "./color-mkhighlight.ts";
+import { darkValue, token } from "./color-token.ts";
 
 /**
  * The exact inline derivation Pegs and Sixteen carried before the
@@ -15,37 +15,37 @@ import { darkValue, token } from "./colour-token.ts";
  * upstream's pure white / pure black saturation), which is why the
  * shared helper must only match it on the correct branches.
  */
-function previousInlineDerivation(defaultBackground: Colour): {
-  background: Colour;
-  highlight: Colour;
-  lowlight: Colour;
+function previousInlineDerivation(defaultBackground: Color): {
+  background: Color;
+  highlight: Color;
+  lowlight: Color;
 } {
   const bg = mkhighlightBackground(defaultBackground);
   const K = Math.sqrt(3) / 6;
-  const colourDistance = (a: Colour, b: Colour) =>
+  const colorDistance = (a: Color, b: Color) =>
     Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2);
-  const colourMix = (a: Colour, b: Colour, t: number): Colour => [
+  const colorMix = (a: Color, b: Color, t: number): Color => [
     a[0] + (b[0] - a[0]) * t,
     a[1] + (b[1] - a[1]) * t,
     a[2] + (b[2] - a[2]) * t,
   ];
-  const black: Colour = [0, 0, 0];
-  const white: Colour = [1, 1, 1];
+  const black: Color = [0, 0, 0];
+  const white: Color = [1, 1, 1];
 
-  const dw = colourDistance(bg, white);
-  const highlight: Colour =
-    dw < K ? colourMix(white, black, K / Math.sqrt(3)) : colourMix(bg, white, K / dw);
+  const dw = colorDistance(bg, white);
+  const highlight: Color =
+    dw < K ? colorMix(white, black, K / Math.sqrt(3)) : colorMix(bg, white, K / dw);
 
-  const db = colourDistance(bg, black);
-  const lowlight: Colour =
-    db < K ? colourMix(black, white, K / Math.sqrt(3)) : colourMix(bg, black, K / db);
+  const db = colorDistance(bg, black);
+  const lowlight: Color =
+    db < K ? colorMix(black, white, K / Math.sqrt(3)) : colorMix(bg, black, K / db);
 
   return { background: bg, highlight, lowlight };
 }
 
 /** Backgrounds far enough from both extremes that the old inline code
  * took its correct (upstream-matching) branches. */
-const MID_RANGE_BACKGROUNDS: [string, Colour][] = [
+const MID_RANGE_BACKGROUNDS: [string, Color][] = [
   ["mid grey", [0.5, 0.5, 0.5]],
   ["typical dark host background", [0.13, 0.14, 0.16]],
   ["saturated colour", [0.2, 0.4, 0.8]],
@@ -53,7 +53,7 @@ const MID_RANGE_BACKGROUNDS: [string, Colour][] = [
 
 /** Backgrounds whose adjusted form sits at (or a hair inside) K of an
  * extreme, where the old inline fallback was buggy. */
-const EXTREME_BACKGROUNDS: [string, Colour][] = [
+const EXTREME_BACKGROUNDS: [string, Color][] = [
   ["pure white", [1, 1, 1]],
   ["near-white with IEEE drift", [1 - 1e-15, 1, 1]],
   ["typical light host background", [0.9, 0.9, 0.92]],
@@ -83,7 +83,7 @@ describe("mkhighlight", () => {
     for (const [, bg] of [
       ["pure white", [1, 1, 1]],
       ["typical light host background", [0.9, 0.9, 0.92]],
-    ] as [string, Colour][]) {
+    ] as [string, Color][]) {
       expect(mkhighlight(bg).highlight).toEqual([1, 1, 1]);
     }
   });
@@ -99,7 +99,7 @@ describe("mkhighlight", () => {
     ALL_BACKGROUNDS,
   )("keeps highlight brighter and lowlight darker than the background on %s", (_name, bg) => {
     const { background, highlight, lowlight } = mkhighlight(bg);
-    const luma = (c: Colour) => c[0] + c[1] + c[2];
+    const luma = (c: Color) => c[0] + c[1] + c[2];
     expect(luma(highlight)).toBeGreaterThan(luma(background));
     expect(luma(lowlight)).toBeLessThan(luma(background));
   });
@@ -116,11 +116,11 @@ describe("mkhighlight", () => {
 });
 
 describe("mkhighlightSpecific", () => {
-  // Unruly's two fixed bases: near-white COL_0 (0.95 grey) and dark COL_1
-  // (0.2 grey). The near-white base is the case the existing mkhighlight
+  // Unruly's two fixed bases: near-white COL_0 (0.95 gray) and dark COL_1
+  // (0.2 gray). The near-white base is the case the existing mkhighlight
   // helper can't reproduce — it must shift the base itself.
-  const COL_0: Colour = [0.95, 0.95, 0.95];
-  const COL_1: Colour = [0.2, 0.2, 0.2];
+  const COL_0: Color = [0.95, 0.95, 0.95];
+  const COL_1: Color = [0.2, 0.2, 0.2];
 
   it("extrapolates a near-white base away from white and saturates the highlight", () => {
     const { base, highlight } = mkhighlightSpecific(COL_0);
@@ -150,7 +150,7 @@ describe("mkhighlightSpecific", () => {
   it("does not shift a base comfortably inside the gamut (dark COL_1)", () => {
     const { base, highlight, lowlight } = mkhighlightSpecific(COL_1);
     expect(base).toEqual(COL_1);
-    const luma = (c: Colour) => c[0] + c[1] + c[2];
+    const luma = (c: Color) => c[0] + c[1] + c[2];
     expect(luma(highlight)).toBeGreaterThan(luma(base));
     expect(luma(lowlight)).toBeLessThan(luma(base));
   });
@@ -158,7 +158,7 @@ describe("mkhighlightSpecific", () => {
   it.each([
     ["near-white", COL_0],
     ["dark", COL_1],
-    ["mid grey", [0.5, 0.5, 0.5] as Colour],
+    ["mid grey", [0.5, 0.5, 0.5] as Color],
   ])("stays in gamut for the %s base", (_name, base) => {
     const r = mkhighlightSpecific(base);
     for (const c of [r.base, r.highlight, r.lowlight]) {
@@ -170,12 +170,12 @@ describe("mkhighlightSpecific", () => {
   });
 
   it("equals mkhighlight on a mid-grey base modulo the base-vs-background shift", () => {
-    // For a mid-grey base neither pass shifts, so specific's highlight/lowlight
-    // match mkhighlight's (which also doesn't shift mid grey).
-    const grey: Colour = [0.5, 0.5, 0.5];
-    const spec = mkhighlightSpecific(grey);
-    const full = mkhighlight(grey);
-    expect(spec.base).toEqual(grey);
+    // For a mid-gray base neither pass shifts, so specific's highlight/lowlight
+    // match mkhighlight's (which also doesn't shift mid gray).
+    const gray: Color = [0.5, 0.5, 0.5];
+    const spec = mkhighlightSpecific(gray);
+    const full = mkhighlight(gray);
+    expect(spec.base).toEqual(gray);
     expect(spec.highlight).toEqual(full.highlight);
     expect(spec.lowlight).toEqual(full.lowlight);
   });

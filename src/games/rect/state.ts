@@ -49,7 +49,7 @@ export interface RectState {
   readonly completed: boolean;
   readonly cheated: boolean;
   /** Per-cell correctness overlay (1 = part of a valid rectangle), `w*h`.
-   * Recomputed after every move; drives the grey fill + completion. */
+   * Recomputed after every move; drives the gray fill + completion. */
   readonly correct: Uint8Array;
 }
 

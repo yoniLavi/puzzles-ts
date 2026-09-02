@@ -23,7 +23,7 @@ const a = DODEC_A;
 const b = DODEC_B;
 
 /**
- * The twelve-corner dodecagon centred on `(px, py)`, clockwise from the top
+ * The twelve-corner dodecagon centered on `(px, py)`, clockwise from the top
  * right. Identical in all four tilings, so it is emitted from one place — the
  * corner order is upstream's and is observable.
  */
@@ -53,7 +53,7 @@ export function gridNewDodecagonal(width: number, height: number): Grid {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      /* centre of dodecagon */
+      /* center of dodecagon */
       let px = (4 * a + 2 * b) * x;
       const py = (3 * a + 2 * b) * y;
       if (y % 2) px += 2 * a + b;
@@ -93,7 +93,7 @@ export function gridNewGreatdodecagonal(width: number, height: number): Grid {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      /* centre of dodecagon */
+      /* center of dodecagon */
       let px = (6 * a + 2 * b) * x;
       const py = (3 * a + 3 * b) * y;
       if (y % 2) px += 3 * a + b;
@@ -169,7 +169,7 @@ export function gridNewGreatgreatdodecagonal(width: number, height: number): Gri
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      /* centre of dodecagon */
+      /* center of dodecagon */
       let px = (4 * a + 4 * b) * x;
       const py = (6 * a + 2 * b) * y;
       if (y % 2) px += 2 * a + 2 * b;
@@ -305,7 +305,7 @@ export function gridNewCompassdodecagonal(width: number, height: number): Grid {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      /* centre of dodecagon */
+      /* center of dodecagon */
       const px = (4 * a + 2 * b) * x;
       const py = (4 * a + 2 * b) * y;
 

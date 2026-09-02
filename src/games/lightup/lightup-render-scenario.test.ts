@@ -20,7 +20,7 @@ import {
   COL_HINT,
   COL_HINT_CELL,
   COL_HINT_DARKREF,
-  COL_HINT_LITREF,
+  COL_HINT_LITERF,
 } from "./render.ts";
 import { encodeParams, type LightupParams, SYMM_ROT4 } from "./state.ts";
 
@@ -52,15 +52,13 @@ describe("Light Up hint render scenarios", () => {
     // Every target is **ringed** COL_HINT (a mark, not the bulb the player must
     // place) — four thin rects each, and no solid one.
     expectRing(recording.ops, COL_HINT, h?.targets.length);
-    // The driving clue's digit recolours COL_HINT (the clue↔move tie).
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
+    // The driving clue's digit recolors COL_HINT (the clue↔move tie).
+    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_HINT)).toBe(
       true,
     );
     // Clue digits elsewhere still drawn; the grid frame is present.
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
-    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_GRID)).toBe(
-      true,
-    );
+    expect(recording.ops.some((o) => "color" in o && o.color === COL_GRID)).toBe(true);
     expect(size.w).toBeGreaterThan(0);
 
     expect(recording.ops).toMatchSnapshot();
@@ -90,12 +88,12 @@ describe("Light Up hint render scenarios", () => {
     expect(
       recording.ops.some(
         (o) =>
-          (o.op === "rect" && o.colour === COL_HINT_CELL) ||
-          (o.op === "line" && o.colour === COL_HINT_LITREF),
+          (o.op === "rect" && o.color === COL_HINT_CELL) ||
+          (o.op === "line" && o.color === COL_HINT_LITERF),
       ),
     ).toBe(true);
     expect(
-      recording.ops.some((o) => "colour" in o && o.colour === COL_HINT_DARKREF),
+      recording.ops.some((o) => "color" in o && o.color === COL_HINT_DARKREF),
     ).toBe(true);
   });
 
@@ -135,10 +133,10 @@ describe("Light Up hint render scenarios", () => {
     expect(h?.kind).toBe("impossible");
     expect(h?.targets.length).toBe(1);
     expect(
-      recording.ops.some((o) => "colour" in o && o.colour === COL_HINT_DARKREF),
+      recording.ops.some((o) => "color" in o && o.color === COL_HINT_DARKREF),
     ).toBe(true);
     expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
+      recording.ops.some((o) => o.op === "rect" && o.color === COL_HINT_CELL),
     ).toBe(true);
   });
 });

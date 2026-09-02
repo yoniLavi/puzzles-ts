@@ -32,7 +32,7 @@ export const DIFFCOUNT = 3;
 // concluded "so Easy/Normal/Tricky are all guess-free". That measurement is
 // sound and still holds — but it answers a different question. It is about
 // *recursion*: no board needs a hypothesis nested inside a hypothesis. The rule
-// is about **propagation**: rung 3 (`forcingPass`) hypothesises one candidate
+// is about **propagation**: rung 3 (`forcingPass`) hypothesizes one candidate
 // and runs the arc-consistency + counting *fixpoint* from it, taking the
 // contradiction that eventually appears. That is a solve-from-hypothesis, the
 // shape Galaxies' removed rung had, and only a tier named `Unreasonable` may

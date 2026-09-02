@@ -7,7 +7,7 @@
  *  1. Build a *base* grid at `size / (1 + expandfactor)` by repeatedly picking a
  *     random uncovered square and a random rectangle covering it (`enumRects` +
  *     `placeRect`), leaving occasional singletons.
- *  2. Remove each singleton by extending a neighbour (or, in the four-2×2 case,
+ *  2. Remove each singleton by extending a neighbor (or, in the four-2×2 case,
  *     dropping a 3×3 over it).
  *  3. Stretch the base grid to full size in two passes — expand rows, transpose,
  *     expand rows again, transpose back — distributing the extra rows randomly.

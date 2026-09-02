@@ -59,7 +59,7 @@ solved verdict identical to the C solver on every board. Easy SHALL run stage 1
 (force bridges an island must place because its remaining count equals its
 available adjacent space, and forbid bridges into a satisfied island). Medium
 SHALL additionally run stage 2 (per-direction minimum/maximum reasoning using
-each neighbour's own remaining capacity). Hard SHALL additionally run stage 3
+each neighbor's own remaining capacity). Hard SHALL additionally run stage 3
 (the dsf connected-subgroup deductions — forbid a bridge that would seal off a
 subgroup that cannot then be satisfied, and, when `allowloops` is false, forbid a
 bridge that would complete a premature loop). The solver is purely deductive
@@ -100,16 +100,16 @@ exceeded; the in-progress drag destination SHALL be tracked (`update_drag_dst`)
 and committed on release (`finish_drag`). Right-drag along a clear span between
 two islands SHALL toggle a no-line/mark on that span. Cursor keys SHALL move a
 keyboard cursor, and `CURSOR_SELECT` SHALL grab and drop a keyboard drag. A drag
-that does not run cleanly between two in-line islands SHALL be cancelled with no
+that does not run cleanly between two in-line islands SHALL be canceled with no
 change. No editor-only move letters are mapped.
 
 #### Scenario: Dragging cycles the bridge count
 
-- **WHEN** the player left-drags from an island to an in-line neighbour three
+- **WHEN** the player left-drags from an island to an in-line neighbor three
   times on a `maxb = 2` board
 - **THEN** the bridge count between them goes 1, then 2, then 0
 
-#### Scenario: An off-line drag is cancelled
+#### Scenario: An off-line drag is canceled
 
 - **WHEN** the player starts a drag on an island and releases where no in-line
   island lies
@@ -145,7 +145,7 @@ diff key so they repaint and clear on a later frame.
 The renderer SHALL draw islands as circles bearing their count, single and double
 bridges (horizontal and vertical), the in-progress drag preview line,
 no-line/mark indicators, the keyboard cursor ring, and the win flash, using the
-upstream tile geometry. The palette SHALL mirror the upstream colour enum
+upstream tile geometry. The palette SHALL mirror the upstream color enum
 index-for-index (`BACKGROUND, FOREGROUND, HIGHLIGHT, LOWLIGHT, SELECTED, MARK,
 HINT, GRID, WARNING, CURSOR`); the `findMistakes` overlay SHALL reuse the red
 `COL_WARNING` channel (no extra palette entry), so it lives in the render diff
@@ -166,13 +166,13 @@ requires a manual click to mark an island done. When on, the renderer SHALL draw
 island whose current bridge-count equals its clue with the "done" mark background
 (`DI_BG_MARK`), automatically and without any player action. This aid SHALL be
 **purely visual**: it SHALL NOT set `G_MARK` or lock the island's bridges, so the
-player can still edit them freely (the manual click-to-mark-and-lock behaviour is
+player can still edit them freely (the manual click-to-mark-and-lock behavior is
 retained and unchanged). Because a satisfied island is never `island_impossible`,
 the auto-mark background SHALL never fight the red live-error foreground. The
-background is part of the render diff key, so an island greys as soon as its count
+background is part of the render diff key, so an island grays as soon as its count
 is met and reverts when a bridge is removed.
 
-#### Scenario: A satisfied island greys only when the preference is on
+#### Scenario: A satisfied island grays only when the preference is on
 
 - **WHEN** the player brings an island's bridge-count up to its clue with
   `auto-mark-complete` on

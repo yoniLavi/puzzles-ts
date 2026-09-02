@@ -73,7 +73,7 @@ import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   KeyLabel,
@@ -82,7 +82,7 @@ import type {
 } from "../../engine/types.ts";
 import { newTowersDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   coord,
   FLASH_TIME,
@@ -183,7 +183,7 @@ function interpretMove(
   let ty = fromCoord(p.y, ts);
 
   if (ui.threeD) {
-    // A click may land on a tower protruding up-left from a neighbouring cell;
+    // A click may land on a tower protruding up-left from a neighboring cell;
     // check the tops of nearby towers and retarget if so.
     for (let dy = 0; dy <= 1; dy++) {
       for (let dx = 0; dx >= -1; dx--) {
@@ -377,7 +377,7 @@ function executeMove(state: TowersState, move: TowersMove): TowersState {
       const all = (1 << (w + 1)) - (1 << 1);
       // **Additive**: fill only the cells that have no notes yet, never reset one
       // the player has narrowed. Resetting threw away their own deductions on any
-      // board with some pencilled cells and some blank ones (owner-reported on
+      // board with some penciled cells and some blank ones (owner-reported on
       // Salad, 2026-07-29); `adaptiveMarkAll`'s contract always said "fill every
       // *note-less* empty cell" — this is the games catching up with it.
       for (let i = 0; i < w * w; i++) {
@@ -508,7 +508,7 @@ function narrate(reason: HintReason, n: number, continues = false): string {
       return `Another group of cells already accounts for a fixed set of heights that includes ${n}, so we must cross out the ${n} here.`;
     // The shared chain sentence, in Towers' own vocabulary. Towers keeps its
     // own `narrate` because other arms need the value qualified ("height 5"),
-    // which this one does not — "two heights left" contextualises the bare
+    // which this one does not — "two heights left" contextualizes the bare
     // numbers, and the numbered cells carry the chain.
     case "forcing":
       return narrateForcingChain(
@@ -786,7 +786,7 @@ function buildSteps(
 
     // 3. The extreme-clue lines are done — pencil in the notes now (once), so
     //    the eliminations below have something to cross out and are taught
-    //    rather than skipped in favour of bare placements.
+    //    rather than skipped in favor of bare placements.
     if (!pop.done()) {
       pop.ensure();
       lastStrikeGroup = -1;
@@ -1004,7 +1004,7 @@ export const towersGame: Game<
     },
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: TowersParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

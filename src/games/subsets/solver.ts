@@ -201,7 +201,7 @@ function solveSinglePosition(
 
 /** Collapse the surviving candidates back into `known`/`mask` (upstream
  * `subsets_bits_from_cube`). A cell with no surviving candidate — a
- * contradiction — gets `known |= ~0`, upstream behaviour reproduced: the
+ * contradiction — gets `known |= ~0`, upstream behavior reproduced: the
  * Uint16Array stores 0xFFFF where C stores 0xFFFFFFFF, which is
  * observationally identical because `mask` never exceeds `ALL_BITS(n)`, so
  * such a cell can never read as decided or index the counts array. */
@@ -483,7 +483,7 @@ export type SubsetsReason =
    * cell all agree on the decided letters. `survivors` is that surviving
    * set-value list (the self-contained premise — every one contains each
    * now-Known letter, none contains a now-Cleared letter; design D3, measured
-   * ≤3 in 94% of collapses). `neighbours` are the few local arrow/adjacency
+   * ≤3 in 94% of collapses). `neighbors` are the few local arrow/adjacency
    * cells whose relation removed candidates (shaded as evidence);
    * `placedDriven` is true when exactly-once placements elsewhere also
    * removed candidates (narrated generically, shown ambiently in the tally —
@@ -491,7 +491,7 @@ export type SubsetsReason =
   | {
       kind: "collapse";
       survivors: number[];
-      neighbours: number[];
+      neighbors: number[];
       placedDriven: boolean;
     }
   /** A set placed nowhere with exactly one candidate cell left goes there —
@@ -527,7 +527,7 @@ function bitList(mask: number, n: number): number[] {
  * own marks (syncCube)" — the latter carries no external evidence cell. */
 type ElimEvidence =
   | { kind: "placed"; cell: number }
-  | { kind: "neighbour"; cell: number };
+  | { kind: "neighbor"; cell: number };
 
 /** The first arrow with a player-visible letter change, applied and recorded
  * (mirrors `applyArrows`, one side of one arrow at a time). */
@@ -599,7 +599,7 @@ function recCubeSingleCount(
   return ret;
 }
 
-/** `disjoint`, recording the incomparable/decided neighbour as evidence. */
+/** `disjoint`, recording the incomparable/decided neighbor as evidence. */
 function recDisjoint(
   state: SubsetsState,
   cube: Uint8Array,
@@ -625,9 +625,9 @@ function recDisjoint(
 
         if (state.known[i1] !== state.mask[i1]) {
           if (cube[i1 * n2] || cube[i1 * n2 + (n2 - 1)]) {
-            if (cube[i1 * n2]) elim[i1 * n2] ??= { kind: "neighbour", cell: i2 };
+            if (cube[i1 * n2]) elim[i1 * n2] ??= { kind: "neighbor", cell: i2 };
             if (cube[i1 * n2 + (n2 - 1)])
-              elim[i1 * n2 + (n2 - 1)] ??= { kind: "neighbour", cell: i2 };
+              elim[i1 * n2 + (n2 - 1)] ??= { kind: "neighbor", cell: i2 };
             cube[i1 * n2] = 0;
             cube[i1 * n2 + (n2 - 1)] = 0;
             ret++;
@@ -641,7 +641,7 @@ function recDisjoint(
             )
               continue;
             cube[i2 * n2 + opt] = 0;
-            elim[i2 * n2 + opt] ??= { kind: "neighbour", cell: i1 };
+            elim[i2 * n2 + opt] ??= { kind: "neighbor", cell: i1 };
             ret++;
           }
         }
@@ -652,7 +652,7 @@ function recDisjoint(
 }
 
 /**
- * `applyArrowsAdvanced`, recording the arrow neighbour as evidence. `strong`
+ * `applyArrowsAdvanced`, recording the arrow neighbor as evidence. `strong`
  * adds the head half exactly as the solve path does — and, exactly as there,
  * the recorder reaches for it only once the cheaper vocabulary is exhausted
  * (see {@link deduceHintPlan}).
@@ -682,7 +682,7 @@ function recApplyArrowsAdvanced(
           }
           if (!found) {
             cube[i1 * n2 + sup] = 0;
-            elim[i1 * n2 + sup] ??= { kind: "neighbour", cell: i2 };
+            elim[i1 * n2 + sup] ??= { kind: "neighbor", cell: i2 };
             ret++;
           }
         }
@@ -698,7 +698,7 @@ function recApplyArrowsAdvanced(
           }
           if (!found) {
             cube[i2 * n2 + sub] = 0;
-            elim[i2 * n2 + sub] ??= { kind: "neighbour", cell: i1 };
+            elim[i2 * n2 + sub] ??= { kind: "neighbor", cell: i1 };
             ret++;
           }
         }
@@ -768,17 +768,17 @@ function nextCollapseFiring(
     // Attribute the eliminations that are *culprits* for a decided letter — a
     // Known letter L is forced because every set lacking L was ruled out; a
     // Cleared letter L because every set holding L was. Shade only the few
-    // local arrow/adjacency neighbours; note whether exactly-once placements
+    // local arrow/adjacency neighbors; note whether exactly-once placements
     // contributed (narrated generically — the tally shows them). The
     // surviving-set list is the self-contained premise for the conclusion.
-    const neighbours = new Set<number>();
+    const neighbors = new Set<number>();
     let placedDriven = false;
     for (let nj = 0; nj < n2; nj++) {
       if (cube[i * n2 + nj]) continue; // still a candidate — not a culprit
       const culprit = (gainedKnown & ~nj) !== 0 || (lostMask & nj) !== 0;
       if (!culprit) continue;
       const ev = elim[i * n2 + nj];
-      if (ev?.kind === "neighbour") neighbours.add(ev.cell);
+      if (ev?.kind === "neighbor") neighbors.add(ev.cell);
       else if (ev?.kind === "placed") placedDriven = true;
     }
 
@@ -790,7 +790,7 @@ function nextCollapseFiring(
       reason: {
         kind: "collapse",
         survivors,
-        neighbours: [...neighbours],
+        neighbors: [...neighbors],
         placedDriven,
       },
     };
@@ -839,16 +839,16 @@ export type PlacementBlock =
   /** The cell's own marks forbid it (it lacks a marked letter, or holds a
    * cleared one). */
   | { kind: "marks" }
-  /** A horseshoe to decided `neighbour` requires `value` to contain / be
-   * contained in the neighbour's set, and it isn't: `mustContain` says which
+  /** A horseshoe to decided `neighbor` requires `value` to contain / be
+   * contained in the neighbor's set, and it isn't: `mustContain` says which
    * direction, `letters` are the offending letters. */
-  | { kind: "arrow"; neighbour: number; mustContain: boolean; letters: number }
-  /** A missing horseshoe to decided `neighbour` forbids one set containing the
-   * other, but `value` and the neighbour's set are comparable. */
-  | { kind: "adjacent"; neighbour: number };
+  | { kind: "arrow"; neighbor: number; mustContain: boolean; letters: number }
+  /** A missing horseshoe to decided `neighbor` forbids one set containing the
+   * other, but `value` and the neighbor's set are comparable. */
+  | { kind: "adjacent"; neighbor: number };
 
 /** The visible rule (if any) that stops `value` sitting in undecided cell `i`,
- * judged shallowly from the board (marks + decided-neighbour horseshoes). */
+ * judged shallowly from the board (marks + decided-neighbor horseshoes). */
 export function whyCantPlace(
   state: SubsetsState,
   i: number,
@@ -864,24 +864,24 @@ export function whyCantPlace(
     const y2 = y + ADJTHAN[d].dy;
     if (x2 < 0 || x2 >= w || y2 < 0 || y2 >= state.h) continue;
     const j = y2 * w + x2;
-    if (state.known[j] !== state.mask[j]) continue; // only decided neighbours constrain
+    if (state.known[j] !== state.mask[j]) continue; // only decided neighbors constrain
     const kj = state.known[j];
     if (state.clues[i] & ADJTHAN[d].f) {
       // Arrow i -> j: set(j) ⊆ value — value must contain kj.
       if ((kj & value) !== kj)
-        return { kind: "arrow", neighbour: j, mustContain: true, letters: kj & ~value };
+        return { kind: "arrow", neighbor: j, mustContain: true, letters: kj & ~value };
     } else if (state.clues[j] & ADJTHAN[d].fo) {
       // Arrow j -> i: value ⊆ set(j) — value must fit inside kj.
       if ((value & kj) !== value)
         return {
           kind: "arrow",
-          neighbour: j,
+          neighbor: j,
           mustContain: false,
           letters: value & ~kj,
         };
     } else if ((value & kj) === value || (value & kj) === kj) {
       // No arrow: neither may contain the other, but they are comparable.
-      return { kind: "adjacent", neighbour: j };
+      return { kind: "adjacent", neighbor: j };
     }
   }
   return null;
@@ -892,7 +892,7 @@ export function whyCantPlace(
  * the board** — the Dominosa "no solver, no solution leak" rule (owner redesign
  * 2026-07-21). A **placed** set can go nowhere else, so its decided home
  * cell(s) are returned alone; an **unplaced** set returns every undecided cell
- * where placing it breaks no visible rule (marks + decided-neighbour
+ * where placing it breaks no visible rule (marks + decided-neighbor
  * horseshoes). This powers the reference-aid spotlight and the hidden-single
  * hint.
  */

@@ -23,7 +23,7 @@
  * no notion of. Each rung returns the *lowest* rung that could notice what it
  * just did (or `DIFF_MAX` for "no progress"), and the loop uses that to skip
  * re-running cheap rungs that provably cannot use the new information. That
- * started life as a speed optimisation, but because the generator is
+ * started life as a speed optimization, but because the generator is
  * solver-gated it is **load-bearing for which puzzles exist**: a solver that
  * explores in a different order accepts a different set of boards. So the loop
  * is ported exactly rather than adapted to the shared shape.
@@ -697,7 +697,7 @@ function dlineDeductions(ss: SolverState): number {
  * `lineNew`.
  *
  * **This function always returns `false`, even when it changed the board — and
- * that is deliberate.** Upstream initialises `retval = false` and never
+ * that is deliberate.** Upstream initializes `retval = false` and never
  * reassigns it, so the caller is told "no progress" whenever this fires. Do not
  * "fix" it: a linter's *value is never reassigned* hint points at exactly the
  * wrong cleanup here.
@@ -784,8 +784,8 @@ function findUnknowns(
  * XOR always produces `LINE_YES` on that path. TypeScript's `%` truncates
  * identically, so the literal port and the idiomatic port are the same code —
  * the only trap is applying the hygiene fix `((x % 2) + 2) % 2`, which would
- * change the behaviour. Hence: keep the `number`, keep the truthiness test, and
- * do not normalise.
+ * change the behavior. Hence: keep the `number`, keep the truthiness test, and
+ * do not normalize.
  *
  * That path is in fact **unreachable on any board this game constructs**.
  * `clue < yes` means a face already has more YES edges than its clue allows —
@@ -811,9 +811,9 @@ function parityDeductions(
   const linedsf = ss.linedsf;
   if (linedsf === null) return DIFF_MAX;
   let diff = DIFF_MAX;
-  // NOTE: `totalParity` is used **raw** below, never normalised to 0/1. See the
+  // NOTE: `totalParity` is used **raw** below, never normalized to 0/1. See the
   // doc comment: a negative value is truthy and XORs exactly as C's does, and
-  // normalising it would silently change the deduction on that path (e.g.
+  // normalizing it would silently change the deduction on that path (e.g.
   // `-1 ^ 1` is -2 and truthy, where `1 ^ 1` is 0 and falsy).
 
   if (unknownCount === 2) {
@@ -1061,7 +1061,7 @@ function loopDeductions(ss: SolverState): number {
 // ---------------------------------------------------------------------------
 
 /** The rungs, in the order they are tried, with the difficulty each belongs to.
- * The ordering is part of the solver's behaviour, not a presentation choice. */
+ * The ordering is part of the solver's behavior, not a presentation choice. */
 const RUNGS: readonly { fn: (ss: SolverState) => number; diff: number }[] = [
   { fn: trivialDeductions, diff: 0 },
   { fn: dlineDeductions, diff: DIFF_NORMAL },
@@ -1079,7 +1079,7 @@ const RUNGS: readonly { fn: (ss: SolverState) => number; diff: number }[] = [
  * already clones the game state, so building the working state here is exactly
  * equivalent and there is nothing left to free.
  *
- * The `(thresholdDiff, thresholdIndex)` pair is the speed optimisation
+ * The `(thresholdDiff, thresholdIndex)` pair is the speed optimization
  * described in the module doc: a rung earlier in the list than `thresholdIndex`
  * is skipped when its difficulty is below `thresholdDiff`, because the
  * information the last firing produced is provably useless to it. Load-bearing

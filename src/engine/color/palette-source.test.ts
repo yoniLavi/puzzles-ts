@@ -1,28 +1,28 @@
 /**
- * The guard for **"a game contains no colour value"** — read as a rule about
+ * The guard for **"a game contains no color value"** — read as a rule about
  * source, because that is what the rule actually says.
  *
  * `palette.test.ts` checks *values*, and value is the wrong instrument for this
  * requirement in both directions. It cannot see provenance (a game writing a
- * literal that happens to equal a token passes), and once every colour is a token
- * it cannot see anything at all, because a derived colour has no value to look up
+ * literal that happens to equal a token passes), and once every color is a token
+ * it cannot see anything at all, because a derived color has no value to look up
  * — `mkhighlightSpecific(UNRULY_BLACK)` and `soloKiller(bg)` are correct and
  * unmatchable. So the value guard keeps the jobs value is good at (no two shared
  * roles hold one value; every derived role stays visible against both host
  * backgrounds) and this one reads the source.
  *
- * Three rules, each aimed at one way a colour decision leaks back into a game:
+ * Three rules, each aimed at one way a color decision leaks back into a game:
  *
- * 1. **no colour literal** — `[0.2, 1, 0.2]` in a game is a value nobody can
+ * 1. **no color literal** — `[0.2, 1, 0.2]` in a game is a value nobody can
  *    restyle;
  * 2. **no channel-indexing the background** — `bg[0] * 0.9` is the same decision
  *    written as arithmetic, and it is how most of the collection's derived
- *    colours were originally spelled;
- * 3. **no importing the colour combinators** — `mix`/`scale`/`divide`/`fraction`
- *    are how the *table* builds one colour out of others; a game reaching for
- *    them is a game deciding a colour.
+ *    colors were originally spelled;
+ * 3. **no importing the color combinators** — `mix`/`scale`/`divide`/`fraction`
+ *    are how the *table* builds one color out of others; a game reaching for
+ *    them is a game deciding a color.
  *
- * What it deliberately does not attempt: a game could still compute a colour from
+ * What it deliberately does not attempt: a game could still compute a color from
  * variables the rules do not name. That is a review matter, and the rules above
  * cover every spelling the collection actually used across 57 games. A game is
  * free to call a **named derivation** from the table (`slantGrid(background)`) or
@@ -30,10 +30,10 @@
  * intended shape, not an exception to it.
  */
 import { describe, expect, it } from "vitest";
-import * as colours from "./colours.ts";
+import * as colors from "./colors.ts";
 import * as gameTokens from "./palette-games.ts";
 
-/** The meanings layer, as text — a named colour counts as used when a meaning
+/** The meanings layer, as text — a named color counts as used when a meaning
  * is defined over it, not only when a game imports it directly. */
 const paletteSource: string = Object.values(
   import.meta.glob<string>("./palette.ts", {
@@ -63,7 +63,7 @@ const tableSource: string = Object.values(
  * imports after a file move leaves it behind — and an unmatched glob yields
  * `{}` rather than an error, so all three assertions below would pass over
  * nothing. That is why `finds the game sources at all` exists, and it is what
- * caught this pattern when the file moved into `engine/colour/`. */
+ * caught this pattern when the file moved into `engine/color/`. */
 const sourceModules = import.meta.glob<string>("../../games/**/*.ts", {
   query: "?raw",
   import: "default",
@@ -71,15 +71,15 @@ const sourceModules = import.meta.glob<string>("../../games/**/*.ts", {
 });
 
 /**
- * Array literals of three numbers that are genuinely **not colours**.
+ * Array literals of three numbers that are genuinely **not colors**.
  *
  * Matched on the source snippet rather than a line number so it survives edits,
  * and kept per file so a snippet allowed in one game is not allowed everywhere.
  * It has two entries and should stay about that size: across 57 games, 174 of the
- * 175 three-number literals in the collection *were* colours, which is what makes
+ * 175 three-number literals in the collection *were* colors, which is what makes
  * this rule worth having at all.
  */
-const NOT_COLOURS: Record<string, { snippet: string; why: string }[]> = {
+const NOT_COLORS: Record<string, { snippet: string; why: string }[]> = {
   "cube/render.ts": [
     { snippet: "const t = [0, 0, 0];", why: "a 3-vector in the solid's transform" },
   ],
@@ -120,14 +120,14 @@ function code(src: string): string {
   );
 }
 
-const COLOUR_LITERAL = /\[\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\]/g;
+const COLOR_LITERAL = /\[\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\]/g;
 const BACKGROUND_CHANNEL =
   /\b(?:default[Bb]ackground|background|bg)\s*\[\s*\d|\bbg\[i\]/;
 /** Matched against **raw** source, not the comment-stripped copy: an import
  * path is a string literal, so {@link code} blanks it out. (Found by mutating a
  * game to import `scale` and watching this rule not fire.) Anchored to a line
  * that actually starts an import, so prose naming the module is still fine. */
-const COMBINATOR_IMPORT = /^import[^;]*from\s+"[^"]*colour-token\.ts"/m;
+const COMBINATOR_IMPORT = /^import[^;]*from\s+"[^"]*color-token\.ts"/m;
 
 describe("a game contains no colour value", () => {
   const sources = gameSources();
@@ -139,10 +139,10 @@ describe("a game contains no colour value", () => {
 
   for (const { rel, src } of sources) {
     const stripped = code(src);
-    const allowed = NOT_COLOURS[rel] ?? [];
+    const allowed = NOT_COLORS[rel] ?? [];
 
     it(`${rel} writes no colour literal`, () => {
-      const found = [...stripped.matchAll(COLOUR_LITERAL)].map((m) => {
+      const found = [...stripped.matchAll(COLOR_LITERAL)].map((m) => {
         const line = stripped.slice(0, m.index).split("\n").length;
         return { text: src.split("\n")[line - 1].trim(), line };
       });
@@ -185,7 +185,7 @@ describe("a game contains no colour value", () => {
  * A per-game token names the game it belongs to, and that name is only worth
  * anything if it is true. Checking it here rather than by inspecting resolved
  * palettes catches the cases a palette cannot show: `CROSSING_WALL` and Unruly's
- * two tile colours are *inputs to* `mkhighlightSpecific` and their own values
+ * two tile colors are *inputs to* `mkhighlightSpecific` and their own values
  * never appear in a palette at all, so an identity check over palette entries
  * called all three unused.
  */
@@ -224,7 +224,7 @@ describe("a per-game token belongs to the game it names", () => {
   }
 
   it("declares no token no game uses", () => {
-    // A token with no consumer is a colour decision whose effect nobody can see,
+    // A token with no consumer is a color decision whose effect nobody can see,
     // and it will be wrong by the time somebody does.
     //
     // "Used" includes used *by the table itself*: a set's members are declared
@@ -244,21 +244,21 @@ describe("a per-game token belongs to the game it names", () => {
 });
 
 /**
- * A **named colour with no consumer** is a colour decision nobody can see.
+ * A **named color with no consumer** is a color decision nobody can see.
  *
- * The same rule the per-game half has had all along, now over `colours.ts`,
+ * The same rule the per-game half has had all along, now over `colors.ts`,
  * because the consolidation made it reachable: Crossing's down-run was the only
  * consumer of `ORANGE_WASH`, and when it moved to the bold step the wash sat in
  * the table declaring a shade of orange that nothing on any board could show.
  * That is exactly the state the palette is small in order to avoid.
  *
- * "Used" spans all three ways a colour reaches a board: a game imports it, a
- * meaning in `palette.ts` is defined over it, or one of the sets in `colours.ts`
+ * "Used" spans all three ways a color reaches a board: a game imports it, a
+ * meaning in `palette.ts` is defined over it, or one of the sets in `colors.ts`
  * itself gathers it up (`RED` is in `TEN`, which is what Flood imports).
  */
 it("declares no named colour nothing can show", () => {
   const imported = (src: string): string[] => {
-    const m = /import\s*\{([^}]*)\}\s*from\s*"[^"]*colours\.ts"/.exec(src);
+    const m = /import\s*\{([^}]*)\}\s*from\s*"[^"]*colors\.ts"/.exec(src);
     return m
       ? m[1]
           .split(",")
@@ -267,20 +267,20 @@ it("declares no named colour nothing can show", () => {
       : [];
   };
   const byGames = new Set(gameSources().flatMap(({ src }) => imported(src)));
-  // The meanings layer and the board-relative layer both build on named colours
+  // The meanings layer and the board-relative layer both build on named colors
   // (`ERROR` is `RED`; Signpost's region ramp is built from `EIGHT_FILLS`), and
-  // a colour reaching a board through either of them is used.
+  // a color reaching a board through either of them is used.
   const byMeanings = new Set([...imported(paletteSource), ...imported(tableSource)]);
   const table = code(
     Object.values(
-      import.meta.glob<string>("./colours.ts", {
+      import.meta.glob<string>("./colors.ts", {
         query: "?raw",
         import: "default",
         eager: true,
       }),
     )[0],
   );
-  const dead = Object.keys(colours).filter(
+  const dead = Object.keys(colors).filter(
     (n) =>
       !byGames.has(n) &&
       !byMeanings.has(n) &&

@@ -7,8 +7,8 @@
  * NARROW_BORDERS (the web build): `BORDER = 0`.
  */
 
-import { FOUR_FILLS } from "../../engine/colour/colours.ts";
-import { ERROR, ERROR_TEXT, INK } from "../../engine/colour/palette.ts";
+import { FOUR_FILLS } from "../../engine/color/colors.ts";
+import { ERROR, ERROR_TEXT, INK } from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import {
   CURSOR_DOWN,
@@ -16,7 +16,7 @@ import {
   CURSOR_RIGHT,
   CURSOR_UP,
 } from "../../engine/pointer.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import { BE, LE, type MapData, RE, TE } from "./map-data.ts";
 import {
   FLASH_ALL_TO_WHITE,
@@ -43,8 +43,8 @@ export const COL_MISTAKE = 8;
 const FOUR = 4;
 const FIVE = 5;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const ret: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const ret: Color[] = [];
   ret[COL_BACKGROUND] = defaultBackground;
   ret[COL_GRID] = INK;
   ret[COL_0] = FOUR_FILLS[0];
@@ -60,7 +60,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 // --- cache-word flags ------------------------------------------------
 // Low bits 0..4 hold the base value `tv*FIVE + bv` (0..24); the rest are flags.
 
-const MISTAKE = 0x20; // bit 5 — the cell belongs to a wrong-coloured region
+const MISTAKE = 0x20; // bit 5 — the cell belongs to a wrong-colored region
 const SHOW_NUMBERS = 0x00004000;
 const PENCIL_T_BASE = 0x00080000;
 const PENCIL_B_BASE = 0x00008000;
@@ -92,7 +92,7 @@ export { epsilonX, epsilonY };
 
 /**
  * The region containing a point in tile `(tx, ty)` offset by `(xEps, yEps)` from
- * the tile centre — resolving a diagonally-split cell to one of its two
+ * the tile center — resolving a diagonally-split cell to one of its two
  * regions. Upstream `region_from_logical_coords`.
  */
 export function regionFromLogicalCoords(
@@ -209,7 +209,7 @@ function drawError(dr: GameDrawing, ts: number, x: number, y: number): void {
     COL_GRID,
   );
 
-  // An exclamation mark, hand-drawn (upstream avoids draw_text off-centre).
+  // An exclamation mark, hand-drawn (upstream avoids draw_text off-center).
   const xext = Math.floor(ts / 16);
   const yext = Math.floor((ts * 2) / 5) - (xext * 2 + 2);
   dr.drawRect(
@@ -247,13 +247,13 @@ function drawSquare(
   const cy = coord(y, ts);
   dr.clip({ x: cx, y: cy, w: ts, h: ts });
 
-  // Base (top) region colour.
+  // Base (top) region color.
   dr.drawRect(
     { x: cx, y: cy, w: ts, h: ts },
     tv === FOUR ? COL_BACKGROUND : COL_0 + tv,
   );
 
-  // Second region colour if this is a diagonally-divided square.
+  // Second region color if this is a diagonally-divided square.
   if (M[TE * wh + y * w + x] !== M[BE * wh + y * w + x]) {
     const p2x =
       M[LE * wh + y * w + x] === M[TE * wh + y * w + x]
@@ -349,7 +349,7 @@ function drawSquare(
   }
 
   // Mistake overlay (deliberate divergence): a red inset outline on a cell of a
-  // wrong-coloured region.
+  // wrong-colored region.
   if (mistake) {
     const inset = Math.max(1, Math.floor(ts / 12));
     const t = Math.max(1, Math.floor(ts / 16));
@@ -418,8 +418,8 @@ export function redraw(
     for (let x = 0; x < w; x++) {
       const tRegion = M[TE * wh + y * w + x];
       const bRegion = M[BE * wh + y * w + x];
-      let tv = s.colouring[tRegion];
-      let bv = s.colouring[bRegion];
+      let tv = s.coloring[tRegion];
+      let bv = s.coloring[bRegion];
       if (tv < 0) tv = FOUR;
       if (bv < 0) bv = FOUR;
 
@@ -441,9 +441,9 @@ export function redraw(
       let v = tv * FIVE + bv;
 
       for (let i = 0; i < FOUR; i++) {
-        if (s.colouring[tRegion] < 0 && s.pencil[tRegion] & (1 << i))
+        if (s.coloring[tRegion] < 0 && s.pencil[tRegion] & (1 << i))
           v |= PENCIL_T_BASE << i;
-        if (s.colouring[bRegion] < 0 && s.pencil[bRegion] & (1 << i))
+        if (s.coloring[bRegion] < 0 && s.pencil[bRegion] & (1 << i))
           v |= PENCIL_B_BASE << i;
       }
 
@@ -457,8 +457,8 @@ export function redraw(
   for (let i = 0; i < map.ngraph; i++) {
     const v1 = Math.floor(map.graph[i] / n);
     const v2 = map.graph[i] % n;
-    if (s.colouring[v1] < 0 || s.colouring[v2] < 0) continue;
-    if (s.colouring[v1] !== s.colouring[v2]) continue;
+    if (s.coloring[v1] < 0 || s.coloring[v2] < 0) continue;
+    if (s.coloring[v1] !== s.coloring[v2]) continue;
 
     let ex = map.edgex[i];
     let ey = map.edgey[i];
@@ -485,14 +485,14 @@ export function redraw(
     }
 
   // Floating drag/cursor blob.
-  if (ui.dragColour > -2 || ui.cursor.visible) {
+  if (ui.dragColor > -2 || ui.cursor.visible) {
     let bg: number;
     let iscur = false;
-    if (ui.dragColour >= 0) bg = COL_0 + ui.dragColour;
-    else if (ui.dragColour === -1) bg = COL_BACKGROUND;
+    if (ui.dragColor >= 0) bg = COL_0 + ui.dragColor;
+    else if (ui.dragColor === -1) bg = COL_BACKGROUND;
     else {
       const r = regionFromUiCursor(map, ui);
-      const c = r < 0 ? -1 : s.colouring[r];
+      const c = r < 0 ? -1 : s.coloring[r];
       bg = c < 0 ? COL_BACKGROUND : COL_0 + c;
       iscur = true;
     }

@@ -20,14 +20,14 @@
 
 import type { Game, HintStep } from "../game.ts";
 import { Midend } from "../midend.ts";
-import type { Colour, Size } from "../types.ts";
+import type { Color, Size } from "../types.ts";
 import { RecordingDrawing } from "./recording-drawing.ts";
 
-/** A neutral light-grey default background, standing in for the
- * frontend's theme colour (`puzzle-view.ts` derives one per theme). Any
+/** A neutral light-gray default background, standing in for the
+ * frontend's theme color (`puzzle-view.ts` derives one per theme). Any
  * fixed value works; it only needs to be stable so palette-derived
- * colours snapshot deterministically. */
-export const DEFAULT_BACKGROUND: Colour = [0.827, 0.827, 0.827];
+ * colors snapshot deterministically. */
+export const DEFAULT_BACKGROUND: Color = [0.827, 0.827, 0.827];
 
 /** Guard against a never-satisfied `hintUntil` predicate walking the
  * plan forever (each step recomputes nothing, but a buggy predicate
@@ -71,7 +71,7 @@ export interface RenderScenario<Params, State, Move, Ui, DrawState, Mistake> {
   settle?: boolean;
   /** Frontend default background fed to the game's palette. Defaults to
    * {@link DEFAULT_BACKGROUND}. */
-  defaultBackground?: Colour;
+  defaultBackground?: Color;
   /**
    * Buttons to send through `Midend.processInput` before capture, at `at`
    * (default the origin) — the way to reach a frame that only *input* produces.
@@ -90,7 +90,7 @@ export interface RenderScenario<Params, State, Move, Ui, DrawState, Mistake> {
 }
 
 export interface RenderResult<Params, State, Move, Ui, DrawState> {
-  /** The captured, normalised draw record (the snapshot/assertion target). */
+  /** The captured, normalized draw record (the snapshot/assertion target). */
   recording: RecordingDrawing;
   /** The hint step on display at capture, if `showHint` was set. */
   hint?: HintStep<Move>;
@@ -100,7 +100,7 @@ export interface RenderResult<Params, State, Move, Ui, DrawState> {
    * SVG view (`toSvg`) of the same record. */
   size: Size;
   /** The resolved palette (index → RGB), for reference. */
-  palette: Colour[];
+  palette: Color[];
   /** The driven midend, for further assertions (save round-trip, etc.). */
   midend: Midend<Params, State, Move, Ui, DrawState>;
 }
@@ -160,7 +160,7 @@ export function renderScenario<Params, State, Move, Ui, DrawState, Mistake>(
 
   // Through the midend, so the recording resolves indices against the same
   // board the app paints (the host background shifted off the extremes).
-  const palette = midend.getColourPalette(defaultBackground);
+  const palette = midend.getColorPalette(defaultBackground);
   const recording = new RecordingDrawing(palette);
   midend.redraw(recording);
 

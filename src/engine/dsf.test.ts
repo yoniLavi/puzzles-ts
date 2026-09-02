@@ -5,7 +5,7 @@ import { randomNew, randomUpto } from "./random/index.ts";
 /**
  * Brute-force reference: a plain parent array, walked to a root each
  * time. No path compression, no union-by-size. Property tests cross
- * the optimised `Dsf` against this.
+ * the optimized `Dsf` against this.
  */
 class RefDsf {
   parent: number[];
@@ -249,7 +249,7 @@ describe("FlipDsf", () => {
     // elements under 40 consistent flip-merges already builds deep multi-way
     // equivalence classes with inversions — so a smaller n/ops keeps the check
     // just as strong for a fraction of the work; the earlier 24/60 was ~3× the
-    // cost for no added rigour.
+    // cost for no added rigor.
     const n = 16;
     const rng = randomNew("flipdsf-property");
     for (let trial = 0; trial < 5; trial++) {

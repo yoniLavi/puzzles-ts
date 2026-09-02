@@ -84,12 +84,12 @@ visible white run in three directions is fixed forces the remaining count
 into the fourth direction, and a cell whose inclusion would exceed the clue
 is black; (3) a square whose painting black would disconnect the white region
 (a cut vertex of the white graph) is white; and only when those stall, (4)
-recursion — try a cell both colours and force the surviving colour when one
+recursion — try a cell both colors and force the surviving color when one
 leads to a contradiction. `solve` SHALL run the full solver (including
 recursion) from the initial clues and return the completing sequence of
 cell-sets, or an error when the board contains a contradiction.
 
-#### Scenario: The adjacency rule whitens a neighbour
+#### Scenario: The adjacency rule whitens a neighbor
 
 - **WHEN** the solver runs on a grid with a black cell beside an empty cell
 - **THEN** that empty cell is set white
@@ -138,7 +138,7 @@ where the two conventions meet, and therefore the one place it is worth saying.
 
 ### Requirement: Range highlights errors live and checks mistakes against the solution
 
-`redraw` SHALL highlight, in the error colour, every cell currently violating
+`redraw` SHALL highlight, in the error color, every cell currently violating
 a rule — a black cell orthogonally adjacent to another black cell, a clue
 whose visible white run cannot equal its number, or a white cell cut off from
 the main white component — recomputed each frame from `findErrors`, matching
@@ -151,7 +151,7 @@ are consistent or undecided.
 #### Scenario: A black-adjacency violation reddens live
 
 - **WHEN** two orthogonally adjacent cells are both painted black
-- **THEN** `redraw` draws both in the error colour without any explicit check
+- **THEN** `redraw` draws both in the error color without any explicit check
   action
 
 #### Scenario: findMistakes flags a wrong black
@@ -172,20 +172,20 @@ from contradictory marks would mislead. Otherwise it SHALL deduce, from the
 player's current marks, the ordered sequence of forced cells (the remaining
 no-recursion solution) and return one narrated `HintStep` per forced cell.
 Each step's narration SHALL state the deduction that forces the cell — the
-adjacent black square (a neighbour of a black must be white), a clue already
+adjacent black square (a neighbor of a black must be white), a clue already
 satisfied (its run must stop, so the next cell is black), a clue that would be
 overrun (the cell must be black), a clue that can only reach its count one way
 (the cell must be white), or a cut-vertex of the white region (it must be
 white to keep the white cells connected). `hintKeepTrack` SHALL report
 `"completed"` when the player's move sets the hinted cell to the hinted value
 and `"off"` otherwise. `redraw` SHALL render the displayed step: the target
-cell highlighted in the hint colour with a preview of the forced mark, and the
-deduction's **evidence shaded as an area** in a lighter hint colour — the
+cell highlighted in the hint color with a preview of the forced mark, and the
+deduction's **evidence shaded as an area** in a lighter hint color — the
 clue's line of sight (satisfied/overrun), the run it must reach along (reach),
 or the non-black cells a cut would isolate (connect) — so the shaded picture
 the narration names is visible, not merely a single premise cell. A premise
 that cannot take the area shade (an adjacent **black** square, which must stay
-black) SHALL instead be **ringed** in the hint colour. The shaded area SHALL be
+black) SHALL instead be **ringed** in the hint color. The shaded area SHALL be
 computed against the board state as each step's deduction fires (the prior
 steps applied), so the run grows as the player follows the plan, and SHALL
 never include the target cell itself.
@@ -225,11 +225,11 @@ background.
 - **AND** a move that sets a different cell, or the hinted cell to a different
   value, returns `"off"`
 
-### Requirement: Range hint colour legend
+### Requirement: Range hint color legend
 
 When a Range hint is displayed, `redraw` SHALL distinguish the element types the
-deduction names using a stable colour legend, each colour paired with a
-non-colour cue:
+deduction names using a stable color legend, each color paired with a
+non-color cue:
 
 - The **forced cell** (the move) SHALL be filled `COL_HINT`, with the forced mark
   previewed as a shape — an inset black square for a forced black, a dot for a
@@ -239,7 +239,7 @@ non-colour cue:
 - A cited **decided black square** premise (the adjacent black in an `adjacency`
   deduction) SHALL be ringed `COL_HINT_BLACKREF`, not `COL_HINT` — so a deduction
   that names both a shaded black premise and the forced cell does not draw them
-  in the same colour. The cell stays black underneath; the teal ring is
+  in the same color. The cell stays black underneath; the teal ring is
   reinforcement.
 
 The legend SHALL be consistent across deductions. The `RangeHint` payload
@@ -251,7 +251,7 @@ a render concern.
 - **WHEN** an `adjacency` hint is displayed (a black square forces an adjacent
   cell white)
 - **THEN** the cited black premise is ringed `COL_HINT_BLACKREF` and the forced
-  cell is filled `COL_HINT`, in different colours
+  cell is filled `COL_HINT`, in different colors
 
 #### Scenario: Undecided premises stay shaded
 

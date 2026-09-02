@@ -5,9 +5,9 @@
  *
  * It is contradiction-based deduction, not guess-and-backtrack search:
  *   - `clustersValidate` classifies a grid COMPLETE / UNFINISHED / INVALID
- *     from local neighbour counts;
- *   - `solverTry` (difficulty 0) forces an empty cell's colour whenever the
- *     opposite colour would make the board INVALID — a single-cell proof by
+ *     from local neighbor counts;
+ *   - `solverTry` (difficulty 0) forces an empty cell's color whenever the
+ *     opposite color would make the board INVALID — a single-cell proof by
  *     contradiction;
  *   - `solverRecurse` (difficulty 1) does the same one hypothetical level
  *     deep, re-running the difficulty-0 fixpoint on a scratch copy.
@@ -21,7 +21,7 @@
  *
  * Upstream `clusters_validate` **mutates an `F_ERROR` bit into the grid** on
  * every filled cell (set on a rule violation, cleared otherwise), and the
- * generator never masks it out: it survives the two-colour fill (which only
+ * generator never masks it out: it survives the two-color fill (which only
  * rewrites cleared cells), the isolated-cell flip (`^= COLMASK` leaves bit 3
  * untouched), and the reduce-to-dots (`|= F_SINGLE`), so it reaches the
  * prune's *full-byte* `grid[i] == grid[i-1]` comparison. Two adjacent dots
@@ -50,10 +50,10 @@ export type ClustersStatus = typeof COMPLETE | typeof UNFINISHED | typeof INVALI
 const DX = [-1, 1, 0, 0];
 const DY = [0, 0, -1, 1];
 
-/** Same/other/empty orthogonal-neighbour counts of cell `(x,y)` relative to
- * colour `col` (a `COLMASK` value), plus how many neighbours exist at all
+/** Same/other/empty orthogonal-neighbor counts of cell `(x,y)` relative to
+ * color `col` (a `COLMASK` value), plus how many neighbors exist at all
  * (`max`) — upstream `clusters_count` summed over the four directions. */
-function neighbourCounts(
+function neighborCounts(
   grid: Uint8Array,
   w: number,
   h: number,
@@ -80,16 +80,16 @@ function neighbourCounts(
 
 /** Is the filled cell `i` a rule violation? Upstream `clusters_validate`'s
  * three error conditions:
- *  - wholly surrounded by the other colour (`other === max`);
- *  - a dot (`F_SINGLE`) touching more than one same-colour neighbour;
- *  - a non-dot that can no longer reach two same-colour neighbours
+ *  - wholly surrounded by the other color (`other === max`);
+ *  - a dot (`F_SINGLE`) touching more than one same-color neighbor;
+ *  - a non-dot that can no longer reach two same-color neighbors
  *    (`other === max - 1`). */
 function cellInError(grid: Uint8Array, w: number, h: number, i: number): boolean {
   const cell = grid[i];
   const col = cell & COLMASK;
   const x = i % w;
   const y = (i - x) / w;
-  const { same, other, max } = neighbourCounts(grid, w, h, x, y, col);
+  const { same, other, max } = neighborCounts(grid, w, h, x, y, col);
   if (other === max) return true;
   if (cell & F_SINGLE && same > 1) return true;
   if (!(cell & F_SINGLE) && other === max - 1) return true;
@@ -150,8 +150,8 @@ export function findErrors(grid: Uint8Array, w: number, h: number): number[] {
   return errors;
 }
 
-/** Difficulty-0 deduction: for each empty cell, if colouring it one way makes
- * the board INVALID, force the other colour. Returns how many cells it fixed
+/** Difficulty-0 deduction: for each empty cell, if coloring it one way makes
+ * the board INVALID, force the other color. Returns how many cells it fixed
  * (0 = no progress). Mutates `grid` in place (including its `F_ERROR` bits). */
 function solverTry(grid: Uint8Array, w: number, h: number): number {
   const s = w * h;
@@ -161,19 +161,19 @@ function solverTry(grid: Uint8Array, w: number, h: number): number {
     for (let d = 0; d <= 1; d++) {
       grid[i] = d ? F_COLOR_1 : F_COLOR_0;
       if (clustersValidate(grid, w, h) === INVALID) {
-        grid[i] = d ? F_COLOR_0 : F_COLOR_1; // forced to the opposite colour
+        grid[i] = d ? F_COLOR_0 : F_COLOR_1; // forced to the opposite color
         ret++;
         break;
       }
-      grid[i] = 0; // no contradiction — undo and try the other colour
+      grid[i] = 0; // no contradiction — undo and try the other color
     }
   }
   return ret;
 }
 
-/** Difficulty-1 lookahead: for each empty cell, tentatively colour it and run
+/** Difficulty-1 lookahead: for each empty cell, tentatively color it and run
  * the whole difficulty-0 fixpoint on a scratch copy; if that reaches a
- * contradiction, force the opposite colour. Mutates `grid` in place. */
+ * contradiction, force the opposite color. Mutates `grid` in place. */
 function solverRecurse(grid: Uint8Array, w: number, h: number): number {
   const s = w * h;
   let ret = 0;
@@ -219,7 +219,7 @@ export function solveGame(
 // Pattern shape, docs/games/hints.md § "A non-Latin candidate game (Undead)"/§5.6a): separate code reusing this
 // module's primitives, so the generator's `solveGame`/`clustersValidate` path
 // above stays byte-identical by construction — no recorder flag threads
-// through it. Where the generator only needs *that* a colouring is refuted,
+// through it. Where the generator only needs *that* a coloring is refuted,
 // the hint also needs *why* (which rule trips, at which cell, on which
 // premise), so each firing re-derives its contradiction in detail.
 //
@@ -230,15 +230,15 @@ export function solveGame(
 // vs 6 for first-in-scan-order — see the change's design.md D2/D3). Both
 // rungs are deterministic, so a recomputed plan continues exactly where the
 // previous one left off. Confluence makes the different order safe: a
-// refuted colouring stays refuted as more cells fill in (the three error
+// refuted coloring stays refuted as more cells fill in (the three error
 // conditions are monotone — filling cells can only create errors, never cure
 // them), so any scan order reaches the same verdict as the C solver's.
 
-/** Which of `cellInError`'s three clauses a refuted colouring trips. */
+/** Which of `cellInError`'s three clauses a refuted coloring trips. */
 export type ClustersRuleKind = "surrounded" | "dotOvercount" | "reachTwo";
 
-/** The rule violation a refuted colouring runs into: `cell` is where the
- * board breaks (the tentatively-coloured cell itself, or a neighbour). */
+/** The rule violation a refuted coloring runs into: `cell` is where the
+ * board breaks (the tentatively-colored cell itself, or a neighbor). */
 export interface ClustersContradiction {
   kind: ClustersRuleKind;
   cell: number;
@@ -254,7 +254,7 @@ export type ClustersReason =
   | { kind: "direct"; at: ClustersContradiction }
   | { kind: "chain"; steps: ChainStep[]; at: ClustersContradiction };
 
-/** One forced move: colouring `index` with `refuted` breaks `reason`, so it
+/** One forced move: coloring `index` with `refuted` breaks `reason`, so it
  * must be `fill`. No separate evidence list: every premise tile of the three
  * local rules sits orthogonally adjacent to the broken cell, so the target /
  * danger highlights already put the evidence in view. */
@@ -288,7 +288,7 @@ function errorKind(
   if ((cell & COLMASK) === 0) return null;
   const x = i % w;
   const y = (i - x) / w;
-  const { same, other, max } = neighbourCounts(grid, w, h, x, y, cell & COLMASK);
+  const { same, other, max } = neighborCounts(grid, w, h, x, y, cell & COLMASK);
   if (other === max) return "surrounded";
   if (cell & F_SINGLE && same > 1) return "dotOvercount";
   if (!(cell & F_SINGLE) && other === max - 1) return "reachTwo";
@@ -296,8 +296,8 @@ function errorKind(
 }
 
 /** After filling cell `i` on an otherwise error-free board, a new violation
- * can only sit at `i` or an orthogonal neighbour (the three error conditions
- * read one cell's neighbourhood). Returns the first, preferring `i` itself. */
+ * can only sit at `i` or an orthogonal neighbor (the three error conditions
+ * read one cell's neighborhood). Returns the first, preferring `i` itself. */
 function contradictionAround(
   grid: Uint8Array,
   w: number,
@@ -414,7 +414,7 @@ function shortestChainDeduction(
         if (!best || chain.steps.length < best.chain.steps.length) {
           best = { index: i, refuted, chain };
         }
-        break; // this cell is decided; its other colour needs no trial
+        break; // this cell is decided; its other color needs no trial
       }
     }
   }
@@ -428,7 +428,7 @@ function shortestChainDeduction(
 }
 
 /** Run the deduction from the player's current grid, recording every forced
- * move in order with the rule its refuted colouring would break — the data a
+ * move in order with the rule its refuted coloring would break — the data a
  * hint narrates. Single-cell firings lead; a stall falls back to the
  * shortest-chain lookahead firing. Operates on a clone. */
 export function deduceHintPlan(

@@ -23,10 +23,10 @@
  *     game ids, some loaded saves). Greedy crossing-reduction with a spread
  *     tie-break: among the vertices on a crossed edge, take only moves that
  *     strictly reduce the crossing-pair count (primary); each candidate
- *     offers the neighbour centroid plus outward-pushed variants, and among
+ *     offers the neighbor centroid plus outward-pushed variants, and among
  *     equally-untangling targets we prefer the one that most reduces a
  *     pairwise clustering score (Σ 1/(distance+ε)) so the layout spreads
- *     rather than collapsing to the centre (the barycentric fixed point).
+ *     rather than collapsing to the center (the barycentric fixed point).
  *     This can stall at a local minimum on hard boards; the aux path does
  *     not, which is why it is preferred whenever a solution is known.
  */
@@ -98,24 +98,24 @@ function buildAdjacency(state: UntangleState): number[][] {
   return adj;
 }
 
-/** Centroid of vertex's graph-neighbours in model units, or `null` if it
+/** Centroid of vertex's graph-neighbors in model units, or `null` if it
  * has none. */
-function neighbourCentroid(
+function neighborCentroid(
   pu: readonly UnitPoint[],
-  neighbours: readonly number[],
+  neighbors: readonly number[],
 ): UnitPoint | null {
-  if (neighbours.length === 0) return null;
+  if (neighbors.length === 0) return null;
   let sx = 0;
   let sy = 0;
-  for (const u of neighbours) {
+  for (const u of neighbors) {
     sx += pu[u].x;
     sy += pu[u].y;
   }
-  return { x: sx / neighbours.length, y: sy / neighbours.length };
+  return { x: sx / neighbors.length, y: sy / neighbors.length };
 }
 
 /** Unit vector, or `null` if the input is ~zero. */
-function normalise(x: number, y: number): UnitPoint | null {
+function normalize(x: number, y: number): UnitPoint | null {
   const m = Math.hypot(x, y);
   return m > 1e-9 ? { x: x / m, y: y / m } : null;
 }
@@ -137,12 +137,12 @@ function repulsionDir(
     rx += dx / d2;
     ry += dy / d2;
   }
-  return normalise(rx, ry);
+  return normalize(rx, ry);
 }
 
 /** Candidate target positions (model units) for moving vertex `v`: the
- * plain neighbour centroid plus a few outward-pushed variants that give
- * the optimiser spacious options. */
+ * plain neighbor centroid plus a few outward-pushed variants that give
+ * the optimizer spacious options. */
 function candidateTargets(
   pu: readonly UnitPoint[],
   v: number,
@@ -153,7 +153,7 @@ function candidateTargets(
   const dirs: UnitPoint[] = [];
   const rep = repulsionDir(pu, v, centroid);
   if (rep) dirs.push(rep);
-  const radial = normalise(centroid.x - w / 2, centroid.y - w / 2);
+  const radial = normalize(centroid.x - w / 2, centroid.y - w / 2);
   if (radial) dirs.push(radial);
   for (const d of dirs) {
     for (const scale of [0.15 * w, 0.35 * w]) {
@@ -212,7 +212,7 @@ function deduceAuxPlan(
   if (auxPts === null) return null;
 
   // Dihedral-matched solved positions (model units), then rescaled about
-  // their centre to fill the play box — a uniform scale, so still planar.
+  // their center to fill the play box — a uniform scale, so still planar.
   const solved = dihedralSolvedUnits(state, auxPts);
   let minX = Infinity;
   let maxX = -Infinity;
@@ -317,7 +317,7 @@ export function deduceUntangleHintPlan(
       spreadDelta: number;
     } | null = null;
     for (const v of candidates) {
-      const centroid = neighbourCentroid(pu, adj[v]);
+      const centroid = neighborCentroid(pu, adj[v]);
       if (centroid === null) continue;
       const oldCluster = clusteringAt(pu, v, pu[v]);
       for (const tu of candidateTargets(pu, v, centroid, state.w)) {

@@ -20,7 +20,7 @@ import type { GameStatus } from "../../engine/types.ts";
 
 /** Solvable by the single-cell proof by contradiction alone. */
 export const DIFF_EASY = 0;
-/** Needs the one-level hypothetical: assume a colour, follow the forced
+/** Needs the one-level hypothetical: assume a color, follow the forced
  * consequences, and find the contradiction there. */
 export const DIFF_TRICKY = 1;
 export const DIFFCOUNT = 2;
@@ -41,14 +41,14 @@ const DIFF_CHARS = "et";
 
 export const F_COLOR_0 = 0x01; // red
 export const F_COLOR_1 = 0x02; // blue
-export const F_SINGLE = 0x04; // a "dot": touches exactly one same-colour cell
+export const F_SINGLE = 0x04; // a "dot": touches exactly one same-color cell
 /** Transient rule-violation bit. Upstream `clusters_validate` mutates this
  * into the grid; the solver/generator reproduce that (it is byte-match
  * critical — see solver.ts), but persisted play state stays free of it. */
 export const F_ERROR = 0x08;
 export const COLMASK = F_COLOR_0 | F_COLOR_1;
 
-/** The colour part of a move edit / solve cell: 0 empty, `F_COLOR_0` red,
+/** The color part of a move edit / solve cell: 0 empty, `F_COLOR_0` red,
  * `F_COLOR_1` blue — the same byte value the grid stores (givens excepted,
  * which additionally carry `F_SINGLE`). */
 export type ClustersFill = 0 | typeof F_COLOR_0 | typeof F_COLOR_1;
@@ -74,7 +74,7 @@ export interface ClustersState {
 /**
  * A move is either a *paint* — a list of cell edits committed together (one
  * click, one keyboard place, or a whole accreting drag) — or a *solve* — the
- * full-grid solution fill. Upstream serialises these as an `A%d;B%d;C%d;…`
+ * full-grid solution fill. Upstream serializes these as an `A%d;B%d;C%d;…`
  * string / an `S`-prefixed grid string; the discriminated union is the
  * idiomatic-TS equivalent (Loopy D5 / Pearl / Sokoban convention).
  */
@@ -133,7 +133,7 @@ export function decodeParams(s: string): ClustersParams {
   const { w, h, next } = parseDimensions(s);
   const p: ClustersParams = { w, h, diff: DIFF_EASY };
   if (s[next] === "d" && next + 1 < s.length) {
-    // An unrecognised char leaves the tier out of range so `validateParams`
+    // An unrecognized char leaves the tier out of range so `validateParams`
     // rejects it, rather than silently playing some other difficulty.
     const idx = DIFF_CHARS.indexOf(s[next + 1]);
     p.diff = idx === -1 ? DIFFCOUNT : idx;
@@ -154,7 +154,7 @@ export function decodeParams(s: string): ClustersParams {
  *
  * Area alone is not the rule, which is why both halves are stated. A 1×N strip
  * never binds *at any length* — 1×20 failed all five seeds — because a cell in a
- * one-wide board has at most two neighbours, so the single-cell rule decides it
+ * one-wide board has at most two neighbors, so the single-cell rule decides it
  * immediately or not at all, and there is no chain for the lookahead to follow.
  *
  * Refusing is the collection's rule for a tier with no boards
@@ -169,8 +169,8 @@ export function validateParams(p: ClustersParams, full: boolean): string | null 
   if (p.w * p.h >= 10000) return "Puzzle is too large";
   if (p.w * p.h < 2) return "Puzzle is too small";
   // 1x2 and 2x2 pass upstream's area check and have no puzzle whatever the
-  // difficulty: every colouring of them either leaves a cell touching none of
-  // its own colour (which the generator flips away) or reduces to clues that
+  // difficulty: every coloring of them either leaves a cell touching none of
+  // its own color (which the generator flips away) or reduces to clues that
   // prune to nothing. Measured — those two shapes, alone among every shape up to
   // 4x7, never produced a board in 10,000 attempts; `max(w,h) >= 3` is exactly
   // their complement. Before the retry bound existed this hung the worker for
@@ -200,7 +200,7 @@ const CODE_A = "A".charCodeAt(0);
  * — the trailing `+1` terminator), tracking a run of non-given cells; at each
  * red dot emit `a+run` (chaining `z`=skip-25 for runs > 24), at each blue dot
  * `A+run` (chaining `Z`), and at the terminator flush the final run as a
- * lowercase char. Lowercase = red, uppercase = blue (the colour asymmetry to
+ * lowercase char. Lowercase = red, uppercase = blue (the color asymmetry to
  * preserve). Only `F_COLOR_x|F_SINGLE` cells are dots.
  */
 export function encodeDesc(grid: Uint8Array, w: number, h: number): string {
@@ -282,7 +282,7 @@ export function textFormat(s: ClustersState): string {
     for (let x = 0; x < w; x++) {
       const c = grid[y * w + x];
       const base = c & F_COLOR_0 ? "r" : c & F_COLOR_1 ? "b" : ".";
-      // Uppercase for a given dot (never on an empty cell — givens are coloured).
+      // Uppercase for a given dot (never on an empty cell — givens are colored).
       out += `${c & F_SINGLE ? base.toUpperCase() : base} `;
     }
     out += "\n";

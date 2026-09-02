@@ -1,13 +1,13 @@
-# Upstream licence notices
+# Upstream license notices
 
-This project's own licence is [`../LICENSE.md`](../LICENSE.md) — one layered MIT
+This project's own license is [`../LICENSE.md`](../LICENSE.md) — one layered MIT
 notice covering all three lineages. The files *here* are the upstream notices it
-defers to, kept verbatim to honour MIT's "shall be included in all copies"
+defers to, kept verbatim to honor MIT's "shall be included in all copies"
 condition for the material this project derives from.
 
 They are reference material, not this project's words. **Do not edit them.**
 
-## `sgt-puzzles-LICENCE`
+## `sgt-puzzles-LICENSE`
 
 Simon Tatham's Portable Puzzle Collection — the notice, and the canonical list
 of upstream contributors that [`../LICENSE.md`](../LICENSE.md) and
@@ -19,14 +19,14 @@ overview pages into `../help/games/`.
 
 - Upstream: <https://www.chiark.greenend.org.uk/~sgtatham/puzzles/>
 
-## `puzzles-unreleased-LICENCE`
+## `puzzles-unreleased-LICENSE`
 
 Lennard Sprong's (x-sheep) `puzzles-unreleased`, the source of thirteen of the
 games here — see [`../CREDITS.md`](../CREDITS.md) for the list.
 
 - Upstream: <https://github.com/x-sheep/puzzles-unreleased>
 
-Byte-identical to `sgt-puzzles-LICENCE` today, because x-sheep shipped Simon
+Byte-identical to `sgt-puzzles-LICENSE` today, because x-sheep shipped Simon
 Tatham's notice verbatim. It is kept as its own file regardless: they are two
 projects' notices, and their being the same text is a fact about today rather
 than a guarantee.

@@ -105,7 +105,7 @@ describe("grid aperiodic tilings match the C reference", () => {
     const label = `${f.type} ${f.width}x${f.height} seed=${f.seed}`;
 
     describe(label, () => {
-      // Built lazily and memoised: constructing at describe-body time would let
+      // Built lazily and memoized: constructing at describe-body time would let
       // one unimplemented tiling abort collection for the whole file, hiding
       // every other tiling's result.
       let memo: ReturnType<typeof dump> | undefined;

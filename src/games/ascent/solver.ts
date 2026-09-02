@@ -255,7 +255,7 @@ function solverUpdatePath(sc: SolverScratch): number {
     sc.path[ic] = (1 << findDir(ic, i, w, movement)) | FLAG_ENDPOINT;
   }
 
-  /* Middle numbers: set the path when both neighbours are known. */
+  /* Middle numbers: set the path when both neighbors are known. */
   for (let n = 1; n <= end - 1; n++) {
     i = sc.positions[n];
     if (i === CELL_NONE || sc.path[i] & FLAG_COMPLETE) continue;
@@ -276,7 +276,7 @@ function solverUpdatePath(sc: SolverScratch): number {
     if (count === 2) {
       sc.path[idx] |= FLAG_COMPLETE;
       ret++;
-      /* For every direction this cell does NOT go, tell that neighbour it
+      /* For every direction this cell does NOT go, tell that neighbor it
        * cannot connect back. Bits beyond `dircount` are never set, so the
        * upstream 0..MAXIMUM_DIRS loop is a no-op there — iterate to
        * `dircount` directly. */
@@ -476,7 +476,7 @@ export function ascentSolve(puzzle: Int16Array, diff: number, sc: SolverScratch)
   solverEdges(sc);
   solverInitializePath(sc);
   /* NB: upstream deliberately does NOT reset `foundEndpoints` here — it is
-   * initialised false in the scratch constructor and then *persists* across
+   * initialized false in the scratch constructor and then *persists* across
    * every `ascentSolve` on the same scratch (the generator reuses one). Once
    * true it stays true, so `solverUpdatePath`'s "mark all middles" step and
    * `solverRemoveEndpoints` stop firing on every board after the first. That

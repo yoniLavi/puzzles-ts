@@ -2,8 +2,8 @@
  * Guess — native TS port of the Mastermind clone (`puzzles/guess.c`,
  * deleted when this ships).
  *
- * Deduce a hidden combination of `npegs` colour pegs drawn from
- * `ncolours` colours within `nguesses` rows; each submitted row is
+ * Deduce a hidden combination of `npegs` color pegs drawn from
+ * `ncolors` colors within `nguesses` rows; each submitted row is
  * scored with Knuth's black/white feedback. Win on all-correct-place,
  * lose (and reveal) when the rows run out. The live editing state
  * (working row, holds, drag, cursor) lives in `GuessUi` exactly as
@@ -27,9 +27,9 @@ import {
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
-  colours as coloursImpl,
+  colors as colorsImpl,
   computeGeometry,
   computeSize as computeSizeImpl,
   type Geom,
@@ -118,36 +118,36 @@ function buildGuessMove(ui: GuessUi): GuessMove {
  * state transition). Caches its progress in `ui.hint`, narrowed across
  * calls and rebuilt after an undo (`changedState` clears it). */
 function computeHint(state: GuessState, ui: GuessUi): void {
-  const { npegs, ncolours, allowMultiple } = state.params;
+  const { npegs, ncolors, allowMultiple } = state.params;
   const guesses = state.guesses;
   const nextGo = state.nextGo;
 
-  let mincolour = 1;
-  let maxcolour = 0;
+  let mincolor = 1;
+  let maxcolor = 0;
   for (let i = 0; i < nextGo; i++) {
     for (let j = 0; j < npegs; j++) {
-      if (guesses[i].pegs[j] > maxcolour) maxcolour = guesses[i].pegs[j];
+      if (guesses[i].pegs[j] > maxcolor) maxcolor = guesses[i].pegs[j];
     }
   }
-  maxcolour = allowMultiple
-    ? Math.min(maxcolour + 1, ncolours)
-    : Math.min(maxcolour + npegs, ncolours);
+  maxcolor = allowMultiple
+    ? Math.min(maxcolor + 1, ncolors)
+    : Math.min(maxcolor + npegs, ncolors);
 
-  // Raise `mincolour` past any colour proven absent (a past guess made
-  // entirely of `mincolour` that scored nothing).
+  // Raise `mincolor` past any color proven absent (a past guess made
+  // entirely of `mincolor` that scored nothing).
   for (;;) {
     let advanced = false;
     for (let i = 0; i < nextGo; i++) {
       if (guesses[i].feedback[0]) continue;
       let allMin = true;
       for (let j = 0; j < npegs; j++) {
-        if (guesses[i].pegs[j] !== mincolour) {
+        if (guesses[i].pegs[j] !== mincolor) {
           allMin = false;
           break;
         }
       }
       if (!allMin) continue;
-      mincolour++;
+      mincolor++;
       advanced = true;
       break;
     }
@@ -165,22 +165,22 @@ function computeHint(state: GuessState, ui: GuessUi): void {
     for (;;) {
       i--;
       hint[i]++;
-      if (i !== 0 && hint[i] > maxcolour) {
-        hint[i] = mincolour;
+      if (i !== 0 && hint[i] > maxcolor) {
+        hint[i] = mincolor;
         continue;
       }
       break;
     }
   };
 
-  while (hint[0] <= ncolours) {
+  while (hint[0] <= ncolors) {
     if (!isMarkable(state.params, hint)) {
       increment();
       continue;
     }
     let consistent = true;
     for (let i = 0; i < nextGo; i++) {
-      const { feedback } = markPegs(hint, guesses[i].pegs, maxcolour);
+      const { feedback } = markPegs(hint, guesses[i].pegs, maxcolor);
       for (let j = 0; j < npegs; j++) {
         if (feedback[j] !== guesses[i].feedback[j]) {
           consistent = false;
@@ -220,7 +220,7 @@ function interpretMove(
   button: number,
 ): GuessMove | null | UiUpdate {
   const params = from.params;
-  const { npegs, ncolours } = params;
+  const { npegs, ncolors } = params;
 
   // Label toggle is allowed even after the game ends.
   if (button === 0x6c || button === 0x4c /* 'l' | 'L' */) {
@@ -235,7 +235,7 @@ function interpretMove(
   const y = p.y;
 
   // Hit-test the four regions (upstream interpret_move).
-  let overCol = 0; // one-indexed colour, 0 = none
+  let overCol = 0; // one-indexed color, 0 = none
   let overGuess = -1; // current-row peg index
   let overPastGuessY = -1;
   let overPastGuessX = -1;
@@ -246,7 +246,7 @@ function interpretMove(
   const guessW = npegs * off;
   const guessH = params.nguesses * off;
 
-  if (x >= g.colx && x < g.colx + off && y >= g.coly && y < g.coly + ncolours * off) {
+  if (x >= g.colx && x < g.colx + off && y >= g.coly && y < g.coly + ncolors * off) {
     overCol = Math.floor((y - g.coly) / off) + 1;
   } else if (x >= guessOx && y >= guessOy && y < guessOy + guessH) {
     if (x < guessOx + guessW) overGuess = Math.floor((x - guessOx) / off);
@@ -312,9 +312,9 @@ function interpretMove(
 
   // --- keyboard ---
   if (isCursorMove(button)) {
-    // The peg axis is the cursor's x, the colour axis its y.
+    // The peg axis is the cursor's x, the color axis its y.
     const maxcur = npegs + (ui.markable ? 1 : 0);
-    return moveCursor(ui.cursor, button, maxcur, ncolours) ? UI_UPDATE : null;
+    return moveCursor(ui.cursor, button, maxcur, ncolors) ? UI_UPDATE : null;
   }
   if (button === 0x68 || button === 0x48 || button === 0x3f /* 'h' | 'H' | '?' */) {
     computeHint(from, ui);
@@ -327,8 +327,8 @@ function interpretMove(
     return UI_UPDATE;
   }
   if (
-    ((button >= 0x31 && button <= 0x30 + ncolours) ||
-      (button === 0x30 && ncolours === 10)) &&
+    ((button >= 0x31 && button <= 0x30 + ncolors) ||
+      (button === 0x30 && ncolors === 10)) &&
     ui.cursor.x < npegs
   ) {
     ui.cursor.visible = true;
@@ -364,15 +364,15 @@ function executeMove(s: GuessState, m: GuessMove): GuessState {
 
   if (s.solved) throw new Error("No guesses allowed once the game is over");
 
-  const { npegs, ncolours, nguesses, allowBlank } = s.params;
-  const minColour = allowBlank ? 0 : 1;
+  const { npegs, ncolors, nguesses, allowBlank } = s.params;
+  const minColor = allowBlank ? 0 : 1;
   for (const v of m.pegs) {
-    if (v < minColour || v > ncolours) throw new Error(`Illegal guess peg ${v}`);
+    if (v < minColor || v > ncolors) throw new Error(`Illegal guess peg ${v}`);
   }
 
   const ret = cloneState(s);
   const row = ret.guesses[s.nextGo];
-  const { feedback, ncPlace } = markPegs(m.pegs, s.solution, ncolours);
+  const { feedback, ncPlace } = markPegs(m.pegs, s.solution, ncolors);
   for (let i = 0; i < npegs; i++) row.pegs[i] = m.pegs[i];
   row.feedback = feedback;
 
@@ -409,12 +409,12 @@ export const guessGame: Game<
   validateParams,
   paramConfig: [
     {
-      kw: "colours",
-      name: "Colours",
+      kw: "colors",
+      name: "Colors",
       type: "string",
-      get: (p) => String(p.ncolours),
+      get: (p) => String(p.ncolors),
       set: (p, v) => {
-        p.ncolours = parseConfigInt(v);
+        p.ncolors = parseConfigInt(v);
       },
     },
     {
@@ -455,7 +455,7 @@ export const guessGame: Game<
     },
   ],
   describeParams: (p) => ({
-    colours: String(p.ncolours),
+    colors: String(p.ncolors),
     "pegs-per-guess": String(p.npegs),
     guesses: String(p.nguesses),
     "allow-blanks": p.allowBlank,
@@ -478,7 +478,7 @@ export const guessGame: Game<
     return { ok: true, move: { type: "solve" } };
   },
 
-  colours: (defaultBackground: Colour): Colour[] => coloursImpl(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colorsImpl(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: GuessParams, ts: number): Size => computeSizeImpl(p, ts),
   setTileSize,

@@ -17,9 +17,9 @@
  * bookkeeping actually decides"). Three pieces of this loop's bookkeeping feed
  * back into which puzzles exist, and none of them fits the shared runner:
  *
- *  - `hasCenters` / `hasNoClue` are *latching* optimisation flags. Once
- *    `centersTrivial` reports every centre clue satisfied, the three
- *    centre techniques are never tried again for the rest of the solve.
+ *  - `hasCenters` / `hasNoClue` are *latching* optimization flags. Once
+ *    `centersTrivial` reports every center clue satisfied, the three
+ *    center techniques are never tried again for the rest of the solve.
  *  - `diff` is a running maximum that a technique *reads*: the cheap
  *    `findMaxFleet(simple)` runs only while `diff < DIFF_TRICKY`, so it
  *    switches itself off once the solve has needed a Tricky technique once.
@@ -60,7 +60,7 @@ import {
 import {
   type BoatsRun,
   collectRuns,
-  neighbours,
+  neighbors,
   validateFullState,
   validateState,
 } from "./validate.ts";
@@ -101,14 +101,14 @@ export function placeWater(b: BoatsBoard, x: number, y: number): number {
 
 /**
  * Upstream `boats_solver_place_ship`: place a ship and, since boats never touch
- * diagonally, water on all four diagonal neighbours.
+ * diagonally, water on all four diagonal neighbors.
  *
  * **Divergence (deliberate, and free):** upstream `assert`s that the square is
  * in bounds where this port returns 0. A release build compiles that assert
- * out and then indexes out of bounds, so the C has no defined behaviour there
- * — docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1, "divergence is free where C has no defined behaviour".
+ * out and then indexes out of bounds, so the C has no defined behavior there
+ * — docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1, "divergence is free where C has no defined behavior".
  * It is not reachable from a generated board (`centersTrivial` is the only
- * caller that could pass an off-board square, and only for a centre clue on an
+ * caller that could pass an off-board square, and only for a center clue on an
  * edge row whose boat cannot be perpendicular), but a hand-written game ID can
  * reach it, and a silent out-of-bounds read is the worse answer.
  */
@@ -156,7 +156,7 @@ export function fillRow(
 
 /**
  * Upstream `boats_solver_initial`: clear the board and re-derive it from the
- * given clues alone. An end-cap clue also forces the neighbour it points at
+ * given clues alone. An end-cap clue also forces the neighbor it points at
  * and the water behind it; a single is surrounded by water.
  */
 function solverInitial(b: BoatsBoard): number {
@@ -262,7 +262,7 @@ function checkCounts(
 /**
  * Upstream `boats_solver_remove_singles`: once every size-1 boat is placed, an
  * isolated empty square can hold no boat at all (it would be another single),
- * and an isolated *ship* square must extend into its one free neighbour.
+ * and an isolated *ship* square must extend into its one free neighbor.
  */
 function removeSingles(b: BoatsBoard, fleetCount: Int32Array): number {
   const { w, h, grid } = b;
@@ -272,7 +272,7 @@ function removeSingles(b: BoatsBoard, fleetCount: Int32Array): number {
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
       if (grid[y * w + x] === WATER) continue;
-      const { left, right, up, down } = neighbours(b, x, y);
+      const { left, right, up, down } = neighbors(b, x, y);
 
       if (
         left === WATER &&
@@ -299,9 +299,9 @@ function removeSingles(b: BoatsBoard, fleetCount: Int32Array): number {
 }
 
 /**
- * Upstream `boats_solver_centers_trivial`: a centre clue with water on one side
+ * Upstream `boats_solver_centers_trivial`: a center clue with water on one side
  * of an axis must run along the other axis. Also latches `hasCenters` off once
- * every centre clue is satisfied, so the solver stops trying centre techniques.
+ * every center clue is satisfied, so the solver stops trying center techniques.
  */
 function centersTrivial(b: BoatsBoard): { ret: number; hasCenters: boolean } {
   const { w, h, gridClues } = b;
@@ -311,7 +311,7 @@ function centersTrivial(b: BoatsBoard): { ret: number; hasCenters: boolean } {
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
       if (gridClues[y * w + x] !== SHIP_CENTER) continue;
-      const { left, right, up, down } = neighbours(b, x, y);
+      const { left, right, up, down } = neighbors(b, x, y);
       if ((isShip(left) && isShip(right)) || (isShip(up) && isShip(down))) continue;
 
       hasCenters = true;
@@ -332,7 +332,7 @@ function centersTrivial(b: BoatsBoard): { ret: number; hasCenters: boolean } {
 // --- Normal tier -----------------------------------------------------------
 
 /**
- * Upstream `boats_solver_centers_normal`: a centre clue needs two more ships in
+ * Upstream `boats_solver_centers_normal`: a center clue needs two more ships in
  * whichever line its boat runs along, so a line that cannot take two more
  * rules that direction out.
  */
@@ -343,7 +343,7 @@ function centersNormal(b: BoatsBoard, shipCounts: Int32Array): number {
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
       if (gridClues[y * w + x] !== SHIP_CENTER) continue;
-      const { left, right, up, down } = neighbours(b, x, y);
+      const { left, right, up, down } = neighbors(b, x, y);
       if ((isShip(left) && isShip(right)) || (isShip(up) && isShip(down))) continue;
 
       if (borderClues[y + w] !== NO_CLUE && borderClues[y + w] - shipCounts[y + w] < 2)
@@ -435,7 +435,7 @@ function minExpandDsf(b: BoatsBoard, fleetCount: Int32Array, dsf: Dsf): number {
 
 /**
  * Upstream `boats_solver_max_expand_dsf`: an empty square that would join its
- * neighbouring runs into a boat longer than any the fleet still owes must be
+ * neighboring runs into a boat longer than any the fleet still owes must be
  * water.
  */
 function maxExpandDsf(b: BoatsBoard, fleetCount: Int32Array, dsf: Dsf): number {
@@ -525,7 +525,7 @@ function findMaxFleet(
 
     if (end - start === 1) {
       // Only one square is common to every placement — and its perpendicular
-      // neighbours are then water, because the boat runs along this line.
+      // neighbors are then water, because the boat runs along this line.
       if (run.horizontal) {
         ret += placeShip(b, start, run.row);
         ret += placeWater(b, start, run.row - 1);
@@ -821,8 +821,8 @@ function attemptWaterRows(
 
 /**
  * Upstream `boats_solver_centers_attempt`: try each orientation of an
- * unsatisfied centre clue; an orientation that immediately contradicts the
- * board rules itself out, leaving water past the centre on that axis.
+ * unsatisfied center clue; an orientation that immediately contradicts the
+ * board rules itself out, leaving water past the center on that axis.
  *
  * Note there is no final restore here (unlike the two above): every branch
  * restores `grid` from `tmpGrid` before the next clue, so the board is already
@@ -836,7 +836,7 @@ function centersAttempt(b: BoatsBoard, tmpGrid: Int8Array): number {
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
       if (gridClues[y * w + x] !== SHIP_CENTER) continue;
-      const { left, right, up, down } = neighbours(b, x, y);
+      const { left, right, up, down } = neighbors(b, x, y);
       if ((isShip(left) && isShip(right)) || (isShip(up) && isShip(down))) continue;
 
       placeShip(b, x - 1, y);
@@ -895,7 +895,7 @@ export function solveBoats(b: BoatsBoard, maxDiff: number): BoatsSolveResult {
   if (maxDiff >= DIFF_NORMAL) dsf = new Dsf(w * h + 1);
 
   let diff = DIFF_EASY;
-  // Optimisation latches — see the module header; both are load-bearing.
+  // Optimization latches — see the module header; both are load-bearing.
   let hasCenters = true;
   let hasNoClue = false;
   for (let i = 0; i < w + h && !hasNoClue; i++)
@@ -999,7 +999,7 @@ export function solveBoats(b: BoatsBoard, maxDiff: number): BoatsSolveResult {
  * Easy board is the only kind never gated against these techniques). Not one
  * stuck board had a wrong square — the solver stops, it does not err. Verified
  * identical in the C via a throwaway `boats-dbg` harness, so this is upstream's
- * behaviour and not a porting divergence.
+ * behavior and not a porting divergence.
  *
  * **The repair is here rather than in `checkDsf`** (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3). A false
  * *abort* only ever makes the solver weaker, never wrong, and the generator

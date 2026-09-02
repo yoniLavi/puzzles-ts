@@ -73,7 +73,7 @@ describe("undead recording solver", () => {
     // `onlyCells` (counting's dual) is rarer but should appear in this spread.
     expect(seen.has("onlyCells")).toBe(true);
     // …and `forcing` never, on any tier: `audit-guessing-tier-names` removed
-    // that rung from the recorder, because it hypothesises a candidate and runs
+    // that rung from the recorder, because it hypothesizes a candidate and runs
     // the arc+counting fixpoint from it — a multi-step search, which belongs to
     // an `Unreasonable` board and never to a hint. The solver keeps the rung
     // (the generator grades on it), so this is about narration only.
@@ -365,7 +365,7 @@ describe("undead hint render (tier 2.5)", () => {
     expect(hint).toBeDefined();
     const ops = recording.ops;
     // The sightline's bounce path is **outlined** COL_HINT_CELL, not shaded —
-    // the cells on it carry pencilled monsters the player has to read.
+    // the cells on it carry penciled monsters the player has to read.
     const evidence = markSides(ops, COL_HINT_CELL);
     expect(evidence.length).toBeGreaterThan(0);
     for (const s of evidence) expect(isThin(s)).toBe(true);
@@ -376,7 +376,7 @@ describe("undead hint render (tier 2.5)", () => {
       COL_HINT,
       (hint?.highlights as UndeadHint | undefined)?.targets.length,
     );
-    expect(ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(true);
+    expect(ops.some((o) => o.op === "line" && o.color === COL_HINT)).toBe(true);
     // Edge clue numbers are still drawn (text ops present).
     expect(ops.some((o) => o.op === "text")).toBe(true);
     expect(recording.ops).toMatchSnapshot();

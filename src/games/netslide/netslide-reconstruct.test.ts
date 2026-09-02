@@ -80,7 +80,7 @@ describe("recovering the finished grid", () => {
   });
 
   it("uses the same grid for the whole game, however the board is scrambled", () => {
-    // The answer turns only on the tile multiset, the barriers and the centre
+    // The answer turns only on the tile multiset, the barriers and the center
     // tile, and a slide changes none of them. That is where the hint's stability
     // across recomputes comes from, so it is asserted rather than assumed.
     const { desc } = netslideGame.newDesc(REPORTED_PARAMS, randomNew("stable-1"));

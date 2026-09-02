@@ -67,7 +67,7 @@ interface Point {
  * reflected hat with the same fixed sequence of steps.
  */
 interface Kite {
-  readonly centre: Point;
+  readonly center: Point;
   readonly left: Point;
   readonly right: Point;
   readonly outer: Point;
@@ -77,41 +77,41 @@ const scale = (s: number, a: Point): Point => ({ x: s * a.x, y: s * a.y });
 const add = (a: Point, b: Point): Point => ({ x: a.x + b.x, y: a.y + b.y });
 
 const kiteLeft = (k: Kite): Kite => ({
-  centre: k.centre,
+  center: k.center,
   right: k.left,
   outer: add(scale(2, k.left), scale(-1, k.outer)),
-  left: add(add(k.centre, k.left), scale(-1, k.right)),
+  left: add(add(k.center, k.left), scale(-1, k.right)),
 });
 
 const kiteRight = (k: Kite): Kite => ({
-  centre: k.centre,
+  center: k.center,
   left: k.right,
   outer: add(scale(2, k.right), scale(-1, k.outer)),
-  right: add(add(k.centre, k.right), scale(-1, k.left)),
+  right: add(add(k.center, k.right), scale(-1, k.left)),
 });
 
 const kiteForwardLeft = (k: Kite): Kite => ({
   outer: k.outer,
   right: k.left,
-  centre: add(scale(2, k.left), scale(-1, k.centre)),
-  left: add(add(k.right, k.left), scale(-1, k.centre)),
+  center: add(scale(2, k.left), scale(-1, k.center)),
+  left: add(add(k.right, k.left), scale(-1, k.center)),
 });
 
 const kiteForwardRight = (k: Kite): Kite => ({
   outer: k.outer,
   left: k.right,
-  centre: add(scale(2, k.right), scale(-1, k.centre)),
-  right: add(add(k.left, k.right), scale(-1, k.centre)),
+  center: add(scale(2, k.right), scale(-1, k.center)),
+  right: add(add(k.left, k.right), scale(-1, k.center)),
 });
 
 /**
  * The four moves between adjacent kites. Ordinals index the kitemap.
  *
  * The names are upstream's, and they are defined from the viewpoint of someone
- * standing at the kite's **pointy end** (`centre`, the 60° corner at the hexagon
- * centre) looking towards its **blunt end** (`outer`, the 120° corner at a
+ * standing at the kite's **pointy end** (`center`, the 60° corner at the hexagon
+ * center) looking towards its **blunt end** (`outer`, the 120° corner at a
  * hexagon vertex). That is what picks out which vertex each rewrite above holds
- * fixed: `Left`/`Right` pivot about `centre`, `ForwardLeft`/`ForwardRight` about
+ * fixed: `Left`/`Right` pivot about `center`, `ForwardLeft`/`ForwardRight` about
  * `outer`.
  *
  * - `Left` — 60° anticlockwise about the pointy end.
@@ -159,7 +159,7 @@ function kiteStep(k: Kite, step: KiteStep): Kite {
 const KE_NKEEP = 3;
 
 const START_KITE: Kite = {
-  centre: { x: 0, y: 0 },
+  center: { x: 0, y: 0 },
   left: { x: 0, y: 3 },
   right: { x: 3, y: 0 },
   outer: { x: 2, y: 2 },
@@ -185,7 +185,7 @@ class KiteEnum {
   currIndex = 0;
   /** C reads `last_index`/`last_step` before ever writing them (`hat.c:54`).
    * That is benign — only states 5 and 11 consume the stale value and neither
-   * can run first — but it is undefined behaviour on paper, so initialise. */
+   * can run first — but it is undefined behavior on paper, so initialize. */
   lastIndex = 0;
   lastStep: KiteStep = KiteStep.Left;
 
@@ -443,9 +443,9 @@ const STARTING_HATS: readonly PossibleParent[] = [
  * Pick one weighted candidate.
  *
  * **The `randomUpto` call is unconditional, and must stay that way.** Guarding
- * it with `if (parents.length > 1)` looks like a free optimisation and is a
+ * it with `if (parents.length > 1)` looks like a free optimization and is a
  * silent bug: `PARENTS_T` has exactly one entry, so skipping its draw would
- * desynchronise the RNG stream from the C's and yield a different — entirely
+ * desynchronize the RNG stream from the C's and yield a different — entirely
  * valid, entirely plausible — tiling that nothing would flag
  * (`add-aperiodic-tilings` design D2).
  */
@@ -698,7 +698,7 @@ function hatctxStep(ctx: HatContext, hcIn: HatCoords, step: KiteStep): HatCoords
 export type HatTileCallback = (nvertices: number, coords: readonly number[]) => void;
 
 /**
- * `-0` normalisation, applied **once**, here, where exact interior coordinates
+ * `-0` normalization, applied **once**, here, where exact interior coordinates
  * become the integers the grid is built from.
  *
  * `scale(-1, {x: 0, y: 0})` yields `-0` in JS where C yields `0`, and `-0`
@@ -709,7 +709,7 @@ export type HatTileCallback = (nvertices: number, coords: readonly number[]) => 
  * `extend-grid-tilings`. One choke point beats scattered `|| 0`
  * (`add-aperiodic-tilings` design D8).
  */
-const normaliseZero = (n: number): number => (n === 0 ? 0 : n);
+const normalizeZero = (n: number): number => (n === 0 ? 0 : n);
 
 /**
  * Emit one hat if `kite` is its kite #0 and its whole outline is in bounds.
@@ -735,23 +735,23 @@ function maybeReportHat(
   let k = kite;
   if (hc[2].type === TT_H && hc[1].index === 3) {
     reversed = true;
-    k = { centre: k.centre, left: k.right, right: k.left, outer: k.outer };
+    k = { center: k.center, left: k.right, right: k.left, outer: k.outer };
   }
 
   const vertices: Point[] = new Array<Point>(14);
-  vertices[0] = k.centre;
+  vertices[0] = k.center;
   vertices[1] = k.right;
   vertices[2] = k.outer;
   vertices[3] = k.left;
   k = kiteLeft(k); /* kite #1 */
   k = kiteForwardRight(k); /* kite #2 */
-  vertices[4] = k.centre;
+  vertices[4] = k.center;
   k = kiteRight(k); /* kite #3 */
   vertices[5] = k.right;
   vertices[6] = k.outer;
   k = kiteForwardLeft(k); /* kite #4 */
   vertices[7] = k.left;
-  vertices[8] = k.centre;
+  vertices[8] = k.center;
   k = kiteRight(k); /* kite #5 */
   k = kiteRight(k); /* kite #6 */
   k = kiteRight(k); /* kite #7 */
@@ -782,8 +782,8 @@ function maybeReportHat(
 
     if (x < 0 || x > 4 * w || y < 0 || y > 6 * h) return; /* out of bounds */
 
-    coords[2 * i] = normaliseZero(x);
-    coords[2 * i + 1] = normaliseZero(y);
+    coords[2 * i] = normalizeZero(x);
+    coords[2 * i + 1] = normalizeZero(y);
   }
 
   cb(14, coords);
@@ -820,7 +820,7 @@ export function metatileCharToType(c: string): number {
  * exactly the random draws needed to decide those levels. Recording the
  * prototype is therefore enough to replay the identical patch later.
  */
-export function hatTilingRandomise(
+export function hatTilingRandomize(
   w: number,
   h: number,
   rs: RandomState,

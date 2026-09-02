@@ -37,7 +37,7 @@ found it SHALL NOT write the quick-save slot (the previous quick-save
 SHALL be left intact), and SHALL surface the count while the mistaken
 cells are highlighted. For a game without mistake-checking, the same
 control SHALL perform a plain quick-save. The control's label SHALL
-reflect which behaviour applies ("Check & Save" vs "Quick-save").
+reflect which behavior applies ("Check & Save" vs "Quick-save").
 
 #### Scenario: Clean board is checkpointed
 
@@ -54,13 +54,13 @@ reflect which behaviour applies ("Check & Save" vs "Quick-save").
 #### Scenario: Game without mistake-checking does a plain quick-save
 
 - **WHEN** the active game does not implement mistake-checking
-- **THEN** the control is labelled "Quick-save" and activating it
+- **THEN** the control is labeled "Quick-save" and activating it
   quick-saves the board directly
 
 ### Requirement: Quick-save keyboard shortcut
 
 The app SHALL bind Cmd/Ctrl+S to the Check-&-Save action and SHALL
-prevent the browser's default "save page" behaviour for that chord while
+prevent the browser's default "save page" behavior for that chord while
 a puzzle is open.
 
 #### Scenario: Cmd/Ctrl+S triggers Check-&-Save

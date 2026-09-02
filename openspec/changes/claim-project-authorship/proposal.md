@@ -11,7 +11,7 @@ About dialog today and the first sentence is:
 and the Credits below it are written in a first person — *"from which **I've**
 freely borrowed several clever ideas"* — that is no longer the person who
 maintains this. The front page footer sends a reader wanting credits and
-licences to `github.com/medmunds/puzzles-web`. The About dialog's source,
+licenses to `github.com/medmunds/puzzles-web`. The About dialog's source,
 forum and bug-report links all point there too, so a player who finds a bug in
 *this* app is directed to file it against the project this one forked from.
 
@@ -20,7 +20,7 @@ accurate now. Since then this project has: replaced the C/WASM engine with a
 native TypeScript midend and `Game` interface, **rewritten all 57 games** in
 TypeScript, retired the C engine entirely (`retire-c-engine`), and added
 features upstream and puzzles-web do not have (explained hints,
-mistake-checking, quick-save, per-game play aids, a designed twelve-colour
+mistake-checking, quick-save, per-game play aids, a designed twelve-color
 palette with a dark scheme). `LICENSE.md` and `CREDITS.md` were brought up to
 date by `rehome-upstream-help-sources`; the **player-facing** surfaces were not.
 
@@ -43,7 +43,7 @@ chain; it removes none from the middle of it.**
   `puzzles-web`. The first-person voice in Credits is either re-attributed or
   made authorless.
 - **The front page** (`templates/index.html.hbs`) footer points at this
-  project's repository for credits and licences.
+  project's repository for credits and licenses.
 - **The repository / forum / bug-report links** stop pointing at
   `medmunds/puzzles-web`. Currently `about-dialog.ts` (three links),
   `templates/index.html.hbs` (one), `README.md` (two) and `unsupported.html`
@@ -58,9 +58,9 @@ chain; it removes none from the middle of it.**
 Explicitly **not** in this change:
 
 - **Any reduction in credit to anyone.** Simon Tatham, Lennard Sprong and Mike
-  Edmunds keep every acknowledgement they have, and Mike Edmunds gains an
+  Edmunds keep every acknowledgment they have, and Mike Edmunds gains an
   explicit "made puzzles-web" line he does not currently have.
-- **The upstream licence notices.** `licences/` stays verbatim; this change does
+- **The upstream license notices.** `licenses/` stays verbatim; this change does
   not touch a word of it. (This bullet used to name `help/upstream/`, which
   `retire-the-upstream-help-tree` deleted — the per-puzzle help pages are now
   this project's own under `help/games/`, keeping upstream's wording. This change
@@ -100,7 +100,7 @@ work should not guess them:
   authorship and lineage to players); `licensing` unaffected but cross-checked.
 - Affected code: `src/dialogs/about-dialog.ts`, `templates/index.html.hbs`,
   `unsupported.html`, `README.md`, possibly `package.json`. No engine or game
-  code; no puzzle behaviour.
+  code; no puzzle behavior.
 - Risk: low technically, but it is **outward-facing and about people's names**,
   so it is owner-acceptance-gated on the wording, not just on it building.
   Verify by reading the rendered About dialog and front page in the browser, not
@@ -109,5 +109,5 @@ work should not guess them:
 ## Depends on
 
 - **`rehome-upstream-help-sources`** — landed. It fixed the *legal* attribution
-  (four layers in `LICENSE.md`, `licences/`, a `CREDITS.md` section for Lennard
+  (four layers in `LICENSE.md`, `licenses/`, a `CREDITS.md` section for Lennard
   Sprong). This change fixes the *presentational* attribution on top of it.

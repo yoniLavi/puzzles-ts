@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Solo port (tiers 1 + 2.5).
+ * Behavioral tests for the Solo port (tiers 1 + 2.5).
  *
  * Tier 1 drives the move/solve/findMistakes logic on fixture-derived boards.
  * Tier 2.5 drives a real `Midend` to an initial frame for each of the four
@@ -204,7 +204,7 @@ describe("solo render (initial frame)", () => {
   it("X variant: shades the diagonals with COL_XDIAGONALS", () => {
     const { recording } = renderScenario({ game: soloGame, id: idOf(XTYPE) });
     expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_XDIAGONALS),
+      recording.ops.some((o) => o.op === "rect" && o.color === COL_XDIAGONALS),
     ).toBe(true);
     expect(recording.ops).toMatchSnapshot();
   });
@@ -217,7 +217,7 @@ describe("solo render (initial frame)", () => {
 
   it("killer board: draws cage outlines in COL_KILLER", () => {
     const { recording } = renderScenario({ game: soloGame, id: idOf(KILLER) });
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_KILLER)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_KILLER)).toBe(
       true,
     );
     expect(recording.ops).toMatchSnapshot();

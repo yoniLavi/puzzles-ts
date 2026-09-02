@@ -268,8 +268,8 @@ const CAPABILITY_COVERAGE: Record<string, Coverage> = {
   animLength: { kind: "internal", why: "animation timing" },
   flashLength: { kind: "internal", why: "animation timing" },
   timingState: { kind: "internal", why: "whether the clock runs" },
-  serialiseMove: { kind: "internal", why: "save format" },
-  deserialiseMove: { kind: "internal", why: "save format" },
+  serializeMove: { kind: "internal", why: "save format" },
+  deserializeMove: { kind: "internal", why: "save format" },
   encodeUi: { kind: "internal", why: "save format" },
   decodeUi: { kind: "internal", why: "save format" },
 };

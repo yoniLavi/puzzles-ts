@@ -88,7 +88,7 @@ export interface Cell {
 
 /** Why a cell is forced — the premise the hint narrates and highlights. */
 export type HintReason =
-  | { kind: "adjacency"; from: Cell } // a neighbour of this black must be white
+  | { kind: "adjacency"; from: Cell } // a neighbor of this black must be white
   | { kind: "satisfied"; clue: Cell; n: number } // clue's run is full → cap it black
   | { kind: "overrun"; clue: Cell; n: number } // white here would exceed the clue
   | { kind: "reach"; clue: Cell; n: number } // clue can only reach its count this way
@@ -544,17 +544,17 @@ function chooseBlackSquares(
     const c = i % w;
     const r = Math.floor(i / w);
 
-    let hasBlackNeighbour = false;
+    let hasBlackNeighbor = false;
     for (let j = 0; j < 4; j++) {
       const rr = r + DR[j];
       const cc = c + DC[j];
       if (outOfBounds(rr, cc, w, h)) continue;
       if (grid[idx(rr, cc, w)] === BLACK) {
-        hasBlackNeighbour = true;
+        hasBlackNeighbor = true;
         break;
       }
     }
-    if (hasBlackNeighbour) continue;
+    if (hasBlackNeighbor) continue;
 
     grid[i] = BLACK;
     nBlack++;

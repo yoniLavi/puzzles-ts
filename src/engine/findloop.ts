@@ -35,12 +35,12 @@ export interface FindLoopResult {
 
 /**
  * Run the bridge-finding DFS over an undirected graph with vertices
- * `0 … nvertices−1`. `neighbours(v)` yields every vertex adjacent to `v`
+ * `0 … nvertices−1`. `neighbors(v)` yields every vertex adjacent to `v`
  * (each edge must be reported from both endpoints, as upstream).
  */
 export function findLoops(
   nvertices: number,
-  neighbours: (vertex: number) => Iterable<number>,
+  neighbors: (vertex: number) => Iterable<number>,
 ): FindLoopResult {
   // One flat record per vertex, exactly upstream's `struct findloopstate`.
   const depth = new Int32Array(nvertices).fill(-1);
@@ -76,13 +76,13 @@ export function findLoops(
         componentRoot[u] = componentRoot[parent[u]];
       }
 
-      // Schedule visits to the neighbours, and then back here.
+      // Schedule visits to the neighbors, and then back here.
       v = u;
-      for (const w of neighbours(u)) {
+      for (const w of neighbors(u)) {
         if (w === parent[u]) continue;
         if (depth[w] < 0) {
           parent[w] = u;
-          // Remove the neighbour from the linked list…
+          // Remove the neighbor from the linked list…
           if (prev[w] >= 0) next[prev[w]] = next[w];
           if (next[w] >= 0) prev[next[w]] = prev[w];
           // …and re-insert it immediately before the next node to visit.

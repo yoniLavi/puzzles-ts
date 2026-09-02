@@ -33,10 +33,10 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newTentsDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   dragXform,
   FLASH_TIME,
@@ -336,7 +336,7 @@ export const tentsGame: Game<
 
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: TentsParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

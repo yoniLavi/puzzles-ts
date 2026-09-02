@@ -8,7 +8,7 @@
  * why the description byte-match is such a strong differential.
  */
 import { APERIODIC_GRID_TYPES, type GridType } from "../../engine/grid/index.ts";
-import { FACE_BLACK, FACE_GREY, generateLoop } from "../../engine/loopgen.ts";
+import { FACE_BLACK, FACE_GRAY, generateLoop } from "../../engine/loopgen.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { RetryLimitExceeded, retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
@@ -24,12 +24,12 @@ import {
 } from "./state.ts";
 
 /**
- * Colour every face inside or outside a random closed loop, then derive each
+ * Color every face inside or outside a random closed loop, then derive each
  * face's clue by counting its edges that cross the loop.
  *
- * The infinite exterior counts as **black** (`loopgen.h`'s `FACE_COLOUR(NULL)`),
+ * The infinite exterior counts as **black** (`loopgen.h`'s `FACE_COLOR(NULL)`),
  * which is what makes the boundary clues come out right: a white face at the
- * edge of the patch sees a colour transition across its outer edges, and so is
+ * edge of the patch sees a color transition across its outer edges, and so is
  * clued for them.
  */
 function addFullClues(state: LoopyState, rng: RandomState): void {
@@ -37,16 +37,16 @@ function addFullClues(state: LoopyState, rng: RandomState): void {
   const board = new Int8Array(g.numFaces);
   generateLoop(g, board, rng);
 
-  const colour = (index: number | null): number =>
+  const color = (index: number | null): number =>
     index === null ? FACE_BLACK : board[index];
 
   state.clues.fill(0);
   for (let i = 0; i < g.numEdges; i++) {
     const e = g.edges[i];
-    const c1 = colour(e.face1?.index ?? null);
-    const c2 = colour(e.face2?.index ?? null);
-    // Also a check that the loop generator left no face uncoloured.
-    if (c1 === FACE_GREY || c2 === FACE_GREY) {
+    const c1 = color(e.face1?.index ?? null);
+    const c2 = color(e.face2?.index ?? null);
+    // Also a check that the loop generator left no face uncolored.
+    if (c1 === FACE_GRAY || c2 === FACE_GRAY) {
       throw new Error("loopy: generateLoop left a face grey");
     }
     if (c1 !== c2) {
@@ -99,8 +99,8 @@ function removeClues(state: LoopyState, rng: RandomState, diff: number): void {
  *
  * **The one recovery upstream lacks**, on top of the degenerate-patch retry: if
  * the inner loop exhausts its budget on an aperiodic grid, the *patch* is
- * unfavourable rather than the params. Upstream concedes the hazard in a
- * comment — *"this can loop for ever if the params are suitably unfavourable"* —
+ * unfavorable rather than the params. Upstream concedes the hazard in a
+ * comment — *"this can loop for ever if the params are suitably unfavorable"* —
  * and simply hangs. Measured on the smallest legal Penrose sizes, drawing a
  * fresh patch rescues most of them (Penrose kite/dart 4x4 at Normal took 25
  * patches; the same size at Hard succeeded on the first), so the outer loop
@@ -139,7 +139,7 @@ export function newDesc(p: LoopyParams, rng: RandomState): { desc: string } {
     try {
       generateOnGrid(state, p, rng);
     } catch (e) {
-      // An unfavourable patch, not unfavourable params: try another one.
+      // An unfavorable patch, not unfavorable params: try another one.
       if (e instanceof RetryLimitExceeded && gridVaries) continue;
       throw e;
     }

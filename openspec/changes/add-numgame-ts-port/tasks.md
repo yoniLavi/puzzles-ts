@@ -60,7 +60,7 @@ answer to "should this game exist at all" may end the change here.
 
 - [ ] 5.1 Register in `ts-ported-ids.ts` + `games/index.ts`.
 - [ ] 5.2 Add a catalog entry + the two icon PNGs (numgame was never
-      catalogued, so both are new — see `puzzle-icons` spec).
+      cataloged, so both are new — see `puzzle-icons` spec).
 - [ ] 5.3 Full gate green; `openspec validate add-numgame-ts-port --strict`.
 - [ ] 5.4 Dev-verify in the browser.
 
@@ -70,6 +70,6 @@ answer to "should this game exist at all" may end the change here.
       it is playable; `catalog-registry.test.ts` holds catalog and registry
       together. (This task used to read "delete `puzzles/unfinished/numgame.c`
       and its `unfinished/CMakeLists` entry" — there is no CMake any more, and the
-      source now lives at `reference/numgame.c` in this change, travelling into
+      source now lives at `reference/numgame.c` in this change, traveling into
       the archive with it.)
 - [ ] 6.2 Archive, then commit game + archive together.

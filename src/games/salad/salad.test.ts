@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Salad port.
+ * Behavioral tests for the Salad port.
  *
  * Tier 1 — pure logic: the params and description codecs (both modes), the
  * solver's verdicts, generator quality across every preset, the move
@@ -474,7 +474,7 @@ describe("salad findMistakes", () => {
 // --- tier 1: input ---------------------------------------------------------
 
 const TS = PREFERRED_TILE_SIZE;
-/** The centre of play cell `(x, y)`, allowing for the one-tile clue margin. */
+/** The center of play cell `(x, y)`, allowing for the one-tile clue margin. */
 const at = (x: number, y: number) => ({
   x: (x + 1) * TS + TS / 2,
   y: (y + 1) * TS + TS / 2,
@@ -753,14 +753,14 @@ describe("salad mistake overlay", () => {
       { type: "set", x: i % o, y: (i / o) | 0, value: (sol[i] % NUMBERS.p.nums) + 1 },
     ]);
 
-    const palette = saladGame.colours(DEFAULT_BACKGROUND);
+    const palette = saladGame.colors(DEFAULT_BACKGROUND);
     me.redraw(new RecordingDrawing(palette));
     expect(me.findMistakes()).toBeGreaterThan(0);
     const after = new RecordingDrawing(palette);
     me.redraw(after);
     // The overlay is drawn as stroked lines, so it records as `line` ops
     // (docs/games/testing.md § "Render-op vocabulary" — a stroked box is not a `rect`).
-    expect(after.ops.some((op) => op.op === "line" && op.colour === COL_MISTAKE)).toBe(
+    expect(after.ops.some((op) => op.op === "line" && op.color === COL_MISTAKE)).toBe(
       true,
     );
   });

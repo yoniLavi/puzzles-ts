@@ -11,7 +11,7 @@
  * `_resetRegistry()`: the game modules self-register only once per worker
  * (ES-module side effects don't re-run), so a reset is otherwise
  * unrecoverable. Production still gets the unchanged "import populates the
- * registry" behaviour from the module-load call at the bottom.
+ * registry" behavior from the module-load call at the bottom.
  *
  * A game absent from here cannot be played at all: `retire-c-engine` removed
  * the C/WASM fallback an empty registry used to mean, and

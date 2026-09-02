@@ -25,7 +25,7 @@ stability; new icons MAY be PNG24 without changing the suffix.
 exception to a directory that also held one generated tree — `src/assets/manual/`,
 the halibut output — and that tree is gone with the manual it built
 (`retire-the-upstream-help-tree`). The distinction the original scenario drew,
-between the committed icons and the one generated neighbour, no longer has a
+between the committed icons and the one generated neighbor, no longer has a
 second term: `src/assets/` holds committed files only, and `.gitignore` carries
 no rule for any directory under `src/`.
 
@@ -90,8 +90,8 @@ does without the param.
 
 The capture bar SHALL offer a **New game** action (to re-roll the board
 to a representative state) and a **Capture icons** action. **Capture
-icons** SHALL capture the live canvas, centre-crop it to its largest
-centred square, downscale that square to 64×64 and to 128×128, and
+icons** SHALL capture the live canvas, center-crop it to its largest
+centered square, downscale that square to 64×64 and to 128×128, and
 download both results as PNGs named `<puzzleId>-64d8.png` and
 `<puzzleId>-128d8.png` — the exact filenames `src/assets/icons/`
 requires.
@@ -103,11 +103,11 @@ requires.
 - **AND** the developer activates **Capture icons**
 - **THEN** two PNG files download: `<puzzleId>-64d8.png` (64×64) and
   `<puzzleId>-128d8.png` (128×128)
-- **AND** each is a centred-square downscale of the puzzle canvas
+- **AND** each is a centered-square downscale of the puzzle canvas
 
 #### Scenario: Param is inert in production
 
 - **WHEN** the production build serves `/<puzzleId>?screenshot`
 - **THEN** the normal puzzle screen renders (header, footer, interactive
-  view) with no capture bar and no capture behaviour
+  view) with no capture bar and no capture behavior
 

@@ -15,18 +15,18 @@ import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
 import { mosaicGame } from "./index.ts";
 
 function recordingDrawing() {
-  const ops: Array<{ op: string; colour?: number }> = [];
+  const ops: Array<{ op: string; color?: number }> = [];
   const dr: GameDrawing = {
     startDraw: () => ops.push({ op: "startDraw" }),
     endDraw: () => ops.push({ op: "endDraw" }),
     drawUpdate: () => {},
     clip: () => {},
     unclip: () => {},
-    drawRect: (_r, colour) => ops.push({ op: "drawRect", colour }),
-    drawLine: (_a, _b, colour) => ops.push({ op: "drawLine", colour }),
-    drawPolygon: (_p, colour) => ops.push({ op: "drawPolygon", colour }),
-    drawCircle: (_p, _r, colour) => ops.push({ op: "drawCircle", colour }),
-    drawText: (_p, _o, colour) => ops.push({ op: "drawText", colour }),
+    drawRect: (_r, color) => ops.push({ op: "drawRect", color }),
+    drawLine: (_a, _b, color) => ops.push({ op: "drawLine", color }),
+    drawPolygon: (_p, color) => ops.push({ op: "drawPolygon", color }),
+    drawCircle: (_p, _r, color) => ops.push({ op: "drawCircle", color }),
+    drawText: (_p, _o, color) => ops.push({ op: "drawText", color }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},
@@ -80,7 +80,7 @@ function harness() {
   return { m, status, statusBar, selectAt };
 }
 
-// 3×3 all-black board: every clue saturates its neighbourhood.
+// 3×3 all-black board: every clue saturates its neighborhood.
 const GAME_ID = "3x3:464696464";
 
 describe("Mosaic midend lifecycle", () => {
@@ -110,7 +110,7 @@ describe("Mosaic midend lifecycle", () => {
   it("undo and redo restore the clue count", () => {
     const h = harness();
     expect(h.m.newGameFromId(GAME_ID)).toBeUndefined();
-    h.selectAt(1, 1); // mark the centre → clue 9 unaffected, others pending
+    h.selectAt(1, 1); // mark the center → clue 9 unaffected, others pending
     const after = h.statusBar();
     h.m.undo();
     expect(h.statusBar()).toBe("Clues left: 9");

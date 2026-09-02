@@ -1,5 +1,5 @@
 /**
- * Tracks behavioural tests (tier 1 + tier 2): params/desc codecs, the solver
+ * Tracks behavioral tests (tier 1 + tier 2): params/desc codecs, the solver
  * grade, `findMistakes`, input mapping, and the mistake render overlay
  * (paint-twice, so the overlay is proven to live in the diff key).
  *
@@ -158,7 +158,7 @@ describe("tracks findMistakes + solve", () => {
 });
 
 // Geometry for PREFERRED_TILE_SIZE=33 → sz6=5, tile=30, border=0.
-const CENTRE = (n: number) => (n + 1) * 30 + 15;
+const CENTER = (n: number) => (n + 1) * 30 + 15;
 
 describe("tracks input", () => {
   it("a left-drag lays a straight run of track", () => {
@@ -168,21 +168,21 @@ describe("tracks input", () => {
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(1), y: CENTRE(3) },
+      { x: CENTER(1), y: CENTER(3) },
       LEFT_BUTTON,
     );
     tracksGame.interpretMove(
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(3), y: CENTRE(3) },
+      { x: CENTER(3), y: CENTER(3) },
       LEFT_DRAG,
     );
     const move = tracksGame.interpretMove(
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(3), y: CENTRE(3) },
+      { x: CENTER(3), y: CENTER(3) },
       LEFT_RELEASE,
     );
     expect(move && typeof move === "object" && "ops" in move).toBe(true);
@@ -199,7 +199,7 @@ describe("tracks input", () => {
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(1), y: CENTRE(3) },
+      { x: CENTER(1), y: CENTER(3) },
       LEFT_BUTTON,
     );
     // A valid horizontal drag out to column 3.
@@ -207,7 +207,7 @@ describe("tracks input", () => {
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(3), y: CENTRE(3) },
+      { x: CENTER(3), y: CENTER(3) },
       LEFT_DRAG,
     );
     // Now drift above the grid (y=5 → row −1): upstream would cancel; we freeze.
@@ -215,7 +215,7 @@ describe("tracks input", () => {
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(3), y: 5 },
+      { x: CENTER(3), y: 5 },
       LEFT_DRAG,
     );
     expect(ui.dragging).toBe(true);
@@ -224,7 +224,7 @@ describe("tracks input", () => {
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(3), y: 5 },
+      { x: CENTER(3), y: 5 },
       LEFT_RELEASE,
     );
     const applied = executeMove(st, move as Parameters<typeof executeMove>[1]);
@@ -241,21 +241,21 @@ describe("tracks input", () => {
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(1), y: CENTRE(3) },
+      { x: CENTER(1), y: CENTER(3) },
       RIGHT_BUTTON,
     );
     tracksGame.interpretMove(
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(3), y: CENTRE(3) },
+      { x: CENTER(3), y: CENTER(3) },
       RIGHT_DRAG,
     );
     const move = tracksGame.interpretMove(
       st,
       ui,
       sizedDrawState(tracksGame, st),
-      { x: CENTRE(3), y: CENTRE(3) },
+      { x: CENTER(3), y: CENTER(3) },
       RIGHT_RELEASE,
     );
     expect(move).toBeNull();
@@ -272,7 +272,7 @@ describe("tracks render", () => {
     );
     const ds = newDrawState(solved);
     ds.tileSize = tracksGame.preferredTileSize ?? 33;
-    const dr = new RecordingDrawing(tracksGame.colours(DEFAULT_BACKGROUND));
+    const dr = new RecordingDrawing(tracksGame.colors(DEFAULT_BACKGROUND));
     redraw(dr, ds, null, solved, 1, tracksGame.newUi(solved), 0, 0);
     expect(dr.ops.some((o) => o.op === "text")).toBe(true);
     expect(dr.ops.some((o) => o.op === "line")).toBe(true);
@@ -296,13 +296,13 @@ describe("tracks render", () => {
     const ds = newDrawState(bad);
     ds.tileSize = tracksGame.preferredTileSize ?? 33;
     const ui = tracksGame.newUi(bad);
-    const palette = tracksGame.colours(DEFAULT_BACKGROUND);
+    const palette = tracksGame.colors(DEFAULT_BACKGROUND);
 
     // Warm the drawstate without the overlay, then repaint with it.
     redraw(new RecordingDrawing(palette), ds, null, bad, 1, ui, 0, 0);
     const mistakes = tracksGame.findMistakes?.(bad) ?? [];
     const dr = new RecordingDrawing(palette);
     redraw(dr, ds, null, bad, 1, ui, 0, 0, undefined, mistakes);
-    expect(dr.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(true);
+    expect(dr.ops.some((o) => o.op === "rect" && o.color === COL_ERROR)).toBe(true);
   });
 });

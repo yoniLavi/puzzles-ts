@@ -1,9 +1,9 @@
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLACK, TEN, TEN_NAMES } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLACK, TEN, TEN_NAMES } from "../../engine/color/colors.ts";
 import { drawRecessedBorder as drawBevel, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import { fill } from "./solver.ts";
 import {
   FILLX,
@@ -26,7 +26,7 @@ const coord = (n: number, ts: number) => n * ts + border(ts);
 const VICTORY_FLASH_FRAME = 0.03;
 const DEFEAT_FLASH_FRAME = 0.1;
 
-// --- colour palette indices -------------------------------------------
+// --- color palette indices -------------------------------------------
 
 const COL_BACKGROUND = 0;
 const COL_SEPARATOR = 1;
@@ -39,15 +39,15 @@ const COL_LOWLIGHT = 13;
  *
  * Re-exported from the palette rather than written here, because the sentence is
  * a claim about the board and the only thing between it and a lie is that the
- * word and the colour come from the same place. A scheme may restyle a tile; it
+ * word and the color come from the same place. A scheme may restyle a tile; it
  * may not turn the one the hint calls orange into something a player would call
- * another colour.
+ * another color.
  */
-export const COLOUR_NAMES = TEN_NAMES;
+export const COLOR_NAMES = TEN_NAMES;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   // `BLACK`, not `INK`: the line between two tiles is drawn against the
   // tiles, not the board, and stays black under both schemes.
@@ -76,7 +76,7 @@ const CORNER_DR = 0x080;
 const CURSOR = 0x100;
 const BADFLASH = 0x200;
 const SOLNNEXT = 0x400;
-const COLOUR_SHIFT = 11;
+const COLOR_SHIFT = 11;
 
 export interface FloodDrawState {
   started: boolean;
@@ -109,10 +109,10 @@ function drawTile(
   const ty = coord(y, ts);
   const sep = sepWidth(ts);
 
-  let colour: number;
-  if (tile & BADFLASH) colour = COL_SEPARATOR;
-  else colour = (tile >> COLOUR_SHIFT) + COL_1;
-  dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, colour);
+  let color: number;
+  if (tile & BADFLASH) color = COL_SEPARATOR;
+  else color = (tile >> COLOR_SHIFT) + COL_1;
+  dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, color);
 
   if (sep > 0) {
     if (tile & BORDER_L) dr.drawRect({ x: tx, y: ty, w: sep, h: ts }, COL_SEPARATOR);
@@ -200,12 +200,12 @@ export function redraw(
   activeHint?: HintStep<FloodMove>,
 ): void {
   const ts = ds.tilesize;
-  const { w, h, colours: ncolours } = state;
+  const { w, h, colors: ncolors } = state;
   const wh = w * h;
 
   if (!ds.started) {
     // The engine paints no pixels of its own; fill our own background.
-    const size = computeSize({ w, h, colours: ncolours, leniency: 0 }, ts);
+    const size = computeSize({ w, h, colors: ncolors, leniency: 0 }, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
     drawRecessedFrame(dr, w, h, ts);
     ds.started = true;
@@ -224,32 +224,32 @@ export function redraw(
   // Build the display grid (a mutable copy we may overlay onto).
   const grid = Uint8Array.from(state.grid);
 
-  // Hint overlay: highlight every square of the next fill's colour that
+  // Hint overlay: highlight every square of the next fill's color that
   // is adjacent to the controlled region (upstream's SOLNNEXT). Compute
   // it as upstream does: fill to the target, fill again in a sentinel
-  // colour (= ncolours, out of range), then revert anything that was not
-  // originally the target colour. Sentinel-coloured cells are SOLNNEXT.
+  // color (= ncolors, out of range), then revert anything that was not
+  // originally the target color. Sentinel-colored cells are SOLNNEXT.
   let solnmove = 0;
   const showSoln =
     activeHint !== undefined &&
     activeHint.move.type === "fill" &&
     !state.completed &&
-    state.grid[FILLY * w + FILLX] !== activeHint.move.colour;
+    state.grid[FILLY * w + FILLX] !== activeHint.move.color;
   if (showSoln && activeHint?.move.type === "fill") {
-    solnmove = activeHint.move.colour;
+    solnmove = activeHint.move.color;
     const queue = new Int32Array(wh);
     fill(w, h, grid, FILLX, FILLY, solnmove, queue);
-    fill(w, h, grid, FILLX, FILLY, ncolours, queue);
+    fill(w, h, grid, FILLX, FILLY, ncolors, queue);
     for (let i = 0; i < wh; i++)
-      if (grid[i] === ncolours && state.grid[i] !== solnmove) grid[i] = state.grid[i];
+      if (grid[i] === ncolors && state.grid[i] !== solnmove) grid[i] = state.grid[i];
   }
 
-  // Victory rainbow: superimpose the radiating colour wave.
+  // Victory rainbow: superimpose the radiating color wave.
   if (flashframe >= 0 && victory) {
     for (let x = 0; x < w; x++) {
       for (let y = 0; y < h; y++) {
         const flashpos = flashframe - (Math.abs(x - FILLX) + Math.abs(y - FILLY));
-        if (flashpos >= 0 && flashpos < ncolours) grid[y * w + x] = flashpos;
+        if (flashpos >= 0 && flashpos < ncolors) grid[y * w + x] = flashpos;
       }
     }
   }
@@ -258,10 +258,10 @@ export function redraw(
     for (let y = 0; y < h; y++) {
       const pos = y * w + x;
       let tile: number;
-      if (grid[pos] === ncolours) {
-        tile = (solnmove << COLOUR_SHIFT) | SOLNNEXT;
+      if (grid[pos] === ncolors) {
+        tile = (solnmove << COLOR_SHIFT) | SOLNNEXT;
       } else {
-        tile = grid[pos] << COLOUR_SHIFT;
+        tile = grid[pos] << COLOR_SHIFT;
       }
 
       if (x === 0 || grid[pos - 1] !== grid[pos]) tile |= BORDER_L;

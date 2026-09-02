@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
-import { CONTRADICTION_UNLOCALISED } from "../../engine/hint-refusal.ts";
+import { CONTRADICTION_UNLOCALIZED } from "../../engine/hint-refusal.ts";
 import { expectRing } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import cReference from "./__fixtures__/bricks-c-reference.json" with { type: "json" };
@@ -25,7 +25,7 @@ import {
   type BricksParams,
   type BricksState,
   COL_MASK,
-  colourBits,
+  colorBits,
   DIFF_EASY,
   DIFF_TRICKY,
   encodeParams,
@@ -89,7 +89,7 @@ describe("bricks hint — Easy-tier reason classification", () => {
   });
 
   it("an over-filled clue forces a neighbour clear", () => {
-    // Clue 0 at (0,0); shading its neighbour would give it a shaded cell.
+    // Clue 0 at (0,0); shading its neighbor would give it a shaded cell.
     const { g, w, h } = grid([
       ["0", ".", "."],
       ["U", ".", "."],
@@ -113,7 +113,7 @@ describe("bricks hint — Easy-tier reason classification", () => {
   });
 
   it("a clue that can no longer reach its count forces a neighbour shaded", () => {
-    // Clue 1 at (0,0); its only other neighbour is unshaded, so the target
+    // Clue 1 at (0,0); its only other neighbor is unshaded, so the target
     // must supply the shade.
     const { g, w, h } = grid([
       ["1", "U"],
@@ -128,7 +128,7 @@ describe("bricks hint — where the recursive tier used to be", () => {
   it("stops at the single-cell stall instead of narrating the lookahead", () => {
     // Replaces "finds a chain contradiction where no single-cell one exists".
     // `audit-guessing-tier-names` took the recursive rung out of the hint (it
-    // assumes a colour and *solves the rest of the board* from it — a
+    // assumes a color and *solves the rest of the board* from it — a
     // multi-step search, never a technique a hint may teach) and deleted its
     // recording twin. `solveGame` keeps the rung, so this asserts exactly the
     // gap that now exists: where the board stalls for the direct rung, the
@@ -169,7 +169,7 @@ describe("bricks hint — the full hint()", () => {
     const st = newState(FIX_PARAMS, FIX.desc);
     const plan = deduceBricksPlan(st.grid, st.w, st.h);
     const g = st.grid.slice();
-    for (const m of plan) g[m.index] = colourBits(m.to);
+    for (const m of plan) g[m.index] = colorBits(m.to);
     // 7x6 easy has fewer than the plan cap of empties, so one plan finishes it.
     expect(bricksValidate(g, st.w, st.h, true)).toBe("complete");
   });
@@ -189,9 +189,9 @@ describe("bricks hint — the full hint()", () => {
 
 describe("bricks hint — a second mark on the board is named", () => {
   /** The phrases that tie the acted-on cell to the ringed evidence, one per
-   * reason. Geometric or relational throughout — never a colour name, which
+   * reason. Geometric or relational throughout — never a color name, which
    * `docs/games/hints.md` § "Two marks on the board, one 'this cell'" forbids
-   * as scheme-relative and invisible to a colour-blind reader. */
+   * as scheme-relative and invisible to a color-blind reader. */
   const TIE =
     /next to the ringed shaded bricks|ringed cells? below this one|ringed \d+ beside (it|this cell)|above rests only on this cell|the unringed one/;
 
@@ -308,10 +308,10 @@ describe("bricks hint — refusals", () => {
     g[cell] = F_UNSHADE;
     const r = bricksGame.hint?.({ ...st, grid: g });
     expect(r?.ok).toBe(false);
-    // The *unlocalised* refusal, not the "fix the highlighted mistakes" one:
+    // The *unlocalized* refusal, not the "fix the highlighted mistakes" one:
     // Bricks' `findMistakes` is a rule validator and cannot see this mark, so
     // a message promising a highlight would promise one that never appears.
-    if (r?.ok === false) expect(r.error).toBe(CONTRADICTION_UNLOCALISED);
+    if (r?.ok === false) expect(r.error).toBe(CONTRADICTION_UNLOCALIZED);
   });
 });
 
@@ -345,7 +345,7 @@ describe("bricks hint — rendering (tier 2.5)", () => {
     expectRing(ops, COL_HINT);
     // Some first-step deductions have evidence off-board (edge walls); the
     // 7x6 easy opener's first step should carry at least one evidence cell.
-    const hasEvidence = ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL);
+    const hasEvidence = ops.some((o) => o.op === "rect" && o.color === COL_HINT_CELL);
     expect(
       hasEvidence || (result.hint ? hl(result.hint).evidence.length : 0) === 0,
     ).toBe(true);

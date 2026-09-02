@@ -198,7 +198,7 @@ describe("filling hint render scenario", () => {
     //
     // Filling's premise is a *single* clue cell — the region whose size the
     // deduction is counting off — so its outline is one ring, which is what the
-    // neighbour rule gives for a one-cell region.
+    // neighbor rule gives for a one-cell region.
     expect(hl.area.length).toBe(1);
     expectRing(recording.ops, COL_HINT_CELL, hl.area.length);
     expect(recording.ops.some((o) => o.op === "text")).toBe(true); // clues

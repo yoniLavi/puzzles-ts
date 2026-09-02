@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Loopy port.
+ * Behavioral tests for the Loopy port.
  *
  * The byte-match differential (`loopy-differential.test.ts`) is the strongest
  * assurance this port has, but it can only cover what the C is willing to

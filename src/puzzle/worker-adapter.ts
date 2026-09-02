@@ -11,13 +11,13 @@
  * `PuzzleEngineSurface`. Keeping it under the engine was what made the engine
  * import the shell (`retire-native-directory` D3).
  *
- * The drawing / colour / UI-feedback contract the keystone left
+ * The drawing / color / UI-feedback contract the keystone left
  * minimal was resolved by the first port (`add-flip-ts-port`): the
- * full `GameDrawing` API, `colours(defaultBackground)`, and the
- * `UI_UPDATE` input result. The on-screen keys surface is modelled too
+ * full `GameDrawing` API, `colors(defaultBackground)`, and the
+ * `UI_UPDATE` input result. The on-screen keys surface is modeled too
  * (`requestKeys` forwards `Game.requestKeys` via the midend —
  * `add-ts-onscreen-keys`). The custom-params AND preferences surfaces
- * are both modelled: each forwards to the midend, which builds the app's
+ * are both modeled: each forwards to the midend, which builds the app's
  * config dialog from the game's declarative `paramConfig` / `prefs` and
  * parses the submitted values back. A game that declares neither yields
  * an empty-but-valid config (an empty custom dialog is correct for a
@@ -29,7 +29,7 @@ import type { EngineCore } from "../engine/midend.ts";
 import { getTsGame } from "../engine/registry.ts";
 import type {
   ChangeNotification,
-  Colour,
+  Color,
   ConfigDescription,
   ConfigValues,
   FontInfo,
@@ -190,7 +190,7 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   encodeCustomParams(values: ConfigValues): string {
     return this.engine.encodeCustomParams(values);
   }
-  // Preferences ARE modelled on the TS path: the engine builds the
+  // Preferences ARE modeled on the TS path: the engine builds the
   // config from the game's declarative `prefs` and reads/writes the
   // values off the ui. The app's `puzzle-preferences-form` and
   // per-puzzle IndexedDB persistence drive these unchanged; a game with
@@ -207,11 +207,11 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
 
   // --- rendering --------------------------------------------------
 
-  getColourPalette(defaultBackground: Colour): Colour[] {
-    return this.engine.getColourPalette(defaultBackground);
+  getColorPalette(defaultBackground: Color): Color[] {
+    return this.engine.getColorPalette(defaultBackground);
   }
 
-  darkPalette(defaultBackground: Colour): Record<number, Colour> {
+  darkPalette(defaultBackground: Color): Record<number, Color> {
     return this.engine.darkPalette(defaultBackground);
   }
   size(maxSize: Size): Size {
@@ -298,7 +298,7 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   /** Internal-only mirror of `WorkerPuzzle.frontend.forceRedraw()`
    * — the canvas-invalidating paths (palette/font replacement) want
    * a full repaint with the per-game drawstate dropped, not just a
-   * plain `engine.redraw` that would honour the now-stale cache. Not
+   * plain `engine.redraw` that would honor the now-stale cache. Not
    * on `PuzzleEngineSurface`: the app's own redraw path goes through
    * `redraw()` plus `Midend.size`-driven first-draw, same as the C
    * path. */

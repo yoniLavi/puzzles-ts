@@ -58,7 +58,7 @@ export const MODULES = [
         replace: "      if (true) continue;",
       },
       {
-        // Was EQUIVALENT while the ledger was a scan-skipping optimisation
+        // Was EQUIVALENT while the ledger was a scan-skipping optimization
         // (`diffSimple` skips a line whose digit is placed; run anyway, the
         // sweep places nothing). `add-latin-repeats-support` made it
         // load-bearing: for the repeated symbol the row count is what decides
@@ -318,16 +318,16 @@ export const MODULES = [
         replace: "    return this.game.computeSize(this.params, 1);",
       },
       {
-        within: "Midend.getColourPalette",
-        why: "getColourPalette swallows the frontend's background, flattening every derived colour",
+        within: "Midend.getColorPalette",
+        why: "getColorPalette swallows the frontend's background, flattening every derived color",
         find: "    return resolvePalette(this.game, defaultBackground);",
         replace: "    return resolvePalette(this.game, [1, 1, 1]);",
       },
       {
         within: "Midend.darkPalette",
-        why: "darkPalette claims an authored dark value for every colour, defeating per-token authoring",
-        find: "      const dark = colour && darkValue(colour);",
-        replace: "      const dark = colour;",
+        why: "darkPalette claims an authored dark value for every color, defeating per-token authoring",
+        find: "      const dark = color && darkValue(color);",
+        replace: "      const dark = color;",
       },
       {
         within: "Midend.delete",
@@ -438,8 +438,8 @@ export const MODULES = [
         // {U,D}, and the third clears exactly one of those two pairs. So one
         // bit always survives and `dir === 4` is unreachable — the guard is
         // defensive, not a corner rejection. The comment used to say a corner
-        // or centre click "means nothing", which the module's own
-        // tie-break-at-a-tile-centre test already contradicted.
+        // or center click "means nothing", which the module's own
+        // tie-break-at-a-tile-center test already contradicted.
         within: "pointerEdge",
         why: "the unreachable not-exactly-one-edge guard (a click always resolves to one edge)",
         equivalent: true,
@@ -448,13 +448,13 @@ export const MODULES = [
       },
       {
         within: "pointerEdge",
-        why: "a click on the outer border toggles a border with no neighbour",
+        why: "a click on the outer border toggles a border with no neighbor",
         find: "  if (outOfBounds(hx, hy, w, h)) return null;",
         replace: "  if (false) return null;",
       },
       {
         within: "pointerEdge",
-        why: "a toggle is applied to this cell but not mirrored on its neighbour",
+        why: "a toggle is applied to this cell but not mirrored on its neighbor",
         find: "    ((gdiff >> dir) << FLIP(dir)) | ((gdiff >> (dir + 4)) << (FLIP(dir) + 4));",
         replace: "    0;",
       },
@@ -563,9 +563,9 @@ export const MODULES = [
       {
         within: "addremcommon",
         why: "the connectivity check that keeps every region 4-connected always passes",
-        find: "  const neighbours = new Int32Array(8);\n  for (let dir = 0; dir < 8; dir++) {",
+        find: "  const neighbors = new Int32Array(8);\n  for (let dir = 0; dir < 8; dir++) {",
         replace:
-          "  if (w) return true;\n  const neighbours = new Int32Array(8);\n  for (let dir = 0; dir < 8; dir++) {",
+          "  if (w) return true;\n  const neighbors = new Int32Array(8);\n  for (let dir = 0; dir < 8; dir++) {",
       },
     ],
   },
@@ -584,7 +584,7 @@ export const MODULES = [
 
   // --- second wave ---------------------------------------------------------
   // Chosen by blast radius rather than by size: `params.ts` has 90 importers
-  // and `colour-mkhighlight.ts` 37, so a defect in either reaches most of the
+  // and `color-mkhighlight.ts` 37, so a defect in either reaches most of the
   // collection at once — and both are small enough that a reader can check any
   // claim about them in a minute.
 
@@ -633,30 +633,30 @@ export const MODULES = [
   },
 
   {
-    module: "src/engine/colour/colour-mkhighlight.ts",
+    module: "src/engine/color/color-mkhighlight.ts",
     cases: [
       {
         within: "mkhighlightBackground",
         why: "a near-white background is not shifted, so its highlight bevel vanishes",
-        find: "  const dw = colourDistance(out, white);\n  if (dw < K) {",
-        replace: "  const dw = colourDistance(out, white);\n  if (false) {",
+        find: "  const dw = colorDistance(out, white);\n  if (dw < K) {",
+        replace: "  const dw = colorDistance(out, white);\n  if (false) {",
       },
       {
         within: "mkhighlightBackground",
         why: "a near-black background is not shifted, so its lowlight bevel vanishes",
-        find: "  const db = colourDistance(out, black);\n  if (db < K) {",
-        replace: "  const db = colourDistance(out, black);\n  if (false) {",
+        find: "  const db = colorDistance(out, black);\n  if (db < K) {",
+        replace: "  const db = colorDistance(out, black);\n  if (false) {",
       },
       {
         within: "mkhighlightBackground",
         why: "the exact-white epsilon is dropped, so K/dw overflows and shifts the background past white",
-        find: "    if (dw < EPS) out = colourMix(white, black, K / Math.sqrt(3));\n    else out = colourMix(white, out, K / dw);",
-        replace: "    out = colourMix(white, out, K / dw);",
+        find: "    if (dw < EPS) out = colorMix(white, black, K / Math.sqrt(3));\n    else out = colorMix(white, out, K / dw);",
+        replace: "    out = colorMix(white, out, K / dw);",
       },
       {
         // EQUIVALENT, and measured rather than argued. `mkhighlightBackground`
         // shifts the background until it is *exactly* K from the extreme, so
-        // `K / dw` is exactly 1 and `colourMix(bg, white, 1)` already yields
+        // `K / dw` is exactly 1 and `colorMix(bg, white, 1)` already yields
         // pure white — the `dw < K` arm only exists to absorb float drift.
         // Swept 9,261 backgrounds over the whole RGB cube at 1/20 steps: the
         // adjusted background was within K of white or black **zero** times.
@@ -664,11 +664,11 @@ export const MODULES = [
         within: "mkhighlight",
         why: "the highlight's saturate-to-white arm (an unreachable float-drift guard)",
         equivalent: true,
-        find: "  const highlight: Colour = dw < K ? [1, 1, 1] : colourMix(bg, white, K / dw);",
-        replace: "  const highlight: Colour = colourMix(bg, white, K / dw);",
+        find: "  const highlight: Color = dw < K ? [1, 1, 1] : colorMix(bg, white, K / dw);",
+        replace: "  const highlight: Color = colorMix(bg, white, K / dw);",
       },
       {
-        within: "correctRegionColour",
+        within: "correctRegionColor",
         why: "the completed-region shade equals the background, so a correct region reads as unfilled",
         find: "  return [background[0] * 0.75, background[1] * 0.75, background[2] * 0.75];",
         replace: "  return [background[0], background[1], background[2]];",
@@ -899,7 +899,7 @@ export const MODULES = [
       },
       {
         within: "adapterOf",
-        why: "a game's own move dialect is ignored in favour of the type-keyed default",
+        why: "a game's own move dialect is ignored in favor of the type-keyed default",
         find: "  return adapter ?? (typeKeyedCandidateMoves as unknown as CandidateMoveAdapter<M>);",
         replace:
           "  return typeKeyedCandidateMoves as unknown as CandidateMoveAdapter<M>;",
@@ -1089,12 +1089,12 @@ export const MODULES = [
     // The shared random-loop generator. Per corpus rule 2 the cases stay off the
     // draw order and off *which* loop comes out — that is Pearl's differential's
     // guarantee, by design — and aim instead at the two things this module owns
-    // locally: the colouring is a single closed loop, and the bias protocol is
+    // locally: the coloring is a single closed loop, and the bias protocol is
     // the sequence the doc comment promises.
     //
     // Two candidates were written, measured and **removed** for being on the
     // wrong side of that line: reversing `faceScore`'s sign, and counting
-    // opposite-coloured neighbours in `faceNumNeighbours`. Both survive the local
+    // opposite-colored neighbors in `faceNumNeighbors`. Both survive the local
     // tests and should: they change which loop a seed yields, not whether it is
     // one. Carrying them would have manufactured findings the `repo-layout`
     // requirement says belong elsewhere — and elsewhere does catch them, checked
@@ -1105,14 +1105,14 @@ export const MODULES = [
     module: "src/engine/loopgen.ts",
     cases: [
       {
-        within: "faceColour",
+        within: "faceColor",
         why: "the infinite exterior reads as inside, so the boundary is drawn round the wrong side",
         find: "  return f === null ? FACE_BLACK : board[f.index];",
         replace: "  return f === null ? FACE_WHITE : board[f.index];",
       },
       {
-        within: "canColourFace",
-        why: "a face need not touch its own colour, so a region can start anywhere and the loop breaks into pieces",
+        within: "canColorFace",
+        why: "a face need not touch its own color, so a region can start anywhere and the loop breaks into pieces",
         find: "  if (!foundSame) return false;",
         replace: "  if (false) return false;",
       },
@@ -1120,24 +1120,24 @@ export const MODULES = [
         // EQUIVALENT, argued and then measured. `transitions` counts state
         // changes around a *closed* walk, so it is always even and only `0` is
         // newly admitted — and `0`, given the `foundSame` precondition above it,
-        // means the face is a lone grey hole entirely enclosed by `colour`. The
+        // means the face is a lone gray hole entirely enclosed by `color`. The
         // algorithm appears never to make one: candidacy is refreshed for every
-        // face touching a newly-coloured one, edge *or* corner, so an enclosed
-        // region's last grey face is coloured while its boundary still has two
+        // face touching a newly-colored one, edge *or* corner, so an enclosed
+        // region's last gray face is colored while its boundary still has two
         // transitions. "Appears" is doing real work in that sentence, so it was
         // measured rather than asserted — 1,319 (tiling, size, seed) runs across
         // all eleven periodic tilings `gridNew` builds without a description,
-        // byte-identical colourings throughout. The sweep's own sensitivity was
+        // byte-identical colorings throughout. The sweep's own sensitivity was
         // checked first: changing the random-flip pass's acceptance moves 1,310
         // of those 1,319 rows.
-        within: "canColourFace",
-        why: "a colouring with fewer than two transitions is allowed, so a face can be walled off inside the wrong region",
+        within: "canColorFace",
+        why: "a coloring with fewer than two transitions is allowed, so a face can be walled off inside the wrong region",
         equivalent: true,
         find: "  return transitions === 2;",
         replace: "  return transitions <= 2;",
       },
       {
-        within: "canColourFace",
+        within: "canColorFace",
         why: "the transition walk stops at two rather than past them, so a four-transition face passes the test",
         find: "        if (transitions > 2) break;",
         replace: "        if (transitions >= 2) break;",
@@ -1155,11 +1155,11 @@ export const MODULES = [
         // stopping on either is stopping on both. There is no proof offered that
         // they must — which is precisely why this stays in the corpus rather
         // than being deleted. A tiling on which one list empties first would
-        // leave faces grey, and the harness reporting this case as CAUGHT is how
+        // leave faces gray, and the harness reporting this case as CAUGHT is how
         // that would announce itself. Loopy's generator also throws outright on a
-        // grey face, so the consumer side is guarded independently.
+        // gray face, so the consumer side is guarded independently.
         within: "generateLoop",
-        why: "colouring stops as soon as either list empties, leaving faces grey",
+        why: "coloring stops as soon as either list empties, leaving faces gray",
         equivalent: true,
         find: "    if (cLight === 0 && cDark === 0) break; // no more faces we can use",
         replace:
@@ -1167,31 +1167,31 @@ export const MODULES = [
       },
       {
         within: "generateLoop",
-        why: "a face just coloured stays in the other candidate list and can be coloured again",
+        why: "a face just colored stays in the other candidate list and can be colored again",
         find: "    lightable.delete(i);\n    darkable.delete(i);",
         replace: "    lightable.delete(i);",
       },
       {
         within: "generateLoop",
-        why: "colourability is recomputed for the already-coloured neighbours instead of the grey ones",
-        find: "        if (faceColour(board, f) !== FACE_GREY) continue;",
-        replace: "        if (faceColour(board, f) === FACE_GREY) continue;",
+        why: "colorability is recomputed for the already-colored neighbors instead of the gray ones",
+        find: "        if (faceColor(board, f) !== FACE_GRAY) continue;",
+        replace: "        if (faceColor(board, f) === FACE_GRAY) continue;",
       },
       {
         within: "generateLoop",
-        why: "tendrils grow from faces with two opposite neighbours, not one, so a flip can cut the loop",
-        find: "        } else if (faceNumNeighbours(board, face, opp) === 1) {",
-        replace: "        } else if (faceNumNeighbours(board, face, opp) === 2) {",
+        why: "tendrils grow from faces with two opposite neighbors, not one, so a flip can cut the loop",
+        find: "        } else if (faceNumNeighbors(board, face, opp) === 1) {",
+        replace: "        } else if (faceNumNeighbors(board, face, opp) === 2) {",
       },
       {
         within: "generateLoop",
-        why: "a face tried tentatively for the bias is left coloured, so later candidates are scored against a dirty board",
-        find: "        board[fi] = FACE_GREY;\n        bias(board, fi); // let bias know we put it back",
+        why: "a face tried tentatively for the bias is left colored, so later candidates are scored against a dirty board",
+        find: "        board[fi] = FACE_GRAY;\n        bias(board, fi); // let bias know we put it back",
         replace: "        bias(board, fi); // let bias know we put it back",
       },
       {
         within: "generateLoop",
-        why: "the bias is not told the tentative colour was taken back, so its incremental state drifts",
+        why: "the bias is not told the tentative color was taken back, so its incremental state drifts",
         find: "        bias(board, fi); // let bias know we put it back",
         replace: "        void fi; // let bias know we put it back",
       },
@@ -1206,7 +1206,7 @@ export const MODULES = [
 
   {
     // The grid module's only floating-point code, and **display/input only** —
-    // `gridNearestEdge` decides which edge a click lands on, `gridFindIncentre`
+    // `gridNearestEdge` decides which edge a click lands on, `gridFindIncenter`
     // where a clue digit is drawn. Neither reaches a description, a generator or
     // a solver, which is the boundary that makes float arithmetic safe here and
     // the reason none of these cases belongs to a differential.
@@ -1243,25 +1243,25 @@ export const MODULES = [
         replace: "    if (bestEdge === null || dist <= bestDistance) {",
       },
       {
-        within: "gridFindIncentre",
-        why: "the incentre is recomputed on every request rather than read from the face",
-        find: "  if (f.hasIncentre) return;",
+        within: "gridFindIncenter",
+        why: "the incenter is recomputed on every request rather than read from the face",
+        find: "  if (f.hasIncenter) return;",
         replace: "  if (false) return;",
       },
       {
-        within: "gridFindIncentre",
-        why: "the incentre is computed but never marked cached",
-        find: "  f.hasIncentre = true;",
-        replace: "  f.hasIncentre = false;",
+        within: "gridFindIncenter",
+        why: "the incenter is computed but never marked cached",
+        find: "  f.hasIncenter = true;",
+        replace: "  f.hasIncenter = false;",
       },
       {
-        within: "gridFindIncentre",
-        why: "the incentre's x is stored with the C's `(int)(v + 0.5)`, which truncates toward zero and so misplaces a clue digit by up to a unit on the negative coordinates a grid mostly has",
+        within: "gridFindIncenter",
+        why: "the incenter's x is stored with the C's `(int)(v + 0.5)`, which truncates toward zero and so misplaces a clue digit by up to a unit on the negative coordinates a grid mostly has",
         find: "  f.ix = Math.round(xBest);",
         replace: "  f.ix = Math.trunc(xBest + 0.5);",
       },
       {
-        within: "gridFindIncentre",
+        within: "gridFindIncenter",
         why: "a face with no interior point found silently reports the origin instead of failing",
         find: "  if (!(bestDist > 0)) {",
         replace: "  if (false) {",
@@ -1339,7 +1339,7 @@ export const MODULES = [
         replace: "  if (false) return null;\n\n  const inv = [",
       },
       {
-        within: "gridFindIncentre",
+        within: "gridFindIncenter",
         why: "the 3-subset enumeration never starts at a vertex, so vertex-led candidate points are missed",
         find: "  for (let i = 0; i + 2 < 2 * order; i++) {",
         replace: "  for (let i = 0; i + 2 < order; i++) {",

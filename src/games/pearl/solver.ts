@@ -102,7 +102,7 @@ export function pearlSolve(
         }
       }
 
-    // Nail down any unknown edge whose neighbouring square makes it known.
+    // Nail down any unknown edge whose neighboring square makes it known.
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
         let edgeor = 0;
@@ -333,7 +333,7 @@ export function pearlSolve(
           }
       }
 
-    // Fix up reciprocity: never leave a square linked to a neighbour that
+    // Fix up reciprocity: never leave a square linked to a neighbor that
     // does not link back (can happen when we give up on an impossible board).
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {

@@ -9,18 +9,18 @@ import type { ChangeNotification } from "../../engine/types.ts";
 import { fifteenGame } from "./index.ts";
 
 function recordingDrawing() {
-  const ops: Array<{ op: string; colour?: number }> = [];
+  const ops: Array<{ op: string; color?: number }> = [];
   const dr: GameDrawing = {
     startDraw: () => ops.push({ op: "startDraw" }),
     endDraw: () => ops.push({ op: "endDraw" }),
     drawUpdate: () => ops.push({ op: "drawUpdate" }),
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
-    drawRect: (_r, colour) => ops.push({ op: "drawRect", colour }),
-    drawLine: (_a, _b, colour) => ops.push({ op: "drawLine", colour }),
-    drawPolygon: (_p, colour) => ops.push({ op: "drawPolygon", colour }),
-    drawCircle: (_p, _r, colour) => ops.push({ op: "drawCircle", colour }),
-    drawText: (_p, _o, colour) => ops.push({ op: "drawText", colour }),
+    drawRect: (_r, color) => ops.push({ op: "drawRect", color }),
+    drawLine: (_a, _b, color) => ops.push({ op: "drawLine", color }),
+    drawPolygon: (_p, color) => ops.push({ op: "drawPolygon", color }),
+    drawCircle: (_p, _r, color) => ops.push({ op: "drawCircle", color }),
+    drawText: (_p, _o, color) => ops.push({ op: "drawText", color }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},
@@ -60,7 +60,7 @@ describe("Fifteen midend lifecycle", () => {
     const { dr, ops } = recordingDrawing();
     h.m.forceRedraw(dr);
     // A background rect, the two recessed-border bevels, and a numbered
-    // bevelled tile (3 polygons each) for every non-gap cell.
+    // beveled tile (3 polygons each) for every non-gap cell.
     expect(ops.some((o) => o.op === "drawRect")).toBe(true);
     expect(ops.filter((o) => o.op === "drawPolygon").length).toBeGreaterThan(2);
     expect(ops.filter((o) => o.op === "drawText").length).toBe(15);
@@ -89,7 +89,7 @@ describe("Fifteen midend lifecycle", () => {
     const { dr, ops } = recordingDrawing();
     h.m.forceRedraw(dr);
     // The hinted tile is filled with COL_HINT (palette index 4).
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === 4)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.color === 4)).toBe(true);
   });
 
   it("stretches a hint-executed move to the uniform 1s, despite Fifteen's 0.13s base", () => {

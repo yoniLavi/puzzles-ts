@@ -48,12 +48,12 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
 import { newSlideDesc } from "./generator.ts";
 import { computeReachable, executeMove, nearestReachable } from "./moves.ts";
 import {
   BORDER,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -371,7 +371,7 @@ export const slideGame: Game<
   /** Upstream's `game_changed_state` is empty, but a grab left dangling across
    * an undo (pointer still down, or a block held by the keyboard, while the
    * toolbar rewinds the board) points at an anchor the new board may not have
-   * — which upstream's `game_redraw` asserts on. Cancelling the grab when the
+   * — which upstream's `game_redraw` asserts on. Canceling the grab when the
    * state moves under it is the fix, and costs nothing: a `UI_UPDATE` (which is
    * all a grab or a drag-follow is) never reaches here.
    *
@@ -392,7 +392,7 @@ export const slideGame: Game<
   textFormat,
   statusbarText: (s: SlideState): string => statusbarText(s),
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SlideParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

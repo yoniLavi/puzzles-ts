@@ -121,8 +121,8 @@ by the narration enrichment.
 
 ### Requirement: Fifteen renders tiles, border, and slide animation
 
-The Fifteen `redraw` SHALL draw a one-time recessed bevelled border, then each
-tile as a bevelled square with its centred number (the gap drawn as plain
+The Fifteen `redraw` SHALL draw a one-time recessed beveled border, then each
+tile as a beveled square with its centered number (the gap drawn as plain
 background), maintaining a per-tile cache so a tile is repainted only when it
 changed, is animating, or the flash background changed. A slide SHALL animate
 in two passes — cells vacated by moving tiles blanked first, then each moving
@@ -135,7 +135,7 @@ background for two frames. The status bar SHALL show the move count, a
 
 - **WHEN** `redraw` runs against a recording `GameDrawing` double for a fresh
   board
-- **THEN** the recorded operations include the recessed border and one bevelled
+- **THEN** the recorded operations include the recessed border and one beveled
   tile with its number for each non-gap cell
 
 #### Scenario: A slide animates between cells

@@ -104,7 +104,7 @@ describe("dominosa hint — render", () => {
       id: `${encodeParams(p, true)}:${desc}`,
       showHint: true,
     });
-    const hasHint = recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT);
+    const hasHint = recording.ops.some((o) => o.op === "rect" && o.color === COL_HINT);
     expect(hasHint).toBe(true);
   });
 });

@@ -56,7 +56,7 @@ import {
 } from "./state.ts";
 
 const TS = PREFERRED_TILE_SIZE;
-const PALETTE = romeGame.colours([0.827, 0.827, 0.827]);
+const PALETTE = romeGame.colors([0.827, 0.827, 0.827]);
 /** A fixed board used by most frames — 6x6 Easy, one seed. */
 const RENDER_ID = "6x6de#rome-render";
 
@@ -114,7 +114,7 @@ describe("region outlines", () => {
   it("insets a square's fill on each side that meets a different region", () => {
     // Nothing draws a grid line: each square's rect is inset, and what shows
     // through the COL_BORDER flood is the outline. So a square whose right
-    // neighbour shares its region draws *wider* than one whose doesn't.
+    // neighbor shares its region draws *wider* than one whose doesn't.
     const merged = topLeftTile("a11,i"); // squares 0 and 1 share a region
     const separate = topLeftTile(`${ALL_WALLS_3},i`); // every square alone
     expect(merged.w).toBeGreaterThan(separate.w);
@@ -129,9 +129,7 @@ describe("region outlines", () => {
 
     const first = new RecordingDrawing(PALETTE);
     redraw(first, ds, null, state, 1, newUi(), 0, 0);
-    expect(first.ops.some((o) => o.op === "rect" && o.colour === COL_BORDER)).toBe(
-      true,
-    );
+    expect(first.ops.some((o) => o.op === "rect" && o.color === COL_BORDER)).toBe(true);
 
     // A second redraw of an unchanged board repaints nothing at all.
     const second = new RecordingDrawing(PALETTE);
@@ -146,7 +144,7 @@ describe("board contents", () => {
   it("draws the opening frame: fixed arrows, a goal circle, stable snapshot", () => {
     const result = renderScenario({ game: romeGame, id: RENDER_ID });
     const { ops } = result.recording;
-    expect(ops.some((o) => o.op === "line" && o.colour === COL_ARROW_FIXED)).toBe(true);
+    expect(ops.some((o) => o.op === "line" && o.color === COL_ARROW_FIXED)).toBe(true);
     expect(ops.some((o) => o.op === "circle" && o.fill === COL_GOAL)).toBe(true);
     expect(ops).toMatchSnapshot();
   });
@@ -160,14 +158,14 @@ describe("board contents", () => {
       dir: FM_UP,
     });
     const { dr } = frame(placed, newUi());
-    expect(dr.ops.some((o) => o.op === "line" && o.colour === COL_ARROW_GUESS)).toBe(
+    expect(dr.ops.some((o) => o.op === "line" && o.color === COL_ARROW_GUESS)).toBe(
       true,
     );
   });
 
   it("reds a duplicated arrow the player placed, but not the clue it repeats", () => {
     // Squares 0 and 1 share a region; 0 is a fixed down-arrow clue and the
-    // player adds a second one at 1. Upstream's colour precedence puts
+    // player adds a second one at 1. Upstream's color precedence puts
     // `FM_FIXED` ahead of `FE_DOUBLE`, so a clue never turns red however
     // wrong the region becomes — only the arrow the player can actually fix.
     const state = romeGame.executeMove(board(3, 3, "a11,Dh"), {
@@ -177,17 +175,17 @@ describe("board contents", () => {
       dir: FM_DOWN,
     });
     const { dr } = frame(state, newUi());
-    const red = dr.ops.filter((o) => o.op === "line" && o.colour === COL_ARROW_ERROR);
+    const red = dr.ops.filter((o) => o.op === "line" && o.color === COL_ARROW_ERROR);
     // One arrow's worth of strokes: a shaft plus two head lines.
     expect(red).toHaveLength(3);
-    expect(dr.ops.some((o) => o.op === "line" && o.colour === COL_ARROW_FIXED)).toBe(
+    expect(dr.ops.some((o) => o.op === "line" && o.color === COL_ARROW_FIXED)).toBe(
       true,
     );
   });
 
   it("reddens the background of an arrow that leaves the grid", () => {
     const { dr } = frame(board(3, 3, `${ALL_WALLS_3},bRf`), newUi());
-    expect(dr.ops.some((o) => o.op === "rect" && o.colour === COL_ERRORBG)).toBe(true);
+    expect(dr.ops.some((o) => o.op === "rect" && o.color === COL_ERRORBG)).toBe(true);
   });
 
   it("draws pencil marks as small arrows in the four quadrants", () => {
@@ -196,7 +194,7 @@ describe("board contents", () => {
     state = romeGame.executeMove(state, { kind: "pencil", x: 1, y: 1, dir: FM_RIGHT });
     const { dr } = frame(state, newUi());
     const pencilLines = dr.ops.filter(
-      (o) => o.op === "line" && o.colour === COL_ARROW_PENCIL,
+      (o) => o.op === "line" && o.color === COL_ARROW_PENCIL,
     );
     // Two marks × (one shaft + two head strokes).
     expect(pencilLines).toHaveLength(6);
@@ -207,7 +205,7 @@ describe("board contents", () => {
     state = romeGame.executeMove(state, { kind: "pencil", x: 1, y: 1, dir: FM_UP });
     state = romeGame.executeMove(state, { kind: "place", x: 1, y: 1, dir: FM_LEFT });
     const { dr } = frame(state, newUi());
-    expect(dr.ops.some((o) => o.op === "line" && o.colour === COL_ARROW_PENCIL)).toBe(
+    expect(dr.ops.some((o) => o.op === "line" && o.color === COL_ARROW_PENCIL)).toBe(
       false,
     );
   });
@@ -221,7 +219,7 @@ describe("highlight preferences", () => {
     const state = board(3, 3, `${ALL_WALLS_3},aDbXd`);
     const goalBg = (sgoals: boolean): boolean =>
       frame(state, { ...newUi(), sgoals }).dr.ops.some(
-        (o) => o.op === "rect" && o.colour === COL_GOALBG,
+        (o) => o.op === "rect" && o.color === COL_GOALBG,
       );
     expect(goalBg(true)).toBe(true);
     expect(goalBg(false)).toBe(false);
@@ -231,7 +229,7 @@ describe("highlight preferences", () => {
     const state = board(3, 3, `${ALL_WALLS_3},RDaULd`);
     const loopBg = (sloops: boolean): number =>
       frame(state, { ...newUi(), sloops }).dr.ops.filter(
-        (o) => o.op === "rect" && o.colour === COL_ERRORBG,
+        (o) => o.op === "rect" && o.color === COL_ERRORBG,
       ).length;
     // Four looping squares light up; with the pref off (upstream's default)
     // none do, since no arrow here leaves the grid.
@@ -255,10 +253,10 @@ describe("cursor and drag", () => {
       cursor: newCursor(1, 1, true),
       kmode: KEYMODE_PENCIL,
     }).dr;
-    expect(place.ops.some((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)).toBe(
+    expect(place.ops.some((o) => o.op === "rect" && o.color === COL_HIGHLIGHT)).toBe(
       true,
     );
-    expect(pencil.ops.some((o) => o.op === "rect" && o.colour === COL_LOWLIGHT)).toBe(
+    expect(pencil.ops.some((o) => o.op === "rect" && o.color === COL_LOWLIGHT)).toBe(
       true,
     );
     // Pencil mode additionally shows a '?' prompt in the cursor square.
@@ -274,7 +272,7 @@ describe("cursor and drag", () => {
       mdir: FM_DOWN,
     };
     const { dr } = frame(state, ui);
-    expect(dr.ops.some((o) => o.op === "line" && o.colour === COL_ARROW_ENTRY)).toBe(
+    expect(dr.ops.some((o) => o.op === "line" && o.color === COL_ARROW_ENTRY)).toBe(
       true,
     );
   });
@@ -290,8 +288,7 @@ describe("cursor and drag", () => {
     const { dr } = frame(state, ui);
     expect(
       dr.ops.some(
-        (o) =>
-          o.op === "rect" && o.colour === COL_ARROW_ENTRY && o.w === 4 && o.h === 4,
+        (o) => o.op === "rect" && o.color === COL_ARROW_ENTRY && o.w === 4 && o.h === 4,
       ),
     ).toBe(true);
   });
@@ -310,10 +307,10 @@ describe("completion flash", () => {
       );
     expect(phase(0.65)).not.toBe(phase(0.55));
     const flashing = frame(state, newUi(), 0.65).dr;
-    expect(
-      flashing.ops.some((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT),
-    ).toBe(true);
-    expect(flashing.ops.some((o) => o.op === "rect" && o.colour === COL_LOWLIGHT)).toBe(
+    expect(flashing.ops.some((o) => o.op === "rect" && o.color === COL_HIGHLIGHT)).toBe(
+      true,
+    );
+    expect(flashing.ops.some((o) => o.op === "rect" && o.color === COL_LOWLIGHT)).toBe(
       true,
     );
   });
@@ -352,7 +349,7 @@ describe("mistake overlay", () => {
     const first = new RecordingDrawing(PALETTE);
     me.redraw(first);
     const errorOutline = (r: RecordingDrawing): boolean =>
-      r.ops.some((o) => o.op === "line" && o.colour === COL_ARROW_ERROR);
+      r.ops.some((o) => o.op === "line" && o.color === COL_ARROW_ERROR);
     // No rule is broken yet, so nothing is red on the first paint.
     expect(errorOutline(first)).toBe(false);
 

@@ -12,7 +12,7 @@ import { type CubeParams, newState } from "./state.ts";
 
 interface Op {
   op: string;
-  colour?: number;
+  color?: number;
   x?: number;
   y?: number;
   w?: number;
@@ -29,14 +29,14 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
+      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
     drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", colour: c }),
-    drawPolygon: (_p: unknown, f: number) => ops.push({ op: "drawPolygon", colour: f }),
+      ops.push({ op: "drawLine", color: c }),
+    drawPolygon: (_p: unknown, f: number) => ops.push({ op: "drawPolygon", color: f }),
     drawCircle: (_p: unknown, _r: number, f: number) =>
-      ops.push({ op: "drawCircle", colour: f }),
+      ops.push({ op: "drawCircle", color: f }),
     drawText: (_p: unknown, _o: unknown, c: number) =>
-      ops.push({ op: "drawText", colour: c }),
+      ops.push({ op: "drawText", color: c }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},
@@ -73,7 +73,7 @@ describe("Cube rendering", () => {
     expect(
       ops.some(
         (o) =>
-          o.op === "drawRect" && o.x === 0 && o.y === 0 && o.colour === COL_BACKGROUND,
+          o.op === "drawRect" && o.x === 0 && o.y === 0 && o.color === COL_BACKGROUND,
       ),
     ).toBe(true);
 
@@ -85,7 +85,7 @@ describe("Cube rendering", () => {
     // The first `grid.length` polygons are the grid squares; square 0 is
     // blue, so at least one square polygon uses COL_BLUE.
     const squarePolys = polys.slice(0, state.grid.length);
-    expect(squarePolys.some((o) => o.colour === COL_BLUE)).toBe(true);
+    expect(squarePolys.some((o) => o.color === COL_BLUE)).toBe(true);
 
     // A final drawUpdate covering the canvas.
     expect(ops.some((o) => o.op === "drawUpdate")).toBe(true);

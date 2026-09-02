@@ -16,7 +16,7 @@
  *
  * Unresolved segments are the interesting part of the model: the player only
  * ever says "there is *something* here", and `adjustShips` turns that into the
- * right shape — end cap, centre or single — as soon as the neighbours decide it.
+ * right shape — end cap, center or single — as soon as the neighbors decide it.
  *
  * Layout: [`state.ts`](./state.ts) (params, cell model, codecs, moves/ui),
  * [`validate.ts`](./validate.ts) (the shared status passes),
@@ -62,7 +62,7 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   Point,
@@ -78,7 +78,7 @@ import {
 } from "./hint-solver.ts";
 import {
   type BoatsDrawState,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -289,7 +289,7 @@ function executeMove(state: BoatsState, move: BoatsMove): BoatsState {
     return assertNever(move, "boats: executeMove");
   }
 
-  // Resolve every segment's shape from its neighbours, then see whether that
+  // Resolve every segment's shape from its neighbors, then see whether that
   // finished the puzzle.
   const board = {
     w,
@@ -326,8 +326,8 @@ function status(s: BoatsState): GameStatus {
 /**
  * What a Boats hint step marks on the board. `targets` are the squares to
  * decide — drawn in `COL_HINT` in the shape of the action each one is (a boat
- * mark for a segment, a water mark for water), because a single colour standing
- * for two different actions reads as one action (docs/games/hints.md § "Echo the move's shape in the hint colour").
+ * mark for a segment, a water mark for water), because a single color standing
+ * for two different actions reads as one action (docs/games/hints.md § "Echo the move's shape in the hint color").
  * `evidence` is the area the deduction reasons over, shaded `COL_HINT_CELL`.
  */
 export interface BoatsHint {
@@ -424,7 +424,7 @@ function narrate(f: BoatsFiring): string {
     case "allWaterPlaced":
       return "Every square of water the puzzle has room for is already marked, so every square still free must hold a boat segment.";
 
-    case "centreForced":
+    case "centerForced":
       return t.vertical
         ? "This middle segment has water beside it, so its boat can't lie across — it must run up and down through here."
         : "This middle segment has water above or below it, so its boat must lie across — through the squares either side.";
@@ -435,7 +435,7 @@ function narrate(f: BoatsFiring): string {
     case "mustExtend":
       return "With every 1-boat already placed, this segment can't stand alone — and water blocks three sides, so its boat must continue here.";
 
-    case "centreCount": {
+    case "centerCount": {
       const room = t.line.clue;
       const lie = t.vertical ? "lying across" : "standing up through";
       return `${lineIntro(t.line)}${lineName(t.line)} has ${room === 0 ? "no room for another ship" : "room for only one more ship"}, but a boat ${lie} this middle segment needs two — so it can't go that way.`;
@@ -550,7 +550,7 @@ function hint(state: BoatsState): HintResult<BoatsMove, BoatsHint> {
  * A move completes the step when every square **this leg** asks for ends up as
  * asked.
  *
- * The judgement is per *leg*, not per journey, and that distinction is
+ * The judgment is per *leg*, not per journey, and that distinction is
  * load-bearing: the midend advances the plan on `"completed"` and holds the
  * same step on `"onTrack"`, so a journey whose legs could only complete
  * together would stall on its first leg for ever (and `executeHint` would
@@ -751,7 +751,7 @@ export const boatsGame: Game<
   hintKeepTrack,
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: BoatsParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

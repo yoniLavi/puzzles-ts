@@ -16,7 +16,7 @@ import { DIFF_EASY, encodeClues, type SlantParams } from "./state.ts";
  * squares in shuffled order; where connectivity forces an orientation take
  * it, otherwise draw one random bit. Never needs to backtrack — two
  * existing paths across both diagonals of one square would have to cross at
- * a shared point, and chessboard-colouring the points shows they can't.
+ * a shared point, and chessboard-coloring the points shows they can't.
  */
 export function slantGenerate(
   w: number,

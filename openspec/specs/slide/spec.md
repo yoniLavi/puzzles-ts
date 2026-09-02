@@ -88,7 +88,7 @@ layout deduplication.
 
 The generator SHALL use the solver to keep every board soluble: it SHALL remove
 singleton blocks until the board becomes soluble, then attempt to merge adjacent
-blocks in a randomised order, keeping a merge only while the board stays soluble.
+blocks in a randomized order, keeping a merge only while the board stays soluble.
 Generation from a given seed SHALL be reproducible.
 
 The generator SHALL test solubility **after** its final singleton removal as well
@@ -102,7 +102,7 @@ any description upstream produces.
 
 - **WHEN** a soluble board is solved
 - **THEN** the reported move count equals the length of a shortest sequence that
-  brings the main block to the target, and the returned moves realise it
+  brings the main block to the target, and the returned moves realize it
 
 #### Scenario: Generation is reproducible from a seed
 
@@ -131,10 +131,10 @@ this frontend never sends (it maps Space and Enter to the cursor-select buttons)
 so a literal transcription would leave an installed route unwalkable.
 
 A drag left in progress across a state change (an undo made while the pointer is
-still down) SHALL be cancelled, so no frame is ever asked to preview a block
+still down) SHALL be canceled, so no frame is ever asked to preview a block
 against a board it no longer fits.
 
-Rendering SHALL draw each block with bevelled highlights, SHALL show the dragged
+Rendering SHALL draw each block with beveled highlights, SHALL show the dragged
 block following the pointer with a landing shadow at its snapped destination,
 SHALL highlight the next block to move while a stored solution is active, and
 SHALL flash on completion. There SHALL be no interpolated sliding animation.
@@ -155,7 +155,7 @@ SHALL flash on completion. There SHALL be no interpolated sliding animation.
 - **WHEN** a block is grabbed and released without having moved
 - **THEN** the board and the move count are unchanged
 
-### Requirement: Slide's board reads by colour, not only by bevel
+### Requirement: Slide's board reads by color, not only by bevel
 
 The floor, the walls, the ordinary blocks and the main block SHALL be
 distinguishable from one another by fill, not solely by their bevels, in both the
@@ -163,7 +163,7 @@ light and the dark presentation. Upstream derives all four from the single host
 background, which its own author records as "wishy-washy"; this project's display
 code is free to correct that.
 
-Each SHALL be a function of the host background rather than an authored colour,
+Each SHALL be a function of the host background rather than an authored color,
 so that one inversion rule maps all four and their **ordering** survives the
 scheme flip by construction. Only the two the help page names to the player —
 the blue key block and the green exit — SHALL carry a hue; the others stay
@@ -182,19 +182,19 @@ The solver's next-piece indication SHALL read as an ordering cue rather than as
 the brightest element of the frame, and SHALL leave the piece's own fill intact
 so that it is not mistaken for a change of state.
 
-Every colour SHALL come from the shared palette, and SHALL be checked in both
+Every color SHALL come from the shared palette, and SHALL be checked in both
 schemes — a fill that reads as contrast against a light background must not read
 as a bright patch against a dark one.
 
 #### Scenario: The pieces are told apart without relying on bevels
 
-- **WHEN** the board is rendered in either colour scheme
+- **WHEN** the board is rendered in either color scheme
 - **THEN** floor, wall, ordinary block and main block each read as a distinct
   fill, and the target marker remains the most prominent
 
 #### Scenario: The ladder inverts as a whole
 
-- **WHEN** the board is rendered under the opposite colour scheme
+- **WHEN** the board is rendered under the opposite color scheme
 - **THEN** the four fills keep their order relative to one another, reversed
   along with the board itself, rather than any one of them changing its place
 
@@ -221,7 +221,7 @@ Selecting on a cell belonging to a block SHALL grab that block, computing the
 **same** reachable set the pointer grab computes. While a block is grabbed, the
 cursor keys SHALL move it **one cell per press** within that reachable set and
 SHALL refuse a step that would leave it; selecting again SHALL commit the move,
-and cancelling SHALL restore the block to where it started.
+and canceling SHALL restore the block to where it started.
 
 One cell per press, rather than sliding as far as the reachable set allows, is
 required rather than preferred: a slide-to-the-end cursor cannot stop *inside* a
@@ -248,11 +248,11 @@ The cursor SHALL survive that, being a position on a grid whose size has not
 changed; losing it would read as a dropped keypress.
 
 While a Solve route is installed, the select key SHALL continue to step that
-route rather than grab a block, so a shipped behaviour is not broken by the new
+route rather than grab a block, so a shipped behavior is not broken by the new
 one. The player regains keyboard selection by making any move of their own,
 which already discards the route.
 
-Rendering SHALL show the keyboard cursor and the grabbed block, in both colour
+Rendering SHALL show the keyboard cursor and the grabbed block, in both color
 schemes and at the smallest shipped tile size. The grabbed block SHALL be drawn
 exactly as the pointer drag draws it — there is one grab, and rendering it two
 ways would assert a distinction the game does not make. The cursor SHALL be the
@@ -260,10 +260,10 @@ mark that distinguishes keyboard play, SHALL ride the grabbed block on the
 square it was picked up by, and SHALL sit beside the board's content rather than
 over it.
 
-The cursor's colour SHALL be chosen against the span of materials it can land
+The cursor's color SHALL be chosen against the span of materials it can land
 on, not against one of them: the board's own contrast ladder runs from the key
-block to the exit area, and that ladder **inverts** between colour schemes, so a
-colour prominent in one scheme is not thereby prominent in the other.
+block to the exit area, and that ladder **inverts** between color schemes, so a
+color prominent in one scheme is not thereby prominent in the other.
 
 #### Scenario: A keyboard journey and the equivalent drag produce the same move
 
@@ -278,7 +278,7 @@ colour prominent in one scheme is not thereby prominent in the other.
   its reachable set
 - **THEN** nothing moves, no move is recorded, and the selection is retained
 
-#### Scenario: Cancelling a selection restores the block
+#### Scenario: Canceling a selection restores the block
 
 - **WHEN** a block has been walked several cells and the player cancels instead
   of committing

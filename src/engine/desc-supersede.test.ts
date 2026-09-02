@@ -78,7 +78,7 @@ const minesish: Game<MinesishParams, MinesishState, MinesishMove, null, null> = 
   status: () => "ongoing",
   textFormat: (s) =>
     `layout=${s.layout} clicked=${s.clickedAt} opened=[${s.opened.join(",")}]`,
-  colours: (bg) => [bg],
+  colors: (bg) => [bg],
   computeSize: () => ({ w: 10, h: 10 }),
   // Required members this double has nothing to say about; see
   // `Game.newDrawState` (`audit-vestigial-contract-surface`).

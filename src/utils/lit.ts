@@ -162,7 +162,7 @@ function repairFontTagsForTextNodes(element: ParentNode) {
 // https://github.com/lit/lit/blob/lit-html%403.3.1/packages/lit-html/src/lit-html.ts#L2257
 const litPartProperty = "_$litPart$";
 
-type LitRenderRoot = LitElement["renderRoot"] & { [litPartProperty]?: ChildPart };
+type LiternderRoot = LitElement["renderRoot"] & { [litPartProperty]?: ChildPart };
 
 interface RenderState {
   children: ChildNode[];
@@ -175,16 +175,16 @@ interface RenderState {
  */
 function clearRenderState(element: LitElement) {
   element.renderRoot.replaceChildren();
-  (element.renderRoot as LitRenderRoot)[litPartProperty] = undefined;
+  (element.renderRoot as LiternderRoot)[litPartProperty] = undefined;
 }
 
 function captureRenderState(element: LitElement): RenderState {
   const children = [...element.renderRoot.childNodes];
-  const childPart = (element.renderRoot as LitRenderRoot)[litPartProperty];
+  const childPart = (element.renderRoot as LiternderRoot)[litPartProperty];
   return { children, childPart };
 }
 
 function restoreRenderState(element: LitElement, state: RenderState) {
   element.renderRoot.replaceChildren(...state.children);
-  (element.renderRoot as LitRenderRoot)[litPartProperty] = state.childPart;
+  (element.renderRoot as LiternderRoot)[litPartProperty] = state.childPart;
 }

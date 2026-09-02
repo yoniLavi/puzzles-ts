@@ -9,18 +9,18 @@ import type { ChangeNotification } from "../../engine/types.ts";
 import { cubeGame } from "./index.ts";
 
 function recordingDrawing() {
-  const ops: Array<{ op: string; colour?: number }> = [];
+  const ops: Array<{ op: string; color?: number }> = [];
   const dr: GameDrawing = {
     startDraw: () => ops.push({ op: "startDraw" }),
     endDraw: () => ops.push({ op: "endDraw" }),
     drawUpdate: () => ops.push({ op: "drawUpdate" }),
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
-    drawRect: (_r, colour) => ops.push({ op: "drawRect", colour }),
-    drawLine: (_a, _b, colour) => ops.push({ op: "drawLine", colour }),
-    drawPolygon: (_p, colour) => ops.push({ op: "drawPolygon", colour }),
-    drawCircle: (_p, _r, colour) => ops.push({ op: "drawCircle", colour }),
-    drawText: (_p, _o, colour) => ops.push({ op: "drawText", colour }),
+    drawRect: (_r, color) => ops.push({ op: "drawRect", color }),
+    drawLine: (_a, _b, color) => ops.push({ op: "drawLine", color }),
+    drawPolygon: (_p, color) => ops.push({ op: "drawPolygon", color }),
+    drawCircle: (_p, _r, color) => ops.push({ op: "drawCircle", color }),
+    drawText: (_p, _o, color) => ops.push({ op: "drawText", color }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},
@@ -48,7 +48,7 @@ describe("Cube midend lifecycle", () => {
   let h: ReturnType<typeof harness>;
   beforeEach(() => {
     h = harness();
-    // 3x3 cube grid, no blue squares, start in the centre (index 4) where
+    // 3x3 cube grid, no blue squares, start in the center (index 4) where
     // every orthogonal roll is legal.
     expect(h.m.newGameFromId("c3x3:000,4")).toBeUndefined();
   });

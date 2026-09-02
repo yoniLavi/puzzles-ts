@@ -62,7 +62,7 @@ export function cellValueToGrid(v: RangeCellValue): number {
   if (v === "black") return BLACK;
   if (v === "white") return WHITE;
   if (v === "empty") return EMPTY;
-  // The trailing `: EMPTY` this replaces was where an unrecognised move landed:
+  // The trailing `: EMPTY` this replaces was where an unrecognized move landed:
   // a foreign `value` painted the cell blank instead of being refused.
   return assertNever(v, "range: cellValueToGrid");
 }

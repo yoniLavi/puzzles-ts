@@ -70,7 +70,7 @@ pixels of its own: cube fills its own background rect each frame.
 - **WHEN** `redraw` runs against a recording `GameDrawing` double for a fresh
   board
 - **THEN** the recorded operations include the grid squares (with blue squares
-  drawn in the blue colour) and the solid's projected polygons
+  drawn in the blue color) and the solid's projected polygons
 
 #### Scenario: A roll animates between squares
 

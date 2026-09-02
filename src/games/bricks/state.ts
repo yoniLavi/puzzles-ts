@@ -6,13 +6,13 @@
  * D2): `params.w`/`h` are the user-friendly size, but the backing `grid` is
  * `w = params.w + ⌈h/2⌉ − 1` wide, with the two triangular corners masked to
  * `F_BOUND` so exactly `params.w × params.h` cells remain playable. The six
- * hex neighbours are the fixed {@link BRICKS_STEPS} table. Everything else in
+ * hex neighbors are the fixed {@link BRICKS_STEPS} table. Everything else in
  * the port follows from those two facts.
  *
  * A `cell` is a packed bit-field (upstream `typedef unsigned int cell`): the
  * low three bits are a clue number (0..7, `NUM_MASK`), `F_BOUND` marks
- * padding, and `COL_MASK` holds the play colour (`F_SHADE`/`F_UNSHADE`/
- * `F_EMPTY`). A cell is *either* a number *or* a colour — never both — so a
+ * padding, and `COL_MASK` holds the play color (`F_SHADE`/`F_UNSHADE`/
+ * `F_EMPTY`). A cell is *either* a number *or* a color — never both — so a
  * cell with no `COL_MASK` bits and value ≤ 7 is a clue. The transient error /
  * cursor flags upstream ORs into the same word are kept out of persisted
  * state here (recomputed on demand — see solver.ts / render.ts).
@@ -41,8 +41,8 @@ export const FE_LINE_LEFT = 0x200;
 export const FE_LINE_RIGHT = 0x400;
 export const FE_CURSOR = 0x800;
 
-/** The six hexagonal neighbours of a cell, as (dx, dy) steps (upstream
- * `bricks_steps`). Load-bearing: it gates the neighbour-count validity and
+/** The six hexagonal neighbors of a cell, as (dx, dy) steps (upstream
+ * `bricks_steps`). Load-bearing: it gates the neighbor-count validity and
  * the generated clue values, so it is logic, not display. */
 export const BRICKS_STEPS: ReadonlyArray<readonly [number, number]> = [
   [0, -1],
@@ -85,23 +85,23 @@ export interface BricksState {
   cheated: boolean;
 }
 
-/** A cell's play colour — upstream `A`/`B`/`C`. */
-export type CellColour = "shade" | "unshade" | "empty";
+/** A cell's play color — upstream `A`/`B`/`C`. */
+export type CellColor = "shade" | "unshade" | "empty";
 
 /**
- * A move is either a *paint* — a batch of per-cell colour settings committed
+ * A move is either a *paint* — a batch of per-cell color settings committed
  * together (one click, one keyboard place, or a whole drag; upstream's
  * `A%d;B%d;…` string) — or a *solve* — the full-board fill (upstream's `S`
- * string, one colour per padded cell; non-playable cells' entries ignored).
+ * string, one color per padded cell; non-playable cells' entries ignored).
  */
 export type BricksMove =
-  | { kind: "paint"; cells: ReadonlyArray<{ index: number; to: CellColour }> }
-  | { kind: "solve"; grid: ReadonlyArray<CellColour> };
+  | { kind: "paint"; cells: ReadonlyArray<{ index: number; to: CellColor }> }
+  | { kind: "solve"; grid: ReadonlyArray<CellColor> };
 
 export interface BricksUi {
   /** Keyboard cursor visible + position. */
   cursor: GridCursor;
-  /** The colour the in-flight drag paints (`F_SHADE`/`F_UNSHADE`/`F_EMPTY`,
+  /** The color the in-flight drag paints (`F_SHADE`/`F_UNSHADE`/`F_EMPTY`,
    * or 0 when no drag is active). */
   dragtype: number;
   /** Padded-cell indices accreted since the drag began; previewed by the
@@ -109,20 +109,20 @@ export interface BricksUi {
   drag: number[];
 }
 
-/** A cell currently violating a rule, with its localised error flags
+/** A cell currently violating a rule, with its localized error flags
  * (`FE_*`) — returned by findMistakes and reused by the render overlay. */
 export interface BricksMistake {
   index: number;
   flags: number;
 }
 
-// --- colour <-> bits --------------------------------------------------------
+// --- color <-> bits --------------------------------------------------------
 
-export function colourBits(c: CellColour): number {
+export function colorBits(c: CellColor): number {
   return c === "shade" ? F_SHADE : c === "unshade" ? F_UNSHADE : F_EMPTY;
 }
 
-export function bitsColour(bits: number): CellColour {
+export function bitsColor(bits: number): CellColor {
   const c = bits & COL_MASK;
   return c === F_SHADE ? "shade" : c === F_UNSHADE ? "unshade" : "empty";
 }
@@ -168,7 +168,7 @@ export function applyBounds(w: number, h: number, grid: Uint16Array): void {
  *
  * The rung stays in the *solver* — hints and Solve use `DIFF_TRICKY` as "try as
  * hard as you can", where it costs nothing — but it is not a difficulty the
- * generator can honour, so it is not offered.
+ * generator can honor, so it is not offered.
  */
 export const MAX_GENERABLE_DIFF = DIFF_NORMAL;
 
@@ -239,7 +239,7 @@ export function decodeParams(s: string): BricksParams {
   if (s[pos] === "d") {
     pos++;
     // Upstream: an unknown/absent difficulty char leaves diff invalid so
-    // validateParams rejects it; a recognised char selects the tier.
+    // validateParams rejects it; a recognized char selects the tier.
     p.diff = DIFFCOUNT + 1;
     if (pos < s.length) {
       const idx = DIFF_CHARS.indexOf(s[pos]);
@@ -367,7 +367,7 @@ export function encodeDesc(grid: Uint16Array, w: number, h: number): string {
     }
     if (i === s) break;
     if (n <= 7) {
-      // A clue (numbers are 0..7; F_BOUND is 8, colours are >= 0x10).
+      // A clue (numbers are 0..7; F_BOUND is 8, colors are >= 0x10).
       if (inNumberRun) out += "_";
       out += String(n);
       inNumberRun = true;

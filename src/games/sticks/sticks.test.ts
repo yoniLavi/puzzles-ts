@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Sticks port (add-sticks-ts-port §8.2): the desc
+ * Behavioral tests for the Sticks port (add-sticks-ts-port §8.2): the desc
  * codec, the contradiction solver, the drag/click/keyboard input machine,
  * `findMistakes`, completion through `executeMove` (the mark=true path the
  * differential never exercises — docs/games/testing.md § "The test tiers"), the midend lifecycle + save
@@ -114,8 +114,8 @@ function press(
   );
 }
 
-/** Pixel centre of cell (x, y) at the default tile size. */
-const centre = (x: number, y: number): { x: number; y: number } => ({
+/** Pixel center of cell (x, y) at the default tile size. */
+const center = (x: number, y: number): { x: number; y: number } => ({
   x: x * 48 + 4 + 24,
   y: y * 48 + 4 + 24,
 });
@@ -351,7 +351,7 @@ describe("sticks input", () => {
     const y = (i - x) / 4;
     let state = newState(FIX_PARAMS, FIX.desc);
     const ui = newUi();
-    const c = centre(x, y);
+    const c = center(x, y);
 
     for (const expected of ["ver", "hor", "none"] as const) {
       expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
@@ -367,7 +367,7 @@ describe("sticks input", () => {
 
   it("right click cycles the other way (blank -> horizontal)", () => {
     const i = whiteCellSolved(F_VER);
-    const c = centre(i % 4, Math.floor(i / 4));
+    const c = center(i % 4, Math.floor(i / 4));
     const state = newState(FIX_PARAMS, FIX.desc);
     const ui = newUi();
     press(state, ui, RIGHT_BUTTON, c.x, c.y);
@@ -381,7 +381,7 @@ describe("sticks input", () => {
     const state = newState(FIX_PARAMS, FIX.desc);
     const black = state.grid.findIndex((t) => (t & F_BLOCK) !== 0);
     expect(black).toBeGreaterThanOrEqual(0);
-    const c = centre(black % 4, Math.floor(black / 4));
+    const c = center(black % 4, Math.floor(black / 4));
     const ui = newUi();
     press(state, ui, LEFT_BUTTON, c.x, c.y);
     expect(press(state, ui, LEFT_RELEASE, c.x, c.y)).toBe(UI_UPDATE);
@@ -390,13 +390,13 @@ describe("sticks input", () => {
   it("a horizontal drag accretes cells and commits them as one move", () => {
     const state = newState(FIX_PARAMS, FIX.desc);
     const ui = newUi();
-    const c0 = centre(0, 0);
+    const c0 = center(0, 0);
     press(state, ui, LEFT_BUTTON, c0.x, c0.y);
     // Sweep right across the top row in half-tile steps.
-    for (let px = c0.x; px <= centre(3, 0).x; px += 24) {
+    for (let px = c0.x; px <= center(3, 0).x; px += 24) {
       press(state, ui, LEFT_DRAG, px, c0.y);
     }
-    const move = press(state, ui, LEFT_RELEASE, centre(3, 0).x, c0.y);
+    const move = press(state, ui, LEFT_RELEASE, center(3, 0).x, c0.y);
     expect(move).not.toBe(UI_UPDATE);
     expect(move).not.toBeNull();
     const set = move as Extract<SticksMove, { kind: "set" }>;
@@ -567,7 +567,7 @@ describe("sticks rendering (tier 2.5)", () => {
       moves: [{ kind: "set", changes: [{ index: i, line: "ver" }] }],
     });
     expect(
-      result.recording.ops.some((o) => o.op === "rect" && o.colour === COL_LINE),
+      result.recording.ops.some((o) => o.op === "rect" && o.color === COL_LINE),
     ).toBe(true);
   });
 
@@ -583,7 +583,7 @@ describe("sticks rendering (tier 2.5)", () => {
     });
     expect(result.mistakeCount).toBe(1);
     expect(
-      result.recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR),
+      result.recording.ops.some((o) => o.op === "rect" && o.color === COL_ERROR),
     ).toBe(true);
   });
 
@@ -595,14 +595,14 @@ describe("sticks rendering (tier 2.5)", () => {
     const ds = newDrawState(state);
     setTileSize(ds, 48);
     const ui = newUi();
-    const dr = new RecordingDrawing(sticksGame.colours([1, 1, 1]));
+    const dr = new RecordingDrawing(sticksGame.colors([1, 1, 1]));
     // Flash-on beat: floor(0.05 / 0.1) = 0 -> even -> lines hidden.
     redraw(dr, ds, null, state, 1, ui, 0, 0.05);
-    expect(dr.ops.some((o) => o.op === "rect" && o.colour === COL_LINE)).toBe(false);
+    expect(dr.ops.some((o) => o.op === "rect" && o.color === COL_LINE)).toBe(false);
     // A later beat shows them again (same drawstate — the flash bit is in
     // the diff key, so the repaint actually happens).
-    const dr2 = new RecordingDrawing(sticksGame.colours([1, 1, 1]));
+    const dr2 = new RecordingDrawing(sticksGame.colors([1, 1, 1]));
     redraw(dr2, ds, null, state, 1, ui, 0, 0.15);
-    expect(dr2.ops.some((o) => o.op === "rect" && o.colour === COL_LINE)).toBe(true);
+    expect(dr2.ops.some((o) => o.op === "rect" && o.color === COL_LINE)).toBe(true);
   });
 });

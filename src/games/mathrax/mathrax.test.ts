@@ -1,5 +1,5 @@
 /**
- * Mathrax behavioural tests (tiers 1 and 2.5). The generator / solver / codec
+ * Mathrax behavioral tests (tiers 1 and 2.5). The generator / solver / codec
  * are pinned byte-for-byte against C by `mathrax-differential.test.ts`; here we
  * cover what a desc differential cannot reach — the clue semantics, the input
  * mapping, `executeMove`'s live-error and completion paths, `findMistakes`
@@ -102,8 +102,8 @@ const FIX_ID = `${encodeParams(FIX_PARAMS, true)}:${FIX.desc}`;
 
 const TS = PREFERRED_TILE_SIZE;
 
-/** Pixel centre of cell `(x, y)` at the default tile size. */
-const centre = (x: number, y: number) => ({
+/** Pixel center of cell `(x, y)` at the default tile size. */
+const center = (x: number, y: number) => ({
   x: BORDER + x * TS + TS / 2,
   y: BORDER + y * TS + TS / 2,
 });
@@ -501,13 +501,13 @@ describe("mathrax input", () => {
     const given = [...st.flags].findIndex((f) => f & F_IMMUTABLE);
     const o = FIX_PARAMS.o;
 
-    expect(press(st, ui, LEFT_BUTTON, centre(empty % o, (empty / o) | 0))).toBe(
+    expect(press(st, ui, LEFT_BUTTON, center(empty % o, (empty / o) | 0))).toBe(
       UI_UPDATE,
     );
     expect(ui.cursor.visible).toBe(true);
     expect(ui.cursor).toMatchObject({ x: empty % o, y: (empty / o) | 0 });
 
-    press(st, ui, LEFT_BUTTON, centre(given % o, (given / o) | 0));
+    press(st, ui, LEFT_BUTTON, center(given % o, (given / o) | 0));
     expect(ui.cursor.visible).toBe(false);
   });
 
@@ -519,7 +519,7 @@ describe("mathrax input", () => {
     const x = empty % o;
     const y = (empty / o) | 0;
 
-    press(st, ui, LEFT_BUTTON, centre(x, y));
+    press(st, ui, LEFT_BUTTON, center(x, y));
     expect(press(st, ui, "3".charCodeAt(0))).toEqual({
       type: "set",
       x,
@@ -535,7 +535,7 @@ describe("mathrax input", () => {
       n: 3,
       pencil: false,
     });
-    press(st, ui, LEFT_BUTTON, centre(x, y)); // re-show the highlight
+    press(st, ui, LEFT_BUTTON, center(x, y)); // re-show the highlight
     // Re-entering 3 changes nothing, so it produces no move.
     expect(press(after, ui, "3".charCodeAt(0))).toBe(UI_UPDATE);
     expect(ui.cursor.visible).toBe(false);
@@ -546,7 +546,7 @@ describe("mathrax input", () => {
     const ui = newUi(st);
     const o = FIX_PARAMS.o;
     const empty = [...st.flags].findIndex((f) => !(f & F_IMMUTABLE));
-    press(st, ui, LEFT_BUTTON, centre(empty % o, (empty / o) | 0));
+    press(st, ui, LEFT_BUTTON, center(empty % o, (empty / o) | 0));
     expect(press(st, ui, "9".charCodeAt(0))).toBeNull(); // o is 5
 
     const given = [...st.flags].findIndex((f) => f & F_IMMUTABLE);
@@ -564,7 +564,7 @@ describe("mathrax input", () => {
     const x = empty % o;
     const y = (empty / o) | 0;
 
-    expect(press(st, ui, RIGHT_BUTTON, centre(x, y))).toBe(UI_UPDATE);
+    expect(press(st, ui, RIGHT_BUTTON, center(x, y))).toBe(UI_UPDATE);
     expect(ui.cpencil).toBe(true);
     expect(press(st, ui, "4".charCodeAt(0))).toEqual({
       type: "set",
@@ -574,7 +574,7 @@ describe("mathrax input", () => {
       pencil: true,
     });
     // A second right-click turns the mode back off (CapsLock-style).
-    press(st, ui, RIGHT_BUTTON, centre(x, y));
+    press(st, ui, RIGHT_BUTTON, center(x, y));
     expect(ui.cpencil).toBe(false);
   });
 
@@ -850,9 +850,9 @@ describe("mathrax rendering", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBe(1);
-    expect(
-      recording.ops.some((op) => op.op === "line" && op.colour === COL_ERROR),
-    ).toBe(true);
+    expect(recording.ops.some((op) => op.op === "line" && op.color === COL_ERROR)).toBe(
+      true,
+    );
   });
 
   it("repaints the mistake overlay on a cell that was already drawn", () => {
@@ -875,12 +875,12 @@ describe("mathrax rendering", () => {
       },
     ]);
 
-    const palette = mathraxGame.colours(DEFAULT_BACKGROUND);
+    const palette = mathraxGame.colors(DEFAULT_BACKGROUND);
     m.redraw(new RecordingDrawing(palette)); // first paint: no overlay yet
     expect(m.findMistakes()).toBe(1);
     const after = new RecordingDrawing(palette);
     m.redraw(after);
-    expect(after.ops.some((op) => op.op === "line" && op.colour === COL_ERROR)).toBe(
+    expect(after.ops.some((op) => op.op === "line" && op.color === COL_ERROR)).toBe(
       true,
     );
 
@@ -888,7 +888,7 @@ describe("mathrax rendering", () => {
     m.playMoves([{ type: "pencilAll" }]);
     const cleared = new RecordingDrawing(palette);
     m.redraw(cleared);
-    expect(cleared.ops.some((op) => op.op === "line" && op.colour === COL_ERROR)).toBe(
+    expect(cleared.ops.some((op) => op.op === "line" && op.color === COL_ERROR)).toBe(
       false,
     );
   });

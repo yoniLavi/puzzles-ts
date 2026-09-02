@@ -248,7 +248,7 @@ interface Leg {
   readonly states: readonly InertiaState[];
   readonly paths: readonly SlidePath[];
   /** The gem the leg is going for: the last one along its final move's path —
-   * the one the ball is really travelling for, where a slide sweeps up several. */
+   * the one the ball is really traveling for, where a slide sweeps up several. */
   readonly goal: number;
   /** The board once the leg has been played. */
   readonly after: InertiaState;

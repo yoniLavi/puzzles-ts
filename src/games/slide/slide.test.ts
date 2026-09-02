@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Slide port (tier 1 — pure logic).
+ * Behavioral tests for the Slide port (tier 1 — pure logic).
  *
  * The desc/generator/solver correctness bar is carried by
  * `slide-differential.test.ts`, which byte-matches the C on every preset. What
@@ -394,7 +394,7 @@ describe("slide solver", () => {
 
   it("makes a non-main block take the long way round a forcefield", () => {
     const { board, forcefield } = fixtureBoard();
-    // Fence the singleton in: its only two free neighbours become forcefields,
+    // Fence the singleton in: its only two free neighbors become forcefields,
     // which only the main block may cross. It can no longer step aside in one
     // move, so the main block has to vacate its corner first, the singleton
     // slides into it, and only then can the main block reach the target — three

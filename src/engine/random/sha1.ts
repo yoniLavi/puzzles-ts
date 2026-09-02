@@ -95,7 +95,7 @@ export function shaBytes(s: ShaState, data: Uint8Array): void {
   let q = 0;
   let remaining = len;
 
-  // Update length field. lenlo/lenhi mirror the C uint32 wrap behaviour.
+  // Update length field. lenlo/lenhi mirror the C uint32 wrap behavior.
   const prevLenlo = s.lenlo;
   s.lenlo = u32(s.lenlo + len);
   if (s.lenlo < prevLenlo) s.lenhi = u32(s.lenhi + 1);
@@ -152,9 +152,9 @@ export function shaFinal(s: ShaState, output: Uint8Array): void {
 /**
  * Deep-clone a SHA state. Mirrors the C `final = base;` struct copy in
  * `misc.c`'s `obfuscate_bitmap`, which forks a partially-hashed base
- * state and finalises each fork independently. `shaFinal` mutates its
+ * state and finalizes each fork independently. `shaFinal` mutates its
  * argument (it appends padding via `shaBytes`), so a caller that needs
- * to keep hashing the base after finalising a fork MUST copy first.
+ * to keep hashing the base after finalizing a fork MUST copy first.
  */
 export function shaCopy(s: ShaState): ShaState {
   return {

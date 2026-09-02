@@ -27,7 +27,7 @@ producer but SHALL accept only candidates the solver proves uniquely solvable,
 and SHALL mitigate the quality problems upstream recorded (too many trivial
 paths, hopelessly interwoven grids, and boring straight-line paths). Because
 there is no upstream game or solver, this capability's assurance SHALL be
-behavioural — every generated board is uniquely solvable — rather than a
+behavioral — every generated board is uniquely solvable — rather than a
 byte-for-byte differential against C.
 
 Input SHALL be click-and-drag between adjacent cells to create a link, over a

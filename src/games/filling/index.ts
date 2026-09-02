@@ -40,10 +40,10 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, KeyLabel, Point, Size } from "../../engine/types.ts";
+import type { Color, KeyLabel, Point, Size } from "../../engine/types.ts";
 import { newFillingDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   type FillingDrawState,
   FLASH_TIME,
@@ -217,11 +217,11 @@ function findMistakes(state: FillingState): readonly FillingMistake[] {
  * call to action rather than a filled-in answer (the value is read off the
  * narration — "the region of N", "a 1"). `value` is the forced number, kept
  * for `hintKeepTrack` (not rendered). `area` is the deduction's evidence to
- * shade light-blue — the region it reasons about, or the neighbours that pin a
+ * shade light-blue — the region it reasons about, or the neighbors that pin a
  * lonely / eliminated cell — so a beginner can *see* the reasoning, not just
  * the conclusion (the Palisade region-highlight convention). The evidence
  * cells are filled, but a light fill leaves their digits readable, so Filling
- * shades rather than rings (unlike Unruly, whose premise is a tile *colour* a
+ * shades rather than rings (unlike Unruly, whose premise is a tile *color* a
  * fill would hide). */
 export interface FillingHint {
   cells: number[];
@@ -355,7 +355,7 @@ export const fillingGame: Game<
 
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: FillingParams, ts: number): Size => computeSize(p.w, p.h, ts),
   setTileSize: (ds, ts) => {

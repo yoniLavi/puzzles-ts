@@ -3,7 +3,7 @@
 exports[`crossing rendering > draws the opening frame 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 360,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -12,7 +12,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -21,7 +21,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -37,7 +37,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 21,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -88,7 +88,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -100,7 +100,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -110,7 +110,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -120,7 +120,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -130,7 +130,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -140,7 +140,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -149,7 +149,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -159,7 +159,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -169,7 +169,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -179,7 +179,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -189,7 +189,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -198,7 +198,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -208,7 +208,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -218,7 +218,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -228,7 +228,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -238,7 +238,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -254,7 +254,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 21,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -305,7 +305,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -317,7 +317,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -327,7 +327,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -337,7 +337,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -347,7 +347,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -357,7 +357,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -366,7 +366,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -376,7 +376,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -386,7 +386,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -396,7 +396,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -406,7 +406,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 20,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -415,7 +415,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -425,7 +425,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -435,7 +435,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -445,7 +445,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -455,7 +455,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -464,7 +464,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -474,7 +474,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -484,7 +484,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -494,7 +494,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -504,7 +504,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -520,7 +520,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 61,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -571,7 +571,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -583,7 +583,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -593,7 +593,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -603,7 +603,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -613,7 +613,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -623,7 +623,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -632,7 +632,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -642,7 +642,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -652,7 +652,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -662,7 +662,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -672,7 +672,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -681,7 +681,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -691,7 +691,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -701,7 +701,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -711,7 +711,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -721,7 +721,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -737,7 +737,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 101,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -788,7 +788,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -800,7 +800,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -810,7 +810,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -820,7 +820,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -830,7 +830,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -840,7 +840,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -849,7 +849,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -859,7 +859,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -869,7 +869,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -879,7 +879,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -889,7 +889,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -898,7 +898,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -908,7 +908,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -918,7 +918,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -928,7 +928,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -938,7 +938,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -954,7 +954,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 101,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1005,7 +1005,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1017,7 +1017,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1027,7 +1027,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1037,7 +1037,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1047,7 +1047,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1057,7 +1057,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1066,7 +1066,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1076,7 +1076,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1086,7 +1086,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1096,7 +1096,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1106,7 +1106,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1115,7 +1115,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1125,7 +1125,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1135,7 +1135,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1145,7 +1145,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1155,7 +1155,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1171,7 +1171,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 141,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1222,7 +1222,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1234,7 +1234,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1244,7 +1244,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1254,7 +1254,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1264,7 +1264,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1274,7 +1274,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1283,7 +1283,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1293,7 +1293,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1303,7 +1303,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1313,7 +1313,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1323,7 +1323,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1332,7 +1332,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1342,7 +1342,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1352,7 +1352,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1362,7 +1362,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1372,7 +1372,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1381,7 +1381,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1391,7 +1391,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1401,7 +1401,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1411,7 +1411,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1421,7 +1421,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1430,7 +1430,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1440,7 +1440,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1450,7 +1450,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1460,7 +1460,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1470,7 +1470,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1479,7 +1479,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1489,7 +1489,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1499,7 +1499,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1509,7 +1509,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1519,7 +1519,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1528,7 +1528,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1538,7 +1538,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1548,7 +1548,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1558,7 +1558,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1568,7 +1568,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1584,7 +1584,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 181,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1635,7 +1635,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1647,7 +1647,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1657,7 +1657,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1667,7 +1667,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1677,7 +1677,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1687,7 +1687,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1696,7 +1696,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1706,7 +1706,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1716,7 +1716,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1726,7 +1726,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1736,7 +1736,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y2": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 138,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1747,7 +1747,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1759,7 +1759,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1771,7 +1771,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1783,7 +1783,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1795,7 +1795,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1807,7 +1807,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1819,7 +1819,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1831,7 +1831,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1843,7 +1843,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1855,7 +1855,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1870,7 +1870,7 @@ exports[`crossing rendering > draws the opening frame 1`] = `
 exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 360,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1879,7 +1879,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1888,7 +1888,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 0,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1904,7 +1904,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 21,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1955,7 +1955,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1967,7 +1967,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1977,7 +1977,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1987,7 +1987,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1997,7 +1997,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2014,7 +2014,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 21,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2065,7 +2065,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     ],
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2079,7 +2079,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2096,7 +2096,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 20,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 4,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -2105,7 +2105,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 23,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -2114,7 +2114,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 23,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 4,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -2123,7 +2123,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 54,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -2135,7 +2135,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2145,7 +2145,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2155,7 +2155,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2165,7 +2165,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2182,7 +2182,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 21,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2233,7 +2233,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     ],
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2247,7 +2247,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 4,
+    "color": 4,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2264,7 +2264,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 20,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 4,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -2273,7 +2273,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 23,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -2282,7 +2282,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 23,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 4,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -2291,7 +2291,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 54,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 35,
     "op": "rect",
     "rgb": "rgb(223, 34, 37)",
@@ -2303,7 +2303,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2313,7 +2313,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2323,7 +2323,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2333,7 +2333,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2343,7 +2343,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 20,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2359,7 +2359,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 21,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2410,7 +2410,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2422,7 +2422,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2432,7 +2432,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2442,7 +2442,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2452,7 +2452,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2462,7 +2462,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 20,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2471,7 +2471,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2481,7 +2481,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 20,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2491,7 +2491,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2501,7 +2501,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2511,7 +2511,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 20,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2520,7 +2520,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2530,7 +2530,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2540,7 +2540,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2550,7 +2550,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2560,7 +2560,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2569,7 +2569,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2579,7 +2579,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2589,7 +2589,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2599,7 +2599,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2609,7 +2609,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2625,7 +2625,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 61,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2676,7 +2676,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2688,7 +2688,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2698,7 +2698,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2708,7 +2708,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2718,7 +2718,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2728,7 +2728,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2737,7 +2737,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2747,7 +2747,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2757,7 +2757,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2767,7 +2767,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2777,7 +2777,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2786,7 +2786,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2796,7 +2796,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2806,7 +2806,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2816,7 +2816,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2826,7 +2826,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2842,7 +2842,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 101,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2893,7 +2893,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2905,7 +2905,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2915,7 +2915,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2925,7 +2925,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2935,7 +2935,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2945,7 +2945,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2954,7 +2954,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2964,7 +2964,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2974,7 +2974,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2984,7 +2984,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2994,7 +2994,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3003,7 +3003,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3013,7 +3013,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3023,7 +3023,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3033,7 +3033,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3043,7 +3043,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3059,7 +3059,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 101,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -3110,7 +3110,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -3122,7 +3122,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3132,7 +3132,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3142,7 +3142,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3152,7 +3152,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3162,7 +3162,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3171,7 +3171,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3181,7 +3181,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3191,7 +3191,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3201,7 +3201,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3211,7 +3211,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 100,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3220,7 +3220,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3230,7 +3230,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3240,7 +3240,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3250,7 +3250,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3260,7 +3260,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3276,7 +3276,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 141,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -3327,7 +3327,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -3339,7 +3339,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3349,7 +3349,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3359,7 +3359,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3369,7 +3369,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3379,7 +3379,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3388,7 +3388,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3398,7 +3398,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3408,7 +3408,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3418,7 +3418,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3428,7 +3428,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3437,7 +3437,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3447,7 +3447,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3457,7 +3457,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3467,7 +3467,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3477,7 +3477,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3486,7 +3486,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3496,7 +3496,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3506,7 +3506,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3516,7 +3516,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3526,7 +3526,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 140,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3535,7 +3535,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3545,7 +3545,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3555,7 +3555,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3565,7 +3565,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3575,7 +3575,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3584,7 +3584,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3594,7 +3594,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3604,7 +3604,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3614,7 +3614,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3624,7 +3624,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3633,7 +3633,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3643,7 +3643,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3653,7 +3653,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3663,7 +3663,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3673,7 +3673,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3689,7 +3689,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 181,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 39,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -3740,7 +3740,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     ],
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -3752,7 +3752,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "unclip",
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3762,7 +3762,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3772,7 +3772,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3782,7 +3782,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3792,7 +3792,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 40,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3801,7 +3801,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3811,7 +3811,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3821,7 +3821,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3831,7 +3831,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 220,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3841,7 +3841,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "y2": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 138,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3852,7 +3852,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3864,7 +3864,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3876,7 +3876,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3888,7 +3888,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3900,7 +3900,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3912,7 +3912,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3924,7 +3924,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3936,7 +3936,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3948,7 +3948,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -3960,7 +3960,7 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
   {
     "align": "left",
     "baseline": "alphabetic",
-    "colour": 4,
+    "color": 4,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",

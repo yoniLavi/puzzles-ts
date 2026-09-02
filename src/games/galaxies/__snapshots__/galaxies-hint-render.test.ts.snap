@@ -3,7 +3,7 @@
 exports[`a displayed hint reaches the canvas > a frame carrying every mark at once is stable 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 288,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -12,7 +12,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 0,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 227,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -28,7 +28,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -37,7 +37,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -46,7 +46,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -55,7 +55,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -64,7 +64,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -73,7 +73,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -82,7 +82,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -91,7 +91,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -100,7 +100,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 63,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -119,7 +119,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -128,7 +128,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -137,7 +137,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -146,7 +146,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -156,7 +156,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 37,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -166,7 +166,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 55,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -176,7 +176,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 55,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -185,7 +185,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -194,7 +194,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -203,7 +203,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -212,7 +212,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -231,7 +231,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -240,7 +240,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -249,7 +249,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -258,7 +258,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -267,7 +267,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -276,7 +276,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -285,7 +285,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -304,7 +304,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -313,7 +313,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -322,7 +322,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -331,7 +331,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -341,7 +341,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 38,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -351,7 +351,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 53,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -361,7 +361,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 55,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -370,7 +370,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -379,7 +379,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -388,7 +388,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 63,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -397,7 +397,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -416,7 +416,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -425,7 +425,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -434,7 +434,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -443,7 +443,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -452,7 +452,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -461,7 +461,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -470,7 +470,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -479,7 +479,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -488,7 +488,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -497,7 +497,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 63,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -526,7 +526,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -535,7 +535,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -544,7 +544,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -553,7 +553,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -563,7 +563,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 38,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -573,7 +573,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 55,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -583,7 +583,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 53,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -592,7 +592,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -601,7 +601,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -610,7 +610,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 63,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -619,7 +619,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -628,7 +628,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -637,7 +637,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 63,
   },
   {
-    "colour": 12,
+    "color": 12,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(14, 88, 91)",
@@ -646,7 +646,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 36,
   },
   {
-    "colour": 12,
+    "color": 12,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(14, 88, 91)",
@@ -655,7 +655,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 36,
   },
   {
-    "colour": 12,
+    "color": 12,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(14, 88, 91)",
@@ -664,7 +664,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 58,
   },
   {
-    "colour": 12,
+    "color": 12,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(14, 88, 91)",
@@ -683,7 +683,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -692,7 +692,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -701,7 +701,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -710,7 +710,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -719,7 +719,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -728,7 +728,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -737,7 +737,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -746,7 +746,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 63,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -755,7 +755,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 63,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -764,7 +764,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 36,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -773,7 +773,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 36,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -782,7 +782,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 58,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -791,7 +791,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 36,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -800,7 +800,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 40,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -809,7 +809,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 40,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -818,7 +818,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 54,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -837,7 +837,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -846,7 +846,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -855,7 +855,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -864,7 +864,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -873,7 +873,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -882,7 +882,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -891,7 +891,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -900,7 +900,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -909,7 +909,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 95,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -938,7 +938,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -947,7 +947,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -956,7 +956,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -965,7 +965,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -974,7 +974,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -983,7 +983,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -992,7 +992,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 95,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1021,7 +1021,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1030,7 +1030,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1039,7 +1039,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1048,7 +1048,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1057,7 +1057,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1066,7 +1066,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 95,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1085,7 +1085,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1094,7 +1094,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1103,7 +1103,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1112,7 +1112,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1121,7 +1121,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1130,7 +1130,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 95,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1159,7 +1159,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1168,7 +1168,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1177,7 +1177,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1186,7 +1186,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1195,7 +1195,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1204,7 +1204,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1213,7 +1213,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 95,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1232,7 +1232,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1241,7 +1241,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1250,7 +1250,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1259,7 +1259,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1269,7 +1269,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 75,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1279,7 +1279,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 80,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1289,7 +1289,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 86,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1298,7 +1298,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1307,7 +1307,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1316,7 +1316,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 95,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1335,7 +1335,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1344,7 +1344,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1353,7 +1353,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1362,7 +1362,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1372,7 +1372,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 70,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1382,7 +1382,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 85,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1392,7 +1392,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 87,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1401,7 +1401,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1410,7 +1410,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1419,7 +1419,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1428,7 +1428,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1437,7 +1437,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 95,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1446,7 +1446,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 95,
   },
   {
-    "colour": 12,
+    "color": 12,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(14, 88, 91)",
@@ -1455,7 +1455,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 68,
   },
   {
-    "colour": 12,
+    "color": 12,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(14, 88, 91)",
@@ -1464,7 +1464,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 68,
   },
   {
-    "colour": 12,
+    "color": 12,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(14, 88, 91)",
@@ -1473,7 +1473,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 90,
   },
   {
-    "colour": 12,
+    "color": 12,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(14, 88, 91)",
@@ -1492,7 +1492,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1501,7 +1501,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1510,7 +1510,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1519,7 +1519,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1528,7 +1528,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1537,7 +1537,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1546,7 +1546,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 127,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1555,7 +1555,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1564,7 +1564,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1583,7 +1583,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1592,7 +1592,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1601,7 +1601,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1610,7 +1610,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1620,7 +1620,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 123,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1630,7 +1630,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 105,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1640,7 +1640,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 105,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1649,7 +1649,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1658,7 +1658,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1667,7 +1667,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1686,7 +1686,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1695,7 +1695,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1704,7 +1704,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1713,7 +1713,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1723,7 +1723,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 104,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1733,7 +1733,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 120,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1743,7 +1743,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 114,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1752,7 +1752,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1781,7 +1781,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1790,7 +1790,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1799,7 +1799,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1808,7 +1808,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1818,7 +1818,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 104,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1828,7 +1828,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 114,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1838,7 +1838,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 120,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1867,7 +1867,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1876,7 +1876,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1885,7 +1885,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1894,7 +1894,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1903,7 +1903,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1922,7 +1922,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1931,7 +1931,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1940,7 +1940,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1949,7 +1949,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1959,7 +1959,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 104,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1969,7 +1969,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 120,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -1979,7 +1979,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 114,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1988,7 +1988,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2037,7 +2037,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2046,7 +2046,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2055,7 +2055,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2064,7 +2064,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2074,7 +2074,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 104,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2084,7 +2084,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 114,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2094,7 +2094,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 120,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2103,7 +2103,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2112,7 +2112,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2121,7 +2121,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2170,7 +2170,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2179,7 +2179,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2188,7 +2188,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2197,7 +2197,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2206,7 +2206,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2215,7 +2215,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2224,7 +2224,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 159,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2233,7 +2233,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2242,7 +2242,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2271,7 +2271,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2280,7 +2280,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2289,7 +2289,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2298,7 +2298,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2307,7 +2307,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2316,7 +2316,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2325,7 +2325,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 159,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2344,7 +2344,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2353,7 +2353,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2362,7 +2362,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2371,7 +2371,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2381,7 +2381,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 152,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2391,7 +2391,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 142,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2401,7 +2401,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 136,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2410,7 +2410,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 159,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2439,7 +2439,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2448,7 +2448,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2457,7 +2457,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2466,7 +2466,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2476,7 +2476,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 152,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2486,7 +2486,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 136,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2496,7 +2496,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 142,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2525,7 +2525,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2534,7 +2534,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2543,7 +2543,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2552,7 +2552,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2571,7 +2571,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2580,7 +2580,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2589,7 +2589,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2598,7 +2598,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2608,7 +2608,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 152,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2618,7 +2618,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 142,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2628,7 +2628,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 136,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2637,7 +2637,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 159,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2686,7 +2686,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2695,7 +2695,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2704,7 +2704,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2713,7 +2713,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2723,7 +2723,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 152,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2733,7 +2733,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 136,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2743,7 +2743,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 142,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2752,7 +2752,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2761,7 +2761,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 159,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2770,7 +2770,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2779,7 +2779,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 159,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2828,7 +2828,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2837,7 +2837,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2846,7 +2846,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2855,7 +2855,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2865,7 +2865,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 181,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2875,7 +2875,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 176,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -2885,7 +2885,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 170,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2894,7 +2894,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2903,7 +2903,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2912,7 +2912,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 191,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2921,85 +2921,12 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
     "w": 2,
     "x": 32,
-    "y": 191,
-  },
-  {
-    "op": "unclip",
-  },
-  {
-    "h": 32,
-    "op": "clip",
-    "w": 32,
-    "x": 64,
-    "y": 160,
-  },
-  {
-    "colour": 0,
-    "h": 32,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 32,
-    "x": 64,
-    "y": 160,
-  },
-  {
-    "colour": 5,
-    "h": 32,
-    "op": "rect",
-    "rgb": "rgb(128, 128, 128)",
-    "w": 1,
-    "x": 64,
-    "y": 160,
-  },
-  {
-    "colour": 5,
-    "h": 1,
-    "op": "rect",
-    "rgb": "rgb(128, 128, 128)",
-    "w": 32,
-    "x": 64,
-    "y": 160,
-  },
-  {
-    "colour": 6,
-    "h": 2,
-    "op": "rect",
-    "rgb": "rgb(0, 0, 0)",
-    "w": 2,
-    "x": 64,
-    "y": 160,
-  },
-  {
-    "colour": 6,
-    "h": 2,
-    "op": "rect",
-    "rgb": "rgb(0, 0, 0)",
-    "w": 1,
-    "x": 95,
-    "y": 160,
-  },
-  {
-    "colour": 6,
-    "h": 1,
-    "op": "rect",
-    "rgb": "rgb(0, 0, 0)",
-    "w": 2,
-    "x": 64,
-    "y": 191,
-  },
-  {
-    "colour": 6,
-    "h": 1,
-    "op": "rect",
-    "rgb": "rgb(0, 0, 0)",
-    "w": 1,
-    "x": 95,
     "y": 191,
   },
   {
@@ -3009,11 +2936,84 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "h": 32,
     "op": "clip",
     "w": 32,
+    "x": 64,
+    "y": 160,
+  },
+  {
+    "color": 0,
+    "h": 32,
+    "op": "rect",
+    "rgb": "rgb(211, 211, 211)",
+    "w": 32,
+    "x": 64,
+    "y": 160,
+  },
+  {
+    "color": 5,
+    "h": 32,
+    "op": "rect",
+    "rgb": "rgb(128, 128, 128)",
+    "w": 1,
+    "x": 64,
+    "y": 160,
+  },
+  {
+    "color": 5,
+    "h": 1,
+    "op": "rect",
+    "rgb": "rgb(128, 128, 128)",
+    "w": 32,
+    "x": 64,
+    "y": 160,
+  },
+  {
+    "color": 6,
+    "h": 2,
+    "op": "rect",
+    "rgb": "rgb(0, 0, 0)",
+    "w": 2,
+    "x": 64,
+    "y": 160,
+  },
+  {
+    "color": 6,
+    "h": 2,
+    "op": "rect",
+    "rgb": "rgb(0, 0, 0)",
+    "w": 1,
+    "x": 95,
+    "y": 160,
+  },
+  {
+    "color": 6,
+    "h": 1,
+    "op": "rect",
+    "rgb": "rgb(0, 0, 0)",
+    "w": 2,
+    "x": 64,
+    "y": 191,
+  },
+  {
+    "color": 6,
+    "h": 1,
+    "op": "rect",
+    "rgb": "rgb(0, 0, 0)",
+    "w": 1,
+    "x": 95,
+    "y": 191,
+  },
+  {
+    "op": "unclip",
+  },
+  {
+    "h": 32,
+    "op": "clip",
+    "w": 32,
     "x": 96,
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3022,7 +3022,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3031,7 +3031,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3040,7 +3040,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3049,7 +3049,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3058,7 +3058,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 191,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3087,7 +3087,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3096,7 +3096,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3105,7 +3105,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3114,7 +3114,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3123,7 +3123,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3142,7 +3142,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3151,7 +3151,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3160,7 +3160,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3169,7 +3169,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3179,7 +3179,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 165,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3189,7 +3189,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 176,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3199,7 +3199,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 176,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3228,7 +3228,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3237,7 +3237,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3246,7 +3246,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3255,7 +3255,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3265,7 +3265,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 186,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3275,7 +3275,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 171,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3285,7 +3285,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 169,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3294,7 +3294,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3303,7 +3303,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3312,7 +3312,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3331,7 +3331,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -3340,7 +3340,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3349,7 +3349,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3358,7 +3358,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3367,7 +3367,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3376,7 +3376,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3385,7 +3385,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3394,7 +3394,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 191,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3403,7 +3403,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3432,7 +3432,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3441,7 +3441,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3450,7 +3450,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3459,7 +3459,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3469,7 +3469,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 208,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3479,7 +3479,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 212,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3489,7 +3489,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 204,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3498,7 +3498,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3507,7 +3507,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3516,7 +3516,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3525,7 +3525,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 223,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3554,7 +3554,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3563,7 +3563,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3572,7 +3572,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3581,7 +3581,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3591,7 +3591,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 208,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3601,7 +3601,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 204,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3611,7 +3611,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 212,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3620,7 +3620,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3629,7 +3629,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 223,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3638,7 +3638,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3647,7 +3647,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3676,7 +3676,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3685,7 +3685,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3694,7 +3694,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3703,7 +3703,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3713,7 +3713,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 218,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3723,7 +3723,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 203,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3733,7 +3733,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 201,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3742,7 +3742,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3751,7 +3751,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3760,7 +3760,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 223,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3779,7 +3779,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3788,7 +3788,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3797,7 +3797,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3806,7 +3806,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3815,7 +3815,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3834,7 +3834,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3843,7 +3843,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3852,7 +3852,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3861,7 +3861,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3871,7 +3871,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 219,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3881,7 +3881,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 208,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -3891,7 +3891,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 208,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3920,7 +3920,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3929,7 +3929,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3938,7 +3938,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -3947,7 +3947,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3956,7 +3956,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3965,7 +3965,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3974,7 +3974,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 223,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -3983,7 +3983,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 196,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -3992,7 +3992,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 196,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -4001,7 +4001,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 218,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -4020,7 +4020,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4029,7 +4029,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4038,7 +4038,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4047,7 +4047,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4057,7 +4057,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 218,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4067,7 +4067,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 201,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4077,7 +4077,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 203,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4086,7 +4086,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4095,7 +4095,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4104,7 +4104,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 223,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4113,7 +4113,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4122,7 +4122,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4141,7 +4141,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4150,7 +4150,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4159,7 +4159,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4168,7 +4168,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4177,7 +4177,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4186,7 +4186,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4195,7 +4195,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4204,7 +4204,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4223,7 +4223,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4232,7 +4232,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4241,7 +4241,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4250,7 +4250,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4260,7 +4260,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 240,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4270,7 +4270,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 244,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4280,7 +4280,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 236,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4289,7 +4289,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4298,7 +4298,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4307,7 +4307,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4316,7 +4316,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4345,7 +4345,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4354,7 +4354,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4363,7 +4363,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4372,7 +4372,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4382,7 +4382,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 240,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4392,7 +4392,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 236,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4402,7 +4402,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 244,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4411,7 +4411,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4420,7 +4420,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4429,7 +4429,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4438,7 +4438,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4467,7 +4467,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4476,7 +4476,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4485,7 +4485,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4494,7 +4494,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4503,7 +4503,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4512,7 +4512,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4521,7 +4521,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4540,7 +4540,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4549,7 +4549,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4558,7 +4558,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4567,7 +4567,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4576,7 +4576,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4585,7 +4585,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4604,7 +4604,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4613,7 +4613,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4622,7 +4622,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4631,7 +4631,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4641,7 +4641,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 240,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4651,7 +4651,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 244,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4661,7 +4661,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 236,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4670,7 +4670,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4679,7 +4679,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4688,7 +4688,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4717,7 +4717,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4726,7 +4726,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4735,7 +4735,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4744,7 +4744,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4754,7 +4754,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 240,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4764,7 +4764,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 236,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -4774,7 +4774,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y2": 244,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4783,7 +4783,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4792,7 +4792,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4801,7 +4801,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4810,7 +4810,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4837,7 +4837,7 @@ exports[`a displayed hint reaches the canvas > a frame carrying every mark at on
 exports[`a displayed hint reaches the canvas > the opening hint frame is stable 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 288,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4846,7 +4846,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 0,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 227,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4862,7 +4862,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4871,7 +4871,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4880,7 +4880,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4889,7 +4889,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4898,7 +4898,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4907,7 +4907,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4916,7 +4916,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4935,7 +4935,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4944,7 +4944,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4953,7 +4953,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -4962,7 +4962,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4971,7 +4971,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4980,7 +4980,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4999,7 +4999,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5008,7 +5008,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5017,7 +5017,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5026,7 +5026,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5035,7 +5035,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5044,7 +5044,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5063,7 +5063,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5072,7 +5072,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5081,7 +5081,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5090,7 +5090,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5099,7 +5099,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5108,7 +5108,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5127,7 +5127,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5136,7 +5136,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5145,7 +5145,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5154,7 +5154,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5163,7 +5163,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5172,7 +5172,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5201,7 +5201,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5210,7 +5210,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5219,7 +5219,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5228,7 +5228,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5237,7 +5237,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5246,7 +5246,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5265,7 +5265,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5274,7 +5274,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5283,7 +5283,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5292,7 +5292,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5301,7 +5301,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5310,7 +5310,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5319,7 +5319,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 32,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5338,7 +5338,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5347,7 +5347,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5356,7 +5356,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5365,7 +5365,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5374,7 +5374,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5383,7 +5383,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5412,7 +5412,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5421,7 +5421,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5430,7 +5430,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5459,7 +5459,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5468,7 +5468,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5477,7 +5477,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5496,7 +5496,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5505,7 +5505,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5514,7 +5514,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5543,7 +5543,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5552,7 +5552,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5561,7 +5561,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5580,7 +5580,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5589,7 +5589,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5598,7 +5598,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5617,7 +5617,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5626,7 +5626,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5635,7 +5635,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5644,7 +5644,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5653,7 +5653,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5662,7 +5662,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 64,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5681,7 +5681,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5690,7 +5690,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5699,7 +5699,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5708,7 +5708,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5717,7 +5717,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5726,7 +5726,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -5745,7 +5745,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5754,7 +5754,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5763,7 +5763,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5782,7 +5782,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5791,7 +5791,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5800,7 +5800,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5819,7 +5819,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "r": 8,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5828,7 +5828,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 100,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5837,7 +5837,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 100,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5846,7 +5846,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 122,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5855,7 +5855,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 100,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5864,7 +5864,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 104,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5873,7 +5873,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 104,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5882,7 +5882,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 118,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5901,7 +5901,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5910,7 +5910,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5919,7 +5919,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -5938,7 +5938,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "r": 8,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5947,7 +5947,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 100,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5956,7 +5956,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 100,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5965,7 +5965,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 122,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5974,7 +5974,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 100,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5983,7 +5983,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 104,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -5992,7 +5992,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 104,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6001,7 +6001,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 118,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6020,7 +6020,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6029,7 +6029,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6038,7 +6038,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6057,7 +6057,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6066,7 +6066,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6075,7 +6075,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6104,7 +6104,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6113,7 +6113,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6122,7 +6122,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6131,7 +6131,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6140,7 +6140,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6149,7 +6149,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 96,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6178,7 +6178,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6187,7 +6187,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6196,7 +6196,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6205,7 +6205,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6214,7 +6214,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6223,7 +6223,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6252,7 +6252,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6261,7 +6261,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6270,7 +6270,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6289,7 +6289,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6298,7 +6298,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6307,7 +6307,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6326,7 +6326,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "r": 8,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6335,7 +6335,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 132,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6344,7 +6344,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 132,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6353,7 +6353,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 154,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6362,7 +6362,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 132,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6371,7 +6371,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 136,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6380,7 +6380,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 136,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6389,7 +6389,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 150,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6408,7 +6408,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6417,7 +6417,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6426,7 +6426,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6445,7 +6445,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "r": 8,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6454,7 +6454,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 132,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6463,7 +6463,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 132,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6472,7 +6472,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 154,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 24,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6481,7 +6481,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 132,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6490,7 +6490,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 136,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6499,7 +6499,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 136,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6508,7 +6508,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 150,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(143, 53, 202)",
@@ -6527,7 +6527,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6536,7 +6536,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6545,7 +6545,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6564,7 +6564,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6573,7 +6573,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6582,7 +6582,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6611,7 +6611,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6620,7 +6620,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6629,7 +6629,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6638,7 +6638,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6647,7 +6647,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6656,7 +6656,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 128,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6685,7 +6685,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6694,7 +6694,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6703,7 +6703,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6712,7 +6712,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6721,7 +6721,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6730,7 +6730,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6749,7 +6749,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6758,7 +6758,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6767,7 +6767,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6786,7 +6786,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6795,7 +6795,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6804,7 +6804,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6833,7 +6833,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6842,7 +6842,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6851,7 +6851,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6870,7 +6870,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6879,7 +6879,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6888,7 +6888,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6917,7 +6917,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6926,7 +6926,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6935,7 +6935,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6954,7 +6954,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -6963,7 +6963,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6972,7 +6972,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -6981,7 +6981,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6990,7 +6990,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -6999,7 +6999,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 160,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7028,7 +7028,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7037,7 +7037,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7046,7 +7046,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7055,7 +7055,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7064,7 +7064,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7073,7 +7073,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7102,7 +7102,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7111,7 +7111,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7120,7 +7120,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7149,7 +7149,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7158,7 +7158,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7167,7 +7167,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7186,7 +7186,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7195,7 +7195,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7204,7 +7204,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7223,7 +7223,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7232,7 +7232,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7241,7 +7241,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7270,7 +7270,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7279,7 +7279,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7288,7 +7288,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7307,7 +7307,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7316,7 +7316,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7325,7 +7325,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7334,7 +7334,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7343,7 +7343,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7352,7 +7352,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 192,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7371,7 +7371,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7380,7 +7380,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7389,7 +7389,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7398,7 +7398,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7407,7 +7407,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7416,7 +7416,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7425,7 +7425,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7444,7 +7444,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7453,7 +7453,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7462,7 +7462,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7471,7 +7471,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7480,7 +7480,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7489,7 +7489,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7518,7 +7518,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7527,7 +7527,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7536,7 +7536,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7545,7 +7545,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7554,7 +7554,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7563,7 +7563,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7592,7 +7592,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7601,7 +7601,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7610,7 +7610,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7619,7 +7619,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7628,7 +7628,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7637,7 +7637,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7656,7 +7656,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7665,7 +7665,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7674,7 +7674,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7683,7 +7683,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7692,7 +7692,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7701,7 +7701,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7720,7 +7720,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7729,7 +7729,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7738,7 +7738,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7747,7 +7747,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7756,7 +7756,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7765,7 +7765,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7794,7 +7794,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -7803,7 +7803,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7812,7 +7812,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -7821,7 +7821,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7830,7 +7830,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7839,7 +7839,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 255,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -7848,7 +7848,7 @@ exports[`a displayed hint reaches the canvas > the opening hint frame is stable 
     "y": 224,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",

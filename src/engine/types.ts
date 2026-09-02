@@ -1,11 +1,11 @@
 /**
- * The engine's shared puzzle vocabulary: geometry, colours, config descriptions
+ * The engine's shared puzzle vocabulary: geometry, colors, config descriptions
  * and the change notifications the engine emits.
  *
  * Every name here belongs to a contract the **engine** states and a game
- * implements — `Colour` is what `Game.colours()` returns, `Rect`/`Point`/`Size`
+ * implements — `Color` is what `Game.colors()` returns, `Rect`/`Point`/`Size`
  * are the drawing API's coordinate records. The app is a consumer. Several are
- * still upstream's C structures seen through a JS lens (a `Colour` is an RGB
+ * still upstream's C structures seen through a JS lens (a `Color` is an RGB
  * triple in 0..1, not a CSS string), which is why they read the way they do.
  *
  * These declarations used to be *re-exported from the Emscripten-generated*
@@ -23,9 +23,9 @@
  * and the games import nothing above them.
  */
 
-/** An RGB triple, each component in 0..1 — the puzzle drawing API's colour
- * representation, as fed to and returned by a game's `colours()`. */
-export type Colour = [number, number, number];
+/** An RGB triple, each component in 0..1 — the puzzle drawing API's color
+ * representation, as fed to and returned by a game's `colors()`. */
+export type Color = [number, number, number];
 
 export type Point = {
   x: number;
@@ -184,7 +184,7 @@ export interface PuzzleStaticAttributes {
   hasReference: boolean;
   // TODO: canFormatAsTextEver: boolean;
   /** The game has no meaning for the secondary button, so the view must not
-   * synthesise one from a long press or a two-finger tap — see
+   * synthesize one from a long press or a two-finger tap — see
    * `Game.ignoresSecondaryButton`. */
   ignoresSecondaryButton: boolean;
   isTimed: boolean;

@@ -9,10 +9,10 @@
  * background rect drawn here on every frame is the game's own fill.
  */
 
-import { BLUE } from "../../engine/colour/colours.ts";
-import { INK } from "../../engine/colour/palette.ts";
+import { BLUE } from "../../engine/color/colors.ts";
+import { INK } from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { type Bbox, enumGridSquares, findBbox } from "./grid.ts";
 import { SOLIDS, transformPoly } from "./solids.ts";
 import type { CubeParams, CubeState, KeyPair } from "./state.ts";
@@ -20,7 +20,7 @@ import type { CubeParams, CubeState, KeyPair } from "./state.ts";
 export const ROLLTIME = 0.13;
 export const PREFERRED_TILE_SIZE = 48;
 
-// Colour indices (matching cube.c's enum).
+// Color indices (matching cube.c's enum).
 export const COL_BACKGROUND = 0;
 export const COL_BORDER = 1;
 export const COL_BLUE = 2;
@@ -34,8 +34,8 @@ export interface CubeDrawState {
   border: number;
 }
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const ret: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const ret: Color[] = [];
   ret[COL_BACKGROUND] = defaultBackground;
   ret[COL_BORDER] = INK;
   ret[COL_BLUE] = BLUE;
@@ -112,7 +112,7 @@ export function redraw(
     pkey = cur.spkey;
     gkey = cur.sgkey;
   }
-  // Draw the OLD state's grid + face colours; the polyhedron rolls over
+  // Draw the OLD state's grid + face colors; the polyhedron rolls over
   // the edge from the old square as `angle` ramps to the full roll.
   const st = oldstate;
   const solid = SOLIDS[st.solidIndex];
@@ -173,7 +173,7 @@ export function redraw(
         y: Math.floor(pts[j * 2 + 1] * gs) + ds.oy,
       });
     }
-    dr.drawPolygon(coords, st.faceColours[i] ? COL_BLUE : COL_BACKGROUND, COL_BORDER);
+    dr.drawPolygon(coords, st.faceColors[i] ? COL_BLUE : COL_BACKGROUND, COL_BORDER);
   }
 
   dr.drawUpdate({ x: 0, y: 0, w: xsize, h: ysize });

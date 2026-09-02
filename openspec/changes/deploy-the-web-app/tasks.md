@@ -51,7 +51,7 @@
       `Strict-Transport-Security` and `Expect-CT`, which another host may not
       add. If HSTS matters, it becomes ours to set.
 
-## 4. Verify the deployed artefact, not the local build
+## 4. Verify the deployed artifact, not the local build
 
 Each of these fails **silently**, which is why they are listed rather than left
 to a glance at the home page.

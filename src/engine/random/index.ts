@@ -132,7 +132,7 @@ export function randomStateDecode(input: string): RandomState {
       } else if (pos === SEEDBUF_LEN + DATABUF_LEN && byte <= DATABUF_LEN) {
         state.pos = byte;
         // Note: C also doesn't increment pos here, so extra bytes get
-        // silently discarded. Match that behaviour.
+        // silently discarded. Match that behavior.
       }
       byte = 0;
       digits = 0;

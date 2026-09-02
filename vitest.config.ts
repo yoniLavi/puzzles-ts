@@ -103,7 +103,7 @@ export default defineConfig({
     // Verified: full suite green 3× under file-order shuffle
     // (`sequence.shuffle.files`) with isolation off. Note what that did *not*
     // catch — two shuffled runs missed the mock collision, because shuffling
-    // file order rarely co-locates a specific pair in one worker. To localise a
+    // file order rarely co-locates a specific pair in one worker. To localize a
     // suspected cross-file leak, force the suspects into one worker
     // (`VITEST_MAX_WORKERS=1 vitest run <a> <b>`) rather than reaching for the
     // shuffle. Do not "fix" it by re-enabling isolation.

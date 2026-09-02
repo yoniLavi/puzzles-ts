@@ -228,7 +228,7 @@ export class DominosaSolver {
     for (let pi = 0; pi < this.pc; pi++) this.placements[pi].index = pi;
   }
 
-  /** (Re)initialise per-board: assign numbers, rebuild the domino/square
+  /** (Re)initialize per-board: assign numbers, rebuild the domino/square
    * placement lists, mark all placements active. Mirrors `solver_setup_grid`. */
   setupGrid(numbers: Int32Array | number[]): void {
     for (const sq of this.squares) {
@@ -821,7 +821,7 @@ export class DominosaSolver {
     return null;
   }
 
-  /** Realise "a domino is placed on (a, b)": rule out the placement's active
+  /** Realize "a domino is placed on (a, b)": rule out the placement's active
    * overlaps and any other placements of its domino. Non-recording. */
   forcePlacement(a: number, b: number): void {
     const p = this.placementOf(a, b);

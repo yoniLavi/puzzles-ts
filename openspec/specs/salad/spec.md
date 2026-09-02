@@ -61,7 +61,7 @@ value, or that uses an unknown character, reproducing the upstream messages.
 
 Salad SHALL provide a solver built on the shared `engine/latin.ts` framework, adding
 its own deduction — in ABC End View mode — the border-clue deduction. The "some
-squares empty" rule SHALL be realised by declaring the empty square to the shared
+squares empty" rule SHALL be realized by declaring the empty square to the shared
 cube as its repeated symbol (`nums + 1`, appearing `order − nums` times per line),
 so that the cube's own positional, numeric and set eliminations reason about
 empty squares directly; a cross SHALL be that symbol placed and a ball that symbol
@@ -70,7 +70,7 @@ struck, and the board's marker array SHALL be read back off the solved cube.
 The solver SHALL provide two difficulties, Normal and Extreme, and both SHALL be
 solvable by pure deduction without guessing. The generator SHALL use the solver to
 keep every board uniquely solvable: it SHALL generate a full Latin square, then
-remove clues in a randomised order, keeping a removal only while the puzzle stays
+remove clues in a randomized order, keeping a removal only while the puzzle stays
 uniquely solvable at the target difficulty. Generation from a given seed SHALL be
 reproducible.
 
@@ -133,7 +133,7 @@ see, never merely naming the move.
 
 Each of Salad's three deductions SHALL be narrated in its own terms:
 
-- the **hole/symbol synchronisation** — a square that can hold no symbol must be
+- the **hole/symbol synchronization** — a square that can hold no symbol must be
   empty, and a square that cannot be empty must hold a symbol (even when which
   symbol is not yet known);
 - the **per-line count** — once a line's empty squares are all marked, every other

@@ -19,7 +19,7 @@
  * 2. **Emission order is observable.** Dot indices are assigned in
  *    first-encounter order, driven by these loops. `grid-differential.test.ts`
  *    compares indices, not just shapes, so reordering face emission within a
- *    cell is a behaviour change even when the resulting geometry is identical.
+ *    cell is a behavior change even when the resulting geometry is identical.
  *
  * The four aperiodic tilings (Penrose P2/P3, hats, spectres) are NOT here —
  * they are RNG-bearing and desc-round-tripping, and land in
@@ -294,11 +294,11 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
         xExtent: PENROSE_TILESIZE * width,
         yExtent: PENROSE_TILESIZE * height,
       };
-    // Hats is the one tiling whose built grid is NOT re-centred into the
+    // Hats is the one tiling whose built grid is NOT re-centered into the
     // extent reported here: Penrose and spectres both force their bounding box
     // to match, hats keeps whatever survived trimming. So a hat grid's bbox
     // will generally differ from this. That asymmetry is upstream's and is
-    // deliberate — don't "fix" it by adding a recentring step.
+    // deliberate — don't "fix" it by adding a recentering step.
     case "hats":
       return {
         tileSize: HATS_TILESIZE,
@@ -329,7 +329,7 @@ const INT_MAX = 2147483647;
  * `corners: true` means upstream bounds `(width+1) * (height+1)` — it counts
  * lattice corners, so a 1-cell grid still has 4 — where `false` bounds
  * `width * height`. The distinction changes the accepted/rejected boundary, so
- * it is carried per tiling rather than normalised away.
+ * it is carried per tiling rather than normalized away.
  */
 const OBJECT_BOUND: Record<
   GridType,

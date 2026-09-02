@@ -654,8 +654,8 @@ export function interpretAscentMove(
   let gx: number;
   let gy: number;
   if (isHexagonal(state.mode)) {
-    /* Real hexagons (design F7): pick the cell whose centre is nearest the
-     * pointer. `(col,row)` are axial coords, so this is a small neighbourhood
+    /* Real hexagons (design F7): pick the cell whose center is nearest the
+     * pointer. `(col,row)` are axial coords, so this is a small neighborhood
      * search around the fractional estimate. */
     const R = tilesize / Math.sqrt(3);
     const vp = (tilesize * Math.sqrt(3)) / 2;

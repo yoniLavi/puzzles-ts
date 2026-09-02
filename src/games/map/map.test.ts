@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Map port (tier 1 + a tier-2 paint-twice render
+ * Behavioral tests for the Map port (tier 1 + a tier-2 paint-twice render
  * check). Byte-match generation/solver fidelity lives in
  * `map-differential.test.ts`; this file covers the codec, input → move mapping,
  * `executeMove`, completion, `findMistakes`, and `solve`.
@@ -70,7 +70,7 @@ function solidCellOf(state: MapState, region: number): { x: number; y: number } 
   return null;
 }
 
-function centreOf(cell: { x: number; y: number }): { x: number; y: number } {
+function centerOf(cell: { x: number; y: number }): { x: number; y: number } {
   return { x: cell.x * TS + Math.floor(TS / 2), y: cell.y * TS + Math.floor(TS / 2) };
 }
 
@@ -166,8 +166,8 @@ describe("map executeMove", () => {
     let s = cloneState(state);
     s = mapGame.executeMove(s, { ops: [{ op: "pencil", region: blank, bit: 2 }] });
     expect(s.pencil[blank]).toBe(1 << 2);
-    s = mapGame.executeMove(s, { ops: [{ op: "colour", region: blank, colour: 1 }] });
-    expect(s.colouring[blank]).toBe(1);
+    s = mapGame.executeMove(s, { ops: [{ op: "color", region: blank, color: 1 }] });
+    expect(s.coloring[blank]).toBe(1);
     expect(s.pencil[blank]).toBe(0);
   });
 
@@ -181,11 +181,11 @@ describe("map executeMove", () => {
     s = mapGame.executeMove(s, { ops: [{ op: "pencil", region: blank, bit: 1 }] });
     expect(s.pencil[blank]).toBe(0);
 
-    const coloured = mapGame.executeMove(state, {
-      ops: [{ op: "colour", region: blank, colour: 0 }],
+    const colored = mapGame.executeMove(state, {
+      ops: [{ op: "color", region: blank, color: 0 }],
     });
     expect(() =>
-      mapGame.executeMove(coloured, { ops: [{ op: "pencil", region: blank, bit: 0 }] }),
+      mapGame.executeMove(colored, { ops: [{ op: "pencil", region: blank, bit: 0 }] }),
     ).toThrow();
   });
 
@@ -194,8 +194,7 @@ describe("map executeMove", () => {
     const sol = solutionFromAux(aux, p.n);
     const ops: MapOp[] = [];
     for (let i = 0; i < p.n; i++)
-      if (!state.map.immutable[i])
-        ops.push({ op: "colour", region: i, colour: sol[i] });
+      if (!state.map.immutable[i]) ops.push({ op: "color", region: i, color: sol[i] });
     const done = mapGame.executeMove(state, { ops });
     expect(done.completed).toBe(true);
     expect(mapGame.status(done)).toBe("solved");
@@ -206,7 +205,7 @@ describe("map executeMove", () => {
     const sol = solutionFromAux(aux, p.n);
     const blank = firstBlank(state);
     const s = mapGame.executeMove(state, {
-      ops: [{ op: "colour", region: blank, colour: sol[blank] }],
+      ops: [{ op: "color", region: blank, color: sol[blank] }],
     });
     expect(s.completed).toBe(false);
   });
@@ -230,15 +229,15 @@ describe("map interpretMove", () => {
     const blankCell = solidCellOf(state, found.blank);
     if (!clueCell || !blankCell) return;
 
-    const press = mapGame.interpretMove(state, ui, ds, centreOf(clueCell), LEFT_BUTTON);
+    const press = mapGame.interpretMove(state, ui, ds, centerOf(clueCell), LEFT_BUTTON);
     expect(press).toBe(UI_UPDATE);
-    expect(ui.dragColour).toBe(state.colouring[found.clue]);
+    expect(ui.dragColor).toBe(state.coloring[found.clue]);
 
-    const rel = mapGame.interpretMove(state, ui, ds, centreOf(blankCell), LEFT_RELEASE);
+    const rel = mapGame.interpretMove(state, ui, ds, centerOf(blankCell), LEFT_RELEASE);
     expect(rel).not.toBe(UI_UPDATE);
     expect(rel).not.toBeNull();
     const s2 = mapGame.executeMove(state, rel as { ops: MapOp[] });
-    expect(s2.colouring[found.blank]).toBe(state.colouring[found.clue]);
+    expect(s2.coloring[found.blank]).toBe(state.coloring[found.clue]);
   });
 
   it("dropping on an immutable region is a no-op", () => {
@@ -250,8 +249,8 @@ describe("map interpretMove", () => {
     const clue = firstClue(state);
     const clueCell = solidCellOf(state, clue);
     if (!clueCell) return;
-    mapGame.interpretMove(state, ui, ds, centreOf(clueCell), LEFT_BUTTON);
-    const rel = mapGame.interpretMove(state, ui, ds, centreOf(clueCell), LEFT_RELEASE);
+    mapGame.interpretMove(state, ui, ds, centerOf(clueCell), LEFT_BUTTON);
+    const rel = mapGame.interpretMove(state, ui, ds, centerOf(clueCell), LEFT_RELEASE);
     expect(rel).toBe(UI_UPDATE);
   });
 
@@ -267,18 +266,18 @@ describe("map interpretMove", () => {
     const blankCell = solidCellOf(state, found.blank);
     if (!clueCell || !blankCell) return;
 
-    mapGame.interpretMove(state, ui, ds, centreOf(clueCell), RIGHT_BUTTON);
+    mapGame.interpretMove(state, ui, ds, centerOf(clueCell), RIGHT_BUTTON);
     const rel = mapGame.interpretMove(
       state,
       ui,
       ds,
-      centreOf(blankCell),
+      centerOf(blankCell),
       RIGHT_RELEASE,
     );
     expect(rel).not.toBe(UI_UPDATE);
     const s2 = mapGame.executeMove(state, rel as { ops: MapOp[] });
-    expect(s2.colouring[found.blank]).toBe(-1);
-    expect(s2.pencil[found.blank]).toBe(1 << (state.colouring[found.clue] as number));
+    expect(s2.coloring[found.blank]).toBe(-1);
+    expect(s2.pencil[found.blank]).toBe(1 << (state.coloring[found.clue] as number));
   });
 
   it("the 'l' key toggles region numbers", () => {
@@ -310,7 +309,7 @@ describe("map solve + findMistakes", () => {
     if (!res?.ok) return;
     const done = mapGame.executeMove(state, res.move);
     expect(done.cheated).toBe(true);
-    for (let i = 0; i < p.n; i++) expect(done.colouring[i]).toBe(sol[i]);
+    for (let i = 0; i < p.n; i++) expect(done.coloring[i]).toBe(sol[i]);
   });
 
   it("solve via aux matches re-derivation", () => {
@@ -320,7 +319,7 @@ describe("map solve + findMistakes", () => {
     if (!res?.ok) return;
     const done = mapGame.executeMove(state, res.move);
     const sol = solutionFromAux(aux, p.n);
-    for (let i = 0; i < p.n; i++) expect(done.colouring[i]).toBe(sol[i]);
+    for (let i = 0; i < p.n; i++) expect(done.coloring[i]).toBe(sol[i]);
   });
 
   it("flags a region coloured against the unique solution", () => {
@@ -329,7 +328,7 @@ describe("map solve + findMistakes", () => {
     const blank = firstBlank(state);
     const wrong = (sol[blank] + 1) % 4;
     const s = mapGame.executeMove(state, {
-      ops: [{ op: "colour", region: blank, colour: wrong }],
+      ops: [{ op: "color", region: blank, color: wrong }],
     });
     const mistakes = mapGame.findMistakes?.(s) ?? [];
     expect(mistakes.some((m) => m.region === blank)).toBe(true);
@@ -340,7 +339,7 @@ describe("map solve + findMistakes", () => {
     const sol = solutionFromAux(aux, p.n);
     const blank = firstBlank(state);
     const s = mapGame.executeMove(state, {
-      ops: [{ op: "colour", region: blank, colour: sol[blank] }],
+      ops: [{ op: "color", region: blank, color: sol[blank] }],
     });
     expect(mapGame.findMistakes?.(s) ?? []).toHaveLength(0);
   });
@@ -358,12 +357,12 @@ describe("map save round-trip", () => {
 
     const me = new Midend(mapGame);
     expect(me.newGameFromId(id)).toBeUndefined();
-    me.playMoves([{ ops: [{ op: "colour", region: blank, colour: 2 }] }]);
+    me.playMoves([{ ops: [{ op: "color", region: blank, color: 2 }] }]);
     const saved = me.saveGame();
 
     const me2 = new Midend(mapGame);
     expect(me2.loadGame(saved)).toBeUndefined();
-    // A faithful reconstruction re-serialises to the same bytes.
+    // A faithful reconstruction re-serializes to the same bytes.
     expect(Array.from(me2.saveGame())).toEqual(Array.from(saved));
   });
 });
@@ -379,7 +378,7 @@ describe("map mistake overlay repaints on an already-drawn board", () => {
     const blank = firstBlank(state0);
     const wrong = (sol[blank] + 1) % 4;
     const state = mapGame.executeMove(state0, {
-      ops: [{ op: "colour", region: blank, colour: wrong }],
+      ops: [{ op: "color", region: blank, color: wrong }],
     });
 
     const ui = newUi(state);
@@ -387,7 +386,7 @@ describe("map mistake overlay repaints on an already-drawn board", () => {
     setTileSize(ds, TS);
 
     // Frame 1: no overlay — warm the cache.
-    const dr1 = new RecordingDrawing(mapGame.colours([0.9, 0.9, 0.9]));
+    const dr1 = new RecordingDrawing(mapGame.colors([0.9, 0.9, 0.9]));
     dr1.startDraw();
     redraw(dr1, ds, null, state, 0, ui, 0, 0, undefined, []);
     dr1.endDraw();
@@ -395,11 +394,11 @@ describe("map mistake overlay repaints on an already-drawn board", () => {
     // Frame 2: same drawstate, now with the mistake overlay.
     const mistakes = mapGame.findMistakes?.(state) ?? [];
     expect(mistakes.length).toBeGreaterThan(0);
-    const dr2 = new RecordingDrawing(mapGame.colours([0.9, 0.9, 0.9]));
+    const dr2 = new RecordingDrawing(mapGame.colors([0.9, 0.9, 0.9]));
     dr2.startDraw();
     redraw(dr2, ds, state, state, 0, ui, 0, 0, undefined, mistakes);
     dr2.endDraw();
 
-    expect(dr2.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(true);
+    expect(dr2.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(true);
   });
 });

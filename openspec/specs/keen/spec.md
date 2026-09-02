@@ -10,7 +10,7 @@ The engine SHALL provide a registered `keen` game implementing
 Latin-square puzzle ("KenKen" / "Inshi No Heya") on a `w × w` grid in which the
 player places a digit `1..w` in every cell so each row and column contains every
 digit exactly once, subject to **arithmetic cage clues** — the grid is
-partitioned into contiguous blocks, each labelled with a target value and an
+partitioned into contiguous blocks, each labeled with a target value and an
 operation (`+`, `−`, `×`, `÷`) that the block's digits must satisfy, where
 subtraction and division cages always have area 2. Params SHALL be `w`, `diff`
 (Easy, Normal, Hard, Extreme, or Unreasonable), and `multiplicationOnly`,
@@ -46,7 +46,7 @@ following edge", with a compression pass that may replace a run of the same
 letter with that letter plus a decimal repeat count. The clue list SHALL give,
 for each cage in minimal-cell order, an operation tag (`a` add, `s` subtract, `m`
 multiply, `d` divide) followed by the decimal target value. `validateDesc` SHALL
-reject a malformed block structure, the wrong number of clues, an unrecognised
+reject a malformed block structure, the wrong number of clues, an unrecognized
 clue tag, and a subtraction or division clue on a cage whose area is not 2.
 `newState` SHALL rebuild the cage partition (a disjoint-set structure) and the
 per-cage clue, with every cell starting blank (Keen has no givens).
@@ -70,7 +70,7 @@ cages (random dominoes plus folded singletons, every cage of area `≤ 6`), assi
 a balanced mix of cage operations and values avoiding low-quality clues, and
 accept the board only when the graded solver solves it at **exactly** the
 requested difficulty (solvable at `diff` but not at `diff − 1`), regenerating
-otherwise; a 3×3 puzzle requested above Normal SHALL be dialled down to Normal.
+otherwise; a 3×3 puzzle requested above Normal SHALL be dialed down to Normal.
 Generation SHALL be RNG-faithful to upstream over the bit-identical `random.ts`,
 so the emitted desc matches the C reference byte-for-byte for the same seed. The
 generator SHALL carry a capped-iteration backstop that throws rather than
@@ -132,7 +132,7 @@ other cell in its row and column. `executeMove` SHALL return a new state and
 never mutate its input; a placement that completes the grid with no errors SHALL
 mark the state completed.
 
-#### Scenario: Placing and pencilling digits
+#### Scenario: Placing and penciling digits
 
 - **WHEN** a cell is highlighted and a digit key is pressed
 - **THEN** `interpretMove` yields a `set` move that places (or, in pencil mode,
@@ -155,7 +155,7 @@ cell, the cursor and pencil-mode highlights, live rule-violation errors (a cage
 whose filled digits violate its clue, and duplicate digits in a row or column),
 the Check & Save mistake overlay, and a completion flash. A CapsLock-style
 pencil-mode indicator SHALL be shown while persistent pencil mode is on. The
-palette SHALL be index-for-index with the upstream colour enum. Rendering SHALL
+palette SHALL be index-for-index with the upstream color enum. Rendering SHALL
 use a per-tile diff cache, with every overlay that is not part of the tile value
 (the mistake overlay) included in the diff key so it repaints on an
 already-drawn cell.
@@ -164,7 +164,7 @@ already-drawn cell.
 
 - **WHEN** a board is rendered to a recording drawing
 - **THEN** the cage clue text appears at each cage's minimal cell
-- **AND** a placed digit is drawn centred in its cell
+- **AND** a placed digit is drawn centered in its cell
 
 #### Scenario: Mistake overlay repaints on an already-drawn cell
 
@@ -243,7 +243,7 @@ spotted indication (the cage, named by its arithmetic clue), then the reasoning,
 then a necessity-voice conclusion ("must cross out the N" for an elimination, "can
 only be N" for a placement). A single cage firing forcing several strikes SHALL be
 one journey (continuation legs flagged `continuesPrevious`), and equivalent strikes
-of one firing SHALL share the target hint colour.
+of one firing SHALL share the target hint color.
 
 The trivial row/column eliminations a placement implies SHALL be governed by the
 auto-pencil preference (read from `ui`): with it on they are folded silently into
@@ -275,14 +275,14 @@ or one digit-out-of-one-line cross-cage elimination) SHALL map to exactly one
 
 #### Scenario: A cage elimination is taught as a note strike
 
-- **WHEN** the player asks for a hint on a fully-pencilled board where a cage's
+- **WHEN** the player asks for a hint on a fully-penciled board where a cage's
   arithmetic clue rules a digit out of one of its cells
 - **THEN** the hint returns a step whose `pencilStrike` move clears exactly those
   candidates
 - **AND** the narration names the cage by its clue (its target value and
   operation) and concludes in the necessity voice
 - **AND** the cage's cells are shaded and the struck candidates marked in the hint
-  colour
+  color
 
 #### Scenario: A hidden single is named by its line, not by the cell
 
@@ -313,8 +313,8 @@ or one digit-out-of-one-line cross-cage elimination) SHALL map to exactly one
 ### Requirement: Keen provides on-screen key labels
 
 Keen SHALL implement `requestKeys(params)` returning one button per digit `1..w`
-(labelled by the digit character) followed by a clear key (button code `8`,
-labelled `"Clear"`), reproducing upstream `game_request_keys` so the keypad matches
+(labeled by the digit character) followed by a clear key (button code `8`,
+labeled `"Clear"`), reproducing upstream `game_request_keys` so the keypad matches
 the C build.
 
 #### Scenario: The keypad covers the grid's digits plus clear

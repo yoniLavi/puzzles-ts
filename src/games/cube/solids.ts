@@ -228,7 +228,7 @@ export function transformPoly(
 /**
  * Seat the solid on a grid square: for each of the square's corner
  * points, find the single solid vertex sitting at that (x, y) (relative
- * to the square centre) with z at the solid's lowest level. Returns the
+ * to the square center) with z at the solid's lowest level. Returns the
  * matched vertex indices (one per square corner), or `null` if any
  * corner fails to match exactly one vertex. Mirrors `align_poly`.
  */

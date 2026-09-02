@@ -5,7 +5,7 @@
  *     upstream per-module test acts as the spec (per AGENTS.md test
  *     discipline layer 2).
  *
- *  2. Surface-level behavioural checks (preconditions, reset, iterator
+ *  2. Surface-level behavioral checks (preconditions, reset, iterator
  *     sugar) that are part of the TS API contract.
  *
  *  3. Closed-form properties, exhaustive over a small grid: exactly
@@ -14,7 +14,7 @@
  *
  * THERE USED TO BE A FOURTH, FIRST LAYER: replay of a C-recorded
  * `__fixtures__/corpus.json`. `retire-native-directory` retired it, and the
- * reasoning is worth keeping because it does **not** generalise to the other
+ * reasoning is worth keeping because it does **not** generalize to the other
  * frozen corpora in this repo. A per-game differential records which boards a
  * solver-gated generator produces, and `random`'s corpus records what bit
  * sequence a seed yields; neither fact can be derived, so the recorded fixture
@@ -93,7 +93,7 @@ describe("combi-test.c port", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Surface-level behavioural checks: preconditions, iterator sugar.
+// Surface-level behavioral checks: preconditions, iterator sugar.
 
 describe("Combi API surface", () => {
   it("throws when r > n", () => {

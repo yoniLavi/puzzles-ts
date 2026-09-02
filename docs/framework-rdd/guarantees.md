@@ -4,16 +4,16 @@
 > Authored by `rewrite-game-dev-docs` (2026-08-07). Current truth:
 > [`docs/games/`](../games/README.md). See the [vision README](./README.md).
 
-The framework's second half. Declarations buy behaviour; this document lists
+The framework's second half. Declarations buy behavior; this document lists
 what the *machine* asserts about every game the moment its definition exists —
-enrolment-free, because a hand-maintained enrolment list is a defect class
-(the collection has already been bitten by guards that measured a neighbour
+enrollment-free, because a hand-maintained enrollment list is a defect class
+(the collection has already been bitten by guards that measured a neighbor
 of the thing they claimed to guard; a list of "games that opted in" is that
-shape institutionalised).
+shape institutionalized).
 
 ## The standing principle
 
-**Declaring a capability enrols its guards.** This generalises what
+**Declaring a capability enrolls its guards.** This generalizes what
 `difficulty-contract.test.ts` and `touch-input.test.ts` already do, and
 retires the hand-lists (`testing/hint-games.ts`). The suite iterates the
 registry — asserting first that the registry's own count matches the catalog,

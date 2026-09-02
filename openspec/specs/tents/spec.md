@@ -169,7 +169,7 @@ empty list when the board is not uniquely solvable.
 
 `redraw` SHALL render: grass-filled non-blank tiles, trees (trunk rectangle
 plus leaf circles), tents (triangle), grid lines, the edge numbers on the
-bottom (columns) and right (rows) borders, red error colouring (error trunk,
+bottom (columns) and right (rows) borders, red error coloring (error trunk,
 error leaf/tent, adjacency diamonds with exclamation marks, red numbers), the
 keyboard cursor outline, and the upstream 3-phase completion flash (trees and
 tents blanked on the flashed thirds). The web build's `NARROW_BORDERS`
@@ -177,8 +177,8 @@ geometry SHALL be used (thin top-left border, number room on the
 bottom/right). The drawstate SHALL diff a packed `Int32Array` per tile
 (square value plus every error, cursor, flash, and mistake overlay bit) and a
 separate per-number diff array, so every overlay is in the diff key. The
-palette SHALL be index-for-index with the C colour enum, the fork mistake
-colour appended past it.
+palette SHALL be index-for-index with the C color enum, the fork mistake
+color appended past it.
 
 #### Scenario: A mistake overlay repaints an unchanged tile
 
@@ -189,5 +189,5 @@ colour appended past it.
 #### Scenario: Edge numbers render red on error
 
 - **WHEN** a row's tent count exceeds its edge clue
-- **THEN** that row's number is drawn in the error colour
+- **THEN** that row's number is drawn in the error color
 

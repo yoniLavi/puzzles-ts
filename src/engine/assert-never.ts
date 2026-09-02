@@ -51,7 +51,7 @@ function describe(value: unknown): string {
  * that type checking cannot exclude.
  *
  * `context` is required rather than derived from a stack: the message is read
- * in a player's console and quoted in a `loadGame` refusal, and "unrecognised
+ * in a player's console and quoted in a `loadGame` refusal, and "unrecognized
  * move" with no game name in it is the unhelpfulness this exists to remove.
  * Spell it as the dispatch site — `"abcd: executeMove"`.
  */

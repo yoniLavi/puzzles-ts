@@ -7,8 +7,8 @@ import { type FlipParams, type FlipState, flipGame } from "./index.ts";
 
 /** Recording fake of the full `GameDrawing` surface. */
 function recordingDrawing() {
-  const ops: Array<{ op: string; colour?: number }> = [];
-  const rec = (op: string, colour?: number) => ops.push({ op, colour });
+  const ops: Array<{ op: string; color?: number }> = [];
+  const rec = (op: string, color?: number) => ops.push({ op, color });
   const dr: GameDrawing = {
     startDraw: () => rec("startDraw"),
     endDraw: () => rec("endDraw"),
@@ -300,7 +300,7 @@ describe("Flip redraw", () => {
     const a = recordingDrawing();
     flipGame.redraw(a.dr, ds, null, s, 1, ui, 0, 0);
     // (w+1)+(h+1) = 8 grid lines, all COL_GRID, drawn once.
-    const gridLines = a.ops.filter((o) => o.op === "drawLine" && o.colour === COL_GRID);
+    const gridLines = a.ops.filter((o) => o.op === "drawLine" && o.color === COL_GRID);
     expect(gridLines.length).toBe(8);
     expect(a.ops.some((o) => o.op === "drawRect")).toBe(true);
 
@@ -325,7 +325,7 @@ describe("Flip redraw", () => {
     flipGame.setTileSize?.(ds, flipGame.preferredTileSize ?? 32);
     const a = recordingDrawing();
     flipGame.redraw(a.dr, ds, null, hinted, 1, ui, 0, 0);
-    expect(a.ops.some((o) => o.op === "drawLine" && o.colour === COL_HINT)).toBe(true);
+    expect(a.ops.some((o) => o.op === "drawLine" && o.color === COL_HINT)).toBe(true);
   });
 });
 
@@ -366,7 +366,7 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
     const first = recordingDrawing();
     me.redraw(first.dr);
     const firstGridLines = first.ops.filter(
-      (o) => o.op === "drawLine" && o.colour === COL_GRID,
+      (o) => o.op === "drawLine" && o.color === COL_GRID,
     ).length;
     expect(firstGridLines).toBeGreaterThan(0); // grid drawn once
 
@@ -393,7 +393,7 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
     const idle = recordingDrawing();
     me.redraw(idle.dr);
     expect(
-      idle.ops.filter((o) => o.op === "drawLine" && o.colour === COL_GRID).length,
+      idle.ops.filter((o) => o.op === "drawLine" && o.color === COL_GRID).length,
     ).toBe(0);
 
     me.canvasCleared(); // app calls this from `resizeDrawing`
@@ -402,9 +402,9 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
 
     // Flip's `!ds.started` branch fired: full-window bg fill +
     // grid lines.
-    expect(second.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
+    expect(second.ops.some((o) => o.op === "drawRect" && o.color === 0)).toBe(true);
     const secondGridLines = second.ops.filter(
-      (o) => o.op === "drawLine" && o.colour === COL_GRID,
+      (o) => o.op === "drawLine" && o.color === COL_GRID,
     ).length;
     expect(secondGridLines).toBeGreaterThan(0);
   });
@@ -575,7 +575,7 @@ describe("Flip through the midend", () => {
     ).toBeUndefined();
 
     // Reveal the solution (a hint move; marks usedSolve), then click
-    // the hinted cells via processInput at tile centres.
+    // the hinted cells via processInput at tile centers.
     expect(me.solve()).toBeUndefined();
     const tile = flipGame.preferredTileSize ?? 32;
     const border = tile >> 1;

@@ -1,8 +1,8 @@
 # The gate lives in scripts/gate.sh so this hook and `npm run gate` share one
 # implementation (the build-pipeline spec requires they mirror each other).
-# tsc → biome (lint + format + import order) → probe-anchor check (the fast
-# fail-fast prefix), then `vitest run` ∥ `vite build` concurrently, failing the
-# commit if either fails.
+# tsc → biome (lint + format + import order) → probe-anchor check → spelling
+# guard → openspec validate (the fast fail-fast prefix), then `vitest run` ∥
+# `vite build` concurrently, failing the commit if either fails.
 #
 # Two env vars scope this run by role, and both rely on CI as the backstop:
 #

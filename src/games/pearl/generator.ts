@@ -6,7 +6,7 @@
  * The generator: build a random loop over the shared `generateLoop` (biased
  * toward black-pearl corners), derive the maximal clue set, gate on the
  * solver finding a unique solution at the requested difficulty (and failing
- * one tier easier), then greedily minimise the clues.
+ * one tier easier), then greedily minimize the clues.
  */
 import { type Grid, gridNewSquare } from "../../engine/grid/index.ts";
 import {
@@ -58,14 +58,14 @@ function makeBias(g: Grid): LoopgenBias {
     let score = 0;
     for (let bi = 0; bi < 2; bi++) {
       const c = bi === 0 ? FACE_WHITE : FACE_BLACK;
-      // Which edges lie on this colour's boundary.
+      // Which edges lie on this color's boundary.
       for (let ei = 0; ei < nEdges; ei++) {
         const e = g.edges[ei];
         const fc1 = e.face1 ? board[e.face1.index] : FACE_BLACK;
         const fc2 = e.face2 ? board[e.face2.index] : FACE_BLACK;
         onLoop[ei] = (fc1 === c) !== (fc2 === c) ? 1 : 0;
       }
-      // Vertex types (corner / straight / off-loop) + loop neighbours.
+      // Vertex types (corner / straight / off-loop) + loop neighbors.
       for (let di = 0; di < nDots; di++) {
         const d = g.dots[di];
         let type = 0;
@@ -90,7 +90,7 @@ function makeBias(g: Grid): LoopgenBias {
         nbr0[di] = n0;
         nbr1[di] = n1;
       }
-      // A black-clue site: a corner whose two loop neighbours are non-corners.
+      // A black-clue site: a corner whose two loop neighbors are non-corners.
       for (let di = 0; di < nDots; di++) {
         if (vtype[di] & 0x10 && !((vtype[nbr0[di]] | vtype[nbr1[di]]) & 0x10)) score++;
       }
@@ -100,7 +100,7 @@ function makeBias(g: Grid): LoopgenBias {
 }
 
 /** Generate a random loop into `lines` (length w*h) via the biased loop
- * generator, converting the face colouring to per-cell R/U/L/D line bits.
+ * generator, converting the face coloring to per-cell R/U/L/D line bits.
  * Faithful to `pearl_loopgen`. */
 export function pearlLoopgen(
   w: number,
@@ -115,13 +115,13 @@ export function pearlLoopgen(
 
   generateLoop(g, board, rng, makeBias(g));
 
-  const faceColour = (f: (typeof g.faces)[number] | null): number =>
+  const faceColor = (f: (typeof g.faces)[number] | null): number =>
     f === null ? FACE_BLACK : board[f.index];
 
   for (let i = 0; i < g.numEdges; i++) {
     const e = g.edges[i];
-    const c1 = faceColour(e.face1);
-    const c2 = faceColour(e.face2);
+    const c1 = faceColor(e.face1);
+    const c2 = faceColor(e.face2);
     if (c1 !== c2) {
       // This grid edge is on the loop: lay a line along it.
       let x1 = (e.dot1.x / s) | 0;
@@ -144,7 +144,7 @@ export function pearlLoopgen(
 /**
  * Build a puzzle: a random loop, its maximal clue set, solver-gated to a
  * unique solution at `difficulty` (and — for Tricky — not solvable one tier
- * easier), then greedily minimised. Writes `clues` and the solution
+ * easier), then greedily minimized. Writes `clues` and the solution
  * `gridOut` (both length w*h). Faithful to `new_clues`, including the
  * upstream `corners`-array duplication quirk (design D4) and the
  * 5×5-Tricky→Easy downgrade.

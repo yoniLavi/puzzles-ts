@@ -88,7 +88,7 @@ own clue deductions: for each cell it SHALL intersect its candidate digits with 
 permitted by each adjacent clue given the opposite cell's candidates, across the Easy,
 Normal, Tricky and `Unreasonable` difficulty levels. The generator SHALL produce a full
 Latin square, derive a candidate clue at every interior intersection, and then remove
-given digits and clues in a randomised order while the puzzle remains **uniquely**
+given digits and clues in a randomized order while the puzzle remains **uniquely**
 solvable at the target difficulty. Generation from a given seed SHALL be reproducible.
 
 Uniqueness is required at *every* difficulty, including the guess-and-verify
@@ -204,7 +204,7 @@ message SHALL name those tiers from the game's tier list rather than spelling th
 in prose, so it cannot survive a rename while the menu moves on.
 
 A 3×3 grid has only four intersections, which is not enough structure to separate
-those tiers from their neighbours: no board needing Normal, and none needing the
+those tiers from their neighbors: no board needing Normal, and none needing the
 top tier, was found in 3,000 candidates each. Size 3 *Tricky* is unaffected, and
 every tier at size 4 and above is reachable at ordinary cost.
 

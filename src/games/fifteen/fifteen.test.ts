@@ -218,7 +218,7 @@ describe("Fifteen input", () => {
     const solved = solvedState(4, 4); // gap at (3,3)
     const ds = fifteenGame.newDrawState?.(solved) ?? null;
     fifteenGame.setTileSize?.(ds as never, 48);
-    // Click the centre of cell (0,3): same row as the gap.
+    // Click the center of cell (0,3): same row as the gap.
     const px = 0 * 48 + 24 + 24; // coord(0)+ts/2 = border + ts/2
     const py = 3 * 48 + 24 + 24;
     const move = fifteenGame.interpretMove(

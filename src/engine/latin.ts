@@ -32,7 +32,7 @@
  * `symbols = o − times + 1` distinct values, `cubepos` strides by `symbols`,
  * positional elimination places the repeated symbol when exactly `times`
  * candidate cells remain, placing it strikes the rest of the line only once the
- * line's count is full, set elimination generalises to multiplicities
+ * line's count is full, set elimination generalizes to multiplicities
  * ({@link LatinSolver.setGeneral}), and forcing chains never link through it
  * (a link relies on the value appearing once). **Every one of those paths
  * reduces to the C's when no repeat is declared** — `symbols = o`, every
@@ -96,7 +96,7 @@ export type LatinReason =
 /**
  * The one reason only a solver with {@link LatinRepeats} ever records: the
  * repeated symbol `n` has been placed all `times` times in this line, so it is
- * ruled out of the rest of the line — the multiplicity analogue of `dup`, which
+ * ruled out of the rest of the line — the multiplicity analog of `dup`, which
  * names one placement where here it is the count that forces. Kept apart from
  * {@link LatinReason} so the Latin-square games, whose narrations switch over
  * that union exhaustively, are not asked to narrate a case they cannot meet; a
@@ -169,7 +169,7 @@ export class LatinSolver {
   private readonly sRowidx: Uint8Array;
   private readonly sColidx: Uint8Array;
   private readonly sSet: Uint8Array;
-  private readonly sNeighbours: Int32Array;
+  private readonly sNeighbors: Int32Array;
   private readonly sBfsqueue: Int32Array;
   /** BFS parent pointers for {@link forcing}, so a firing can report the chain
    * it followed rather than only its conclusion. Written on the hint path only
@@ -211,7 +211,7 @@ export class LatinSolver {
     this.sRowidx = new Uint8Array(o);
     this.sColidx = new Uint8Array(o);
     this.sSet = new Uint8Array(o);
-    this.sNeighbours = new Int32Array(3 * o);
+    this.sNeighbors = new Int32Array(3 * o);
     this.sBfsqueue = new Int32Array(o * o);
     this.sParent = new Int32Array(o * o);
   }
@@ -506,7 +506,7 @@ export class LatinSolver {
     const o = this.o;
     const s = this.symbols;
     const number = this.sGrid; // reused as the BFS "other candidate" map
-    const neighbours = this.sNeighbours;
+    const neighbors = this.sNeighbors;
     const bfsqueue = this.sBfsqueue;
     const parent = this.sParent;
 
@@ -524,7 +524,7 @@ export class LatinSolver {
 
         for (let n = 1; n <= s; n++) {
           if (!this.cubeGet(x, y, n)) continue;
-          // Every link of a chain — "this cell takes `currn`, so its neighbour
+          // Every link of a chain — "this cell takes `currn`, so its neighbor
           // in the line cannot" — relies on `currn` appearing once per line, so
           // the repeated symbol can neither start a chain nor carry one.
           if (n === this.repeat) continue;
@@ -546,12 +546,12 @@ export class LatinSolver {
             if (currn === this.repeat) continue;
 
             let nn = 0;
-            for (let yt = 0; yt < o; yt++) neighbours[nn++] = yt * o + xx;
-            for (let xt = 0; xt < o; xt++) neighbours[nn++] = yy * o + xt;
+            for (let yt = 0; yt < o; yt++) neighbors[nn++] = yt * o + xx;
+            for (let xt = 0; xt < o; xt++) neighbors[nn++] = yy * o + xt;
 
             for (let i = 0; i < nn; i++) {
-              const xt = neighbours[i] % o;
-              const yt = (neighbours[i] / o) | 0;
+              const xt = neighbors[i] % o;
+              const yt = (neighbors[i] / o) | 0;
               if (number[yt * o + xt] <= o) continue;
               if (!this.cubeGet(xt, yt, currn)) continue;
               if (xt === xx && yt === yy) continue;
@@ -593,7 +593,7 @@ export class LatinSolver {
                       // Which line ties the conclusion to the *origin* — the
                       // other half of the case split. The conclusion's tie to
                       // the chain's far end is structural (it is a BFS
-                      // neighbour of it), so only this one needs recording.
+                      // neighbor of it), so only this one needs recording.
                       shares: xt === x ? "col" : "row",
                     },
                     group: this.group,
@@ -764,17 +764,17 @@ export class LatinSolver {
 
       for (let mask = 1; mask < 1 << nSub; mask++) {
         // Skip singletons and the full set: a singleton is `elim`'s job, and the
-        // full set's neighbourhood is everything.
+        // full set's neighborhood is everything.
         const size = popcount(mask);
         if (size < 2 || size >= nSub) continue;
         let demanded = 0;
         for (let a = 0; a < nSub; a++) if (mask & (1 << a)) demanded += want[a];
-        let neighbourhood = 0;
+        let neighborhood = 0;
         let supplied = 0;
         for (let b = 0; b < nOther; b++) {
           for (let a = 0; a < nSub; a++) {
             if (mask & (1 << a) && live(a, b)) {
-              neighbourhood |= 1 << b;
+              neighborhood |= 1 << b;
               supplied += give[b];
               break;
             }
@@ -786,7 +786,7 @@ export class LatinSolver {
         for (let a = 0; a < nSub; a++) {
           if (mask & (1 << a)) continue;
           for (let b = 0; b < nOther; b++) {
-            if (neighbourhood & (1 << b) && live(a, b)) {
+            if (neighborhood & (1 << b) && live(a, b)) {
               strike(side === "rows" ? at(a, b) : at(b, a));
               progress = true;
             }
@@ -1026,9 +1026,9 @@ export function latinSolver<Ctx>(
 
 /**
  * Maximum bipartite matching (Hopcroft–Karp) between `nl` left and `nr`
- * right vertices. `adjlists[L]` lists L's neighbours (mutated in place by the
- * randomising DFS, exactly as upstream). Returns the L→R assignment array
- * (`-1` = unmatched), the analogue of upstream's `outl`. The two RNG draws —
+ * right vertices. `adjlists[L]` lists L's neighbors (mutated in place by the
+ * randomizing DFS, exactly as upstream). Returns the L→R assignment array
+ * (`-1` = unmatched), the analog of upstream's `outl`. The two RNG draws —
  * `shuffle(Lorder)` per BFS pass and the in-place `random_upto` adjacency
  * swap during the DFS — are reproduced exactly so generation is byte-faithful.
  *
@@ -1036,7 +1036,7 @@ export function latinSolver<Ctx>(
  * possible matchings (generation), while omitting it runs deterministically
  * — the two draw sites are guarded exactly as `matching.c`'s `if (rs)`. A
  * matching's *cardinality* is order-independent, so the `rs`-less mode is the
- * faithful analogue of upstream's `rs = NULL` existence check (Tents'
+ * faithful analog of upstream's `rs = NULL` existence check (Tents'
  * completion check). Derive an `R→L` assignment, if needed, by inverting the
  * returned `L→R` array.
  */

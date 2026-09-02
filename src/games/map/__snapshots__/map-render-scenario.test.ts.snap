@@ -3,7 +3,7 @@
 exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`] = `
 [
   {
-    "colour": 1,
+    "color": 1,
     "h": 201,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -19,7 +19,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -28,7 +28,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -37,7 +37,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -46,7 +46,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -65,7 +65,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -74,7 +74,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -83,7 +83,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -102,7 +102,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -111,7 +111,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -120,7 +120,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -139,7 +139,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -148,7 +148,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -157,7 +157,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -166,7 +166,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -185,7 +185,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -194,7 +194,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -203,7 +203,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -222,7 +222,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -231,7 +231,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -240,7 +240,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -259,7 +259,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -268,7 +268,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -277,7 +277,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -296,7 +296,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -305,7 +305,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -314,7 +314,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -333,7 +333,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -342,7 +342,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -351,7 +351,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -360,7 +360,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -379,7 +379,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -388,7 +388,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -397,7 +397,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -416,7 +416,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -425,7 +425,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -434,7 +434,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -453,7 +453,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -462,7 +462,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -471,7 +471,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -490,7 +490,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -499,7 +499,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -508,7 +508,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -527,7 +527,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -546,7 +546,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -565,7 +565,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -574,7 +574,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -583,7 +583,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -602,7 +602,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -621,7 +621,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -640,7 +640,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -659,7 +659,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -699,7 +699,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -729,7 +729,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     ],
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -748,7 +748,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -767,7 +767,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -786,7 +786,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 20,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -805,7 +805,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -814,7 +814,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -823,7 +823,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -832,7 +832,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -851,7 +851,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -860,7 +860,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -879,7 +879,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -898,7 +898,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -907,7 +907,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -916,7 +916,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -935,7 +935,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -954,7 +954,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -973,7 +973,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1013,7 +1013,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1022,7 +1022,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1041,7 +1041,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1060,7 +1060,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -1100,7 +1100,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -1119,7 +1119,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 40,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -1138,7 +1138,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 163, 154)",
@@ -1147,7 +1147,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1156,7 +1156,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1165,7 +1165,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1184,7 +1184,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1193,7 +1193,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1202,7 +1202,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1221,7 +1221,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1261,7 +1261,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1270,7 +1270,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1279,7 +1279,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1298,7 +1298,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1307,7 +1307,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1316,7 +1316,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1325,7 +1325,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1344,7 +1344,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1353,7 +1353,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1362,7 +1362,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1381,7 +1381,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1390,7 +1390,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1409,7 +1409,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1428,7 +1428,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1447,7 +1447,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1466,7 +1466,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -1475,7 +1475,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1484,7 +1484,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1503,7 +1503,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 60,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -1522,7 +1522,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1531,7 +1531,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1540,7 +1540,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1549,7 +1549,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1568,7 +1568,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1577,7 +1577,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1596,7 +1596,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1605,7 +1605,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1614,7 +1614,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1633,7 +1633,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1673,7 +1673,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1682,7 +1682,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1701,7 +1701,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1720,7 +1720,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1739,7 +1739,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -1748,7 +1748,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1757,7 +1757,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1766,7 +1766,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1785,7 +1785,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1794,7 +1794,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1803,7 +1803,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1812,7 +1812,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1831,7 +1831,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1840,7 +1840,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1849,7 +1849,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1868,7 +1868,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -1898,7 +1898,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     ],
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1917,7 +1917,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 80,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(236, 227, 174)",
@@ -1936,7 +1936,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1945,7 +1945,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1954,7 +1954,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1973,7 +1973,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1992,7 +1992,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2001,7 +2001,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2010,7 +2010,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2029,7 +2029,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2038,7 +2038,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2047,7 +2047,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2066,7 +2066,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2085,7 +2085,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2104,7 +2104,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2144,7 +2144,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -2153,7 +2153,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2172,7 +2172,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -2181,7 +2181,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2200,7 +2200,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2230,7 +2230,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     ],
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2249,7 +2249,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2268,7 +2268,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2277,7 +2277,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2286,7 +2286,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 100,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2305,7 +2305,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(177, 250, 254)",
@@ -2314,7 +2314,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2323,7 +2323,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2332,7 +2332,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2351,7 +2351,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(177, 250, 254)",
@@ -2360,7 +2360,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2369,7 +2369,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2388,7 +2388,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2397,7 +2397,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2406,7 +2406,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2425,7 +2425,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2434,7 +2434,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2443,7 +2443,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2452,7 +2452,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2471,7 +2471,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2480,7 +2480,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2499,7 +2499,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2518,7 +2518,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -2527,7 +2527,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2536,7 +2536,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2555,7 +2555,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -2574,7 +2574,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -2593,7 +2593,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -2612,7 +2612,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -2621,7 +2621,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2630,7 +2630,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2649,7 +2649,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -2658,7 +2658,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2667,7 +2667,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 120,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2686,7 +2686,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(177, 250, 254)",
@@ -2695,7 +2695,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2704,7 +2704,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2723,7 +2723,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(177, 250, 254)",
@@ -2742,7 +2742,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2751,7 +2751,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2760,7 +2760,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2769,7 +2769,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2788,7 +2788,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2797,7 +2797,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2816,7 +2816,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2825,7 +2825,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2834,7 +2834,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2843,7 +2843,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2862,7 +2862,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2871,7 +2871,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2880,7 +2880,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2899,7 +2899,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2908,7 +2908,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2917,7 +2917,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2936,7 +2936,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2945,7 +2945,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2954,7 +2954,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2963,7 +2963,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2982,7 +2982,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -2991,7 +2991,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3010,7 +3010,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -3029,7 +3029,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -3048,7 +3048,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 140,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -3067,7 +3067,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(177, 250, 254)",
@@ -3076,7 +3076,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3085,7 +3085,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3104,7 +3104,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(177, 250, 254)",
@@ -3123,7 +3123,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3132,7 +3132,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3141,7 +3141,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3160,7 +3160,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3179,7 +3179,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3209,7 +3209,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     ],
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3228,7 +3228,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3247,7 +3247,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3287,7 +3287,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3296,7 +3296,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3315,7 +3315,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -3345,7 +3345,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     ],
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3364,7 +3364,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -3383,7 +3383,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -3402,7 +3402,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 160,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -3421,7 +3421,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(177, 250, 254)",
@@ -3430,7 +3430,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3439,7 +3439,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3458,7 +3458,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(177, 250, 254)",
@@ -3477,7 +3477,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3486,7 +3486,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3495,7 +3495,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3514,7 +3514,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3533,7 +3533,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3552,7 +3552,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3561,7 +3561,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3570,7 +3570,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3589,7 +3589,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3598,7 +3598,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3617,7 +3617,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3636,7 +3636,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3655,7 +3655,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3664,7 +3664,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3673,7 +3673,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3692,7 +3692,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",
@@ -3701,7 +3701,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3720,7 +3720,7 @@ exports[`map render scenarios > opener frame: region fills + grid lines drawn 1`
     "y": 180,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(233, 212, 253)",

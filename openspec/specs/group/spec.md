@@ -135,7 +135,7 @@ so Check & Save applies.
 Rendering SHALL draw the element legend along the top and left, shade the leading
 diagonal, draw dividers as thick edges, lay out pencil marks in a grid, highlight
 the selection, annotate Latin duplicates and associativity failures in the error
-colour, and flash on completion.
+color, and flash on completion.
 
 #### Scenario: A diagonal multifill sets several cells at once
 
@@ -193,7 +193,7 @@ step SHALL state the actual triple and the three known products that force the
 fourth (teaching the technique, not merely pointing at the cell). A single
 deduction *firing* that forces several cells (the identity fill) SHALL be one
 journey (continuation legs flagged `continuesPrevious`), and equivalent
-placements of one firing SHALL share the target hint colour.
+placements of one firing SHALL share the target hint color.
 
 The hint SHALL refuse (`{ ok: false, error }`) when the board is solved or when
 `findMistakes` is non-empty, and refusal SHALL light the mistake overlay through
@@ -227,7 +227,7 @@ SHALL map to exactly one `group` so a hint step never mixes deductions.
 - **AND** the narration names the three known products and states that
   `(a·b)·c = a·(b·c)` forces the fourth
 - **AND** the three known-product cells are shaded as evidence and the target cell
-  is ringed in the hint colour
+  is ringed in the hint color
 
 #### Scenario: The identity's row and column are filled as one journey
 

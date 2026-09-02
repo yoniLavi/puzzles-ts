@@ -3,8 +3,8 @@
  * `GameDrawing`, assert the ops that matter, and snapshot the record.
  *
  * Net's renderer is a fresh port (design D2), so this is the guard that its
- * rotated-polygon wires, the three colour passes (black / powered-cyan /
- * error-red), the endpoint + source boxes, the locked-grey background, and the
+ * rotated-polygon wires, the three color passes (black / powered-cyan /
+ * error-red), the endpoint + source boxes, the locked-gray background, and the
  * barrier rectangles are all emitted.
  */
 
@@ -56,8 +56,8 @@ describe("net render", () => {
     const { recording } = renderScenario({ game: netGame, id });
     const ops = recording.ops;
 
-    // Grid lines are border-grey rects; wires are black-filled polygons.
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_BORDER)).toBe(true);
+    // Grid lines are border-gray rects; wires are black-filled polygons.
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_BORDER)).toBe(true);
     expect(ops.some((o) => o.op === "polygon" && o.fill === COL_WIRE)).toBe(true);
     expect(ops.filter((o) => o.op === "polygon").length).toBeGreaterThan(0);
 
@@ -82,7 +82,7 @@ describe("net render", () => {
     const { id } = board(P5, "render-locked");
     const lock: NetMove = { type: "lock", x: 2, y: 2 };
     const { recording } = renderScenario({ game: netGame, id, moves: [lock] });
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_LOCKED)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_LOCKED)).toBe(
       true,
     );
   });
@@ -90,7 +90,7 @@ describe("net render", () => {
   it("a barrier preset draws red barrier rectangles", () => {
     const { id } = board(P5B, "render-barrier");
     const { recording } = renderScenario({ game: netGame, id });
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_BARRIER)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_BARRIER)).toBe(
       true,
     );
   });

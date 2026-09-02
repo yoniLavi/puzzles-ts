@@ -3,7 +3,7 @@
  * description **byte-for-byte** for the same seed.
  *
  * This is the strongest bar available, and here it validates three layers at
- * once. Spokes' generator strips a randomised list of lines and keeps each
+ * once. Spokes' generator strips a randomized list of lines and keeps each
  * removal only while the tiered solver still deduces a unique solution, so the
  * published clue digits are decided by the solver's verdict on every
  * intermediate board — the desc cannot match unless the generator's draw
@@ -18,7 +18,7 @@
  * differential alone — keeping this oracle over the generator's draw order, the
  * whole tiered solver and the codec, and leaving only the four-line clear in
  * `spokesGenerate` outside its reach. `spokes.test.ts` covers the corrected
- * gate behaviourally, by grading the boards the game actually ships.
+ * gate behaviorally, by grading the boards the game actually ships.
  *
  * The fixture was recorded from `puzzles/auxiliary/spokes-trace.c` while
  * `puzzles/unreleased/spokes.c` still existed; see that harness's header for

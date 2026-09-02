@@ -74,7 +74,7 @@ solution string.
 ### Requirement: Towers accepts digit, pencil, clue-strike, and solve moves
 
 `interpretMove` SHALL select a cell by mouse (with 3D-aware hit-testing so a
-click on a tower protruding from a neighbouring cell selects that neighbour) or
+click on a tower protruding from a neighboring cell selects that neighbor) or
 keyboard cursor, distinguishing a real-entry highlight (left button / select)
 from a pencil-mark highlight (right button / select2). With a cell highlighted,
 a digit `1..w` SHALL enter that tower (or toggle the pencil mark in pencil
@@ -105,13 +105,13 @@ constraint.
 `redraw` SHALL render the `w × w` play area surrounded by the outside clue cells,
 with each filled cell drawn — under the default 3D appearance preference — as a
 tower whose height scales the drawn solid, and under the 2D preference as a
-plain centred digit. Empty cells SHALL show their pencil marks in an
-auto-sized grid layout. The renderer SHALL colour given towers, user-entered
+plain centered digit. Empty cells SHALL show their pencil marks in an
+auto-sized grid layout. The renderer SHALL color given towers, user-entered
 towers, struck-through ("done") clues, and error cells distinctly, highlight the
 selected cell (full highlight for real entry, a corner wedge for pencil mode),
 draw the keyboard cursor, and flash on completion. Cells SHALL be diffed against
 a per-tile cache that accounts for a 3D tower's protrusion into its
-up-left neighbours.
+up-left neighbors.
 
 #### Scenario: Initial 3D frame draws clues and towers
 
@@ -123,7 +123,7 @@ up-left neighbours.
 #### Scenario: 2D preference suppresses the tower solids
 
 - **WHEN** the same board is rendered with the appearance preference set to 2D
-- **THEN** given towers are drawn as centred digits with no tower polygons
+- **THEN** given towers are drawn as centered digits with no tower polygons
 
 ### Requirement: Towers exposes appearance and pencil-highlight preferences
 
@@ -213,7 +213,7 @@ clear together with the pencil mode and SHALL NOT alter game state.
 - **WHEN** sticky pencil mode is on and active, and the player right-clicks again
 - **THEN** pencil mode turns off, real entry resumes, and the indicator clears
 
-#### Scenario: Sticky mode disabled restores upstream behaviour
+#### Scenario: Sticky mode disabled restores upstream behavior
 
 - **WHEN** the sticky pencil preference is off and the player right-clicks a cell
   to pencil it, then left-clicks another cell
@@ -253,7 +253,7 @@ the spotted indication (the clue/line pattern), then the reasoning, then a
 necessity-voice conclusion — and a highlight that shades the **driving clue
 cell(s)** and their line of sight (`COL_HINT_CELL`) so the player can see which
 clue the hint is about, marks the target cell(s)/struck candidate(s)
-(`COL_HINT`), with equivalent strikes of one firing sharing the target colour.
+(`COL_HINT`), with equivalent strikes of one firing sharing the target color.
 The hint SHALL refuse (`{ ok: false, error }`) when the board is solved or when
 `findMistakes` is non-empty, and refusal SHALL light the mistake overlay through
 the engine's existing refusal→`findMistakes` coupling.
@@ -275,14 +275,14 @@ differential), and the hint fixpoint SHALL be guarded by a step budget.
 
 #### Scenario: A clue elimination is taught as a note strike
 
-- **WHEN** the player asks for a hint on a fully-pencilled board where a clue
+- **WHEN** the player asks for a hint on a fully-penciled board where a clue
   line-of-sight deduction rules a height out of one or more cells
 - **THEN** the hint returns a step whose `pencilStrike` move clears exactly those
   candidates
 - **AND** the narration names the clue pattern and states why those heights
   cannot sit there, concluding in the necessity voice
 - **AND** the driving clue's line of sight is shaded and the struck candidates
-  are marked in the hint colour
+  are marked in the hint color
 
 #### Scenario: An empty board is populated before elimination
 
@@ -325,7 +325,7 @@ pencil marks of every other cell in the same row and column. The decision SHALL 
 fixed at move-creation time (recorded on the move) so that replaying a saved game is
 deterministic regardless of the preference's later value. When the preference is off
 (the default), a placement SHALL leave other cells' pencil marks untouched (upstream
-behaviour) and note cleanup is manual — the player removes obvious candidates via the
+behavior) and note cleanup is manual — the player removes obvious candidates via the
 mark-all control or a hint. The preference SHALL also govern the hint: with it on, the
 hint folds the implied row/column eliminations into the placement; with it off, the
 hint teaches them as explicit strikes.
@@ -345,8 +345,8 @@ hint teaches them as explicit strikes.
 ### Requirement: Towers provides on-screen key labels
 
 Towers SHALL implement `requestKeys(params)` returning one button per digit `1..w`
-(labelled by the digit character) followed by a clear key (button code `8`,
-labelled `"Clear"`), reproducing upstream `game_request_keys` so the keypad matches
+(labeled by the digit character) followed by a clear key (button code `8`,
+labeled `"Clear"`), reproducing upstream `game_request_keys` so the keypad matches
 the C build.
 
 #### Scenario: The keypad covers the grid's heights plus clear

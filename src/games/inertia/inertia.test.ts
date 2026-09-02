@@ -1,5 +1,5 @@
 /**
- * Inertia — behavioural tests.
+ * Inertia — behavioral tests.
  *
  * Tier 1 (the slide rule, the codec, the generator, the route aid, the deaths
  * tally) plus tier 2.5 render scenarios (docs/games/testing.md § "The test tiers").
@@ -343,12 +343,12 @@ describe("inertia swipe", () => {
     const ds = inertiaGame.newDrawState?.(s);
     if (!ds) throw new Error("expected a drawstate");
     inertiaGame.setTileSize?.(ds, ts);
-    // Pixel centre of a cell, and the ball's own centre.
-    const centre = (cx: number, cy: number) => ({
+    // Pixel center of a cell, and the ball's own center.
+    const center = (cx: number, cy: number) => ({
       x: 1 + cx * ts + ts / 2,
       y: 1 + cy * ts + ts / 2,
     });
-    return { s, ds, u: ui(), centre, ball: centre(2, 2) };
+    return { s, ds, u: ui(), center, ball: center(2, 2) };
   }
 
   const PRESS = 0x0200;
@@ -356,20 +356,20 @@ describe("inertia swipe", () => {
   const RELEASE = 0x0206;
 
   it("aims an arrow while held, and launches that way on release", () => {
-    const { s, ds, u, centre, ball } = swipeBoard();
+    const { s, ds, u, center, ball } = swipeBoard();
 
     expect(inertiaGame.interpretMove(s, u, ds, ball, PRESS)).toBe(UI_UPDATE);
     expect(u.aiming).toBe(true);
     expect(u.aimDir).toBe(-1); // nothing aimed yet: still on the ball
 
     // Drag out to the east: the arrow points east...
-    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), DRAG)).toBe(UI_UPDATE);
+    expect(inertiaGame.interpretMove(s, u, ds, center(4, 2), DRAG)).toBe(UI_UPDATE);
     expect(u.aimDir).toBe(E);
     // ...and dragging further the same way changes nothing to repaint.
-    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), DRAG)).toBeNull();
+    expect(inertiaGame.interpretMove(s, u, ds, center(4, 2), DRAG)).toBeNull();
 
     // Let go: the ball goes east.
-    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), RELEASE)).toEqual({
+    expect(inertiaGame.interpretMove(s, u, ds, center(4, 2), RELEASE)).toEqual({
       type: "move",
       dir: E,
     });
@@ -379,16 +379,16 @@ describe("inertia swipe", () => {
   });
 
   it("aims diagonally", () => {
-    const { s, ds, u, centre, ball } = swipeBoard();
+    const { s, ds, u, center, ball } = swipeBoard();
     inertiaGame.interpretMove(s, u, ds, ball, PRESS);
-    inertiaGame.interpretMove(s, u, ds, centre(4, 4), DRAG);
+    inertiaGame.interpretMove(s, u, ds, center(4, 4), DRAG);
     expect(u.aimDir).toBe(SE);
   });
 
   it("dragging back onto the ball calls the swipe off", () => {
-    const { s, ds, u, centre, ball } = swipeBoard();
+    const { s, ds, u, center, ball } = swipeBoard();
     inertiaGame.interpretMove(s, u, ds, ball, PRESS);
-    inertiaGame.interpretMove(s, u, ds, centre(4, 2), DRAG);
+    inertiaGame.interpretMove(s, u, ds, center(4, 2), DRAG);
     expect(u.aimDir).toBe(E);
 
     // Back to the ball: the arrow goes away...
@@ -402,14 +402,14 @@ describe("inertia swipe", () => {
   });
 
   it("will not aim at a wall", () => {
-    const { s, ds, u, centre, ball } = swipeBoard();
+    const { s, ds, u, center, ball } = swipeBoard();
     inertiaGame.interpretMove(s, u, ds, ball, PRESS);
 
     // Due north of the ball is a wall, so there is nothing to aim at: no arrow,
     // and releasing does nothing.
-    expect(inertiaGame.interpretMove(s, u, ds, centre(2, 0), DRAG)).toBeNull();
+    expect(inertiaGame.interpretMove(s, u, ds, center(2, 0), DRAG)).toBeNull();
     expect(u.aimDir).toBe(-1);
-    expect(inertiaGame.interpretMove(s, u, ds, centre(2, 0), RELEASE)).toBe(UI_UPDATE);
+    expect(inertiaGame.interpretMove(s, u, ds, center(2, 0), RELEASE)).toBe(UI_UPDATE);
   });
 
   it("survives a touch long-press, which arrives as the right button", () => {
@@ -418,25 +418,25 @@ describe("inertia swipe", () => {
     // drag" is exactly a press that stays put. So the whole gesture has to work
     // on the secondary button too, or it would die the moment a player paused
     // to aim.
-    const { s, ds, u, centre, ball } = swipeBoard();
+    const { s, ds, u, center, ball } = swipeBoard();
     const R_PRESS = 0x0202;
     const R_DRAG = 0x0205;
     const R_RELEASE = 0x0208;
 
     expect(inertiaGame.interpretMove(s, u, ds, ball, R_PRESS)).toBe(UI_UPDATE);
     expect(u.aiming).toBe(true);
-    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), R_DRAG)).toBe(UI_UPDATE);
+    expect(inertiaGame.interpretMove(s, u, ds, center(4, 2), R_DRAG)).toBe(UI_UPDATE);
     expect(u.aimDir).toBe(E);
-    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), R_RELEASE)).toEqual({
+    expect(inertiaGame.interpretMove(s, u, ds, center(4, 2), R_RELEASE)).toEqual({
       type: "move",
       dir: E,
     });
   });
 
   it("ignores drag and release when no swipe is under way", () => {
-    const { s, ds, u, centre } = swipeBoard();
-    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), DRAG)).toBeNull();
-    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), RELEASE)).toBeNull();
+    const { s, ds, u, center } = swipeBoard();
+    expect(inertiaGame.interpretMove(s, u, ds, center(4, 2), DRAG)).toBeNull();
+    expect(inertiaGame.interpretMove(s, u, ds, center(4, 2), RELEASE)).toBeNull();
   });
 });
 
@@ -722,7 +722,7 @@ describe("inertia rendering", () => {
     if (!ds) throw new Error("expected a drawstate");
     inertiaGame.setTileSize?.(ds, 32);
 
-    const palette = inertiaGame.colours([1, 1, 1]);
+    const palette = inertiaGame.colors([1, 1, 1]);
     const redraw = inertiaGame.redraw;
     if (!redraw) throw new Error("expected a redraw");
     const paint = (u: InertiaUi) => {
@@ -730,8 +730,8 @@ describe("inertia rendering", () => {
       redraw(dr, ds, null, s, 0, u, 0, 0);
       return dr.ops;
     };
-    const arrows = (ops: DrawOp[], colour: number) =>
-      ops.filter((o) => o.op === "polygon" && o.fill === colour).length;
+    const arrows = (ops: DrawOp[], color: number) =>
+      ops.filter((o) => o.op === "polygon" && o.fill === color).length;
 
     // No swipe: no arrow of either kind.
     const idle = paint({ ...ui(), aiming: false, aimDir: -1 });

@@ -8,7 +8,7 @@ import { newCursor } from "../../engine/pointer.ts";
  * **a hub is eight spokes, each a 2-bit state** ({@link SPOKE_HIDDEN} = no line
  * is possible, {@link SPOKE_EMPTY} = undecided, {@link SPOKE_LINE} = drawn,
  * {@link SPOKE_MARKED} = ruled out) over the eight compass directions, packed
- * into one 16-bit word per cell. A spoke and its inverse on the neighbouring
+ * into one 16-bit word per cell. A spoke and its inverse on the neighboring
  * hub are always kept in lock-step ({@link spokesPlace}), so an edge has one
  * state no matter which end you read it from.
  *
@@ -28,11 +28,11 @@ import { newCursor } from "../../engine/pointer.ts";
 
 // --- spoke states -----------------------------------------------------------
 
-/** No line is possible here (a board edge, or a hole's neighbour). */
+/** No line is possible here (a board edge, or a hole's neighbor). */
 export const SPOKE_HIDDEN = 0;
 /** Default state: a line or a mark can be placed. */
 export const SPOKE_EMPTY = 1;
-/** Connected to the neighbouring hub. */
+/** Connected to the neighboring hub. */
 export const SPOKE_LINE = 2;
 /** Ruled out by the player or the solver. */
 export const SPOKE_MARKED = 3;
@@ -152,7 +152,7 @@ export function decodeParams(s: string): SpokesParams {
   }
   if (s[i] === "d") {
     i++;
-    // An unrecognised (or missing) letter leaves the difficulty invalid, which
+    // An unrecognized (or missing) letter leaves the difficulty invalid, which
     // `validateParams` rejects. Upstream stores an out-of-range integer here
     // and then never checks it (its `validate_params` tests only w and h), so
     // a game id like `6x6dz` would index `spokes_diffchars` out of bounds; the
@@ -227,9 +227,9 @@ export function spokesCount(hub: number, s: number): number {
 }
 
 /**
- * Set spoke `dir` of cell `i` **and its inverse on the neighbour**, so the two
+ * Set spoke `dir` of cell `i` **and its inverse on the neighbor**, so the two
  * ends of an edge never disagree (upstream `spokes_place`). Out-of-grid
- * neighbours are simply skipped.
+ * neighbors are simply skipped.
  */
 export function spokesPlace(b: SpokesBoard, i: number, dir: number, s: number): void {
   setSpoke(b.spokes, i, dir, s);
@@ -396,8 +396,8 @@ export interface SpokesState extends SpokesBoard {
  * Decode a description into the starting board (upstream `new_game`).
  *
  * The hole pass is order-sensitive and mutates as it goes, exactly as the C:
- * a `0` cell loses all its own spokes and every neighbour's spoke pointing at
- * it, while an `'X'` cell (read as clue `-1` before being normalised to `0`)
+ * a `0` cell loses all its own spokes and every neighbor's spoke pointing at
+ * it, while an `'X'` cell (read as clue `-1` before being normalized to `0`)
  * *additionally* hides the four diagonals that would graze past it — so `X`
  * carves a wider hole than `0`, and the two are not interchangeable.
  */
@@ -504,7 +504,7 @@ export interface SpokesUi {
   /** Cursor position on the `(3w−2) × (3h−2)` half-grid: a hub sits on a
    * sub-cell ≡ 0 (mod 3), and the two between each pair of hubs are that
    * pair's direction pickers. */
-  /** Fork aid: grey out a hub once its spoke count matches its clue. Visual
+  /** Fork aid: gray out a hub once its spoke count matches its clue. Visual
    * only — a satisfied hub stays fully editable. */
   markSatisfied: boolean;
 }

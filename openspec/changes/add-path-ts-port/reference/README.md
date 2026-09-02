@@ -12,10 +12,10 @@ for whoever implements this change, and nothing else:
 - **It is not an oracle.** Even when it built, it was `cliprogram(path path.c
   COMPILE_DEFINITIONS TEST_GEN)` — a standalone generator with **no solver**,
   whose own header says the grids it produces "are not of suitable quality to be
-  used directly as puzzles". This change's assurance is behavioural from the
+  used directly as puzzles". This change's assurance is behavioral from the
   start; there is nothing here to match.
 - **What it is genuinely good for** is the generator strategy in its long header
-  comment (grow paths, push neighbours into new shapes, fill the grid) and the
+  comment (grow paths, push neighbors into new shapes, fill the grid) and the
   honest account of where that strategy falls down. That is why it was worth
   carrying rather than leaving in git history.
 
@@ -24,9 +24,9 @@ were "half-written, fundamentally flawed, or in other ways unready to be shipped
 as part of the polished Puzzles collection" — accurate, and the reason this is a
 greenfield build rather than a port.
 
-**Licence.** MIT, © Simon Tatham and the Puzzles contributors — the same notice
+**License.** MIT, © Simon Tatham and the Puzzles contributors — the same notice
 as the rest of the collection, preserved at
-[`puzzles/LICENCE`](../../../../puzzles/LICENCE). Copying it here does not change
+[`puzzles/LICENSE`](../../../../puzzles/LICENSE). Copying it here does not change
 its terms or its authorship.
 
 This directory travels with the change into `openspec/changes/archive/` when the

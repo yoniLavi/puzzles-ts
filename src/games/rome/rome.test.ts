@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Rome port (tier 1 logic + a Midend integration
+ * Behavioral tests for the Rome port (tier 1 logic + a Midend integration
  * pass). The byte-match generator/solver/codec check lives in
  * `rome-differential.test.ts`; these cover what a desc differential never
  * touches — the validity check's error flags, the interactive drag/keyboard

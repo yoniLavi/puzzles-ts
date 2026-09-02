@@ -339,9 +339,9 @@ describe("sticks hint — render frames (tier 2.5)", () => {
       });
       expect(result.hint?.explanation).toMatch(PHRASE[kind]);
       const ops = result.recording.ops;
-      // The forced square is drawn as a bar in the hint colour — the game's own
+      // The forced square is drawn as a bar in the hint color — the game's own
       // line shape, which a plain tint could not give an orientation (§5.1a).
-      const bars = ops.filter((o) => o.op === "rect" && o.colour === COL_HINT);
+      const bars = ops.filter((o) => o.op === "rect" && o.color === COL_HINT);
       expect(bars.length).toBe(1);
       const bar = bars[0];
       if (bar.op !== "rect") throw new Error("unreachable");
@@ -366,7 +366,7 @@ describe("sticks hint — render frames (tier 2.5)", () => {
     const { id } = board(SEED_FOR.tooLong);
     const result = renderScenario({ game: sticksGame, id, showHint: true });
     expect(
-      result.recording.ops.some((o) => o.op === "rect" && o.colour === COL_LINE),
+      result.recording.ops.some((o) => o.op === "rect" && o.color === COL_LINE),
     ).toBe(false);
   });
 });

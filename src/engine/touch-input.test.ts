@@ -65,7 +65,7 @@ describe("touch input reaches every ported game", () => {
 
     it(`${id}: a touch press does what a mouse press does`, () => {
       if (game.wantsStylusModifier) {
-        // Opted in: this game gives touch its own behaviour on purpose (Pattern
+        // Opted in: this game gives touch its own behavior on purpose (Pattern
         // cycles a cell's state, having no right button to cycle with), so the
         // two are *meant* to differ. Nothing to compare.
         return;

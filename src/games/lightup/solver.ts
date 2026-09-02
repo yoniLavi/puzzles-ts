@@ -67,7 +67,7 @@ export type LightupHintReason =
       corridor: HintCell[];
     }
   | {
-      /** A clue with all its bulbs placed rules out its free neighbours. */
+      /** A clue with all its bulbs placed rules out its free neighbors. */
       kind: "clueSatisfied";
       clue: HintCell;
       n: number;
@@ -75,11 +75,11 @@ export type LightupHintReason =
       bulbs: HintCell[];
     }
   | {
-      /** A clue with as many bulbs left to place as free neighbours. */
+      /** A clue with as many bulbs left to place as free neighbors. */
       kind: "clueSaturated";
       clue: HintCell;
       n: number;
-      /** Bulbs still to place (= the number of free neighbours). */
+      /** Bulbs still to place (= the number of free neighbors). */
       need: number;
     }
   | {
@@ -177,7 +177,7 @@ function trySolveLight(
 }
 
 /** A clue with enough info places all its bulbs (or marks all remaining
- * neighbours impossible). Sets F_NUMBERUSED when it acts. */
+ * neighbors impossible). Sets F_NUMBERUSED when it acts. */
 function trySolveNumber(
   state: LightupState,
   nx: number,
@@ -268,7 +268,7 @@ interface Scratch {
 
 /**
  * Enumerate every square that would rule out a bulb at (x, y): anything
- * that would light it, plus any empty neighbour of an adjacent clue that
+ * that would light it, plus any empty neighbor of an adjacent clue that
  * has exactly one bulb left to place. Calls `cb` once per square, in
  * upstream order (the counts and tie-breaks downstream depend on it).
  */
@@ -388,8 +388,8 @@ function discountUnlit(
 }
 
 /**
- * MAKESLIGHT sets from a clue square: with n free neighbours needing m
- * more bulbs, every (n−m+1)-subset of the free neighbours must contain a
+ * MAKESLIGHT sets from a clue square: with n free neighbors needing m
+ * more bulbs, every (n−m+1)-subset of the free neighbors must contain a
  * bulb. All subsets are tried (no early exit), as upstream.
  */
 function discountClue(
@@ -575,7 +575,7 @@ export function dosolve(
 
 /**
  * Run the deductive solver (no recursion — a guess isn't a teachable
- * step) from the player's current position, honouring their bulbs and
+ * step) from the player's current position, honoring their bulbs and
  * impossible-marks as constraints, and record every firing in deduction
  * order. The returned script is the hint plan's raw material; it ends
  * either with the board solved or at the point where deduction runs dry

@@ -48,7 +48,7 @@ tabbed to and pressed, which arrives as a click with a `detail` of 0 — SHALL
 also leave focus alone, because that player is moving through the tab order
 deliberately and would lose their place. Dismissing a menu with Escape or a
 click-away SHALL continue to return focus to the menu's trigger, which is the
-conventional behaviour for a dismissal.
+conventional behavior for a dismissal.
 
 #### Scenario: A menu opened with the mouse can still be driven with the keyboard
 

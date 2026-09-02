@@ -218,7 +218,7 @@ export function newUnequalDesc(
   let diff = diffToLevel(p.diff);
   const lscratch = o2 * 5;
 
-  // Clue codes, randomised later. Numbers (which == 4) come before the
+  // Clue codes, randomized later. Numbers (which == 4) come before the
   // inequalities (which 0..3), in `(i%o2)*5 + 4 - (i/o2)` order.
   const scratch = new Int32Array(lscratch);
   for (let i = 0; i < lscratch; i++) scratch[i] = (i % o2) * 5 + 4 - ((i / o2) | 0);

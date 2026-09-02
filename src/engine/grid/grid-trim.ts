@@ -23,7 +23,7 @@
  * Two observations collapse that. First, **the stored face index is never read
  * back**: `dotpairs` appears on the right-hand side of nothing but a `>= 0`
  * presence test, so the matrix is really a *set* of directed half-edges wearing
- * an `int[]` costume. Second, both queries it answers are per-dot neighbourhood
+ * an `int[]` costume. Second, both queries it answers are per-dot neighborhood
  * questions, not global ones:
  *
  * - a dot is landlocked iff its successor set equals its predecessor set (every

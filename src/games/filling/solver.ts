@@ -6,7 +6,7 @@
  * solver is **confluent**: the final filled set is independent of the order
  * the techniques fire. We therefore port the four techniques idiomatically
  * (no `connected[]` cyclic-linked-list mirroring) and iterate to fixpoint;
- * the solved/stuck verdict — which the generator's clue minimisation depends
+ * the solved/stuck verdict — which the generator's clue minimization depends
  * on — is identical to C's because both reach the same fixpoint.
  */
 import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
@@ -25,10 +25,10 @@ import { DX, DY } from "./state.ts";
  *   critical-square rules, grouped per region.
  * - `blocked`: a region whose *only* flood-reachable empty square is this one
  *   (it can only grow one way) — always a single cell.
- * - `lonely`: no neighbouring region can grow to include this square, so it is
+ * - `lonely`: no neighboring region can grow to include this square, so it is
  *   a region of one — a 1.
  * - `bitmap`: every number but one is eliminated here (candidate elimination);
- *   the local eliminators are the filled orthogonal neighbours. */
+ *   the local eliminators are the filled orthogonal neighbors. */
 export type FillingHintReason =
   | { kind: "growth"; n: number; exact: boolean }
   | { kind: "blocked"; n: number }
@@ -37,7 +37,7 @@ export type FillingHintReason =
 
 /** One step of a hint plan: a set of cells forced to the same value, the
  * evidence cells to shade (the region the deduction reasons about, or the
- * neighbours that pin a lonely / eliminated cell), and the reason. */
+ * neighbors that pin a lonely / eliminated cell), and the reason. */
 export interface FillingHintMove {
   cells: number[];
   value: number;
@@ -102,7 +102,7 @@ class FillingSolver {
     this.connected[rb] = c;
   }
 
-  /** Merge a newly-filled cell with same-valued orthogonal neighbours. */
+  /** Merge a newly-filled cell with same-valued orthogonal neighbors. */
   private filledSquare(i: number): void {
     const { w, h, board } = this;
     const x = i % w;
@@ -186,9 +186,9 @@ class FillingSolver {
     return cells;
   }
 
-  /** Filled orthogonal neighbours of cell `i` — the pinning evidence for a
+  /** Filled orthogonal neighbors of cell `i` — the pinning evidence for a
    * lonely-cell or candidate-elimination hint. */
-  private filledNeighbours(i: number): number[] {
+  private filledNeighbors(i: number): number[] {
     const { w, h, board } = this;
     const x = i % w;
     const y = (i / w) | 0;
@@ -309,8 +309,8 @@ class FillingSolver {
     return learn;
   }
 
-  /** Either force an empty cell a neighbouring region must include to reach
-   * capacity, or drop a `1` into an isolated cell no neighbour can extend. */
+  /** Either force an empty cell a neighboring region must include to reach
+   * capacity, or drop a `1` into an isolated cell no neighbor can extend. */
   private learnExpandOrOne(): boolean {
     const { w, h, board, dsf, sz } = this;
     let learn = false;
@@ -343,10 +343,10 @@ class FillingSolver {
         break;
       }
       if (!expanded && one) {
-        const neighbours = this.filledNeighbours(i);
+        const neighbors = this.filledNeighbors(i);
         board[i] = 1;
         this.nempty--;
-        this.rec?.(i, 1, "lonely", neighbours);
+        this.rec?.(i, 1, "lonely", neighbors);
         learn = true;
       }
     }
@@ -372,7 +372,7 @@ class FillingSolver {
         // then skips `j` both when no member is in range AND when `i` itself is
         // (it is tested first, so the walk breaks at `k == i`). The cycle grows
         // as cells fill in this same loop, so later `j`s see the larger region
-        // — both behaviours preserved for differential parity.
+        // — both behaviors preserved for differential parity.
         let k = i;
         do {
           if (Math.abs((k % w) - jx) + Math.abs(((k / w) | 0) - jy) <= slack) break;
@@ -405,7 +405,7 @@ class FillingSolver {
 
     for (let i = 0; i < sz; i++) bm[i] = ALL;
 
-    // Zero filled cells; clear their number from orthogonal neighbours.
+    // Zero filled cells; clear their number from orthogonal neighbors.
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const i = y * w + x;
@@ -485,11 +485,11 @@ class FillingSolver {
           n += 1;
         }
         if (board[i] === 0) {
-          const neighbours = this.filledNeighbours(i);
+          const neighbors = this.filledNeighbors(i);
           board[i] = n;
           this.filledSquare(i);
           this.nempty--;
-          this.rec?.(i, n, "bitmap", neighbours);
+          this.rec?.(i, n, "bitmap", neighbors);
           learn = true;
         }
       }

@@ -22,13 +22,13 @@
 # `tsc` already covers the `tsc &&` half of `npm run build`, so run `vite build`
 # directly (leaner, no double typecheck). Needs no generated assets at all: the
 # catalog is committed source (`retire-c-engine`) and the manual, the last
-# generated artefact, is deleted (`retire-the-upstream-help-tree`).
+# generated artifact, is deleted (`retire-the-upstream-help-tree`).
 #
 # CONCURRENCY. `vitest` and `vite build` share no inputs or outputs, so they
 # always run concurrently and the gate's wall clock is ~max(vitest, build)
 # rather than their sum.
 #
-# This used to probe the 1-minute load average and serialise on a busy box,
+# This used to probe the 1-minute load average and serialize on a busy box,
 # because oversubscribing starved vitest's heaviest seed-deterministic tests
 # past their 60s timeout (at high external load the concurrent build reliably
 # flaked dsf / netslide-hint). The probe is still gone — it read "busy" nearly
@@ -98,12 +98,23 @@ fi
 #
 # What is gated is only "every anchor applies". The probe's rate is NEVER gated
 # or ratcheted: a gated feedback number invites tests written against the number
-# rather than against behaviour, which is exactly what the repo-layout
+# rather than against behavior, which is exactly what the repo-layout
 # requirement it serves forbids. A survivor is a finding to read.
 #
 # If this fails, re-anchor the case on surrounding text — and take the prompt to
 # decide whether it still states the defect it claims to.
 node scripts/feedback-probe.mjs --verify
+
+# --- 1b. Every word this project writes is spelled the American way. ~1s. ---
+#
+# `scripts/checks/spelling-table.mjs` is the convention (the `repo-layout`
+# spelling requirement); this scans every tracked file outside the record and
+# other people's words for any stem in it. It sits HERE, in the fast prefix and
+# ahead of the documentation-only shortcut below, because the shortcut skips
+# vitest — and `src/gate-scope.test.ts` forbids a test from reading `docs/` or
+# `openspec/` at all, which is exactly where a British spelling would otherwise
+# creep back in unchecked.
+node scripts/checks/spelling.mjs
 
 # --- 1c. The specs and every open change parse and validate. ~1s. ---
 #
@@ -156,7 +167,7 @@ fi
 # path stops being safe *and says so*. `help/` is deliberately absent: it is
 # both a `vite build` input and `help-coverage.test.ts`'s subject.
 #
-# Anything outside the list — one `src/` file, one `help/` page, one licence —
+# Anything outside the list — one `src/` file, one `help/` page, one license —
 # and the whole gate runs. The default is "run everything"; this is the
 # exception, and it fails closed.
 if [ "${GATE_PRECOMMIT:-}" = "1" ]; then

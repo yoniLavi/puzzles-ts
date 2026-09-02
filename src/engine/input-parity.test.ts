@@ -24,7 +24,7 @@
  *     that separates "the wiring is connected" from "the input is reachable".
  *
  * ON THE INSTRUMENT (this repo's standing rule, and it bit four times while
- * this file was being written). A behavioural probe over generic geometry can
+ * this file was being written). A behavioral probe over generic geometry can
  * only ever observe *"the board did not change"*, and there are many innocent
  * reasons for that:
  *

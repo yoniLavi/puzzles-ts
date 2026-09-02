@@ -72,7 +72,7 @@ or backtrack at any difficulty tier.
 The generator SHALL use the graded solver to keep every board uniquely soluble at
 its target difficulty: it SHALL build a Hamiltonian path by the backbite
 algorithm, then either remove clue numbers while the solver still solves
-(non-Edges modes, honouring the symmetry and keep-endpoints options) or move
+(non-Edges modes, honoring the symmetry and keep-endpoints options) or move
 numbers out to arrow clues via a maximal bipartite matching (Edges mode), retrying
 until soluble. Generation from a given seed SHALL be reproducible.
 
@@ -99,7 +99,7 @@ and Enter SHALL emulate mouse clicks. Ephemeral entry state SHALL live on the UI
 never on the game state, and an input that changes nothing SHALL produce no history
 entry.
 
-A move SHALL be modelled as a discriminated union of place, line, clear and solve
+A move SHALL be modeled as a discriminated union of place, line, clear and solve
 operations rather than as an upstream move string. Placing a number on an
 immutable (given) cell SHALL be rejected. The game SHALL be completed when every
 cell is filled, the numbers form a single path from the lowest to the highest, and
@@ -164,5 +164,5 @@ its own state behind to influence the next candidate.
 #### Scenario: The probe is not weakened by the candidate before it
 
 - **WHEN** the generator tests whether the easier tier solves a candidate
-- **THEN** the solver runs from scratch state initialised for that board alone
+- **THEN** the solver runs from scratch state initialized for that board alone
 

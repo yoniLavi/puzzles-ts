@@ -40,7 +40,7 @@ A Boats description SHALL encode, first, the row and column occupancy clues as
 hidden clue (the remove-numbers mechanic); and then the grid in row-major order as
 a run-length sequence in which a lowercase letter denotes a run of that many empty
 squares and an uppercase letter denotes a single given clue — water or one of the
-boat-segment shapes (single, vague/unknown, top, bottom, left, right, centre).
+boat-segment shapes (single, vague/unknown, top, bottom, left, right, center).
 
 The run-length sequence SHALL be written so that a run is emitted only when a
 given clue follows it or the run reaches the maximum a single letter can carry,
@@ -117,7 +117,7 @@ cell between empty, a boat segment and water; a right-click SHALL toggle water; 
 drag SHALL fill a run along a single row or column; and a keyboard cursor with a
 place-segment key, a place-water key and modifier-drag SHALL provide the same
 placements. An unknown boat segment SHALL automatically resolve to the correct
-shape once its neighbours are known, and a completed boat SHALL be crossed off the
+shape once its neighbors are known, and a completed boat SHALL be crossed off the
 fleet list.
 
 The game SHALL flag provably-wrong cells live: a row or column whose occupancy
@@ -131,7 +131,7 @@ game-specific state.
 
 Rendering SHALL draw each cell as water or its boat-segment shape, the row and
 column count clues on the edges, and the fleet list, with wrong cells and counts in
-their error colours; there SHALL be no interpolated animation, and the board SHALL
+their error colors; there SHALL be no interpolated animation, and the board SHALL
 flash on completion.
 
 #### Scenario: Filling a run of cells along a row
@@ -142,7 +142,7 @@ flash on completion.
 #### Scenario: A row whose count is exceeded is flagged
 
 - **WHEN** more boat segments are placed in a row than its occupancy clue allows
-- **THEN** the offending cells and the count are shown in the error colour and are
+- **THEN** the offending cells and the count are shown in the error color and are
   reported by `findMistakes`
 
 #### Scenario: Completing the fleet wins, without filling in the water
@@ -202,7 +202,7 @@ narrated as further deductions.
 
 Forced squares and the evidence they are deduced from SHALL be visually distinct,
 and the two kinds of placement Boats admits — a boat segment and water — SHALL be
-marked in the shape of the action each represents, so that one hint colour cannot
+marked in the shape of the action each represents, so that one hint color cannot
 stand for two different actions.
 
 #### Scenario: A line filled by one deduction is a single hint

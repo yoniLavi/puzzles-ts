@@ -373,10 +373,10 @@ describe("unequal hint render", () => {
     // ring of `2·2 + 2` sides, not two four-sided ones.
     expectContour(recording.ops, COL_HINT_CELL, 2);
     // The struck candidate keeps its COL_PENCIL digit, crossed through in COL_PENCIL.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_PENCIL)).toBe(
       true,
     );
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
+    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_PENCIL)).toBe(
       true,
     );
     // The strike cell is **ringed** COL_HINT rather than filled with it — a fill
@@ -400,7 +400,7 @@ describe("unequal hint render", () => {
     });
     expect(hint?.explanation).toMatch(/bar/);
     expectContour(recording.ops, COL_HINT_CELL, 2);
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_PENCIL)).toBe(
       true,
     );
     expect(recording.ops).toMatchSnapshot();

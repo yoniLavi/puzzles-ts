@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Spokes port.
+ * Behavioral tests for the Spokes port.
  *
  * Tier 1 (params / codec / solver / generator / input / completion) plus the
  * tier-2 and tier-2.5 render checks. The generator's agreement with upstream is
@@ -79,7 +79,7 @@ const FIX_DESC = "1111432442253111";
 const FIX_ID = `4x4de:${FIX_DESC}`;
 
 const TS = PREFERRED_TILE_SIZE;
-/** Pixel centre of hub (x, y). */
+/** Pixel center of hub (x, y). */
 const hub = (x: number, y: number): Point => ({
   x: x * TS + TS / 2,
   y: y * TS + TS / 2,
@@ -216,7 +216,7 @@ describe("spokes description codec", () => {
 
   it("carves a wider hole for 'X' than for '0'", () => {
     // A '0' hole only removes the spokes that point *at* it; an 'X' also blocks
-    // the diagonals that graze past it, so its neighbour loses more spokes.
+    // the diagonals that graze past it, so its neighbor loses more spokes.
     const zero = newState({ w: 3, h: 3, diff: "easy" }, "010111111");
     const ex = newState({ w: 3, h: 3, diff: "easy" }, "0X0111111");
     const count = (s: SpokesState, i: number) => {
@@ -225,7 +225,7 @@ describe("spokes description codec", () => {
       return n;
     };
     expect(count(ex, 3)).toBeLessThan(count(zero, 3));
-    // Both normalise the hole's own clue to 0.
+    // Both normalize the hole's own clue to 0.
     expect(ex.numbers[1]).toBe(0);
   });
 
@@ -385,7 +385,7 @@ describe("spokes input", () => {
     const state = newState(FIX, FIX_DESC);
     const ui = newUi();
     press(state, ui, LEFT_BUTTON, hub(0, 0));
-    // Two pixels off the centre is well inside the dead zone.
+    // Two pixels off the center is well inside the dead zone.
     press(state, ui, LEFT_DRAG, { x: hub(0, 0).x + 2, y: hub(0, 0).y });
     expect(ui.dragEnd).toBe(-1);
     expect(press(state, ui, LEFT_RELEASE, hub(0, 0))).toBe(UI_UPDATE);
@@ -562,7 +562,7 @@ describe("spokes rendering", () => {
     expect(ops.filter((o) => o.op === "text").length).toBe(16);
     // Every hub is a circle; none of them carries a line yet.
     expect(ops.some((o) => o.op === "circle")).toBe(true);
-    expect(ops.some((o) => o.op === "line" && o.colour === COL_LINE)).toBe(false);
+    expect(ops.some((o) => o.op === "line" && o.color === COL_LINE)).toBe(false);
     expect(ops).toMatchSnapshot();
   });
 
@@ -574,7 +574,7 @@ describe("spokes rendering", () => {
     });
     expect(
       recording.ops.some(
-        (o) => o.op === "line" && o.colour === COL_LINE && o.thickness > 1,
+        (o) => o.op === "line" && o.color === COL_LINE && o.thickness > 1,
       ),
     ).toBe(true);
   });
@@ -589,7 +589,7 @@ describe("spokes rendering", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBe(1);
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_ERROR)).toBe(
       true,
     );
   });
@@ -605,19 +605,19 @@ describe("spokes rendering", () => {
     const { index, dir } = solutionSpokes(state, SPOKE_MARKED)[0];
     m.playMoves([{ kind: "set", index, dir, state: SPOKE_LINE }]);
 
-    const palette = spokesGame.colours(DEFAULT_BACKGROUND);
+    const palette = spokesGame.colors(DEFAULT_BACKGROUND);
     m.redraw(new RecordingDrawing(palette)); // first paint: no overlay yet
     expect(m.findMistakes()).toBe(1);
 
     const after = new RecordingDrawing(palette);
     m.redraw(after);
-    expect(after.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(true);
+    expect(after.ops.some((o) => o.op === "line" && o.color === COL_ERROR)).toBe(true);
 
     // And a third frame without the overlay repaints it away again.
     m.playMoves([{ kind: "set", index, dir, state: 1 /* EMPTY */ }]);
     const cleared = new RecordingDrawing(palette);
     m.redraw(cleared);
-    expect(cleared.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(
+    expect(cleared.ops.some((o) => o.op === "line" && o.color === COL_ERROR)).toBe(
       false,
     );
   });
@@ -628,7 +628,7 @@ describe("spokes rendering", () => {
     ui.dragStart = 0;
     ui.dragEnd = 1;
 
-    const palette = spokesGame.colours(DEFAULT_BACKGROUND);
+    const palette = spokesGame.colors(DEFAULT_BACKGROUND);
     const ds = newDrawState(state);
     setTileSize(ds, TS);
     const dr = new RecordingDrawing(palette);
@@ -645,7 +645,7 @@ describe("spokes rendering", () => {
     ui.cursor.visible = true;
     ui.cursor.x = 1;
 
-    const palette = spokesGame.colours(DEFAULT_BACKGROUND);
+    const palette = spokesGame.colors(DEFAULT_BACKGROUND);
     const ds = newDrawState(state);
     setTileSize(ds, TS);
     const dr = new RecordingDrawing(palette);
@@ -653,7 +653,7 @@ describe("spokes rendering", () => {
 
     // Four corner brackets, two segments each.
     expect(
-      dr.ops.filter((o) => o.op === "line" && o.colour === 7 /* CURSOR */).length,
+      dr.ops.filter((o) => o.op === "line" && o.color === 7 /* CURSOR */).length,
     ).toBe(8);
   });
 
@@ -685,7 +685,7 @@ describe("spokes rendering", () => {
     const lit = cloneState(state);
     spokesPlace(lit, 0, DIR_RIGHT, SPOKE_LINE);
 
-    const palette = spokesGame.colours(DEFAULT_BACKGROUND);
+    const palette = spokesGame.colors(DEFAULT_BACKGROUND);
     const ds = newDrawState(lit);
     setTileSize(ds, TS);
     const dr = new RecordingDrawing(palette);

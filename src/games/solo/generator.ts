@@ -11,7 +11,7 @@
  *  3. Reduce to a uniquely-solvable puzzle at *exactly* the target difficulty:
  *     - **non-killer:** remove givens in shuffled symmetry orbits, keeping a
  *       removal only while the graded solver still solves within the target
- *       (a solver-gated minimiser — docs/games/solver-and-generator.md § "Solver-gated generation");
+ *       (a solver-gated minimizer — docs/games/solver-and-generator.md § "Solver-gated generation");
  *     - **killer:** grade the `gen_killer_cages` layout (cages of size ≤ 2 after
  *       singleton removal) and, if it lands on the target difficulty, publish it
  *       with no givens. Upstream *intends* to grow cages by merging adjacent
@@ -155,7 +155,7 @@ function gridgenReal(u: GridgenUsage, steps: { n: number }): boolean {
 }
 
 /** Entry point to the grid generator (`gridgen`): fill `grid` with a random full
- *  solution honouring every constraint. Returns false if the step budget ran
+ *  solution honoring every constraint. Returns false if the step budget ran
  *  out before completing. */
 function gridgen(
   cr: number,
@@ -182,7 +182,7 @@ function gridgen(
     rng,
   };
 
-  // Fill the top row with a random permutation (free relabelling, no bias).
+  // Fill the top row with a random permutation (free relabeling, no bias).
   const top = Array.from({ length: cr }, (_, i) => i + 1);
   shuffle(top, rng);
   for (let x = 0; x < cr; x++) {
@@ -190,7 +190,7 @@ function gridgen(
     gridgenPlace(u, x, 0, top[x]);
   }
 
-  // Initialise the remaining spaces (rows 1..cr-1) with random tie-breakers.
+  // Initialize the remaining spaces (rows 1..cr-1) with random tie-breakers.
   for (let y = 1; y < cr; y++)
     for (let x = 0; x < cr; x++) u.spaces.push({ x, y, r: randomBits(rng, 31) });
   u.nspaces = u.spaces.length;
@@ -224,7 +224,7 @@ function mergeBlocks(b: BlockStructure, n1: number, n2: number): void {
 }
 
 /** `gen_killer_cages`: lay out cages by a left/down random walk, optionally
- *  folding away singletons by merging each into a neighbour. */
+ *  folding away singletons by merging each into a neighbor. */
 function genKillerCages(
   cr: number,
   rng: RandomState,
@@ -308,7 +308,7 @@ function computeKclues(
  * that no killer cages are ever merged: every killer puzzle ships the raw
  * `gen_killer_cages` layout (after singleton removal), and the elaborate
  * grade-and-merge loop in `newSoloDesc` is effectively inert. We reproduce the
- * missing increment (and so the always-false, zero-RNG behaviour) exactly,
+ * missing increment (and so the always-false, zero-RNG behavior) exactly,
  * because "fixing" it would merge cages C never merges and diverge the desc.
  * The pick loop is kept 1:1 with C (it is genuinely unreachable upstream too).
  */

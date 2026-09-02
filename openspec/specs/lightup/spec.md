@@ -64,10 +64,10 @@ into black/numbered flags and clue values with all open squares unlit.
 The port SHALL implement the upstream solver with its exact deductive power at
 each difficulty: at easy, forced-light ("this unlit square has exactly one
 remaining way to be lit") and clue deductions (a satisfied clue marks its
-remaining neighbours impossible; a clue whose remaining lights equal its
+remaining neighbors impossible; a clue whose remaining lights equal its
 remaining spaces fills them); at tricky, additionally the overlapping-set
 discount (every MAKESLIGHT set — from an unlit square or a `C(n, n−m+1)`
-combination of a clue's free neighbours enumerated via the ported `Combi`
+combination of a clue's free neighbors enumerated via the ported `Combi`
 module — is tested against candidate MAKESDARK squares chosen by the upstream
 minimum-rule-out heuristic, marking squares impossible), restarting the cheap
 deduction sweep after the first successful discount; at hard, additionally
@@ -93,7 +93,7 @@ SHALL be reused by `solve()` and `findMistakes`.
 ### Requirement: Light Up generation byte-matches the C reference
 
 The generator SHALL reproduce upstream `new_game_desc` faithfully: symmetric
-black-square placement per the symmetry mode (including the centre-square
+black-square placement per the symmetry mode (including the center-square
 random draw for odd 4-way-rotational grids), a correct random light placement
 seeded by filling all open squares then removing lights via the marked-sweep,
 numbering all black squares, solver-gating at the target difficulty, stripping
@@ -145,30 +145,30 @@ grid is correct (all lit, no overlap, all clues exact).
 ### Requirement: Light Up renders to C parity with live error feedback
 
 `redraw` SHALL draw: black squares (numbered ones showing their clue,
-in the error colour when the clue is provably wrong — too many adjacent
-bulbs, or too few even if all plausible neighbours were filled); open squares
-with lit squares filled yellow; bulbs as circles (error-coloured when lit by
+in the error color when the clue is provably wrong — too many adjacent
+bulbs, or too few even if all plausible neighbors were filled); open squares
+with lit squares filled yellow; bulbs as circles (error-colored when lit by
 another bulb); impossible-marks as small black blobs — suppressed on lit
 squares when the `show-lit-blobs` preference (default on, via the `Game.prefs`
 hook) is off; the keyboard cursor; and the 3-phase completion flash. The
 per-tile packed flags SHALL be the render cache key (`Int32Array`), and every
 overlay not in the packed value (the `findMistakes` highlight) SHALL be in a
 sidecar included in the diff key. The palette SHALL stay index-for-index with
-the upstream colour enum (0 background, 1 grid, 2 black, 3 light, 4 lit,
+the upstream color enum (0 background, 1 grid, 2 black, 3 light, 4 lit,
 5 error, 6 cursor) because the app's dark-mode overrides target indices 2
 and 3.
 
 #### Scenario: Overlapping bulbs render as errors
 
 - **WHEN** two bulbs light each other
-- **THEN** both are drawn in the error colour
+- **THEN** both are drawn in the error color
 
 #### Scenario: A provably-wrong clue turns red
 
 - **WHEN** a numbered black square has more adjacent bulbs than its clue
-- **THEN** its number is drawn in the error colour
+- **THEN** its number is drawn in the error color
 
-#### Scenario: Lit blobs honour the preference
+#### Scenario: Lit blobs honor the preference
 
 - **WHEN** a marked square becomes lit and `show-lit-blobs` is off
 - **THEN** the blob is not drawn (and reappears when the preference is
@@ -199,19 +199,19 @@ the frame it is computed (sidecar in the render diff key).
 
 The game SHALL implement `hint()` returning a plan of narrated steps computed
 by the game's own solver techniques from the player's current position
-(honouring placed bulbs and impossible-marks), refusing on a solved board and
+(honoring placed bulbs and impossible-marks), refusing on a solved board and
 on a board with detectable mistakes (coupling to the `findMistakes` overlay
 and the banner). Each step SHALL name its technique and meet the Palisade
-quality bar: lead with the recognisable indication, state why the move is
+quality bar: lead with the recognizable indication, state why the move is
 forced, conclude in the necessity voice, one deduction firing = one step (a
 clue firing that forces several squares is one grouped multi-cell step). The
 narrated techniques SHALL cover at minimum: forced-light (an unlit square
 with one remaining way to be lit), clue-satisfied (a full clue crossing out
-its remaining neighbours), clue-saturated (remaining bulbs = remaining
+its remaining neighbors), clue-saturated (remaining bulbs = remaining
 spaces), and the overlapping-set discount (a candidate square that would
 extinguish every way to satisfy an unlit square or a clue). Steps that rule
 squares out SHALL emit the game's impossible-mark move, so the accumulated
-marks externalise the deduction state on the board. `hintKeepTrack` SHALL
+marks externalize the deduction state on the board. `hintKeepTrack` SHALL
 classify a player's partial completion of a multi-cell step as on-track and
 shrink the step in place. No displayed step may be a generic, un-narrated
 fallback.
@@ -237,7 +237,7 @@ leaving the reader to supply it.
 #### Scenario: A satisfied clue groups its marks
 
 - **WHEN** a clue already adjacent to its full bulb count has k > 1 free
-  neighbours
+  neighbors
 - **THEN** one step emits one move marking all k squares impossible, narrated
   as a single deduction
 
@@ -264,10 +264,10 @@ leaving the reader to supply it.
 The displayed hint SHALL highlight, not perform: target square(s) filled
 `COL_HINT` blue with no bulb/mark preview (bulb targets and mark targets look
 identical; the narration says which action), the deduction's evidence — the
-corridor of sight or the clue's free neighbours, computed against the board
+corridor of sight or the clue's free neighbors, computed against the board
 as that step fires — shaded `COL_HINT_CELL`, with the driving clue's digit
-visible on its shaded cell. Hint colours SHALL be appended past the upstream
-colour enum (the dark-mode overrides target indices 2 and 3), and every hint
+visible on its shaded cell. Hint colors SHALL be appended past the upstream
+color enum (the dark-mode overrides target indices 2 and 3), and every hint
 bit SHALL participate in the per-tile render cache diff key.
 
 #### Scenario: Evidence is visible as an area
@@ -279,7 +279,7 @@ bit SHALL participate in the per-tile render cache diff key.
 #### Scenario: A hint step's marks stay inside its evidence
 
 - **WHEN** any grouped clue step is displayed
-- **THEN** every target square lies within the narrated clue's neighbour set
+- **THEN** every target square lies within the narrated clue's neighbor set
 
 ### Requirement: No non-Unreasonable Light Up tier requires guessing
 

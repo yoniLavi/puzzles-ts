@@ -82,7 +82,7 @@ describe("Pegs desc and state", () => {
     const p = { w: 7, h: 7, type: 0 };
     const { desc } = G.newDesc(p, rng);
     expect(desc.length).toBe(49);
-    // Centre cell (index 24) should be a hole.
+    // Center cell (index 24) should be a hole.
     expect(desc[24]).toBe("H");
     // Should have pegs and holes and obstacles.
     const pegs = [...desc].filter((c) => c === "P").length;
@@ -205,13 +205,13 @@ describe("Pegs moves", () => {
 describe("Pegs move serialisation", () => {
   it("round-trips a jump move", () => {
     const move: PegsMove = { type: "jump", sx: 3, sy: 5, tx: 3, ty: 7 };
-    const raw = G.serialiseMove?.(move);
-    const restored = G.deserialiseMove?.(raw);
+    const raw = G.serializeMove?.(move);
+    const restored = G.deserializeMove?.(raw);
     expect(restored).toEqual(move);
   });
 
   it("rejects invalid serialised move", () => {
-    expect(() => G.deserialiseMove?.("invalid")).toThrow();
+    expect(() => G.deserializeMove?.("invalid")).toThrow();
   });
 });
 
@@ -234,7 +234,7 @@ describe("Pegs text format", () => {
 describe("Pegs colours", () => {
   it("uses mkhighlightBackground for the background colour", () => {
     const bg: [number, number, number] = [1, 1, 1]; // near-white
-    const palette = G.colours(bg);
+    const palette = G.colors(bg);
     // Background should be shifted away from pure white.
     expect(palette[0][0]).toBeLessThan(1);
     expect(palette[0][1]).toBeLessThan(1);
@@ -242,7 +242,7 @@ describe("Pegs colours", () => {
   });
 
   it("has 6 colours: upstream's five plus the held-peg ring", () => {
-    const palette = G.colours([0.9, 0.9, 0.9]);
+    const palette = G.colors([0.9, 0.9, 0.9]);
     expect(palette.length).toBe(6);
   });
 });

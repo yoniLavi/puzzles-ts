@@ -64,7 +64,7 @@ premature-short-loop rules. It SHALL return the three-valued verdict
 easiest difficulty that yields a unique solution. The generator SHALL build a
 random loop via the shared `generateLoop` (biased toward black-pearl corners),
 derive a maximal clue set, gate on the solver finding a unique solution at the
-requested difficulty (and failing one tier easier), then greedily minimise the
+requested difficulty (and failing one tier easier), then greedily minimize the
 clues — reproducing the upstream RNG draw order byte-for-byte (including the
 upstream `corners`-array quirk that consumes a shuffle sized by the straight
 count, and the 5×5-Tricky→Easy downgrade) — so that for a given seed and params
@@ -117,10 +117,10 @@ existing no-line marks as barriers and the loop-closure degree rule), marking
 draws lines or marks with modifiers; an in-place autosolve hint on the `H` key; a
 drag or click that changes nothing SHALL produce no move; laying a line over a
 mark SHALL be rejected. `redraw` SHALL render the grid in the selected appearance
-style (traditional square outlines, or loopy centre-dots plus inter-cell grid),
+style (traditional square outlines, or loopy center-dots plus inter-cell grid),
 the black and white pearls, the no-line crosses, the loop segments (with the drag
-preview and error recolouring), the flagged-mistake segment colour, and the
-completion flash, with the palette index-for-index against the upstream colour
+preview and error recoloring), the flagged-mistake segment color, and the
+completion flash, with the palette index-for-index against the upstream color
 enum.
 
 #### Scenario: A drag draws a loop path

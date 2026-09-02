@@ -8,7 +8,7 @@ TBD - created by archiving change add-sokoban-ts-port. Update Purpose after arch
 The engine SHALL provide `src/games/sokoban/` implementing the `Game`
 interface for Sokoban, registered so the puzzle is served by the TypeScript engine.
 
-Sokoban SHALL support rectangular boards parameterised by width and height (both at
+Sokoban SHALL support rectangular boards parameterized by width and height (both at
 least 4), with the upstream presets 12×10, 16×12 and 20×16. Because Sokoban is a
 non-deductive movement puzzle with no solver and no wrong-but-legal cell state, it
 SHALL NOT implement `solve`, `hint` or `findMistakes`; Check & Save SHALL therefore
@@ -31,7 +31,7 @@ degrade to a plain quick-save, which is correct for a non-uniquely-solvable game
 A Sokoban description SHALL encode the grid in row-major order as a run-length
 sequence: a cell character optionally followed by a decimal repeat count. The
 character alphabet SHALL cover space, wall, target, barrel, barrel-on-target, pit,
-deep pit, player and player-on-target, and additionally labelled capital-letter
+deep pit, player and player-on-target, and additionally labeled capital-letter
 barrels and their on-target forms, so that hand-authored level descriptions are
 fully supported even though the random generator emits only a subset.
 
@@ -106,8 +106,8 @@ because the level is solvable by construction.
 
 ### Requirement: Sokoban rendering
 
-Sokoban SHALL render each cell as its content — walls with a bevelled face, targets,
-pits, deep pits, the player and barrels as discs, and labelled barrels with their
+Sokoban SHALL render each cell as its content — walls with a beveled face, targets,
+pits, deep pits, the player and barrels as discs, and labeled barrels with their
 letter — over grid lines drawn once, filling its own background. Moves SHALL be
 applied instantly (there is no walk or push animation), and the board SHALL flash on
 completion.
@@ -117,7 +117,7 @@ completion.
 - **WHEN** a move transitions the board from not-completed to completed
 - **THEN** the board flashes for the completion flash duration and then settles
 
-#### Scenario: A labelled barrel shows its letter
+#### Scenario: A labeled barrel shows its letter
 
 - **WHEN** the board contains a capital-letter barrel
 - **THEN** that barrel is drawn with its letter label

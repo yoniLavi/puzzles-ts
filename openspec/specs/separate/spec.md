@@ -58,7 +58,7 @@ The player SHALL divide the grid by toggling edges, each three-valued (wall /
 no-wall mark / unknown) and shared between the two cells it separates so every
 edit records both sides, exactly as Palisade. A left click SHALL cycle the edge
 nearest the pointer through wall ↔ unknown; a right click through no-wall-mark ↔
-unknown. A half-grid keyboard cursor (corner/edge/centre coordinates in
+unknown. A half-grid keyboard cursor (corner/edge/center coordinates in
 `[1, 2w-1] × [1, 2h-1]`) SHALL move with the arrow keys and set the adjacent edge
 with select/select2. Toggling a grid-rim wall SHALL be rejected. A move that
 changes nothing SHALL return `null` (no history entry).
@@ -121,7 +121,7 @@ bit-identical `random.ts`.
 
 ### Requirement: Separate shades completed correct regions
 
-The render SHALL shade a wall-bounded region with the shared completed-region colour (a neutral `COL_CORRECT` grey, matching Rectangles) once
+The render SHALL shade a wall-bounded region with the shared completed-region color (a neutral `COL_CORRECT` gray, matching Rectangles) once
 it is a completed, correct region — exactly `k` cells, holding one of each letter
 (no duplicate), with no wall interior to it — giving the player the same
 local-correctness feedback Galaxies and Rectangles give. The untouched board
@@ -151,7 +151,7 @@ is not uniquely deducible `findMistakes` SHALL return an empty list.
 
 - **WHEN** the player draws a wall that the unique solution does not have and
   Check & Save runs
-- **THEN** `findMistakes` includes that edge and it renders in the error colour
+- **THEN** `findMistakes` includes that edge and it renders in the error color
 
 ### Requirement: Separate shares its border-marking mechanic rather than owning a copy
 

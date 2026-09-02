@@ -58,9 +58,9 @@ function unset(board: SeismicBoard, x: number, y: number, n: number): number {
  * and `n` is ruled out of every cell the keep-apart rule forbids it in and of
  * the rest of the cell's region.
  *
- * The keep-apart rule is the game's only mode-dependent behaviour: Seismic bars
+ * The keep-apart rule is the game's only mode-dependent behavior: Seismic bars
  * `n` from the `n` cells either side along both axes, Tectonic from all eight
- * neighbours.
+ * neighbors.
  */
 export function placeNumber(
   board: SeismicBoard,

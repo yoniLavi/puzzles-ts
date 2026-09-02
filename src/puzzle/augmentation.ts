@@ -137,7 +137,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   flood: {
     describeConfig: configFormatter(
-      "{width}x{height}, {colours} colours{extra-moves-permitted}",
+      "{width}x{height}, {colors} colours{extra-moves-permitted}",
       {
         "extra-moves-permitted": (value) =>
           Number(value) > 0 ? `, ${value} extra moves` : "",
@@ -161,7 +161,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   guess: {
     describeConfig: configFormatter(
-      "{pegs-per-guess}x{guesses}, {colours} colours{allow-blanks:| + blank}{allow-duplicates:, no duplicates|}",
+      "{pegs-per-guess}x{guesses}, {colors} colours{allow-blanks:| + blank}{allow-duplicates:, no duplicates|}",
     ),
   },
   inertia: {
@@ -228,7 +228,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       },
     ),
     // The undecided and ruled-out edges take their dark values from the shared
-    // palette (`lineMaybeColour` / `lineNoColour`); the `{ 2: 0.6 }` multiplier
+    // palette (`lineMaybeColor` / `lineNoColor`); the `{ 2: 0.6 }` multiplier
     // that lived here darkened an already-dark inversion into invisibility.
   },
   magnets: {
@@ -333,7 +333,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       "{width} x {height}, regions of size {region-size}",
     ),
     // Palisade grid/clue/line-yes all share palette index 2; the undecided line
-    // (index 3) takes its dark value from the shared `lineMaybeColour`.
+    // (index 3) takes its dark value from the shared `lineMaybeColor`.
   },
   pattern: {
     describeConfig: configFormatter("{width}x{height}"),
@@ -398,7 +398,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   separate: {
     describeConfig: configFormatter("{width}x{height}, {letters} letters"),
     // Separate shares Palisade's palette: grid/letter/wall on index 2, and the
-    // undecided line on index 3 takes its dark value from `lineMaybeColour`.
+    // undecided line on index 3 takes its dark value from `lineMaybeColor`.
   },
   signpost: {
     describeConfig: configFormatter(

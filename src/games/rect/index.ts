@@ -5,7 +5,7 @@
  *
  * Left-drag draws a rectangle outline; right-drag erases interior edges; a
  * click near an edge toggles that single edge; a half-grid keyboard cursor
- * supports press-to-drag. `coord_round`'s corner/centre/edge click allocation
+ * supports press-to-drag. `coord_round`'s corner/center/edge click allocation
  * is ported exactly. A drag or click that changes nothing produces no move
  * (local no-op suppression — no state-string undo).
  */
@@ -31,7 +31,7 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import {
   cloneRectState,
@@ -43,7 +43,7 @@ import {
 } from "./moves.ts";
 import {
   BORDER,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -67,10 +67,10 @@ import {
 } from "./state.ts";
 
 const CORNER_TOLERANCE = 0.15;
-const CENTRE_TOLERANCE = 0.15;
+const CENTER_TOLERANCE = 0.15;
 
 /** Map a fractional grid coordinate to the half-grid space (0..2w, 0..2h),
- * allocating the click to a corner, a cell centre, or an edge exactly as
+ * allocating the click to a corner, a cell center, or an edge exactly as
  * upstream `coord_round`. `(int)` casts are `Math.trunc`; `floor()` is
  * `Math.floor`. */
 function coordRound(x: number, y: number): [number, number] {
@@ -86,14 +86,14 @@ function coordRound(x: number, y: number): [number, number] {
   }
   dx = Math.abs(x - xs);
   dy = Math.abs(y - ys);
-  if (Math.max(dx, dy) < CENTRE_TOLERANCE) {
+  if (Math.max(dx, dy) < CENTER_TOLERANCE) {
     return [1 + 2 * Math.trunc(xs), 1 + 2 * Math.trunc(ys)];
   }
   if (dx > dy) {
-    // Vertical edge: x-coord of corner, y-coord of square centre.
+    // Vertical edge: x-coord of corner, y-coord of square center.
     return [2 * Math.trunc(xv), 1 + 2 * Math.trunc(Math.floor(ys))];
   }
-  // Horizontal edge: x-coord of square centre, y-coord of corner.
+  // Horizontal edge: x-coord of square center, y-coord of corner.
   return [1 + 2 * Math.trunc(Math.floor(xs)), 2 * Math.trunc(yv)];
 }
 
@@ -427,7 +427,7 @@ export const rectGame: Game<
   textFormat,
   statusbarText,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: RectParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

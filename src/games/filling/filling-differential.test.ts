@@ -2,7 +2,7 @@
  * Gated C-vs-TS differential for Filling (Fillomino).
  *
  * Filling earns a differential: it runs a real uniqueness-driven generator
- * (a shuffled DSF region partition + solver-gated clue minimisation) over the
+ * (a shuffled DSF region partition + solver-gated clue minimization) over the
  * bit-identical `random.ts`, so a faithful port reproduces the C desc exactly
  * for the same seed. Two assertions per fixture:
  *   1. byte-for-byte desc match (the generator + RNG are faithful);

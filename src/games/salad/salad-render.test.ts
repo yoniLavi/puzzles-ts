@@ -69,7 +69,7 @@ describe("salad render scenarios", () => {
   it("draws the ABC End View border clues in the margin", () => {
     const { recording } = renderScenario({ game: saladGame, id: LETTERS_ID });
     const clues = recording.ops.filter(
-      (o) => o.op === "text" && o.colour === COL_BORDERCLUE,
+      (o) => o.op === "text" && o.color === COL_BORDERCLUE,
     );
     // The reference board carries five border clues (C, C, A, B, A).
     expect(clues).toHaveLength(5);
@@ -85,7 +85,7 @@ describe("salad render scenarios", () => {
 
   it("does not let a border clue's erase wipe the grid's outline", () => {
     // Regression (owner-reported): the four clue tiles abut the play area, and
-    // the grid's outermost boundary lines are drawn by the neighbouring *cells*
+    // the grid's outermost boundary lines are drawn by the neighboring *cells*
     // on the shared pixel. A clue that erases its whole tile therefore rubs out
     // the boundary — which happened on the right edge, so every row carrying a
     // right-hand clue lost its outer cell border. Assert the invariant (no
@@ -108,7 +108,7 @@ describe("salad render scenarios", () => {
     // than a whole tile (a cell's own repaint is `ts × ts` and legitimately
     // repaints its own borders straight afterwards).
     const erases = recording.ops.filter(
-      (op) => op.op === "rect" && op.colour === COL_BACKGROUND && op.w < ts,
+      (op) => op.op === "rect" && op.color === COL_BACKGROUND && op.w < ts,
     );
     expect(erases.length).toBeGreaterThan(0);
     for (const e of erases) {
@@ -129,12 +129,12 @@ describe("salad render scenarios", () => {
     expect(
       recording.ops.some((o) => o.op === "circle" && o.fill === COL_I_BALLBG),
     ).toBe(true);
-    // A given cross is two thick strokes in the immutable hole colour, and
-    // none is drawn in the player's guess colour on an untouched board.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_I_HOLE)).toBe(
+    // A given cross is two thick strokes in the immutable hole color, and
+    // none is drawn in the player's guess color on an untouched board.
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_I_HOLE)).toBe(
       true,
     );
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_G_HOLE)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_G_HOLE)).toBe(
       false,
     );
     expect(recording.ops).toMatchSnapshot();
@@ -148,7 +148,7 @@ describe("salad render scenarios", () => {
       moves,
     });
     const notes = recording.ops.filter(
-      (o) => o.op === "text" && o.colour === COL_PENCIL,
+      (o) => o.op === "text" && o.color === COL_PENCIL,
     );
     expect(notes.length).toBeGreaterThan(0);
     // The "might be empty" mark renders as an X alongside the digits.
@@ -172,7 +172,7 @@ describe("salad render scenarios", () => {
     });
     expect(mistakeCount).toBeGreaterThan(0);
     expect(
-      recording.ops.some((op) => op.op === "line" && op.colour === COL_MISTAKE),
+      recording.ops.some((op) => op.op === "line" && op.color === COL_MISTAKE),
     ).toBe(true);
     expect(recording.ops).toMatchSnapshot();
   });
@@ -196,15 +196,15 @@ describe("salad hint frames", () => {
     // (§5.2).
     const { recording, hint } = hintFrame(LETTERS_ID, /has room for only/);
     expect(hint?.explanation).toMatch(/has room for only \d+ empty square/);
-    // The run is a **contour**: a side wherever the neighbour across it is not
+    // The run is a **contour**: a side wherever the neighbor across it is not
     // also evidence, so a contiguous run of `n` squares comes out as `2n + 2`
     // thin sides rather than `4n` per-square rings or one solid wash.
     const outline = markSides(recording.ops, COL_HINT_CELL);
     expect(outline.length).toBeGreaterThan(4);
     for (const s of outline) expect(isThin(s)).toBe(true);
     // The premise is only visible if the clue glyph is part of the highlight
-    // (design D8): it is redrawn in COL_HINT rather than the usual clue colour.
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
+    // (design D8): it is redrawn in COL_HINT rather than the usual clue color.
+    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_HINT)).toBe(
       true,
     );
     // Each square acted on is ringed in COL_HINT, so its struck notes stay
@@ -220,7 +220,7 @@ describe("salad hint frames", () => {
   it("outlines the nearest square a clue can see, when that is the whole premise", () => {
     // The near arm on a board with one empty square per line: the run really is
     // a single square, and saying so is honest rather than a missing area. One
-    // square's contour is a ring — four sides, which is what the neighbour rule
+    // square's contour is a ring — four sides, which is what the neighbor rule
     // gives when nothing beside it is evidence.
     const { recording, hint } = hintFrame(
       LETTERS_ID,
@@ -228,7 +228,7 @@ describe("salad hint frames", () => {
     );
     expect(hint?.explanation).toMatch(/and this is the nearest square to it/);
     expectRing(recording.ops, COL_HINT_CELL);
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
+    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_HINT)).toBe(
       true,
     );
   });
@@ -242,7 +242,7 @@ describe("salad hint frames", () => {
     // §5.1a: Salad writes three shapes, so the hint echoes the one it is asking
     // for — here the two strokes of a cross, in COL_HINT.
     const strokes = recording.ops.filter(
-      (o) => o.op === "line" && o.colour === COL_HINT,
+      (o) => o.op === "line" && o.color === COL_HINT,
     );
     expect(strokes.length).toBeGreaterThanOrEqual(2);
     expect(recording.ops).toMatchSnapshot();
@@ -266,7 +266,7 @@ describe("salad hint frames", () => {
     expect(want).toBeDefined();
     expect(
       recording.ops.some(
-        (o) => o.op === "text" && o.colour === COL_HINT && o.text === want,
+        (o) => o.op === "text" && o.color === COL_HINT && o.text === want,
       ),
     ).toBe(true);
     expect(recording.ops).toMatchSnapshot();
@@ -274,13 +274,13 @@ describe("salad hint frames", () => {
 
   it("crosses a struck candidate through, keeping the note itself legible", () => {
     // The Towers convention: the struck note keeps COL_PENCIL (so it still reads
-    // as a real note) and gains a strikethrough in the same colour.
+    // as a real note) and gains a strikethrough in the same color.
     const { recording } = hintFrame(NUMBERS_ID, /There's already a \d/);
     const notes = recording.ops.filter(
-      (o) => o.op === "text" && o.colour === COL_PENCIL,
+      (o) => o.op === "text" && o.color === COL_PENCIL,
     );
     const rules = recording.ops.filter(
-      (o) => o.op === "line" && o.colour === COL_PENCIL,
+      (o) => o.op === "line" && o.color === COL_PENCIL,
     );
     expect(notes.length).toBeGreaterThan(0);
     expect(rules.length).toBeGreaterThan(0);
@@ -298,7 +298,7 @@ function paint(
 ): RecordingDrawing {
   const ds = newDrawState(state);
   setTileSize(ds, saladGame.preferredTileSize ?? 32);
-  const rec = new RecordingDrawing(saladGame.colours(DEFAULT_BACKGROUND));
+  const rec = new RecordingDrawing(saladGame.colors(DEFAULT_BACKGROUND));
   redraw(rec, ds, null, state, 0, ui, 0, flashTime);
   return rec;
 }
@@ -311,7 +311,7 @@ describe("salad Ui-driven frames", () => {
     const ink = paint(s, ui);
     expect(
       ink.ops.some(
-        (o) => o.op === "rect" && o.colour === COL_LOWLIGHT && o.w === 40 && o.h === 40,
+        (o) => o.op === "rect" && o.color === COL_LOWLIGHT && o.w === 40 && o.h === 40,
       ),
     ).toBe(true);
     // No pencil-mode glyph while entering ink.
@@ -341,7 +341,7 @@ describe("salad Ui-driven frames", () => {
     const phaseB = paint(s, ui, FLASH_TIME - 0.1);
     const wave = (r: RecordingDrawing) =>
       r.ops
-        .filter((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)
+        .filter((o) => o.op === "rect" && o.color === COL_HIGHLIGHT)
         .map((o) => (o.op === "rect" ? `${o.x},${o.y}` : ""))
         .join(" ");
     expect(wave(phaseA)).not.toBe("");

@@ -67,7 +67,7 @@ built these guards was explicit that the sweep is the net and the browser pass
 is what catches what the net's mesh is shaped to miss.
 
 **On writing a probe of your own**, if you ever extend one of these: ask *was the
-button consumed*, never *did the board change*. A behavioural probe over generic
+button consumed*, never *did the board change*. A behavioral probe over generic
 geometry can only observe the latter, and there are many innocent reasons for it
 — a right-button eraser has nothing to erase on a fresh board, a Clear key on an
 empty cell is a legitimate no-op, and Fifteen's gap starts in the corner where
@@ -128,7 +128,7 @@ meanings tests them in separate branches. Escape reaches games as 27 whenever no
 pointer gesture is in flight (`app-shell` spec, "Escape reaches the puzzle when
 there is no gesture to cancel").
 
-Two things generalise past keys here, and both cost this project real defects:
+Two things generalize past keys here, and both cost this project real defects:
 
 - **The repair belonged one layer down.** The dead bindings were in the games,
   but fixing them per-game would have left seven files each carefully testing a
@@ -138,8 +138,8 @@ Two things generalise past keys here, and both cost this project real defects:
   paragraph.** [`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts)
   reads the codes the frontend can actually produce and the codes the game
   sources actually test, and fails on a test with no producer. It is a source
-  scan on purpose: what is being asserted is that no behaviour exists, which no
-  behavioural test can see — a game handed `8` directly handles it perfectly.
+  scan on purpose: what is being asserted is that no behavior exists, which no
+  behavioral test can see — a game handed `8` directly handles it perfectly.
 - **Two things that scan misses, both found by widening it, one of them live.**
   A **`switch (button) { case 8: }`** is a comparison the regex cannot see, and
   Unruly carried one through the very sweep that fixed fourteen games: its gate
@@ -161,12 +161,12 @@ LEFT_BUTTON` simply never matches `LEFT_BUTTON | MOD_STYLUS`; it reads
 correctly, fails silently, and fails only on a device the suite never uses).
 So the contract is deliberately inverted from upstream
 (`fix-touch-input-stylus-modifier`): **the midend strips `MOD_STYLUS` before
-`interpretMove`**, and a game that genuinely gives touch its own behaviour
+`interpretMove`**, and a game that genuinely gives touch its own behavior
 opts in with `Game.wantsStylusModifier` — see its doc comment in
 [`engine/game.ts`](../../src/engine/game.ts) for the full rationale. Pattern
 and Loopy are the games that ask (each cycles a cell's or an edge's state on a
 tap, having no right button to cycle with). Note what happened to the previous
-sentence here, because it is a shape worth recognising: the `ts-engine` spec said
+sentence here, because it is a shape worth recognizing: the `ts-engine` spec said
 "Pattern is the only such game", and that quietly became false the day Loopy
 landed. **A count is a fact that goes stale silently** — name the members
 instead.
@@ -307,7 +307,7 @@ wrongly convict them of having none.
 never spends a press on the reveal. `moveCursor` does that for you; the guard is
 collection-wide, in `cursor-vocabulary.test.ts`.
 
-The one exception, and it is a rule rather than a per-game licence: **an arrow
+The one exception, and it is a rule rather than a per-game license: **an arrow
 that is itself an action still only reveals on the first press.** Pearl's
 modified arrow marks a line, Range's shifted arrow dots the cells it passes, and
 Sixteen's arrow *is* a slide in its locked and modified modes — a first press
@@ -347,7 +347,7 @@ The concrete rules that fell out, each of which had a wrong answer available:
 - **One cell per press, not slide-to-the-end.** Sliding as far as the set allows
   is fewer presses, but it cannot stop *inside* a corridor — so it cannot reach
   every cell the drag reaches, which is the whole point of adding the keyboard.
-- **Keep the cursor out of the grab.** A grab is cancelled whenever the board
+- **Keep the cursor out of the grab.** A grab is canceled whenever the board
   moves under it (its reachable set is stale); a cursor is a position on a grid
   whose size did not change. Clearing both in one `cancelGrab` reads to a player
   as a dropped keypress.
@@ -366,7 +366,7 @@ cursor to sit on and no row or column for an arrow to step along. Loopy is the
 worked example ([`loopy/cursor.ts`](../../src/games/loopy/cursor.ts),
 [`loopy-keyboard.test.ts`](../../src/games/loopy/loopy-keyboard.test.ts));
 normative: the `loopy` spec, "Loopy is playable from the keyboard alone". What
-generalised:
+generalized:
 
 - **Put the cursor on the thing every tiling has.** Every dot has a ring of
   incident edges, and the grid already supplies it in clockwise order
@@ -441,12 +441,12 @@ lifecycle in `interpretMove`:
 The drag continues off the **button class**, not the exact press button, so a
 touch long-press that arrived as `RIGHT_BUTTON` (§ "A touch hold arrives as
 the right button") continues its own drag correctly. The renderer previews the
-drag by recolouring accreted cells in the cache key — put it in the diff key
+drag by recoloring accreted cells in the cache key — put it in the diff key
 ([`rendering.md`](./rendering.md) § "The tile cache and the diff key").
 
 Exemplars: [`clusters/index.ts`](../../src/games/clusters/index.ts) (the
 reference); [`bricks/index.ts`](../../src/games/bricks/index.ts) (confirms the
-shape generalises — a single uniform dragtype painted across accreted cells).
+shape generalizes — a single uniform dragtype painted across accreted cells).
 **A shared skeleton was evaluated twice and declined twice**: Sticks' drag
 machine differs materially (the press picks no paint value — orientation comes
 from the drag *axis* via a bounding-box test; each accreted cell stores its
@@ -488,7 +488,7 @@ button. Exemplar: [`boats/index.ts`](../../src/games/boats/index.ts).
 A rectangle-fill drag (Pattern), a piece drag with a sprite (Pegs, Signpost),
 and a slide-follow drag (Sixteen, Slide) each keep their own lifecycle; their
 *rendering* halves (preview simulation, the `moves.ts` module split, blitter
-sprites, cancelling a dangling drag in `changedState`) are in
+sprites, canceling a dangling drag in `changedState`) are in
 [`rendering.md`](./rendering.md).
 
 The **aim drag** picks one discrete target, not a set: `Ui` stores the
@@ -520,7 +520,7 @@ that never had one).
 **A press that could be either a click or a drag must not act on the press.**
 Galaxies' left button toggles a wall *and* starts an association drag: the
 press only records where it landed, travel beyond a few pixels turns it into a
-drag sourced from the press point, and a release that never travelled is the
+drag sourced from the press point, and a release that never traveled is the
 click. Upstream ducked this by putting the drag on the right button — which is
 the button this frontend serves worst (see the trap above), so the ducking
 costs more here than the disambiguation does.
@@ -528,7 +528,7 @@ costs more here than the disambiguation does.
 Two things make it work, and neither is obvious:
 
 - **Measure the release against the press, not a `dragStarted` flag.**
-  `view-interactive.ts`'s `cancelPointerTracking` synthesises a drag *and* a
+  `view-interactive.ts`'s `cancelPointerTracking` synthesizes a drag *and* a
   release at `(-100, -100)` when the pointer leaves the canvas mid-press, so a
   press that never became a drag *will* arrive at a release far from where it
   started. A distance test rejects it for free; a flag needs the case spelled
@@ -612,7 +612,7 @@ Normative: the on-screen-keys requirement in
   *computed from the distribution* (`Math.max(...)` over the array, never a
   restated `5`), the structural test asserts every generated region fits it, and
   the format bound's only job is to bound the generator bound. `requestKeys`
-  takes params and cannot see the board, so this is a judgement made once — make
+  takes params and cannot see the board, so this is a judgment made once — make
   it a derived one, and pin the resulting `KeyLabel[]` so widening the
   distribution *fails a test* rather than silently widening the panel.
 

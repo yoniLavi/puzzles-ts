@@ -53,7 +53,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   params?: string;
 
   /** Dev-only icon-capture mode (set by `?screenshot`; see
-   * `src/puzzle/icon-capture.ts`). Honoured only in dev builds. */
+   * `src/puzzle/icon-capture.ts`). Honored only in dev builds. */
   @property({ type: Boolean })
   screenshot = false;
 

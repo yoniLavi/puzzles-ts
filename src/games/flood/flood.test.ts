@@ -28,37 +28,37 @@ function gen(p: FloodParams, seed = "flood-test"): FloodState {
 
 describe("Flood params", () => {
   it("round-trips and encodes the full form", () => {
-    const p: FloodParams = { w: 12, h: 12, colours: 6, leniency: 5 };
+    const p: FloodParams = { w: 12, h: 12, colors: 6, leniency: 5 };
     expect(encodeParams(p, true)).toBe("12x12c6m5");
     expect(encodeParams(p, false)).toBe("12x12");
     expect(decodeParams("12x12c6m5")).toEqual(p);
   });
 
   it("decodes a bare W as a square board with default colours/leniency", () => {
-    expect(decodeParams("12")).toEqual({ w: 12, h: 12, colours: 6, leniency: 5 });
+    expect(decodeParams("12")).toEqual({ w: 12, h: 12, colors: 6, leniency: 5 });
   });
 
   it("decodes c/m flags in either remainder order", () => {
-    expect(decodeParams("8x10c4m0")).toEqual({ w: 8, h: 10, colours: 4, leniency: 0 });
+    expect(decodeParams("8x10c4m0")).toEqual({ w: 8, h: 10, colors: 4, leniency: 0 });
     expect(decodeParams("16x16c6m2")).toEqual({
       w: 16,
       h: 16,
-      colours: 6,
+      colors: 6,
       leniency: 2,
     });
   });
 
   it("validateParams rejects bad params", () => {
-    expect(validateParams({ w: 1, h: 1, colours: 6, leniency: 0 }, true)).toMatch(
+    expect(validateParams({ w: 1, h: 1, colors: 6, leniency: 0 }, true)).toMatch(
       /two squares/,
     );
-    expect(validateParams({ w: 4, h: 4, colours: 2, leniency: 0 }, true)).toMatch(
+    expect(validateParams({ w: 4, h: 4, colors: 2, leniency: 0 }, true)).toMatch(
       /between 3 and 10/,
     );
-    expect(validateParams({ w: 4, h: 4, colours: 11, leniency: 0 }, true)).toMatch(
+    expect(validateParams({ w: 4, h: 4, colors: 11, leniency: 0 }, true)).toMatch(
       /between 3 and 10/,
     );
-    expect(validateParams({ w: 4, h: 4, colours: 6, leniency: -1 }, true)).toMatch(
+    expect(validateParams({ w: 4, h: 4, colors: 6, leniency: -1 }, true)).toMatch(
       /non-negative/,
     );
     expect(validateParams(defaultParams(), true)).toBeNull();
@@ -69,7 +69,7 @@ describe("Flood params", () => {
     expect(menu.submenu).toHaveLength(7);
     expect(menu.submenu?.[0]).toEqual({
       title: "12x12 Easy",
-      params: { w: 12, h: 12, colours: 6, leniency: 5 },
+      params: { w: 12, h: 12, colors: 6, leniency: 5 },
     });
   });
 });
@@ -81,12 +81,12 @@ describe("Flood desc", () => {
     expect(validateDesc(p, desc)).toBeNull();
     const state = newState(p, desc);
     expect(state.grid).toHaveLength(p.w * p.h);
-    // desc is wh colour chars + ",<movelimit>".
+    // desc is wh color chars + ",<movelimit>".
     expect(desc).toMatch(/^[0-9A-Z]+,\d+$/);
   });
 
   it("validateDesc rejects malformed descriptions", () => {
-    const p: FloodParams = { w: 2, h: 2, colours: 3, leniency: 0 };
+    const p: FloodParams = { w: 2, h: 2, colors: 3, leniency: 0 };
     expect(validateDesc(p, "012")).toMatch(/Not enough/); // 3 of 4 cells, no comma
     expect(validateDesc(p, "012!")).toMatch(/Bad character/);
     expect(validateDesc(p, "0123")).toMatch(/Expected ','/);
@@ -97,15 +97,15 @@ describe("Flood desc", () => {
 
 describe("Flood generation", () => {
   for (const p of [
-    { w: 12, h: 12, colours: 6, leniency: 5 },
-    { w: 12, h: 12, colours: 3, leniency: 0 },
-    { w: 16, h: 16, colours: 6, leniency: 0 },
+    { w: 12, h: 12, colors: 6, leniency: 5 },
+    { w: 12, h: 12, colors: 3, leniency: 0 },
+    { w: 16, h: 16, colors: 6, leniency: 0 },
   ] as FloodParams[]) {
     it(`produces a non-trivial board whose limit is solver+leniency (${encodeParams(p, true)})`, () => {
       const { desc } = newDesc(p, randomNew(`gen-${encodeParams(p, true)}`));
       const state = newState(p, desc);
       expect(completed(state.grid)).toBe(false);
-      const solverMoves = solveMoves(p.w, p.h, state.grid, state.colours);
+      const solverMoves = solveMoves(p.w, p.h, state.grid, state.colors);
       expect(state.movelimit).toBe(solverMoves.length + p.leniency);
     });
   }
@@ -113,12 +113,12 @@ describe("Flood generation", () => {
 
 describe("Flood fill move", () => {
   it("floods the corner region and leaves the source unmutated", () => {
-    // A 3×3 board: corner colour 0, with a colour-1 cell adjacent.
-    const p: FloodParams = { w: 3, h: 3, colours: 3, leniency: 0 };
+    // A 3×3 board: corner color 0, with a color-1 cell adjacent.
+    const p: FloodParams = { w: 3, h: 3, colors: 3, leniency: 0 };
     const state = newState(p, "011000222,9");
     const before = Uint8Array.from(state.grid);
-    const next = executeMove(state, { type: "fill", colour: 1 });
-    // The corner (0,0) and the two colour-1 cells (1,0),(2,0) become 1.
+    const next = executeMove(state, { type: "fill", color: 1 });
+    // The corner (0,0) and the two color-1 cells (1,0),(2,0) become 1.
     expect(Array.from(next.grid.slice(0, 3))).toEqual([1, 1, 1]);
     expect(next.moves).toBe(1);
     // Source state untouched (immutability).
@@ -127,28 +127,28 @@ describe("Flood fill move", () => {
   });
 
   it("rejects a fill with the current corner colour", () => {
-    const p: FloodParams = { w: 3, h: 3, colours: 3, leniency: 0 };
+    const p: FloodParams = { w: 3, h: 3, colors: 3, leniency: 0 };
     const state = newState(p, "011000222,9");
-    expect(() => executeMove(state, { type: "fill", colour: 0 })).toThrow();
+    expect(() => executeMove(state, { type: "fill", color: 0 })).toThrow();
   });
 });
 
 describe("Flood win / lose status", () => {
   it("reports solved when the grid completes within the limit", () => {
-    // 1×2 board, corner colour 0, other cell colour 1, limit 5.
-    const p: FloodParams = { w: 2, h: 1, colours: 3, leniency: 0 };
+    // 1×2 board, corner color 0, other cell color 1, limit 5.
+    const p: FloodParams = { w: 2, h: 1, colors: 3, leniency: 0 };
     const state = newState(p, "01,5");
     expect(status(state)).toBe("ongoing");
-    const next = executeMove(state, { type: "fill", colour: 1 });
+    const next = executeMove(state, { type: "fill", color: 1 });
     expect(completed(next.grid)).toBe(true);
     expect(status(next)).toBe("solved");
   });
 
   it("reports lost when the move count reaches the limit unsolved", () => {
     // limit 1: a single fill that does not complete the board loses.
-    const p: FloodParams = { w: 3, h: 1, colours: 3, leniency: 0 };
+    const p: FloodParams = { w: 3, h: 1, colors: 3, leniency: 0 };
     const state = newState(p, "012,1");
-    const next = executeMove(state, { type: "fill", colour: 1 });
+    const next = executeMove(state, { type: "fill", color: 1 });
     // grid is now 1,1,2 — not complete, and moves(1) >= limit(1).
     expect(completed(next.grid)).toBe(false);
     expect(status(next)).toBe("lost");
@@ -169,21 +169,21 @@ describe("Flood solve", () => {
   });
 
   it("refuses to solve an already-complete board", () => {
-    const p: FloodParams = { w: 2, h: 1, colours: 3, leniency: 0 };
-    const state = executeMove(newState(p, "01,5"), { type: "fill", colour: 1 });
+    const p: FloodParams = { w: 2, h: 1, colors: 3, leniency: 0 };
+    const state = executeMove(newState(p, "01,5"), { type: "fill", color: 1 });
     expect(floodGame.solve?.(state, state).ok).toBe(false);
   });
 });
 
 describe("Flood input mapping", () => {
-  const p: FloodParams = { w: 3, h: 3, colours: 3, leniency: 0 };
+  const p: FloodParams = { w: 3, h: 3, colors: 3, leniency: 0 };
   const state = newState(p, "011000222,9");
   const ds = floodGame.newDrawState?.(state) ?? null;
   if (ds) floodGame.setTileSize?.(ds, 32);
 
   it("maps a left-click on a different-colour cell to a fill", () => {
     const fresh = floodGame.newUi(state);
-    // Cell (1,0) holds colour 1; border = ts/2 = 16, ts = 32, so x in
+    // Cell (1,0) holds color 1; border = ts/2 = 16, ts = 32, so x in
     // [48,80) maps to column 1, y in [16,48) to row 0.
     const move = floodGame.interpretMove(
       state,
@@ -192,12 +192,12 @@ describe("Flood input mapping", () => {
       { x: 56, y: 24 },
       LEFT_BUTTON,
     );
-    expect(move).toEqual({ type: "fill", colour: 1 });
+    expect(move).toEqual({ type: "fill", color: 1 });
   });
 
   it("ignores a left-click on a same-colour (corner) cell", () => {
     const fresh = floodGame.newUi(state);
-    // Cell (0,0) is the corner colour 0.
+    // Cell (0,0) is the corner color 0.
     const move = floodGame.interpretMove(
       state,
       fresh,
@@ -226,13 +226,13 @@ describe("Flood input mapping", () => {
       { x: 0, y: 0 },
       CURSOR_SELECT,
     );
-    expect(move).toEqual({ type: "fill", colour: 1 });
+    expect(move).toEqual({ type: "fill", color: 1 });
   });
 });
 
 describe("Flood text format", () => {
   it("emits colour chars per row", () => {
-    const p: FloodParams = { w: 3, h: 2, colours: 3, leniency: 0 };
+    const p: FloodParams = { w: 3, h: 2, colors: 3, leniency: 0 };
     const state = newState(p, "012210,9");
     expect(textFormat(state)).toBe("012\n210\n");
   });

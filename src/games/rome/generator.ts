@@ -56,11 +56,11 @@ import {
  *
  * Two upstream details here are load-bearing and look like oversights:
  *
- * - **`arrdsf` is never reinitialised** between calls, so merges accumulate
+ * - **`arrdsf` is never reinitialized** between calls, so merges accumulate
  *   across the whole fill — two squares joined while both were still empty
  *   (empty squares all share an arrow mask of zero, so they *all* merge) stay
  *   joined afterwards. `suggest` likewise accumulates and is never cleared.
- * - **`suggest[i1] |= grid[i2]`** ORs the neighbour's *whole* cell, not just
+ * - **`suggest[i1] |= grid[i2]`** ORs the neighbor's *whole* cell, not just
  *   its arrow bits, so goal and rule-violation bits land in `suggest` too.
  *   They are inert (the only consumer masks against a candidate set that holds
  *   arrow bits alone), but the write is reproduced as-is.

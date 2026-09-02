@@ -1,6 +1,6 @@
 /**
  * Unruly — native TS port of `unruly.c` (the binary puzzle Binairo).
- * Fill the grid with two colours so no row/column has three equal cells
+ * Fill the grid with two colors so no row/column has three equal cells
  * in a row and each row/column holds equally many of each; an optional
  * variant also forbids two identical rows or columns.
  *
@@ -39,11 +39,11 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { type Cell, DIFF_NAMES, EMPTY, ONE, ZERO } from "./constants.ts";
 import { newDesc, solvableAt } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -193,13 +193,13 @@ function flashLength(
 // --- hint -----------------------------------------------------------------
 
 /** Highlight data for an Unruly hint step. `target` is the cell the
- * deduction forces (filled `COL_HINT` with a preview of the forced colour).
+ * deduction forces (filled `COL_HINT` with a preview of the forced color).
  * `area` cells are the deduction's other forced cells — the journey's
  * siblings — light-shaded `COL_HINT_CELL` *where still empty*, so the player
  * sees the whole "this line fills" deduction at a glance. `ring` cells are
- * **filled** premise cells whose colour is the evidence (the same-colour
+ * **filled** premise cells whose color is the evidence (the same-color
  * pair, the completed quota, the near-complete reserved window); a light
- * shade would hide the colour that *is* the reason, so they are ringed in
+ * shade would hide the color that *is* the reason, so they are ringed in
  * `COL_HINT` instead. */
 export interface UnrulyHint {
   target: { x: number; y: number; value: Cell };
@@ -207,7 +207,7 @@ export interface UnrulyHint {
   ring: number[];
 }
 
-const colourName = (c: number): string => (c === ONE ? "black" : "white");
+const colorName = (c: number): string => (c === ONE ? "black" : "white");
 
 /** Every cell index of a row (`horizontal`) or column. */
 function lineCells(
@@ -228,15 +228,15 @@ function narrate(reason: HintReason): string {
   const line = reason.kind === "threes" ? "" : reason.horizontal ? "row" : "column";
   switch (reason.kind) {
     case "threes": {
-      const c = colourName(reason.colour);
-      return `Two of these three cells are already ${c}; a third ${c} would make three in a row, which isn't allowed — so this cell must be ${colourName(reason.colour === ONE ? ZERO : ONE)}.`;
+      const c = colorName(reason.color);
+      return `Two of these three cells are already ${c}; a third ${c} would make three in a row, which isn't allowed — so this cell must be ${colorName(reason.color === ONE ? ZERO : ONE)}.`;
     }
     case "complete":
-      return `This ${line} already holds all of its ${colourName(reason.full)} cells, so every remaining cell in it must be ${colourName(reason.fill)}.`;
+      return `This ${line} already holds all of its ${colorName(reason.full)} cells, so every remaining cell in it must be ${colorName(reason.fill)}.`;
     case "unique":
-      return `A full ${line} already matches this one everywhere it is filled except this cell; making this cell ${colourName(reason.fill === ONE ? ZERO : ONE)} would make the two ${line}s identical, which the unique-rows variant forbids — so it must be ${colourName(reason.fill)}.`;
+      return `A full ${line} already matches this one everywhere it is filled except this cell; making this cell ${colorName(reason.fill === ONE ? ZERO : ONE)} would make the two ${line}s identical, which the unique-rows variant forbids — so it must be ${colorName(reason.fill)}.`;
     case "nearcomplete":
-      return `Only one ${colourName(reason.fill === ONE ? ZERO : ONE)} cell is left to place in this ${line}; anywhere but the ringed cells would force three ${colourName(reason.fill)} in a row, so every other empty cell must be ${colourName(reason.fill)}.`;
+      return `Only one ${colorName(reason.fill === ONE ? ZERO : ONE)} cell is left to place in this ${line}; anywhere but the ringed cells would force three ${colorName(reason.fill)} in a row, so every other empty cell must be ${colorName(reason.fill)}.`;
   }
 }
 
@@ -437,7 +437,7 @@ export const unrulyGame: Game<
 
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: UnrulyParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

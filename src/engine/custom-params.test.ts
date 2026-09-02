@@ -78,7 +78,7 @@ function makeGame(
     interpretMove: () => null,
     executeMove: (s) => s,
     status: () => "ongoing",
-    colours: () => [
+    colors: () => [
       [1, 1, 1],
       [0, 0, 0],
     ],

@@ -10,7 +10,7 @@
  *
  * Techniques, per difficulty:
  * - Easy: clue-point counting (fill/empty around a clue whose remaining
- *   lines are 0 or equal its undecided neighbours) + immediate loop
+ *   lines are 0 or equal its undecided neighbors) + immediate loop
  *   avoidance (the square pass).
  * - Hard adds: single-pair equivalence tracking around clue points,
  *   slash-value propagation through equivalence classes, dead-end avoidance
@@ -266,7 +266,7 @@ export function slantSolve(
 
     /*
      * Clue-point pass: any clue point with the number of remaining lines
-     * equal to zero or to the number of remaining undecided neighbouring
+     * equal to zero or to the number of remaining undecided neighboring
      * squares can be filled in completely.
      */
     for (let y = 0; y < H; y++) {
@@ -274,7 +274,7 @@ export function slantSolve(
         const c = clues[y * W + x];
         if (c < 0) continue;
 
-        // The clue's neighbouring squares, in order around the point, with
+        // The clue's neighboring squares, in order around the point, with
         // the slash each would need to connect to the point.
         const nPos: number[] = [];
         const nSlash: number[] = [];
@@ -294,20 +294,20 @@ export function slantSolve(
           nPos.push((y - 1) * w + x);
           nSlash.push(1);
         }
-        const nneighbours = nPos.length;
+        const nneighbors = nPos.length;
 
-        // Count undecided neighbours (nu) and remaining lines (nl). Above
+        // Count undecided neighbors (nu) and remaining lines (nl). Above
         // Easy, also track ONE pair of adjacent undecided squares in the
         // same equivalence class — they share a slash value, so exactly one
         // of them connects: count them jointly as one line.
         let nu = 0;
         let nl = c;
-        let last = nPos[nneighbours - 1];
+        let last = nPos[nneighbors - 1];
         let eq = soln[last] === 0 ? sc.equiv.canonify(last) : -1;
         let meq = -1;
         let mj1 = -1;
         let mj2 = -1;
-        for (let i = 0; i < nneighbours; i++) {
+        for (let i = 0; i < nneighbors; i++) {
           const j = nPos[i];
           const s = nSlash[i];
           if (soln[j] === 0) {
@@ -337,10 +337,10 @@ export function slantSolve(
         if (nl < 0 || nl > nu) return SOLVE_IMPOSSIBLE;
 
         if (nu > 0 && (nl === 0 || nl === nu)) {
-          // Fill (nl > 0) or empty (nl === 0) every undecided neighbour
+          // Fill (nl > 0) or empty (nl === 0) every undecided neighbor
           // except a tracked equivalent pair.
           const placed: SlantPlacement[] = [];
-          for (let i = 0; i < nneighbours; i++) {
+          for (let i = 0; i < nneighbors; i++) {
             const j = nPos[i];
             const s = nSlash[i];
             if (soln[j] === 0 && j !== mj1 && j !== mj2) {
@@ -360,19 +360,19 @@ export function slantSolve(
           // Precisely two undecided squares and one line to place between
           // them: if those squares are adjacent around the point, mark them
           // equivalent. (Applies even when meq >= 0 — a 2 point with two
-          // neighbours already equivalent lets us pair the other two.)
+          // neighbors already equivalent lets us pair the other two.)
           // Upstream does NOT set done_something here; the merge's effect
           // is only picked up by later passes. Faithful.
           let lastIdx = -1;
           let i: number;
-          for (i = 0; i < nneighbours; i++) {
+          for (i = 0; i < nneighbors; i++) {
             const j = nPos[i];
             if (soln[j] === 0 && j !== mj1 && j !== mj2) {
               if (lastIdx < 0) lastIdx = i;
               else if (lastIdx === i - 1 || (lastIdx === 0 && i === 3)) break; // adjacent pair
             }
           }
-          if (i < nneighbours) {
+          if (i < nneighbors) {
             let a = sc.equiv.canonify(nPos[lastIdx]);
             const sv1 = sc.slashval[a];
             const b = sc.equiv.canonify(nPos[i]);
@@ -481,7 +481,7 @@ export function slantSolve(
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         // A placed slash rules out contradicting v-shapes with each
-        // neighbour.
+        // neighbor.
         const s = soln[y * w + x];
         if (s !== 0) {
           if (x > 0) {

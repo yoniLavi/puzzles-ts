@@ -20,7 +20,7 @@ import { defaultParams, type GuessUi, newDesc, newState } from "./state.ts";
 
 interface Op {
   op: string;
-  colour?: number;
+  color?: number;
   x?: number;
   y?: number;
   w?: number;
@@ -37,13 +37,13 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
+      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
     drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", colour: c }),
+      ops.push({ op: "drawLine", color: c }),
     drawPolygon: (p: { x: number; y: number }[], f: number) =>
-      ops.push({ op: "drawPolygon", colour: f, x: p[0].x, y: p[0].y }),
+      ops.push({ op: "drawPolygon", color: f, x: p[0].x, y: p[0].y }),
     drawCircle: (p: { x: number; y: number }, r: number, f: number) =>
-      ops.push({ op: "drawCircle", colour: f, r, x: p.x, y: p.y }),
+      ops.push({ op: "drawCircle", color: f, r, x: p.x, y: p.y }),
     drawText: () => ops.push({ op: "drawText" }),
     blitterNew: () => ({}),
     blitterFree: () => {},
@@ -78,7 +78,7 @@ describe("Guess redraw", () => {
       ops.some(
         (o) =>
           o.op === "drawRect" &&
-          o.colour === COL_BACKGROUND &&
+          o.color === COL_BACKGROUND &&
           o.w === ds.w &&
           o.h === ds.h,
       ),
@@ -89,7 +89,7 @@ describe("Guess redraw", () => {
     const { desc } = newDesc(params, randomNew("render-fb"));
     const s0 = newState(params, desc);
     const wrong = s0.solution.slice();
-    wrong[0] = (wrong[0] % params.ncolours) + 1; // 3 exact matches remain
+    wrong[0] = (wrong[0] % params.ncolors) + 1; // 3 exact matches remain
     const s1 = guessGame.executeMove(s0, {
       type: "guess",
       pegs: wrong,
@@ -101,9 +101,9 @@ describe("Guess redraw", () => {
     const ui = freshUi(s1);
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, s0, s1, 1, ui, 0, 0);
-    expect(
-      ops.some((o) => o.op === "drawCircle" && o.colour === COL_CORRECTPLACE),
-    ).toBe(true);
+    expect(ops.some((o) => o.op === "drawCircle" && o.color === COL_CORRECTPLACE)).toBe(
+      true,
+    );
   });
 
   it("draws the hold bar on a held active slot", () => {
@@ -114,7 +114,7 @@ describe("Guess redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, s, 1, ui, 0, 0);
     expect(
-      ops.some((o) => o.op === "drawRect" && o.colour === COL_HOLD && o.h === 2),
+      ops.some((o) => o.op === "drawRect" && o.color === COL_HOLD && o.h === 2),
     ).toBe(true);
   });
 
@@ -127,10 +127,7 @@ describe("Guess redraw", () => {
     const { dr: drA, ops: opsA } = recordingDrawing();
     redraw(drA, dsA, null, s0, 1, freshUi(s0), 0, 0);
     const pegCircle = (o: Op) =>
-      o.op === "drawCircle" &&
-      o.colour !== undefined &&
-      o.colour >= 6 &&
-      o.colour <= 15;
+      o.op === "drawCircle" && o.color !== undefined && o.color >= 6 && o.color <= 15;
     expect(opsA.some((o) => pegCircle(o) && (o.y ?? 0) >= dsA.solny)).toBe(false);
 
     // Solved: the solution pegs are revealed in the solution row.

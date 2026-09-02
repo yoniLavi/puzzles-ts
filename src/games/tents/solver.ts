@@ -135,7 +135,7 @@ export function tentsSolve(
     }
     if (doneSomething) continue;
 
-    // A tree with exactly one {unattached tent, BLANK} neighbour must have its
+    // A tree with exactly one {unattached tent, BLANK} neighbor must have its
     // tent there.
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {

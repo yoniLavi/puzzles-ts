@@ -2,7 +2,7 @@
 //
 // Tier-3 component tests for `PuzzleScreen` (see the `repo-layout` spec): the
 // Check-&-Save command path — the seam whose symptom path
-// (save-when-it-should-not) the wall-mistake bug travelled — the reference-panel
+// (save-when-it-should-not) the wall-mistake bug traveled — the reference-panel
 // toggle, focus return, and which board a page opens with. Driven in-process
 // under happy-dom with a fake `Puzzle` and mocked dialog/persistence; no worker,
 // no canvas, no full render (we invoke the command handlers directly rather than
@@ -69,7 +69,7 @@ vi.mock("../store/saved-games.ts", () => ({
 // The settings store is deliberately NOT mocked: the board-choice tests assert
 // that a remembered board survives a reload, and a mocked store would assert
 // only that this file's own fake was called — the shape of guard this repo keeps
-// catching (a check aimed at a neighbour of the thing it claims to check).
+// catching (a check aimed at a neighbor of the thing it claims to check).
 import { settings } from "../store/settings.ts";
 import { PuzzleScreen } from "./puzzle-screen.ts";
 
@@ -173,7 +173,7 @@ describe("puzzle-screen: Check-&-Save command", () => {
       label: "Not saved",
       type: "warning",
     });
-    // The count and pluralisation reach the message.
+    // The count and pluralization reach the message.
     expect(String(showAlert.mock.calls[0]?.[0]?.message)).toContain("3 mistakes found");
   });
 

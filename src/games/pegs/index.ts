@@ -15,9 +15,9 @@
  */
 
 import { rejectMove } from "../../engine/assert-never.ts";
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLUE, PURPLE } from "../../engine/colour/colours.ts";
-import { HELD } from "../../engine/colour/palette.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLUE, PURPLE } from "../../engine/color/colors.ts";
+import { HELD } from "../../engine/color/palette.ts";
 import {
   coord as coordE,
   fromCoord as fromCoordE,
@@ -40,7 +40,7 @@ import {
 } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
-import type { Colour, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
 
 // --- grid cell values ------------------------------------------------
 
@@ -53,7 +53,7 @@ const GRID_CURSOR = 10;
 /** Draw-state overlay: jumping-mode highlight on the cell. */
 const GRID_JUMPING = 20;
 
-// --- colour indices --------------------------------------------------
+// --- color indices --------------------------------------------------
 
 const COL_BACKGROUND = 0;
 const COL_HIGHLIGHT = 1;
@@ -61,7 +61,7 @@ const COL_LOWLIGHT = 2;
 const COL_PEG = 3;
 const COL_CURSOR = 4;
 /** Appended past the C enum: the ring round a peg the keyboard has picked up
- * to jump with, which upstream drew in the cursor colour. */
+ * to jump with, which upstream drew in the cursor color. */
 const COL_HELD = 5;
 
 // --- board types -----------------------------------------------------
@@ -120,7 +120,7 @@ interface PegsDrawState {
   /** Per-tile cache of last-drawn cell value (including cursor/jumping overlays). */
   grid: Uint8Array;
   started: boolean;
-  bgColour: number;
+  bgColor: number;
 }
 
 // --- presets ---------------------------------------------------------
@@ -427,7 +427,7 @@ function newDesc(p: PegsParams, rng: RandomState): { desc: string } {
       }
     }
 
-    // Octagon: the centre hole is insoluble (parity proof in C comments).
+    // Octagon: the center hole is insoluble (parity proof in C comments).
     // Pick a random solvable starting hole from one of three equivalence classes.
     if (type === TYPE_OCTAGON) {
       const cls = randomUpto(rng, 3);
@@ -440,7 +440,7 @@ function newDesc(p: PegsParams, rng: RandomState): { desc: string } {
         if (randomUpto(rng, 2)) dy *= 3;
         else dx *= 3;
       } else if (cls === 1) {
-        // Remove a random piece two from the centre.
+        // Remove a random piece two from the center.
         dx = 2 * (randomUpto(rng, 2) * 2 - 1);
         if (randomUpto(rng, 2)) dy = 0;
         else {
@@ -448,7 +448,7 @@ function newDesc(p: PegsParams, rng: RandomState): { desc: string } {
           dx = 0;
         }
       } else {
-        // Remove a random piece one from the centre.
+        // Remove a random piece one from the center.
         dx = randomUpto(rng, 2) * 2 - 1;
         if (randomUpto(rng, 2)) dy = 0;
         else {
@@ -736,13 +736,13 @@ function textFormat(s: PegsState): string {
   return ret;
 }
 
-// --- move serialisation ----------------------------------------------
+// --- move serialization ----------------------------------------------
 
-function serialiseMove(m: PegsMove): unknown {
+function serializeMove(m: PegsMove): unknown {
   return `${m.sx},${m.sy}-${m.tx},${m.ty}`;
 }
 
-function deserialiseMove(raw: unknown): PegsMove {
+function deserializeMove(raw: unknown): PegsMove {
   const s = String(raw);
   const match = s.match(/^(-?\d+),(-?\d+)-(-?\d+),(-?\d+)$/);
   // Pegs is the one game that parses its moves at the save boundary, so this is
@@ -777,9 +777,9 @@ function fromCoordWithTileSize(x: number, ts: number): number {
   return fromCoordE(x, ts, border(ts));
 }
 
-// --- colours ---------------------------------------------------------
+// --- colors ---------------------------------------------------------
 
-function colours(defaultBackground: Colour): Colour[] {
+function colors(defaultBackground: Color): Color[] {
   const {
     background: bg,
     highlight: hi,
@@ -792,7 +792,7 @@ function colours(defaultBackground: Colour): Colour[] {
     bg, // COL_BACKGROUND
     hi, // COL_HIGHLIGHT
     lo, // COL_LOWLIGHT
-    BLUE, // COL_PEG — the piece's own colour, as upstream paints it
+    BLUE, // COL_PEG — the piece's own color, as upstream paints it
     PURPLE, // COL_CURSOR — not CURSOR: green is the held ring; purple as Spokes
     HELD, // COL_HELD — a peg picked up to jump with
   ];
@@ -829,7 +829,7 @@ function newDrawState(s: PegsState): PegsDrawState {
     h: s.h,
     grid: new Uint8Array(s.w * s.h).fill(255),
     started: false,
-    bgColour: -1,
+    bgColor: -1,
   };
 }
 
@@ -841,14 +841,14 @@ function drawTile(
   x: number,
   y: number,
   v: number,
-  bgColour: number,
+  bgColor: number,
 ): void {
   const ts = ds.tileSize;
   let jumping = false;
   let cursor = false;
 
-  if (bgColour >= 0) {
-    dr.drawRect({ x, y, w: ts, h: ts }, bgColour);
+  if (bgColor >= 0) {
+    dr.drawRect({ x, y, w: ts, h: ts }, bgColor);
   }
 
   if (v >= GRID_JUMPING) {
@@ -869,8 +869,8 @@ function drawTile(
     const bg = cursor ? COL_CURSOR : COL_LOWLIGHT;
     dr.drawCircle({ x: x + half, y: y + half }, Math.floor(ts / 4), bg, bg);
   } else if (v === GRID_PEG) {
-    // Under the cursor the whole peg takes the cursor colour; picked up to
-    // jump, it keeps its own colour inside a held ring.
+    // Under the cursor the whole peg takes the cursor color; picked up to
+    // jump, it keeps its own color inside a held ring.
     const outerBg = cursor ? COL_CURSOR : jumping ? COL_HELD : COL_PEG;
     const innerBg = cursor ? COL_CURSOR : COL_PEG;
     dr.drawCircle({ x: x + half, y: y + half }, Math.floor(ts / 3), outerBg, outerBg);
@@ -897,12 +897,12 @@ function redraw(
   const hw = highlightWidth(ts);
   const b = border(ts);
 
-  let bgColour: number;
+  let bgColor: number;
   if (flashTime > 0) {
     const frame = Math.floor(flashTime / FLASH_FRAME);
-    bgColour = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
+    bgColor = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
   } else {
-    bgColour = COL_BACKGROUND;
+    bgColor = COL_BACKGROUND;
   }
 
   // Erase the sprite currently being dragged, if any.
@@ -994,7 +994,7 @@ function redraw(
       }
     }
 
-    // Pass 4: fill playable cells with background colour.
+    // Pass 4: fill playable cells with background color.
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         if (s.grid[y * w + x] !== GRID_OBST) {
@@ -1026,8 +1026,8 @@ function redraw(
       if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y) {
         v += ui.curJumping ? GRID_JUMPING : GRID_CURSOR;
       }
-      if (v !== GRID_OBST && (bgColour !== ds.bgColour || v !== ds.grid[y * w + x])) {
-        drawTile(dr, ds, coord(x, ts), coord(y, ts), v, bgColour);
+      if (v !== GRID_OBST && (bgColor !== ds.bgColor || v !== ds.grid[y * w + x])) {
+        drawTile(dr, ds, coord(x, ts), coord(y, ts), v, bgColor);
         ds.grid[y * w + x] = v;
       }
     }
@@ -1046,7 +1046,7 @@ function redraw(
     drawTile(dr, ds, ds.dragX, ds.dragY, GRID_PEG, -1);
   }
 
-  ds.bgColour = bgColour;
+  ds.bgColor = bgColor;
 }
 
 // --- animation / flash -----------------------------------------------
@@ -1099,10 +1099,10 @@ export const pegsGame: Game<PegsParams, PegsState, PegsMove, PegsUi, PegsDrawSta
   status,
 
   textFormat,
-  serialiseMove,
-  deserialiseMove,
+  serializeMove,
+  deserializeMove,
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize,

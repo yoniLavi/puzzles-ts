@@ -84,7 +84,7 @@ export const HINT_GAMES: [string, AnyGame][] = [
  * object whose every field is empty. The candidate-elimination games' populate
  * opener (`{ area: [], targets: [], marks: [] }`) is the canonical case: its
  * banner narration is the whole display, so a frame it paints nothing on is
- * *correct*. Both cross-game guards need the same judgement — `hint-overlay`
+ * *correct*. Both cross-game guards need the same judgment — `hint-overlay`
  * to know which step must repaint a warm frame, `hint-quality` to know which
  * step must then carry words instead. */
 export function declaresNoMarks(highlights: unknown): boolean {

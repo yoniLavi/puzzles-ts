@@ -1,6 +1,6 @@
 /**
  * **A game and the frontend must agree about input** — two source scans that no
- * behavioural test can replace, because each asserts the *absence* of something.
+ * behavioral test can replace, because each asserts the *absence* of something.
  *
  * ## 1. No game may test a button code this frontend cannot send
  *
@@ -112,7 +112,7 @@ function gameIdOf(path: string): string {
  * Every code `puzzleKeyMap` can deliver, read **from the frontend source**
  * rather than restated here. Restating it would make this test agree with a
  * copy of the map instead of with the map — the exact shape of "a guard that
- * measures a neighbour of the thing it guards".
+ * measures a neighbor of the thing it guards".
  *
  * Entries are either a bare number (`Escape: 27`) or a `PuzzleButton.NAME`,
  * which is resolved through the real enum.
@@ -316,7 +316,7 @@ describe("no game tests a button this frontend cannot send", () => {
     // **This test's first cut matched on the constant's NAME** — BACKSPACE,
     // DELETE, ESCAPE — and it passed while ABCD and Crossing sat there with
     // `const CLEAR = 8`. That is this repo's most-repeated defect aimed at its
-    // own guard: it measured a neighbour of the thing it guards. What actually
+    // own guard: it measured a neighbor of the thing it guards. What actually
     // identifies the defect is the *value*, and what separates it from the many
     // legitimate `= 8`s (`COL_CURSOR`, `DIR_MAX`, `F_DOT_BLACK`) is that the
     // constant is then **compared against a button**. So match on both.

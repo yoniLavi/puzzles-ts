@@ -1,14 +1,14 @@
 /**
  * Clusters — native TS port of `puzzles/unreleased/clusters.c`. Fill the grid
  * with red and blue tiles so that every plain tile touches **two or more**
- * tiles of its own colour, and the given "dot" tiles touch exactly one (all
+ * tiles of its own color, and the given "dot" tiles touch exactly one (all
  * exactly-one tiles are given as dots — upstream's rule statement).
  * Left-click/-drag paints blue (cycling to red, then clear); right-click/-drag
- * paints red; a keyboard cursor places colours with Enter/Space/0/1/2/
- * backspace. Rule violations are shown live (upstream behaviour), and Check &
+ * paints red; a keyboard cursor places colors with Enter/Space/0/1/2/
+ * backspace. Rule violations are shown live (upstream behavior), and Check &
  * Save additionally refuses to save while any violation stands
  * (`findMistakes`). The explained hint (`add-clusters-hint`) narrates the
- * solver's proof by contradiction: which rule the opposite colouring of the
+ * solver's proof by contradiction: which rule the opposite coloring of the
  * forced cell would break.
  */
 
@@ -27,7 +27,7 @@ import {
 import { fromCoord } from "../../engine/geometry.ts";
 import {
   ALREADY_SOLVED,
-  CONTRADICTION_UNLOCALISED,
+  CONTRADICTION_UNLOCALIZED,
   FIX_MISTAKES_FIRST,
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
@@ -51,12 +51,12 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
 import { newClustersDesc } from "./generator.ts";
 import {
   border,
   type ClustersDrawState,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -176,7 +176,7 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  // --- mouse press: pick a drag colour by cycling the pressed cell ---
+  // --- mouse press: pick a drag color by cycling the pressed cell ---
   if (isMouseDown(button)) {
     const i = hy * w + hx;
     const old = grid[i];
@@ -297,9 +297,9 @@ function findMistakes(state: ClustersState): readonly ClustersMistake[] {
 
 /** Highlight roles of a Clusters hint step (the render legend — see the
  * COL_HINT block in render.ts). `target` is the forced cell; `danger` is the
- * tile the refuted colouring would break — the only element the narration
+ * tile the refuted coloring would break — the only element the narration
  * calls "ringed" — when that isn't the target itself; `chain` is a lookahead
- * firing's what-if walk, each cell marked with the colour the hypothesis
+ * firing's what-if walk, each cell marked with the color the hypothesis
  * would force it to. Every other premise tile of the three local rules sits
  * orthogonally adjacent to the target or the danger tile, so it is already
  * in view without a highlight of its own. */
@@ -313,20 +313,19 @@ export interface ClustersHintHighlights {
   chain: (OrderedCell & { fill: ClustersFill })[];
 }
 
-const colourName = (fill: ClustersFill): string =>
-  fill === F_COLOR_0 ? "red" : "blue";
+const colorName = (fill: ClustersFill): string => (fill === F_COLOR_0 ? "red" : "blue");
 
-/** Narrate the proof by contradiction: premise → the rule the refuted colour
+/** Narrate the proof by contradiction: premise → the rule the refuted color
  * breaks → conclusion in the necessity voice (docs/games/hints.md § "Necessity for deductions, imperative for moves", D4).
  *
  * **Where a second mark is on the board, "this cell" is tied to it by geometry**
  * (owner-reported, 2026-08-14: with a solid-filled target *and* a ringed tile on
  * screen, a bare "this cell" points at neither). The fix is deliberately not
- * *"the cell marked purple"* — `hints.md` forbids colour as the only cue, and a
+ * *"the cell marked purple"* — `hints.md` forbids color as the only cue, and a
  * sentence naming a hue is wrong the moment the scheme flips or the reader is
- * colour-blind. It is the relation instead: `contradictionAround` only ever
- * reports the placed cell **or one of its four orthogonal neighbours**, so on
- * every branch below the ringed tile is literally *this cell's neighbour* and
+ * color-blind. It is the relation instead: `contradictionAround` only ever
+ * reports the placed cell **or one of its four orthogonal neighbors**, so on
+ * every branch below the ringed tile is literally *this cell's neighbor* and
  * the sentence can say so. That identifies both squares at once, and is more
  * informative than the wording it replaces rather than merely longer.
  *
@@ -334,8 +333,8 @@ const colourName = (fill: ClustersFill): string =>
  * second mark in those frames, so "this cell" is unambiguous and a
  * disambiguating phrase would be noise. */
 function narrate(d: ClustersDeduction): string {
-  const f = colourName(d.fill);
-  const t = colourName(d.refuted);
+  const f = colorName(d.fill);
+  const t = colorName(d.refuted);
   const at = d.reason.at;
 
   if (d.reason.kind === "chain") {
@@ -352,7 +351,7 @@ function narrate(d: ClustersDeduction): string {
             ? "the ringed tile would be sealed off from its own colour"
             : "the ringed tile could no longer touch two of its own colour";
     // The chain's break is adjacent to the *last forced cell*, not to the
-    // target, so the neighbour relation above is unavailable here. What ties
+    // target, so the neighbor relation above is unavailable here. What ties
     // the three marks together instead is that the chain runs **from** this
     // cell — which is also the one fact a reader needs to follow it.
     //
@@ -383,7 +382,7 @@ function narrate(d: ClustersDeduction): string {
     }
     // reachTwo at the cell itself (an empty cell is never a dot). Count- and
     // edge-neutral: at a corner the board edge does part of the hemming, and
-    // "at most one" stays honest when one open neighbour remains.
+    // "at most one" stays honest when one open neighbor remains.
     return `If this cell were ${t}, at most one neighbour could ever match it — and every plain tile must touch two of its colour. So it must be ${f}.`;
   }
   if (at.kind === "dotOvercount") {
@@ -423,7 +422,7 @@ function hint(state: ClustersState): HintResult<ClustersMove, ClustersHintHighli
   if (plan.verdict === INVALID) {
     return {
       ok: false,
-      error: CONTRADICTION_UNLOCALISED,
+      error: CONTRADICTION_UNLOCALIZED,
     };
   }
   if (plan.verdict !== COMPLETE || plan.deductions.length === 0) {
@@ -440,7 +439,7 @@ function hint(state: ClustersState): HintResult<ClustersMove, ClustersHintHighli
 }
 
 /** A move completes the step iff it paints exactly the hinted cell with the
- * hinted colour. A multi-cell drag (even one covering the target) changes
+ * hinted color. A multi-cell drag (even one covering the target) changes
  * cells the plan didn't account for, so it drops the plan to recompute. */
 function hintKeepTrack(
   m: ClustersMove,
@@ -535,7 +534,7 @@ export const clustersGame: Game<
   findMistakes,
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: ClustersParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

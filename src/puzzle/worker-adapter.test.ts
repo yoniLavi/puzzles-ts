@@ -89,7 +89,7 @@ describe("TsWorkerPuzzle — decodeCustomParams", () => {
     expect(worker.decodeCustomParams("12x12c6m5")).toEqual({
       width: "12",
       height: "12",
-      colours: "6",
+      colors: "6",
       "extra-moves-permitted": "5",
     });
   });
@@ -125,7 +125,7 @@ describe("TsWorkerPuzzle — decodeCustomParams", () => {
     // type-summary formatter indexes options via Number(value), and
     // Number("true") is NaN (the annotation silently renders empty).
     expect(worker.decodeCustomParams("c6p4g10bM")).toEqual({
-      colours: "6",
+      colors: "6",
       "pegs-per-guess": "4",
       guesses: "10",
       "allow-blanks": true,
@@ -220,7 +220,7 @@ describe("TsWorkerPuzzle — the first palette install must repaint", () => {
 
     worker.setDrawingPalette(["#000000"]);
     expect(paints()).toBe(1);
-    // A replacement invalidates any per-tile cache keyed to the old colours.
+    // A replacement invalidates any per-tile cache keyed to the old colors.
     worker.setDrawingPalette(["#ffffff"]);
     expect(paints()).toBe(2);
   });

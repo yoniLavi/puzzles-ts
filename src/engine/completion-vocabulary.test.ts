@@ -8,7 +8,7 @@
  * `cheated`/`usedSolve`/`hasCheated`/`solved`. That last collision is the
  * argument for the whole change: **Magnets spelled `cheated` as `solved`**,
  * which is the word Loopy and Undead used for `completed`. One word, opposite
- * meanings, in neighbouring files.
+ * meanings, in neighboring files.
  *
  * ON THE INSTRUMENT, precisely — the two checks are not equally strong and it
  * matters which is which:

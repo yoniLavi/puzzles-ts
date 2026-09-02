@@ -28,7 +28,7 @@ Embind adapter, the Emscripten build, the worker's wasm path — was retired on
 in the app.
 
 **The migration is deliberate divergence, not a faithful port.** We are
-not tracking upstream and not preserving byte-identical behaviour or old
+not tracking upstream and not preserving byte-identical behavior or old
 save-game / shared-ID compatibility from before the pivot. Going forward,
 game IDs stay stable (the RNG is bit-identical) so shared seeds keep
 reproducing boards.
@@ -65,7 +65,7 @@ Everything below is for building or contributing.
 ## How the migration worked
 
 - **`src/`** is the whole thing: the TypeScript web app, the engine
-  (`src/engine/` — midend, `Game` interface, drawing and colour
+  (`src/engine/` — midend, `Game` interface, drawing and color
   contracts) and all 57 games (`src/games/<id>/`).
 
 - **It went top-down.** A TS midend and a clean `Game` interface first, then
@@ -78,7 +78,7 @@ Everything below is for building or contributing.
   a *reference* while porting. It is gone. What outlived it moved to where it
   belongs: upstream's per-puzzle help text into this project's own pages under
   [help/games/](help/games), the MIT
-  notices to [licences/](licences), and the two unbuilt experimental sources
+  notices to [licenses/](licenses), and the two unbuilt experimental sources
   kept for future greenfield games to the openspec changes that read them. The
   C itself is in git history.
 
@@ -91,14 +91,14 @@ This replaced an earlier bottom-up, byte-identical-fidelity plan
 The web app is a Vite multipage app. Entry pages render at build time
 (or in the dev server) via the custom
 [vite-plugins/extra-pages.ts](vite-plugins/extra-pages.ts) plugin, from
-templates under [templates/](templates/). `src/` is organised by role:
+templates under [templates/](templates/). `src/` is organized by role:
 
 * `src/screens/` — top-level screen components (one per page).
 * `src/dialogs/` — modal / popover overlays.
 * `src/components/` — reusable leaf Lit components.
 * `src/puzzle/` — the puzzle runtime + the Comlink worker boundary.
 * `src/engine/` — the `Game` interface, the `Midend`, the game registry,
-  the drawing/colour contracts and the in-process test harness.
+  the drawing/color contracts and the in-process test harness.
   `src/engine/random/` is the bit-identical RNG port, kept so shared game
   IDs reproduce across builds.
 * `src/games/<id>/` — each game, all 57 of them.
@@ -166,7 +166,7 @@ of what was built is `openspec/changes/archive/` and the git log.
 
 The web app code (including local modifications/additions to the puzzles
 code) is MIT — see [LICENSE.md](./LICENSE.md). The upstream notices in
-[licences/](licences) cover the ported games and the upstream help text
+[licenses/](licenses) cover the ported games and the upstream help text
 adopted into [help/games/](help/games), also MIT. The built app bundles several open
 source packages; required notices are in the app's *About* dialog (open
 an issue if any seem missing).

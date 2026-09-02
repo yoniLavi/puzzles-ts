@@ -38,7 +38,7 @@ describe("tents render scenarios", () => {
     const { recording, size } = renderScenario({ game: tentsGame, id });
 
     // Grid lines in COL_GRID.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_GRID)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_GRID)).toBe(
       true,
     );
     // A tree leaf (green circle).
@@ -99,7 +99,7 @@ describe("tents render scenarios", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBeGreaterThanOrEqual(1);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(
       true,
     );
   });

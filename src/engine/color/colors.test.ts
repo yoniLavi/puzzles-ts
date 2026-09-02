@@ -2,12 +2,12 @@
  * The palette's **measurement**, which is the only instrument that can check what
  * this table claims.
  *
- * "These ten colours can be told apart" is a relation between members, so it
- * cannot be established one colour at a time, and it cannot be established by
+ * "These ten colors can be told apart" is a relation between members, so it
+ * cannot be established one color at a time, and it cannot be established by
  * looking: `hand-author-dark-palette` F2 recorded a screenshot saying Flood had
  * regressed while the measurement said it had improved by nearly 3×, and the
  * screenshot was about to cost a correct change. An eye comparing two dark greens
- * adjacent to seven other colours is not a reliable instrument.
+ * adjacent to seven other colors is not a reliable instrument.
  *
  * So every constraint the design was built against is re-checked here, in **both**
  * schemes, against the numbers upstream's hand-written sets actually measured.
@@ -15,12 +15,12 @@
  * than a discovery.
  */
 import { describe, expect, it } from "vitest";
-import { colourToOKLCH, isGrayChroma, type OKLCH } from "../testing/oklch.ts";
-import type { Colour } from "../types.ts";
-import { darkValue } from "./colour-token.ts";
-import * as colours from "./colours.ts";
+import { colorToOKLCH, isGrayChroma, type OKLCH } from "../testing/oklch.ts";
+import type { Color } from "../types.ts";
+import { darkValue } from "./color-token.ts";
+import * as colors from "./colors.ts";
 
-/** The same OKLCH distance `scripts/checks/colour-dark-check.test.ts` reports, so the
+/** The same OKLCH distance `scripts/checks/color-dark-check.test.ts` reports, so the
  * numbers here and the numbers in that report mean the same thing: chroma and
  * hue as a plane, so a hue difference at low chroma counts for little — which is
  * how the eye treats it. */
@@ -32,19 +32,19 @@ function distance(a: OKLCH, b: OKLCH): number {
   return Math.hypot(a[0] - b[0], ax - bx, ay - by);
 }
 
-/** A colour's value under each scheme. Every entry in `colours.ts` authors both,
+/** A color's value under each scheme. Every entry in `colors.ts` authors both,
  * which is the point: a set's separation in dark mode is a decision, not a
  * side-effect of adapting each member on its own. */
-const light = (c: Colour): OKLCH => colourToOKLCH(c);
-const dark = (c: Colour): OKLCH => {
+const light = (c: Color): OKLCH => colorToOKLCH(c);
+const dark = (c: Color): OKLCH => {
   const d = darkValue(c);
   if (!d) throw new Error("a named colour must author its dark value");
-  return colourToOKLCH(d);
+  return colorToOKLCH(d);
 };
 
 function worstPair(
-  entries: [string, Colour][],
-  scheme: (c: Colour) => OKLCH,
+  entries: [string, Color][],
+  scheme: (c: Color) => OKLCH,
 ): { d: number; pair: string } {
   let best = { d: Number.POSITIVE_INFINITY, pair: "" };
   for (let i = 0; i < entries.length; i++)
@@ -55,25 +55,25 @@ function worstPair(
   return best;
 }
 
-/** Every export of `colours.ts` that is a single colour, by name. */
-const named: [string, Colour][] = Object.entries(colours).filter(
-  (e): e is [string, Colour] =>
+/** Every export of `colors.ts` that is a single color, by name. */
+const named: [string, Color][] = Object.entries(colors).filter(
+  (e): e is [string, Color] =>
     Array.isArray(e[1]) && e[1].length === 3 && typeof e[1][0] === "number",
 );
 
-const label = (want: [string, Colour][]): [string, Colour][] => want;
+const label = (want: [string, Color][]): [string, Color][] => want;
 
 describe("the named colours", () => {
   it("converts OKLCH the same way the app's colour library does", () => {
-    // `colours.ts` inlines the OKLab matrices rather than importing colorjs,
+    // `colors.ts` inlines the OKLab matrices rather than importing colorjs,
     // because it is reached from the puzzle worker. That is only safe while the
-    // two agree, so pin it: every colour in the table, round-tripped back to
+    // two agree, so pin it: every color in the table, round-tripped back to
     // OKLCH, must land on the lightness/chroma/hue it was authored at.
     //
     // Checked through the round trip rather than against a copy of the input
     // table, so this cannot drift into comparing the design against itself.
     for (const [name, c] of named) {
-      const [l, ch] = colourToOKLCH(c);
+      const [l, ch] = colorToOKLCH(c);
       expect(Number.isFinite(l), name).toBe(true);
       expect(l, `${name} lightness`).toBeGreaterThanOrEqual(0);
       expect(l, `${name} lightness`).toBeLessThanOrEqual(1.001);
@@ -88,23 +88,23 @@ describe("the named colours", () => {
   });
 
   it("gives every colour a value in every scheme", () => {
-    // A named colour with no authored dark value would be adapted by calculation,
+    // A named color with no authored dark value would be adapted by calculation,
     // and calculation is exactly what cannot preserve a set's separation.
     for (const [name, c] of named)
       expect(darkValue(c), `${name} has no dark value`).toBeDefined();
   });
 
   it("names each colour once", () => {
-    // Two names for one value are two names for one colour, which is the
+    // Two names for one value are two names for one color, which is the
     // duplication this table exists to remove.
     //
     // **Keyed on the value in *both* schemes**, because that is what a token is:
-    // `colour-token.ts` states the identity as (value, scheme behaviour), and
-    // this keyed on the light half alone — so it read two colours that agree in
-    // light and differ in dark as one. `TEAL_WASH_DEEP` is exactly that colour
+    // `color-token.ts` states the identity as (value, scheme behavior), and
+    // this keyed on the light half alone — so it read two colors that agree in
+    // light and differ in dark as one. `TEAL_WASH_DEEP` is exactly that color
     // (it is `TEAL_WASH` in light and darker in dark), and it failed here while
     // being a perfectly good second name. Keying on the pair is not a weakening:
-    // two names agreeing in *both* schemes are still two names for one colour,
+    // two names agreeing in *both* schemes are still two names for one color,
     // and still fail.
     const seen = new Map<string, string>();
     for (const [name, c] of named) {
@@ -117,39 +117,39 @@ describe("the named colours", () => {
   describe("a set meant to be told apart is designed as a set", () => {
     // The bars are what upstream's hand-written sets measured. Every one of them
     // has to be beaten in BOTH schemes, which is the whole reason this change
-    // exists: dark mode was never authored for a set, only derived per colour.
-    const SETS: [name: string, entries: [string, Colour][], upstream: number][] = [
+    // exists: dark mode was never authored for a set, only derived per color.
+    const SETS: [name: string, entries: [string, Color][], upstream: number][] = [
       [
         "the ten (flood, guess)",
-        colours.TEN.map((c, i) => [colours.TEN_NAMES[i], c] as [string, Colour]),
+        colors.TEN.map((c, i) => [colors.TEN_NAMES[i], c] as [string, Color]),
         0.134,
       ],
       [
         "the nine (samegame)",
-        colours.TEN.slice(0, 9).map(
-          (c, i) => [colours.TEN_NAMES[i], c] as [string, Colour],
+        colors.TEN.slice(0, 9).map(
+          (c, i) => [colors.TEN_NAMES[i], c] as [string, Color],
         ),
         0.127,
       ],
       [
         "eight region fills (signpost)",
-        colours.EIGHT_FILLS.map((c, i) => [`fill${i}`, c] as [string, Colour]),
+        colors.EIGHT_FILLS.map((c, i) => [`fill${i}`, c] as [string, Color]),
         0.071,
       ],
       [
         "four region fills (map)",
-        colours.FOUR_FILLS.map((c, i) => [`fill${i}`, c] as [string, Colour]),
+        colors.FOUR_FILLS.map((c, i) => [`fill${i}`, c] as [string, Color]),
         0.077,
       ],
       [
         "six count digits (mines)",
         label([
-          ["1", colours.BLUE],
-          ["2", colours.GREEN],
-          ["3", colours.RED],
-          ["4", colours.BLUE_BOLD],
-          ["5", colours.RED_BOLD],
-          ["6", colours.TEAL],
+          ["1", colors.BLUE],
+          ["2", colors.GREEN],
+          ["3", colors.RED],
+          ["4", colors.BLUE_BOLD],
+          ["5", colors.RED_BOLD],
+          ["6", colors.TEAL],
         ]),
         0.142,
       ],
@@ -171,7 +171,7 @@ describe("the named colours", () => {
   });
 
   it("keeps a colour's own intensities apart", () => {
-    // A wash that reads as the colour, or a bold that reads as the base, is an
+    // A wash that reads as the color, or a bold that reads as the base, is an
     // intensity nobody can use.
     for (const base of [
       "RED",
@@ -182,7 +182,7 @@ describe("the named colours", () => {
       "BLUE",
       "PURPLE",
       "PINK",
-      "GREY",
+      "GRAY",
     ]) {
       const steps = named.filter(
         ([n]) => n === base || n === `${base}_WASH` || n === `${base}_BOLD`,
@@ -196,7 +196,7 @@ describe("the named colours", () => {
   });
 
   it("keeps a colour inside its own name", () => {
-    // A search that maximises separation will buy it with anything not nailed
+    // A search that maximizes separation will buy it with anything not nailed
     // down, and the first thing it reached for was yellow's lightness: dark
     // YELLOW came out at 0.95 with half the chroma it can carry, which is a
     // **cream**. It bought the ten-set 0.158 that way, and the palette's own
@@ -245,7 +245,7 @@ describe("the named colours", () => {
     // A wash is a fill that content is drawn ON. In light mode that means light
     // enough for black text; in dark mode it means DARK enough for light text —
     // which is why the step is named for its role and not its appearance, and why
-    // it cannot be derived from the light value by any per-colour rule.
+    // it cannot be derived from the light value by any per-color rule.
     for (const [name, c] of named) {
       if (!name.endsWith("_WASH")) continue;
       expect(light(c)[0], `${name} in light mode`).toBeGreaterThan(0.75);
@@ -255,18 +255,18 @@ describe("the named colours", () => {
 
   it("matches the two dimension washes in lightness and chroma", () => {
     // Crossing paints across-runs and down-runs in two washes, and if one is
-    // lighter or more colourful than the other it reads as the important
+    // lighter or more colorful than the other it reads as the important
     // direction. The port found this in RGB: rgb(152,194,211) against its mirror
     // rgb(211,194,152) measures L 0.789 C 0.051 against L 0.818 C 0.059, so the
-    // amber came out both lighter and more colourful. Perceived colourfulness is
+    // amber came out both lighter and more colorful. Perceived colorfulness is
     // what the eye compares, so it is what has to be equal — and that is a
     // property of the palette, not something a game can be trusted to maintain.
     // The bold pair, which is what Crossing uses for both halves of the job —
-    // the board's run highlight and the clue list's ink are one colour per
+    // the board's run highlight and the clue list's ink are one color per
     // direction, not two shades of each.
     for (const resolve of [light, dark]) {
-      const [bl, bc] = resolve(colours.BLUE_BOLD);
-      const [ol, oc] = resolve(colours.ORANGE_BOLD);
+      const [bl, bc] = resolve(colors.BLUE_BOLD);
+      const [ol, oc] = resolve(colors.ORANGE_BOLD);
       expect(ol).toBeCloseTo(bl, 3);
       expect(oc).toBeCloseTo(bc, 3);
     }
@@ -276,14 +276,14 @@ describe("the named colours", () => {
     // The distinction from the INK/PAPER meanings only exists in dark mode, so
     // this is where it is pinned: ink is maximum contrast against the surface and
     // must invert, while a piece's black is the piece's identity.
-    expect(darkValue(colours.BLACK)).toEqual([0, 0, 0]);
-    expect(darkValue(colours.WHITE)).toEqual([1, 1, 1]);
+    expect(darkValue(colors.BLACK)).toEqual([0, 0, 0]);
+    expect(darkValue(colors.WHITE)).toEqual([1, 1, 1]);
   });
 
   it("says the ten's names alongside the ten", () => {
     // Flood's hint reads "Fill with orange". The only thing between that and a
-    // lie is that the word and the colour are handed out together.
-    expect(colours.TEN_NAMES.length).toBe(colours.TEN.length);
-    expect(new Set(colours.TEN_NAMES).size).toBe(colours.TEN_NAMES.length);
+    // lie is that the word and the color are handed out together.
+    expect(colors.TEN_NAMES.length).toBe(colors.TEN.length);
+    expect(new Set(colors.TEN_NAMES).size).toBe(colors.TEN_NAMES.length);
   });
 });

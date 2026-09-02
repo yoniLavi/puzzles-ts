@@ -40,7 +40,7 @@ There is no C *game* to byte-match, so the generator/codec/UI cannot be
 differential-checked the way every other port is. The **solver's arithmetic
 results** can be: for a fixed set of number sets, the reachable-value → ways map
 must match the C utility. That is the whole differential surface. Everything
-else rests on ordinary behavioural tests. This is a real weakening of the usual
+else rests on ordinary behavioral tests. This is a real weakening of the usual
 assurance and should be stated plainly to the owner — it is a consequence of
 there being no game upstream, not a shortcut.
 

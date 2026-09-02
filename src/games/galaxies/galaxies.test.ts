@@ -175,10 +175,10 @@ describe("Galaxies game flow", () => {
       ops: [{ kind: "edge" as const, x: 1, y: 2 }],
       solving: false,
     };
-    // No serialiseMove on this game means the engine's default JSON
+    // No serializeMove on this game means the engine's default JSON
     // round-trip applies. Verify the move object is JSON-safe.
-    const serialised = JSON.stringify(move);
-    const parsed = JSON.parse(serialised);
+    const serialized = JSON.stringify(move);
+    const parsed = JSON.parse(serialized);
     expect(parsed).toEqual(move);
     // The state after applying the parsed move should equal applying
     // the original.
@@ -191,7 +191,7 @@ describe("Galaxies game flow", () => {
 function recordingDrawing() {
   const ops: Array<{
     op: string;
-    colour?: number;
+    color?: number;
     x?: number;
     y?: number;
     w?: number;
@@ -207,16 +207,16 @@ function recordingDrawing() {
       ops.push({ op: "clip", x: r.x, y: r.y, w: r.w, h: r.h }),
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
+      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
     drawLine: (_a: unknown, _b: unknown, c: number, thickness: number) =>
-      ops.push({ op: "drawLine", colour: c, thickness }),
-    drawPolygon: (_p: unknown, f: number) => ops.push({ op: "drawPolygon", colour: f }),
+      ops.push({ op: "drawLine", color: c, thickness }),
+    drawPolygon: (_p: unknown, f: number) => ops.push({ op: "drawPolygon", color: f }),
     drawCircle: (_p: unknown, _r: number, f: number, outline: number) =>
       // A ring is a stroke with no fill (f < 0); the palette index that
       // matters is then the outline's.
-      ops.push({ op: "drawCircle", colour: f >= 0 ? f : outline }),
+      ops.push({ op: "drawCircle", color: f >= 0 ? f : outline }),
     drawText: (_p: unknown, _o: unknown, c: number) =>
-      ops.push({ op: "drawText", colour: c }),
+      ops.push({ op: "drawText", color: c }),
     blitterNew: () => ({}),
     blitterFree: () => ops.push({ op: "blitterFree" }),
     blitterSave: () => ops.push({ op: "blitterSave" }),
@@ -448,9 +448,9 @@ describe("Galaxies findMistakes", () => {
     const { dr, ops } = recordingDrawing();
     galaxiesRedraw(dr, ds, null, s, 1, ui, 0, 0, undefined, mistakes);
     // The only COL_MISTAKE consumer reachable from this state is the
-    // wrong-wall recolour (no tile mistakes present), so any such rect
-    // proves the wall was painted in the mistake colour.
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_MISTAKE)).toBe(true);
+    // wrong-wall recolor (no tile mistakes present), so any such rect
+    // proves the wall was painted in the mistake color.
+    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_MISTAKE)).toBe(true);
   });
 
   it("recolours a flagged wall on a board that was already drawn", () => {
@@ -468,7 +468,7 @@ describe("Galaxies findMistakes", () => {
     // Frame 1: the same board, no overlay — warms the per-tile cache.
     const cold = recordingDrawing();
     galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0, undefined, undefined);
-    expect(cold.ops.some((o) => o.op === "drawRect" && o.colour === COL_MISTAKE)).toBe(
+    expect(cold.ops.some((o) => o.op === "drawRect" && o.color === COL_MISTAKE)).toBe(
       false,
     );
 
@@ -476,7 +476,7 @@ describe("Galaxies findMistakes", () => {
     const warm = recordingDrawing();
     const mistakes = galaxiesGame.findMistakes?.(s) ?? [];
     galaxiesRedraw(warm.dr, ds, s, s, 1, ui, 0, 0, undefined, mistakes);
-    expect(warm.ops.some((o) => o.op === "drawRect" && o.colour === COL_MISTAKE)).toBe(
+    expect(warm.ops.some((o) => o.op === "drawRect" && o.color === COL_MISTAKE)).toBe(
       true,
     );
 
@@ -485,9 +485,9 @@ describe("Galaxies findMistakes", () => {
     const cleared = recordingDrawing();
     galaxiesRedraw(cleared.dr, ds, s, s, 1, ui, 0, 0, undefined, undefined);
     expect(
-      cleared.ops.some((o) => o.op === "drawRect" && o.colour === COL_MISTAKE),
+      cleared.ops.some((o) => o.op === "drawRect" && o.color === COL_MISTAKE),
     ).toBe(false);
-    expect(cleared.ops.some((o) => o.op === "drawRect" && o.colour === COL_EDGE)).toBe(
+    expect(cleared.ops.some((o) => o.op === "drawRect" && o.color === COL_EDGE)).toBe(
       true,
     );
   });
@@ -500,13 +500,13 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
   // arrow, and ink landed outside the board where nothing repaints.
   // The preview is now discrete — snapped target + 180° partner,
   // folded into the tile cache — so these tests pin: paint at the
-  // target pair only, in the drag colour, erased by the tiles' own
+  // target pair only, in the drag color, erased by the tiles' own
   // repaints, never outside the board, no full-board updates.
   //
   // COL_DRAG, not COL_CURSOR: the preview shipped in the keyboard
   // cursor's board-relative tint and the owner could not see it in
-  // either scheme (2026-08-08). Asserting the *drag* colour is what
-  // keeps a transient affordance out of a colour that, being a tint of
+  // either scheme (2026-08-08). Asserting the *drag* color is what
+  // keeps a transient affordance out of a color that, being a tint of
   // the board, cannot be prominent.
   const p: GalaxiesParams = { w: 3, h: 3, diff: GalaxiesDiff.Normal };
   const p43: GalaxiesParams = { w: 4, h: 3, diff: GalaxiesDiff.Normal };
@@ -536,7 +536,7 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     const cold = recordingDrawing();
     galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0);
 
-    // Drag from the centre dot; target the left-middle tile (1,3).
+    // Drag from the center dot; target the left-middle tile (1,3).
     // Its 180° partner about the dot is the right-middle tile (5,3).
     ui.dragging = true;
     ui.dotx = 3;
@@ -552,14 +552,14 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
       expect.arrayContaining([tileRect(0, 1), tileRect(2, 1)]),
     );
     expect(clips1).toHaveLength(2);
-    // Preview lines (arrows + target outline) are drag-coloured —
+    // Preview lines (arrows + target outline) are drag-colored —
     // never the committed arrow's ink, and never the cursor's tint.
     const lines1 = drag1.ops.filter((o) => o.op === "drawLine");
     expect(lines1.length).toBeGreaterThan(0);
-    expect(lines1.every((o) => o.colour === COL_DRAG)).toBe(true);
-    expect(lines1.some((o) => o.colour === COL_CURSOR)).toBe(false);
+    expect(lines1.every((o) => o.color === COL_DRAG)).toBe(true);
+    expect(lines1.some((o) => o.color === COL_CURSOR)).toBe(false);
     // ...and heavier than one, so the preview cannot be mistaken for a
-    // committed arrow even before the colour registers.
+    // committed arrow even before the color registers.
     expect(lines1.every((o) => (o.thickness ?? 1) > 1)).toBe(true);
 
     // Move the target: the old pair must repaint clean (that repaint
@@ -584,7 +584,7 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     const done = recordingDrawing();
     galaxiesRedraw(done.dr, ds, null, s, 1, ui, 0, 0);
     expect(done.ops.filter((o) => o.op === "clip")).toHaveLength(2);
-    expect(done.ops.some((o) => o.op === "drawLine" && o.colour === COL_DRAG)).toBe(
+    expect(done.ops.some((o) => o.op === "drawLine" && o.color === COL_DRAG)).toBe(
       false,
     );
     const idle = recordingDrawing();
@@ -611,7 +611,7 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
   });
 
   it("shows no preview on an uncommittable target (mirror off the board)", () => {
-    // Dot on the top-left tile's centre: every other tile's mirror
+    // Dot on the top-left tile's center: every other tile's mirror
     // about it is off-grid, so nothing can commit anywhere.
     const s = galaxiesGame.newState(p, "a");
     const ui = galaxiesGame.newUi(s);
@@ -629,21 +629,21 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     const drag = recordingDrawing();
     galaxiesRedraw(drag.dr, ds, null, s, 1, ui, 0, 0);
     expect(drag.ops.filter((o) => o.op === "clip")).toHaveLength(0);
-    expect(drag.ops.some((o) => o.colour === COL_DRAG)).toBe(false);
+    expect(drag.ops.some((o) => o.color === COL_DRAG)).toBe(false);
   });
 
   it("erases the half-grid cursor when it moves on, and leaves none behind", () => {
     // The vertex/edge cursor used to be painted after the tile loop with a
     // bare drawRect + drawUpdate — outside the per-tile cache, so nothing
     // ever erased it and every vertex and edge the cursor visited kept a
-    // mark. It went unnoticed for as long as its colour was an invisible
+    // mark. It went unnoticed for as long as its color was an invisible
     // tint of the board; it is COL_CURSOR now, and this is the guard.
     const { s, ui, ds } = twoDotBoard();
     const cold = recordingDrawing();
     galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0);
 
     const cursorRects = (f: ReturnType<typeof recordingDrawing>) =>
-      f.ops.filter((o) => o.op === "drawRect" && o.colour === COL_CURSOR);
+      f.ops.filter((o) => o.op === "drawRect" && o.color === COL_CURSOR);
 
     // A vertical edge at doubled (2,1): the two tiles it separates each
     // paint their clipped half.
@@ -682,7 +682,7 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
 
   it("release commits exactly the previewed pair, not the release pixel", () => {
     const { s, ui } = twoDotBoard();
-    // Press on the dot (pixel centre of doubled (3,3) at tile 32 is 80).
+    // Press on the dot (pixel center of doubled (3,3) at tile 32 is 80).
     expect(
       galaxiesGame.interpretMove(
         s,
@@ -774,7 +774,7 @@ describe("Galaxies association gestures (left button, and cell→dot)", () => {
   // reaches only through a 350 ms long-press) and only *from* a dot.
   const p43: GalaxiesParams = { w: 4, h: 3, diff: GalaxiesDiff.Normal };
 
-  /** 4×3 board, dots at doubled (3,3) and (7,1). Tile (c,r)'s centre pixel
+  /** 4×3 board, dots at doubled (3,3) and (7,1). Tile (c,r)'s center pixel
    * is (48 + 32c, 48 + 32r), so the (3,3) dot sits at (80, 80). */
   function board() {
     const s = galaxiesGame.newState(p43, "gj");
@@ -831,11 +831,11 @@ describe("Galaxies association gestures (left button, and cell→dot)", () => {
   });
 
   it("a press that ends far away commits nothing (the cancelled-pointer path)", () => {
-    // view-interactive.ts's cancelPointerTracking synthesises a drag and a
+    // view-interactive.ts's cancelPointerTracking synthesizes a drag and a
     // release at (-100, -100) when the pointer leaves the canvas mid-press.
     // Measuring the release against the press pixel is what stops that
     // toggling an edge on the far side of the board — and the drag it also
-    // synthesises must land nothing either, whichever gesture the press
+    // synthesizes must land nothing either, whichever gesture the press
     // turned out to have started.
     for (const [px, py] of [
       [64, 80], // inside a dot's catchment: a classic drag, dragged off-board
@@ -933,7 +933,7 @@ describe("Galaxies candidate rings", () => {
     return { s, ui, ds };
   }
   const rings = (f: ReturnType<typeof recordingDrawing>) =>
-    f.ops.filter((o) => o.op === "drawCircle" && o.colour === COL_DRAG);
+    f.ops.filter((o) => o.op === "drawCircle" && o.color === COL_DRAG);
 
   /** Put `ui` into a cell→dot drag on tile (0,1) = doubled (1,3), whose only
    * legal dot is (3,3) — the 180° image about (7,1) is off the board. */
@@ -975,7 +975,7 @@ describe("Galaxies candidate rings", () => {
     expect(rings(drag)).toHaveLength(0);
     // The preview of the pair a release would commit is *not* the aid, and
     // is still drawn: the preference gates the rings alone.
-    expect(drag.ops.some((o) => o.op === "drawLine" && o.colour === COL_DRAG)).toBe(
+    expect(drag.ops.some((o) => o.op === "drawLine" && o.color === COL_DRAG)).toBe(
       true,
     );
   });
@@ -1017,7 +1017,7 @@ describe("Galaxies candidate rings", () => {
 describe("Galaxies association legality is sound", () => {
   // Tightening the predicate is only safe if it can never refuse an arrow
   // the puzzle's own solution contains. That is the property; everything
-  // else about `reachableFromDot` is a judgement call, but this is not.
+  // else about `reachableFromDot` is a judgment call, but this is not.
   it("never rejects an association the unique solution contains", () => {
     const params: GalaxiesParams[] = [
       { w: 7, h: 7, diff: GalaxiesDiff.Normal },
@@ -1062,7 +1062,7 @@ describe("Galaxies association legality is sound", () => {
     // board: a dot on an edge or a vertex owns every tile it touches, so an
     // arrow in one of those tiles pointing at some *other* dot is impossible.
     // It also has a visual tell, which is how it was spotted — the arrow is
-    // drawn a third of a tile from the centre and a dot's radius is a
+    // drawn a third of a tile from the center and a dot's radius is a
     // quarter, so an arrow aimed at a dot on its own cell's boundary
     // overlaps it. Getting the rule right makes the tell unreachable: every
     // dot close enough for an arrow to touch is a dot that owns the cell.
@@ -1160,8 +1160,8 @@ describe("Galaxies association legality is sound", () => {
 
   it("refuses a cell no galaxy centred on that dot could reach", () => {
     // The owner's 2026-08-08 report, reduced. A 5×1 strip: dots at the
-    // centre tile (5,1) and on the edge between (1,1) and (3,1), i.e. at
-    // (2,1). The edge dot owns both tiles it separates, so the centre dot's
+    // center tile (5,1) and on the edge between (1,1) and (3,1), i.e. at
+    // (2,1). The edge dot owns both tiles it separates, so the center dot's
     // galaxy cannot pass leftward through (3,1) — and by symmetry that also
     // denies it (7,1), the tile on the *open* side. Upstream's local
     // precheck accepts both: each is in-grid, dot-free, and has an in-grid

@@ -22,7 +22,7 @@ first try.
 
 The recompute SHALL be **idempotent**: once the board is correctly sized, a further size
 recompute with no layout change SHALL report no change and SHALL NOT trigger a resize loop.
-Existing behaviour SHALL be preserved — a real window/element resize still resizes the board,
+Existing behavior SHALL be preserved — a real window/element resize still resizes the board,
 and the `maxScale` clamp still bounds it.
 
 #### Scenario: A freshly-loaded board fills its space with no synthetic resize

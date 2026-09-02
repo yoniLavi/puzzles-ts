@@ -164,7 +164,7 @@ describe("Sixteen completion", () => {
   });
 });
 
-/* The "Sixteen move serialisation" block went with the codec it tested: that
+/* The "Sixteen move serialization" block went with the codec it tested: that
  * pair was never wired into `sixteenGame`, and a round-trip against itself is
  * green either way. The save path Sixteen actually uses is covered end to end by
  * `engine/save-round-trip.test.ts`. */
@@ -293,12 +293,12 @@ describe("Sixteen move execution", () => {
   });
 });
 
-// --- colours ----------------------------------------------------------
+// --- colors ----------------------------------------------------------
 
 describe("Sixteen colours", () => {
   it("returns 5 colours from the game (including hint)", () => {
     const bg: [number, number, number] = [0.9, 0.9, 0.9];
-    const palette = sixteenGame.colours(bg);
+    const palette = sixteenGame.colors(bg);
     expect(palette).toHaveLength(5);
   });
 });
@@ -873,8 +873,8 @@ describe("Sixteen hint", () => {
 
 describe("Sixteen hint rendering", () => {
   function recordingDrawing() {
-    const ops: Array<{ op: string; colour?: number }> = [];
-    const rec = (op: string, colour?: number) => ops.push({ op, colour });
+    const ops: Array<{ op: string; color?: number }> = [];
+    const rec = (op: string, color?: number) => ops.push({ op, color });
     const dr: GameDrawing = {
       startDraw: () => rec("startDraw"),
       endDraw: () => rec("endDraw"),
@@ -916,7 +916,7 @@ describe("Sixteen hint rendering", () => {
     const COL_HINT_INDEX = 4;
 
     // Check for hint highlight operations
-    const hintOps = ops.filter((o) => o.colour === COL_HINT_INDEX);
+    const hintOps = ops.filter((o) => o.color === COL_HINT_INDEX);
     expect(hintOps.length).toBeGreaterThan(0);
   });
 
@@ -944,8 +944,8 @@ describe("Sixteen hint rendering", () => {
 
 describe("Sixteen hint track and direction fixes", () => {
   function recordingDrawing() {
-    const ops: Array<{ op: string; colour?: number }> = [];
-    const rec = (op: string, colour?: number) => ops.push({ op, colour });
+    const ops: Array<{ op: string; color?: number }> = [];
+    const rec = (op: string, color?: number) => ops.push({ op, color });
     const dr: GameDrawing = {
       startDraw: () => rec("startDraw"),
       endDraw: () => rec("endDraw"),
@@ -1093,7 +1093,7 @@ describe("the hint marks while the hinted slide animates", () => {
 
   interface Op {
     op: string;
-    colour?: number;
+    color?: number;
     x?: number;
     y?: number;
     w?: number;
@@ -1109,13 +1109,13 @@ describe("the hint marks while the hinted slide animates", () => {
       clip: () => {},
       unclip: () => {},
       drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-        ops.push({ op: "rect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
+        ops.push({ op: "rect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
       drawLine: () => {},
       drawPolygon: (p: { x: number; y: number }[], f: number) =>
-        ops.push({ op: "polygon", colour: f, x: p[0].x, y: p[0].y }),
+        ops.push({ op: "polygon", color: f, x: p[0].x, y: p[0].y }),
       drawCircle: () => {},
       drawText: (p: { x: number; y: number }, _o: unknown, c: number) =>
-        ops.push({ op: "text", colour: c, x: p.x, y: p.y }),
+        ops.push({ op: "text", color: c, x: p.x, y: p.y }),
       blitterNew: () => ({}),
       blitterFree: () => {},
       blitterSave: () => {},
@@ -1195,14 +1195,14 @@ describe("the hint marks while the hinted slide animates", () => {
     const w = state.w;
 
     // Half a slide in, the tile sits half a tile from its origin toward its
-    // landing cell; the hint fill is drawTile's centre rect, inset by HW.
+    // landing cell; the hint fill is drawTile's center rect, inset by HW.
     const shift = Math.round(0.5 * TS * m.delta);
     const ex = px(from % w) + (m.axis === "row" ? shift : 0) + HW;
     const ey = px(Math.floor(from / w)) + (m.axis === "column" ? shift : 0) + HW;
 
     const fills = ops.filter(
       (o) =>
-        o.op === "rect" && o.colour === 4 && o.w === TS - 2 * HW && o.h === TS - 2 * HW,
+        o.op === "rect" && o.color === 4 && o.w === TS - 2 * HW && o.h === TS - 2 * HW,
     );
     expect(
       fills.length,
@@ -1220,7 +1220,7 @@ describe("the hint marks while the hinted slide animates", () => {
     // The target is a *cell*; the line slides under it. The solid border's
     // top edge is a full-width, 3px-tall rect at the cell's own corner.
     const top = ops.find(
-      (o) => o.op === "rect" && o.colour === 4 && o.w === TS && o.h === 3,
+      (o) => o.op === "rect" && o.color === 4 && o.w === TS && o.h === 3,
     );
     expect(top, "the target cell is not outlined at all").toBeDefined();
     expect(top).toMatchObject({

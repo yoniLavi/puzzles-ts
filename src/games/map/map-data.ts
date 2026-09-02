@@ -148,14 +148,14 @@ export function validateDesc(params: MapParams, desc: string): string | null {
 }
 
 /**
- * Build the full immutable {@link MapData} plus the initial clue colouring from
+ * Build the full immutable {@link MapData} plus the initial clue coloring from
  * a desc (upstream `new_game`, geometry half). Assumes the desc has already
  * validated.
  */
 export function newMapData(
   params: MapParams,
   desc: string,
-): { map: MapData; colouring: Int32Array } {
+): { map: MapData; coloring: Int32Array } {
   const { w, h, n } = params;
   const wh = w * h;
 
@@ -166,14 +166,14 @@ export function newMapData(
   for (let i = wh; i < 4 * wh; i++) map[i] = map[i % wh];
 
   // Parse the clue list.
-  const colouring = new Int32Array(n).fill(-1);
+  const coloring = new Int32Array(n).fill(-1);
   const immutable = new Uint8Array(n);
   let p = parsed.next + 1; // skip the comma
   let pos = 0;
   while (p < desc.length) {
     const ch = desc[p];
     if (ch >= "0" && ch < String.fromCharCode(48 + 4)) {
-      colouring[pos] = ch.charCodeAt(0) - 48;
+      coloring[pos] = ch.charCodeAt(0) - 48;
       immutable[pos] = 1;
       pos++;
     } else {
@@ -213,7 +213,7 @@ export function newMapData(
       regionx,
       regiony,
     },
-    colouring,
+    coloring,
   };
 }
 
@@ -325,7 +325,7 @@ function computeLabelPoints(
           for (; i < 8; i++) {
             if (oct[i] !== oct[0]) {
               if (othercol < 0) othercol = oct[i];
-              else if (othercol !== oct[i]) break; // three colours here
+              else if (othercol !== oct[i]) break; // three colors here
             }
             if (oct[i] !== oct[(i + 1) & 7]) nchanges++;
           }
@@ -397,16 +397,16 @@ function computeLabelPoints(
 }
 
 /**
- * Encode a board (region-per-cell grid + clue colouring) into a desc, upstream
+ * Encode a board (region-per-cell grid + clue coloring) into a desc, upstream
  * `new_game_desc`'s encoding half. `map` is the `wh` region grid (quadrant 0),
- * `colouring` the per-region clue colour (-1 = unclued).
+ * `coloring` the per-region clue color (-1 = unclued).
  */
 export function encodeMapDesc(
   w: number,
   h: number,
   n: number,
   map: Int32Array,
-  colouring: Int32Array,
+  coloring: Int32Array,
 ): string {
   let ret = "";
 
@@ -455,7 +455,7 @@ export function encodeMapDesc(
   {
     let run = 0;
     for (let i = 0; i < n; i++) {
-      if (colouring[i] < 0) {
+      if (coloring[i] < 0) {
         if (run === 26) {
           ret += "z";
           run = 0;
@@ -463,7 +463,7 @@ export function encodeMapDesc(
         run++;
       } else {
         if (run > 0) ret += String.fromCharCode(96 + run);
-        ret += String.fromCharCode(48 + colouring[i]);
+        ret += String.fromCharCode(48 + coloring[i]);
         run = 0;
       }
     }

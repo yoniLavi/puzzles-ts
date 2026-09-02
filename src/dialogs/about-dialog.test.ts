@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
- * The About dialog renders three kinds of licence text through one function:
- * this project's own `LICENSE.md` (markdown), upstream's plain-text `LICENCE`
+ * The About dialog renders three kinds of license text through one function:
+ * this project's own `LICENSE.md` (markdown), upstream's plain-text `LICENSE`
  * notices, and third-party dependency notices (also plain text).
  *
  * The markdown pass is therefore **opt-in**, and the load-bearing test here is
@@ -32,7 +32,7 @@ describe("licenseTextToHTML — markdown mode (this project's LICENSE.md)", () =
     "This project (`puzzles-ts`) layers work from four sources:",
     "",
     "- Copyright © 2004–2024 Simon Tatham. See",
-    "  [`licences/sgt-puzzles-LICENCE`](./licences/sgt-puzzles-LICENCE) for the",
+    "  [`licenses/sgt-puzzles-LICENSE`](./licenses/sgt-puzzles-LICENSE) for the",
     "  full list.",
     "- Copyright © 2011–2025 Lennard Sprong, for",
     "  [puzzles-unreleased](https://github.com/x-sheep/puzzles-unreleased).",
@@ -63,14 +63,14 @@ describe("licenseTextToHTML — markdown mode (this project's LICENSE.md)", () =
     const hrefs = [...el.querySelectorAll("a")].map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual(["https://github.com/x-sheep/puzzles-unreleased"]);
     // The relative link keeps its text, having lost only its (dead) href.
-    expect(el.textContent).toContain("licences/sgt-puzzles-LICENCE");
+    expect(el.textContent).toContain("licenses/sgt-puzzles-LICENSE");
   });
 
   it("renders code spans, including inside link text", () => {
     const el = renderLicense(LICENSE_SHAPED, undefined, { markdown: true });
     const code = [...el.querySelectorAll("code")].map((c) => c.textContent);
     expect(code).toContain("puzzles-ts");
-    expect(code).toContain("licences/sgt-puzzles-LICENCE");
+    expect(code).toContain("licenses/sgt-puzzles-LICENSE");
   });
 
   it("leaves no raw markdown syntax in the output", () => {

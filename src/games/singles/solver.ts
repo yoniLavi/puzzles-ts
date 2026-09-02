@@ -49,7 +49,7 @@ export type SinglesReason =
    * is the board-corner cell that would be stranded; `matched` are the
    * three cells sharing the number. */
   | { kind: "corner3"; corner: Pt; matched: Pt[] }
-  /** DC: two equal numbers in a 2×2 corner force the other neighbour
+  /** DC: two equal numbers in a 2×2 corner force the other neighbor
    * white. `corner` is the board-corner cell at risk of being sealed off;
    * `pair` are the two cells sharing the number. */
   | { kind: "corner2"; corner: Pt; pair: [Pt, Pt] }
@@ -59,10 +59,10 @@ export type SinglesReason =
   | { kind: "adjBlack"; black: Pt }
   /** SC cascade: a number sharing a line with a new circle must be black. */
   | { kind: "sameLine"; circled: Pt }
-  /** CC/CE/QM: a white cell with one non-black neighbour forces it white. */
+  /** CC/CE/QM: a white cell with one non-black neighbor forces it white. */
   | { kind: "boxedIn"; cell: Pt }
   /** MC: a cell whose shading would split the white region must be white. */
-  | { kind: "split"; neighbours: Pt[] };
+  | { kind: "split"; neighbors: Pt[] };
 
 /** One forced cell recorded for a hint, in deduction order. `group`
  * ties together cells forced by one firing (the only multi-cell firings
@@ -170,7 +170,7 @@ function solverOpBlacken(
 }
 
 /** Apply every queued op, cascading new ops as blacks/circles imply
- * their neighbours. Returns the number of cells actually changed. */
+ * their neighbors. Returns the number of cells actually changed. */
 export function solverOpsDo(s: SinglesState, ss: SolverState): number {
   let nextOp = 0;
   let nOps = 0;
@@ -188,7 +188,7 @@ export function solverOpsDo(s: SinglesState, ss: SolverState): number {
         s.flags[i] |= F_BLACK;
         nOps++;
         recordOp(ss, op);
-        // SB cascade: a new black forces its neighbours white — one firing.
+        // SB cascade: a new black forces its neighbors white — one firing.
         const r = ss.records
           ? { kind: "adjBlack" as const, black: { x: op.x, y: op.y } }
           : undefined;
@@ -389,7 +389,7 @@ function solveCorner(
       newGroup(ss),
     );
   } else if (ns[0] === ns[1] || ns[1] === ns[3]) {
-    // DC: side1 is in a matching pair — the corner's other neighbour
+    // DC: side1 is in a matching pair — the corner's other neighbor
     // (side2) stays white. The pair is (corner,side1) or (side1,inner).
     const pair: [Pt, Pt] = ns[0] === ns[1] ? [P(0), P(1)] : [P(1), P(3)];
     solverOpAdd(
@@ -457,7 +457,7 @@ function solveOffsetpairPair(
         const xd = dx[d] - x2;
         const yd = dy[d] - y2;
         // One firing: the two offset pairs (A at (x1,y1)&(x2,y2), B at
-        // (ax,ay)&(dx,dy)) force both these neighbours of (x2,y2) white.
+        // (ax,ay)&(dx,dy)) force both these neighbors of (x2,y2) white.
         const reason: SinglesReason | undefined = ss.records
           ? {
               kind: "offset",
@@ -506,7 +506,7 @@ function solveOffsetpair(s: SinglesState, ss: SolverState): number {
 
 /* --- loop deductions --- */
 
-/** CC/CE/QM: a white cell whose only non-black neighbour must be white. */
+/** CC/CE/QM: a white cell whose only non-black neighbor must be white. */
 export function solveAllblackbutone(s: SinglesState, ss: SolverState): number {
   const before = ss.ops.length;
   const dis = [-s.w, 1, s.w, -1];
@@ -609,19 +609,19 @@ function solveRemovesplitsCheck(
   s.flags[i] &= ~F_BLACK;
 
   if (!issingle) {
-    // Evidence: the non-black orthogonal neighbours this cell bridges —
+    // Evidence: the non-black orthogonal neighbors this cell bridges —
     // shading it would split them into disconnected white regions.
     let reason: SinglesReason | undefined;
     if (ss.records) {
-      const neighbours: Pt[] = [];
+      const neighbors: Pt[] = [];
       for (let d = 0; d < 4; d++) {
         const xd = x + DXS[d];
         const yd = y + DYS[d];
         if (ingrid(s, xd, yd) && !(s.flags[yd * s.w + xd] & F_BLACK)) {
-          neighbours.push({ x: xd, y: yd });
+          neighbors.push({ x: xd, y: yd });
         }
       }
-      reason = { kind: "split", neighbours };
+      reason = { kind: "split", neighbors };
     }
     solverOpAdd(ss, x, y, OP_CIRCLE, reason, newGroup(ss));
   }
@@ -647,7 +647,7 @@ export function solveRemovesplits(s: SinglesState, ss: SolverState): number {
   return ss.ops.length - before;
 }
 
-/** SNEAKY: a generation-artefact step — a number unique in its row AND
+/** SNEAKY: a generation-artifact step — a number unique in its row AND
  * column must be white. Not implied by the rules; used only to grade a
  * board "too easy". `ss === null` counts without queuing ops. */
 export function solveSneaky(s: SinglesState, ss: SolverState | null): number {
@@ -850,7 +850,7 @@ export function deduceHintPlan(state: SinglesState): HintRecord[] {
 /**
  * Seed the op queue with the cascade implications of cells the player has
  * already decided. `solverOpsDo` fires a cell's cascade (a black forces its
- * neighbours white; a circle blackens its equal line-mates) only when it
+ * neighbors white; a circle blackens its equal line-mates) only when it
  * *changes* that cell during this solve run. `solveSpecific` is written to run
  * from an empty board (upstream's only use), so resuming it from the player's
  * marks — the hint path — would never propagate from those marks and the

@@ -15,7 +15,7 @@ sharper than "we haven't tested on a phone".** The audit's browser pass drove
 synthetic `PointerEvent`s with `pointerType: "touch"` through Chrome, which
 exercises the frontend's promotion decision faithfully — it proved the repaired
 Pegs gesture completes with the fix and leaves the board bit-identical without
-it. What a synthesised pointer cannot tell anyone is anything about a *hand*:
+it. What a synthesized pointer cannot tell anyone is anything about a *hand*:
 
 - whether a fingertip can hit a Loopy edge or an Untangle vertex at all;
 - whether **350 ms** is the right hold window for a real thumb, and whether
@@ -74,7 +74,7 @@ cell, fix what is cheap and file the rest with a clear handoff.
   (350 ms) and `secondaryButtonDragThreshold` (8 px) are user-settable and their
   defaults were inherited, not measured. If the device says they are wrong, that
   is a finding with a cheap fix — and `src/utils/touch.test.ts` now pins the
-  behaviour those numbers drive, so changing them is safe.
+  behavior those numbers drive, so changing them is safe.
 - **File, don't cram.** Anything needing an interaction designed gets its own
   change with the finding quoted.
 

@@ -40,10 +40,10 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newSinglesDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -208,7 +208,7 @@ function executeMove(state: SinglesState, move: SinglesMove): SinglesState {
     const i = y * next.w + x;
     next.flags[i] &= ~(F_BLACK | F_CIRCLE);
     // `value` *is* a union, so the fall-through case is asserted: an
-    // unrecognised one used to arrive here as "empty" and clear the cell.
+    // unrecognized one used to arrive here as "empty" and clear the cell.
     if (value === "black") next.flags[i] |= F_BLACK;
     else if (value === "circle") next.flags[i] |= F_CIRCLE;
     else if (value !== "empty") assertNever(value, `singles: executeMove (${x},${y})`);
@@ -275,7 +275,7 @@ interface Cell {
  * undecided number cell (the digit draws on top) and rings an already-
  * decided black/circle cell whose state *is* the reason. `strand` is the
  * distinct corner cell a 2×2-corner deduction is protecting from being
- * sealed off — drawn in its own colour so the player can tell the corner
+ * sealed off — drawn in its own color so the player can tell the corner
  * at risk apart from the matching numbers that share a value. */
 export interface SinglesHint {
   targets: { x: number; y: number; value: "black" | "circle" }[];
@@ -300,7 +300,7 @@ function joinNums(ns: number[]): string {
 /** Narrate *why* the grouped firing forces its cell(s), referencing the
  * highlighted evidence so the words and the picture agree. The corner
  * deductions name the actual numbers involved (owner-directed: concrete
- * values read far clearer than "this square / its other neighbour"). */
+ * values read far clearer than "this square / its other neighbor"). */
 function narrate(
   reason: SinglesReason,
   targets: { x: number; y: number }[],
@@ -324,7 +324,7 @@ function narrate(
     case "corner4": {
       // All four share a number, so a diagonal pair must be shaded (two
       // shaded cells, never adjacent). At a *grid* corner the corner cell's
-      // only neighbours are the two sides, so shading the side diagonal
+      // only neighbors are the two sides, so shading the side diagonal
       // would strand the corner white — the same box-in argument as corner3.
       const n = numAt(reason.block[0]);
       return `This corner ${n} matches both its neighbours, so keeping it white would shade them both and box it in — the corner and the ${n} diagonally inside must both be shaded.`;
@@ -343,7 +343,7 @@ function narrate(
       // Indication-first (§1b): open on the spotted pattern — a touching pair
       // of equal numbers at a grid corner — then run the proof-by-contradiction
       // arc with concrete numbers: the move we rule out (shading the target) →
-      // its consequence (the corner's neighbour shaded, the corner boxed in) →
+      // its consequence (the corner's neighbor shaded, the corner boxed in) →
       // the deduction. ("at the corner" is robust to either sub-case: the pair
       // is (corner, side) or (side, inner), so it always sits in the corner
       // block; "the ${p} beside the corner ${c}" names the side member either
@@ -357,7 +357,7 @@ function narrate(
       // quad = [A1, B1, A2, B2]; the A-pair (n) shares one line, the B-pair
       // (m) the next. Lead with the *indication* (§1b) — the spotted pattern,
       // a pair of n in one line and a pair of m in the next — so the player
-      // learns to recognise it, then give the consequence. The pairs can sit
+      // learns to recognize it, then give the consequence. The pairs can sit
       // ANYWHERE along those lines, so never say "overlap"/"between them";
       // "lined up so that" + the highlight carry the exact arrangement.
       // (Article-free — "one of the Ns" sidesteps "a 4" vs "an 8".)
@@ -373,7 +373,7 @@ function narrate(
       return `There's ${pairs}, lined up so that shading either of these two squares would force ${forced} to be shaded next to each other — and shaded squares can't touch. So both must be white.`;
     }
     case "adjBlack": {
-      // The forced cells are a shaded square's neighbours — their values are
+      // The forced cells are a shaded square's neighbors — their values are
       // unrelated to the deduction (it's pure adjacency), but still name them
       // so the player knows which squares without hunting the highlight. The
       // group can hold mixed/repeated values, so list them all.
@@ -422,12 +422,12 @@ function evidenceOf(reason: SinglesReason): Cell[] {
     case "boxedIn":
       return [reason.cell];
     case "split":
-      return reason.neighbours;
+      return reason.neighbors;
   }
 }
 
 /** The corner cell a 2×2-corner deduction is protecting (drawn in the
- * distinct strand colour), if any. */
+ * distinct strand color), if any. */
 function strandOf(reason: SinglesReason): Cell[] {
   return reason.kind === "corner2" || reason.kind === "corner3" ? [reason.corner] : [];
 }
@@ -467,7 +467,7 @@ function hint(state: SinglesState): HintResult<SinglesMove, SinglesHint> {
       }));
       const key = (c: Cell): number => c.y * state.w + c.x;
       const targetKey = new Set(targets.map(key));
-      // The protected corner is drawn in its own colour; keep it out of
+      // The protected corner is drawn in its own color; keep it out of
       // both the targets and the shaded matching-number evidence.
       const strand = strandOf(reason).filter((c) => !targetKey.has(key(c)));
       const strandKey = new Set(strand.map(key));
@@ -612,7 +612,7 @@ export const singlesGame: Game<
     },
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SinglesParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

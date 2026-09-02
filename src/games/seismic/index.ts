@@ -39,7 +39,7 @@ import {
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   KeyLabel,
@@ -48,7 +48,7 @@ import type {
 } from "../../engine/types.ts";
 import { maxGeneratedRegionSize, newSeismicDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -226,7 +226,7 @@ function interpretMove(
   // board — it walks `w * w` cells and caps candidates at `w` — whereas Seismic's
   // grid is rectangular and its candidate range is per *region*. Widening a
   // helper five games share for this one game is not worth it; upstream's `M` is
-  // fill-only too, so this is also the C's behaviour.
+  // fill-only too, so this is also the C's behavior.
   if (button === 0x4d || button === 0x6d) {
     // The fill is additive, so the gate is "some empty cell has *no* notes" —
     // not "some cell differs from its region's full set", which would keep
@@ -433,7 +433,7 @@ export const seismicGame: Game<
 
   prefs: [stickyPencilPref<SeismicUi>()],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SeismicParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Separate port.
+ * Behavioral tests for the Separate port.
  *
  * Tier 1 — params/desc codecs, the win condition, the solver/generator, and
  * findMistakes. Tier 2.5 — render scenarios (opener frame snapshot + a
@@ -85,7 +85,7 @@ describe("separate isSolved", () => {
         const i = y * P5.w + x;
         if (broken[i] & BORDER_R) {
           broken[i] &= ~BORDER_R;
-          broken[i + 1] &= ~8; // clear the neighbour's BORDER_L
+          broken[i + 1] &= ~8; // clear the neighbor's BORDER_L
           break outer;
         }
       }
@@ -221,7 +221,7 @@ describe("separate render scenarios", () => {
       moves: [{ type: "edges", edits }],
     });
     const validRects = recording.ops.filter(
-      (o) => o.op === "rect" && o.colour === COL_CORRECT,
+      (o) => o.op === "rect" && o.color === COL_CORRECT,
     ).length;
     // Region 0 has exactly k=5 cells → 5 green tile backgrounds; the rest plain.
     expect(validRects).toBe(P5.k);
@@ -237,7 +237,7 @@ describe("separate render scenarios", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBeGreaterThan(0);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_ERROR)).toBe(
       true,
     );
   });

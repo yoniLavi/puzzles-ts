@@ -23,8 +23,8 @@ import {
   type UntangleUi,
 } from "./state.ts";
 
-// Palette indices (must match `untangleGame.colours`). Exported so the
-// render tests can assert on the exact colour an op carries.
+// Palette indices (must match `untangleGame.colors`). Exported so the
+// render tests can assert on the exact color an op carries.
 export const COL_BACKGROUND = 1;
 export const COL_LINE = 2;
 export const COL_CROSSEDLINE = 3;
@@ -32,7 +32,7 @@ export const COL_OUTLINE = 4;
 export const COL_POINT = 5;
 export const COL_DRAGPOINT = 6;
 export const COL_CURSORPOINT = 7;
-export const COL_NEIGHBOUR = 8;
+export const COL_NEIGHBOR = 8;
 export const COL_FLASH = 9;
 export const COL_HINT = 10;
 
@@ -61,7 +61,7 @@ export function redrawUntangle(
   const n = s.n;
   const ts = ds.tileSize;
 
-  // Background colour: steady, or blinking to the flash during completion.
+  // Background color: steady, or blinking to the flash during completion.
   let bg = COL_BACKGROUND;
   if (flashTime > 0) {
     bg =
@@ -131,27 +131,27 @@ export function redrawUntangle(
   const crossSource = prev ?? s;
   for (let i = 0; i < s.edges.length; i++) {
     const e = s.edges[i];
-    const colour =
+    const color =
       ui.showCrossedEdges && crossSource.crosses[i] ? COL_CROSSEDLINE : COL_LINE;
     dr.drawLine(
       { x: ds.x[e.a], y: ds.y[e.a] },
       { x: ds.x[e.b], y: ds.y[e.b] },
-      colour,
+      color,
       1,
     );
   }
 
   // Vertices, in a fixed z-order so the drag/cursor point sits on top.
-  const drawOrder = [COL_POINT, COL_NEIGHBOUR, COL_CURSORPOINT, COL_DRAGPOINT];
-  for (const thisColour of drawOrder) {
+  const drawOrder = [COL_POINT, COL_NEIGHBOR, COL_CURSORPOINT, COL_DRAGPOINT];
+  for (const thisColor of drawOrder) {
     for (let i = 0; i < n; i++) {
       let c: number;
       if (ui.dragPoint === i) c = COL_DRAGPOINT;
       else if (ui.cursorPoint === i) c = COL_CURSORPOINT;
       else if (ui.dragPoint >= 0 && s.edgeSet.has(packEdge(ui.dragPoint, i, n)))
-        c = COL_NEIGHBOUR;
+        c = COL_NEIGHBOR;
       else c = COL_POINT;
-      if (c !== thisColour) continue;
+      if (c !== thisColor) continue;
 
       if (ui.vertexNumbers) {
         // Blank the blob area, then draw the index number in `c`.

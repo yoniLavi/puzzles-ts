@@ -3,9 +3,9 @@
  *
  * Netslide (Richard Boulton's cross between Net and Sixteen) is a grid of
  * Net wire tiles whose solved configuration is a spanning tree rooted at the
- * centre tile. The player slides whole rows and columns toroidally — every
- * line except the centre row and the centre column — until every tile is
- * connected to, and therefore powered by, the centre.
+ * center tile. The player slides whole rows and columns toroidally — every
+ * line except the center row and the center column — until every tile is
+ * connected to, and therefore powered by, the center.
  */
 
 import { parseLeadingInt } from "../../engine/params.ts";
@@ -32,7 +32,7 @@ import {
 /* ----------------------------------------------------------------------
  * Bit vocabulary.
  *
- * A tile's wires are a 4-bit mask; the same four bits name a neighbour
+ * A tile's wires are a 4-bit mask; the same four bits name a neighbor
  * direction — the direction algebra lives in `engine/wires.ts`, shared with
  * Net. The barrier grid reuses those low four bits for "there is a wall on this
  * side" and the high four for the corner-joining flags that let barrier
@@ -188,9 +188,9 @@ export interface NetslideState {
    * and its column cannot be slid — that restriction is what makes Netslide a
    * puzzle rather than a shuffle.
    *
-   * It is `⌊w/2⌋, ⌊h/2⌋`, which is *not* the centre of an even-sized board — so
-   * player-facing text (hints, help) says "the source", never "the centre", which
-   * a 4×4 player can see is false. Internal comments below still say centre-ish
+   * It is `⌊w/2⌋, ⌊h/2⌋`, which is *not* the center of an even-sized board — so
+   * player-facing text (hints, help) says "the source", never "the center", which
+   * a 4×4 player can see is false. Internal comments below still say center-ish
    * things about the flood fill; the vocabulary rule is about what we show. */
   readonly cx: number;
   readonly cy: number;
@@ -336,8 +336,8 @@ function addBarrierCorners(barriers: Uint8Array, w: number, h: number): void {
  */
 
 /**
- * Flood outward from the centre tile: a tile is *active* (powered) when it is
- * reachable from the centre through wires that connect in both directions and
+ * Flood outward from the center tile: a tile is *active* (powered) when it is
+ * reachable from the center through wires that connect in both directions and
  * are not separated by a barrier. This is both the "how close am I?" visual aid
  * and the win condition — the game is complete when every tile is active.
  *
@@ -373,7 +373,7 @@ export function computeActive(
   );
 }
 
-/** Is every tile powered from the centre? `tiles` defaults to the state's own
+/** Is every tile powered from the center? `tiles` defaults to the state's own
  * grid; the hint passes a candidate arrangement to ask whether it would win. */
 export function isComplete(s: NetslideState, tiles: Uint8Array = s.tiles): boolean {
   return computeActive(s, -1, -1, tiles).every((a) => a !== 0);

@@ -1,5 +1,5 @@
 /**
- * A tiny fake `Game` used only by the engine's behavioural tests
+ * A tiny fake `Game` used only by the engine's behavioral tests
  * (imported solely from `*.test.ts`). It is the smallest thing that
  * exercises every midend path: a counter you increment toward a
  * target, with a solver that jumps straight to the target, a text
@@ -10,12 +10,12 @@
  *
  * It also implements just enough of the drawing contract
  * (`newDrawState`/`setTileSize`/`redraw`) to drive the first-draw and
- * force-redraw behaviour the midend mirrors from `midend.c`. Each
+ * force-redraw behavior the midend mirrors from `midend.c`. Each
  * `newDrawState` and each `redraw` invocation is recorded on the
  * drawstate itself so tests can assert without leaking globals.
  *
  * This is the `ts-migration` "validated without a golden corpus"
- * discipline applied to the midend: the suite asserts behavioural
+ * discipline applied to the midend: the suite asserts behavioral
  * invariants against this game, not a recorded C corpus.
  */
 
@@ -29,7 +29,7 @@ export interface FakeState {
   count: number;
   target: number;
 }
-/** Moves are plain strings ⇒ JSON-safe ⇒ no serialiseMove needed.
+/** Moves are plain strings ⇒ JSON-safe ⇒ no serializeMove needed.
  * `dec` exists so hint tests have an off-plan move available. */
 export type FakeMove = "inc" | "dec" | "solve";
 
@@ -122,7 +122,7 @@ export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, FakeDrawState
   textFormat: (s) => `count=${s.count}`,
   statusbarText: (s) => `count ${s.count}/${s.target}`,
 
-  colours: () => [
+  colors: () => [
     [1, 1, 1],
     [0, 0, 0],
   ],

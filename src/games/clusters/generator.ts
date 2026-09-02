@@ -37,12 +37,12 @@ import {
 const DX = [-1, 1, 0, 0];
 const DY = [0, 0, -1, 1];
 
-/** The cadence at which a stuck run re-randomises every cell rather than only
+/** The cadence at which a stuck run re-randomizes every cell rather than only
  * the blank ones (upstream `clusters_generate`'s `force` argument). */
 const FORCE_EVERY = 100;
 
-/** Count same-colour orthogonal neighbours of cell `(x,y)` for colour `col`. */
-function sameNeighbours(
+/** Count same-color orthogonal neighbors of cell `(x,y)` for color `col`. */
+function sameNeighbors(
   grid: Uint8Array,
   w: number,
   h: number,
@@ -64,10 +64,10 @@ function sameNeighbours(
  * One generation attempt (upstream `clusters_generate`). Fills the grid with a
  * candidate puzzle in place and returns the solver verdict the caller gates on:
  *
- *  1. Two-colour every cell at random (`force`, or only the still-blank ones).
- *  2. Repeatedly flip the first cell with **zero** same-colour neighbours,
+ *  1. Two-color every cell at random (`force`, or only the still-blank ones).
+ *  2. Repeatedly flip the first cell with **zero** same-color neighbors,
  *     rescanning from the top after each flip, until none remains.
- *  3. Reduce to clues: a cell with exactly one same-colour neighbour becomes a
+ *  3. Reduce to clues: a cell with exactly one same-color neighbor becomes a
  *     dot (`F_SINGLE`); every other cell is cleared.
  *  4. Prune adjacent equal dot pairs (two adjacent identical dots are mutually
  *     derivable): in scan order, clear a dot and its left/upper twin.
@@ -90,7 +90,7 @@ function clustersGenerate(
   const s = w * h;
   const counts = new Int32Array(s);
 
-  // 1. Random two-colour fill. `randomUpto(rs, 2) ? F_COLOR_0 : F_COLOR_1` —
+  // 1. Random two-color fill. `randomUpto(rs, 2) ? F_COLOR_0 : F_COLOR_1` —
   //    1 → red, 0 → blue (the whole RNG draw the desc depends on).
   for (let i = 0; i < s; i++) {
     if (force || !grid[i]) grid[i] = randomUpto(rng, 2) ? F_COLOR_0 : F_COLOR_1;
@@ -98,7 +98,7 @@ function clustersGenerate(
 
   // 2. Flip isolated cells until none remain, restarting the scan after each
   //    flip (the `break` is load-bearing for byte-match). The final pass, which
-  //    finds nothing to flip, leaves `counts` holding the settled neighbour
+  //    finds nothing to flip, leaves `counts` holding the settled neighbor
   //    counts step 3 reads.
   let reset = true;
   while (reset) {
@@ -106,18 +106,18 @@ function clustersGenerate(
     for (let i = 0; i < s; i++) {
       const x = i % w;
       const y = (i - x) / w;
-      counts[i] = sameNeighbours(grid, w, h, x, y, grid[i] & COLMASK);
+      counts[i] = sameNeighbors(grid, w, h, x, y, grid[i] & COLMASK);
     }
     for (let i = 0; i < s; i++) {
       if (counts[i] === 0) {
-        grid[i] ^= COLMASK; // swap this cell's colour
+        grid[i] ^= COLMASK; // swap this cell's color
         reset = true;
         break;
       }
     }
   }
 
-  // 3. Cells with exactly one same-colour neighbour become dot clues; clear all
+  // 3. Cells with exactly one same-color neighbor become dot clues; clear all
   //    others.
   for (let i = 0; i < s; i++) {
     if (counts[i] === 1) grid[i] |= F_SINGLE;
@@ -145,7 +145,7 @@ function clustersGenerate(
   // itself: it is much the cheaper of the two, and running it to its fixpoint
   // before the lookahead costs the deeper solve nothing, because `solveGame`
   // begins with that same fixpoint and the deduction is confluent (a refuted
-  // colouring stays refuted as more cells fill in — see solver.ts), so the
+  // coloring stays refuted as more cells fill in — see solver.ts), so the
   // two-call sequence reaches the identical grid.
   const easy = solveGame(grid, w, h, DIFF_EASY);
   if (diff === DIFF_EASY) return easy;
@@ -153,7 +153,7 @@ function clustersGenerate(
   // Tricky, and the single-cell rule alone finished it — so this board does not
   // need the tier the player asked for. Rejecting it takes more than returning
   // "no": every other rejection leaves a *partly* solved grid whose blank cells
-  // the next attempt re-randomises, but a completed one has no blank cells left,
+  // the next attempt re-randomizes, but a completed one has no blank cells left,
   // so step 1 would change nothing and draw no randomness, step 2 would find no
   // isolated cell in a solved board, and step 3 would re-derive the very same
   // clues — a fixed point that spins for ever.

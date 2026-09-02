@@ -25,7 +25,7 @@
  * `tierOf` / `withTier` go through the game rather than around it.
  *
  * **Why a discriminated verdict, rather than the solvers' integers.** Every
- * game's solver reports some flavour of `-1 / 0 / 1`, and the meanings are not
+ * game's solver reports some flavor of `-1 / 0 / 1`, and the meanings are not
  * uniform: Magnets' `0` is "ambiguous or unfinished", Boats' is "stuck",
  * Clusters returns a three-valued status enum, Tracks returns a record. Mapping
  * each to three named outcomes belongs in the per-game adapter, where the
@@ -154,7 +154,7 @@ export function cappedSolveFor<Params>(
  * before `tier`, so a board the easier ladder already cracks is rejected
  * without ever paying for the deeper solve — and a generator that retries in a
  * loop pays the cheap half far more often than the expensive one. That ordering
- * is not a micro-optimisation: `add-clusters-difficulty-tiers` (D3) measured it
+ * is not a micro-optimization: `add-clusters-difficulty-tiers` (D3) measured it
  * making the whole generator *faster than it had been before it had tiers*
  * (10×10 Tricky worst case 25.0 s → 10.9 s). It also leaves a game free to
  * answer both questions from a single fixpoint if its tiers are nested rungs of

@@ -5,7 +5,7 @@
 > [`docs/games/`](../games/README.md). See the [vision README](./README.md).
 
 A framework game is one directory exporting one **definition** — a manifest of
-declarations, each of which buys a set of derived behaviour. This document
+declarations, each of which buys a set of derived behavior. This document
 walks the declarations in the order the scaffolder presents them, and states
 for each: what you write, what falls out, and where the escape hatch is.
 
@@ -22,7 +22,7 @@ declarative `paramConfig` shapes), presets, and validation predicates.
 **You get:** the Custom dialog, the type-menu summary, param codecs (the
 `WxH`-style prefix forms via the shared parser; `%g` float round-tripping),
 and — if your techniques carry tiers — the whole difficulty contract:
-tier list, read/set on params, capped solving, and enrolment in the
+tier list, read/set on params, capped solving, and enrollment in the
 cap-monotonicity and tiers-bind guards. There is no hand-written
 `DifficultyContract`; it is a projection of the technique ladder
 ([`deduction.md`](./deduction.md)).
@@ -120,7 +120,7 @@ should be free to differ between games. For these, we do not:
 - **Digit parsing** (`button >= 49 && button <= 57`, `button - 48`; 11 games).
   Splits cleanly rather than being declined: *"is this a digit key and which
   digit"* is one fact and belongs in `pointer.ts`; the **bound** (`<= w`,
-  `< n`, `<= ncolours`) and whether `0` clears or means ten are real per-game
+  `< n`, `<= ncolors`) and whether `0` clears or means ten are real per-game
   answers and stay. The gesture table's `digits(1..w) → move` is the end state;
   the helper is the step that gets there without waiting for it.
 - **The Latin-family highlight-then-type flow** (Solo, Keen, Towers, Mathrax,

@@ -40,7 +40,7 @@ and for each square entered: collect a gem there (decrementing the gem count and
 clearing the square), die on a mine there, and stop when the square is a
 stop-square or when the next square in the direction is a wall. `interpretMove`
 SHALL reject a direction whose adjacent square is a wall, and SHALL reject every
-move while the ball is dead. The state SHALL record the distance travelled by the
+move while the ball is dead. The state SHALL record the distance traveled by the
 last move, so the renderer can animate the slide.
 
 #### Scenario: The ball collects gems on the way past
@@ -88,7 +88,7 @@ from the ball), and SHALL play that direction when the pointer is released.
 Aiming SHALL yield no direction — and so draw no arrow, and make no move on
 release — when the pointer is back on the ball (which is how the player calls the
 swipe off) or when it is aimed at a wall (which is not a move the ball can make).
-The arrow SHALL be drawn in its own colour, distinct from the route arrow, since
+The arrow SHALL be drawn in its own color, distinct from the route arrow, since
 the two mean different things ("you are about to go this way" versus "the solver
 says go this way") and a player with a route installed sees both.
 
@@ -118,7 +118,7 @@ committing.
 The desc SHALL be exactly `w · h` characters from `{b, g, m, s, w, S}` (blank,
 gem, mine, stop, wall, start), row-major. `newState` SHALL place the ball on the
 single `S` square and treat that square as a stop-square thereafter.
-`validateDesc` SHALL reject a desc of the wrong length, containing an unrecognised
+`validateDesc` SHALL reject a desc of the wrong length, containing an unrecognized
 character, without exactly one start square, or without at least one gem.
 
 #### Scenario: Start square is a stop square
@@ -171,7 +171,7 @@ gem after another until none remain, and then repeatedly replacing redundant
 sections of the tour with shortest paths until it stops shrinking. It SHALL return
 an error when some remaining gem is unreachable.
 
-Because the tour is an approximate solution to a travelling-salesman problem and
+Because the tour is an approximate solution to a traveling-salesman problem and
 not a deduction, the route is **not** required to reproduce the one the C
 reference finds. Two tours SHALL be grown — one reaching for the nearest
 uncollected gem, one for the farthest — and the shorter kept, which yields a
@@ -219,7 +219,7 @@ The game SHALL render walls with a bevel, mines, stop-squares as rings, gems as
 diamonds, and the ball as a circle (a jagged red splat when dead) drawn over a
 blitter-saved background, with the route arrow when a route is installed. A move
 SHALL animate the ball sliding along its path, in a time proportional to the
-square root of the distance travelled, with each gem disappearing as the ball
+square root of the distance traveled, with each gem disappearing as the ball
 reaches it. Death SHALL flash the board red and the winning move SHALL flash it
 light. The status bar SHALL show the remaining gem count, `DEAD!` when dead,
 `COMPLETED!` when finished, and a running deaths tally.
@@ -329,7 +329,7 @@ promise the plan then breaks reads as a hint that has lost the plot.
 ### Requirement: A hint is a nudge; only Solve is a commitment
 
 `hint` SHALL NOT mark the game as solved-with-help and SHALL NOT install a route
-into the game state. Solve's existing behaviour — installing a route, setting
+into the game state. Solve's existing behavior — installing a route, setting
 `cheated`, and reporting "Auto-solver used." in the status bar for the remainder of
 the game — SHALL be unchanged.
 
@@ -369,8 +369,8 @@ prevent.
 
 ### Requirement: The hint is drawn as a marked gem and an arrow
 
-`redraw` SHALL mark the displayed step's subgoal gem with a ring in its own colour,
-and SHALL draw the step's direction as an arrow on the ball, in the same colour and
+`redraw` SHALL mark the displayed step's subgoal gem with a ring in its own color,
+and SHALL draw the step's direction as an arrow on the ball, in the same color and
 shape as the route arrow (both mean "the solver says go this way"). The aim arrow
 of a swipe in progress SHALL take precedence over both, being what the ball will
 actually do next.

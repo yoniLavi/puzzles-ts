@@ -199,7 +199,7 @@ export function validateParams(p: LightupParams, full: boolean): string | null {
 
 // --- board helpers ------------------------------------------------------------------
 
-/** The orthogonal in-bounds neighbours of (x, y), in upstream's
+/** The orthogonal in-bounds neighbors of (x, y), in upstream's
  * left/right/up/down order (order matters — solver scratch lists and
  * tie-breaks are built in this order). */
 export function getSurrounds(
@@ -324,7 +324,7 @@ export function numberCorrect(state: LightupState, x: number, y: number): boolea
 }
 
 /** The display-error test for a clue: definitely too many bulbs, or too
- * few even if every plausible neighbour became one. */
+ * few even if every plausible neighbor became one. */
 export function numberWrong(state: LightupState, x: number, y: number): boolean {
   const clue = state.lights[idx(x, y, state.w)];
   let n = 0;

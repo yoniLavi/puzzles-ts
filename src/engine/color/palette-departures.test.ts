@@ -11,7 +11,7 @@
  * Keyed on the slot's index name because that is the only shape a palette
  * assignment has: `out[COL_CURSOR] = X` carries its meaning in `COL_CURSOR` and
  * nowhere else. A game that names a cursor slot something without "CURSOR" in it
- * is not seen here — that is a naming question, not a colour one, and the
+ * is not seen here — that is a naming question, not a color one, and the
  * vacuity count below says how many slots the scan actually examined.
  */
 import { describe, expect, it } from "vitest";
@@ -51,7 +51,7 @@ interface Assignment {
 
 /** `out[COL_X] = value;` / `ret[COL_X] = value;` — a palette assignment. */
 const ASSIGNMENT =
-  /^\s*(?:out|ret|colours|palette)\[(COL_[A-Z0-9_]+)\]\s*=\s*(.+?);\s*(\/\/.*)?$/;
+  /^\s*(?:out|ret|colors|palette)\[(COL_[A-Z0-9_]+)\]\s*=\s*(.+?);\s*(\/\/.*)?$/;
 
 /** `value, // COL_X ...` — the positional form five games use (Bridges,
  * Fifteen, Sixteen, Pegs, Untangle), where the slot is named in the trailing

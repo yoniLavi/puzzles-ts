@@ -4,7 +4,7 @@
 > Authored by `rewrite-game-dev-docs` (2026-08-07). Current truth:
 > [`docs/games/`](../games/README.md). See the [vision README](./README.md).
 
-The centre of the framework. Everything a logic game "does" — solving,
+The center of the framework. Everything a logic game "does" — solving,
 grading, generating, hinting, refusing — is a projection of one declared
 ladder of techniques. This document is the contract; it is deliberately the
 longest of the set because it is where the collection's hardest-won rules
@@ -79,7 +79,7 @@ derives:
    stale steps, resume from any position, step budgets) is framework-owned
    and identical for every game.
 5. **Refuse & check** — `findMistakes` for a unique-solution game is derived:
-   solve from the clues once (memoised per game id), diff the player's
+   solve from the clues once (memoized per game id), diff the player's
    entries. Games whose mistakes are rule-violations rather than
    solution-divergence declare **invariants** — `detect`/`highlight`/`narrate`
    triples — which feed live-error rendering, `findMistakes`, and the hint's
@@ -145,7 +145,7 @@ What a framework would have to carry for this shape:
 
 - **A technique declares which move set records it**, and a game declares how
   a *notation* move set discharges into a *goal* one. In Galaxies that bridge
-  is itself a technique ("two neighbours settled on different dots ⇒ a wall
+  is itself a technique ("two neighbors settled on different dots ⇒ a wall
   between them"), which suggests the framework needs nothing new here beyond
   *knowing* that the plan is not complete until the goal move set is.
 - **The completion driver must judge the goal move set**, not the number of

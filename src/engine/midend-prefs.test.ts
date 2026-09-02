@@ -1,6 +1,6 @@
 /**
- * Behavioural tests for the engine's per-game preferences hook (the
- * idiomatic-TS realisation of upstream `get_prefs`/`set_prefs`): the
+ * Behavioral tests for the engine's per-game preferences hook (the
+ * idiomatic-TS realization of upstream `get_prefs`/`set_prefs`): the
  * declarative `Game.prefs`, the midend's
  * `getPreferencesConfig`/`getPreferences`/`setPreferences`, value
  * coercion, retention across a new game, and the empty result for a
@@ -45,7 +45,7 @@ const prefGame: Game<{ n: number }, PrefState, "noop", PrefUi> = {
   interpretMove: () => null,
   executeMove: (s) => s,
   status: () => "ongoing",
-  colours: () => [
+  colors: () => [
     [1, 1, 1],
     [0, 0, 0],
   ],

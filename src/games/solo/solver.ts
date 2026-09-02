@@ -5,7 +5,7 @@
  * recursion).
  *
  * The solver doubles as the generator's grading oracle: the solver-gated
- * minimiser removes givens while this solver still solves at the target
+ * minimizer removes givens while this solver still solves at the target
  * difficulty, so the published board depends on this reaching C's *exact*
  * verdict on every intermediate grid. It is therefore ported logic-faithfully
  * (including the few upstream quirks called out below), not merely "correctly".
@@ -251,7 +251,7 @@ class SolverUsage {
   private readonly sRowidx: Uint8Array;
   private readonly sColidx: Uint8Array;
   private readonly sSet: Uint8Array;
-  private readonly sNeighbours: Int32Array;
+  private readonly sNeighbors: Int32Array;
   private readonly sBfsqueue: Int32Array;
   /** BFS parent pointers for {@link forcing}, so a firing can report the chain
    * it followed rather than only its conclusion. Never *read* for a cell this
@@ -287,7 +287,7 @@ class SolverUsage {
 
     // Killer state exists iff we have both the cages and the clue grid (upstream
     // gates every killer deduction on `kclues != NULL`, which is built only when
-    // kgrid is present — so coupling the two matches that behaviour).
+    // kgrid is present — so coupling the two matches that behavior).
     if (kblocks && kgrid) {
       const nclues = kblocks.nrBlocks;
       const kclues = new Array<number>(area).fill(0);
@@ -311,7 +311,7 @@ class SolverUsage {
     this.sRowidx = new Uint8Array(cr);
     this.sColidx = new Uint8Array(cr);
     this.sSet = new Uint8Array(cr);
-    this.sNeighbours = new Int32Array(5 * cr);
+    this.sNeighbors = new Int32Array(5 * cr);
     this.sBfsqueue = new Int32Array(area);
     this.sParent = new Int32Array(area);
     this.sIndexlist = new Int32Array(area);
@@ -542,7 +542,7 @@ class SolverUsage {
     const cr = this.cr;
     const bfsqueue = this.sBfsqueue;
     const number = this.sGrid;
-    const neighbours = this.sNeighbours;
+    const neighbors = this.sNeighbors;
     const parent = this.sParent;
 
     for (let y = 0; y < cr; y++) {
@@ -572,23 +572,23 @@ class SolverUsage {
             xx %= cr;
             const currn = number[yy * cr + xx];
 
-            let nneighbours = 0;
-            for (let yt = 0; yt < cr; yt++) neighbours[nneighbours++] = yt * cr + xx;
-            for (let xt = 0; xt < cr; xt++) neighbours[nneighbours++] = yy * cr + xt;
+            let nneighbors = 0;
+            for (let yt = 0; yt < cr; yt++) neighbors[nneighbors++] = yt * cr + xx;
+            for (let xt = 0; xt < cr; xt++) neighbors[nneighbors++] = yy * cr + xt;
             const blkIdx = this.blocks.whichblock[yy * cr + xx];
             for (let yt = 0; yt < cr; yt++)
-              neighbours[nneighbours++] = this.blocks.blocks[blkIdx][yt];
+              neighbors[nneighbors++] = this.blocks.blocks[blkIdx][yt];
             if (this.diag) {
               const sqindex = yy * cr + xx;
               if (onDiag0(sqindex, cr))
-                for (let i = 0; i < cr; i++) neighbours[nneighbours++] = diag0(i, cr);
+                for (let i = 0; i < cr; i++) neighbors[nneighbors++] = diag0(i, cr);
               if (onDiag1(sqindex, cr))
-                for (let i = 0; i < cr; i++) neighbours[nneighbours++] = diag1(i, cr);
+                for (let i = 0; i < cr; i++) neighbors[nneighbors++] = diag1(i, cr);
             }
 
-            for (let i = 0; i < nneighbours; i++) {
-              const xt = neighbours[i] % cr;
-              const yt = (neighbours[i] / cr) | 0;
+            for (let i = 0; i < nneighbors; i++) {
+              const xt = neighbors[i] % cr;
+              const yt = (neighbors[i] / cr) | 0;
               if (number[yt * cr + xt] <= cr) continue;
               if (!this.cubeAt(xt, yt, currn)) continue;
               if (xt === xx && yt === yy) continue;
@@ -986,7 +986,7 @@ class SolverUsage {
             if (dlev.maxdiff >= DIFF_RECURSIVE) {
               // NB: upstream sets dlev->diff = DIFF_IMPOSSIBLE here, but the
               // got_result label immediately overwrites it with the local
-              // `diff`; we replicate that (effective) behaviour faithfully.
+              // `diff`; we replicate that (effective) behavior faithfully.
               if (sum <= 0) {
                 finish(diff);
                 return;

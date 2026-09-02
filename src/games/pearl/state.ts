@@ -279,7 +279,7 @@ export interface PearlMove {
 
 /** Transient interaction state (upstream `game_ui`). The drag path, keyboard
  * cursor, and the `appearance` preference (`guiStyle`). None of it is
- * serialised. */
+ * serialized. */
 export interface PearlUi {
   /** Drag path so far, as `y*w+x` coords (length w*h; only the first
    * `ndragcoords` entries are live). */

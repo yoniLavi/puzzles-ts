@@ -86,7 +86,7 @@ describe("generated tables", () => {
 
   it("partitions the arrival tables contiguously and completely", () => {
     // `step`/`stepHex` index `in[startIndex + len - 1 - lo]`. A gap or an
-    // overlap in the partition reads a neighbouring edge's entry, which is a
+    // overlap in the partition reads a neighboring edge's entry, which is a
     // perfectly valid-looking entry pointing at the wrong tile.
     for (const data of HEX_DATA) {
       for (const [edges, inTable] of [
@@ -125,7 +125,7 @@ describe("generated tables", () => {
   it("keeps the single-entry possibility tables that must still draw", () => {
     // J and L have exactly one legal parent each. `choosePoss` still consumes a
     // random number for them; if a future refactor short-circuits that, the
-    // stream desynchronises and every desc changes. Pinned here so the
+    // stream desynchronizes and every desc changes. Pinned here so the
     // temptation is at least visible.
     const single = HEX_DATA.filter((h) => h.poss.length === 1).map((h) => h.letter);
     expect(single).toEqual(["J", "L"]);
@@ -144,7 +144,7 @@ describe("generated tables", () => {
 
   it("describes a closed 14-sided outline with one collinear vertex", () => {
     expect(SPECTRE_ANGLES).toHaveLength(SPECTRE_NVERTICES);
-    // Fourteen turns totalling a full turn clockwise, in twelfths.
+    // Fourteen turns totaling a full turn clockwise, in twelfths.
     expect(SPECTRE_ANGLES.reduce((a, b) => a + b, 0)).toBe(-12);
     // The "double edge": a straight-through vertex, which is how adjacent
     // spectres come to share dots. It must survive into the emitted face.
@@ -389,7 +389,7 @@ describe("faces", () => {
   it("emits order-14 faces before trimming merges nothing away", () => {
     const g = gridNewSpectres(6, 6, "0003047Y");
     // Every spectre is a 14-gon, collinear vertex included. If the collinear
-    // vertex were dropped as an optimisation these would be 13.
+    // vertex were dropped as an optimization these would be 13.
     for (const f of g.faces) expect(f.order).toBe(SPECTRE_NVERTICES);
   });
 

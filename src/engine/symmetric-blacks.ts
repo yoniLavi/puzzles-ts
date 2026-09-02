@@ -10,7 +10,7 @@
  * attempt, retried while the cell is already black), the x-outer/y-inner
  * symmetry copy order (which reads the *current* board, so overlapping
  * regions behave exactly as C's in-place assignment), and the
- * `SYMM_ROT4` odd-centre fix-up draw (`randomUpto(rs, 100) <= blackpc`,
+ * `SYMM_ROT4` odd-center fix-up draw (`randomUpto(rs, 100) <= blackpc`,
  * note the `<=`) are all observable in the RNG stream the callers' descs
  * depend on.
  *
@@ -55,7 +55,7 @@ export interface SymmetricBlacksOptions {
 }
 
 /**
- * Randomise black squares over the symmetry-reduced region, then
+ * Randomize black squares over the symmetry-reduced region, then
  * mirror/rotate the region over the whole board (upstream `set_blacks`).
  */
 export function placeSymmetricBlacks(opts: SymmetricBlacksOptions): void {
@@ -106,7 +106,7 @@ export function placeSymmetricBlacks(opts: SymmetricBlacksOptions): void {
     rh = h;
   }
 
-  // Randomise the required region by rejection sampling.
+  // Randomize the required region by rejection sampling.
   const nblack = Math.floor((rw * rh * blackpc) / 100);
   const pick = retryLimit("placeSymmetricBlacks", MAX_BLACK_PICKS);
   for (let i = 0; i < nblack; i++) {

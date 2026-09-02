@@ -31,7 +31,7 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import {
   ALREADY_SOLVED,
-  CONTRADICTION_UNLOCALISED,
+  CONTRADICTION_UNLOCALIZED,
   FIX_MISTAKES_FIRST,
   NO_DEDUCTION_LEFT,
   NO_DEDUCTION_LEFT_TRIAL_AND_ERROR,
@@ -51,7 +51,7 @@ const gameSources = import.meta.glob<string>("../games/**/*.ts", {
 /** The approved refusals. A game emitting one of these needs no exception. */
 const APPROVED = new Set([
   ALREADY_SOLVED,
-  CONTRADICTION_UNLOCALISED,
+  CONTRADICTION_UNLOCALIZED,
   FIX_MISTAKES_FIRST,
   NO_DEDUCTION_LEFT,
   NO_DEDUCTION_LEFT_TRIAL_AND_ERROR,

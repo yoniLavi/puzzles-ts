@@ -5,7 +5,7 @@
  * Faithful transliteration of `puzzles/unfinished/sokoban.c`. The grid is a
  * flat `Uint8Array` of *character codes* — the same alphabet the C uses in
  * game IDs — so a hand-authored level game ID decodes identically here. The
- * full alphabet (pits, deep pits, capital-letter labelled barrels) is ported
+ * full alphabet (pits, deep pits, capital-letter labeled barrels) is ported
  * even though the random generator never emits those characters (design D7):
  * it keeps hand-typed level descriptions working, which the header names as
  * Sokoban's reason to exist.
@@ -35,7 +35,7 @@ const A = c("A");
 const Z = c("Z");
 
 /**
- * A capital letter A–Z is a *labelled* barrel; while resting on a target it
+ * A capital letter A–Z is a *labeled* barrel; while resting on a target it
  * is stored as its control-character value (A → ^A = 1, … Z → 26). These let
  * annotated level IDs name particular barrels. `isBarrel`/`isOnTarget`
  * therefore test more than a bare equality (upstream macros of the same name).
@@ -54,14 +54,14 @@ export function isOnTarget(v: number): boolean {
   );
 }
 /** Put a barrel onto a target: BARREL → BARRELTARGET, a capital → its ^ form. */
-export function targetise(b: number): number {
+export function targetize(b: number): number {
   return b === BARREL ? BARRELTARGET : b - (A - 1);
 }
 /** Take a barrel off a target: BARRELTARGET → BARREL, a ^ form → its capital. */
-export function detargetise(b: number): number {
+export function detargetize(b: number): number {
   return b === BARRELTARGET ? BARREL : b + (A - 1);
 }
-/** The display letter for a labelled barrel, or 0 for a plain/anonymous one. */
+/** The display letter for a labeled barrel, or 0 for a plain/anonymous one. */
 export function barrelLabel(b: number): number {
   if (b >= A && b <= Z) return b;
   if (b >= 1 && b <= 26) return b + (A - 1);

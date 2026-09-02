@@ -11,13 +11,13 @@
  * face, every digit on the canvas). These tilings have never been rendered
  * anywhere before, so this is their first check rather than a regression net.
  *
- * The rest are the state-dependent colourings the sweep's opener frames cannot
+ * The rest are the state-dependent colorings the sweep's opener frames cannot
  * reach: line state, the faint-line preference, vertex errors, the
  * `exactlyOneLoop` clue rule, and the clue-position cache `setTileSize`
  * invalidates.
  */
 import { describe, expect, it } from "vitest";
-import { gridFindIncentre } from "../../engine/grid/index.ts";
+import { gridFindIncenter } from "../../engine/grid/index.ts";
 import { Midend } from "../../engine/midend.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
@@ -61,7 +61,7 @@ function board(
 }
 
 /** Mirror of `render.ts`'s `toScreen` (not exported), so a test can say where
- * a given dot or incentre *should* land rather than only how many landed. */
+ * a given dot or incenter *should* land rather than only how many landed. */
 function screenPos(
   state: LoopyState,
   ts: number,
@@ -109,7 +109,7 @@ describe("Loopy render scenarios: every tiling draws its whole grid", () => {
       // The game paints its own background first; the engine emits no pixels
       // of its own, so a missing opener rect means the board is drawn over
       // whatever was there before (`fix-flip-canvas-reshape`).
-      expect(ops[0]).toMatchObject({ op: "rect", x: 0, y: 0, colour: COL_BACKGROUND });
+      expect(ops[0]).toMatchObject({ op: "rect", x: 0, y: 0, color: COL_BACKGROUND });
 
       // Nothing may be dropped or duplicated in the translation from grid to
       // screen: one dot is one circle, one edge is one line. A tiling whose
@@ -124,8 +124,8 @@ describe("Loopy render scenarios: every tiling draws its whole grid", () => {
       const lines = ops.filter((o) => o.op === "line");
       expect(lines.length).toBe(g.numEdges);
       // An untouched board is entirely UNKNOWN, so every line takes that one
-      // colour — which also pins that no edge is silently drawn as an error.
-      expect(lines.every((o) => o.op === "line" && o.colour === COL_LINEUNKNOWN)).toBe(
+      // color — which also pins that no edge is silently drawn as an error.
+      expect(lines.every((o) => o.op === "line" && o.color === COL_LINEUNKNOWN)).toBe(
         true,
       );
 
@@ -139,7 +139,7 @@ describe("Loopy render scenarios: every tiling draws its whole grid", () => {
       expect(expected.length).toBeGreaterThan(0);
 
       // Every digit lands on the canvas. This is the check that would catch a
-      // face incentre computed in the wrong space for an irregular tiling —
+      // face incenter computed in the wrong space for an irregular tiling —
       // the failure mode most likely to be unique to hats/spectres/Penrose.
       for (const t of texts) {
         if (t.op !== "text") continue;
@@ -181,7 +181,7 @@ describe("Loopy render scenarios: line state and preferences", () => {
   it("draws a YES edge black, a NO edge faint and the rest unknown", () => {
     const { id, state } = SQUARES();
     // Two edges far enough apart that neither creates a vertex error, so the
-    // frame shows the three plain line colours and nothing else.
+    // frame shows the three plain line colors and nothing else.
     const yesEdge = 0;
     const noEdge = 40;
     const { recording } = renderScenario({
@@ -190,25 +190,25 @@ describe("Loopy render scenarios: line state and preferences", () => {
       moves: [setEdges([yesEdge], LINE_YES), setEdges([noEdge], LINE_NO)],
     });
     const lines = recording.ops.filter((o) => o.op === "line");
-    const byColour = (c: number) =>
-      lines.filter((o) => o.op === "line" && o.colour === c);
+    const byColor = (c: number) =>
+      lines.filter((o) => o.op === "line" && o.color === c);
 
-    expect(byColour(COL_FOREGROUND).length).toBe(1);
-    expect(byColour(COL_FAINT).length).toBe(1);
-    expect(byColour(COL_LINEUNKNOWN).length).toBe(state.grid.numEdges - 2);
-    expect(byColour(COL_MISTAKE).length).toBe(0);
+    expect(byColor(COL_FOREGROUND).length).toBe(1);
+    expect(byColor(COL_FAINT).length).toBe(1);
+    expect(byColor(COL_LINEUNKNOWN).length).toBe(state.grid.numEdges - 2);
+    expect(byColor(COL_MISTAKE).length).toBe(0);
 
     // The black line is the edge that was actually set, not merely *an* edge:
-    // colour counts alone would survive the renderer colouring the wrong one.
+    // color counts alone would survive the renderer coloring the wrong one.
     const e = state.grid.edges[yesEdge];
     const [x1, y1] = screenPos(state, PREFERRED_TILE_SIZE, e.dot1.x, e.dot1.y);
     const [x2, y2] = screenPos(state, PREFERRED_TILE_SIZE, e.dot2.x, e.dot2.y);
-    expect(byColour(COL_FOREGROUND)[0]).toMatchObject({ x1, y1, x2, y2 });
+    expect(byColor(COL_FOREGROUND)[0]).toMatchObject({ x1, y1, x2, y2 });
 
     // A NO line is drawn thinner than a laid one — that difference is the
     // whole reason a faint line reads as a mark rather than as a segment.
-    const faint = byColour(COL_FAINT)[0];
-    const black = byColour(COL_FOREGROUND)[0];
+    const faint = byColor(COL_FAINT)[0];
+    const black = byColor(COL_FOREGROUND)[0];
     if (faint.op !== "line" || black.op !== "line") throw new Error("unreachable");
     expect(faint.thickness).toBeLessThan(black.thickness);
 
@@ -221,7 +221,7 @@ describe("Loopy render scenarios: line state and preferences", () => {
 
     const shown = renderScenario({ game: loopyGame, id, moves });
     expect(
-      shown.recording.ops.filter((o) => o.op === "line" && o.colour === COL_FAINT)
+      shown.recording.ops.filter((o) => o.op === "line" && o.color === COL_FAINT)
         .length,
     ).toBe(1);
 
@@ -231,13 +231,13 @@ describe("Loopy render scenarios: line state and preferences", () => {
     expect(midend.newGameFromId(id)).toBeUndefined();
     midend.playMoves(moves);
     expect(midend.setPreferences({ "draw-faint-lines": false })).toBeUndefined();
-    const recording = new RecordingDrawing(loopyGame.colours(DEFAULT_BACKGROUND));
+    const recording = new RecordingDrawing(loopyGame.colors(DEFAULT_BACKGROUND));
     midend.redraw(recording);
 
-    // Not merely recoloured: the phase is skipped, so the NO edge contributes
+    // Not merely recolored: the phase is skipped, so the NO edge contributes
     // no line op at all.
     expect(
-      recording.ops.filter((o) => o.op === "line" && o.colour === COL_FAINT).length,
+      recording.ops.filter((o) => o.op === "line" && o.color === COL_FAINT).length,
     ).toBe(0);
     expect(recording.ops.filter((o) => o.op === "line").length).toBe(
       shown.recording.ops.filter((o) => o.op === "line").length - 1,
@@ -261,14 +261,13 @@ describe("Loopy render scenarios: error highlighting", () => {
       moves: [setEdges(edges, LINE_YES)],
     });
     const mistakes = recording.ops.filter(
-      (o) => o.op === "line" && o.colour === COL_MISTAKE,
+      (o) => o.op === "line" && o.color === COL_MISTAKE,
     );
     expect(mistakes.length).toBe(3);
     // No black lines survive: every laid edge on this board is one of the
-    // three, and an errored edge is drawn in the error colour instead.
+    // three, and an errored edge is drawn in the error color instead.
     expect(
-      recording.ops.filter((o) => o.op === "line" && o.colour === COL_FOREGROUND)
-        .length,
+      recording.ops.filter((o) => o.op === "line" && o.color === COL_FOREGROUND).length,
     ).toBe(0);
 
     const positions = new Set(
@@ -305,7 +304,7 @@ describe("Loopy render scenarios: error highlighting", () => {
     const beforeText = before.recording.ops.filter((o) => o.op === "text")[nth];
     expect(beforeText).toMatchObject({
       text: String(state.clues[victim]),
-      colour: COL_FOREGROUND,
+      color: COL_FOREGROUND,
     });
 
     const after = renderScenario({
@@ -316,17 +315,17 @@ describe("Loopy render scenarios: error highlighting", () => {
     const afterText = after.recording.ops.filter((o) => o.op === "text")[nth];
     expect(afterText).toMatchObject({
       text: String(state.clues[victim]),
-      colour: COL_MISTAKE,
+      color: COL_MISTAKE,
     });
 
     // The loop itself is a legal single component, so its edges stay black —
     // the error is the clue, not the lines.
     expect(
-      after.recording.ops.filter((o) => o.op === "line" && o.colour === COL_MISTAKE)
+      after.recording.ops.filter((o) => o.op === "line" && o.color === COL_MISTAKE)
         .length,
     ).toBe(0);
     expect(
-      after.recording.ops.filter((o) => o.op === "line" && o.colour === COL_FOREGROUND)
+      after.recording.ops.filter((o) => o.op === "line" && o.color === COL_FOREGROUND)
         .length,
     ).toBe(loop.length);
   });
@@ -341,7 +340,7 @@ describe("Loopy render scenarios: clue-position cache", () => {
     // that cost Flip three iterations.
     const { p, id, state } = board("squares", 0, 5, 5);
     const g = state.grid;
-    const palette = loopyGame.colours(DEFAULT_BACKGROUND);
+    const palette = loopyGame.colors(DEFAULT_BACKGROUND);
 
     const midend = new Midend(loopyGame);
     expect(midend.newGameFromId(id)).toBeUndefined();
@@ -371,7 +370,7 @@ describe("Loopy render scenarios: clue-position cache", () => {
     const clued = [...state.clues.keys()].filter((i) => state.clues[i] >= 0);
     clued.forEach((face, k) => {
       const f = g.faces[face];
-      gridFindIncentre(f);
+      gridFindIncenter(f);
       expect(smallPos[k]).toEqual(screenPos(state, SMALL_TILE, f.ix, f.iy));
       expect(bigPos[k]).toEqual(screenPos(state, PREFERRED_TILE_SIZE, f.ix, f.iy));
     });

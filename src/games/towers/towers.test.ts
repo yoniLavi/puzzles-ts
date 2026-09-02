@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Towers (Skyscrapers) port.
+ * Behavioral tests for the Towers (Skyscrapers) port.
  *
  * Tier 1 — pure logic: params/desc codecs, the clue geometry, generator
  * quality (seeded; solvable, unique, correctly graded), move transitions,
@@ -392,7 +392,7 @@ function polygonCount(rec: RecordingDrawing): number {
 
 describe("towers sticky pencil mode", () => {
   const ts = 32;
-  // Click the centre of cell (cx, cy). 2D hit-testing (no 3D retargeting).
+  // Click the center of cell (cx, cy). 2D hit-testing (no 3D retargeting).
   const center = (cx: number, cy: number) => ({
     x: coord(cx, ts) + Math.floor(ts / 2),
     y: coord(cy, ts) + Math.floor(ts / 2),
@@ -462,7 +462,7 @@ describe("towers sticky pencil mode", () => {
 describe("towers render", () => {
   it("draws the pencil-mode indicator only while pencil mode is on", () => {
     const ts = towersGame.preferredTileSize ?? 48;
-    const palette = towersGame.colours(DEFAULT_BACKGROUND);
+    const palette = towersGame.colors(DEFAULT_BACKGROUND);
     const render = (hpencil: boolean): RecordingDrawing => {
       const st = newState(RENDER.p, RENDER.desc);
       const ui = newUi(st);
@@ -493,7 +493,7 @@ describe("towers render", () => {
 
   it("the 2D appearance omits the tower-face polygons", () => {
     const ts = towersGame.preferredTileSize ?? 48;
-    const palette = towersGame.colours(DEFAULT_BACKGROUND);
+    const palette = towersGame.colors(DEFAULT_BACKGROUND);
 
     const render3d = (threeD: boolean): RecordingDrawing => {
       const st = newState(RENDER.p, RENDER.desc);
@@ -534,7 +534,7 @@ describe("towers render", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBeGreaterThan(0);
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_ERROR)).toBe(
       true,
     );
   });
@@ -555,7 +555,7 @@ describe("towers render", () => {
       { type: "set", x: empty % w, y: (empty / w) | 0, n: wrong, pencil: false },
     ]);
 
-    const palette = towersGame.colours(DEFAULT_BACKGROUND);
+    const palette = towersGame.colors(DEFAULT_BACKGROUND);
     // First paint: the wrong tower is drawn, no mistake overlay yet.
     me.redraw(new RecordingDrawing(palette));
     // Now Check & Save: the offending cell's tile is unchanged from the paint
@@ -563,7 +563,7 @@ describe("towers render", () => {
     expect(me.findMistakes()).toBeGreaterThan(0);
     const after = new RecordingDrawing(palette);
     me.redraw(after);
-    expect(after.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(true);
+    expect(after.ops.some((o) => o.op === "line" && o.color === COL_ERROR)).toBe(true);
   });
 
   it("the mistake overlay marks a wrong tower in COL_ERROR", () => {
@@ -586,7 +586,7 @@ describe("towers render", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBeGreaterThan(0);
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_ERROR)).toBe(
       true,
     );
   });

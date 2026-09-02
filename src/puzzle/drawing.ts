@@ -58,7 +58,7 @@ export class Drawing implements GameDrawing<Blitter> {
 
   /**
    * Install the color palette, which must be CSS color strings
-   * in the same order as the game's `colours()` return.
+   * in the same order as the game's `colors()` return.
    * (Does not redraw anything already on the canvas.)
    * Returns true if an already set palette was replaced.
    */
@@ -113,7 +113,7 @@ export class Drawing implements GameDrawing<Blitter> {
   drawText(
     { x, y }: Point,
     { align, baseline, fontType, size }: DrawTextOptions,
-    colour: number,
+    color: number,
     text: string,
   ): void {
     if (size < 1) {
@@ -146,20 +146,20 @@ export class Drawing implements GameDrawing<Blitter> {
     } else {
       this.context.textBaseline = baseline;
     }
-    this.setUpContext({ fillColor: colour });
+    this.setUpContext({ fillColor: color });
     this.context.fillText(text, x, y);
   }
 
-  drawRect({ x, y, w, h }: Rect, colour: number): void {
+  drawRect({ x, y, w, h }: Rect, color: number): void {
     if (w < 1 || h < 1) {
       // console.warn(`Drawing.drawRect ignoring w=${w} h=${h}`);
       return;
     }
-    this.setUpContext({ fillColor: colour, strokeColor: colour, lineWidth: 1 });
+    this.setUpContext({ fillColor: color, strokeColor: color, lineWidth: 1 });
     this.context.fillRect(x, y, w, h);
   }
 
-  drawLine(p1: Point, p2: Point, colour: number, thickness: number): void {
+  drawLine(p1: Point, p2: Point, color: number, thickness: number): void {
     if (thickness <= 0) {
       // console.warn(`Drawing.drawLine ignoring thickness=${thickness}`);
       return;
@@ -168,14 +168,14 @@ export class Drawing implements GameDrawing<Blitter> {
     // Drawing API points are pixel center; canvas is pixel top left.
     this.context.moveTo(p1.x + 0.5, p1.y + 0.5);
     this.context.lineTo(p2.x + 0.5, p2.y + 0.5);
-    this.setUpContext({ strokeColor: colour, fillColor: colour, lineWidth: thickness });
+    this.setUpContext({ strokeColor: color, fillColor: color, lineWidth: thickness });
     this.context.stroke();
     // Draw the pixel at each end of the line (copied from upstream's emcclib.js).
     this.context.fillRect(p1.x, p1.y, 1, 1);
     this.context.fillRect(p2.x, p2.y, 1, 1);
   }
 
-  drawPolygon(coords: Point[], fillcolour: number, outlinecolour: number): void {
+  drawPolygon(coords: Point[], fillcolor: number, outlinecolor: number): void {
     // Drawing API points are pixel center; canvas is pixel top left.
     this.context.beginPath();
     this.context.moveTo(coords[0].x + 0.5, coords[0].y + 0.5);
@@ -184,10 +184,10 @@ export class Drawing implements GameDrawing<Blitter> {
     }
     this.context.closePath();
     this.setUpContext({
-      strokeColor: outlinecolour,
-      fillColor: fillcolour >= 0 ? fillcolour : undefined,
+      strokeColor: outlinecolor,
+      fillColor: fillcolor >= 0 ? fillcolor : undefined,
     });
-    if (fillcolour >= 0) {
+    if (fillcolor >= 0) {
       this.context.fill();
     }
     this.context.stroke();
@@ -196,8 +196,8 @@ export class Drawing implements GameDrawing<Blitter> {
   drawCircle(
     { x: cx, y: cy }: Point,
     radius: number,
-    fillcolour: number,
-    outlinecolour: number,
+    fillcolor: number,
+    outlinecolor: number,
   ): void {
     if (radius <= 0) {
       // console.warn(`Drawing.drawCircle ignoring radius=${radius}`);
@@ -207,10 +207,10 @@ export class Drawing implements GameDrawing<Blitter> {
     this.context.arc(cx + 0.5, cy + 0.5, radius, 0, Math.PI * 2, false);
     this.context.closePath();
     this.setUpContext({
-      strokeColor: outlinecolour,
-      fillColor: fillcolour >= 0 ? fillcolour : undefined,
+      strokeColor: outlinecolor,
+      fillColor: fillcolor >= 0 ? fillcolor : undefined,
     });
-    if (fillcolour >= 0) {
+    if (fillcolor >= 0) {
       this.context.fill();
     }
     this.context.stroke();

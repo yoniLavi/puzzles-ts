@@ -171,7 +171,7 @@ describe("the description codec", () => {
     // `v` is a wall to the right of its tile, `h` a wall below it.
     const { barriers } = parseWireDesc(2, 2, "1v234");
     expect(barriers[0] & R).toBeTruthy();
-    expect(barriers[1] & L).toBeTruthy(); // its neighbour sees the same wall
+    expect(barriers[1] & L).toBeTruthy(); // its neighbor sees the same wall
     expect(barriers[0] & D).toBeFalsy();
   });
 
@@ -255,7 +255,7 @@ describe("growSpanningTree", () => {
     for (const seed of ["a", "b", "c"]) {
       const tiles = grow(w, h, wrapping, `${seed}-${w}x${h}`);
 
-      // Every arm is matched by its neighbour's facing arm. Without this the
+      // Every arm is matched by its neighbor's facing arm. Without this the
       // counts below would be meaningless — half an edge is not an edge.
       let arms = 0;
       for (let y = 0; y < h; y++) {
@@ -347,8 +347,8 @@ describe("computeActive", () => {
   });
 
   it("needs the connection to exist from BOTH sides", () => {
-    // The neighbour must point back. Note the discriminating case is a
-    // neighbour wired to *nothing*: if the middle tile were merely wired the
+    // The neighbor must point back. Note the discriminating case is a
+    // neighbor wired to *nothing*: if the middle tile were merely wired the
     // wrong way (`L` only), the outward check on the far side would stop the
     // flood anyway and the test would pass with the both-sides check deleted.
     const { barriers } = row();

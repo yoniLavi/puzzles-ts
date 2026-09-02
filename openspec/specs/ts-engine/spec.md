@@ -5,9 +5,9 @@ The native-TypeScript puzzle engine: the single idiomatic `Game`
 interface every port implements, the `Midend` that orchestrates a game
 behind the existing Comlink surface, the runtime per-game registry
 that is the hybrid TS-vs-C/WASM decision point, the clean TS-native
-save format, and the behavioural (corpus-free) test discipline for the
+save format, and the behavioral (corpus-free) test discipline for the
 engine. This is the keystone the `ts-migration` doctrine mandates
-before any game port; it realises that doctrine's "midend precedes
+before any game port; it realizes that doctrine's "midend precedes
 game ports" and "per-game hybrid" requirements.
 
 ## Requirements
@@ -54,7 +54,7 @@ and draw state, the engine random source (the retained bit-identical
 
 The midend SHALL provide the app-facing Comlink surface (new game, new game from
 ID, restart, process key/mouse, undo, redo, solve, redraw, presets, status,
-serialise/deserialise, timer) and SHALL emit the change-notification shapes the
+serialize/deserialize, timer) and SHALL emit the change-notification shapes the
 app consumes. The app shell, screen, dialog, drawing-canvas, and store code SHALL
 NOT require changes to drive a game.
 
@@ -86,8 +86,8 @@ from the registry is **unplayable**, not delegated. The worker SHALL fail
 explicitly for an unregistered id rather than falling through.
 
 Because the registry is now the *only* answer to "which games exist", it SHALL
-agree with the catalog exactly, in both directions — every catalogued game is
-registered, and every registered game is catalogued — and that SHALL be asserted
+agree with the catalog exactly, in both directions — every cataloged game is
+registered, and every registered game is cataloged — and that SHALL be asserted
 by a test rather than left to discipline.
 
 #### Scenario: An unregistered puzzle id fails explicitly
@@ -99,12 +99,12 @@ by a test rather than left to discipline.
 #### Scenario: Catalog and registry cannot drift
 
 - **WHEN** a game is added to the catalog but not registered, or registered but
-  not catalogued
+  not cataloged
 - **THEN** the gate fails
 
 ### Requirement: The engine uses a clean TS-native save format
 
-The midend SHALL serialise and restore a game using a clean,
+The midend SHALL serialize and restore a game using a clean,
 versioned TypeScript-native format (a version-tagged envelope carrying
 the puzzle id, parameters, game id, the move list, timer elapsed, and
 checkpoints). Restoration SHALL reconstruct history by replaying the
@@ -135,7 +135,7 @@ older one whose fields are missing or malformed — SHALL still be rejected.
 
 #### Scenario: C-format save is not required to load
 
-- **WHEN** a payload produced by the pre-pivot C-serialisation path is
+- **WHEN** a payload produced by the pre-pivot C-serialization path is
   presented to the TS midend
 - **THEN** the midend is NOT required to load it
 - **AND** this is not treated as a defect
@@ -153,9 +153,9 @@ older one whose fields are missing or malformed — SHALL still be rejected.
   version whose fields are missing or of the wrong type
 - **THEN** decoding fails
 
-### Requirement: Midend correctness is established by behavioural tests, not a corpus
+### Requirement: Midend correctness is established by behavioral tests, not a corpus
 
-Midend correctness SHALL be established by behavioural and property
+Midend correctness SHALL be established by behavioral and property
 tests driven by a small in-repo fake `Game`, NOT by a byte-identical
 characterization corpus. The suite SHALL cover undo/redo invariants,
 history truncation after a move following an undo, status transitions,
@@ -166,33 +166,33 @@ and save/restore round-tripping. This applies the `ts-migration`
 #### Scenario: The midend is validated without a golden corpus
 
 - **WHEN** the engine layer is implemented
-- **THEN** its tests drive a fake `Game` and assert behavioural
+- **THEN** its tests drive a fake `Game` and assert behavioral
   invariants (including `undo` after a move restoring the prior state)
 - **AND** no characterization corpus captured from the C build is
   required for the midend to be accepted
 
-### Requirement: The `Game` drawing, colour, and input-feedback contract is fully specified
+### Requirement: The `Game` drawing, color, and input-feedback contract is fully specified
 
 The engine SHALL fully specify the drawing surface, UI-only input
-feedback, and colour derivation that the keystone left as a minimal
+feedback, and color derivation that the keystone left as a minimal
 placeholder for the first real port to fix, as follows.
 
 - `GameDrawing` SHALL expose the full puzzle drawing API — filled
   rectangle, line, polygon, circle, text, clip/unclip,
   start/end-draw, draw-update, and the blitter save/restore quartet —
   with the same coordinate and palette-index semantics the existing
-  canvas drawing surface already honours. The existing canvas
+  canvas drawing surface already honors. The existing canvas
   `Drawing` SHALL satisfy `GameDrawing` structurally without
   modification. The engine SHALL NOT impose a full-vs-incremental
-  redraw policy; redraw optimisation (per-element diffing,
+  redraw policy; redraw optimization (per-element diffing,
   first-draw-only setup) is the game's own concern, as in upstream.
 - `interpretMove` SHALL be able to report a UI-only change (cursor or
   other UI state changed in place) distinctly from "a move" and from
   "nothing happened". The midend SHALL, on a UI-only result, redraw
   and notify without creating a history entry; on "nothing happened"
   it SHALL do nothing; on a move it SHALL apply it to history.
-- A game's `colours` SHALL receive the frontend default background
-  colour, and the engine SHALL thread that default from the worker
+- A game's `colors` SHALL receive the frontend default background
+  color, and the engine SHALL thread that default from the worker
   surface through the midend to the game, so a game can derive its
   palette from the host background exactly as upstream's
   `game_colours` does.
@@ -214,7 +214,7 @@ placeholder for the first real port to fix, as follows.
 
 #### Scenario: Palette is derived from the host background
 
-- **WHEN** the app requests the colour palette with its default
+- **WHEN** the app requests the color palette with its default
   background
 - **THEN** the game receives that background and returns a palette
   derived from it (not a hardcoded background)
@@ -257,7 +257,7 @@ marker for "this game is TS-served" rather than inferring it, and the
 catalog generator SHALL union TS-ported games with the wasm-built
 games.
 
-#### Scenario: Flip is catalogued but has no wasm
+#### Scenario: Flip is cataloged but has no wasm
 
 - **WHEN** the project is built after Flip's C source is deleted
 - **THEN** `catalog.json` and `puzzleIds` still include `flip` with
@@ -313,7 +313,7 @@ in its `!ds.started` branch and re-fired on a fresh drawstate.
   invoke this from `resizeDrawing` immediately after `Drawing.resize`.
 
 - `Midend.forceRedraw(dr)` — palette or font replacement does not
-  clear the canvas but invalidates the colour/font choices baked
+  clear the canvas but invalidates the color/font choices baked
   into cached tiles. `forceRedraw` SHALL discard the drawstate (the
   same effect as `canvasCleared`) and immediately call `redraw(dr)`;
   the game's `!ds.started` branch paints a fresh frame over the
@@ -390,14 +390,14 @@ the bg + one-time setup via the game's first-paint branch.
 - **AND** there is no framework-level background fill, clear, or
   full-window overpaint
 
-### Requirement: The engine provides a shared colour-mkhighlight helper
+### Requirement: The engine provides a shared color-mkhighlight helper
 
-The engine SHALL provide `mkhighlightBackground(bg: Colour): Colour` in `src/engine/colour/colour-mkhighlight.ts`, implementing the `misc.c` `game_mkhighlight_specific` background-adjustment logic with the near-white epsilon fix. Every white/black-tile game SHALL be able to import and use this instead of re-deriving it locally.
+The engine SHALL provide `mkhighlightBackground(bg: Color): Color` in `src/engine/color/color-mkhighlight.ts`, implementing the `misc.c` `game_mkhighlight_specific` background-adjustment logic with the near-white epsilon fix. Every white/black-tile game SHALL be able to import and use this instead of re-deriving it locally.
 
 #### Scenario: A game imports the shared mkhighlightBackground
 
-- **WHEN** a game's `colours()` method receives a default background that is near-white
-- **THEN** `mkhighlightBackground` shifts the background away from pure white so that a pure-white tile colour is visibly brighter
+- **WHEN** a game's `colors()` method receives a default background that is near-white
+- **THEN** `mkhighlightBackground` shifts the background away from pure white so that a pure-white tile color is visibly brighter
 - **AND** the game does not contain a local copy of the highlight logic
 
 ### Requirement: The engine provides a shared disjoint-set forest (dsf)
@@ -470,18 +470,18 @@ manual flow ("clear this one, then the rest" stays on screen through its legs)
 and the auto-play flow (the legs animate back-to-back as one multi-part move)
 consistent across every game whose hints group naturally.
 
-**Hint-authoring convention — element-type colour legend.** When a game's hint
+**Hint-authoring convention — element-type color legend.** When a game's hint
 narration names **more than one distinct kind of board element** (e.g. a filled
 cell as premise versus the forced cell as conclusion, or a clue versus a
 region), the game's `redraw` SHALL distinguish those types with a **stable
-per-game colour legend**: each element type is assigned one highlight colour used
+per-game color legend**: each element type is assigned one highlight color used
 consistently across all that game's hints (so the legend is learnable), and only
-the types a given hint actually names are highlighted. Each legend colour SHALL
-be paired with a **non-colour cue** (ring versus shade versus fill, the drawn
-digit/clue, or position) so the type mapping survives for colourblind players —
-colour SHALL NOT be the sole carrier, and colour names SHALL NOT appear in the
+the types a given hint actually names are highlighted. Each legend color SHALL
+be paired with a **non-color cue** (ring versus shade versus fill, the drawn
+digit/clue, or position) so the type mapping survives for colorblind players —
+color SHALL NOT be the sole carrier, and color names SHALL NOT appear in the
 narration text. This convention is orthogonal to "equivalent moves share a
-colour": equivalent *forced moves* still share the single target colour; the
+color": equivalent *forced moves* still share the single target color; the
 legend governs *premise/element types*.
 
 A non-deductive game (no technique to teach) MAY instead derive its plan from
@@ -490,21 +490,21 @@ player to the unique solution. Such a game SHOULD prefer the `aux`-derived plan
 when `aux` is present (guaranteeing the plan completes) and MAY fall back to a
 local heuristic when it is absent.
 
-#### Scenario: A hint naming multiple element types colours them by a stable legend
+#### Scenario: A hint naming multiple element types colors them by a stable legend
 
 - **WHEN** a game's displayed hint step narrates two distinct board-element
   types (for example a cited filled/decided premise cell and the forced target
   cell)
-- **THEN** `redraw` highlights each type in its own legend colour, paired with a
-  distinguishing non-colour cue, rather than rendering both in the single target
-  colour
+- **THEN** `redraw` highlights each type in its own legend color, paired with a
+  distinguishing non-color cue, rather than rendering both in the single target
+  color
 
-#### Scenario: A legend colour is the same across different hints of one game
+#### Scenario: A legend color is the same across different hints of one game
 
 - **WHEN** two different hints of the same game each name the same element type
   (for example "a shaded square" appears as a premise in two different
   deductions)
-- **THEN** that element type is drawn in the same legend colour in both hints
+- **THEN** that element type is drawn in the same legend color in both hints
 
 #### Scenario: Requesting a hint from the midend
 
@@ -525,12 +525,12 @@ The engine SHALL provide button code constants (`LEFT_BUTTON`, `RIGHT_BUTTON`, `
 
 ### Requirement: The engine provides a full mkhighlight palette helper
 
-The engine SHALL provide `mkhighlight(bg: Colour): { background: Colour; highlight: Colour; lowlight: Colour }` in `src/engine/colour/colour-mkhighlight.ts`, implementing the full `misc.c` `game_mkhighlight` derivation: the background is adjusted via `mkhighlightBackground`, then the highlight is shifted from the adjusted background toward white by K = sqrt(3)/6 and the lowlight toward black by K. Per upstream, when the background is within K of white the highlight SHALL saturate to pure white, and when within K of black the lowlight SHALL saturate to pure black. Games needing the standard bg/highlight/lowlight trio SHALL destructure this helper instead of re-deriving the colours locally.
+The engine SHALL provide `mkhighlight(bg: Color): { background: Color; highlight: Color; lowlight: Color }` in `src/engine/color/color-mkhighlight.ts`, implementing the full `misc.c` `game_mkhighlight` derivation: the background is adjusted via `mkhighlightBackground`, then the highlight is shifted from the adjusted background toward white by K = sqrt(3)/6 and the lowlight toward black by K. Per upstream, when the background is within K of white the highlight SHALL saturate to pure white, and when within K of black the lowlight SHALL saturate to pure black. Games needing the standard bg/highlight/lowlight trio SHALL destructure this helper instead of re-deriving the colors locally.
 
 #### Scenario: A game derives its palette from the shared helper
 
-- **WHEN** a game's `colours()` method calls `mkhighlight(defaultBackground)`
-- **THEN** it receives background, highlight, and lowlight colours matching upstream `game_mkhighlight`, with the highlight strictly brighter and the lowlight strictly darker than the background
+- **WHEN** a game's `colors()` method calls `mkhighlight(defaultBackground)`
+- **THEN** it receives background, highlight, and lowlight colors matching upstream `game_mkhighlight`, with the highlight strictly brighter and the lowlight strictly darker than the background
 - **AND** the game contains no local copy of the highlight/lowlight math
 
 #### Scenario: Light host backgrounds get a pure-white highlight
@@ -701,7 +701,7 @@ cursors — and for whatever a game does *while* the cursor moves.
 
 - **WHEN** the engine ships `gridCursorMove`
 - **THEN** the former local clamp helpers (`fifteen`'s `moveCursorClamped`,
-  `sixteen`'s `moveCursor`) are deleted in favour of it
+  `sixteen`'s `moveCursor`) are deleted in favor of it
 - **AND** no positional-cursor game carries its own bounded/toroidal clamp copy
 
 ### Requirement: The midend reconciles persisted Ui across state transitions
@@ -743,26 +743,26 @@ The engine SHALL provide `drawRecessedBorder(dr, bounds, inset, highlight,
 lowlight)` in `src/engine/draw.ts`, where `bounds` is the playfield's
 outer pixel box (`{ left, top, right, bottom }`, edges inclusive), `inset` is the
 bevel depth (the tile size), and `highlight`/`lowlight` are the two palette
-colours. It SHALL draw the upstream two-pentagon recessed bevel — a top-right
+colors. It SHALL draw the upstream two-pentagon recessed bevel — a top-right
 highlight wedge and a bottom-left lowlight wedge — in one canonical winding.
-Games that draw a bevelled frame SHALL call this helper, each supplying its own
+Games that draw a beveled frame SHALL call this helper, each supplying its own
 edge derivation, instead of re-deriving the polygons locally. Per-game extras
 that are not the bevel (e.g. a separator rectangle just outside the grid) SHALL
 remain at the call site.
 
-#### Scenario: A bevelled game draws its frame through the helper
+#### Scenario: A beveled game draws its frame through the helper
 
 - **WHEN** a game with a recessed border (e.g. Fifteen, Sixteen, Twiddle,
   Samegame, Flood) draws its first frame
 - **THEN** it calls `drawRecessedBorder` with its computed bounds, tile size, and
-  highlight/lowlight colours
+  highlight/lowlight colors
 - **AND** the two filled pentagons cover the same pixels the game's prior private
   copy did (the lowlight wedge is winding-independent, so traversal order does not
   change the filled region)
 
 ### Requirement: The engine provides a shared rectangle-outline drawing helper
 
-The engine SHALL provide `drawRectOutline(dr, x, y, w, h, colour)` in
+The engine SHALL provide `drawRectOutline(dr, x, y, w, h, color)` in
 `src/engine/draw.ts`, drawing a 1px-thick rectangle border via four lines
 using the upstream-faithful **inclusive** convention (corners `(x,y)` to
 `(x+w−1, y+h−1)`), matching upstream `draw_rect_outline`. Games drawing a
@@ -771,7 +771,7 @@ of carrying a private copy or inlining the four `drawLine` calls.
 
 #### Scenario: A caller draws an inclusive-convention outline
 
-- **WHEN** a game calls `drawRectOutline(dr, x, y, w, h, colour)`
+- **WHEN** a game calls `drawRectOutline(dr, x, y, w, h, color)`
 - **THEN** the border spans `(x, y)`..`(x+w−1, y+h−1)` inclusive
 - **AND** a caller that previously used an exclusive `x+w` convention adjusts its
   width/height argument so its drawn pixels are unchanged
@@ -857,7 +857,7 @@ single plan-computation chokepoint.
 
 - **WHEN** the board has a mistake and the game's `hint()` refuses
 - **THEN** the midend computes and displays the mistake overlay (the same one
-  Check & Save populates) so the offending cells render in the mistake colour
+  Check & Save populates) so the offending cells render in the mistake color
 - **AND** the refusal message is still returned to the caller
 
 #### Scenario: A refusal unrelated to mistakes highlights nothing
@@ -915,7 +915,7 @@ continues parsing any trailing suffix from `next`.
 ### Requirement: The engine supports per-game user preferences
 
 The engine SHALL support per-game user preferences, the idiomatic-TS
-realisation of upstream's `get_prefs`/`set_prefs`. The `Game` interface
+realization of upstream's `get_prefs`/`set_prefs`. The `Game` interface
 SHALL define an **optional** declarative `prefs` member: an ordered list
 of preference items, each carrying a stable keyword (`kw`), a
 human-readable `name`, a discriminated `type` (`"boolean"` or
@@ -924,7 +924,7 @@ and `get`/`set` accessors that read and write the preference's value on
 the game's **`Ui`** value (preferences live on the `Ui`, exactly as
 upstream stores them on `game_ui`, so `interpretMove` and `redraw` see
 them). A game with no preferences SHALL omit `prefs`, and the engine
-SHALL report an empty preferences set for it — the correct behaviour for
+SHALL report an empty preferences set for it — the correct behavior for
 the four-plus existing ports, not a stub.
 
 The `Midend` (and the `EngineCore` surface it implements) SHALL expose
@@ -948,7 +948,7 @@ across new games; this reproduces that effect). Preferences SHALL NOT be
 written into the save file (they are app-level, persisted per puzzle by
 the existing settings store). The engine SHALL NOT carry a binary
 `savePreferences`/`loadPreferences` surface. It existed only to mirror
-upstream's `midend_serialise_prefs` across the C/WASM boundary; the app has
+upstream's `midend_serialize_prefs` across the C/WASM boundary; the app has
 never used it for persistence, and the TS adapter answered it with an empty
 buffer — a method that silently returned nothing rather than refusing, which is
 worse than its absence. If an import/export feature is ever wanted it SHALL
@@ -1054,7 +1054,7 @@ The mark-all action SHALL be **adaptive** for a game whose cells have uniqueness
 regions (one that supplies a per-game region provider): if any empty cell has **no
 pencil notes at all** the action fills every note-less empty cell with all candidates
 (as before); otherwise (every empty cell already carries notes) the action SHALL
-instead **remove the obvious candidates** — every pencilled value equal to a value
+instead **remove the obvious candidates** — every penciled value equal to a value
 already *placed* in one of that cell's uniqueness regions (row/column, plus sub-block
 and X-diagonal where the game has them; a Keen arithmetic cage is NOT a uniqueness
 region). "Obvious" SHALL be judged only against placed values, never inferred from
@@ -1070,7 +1070,7 @@ all candidates minus the values placed in its regions" — there SHALL be no fil
 toggle, and a cleaned board SHALL NOT silently re-fill. A clean SHALL NOT empty a cell of its last note (a cell whose every
 candidate is region-eliminated occurs only on an already-mistaken board; leaving its last
 note keeps idempotency unconditional). A game without a row/column uniqueness model (e.g.
-Undead) SHALL keep the fill-only behaviour.
+Undead) SHALL keep the fill-only behavior.
 
 #### Scenario: A pencil-mark game shows the control and fills candidates
 
@@ -1083,7 +1083,7 @@ Undead) SHALL keep the fill-only behaviour.
 
 - **WHEN** every empty cell is already fully noted and the player activates the
   mark-all control on a game with uniqueness regions
-- **THEN** the action emits a `pencilStrike` that removes exactly the pencilled
+- **THEN** the action emits a `pencilStrike` that removes exactly the penciled
   values already placed in each cell's row/column (and block/diagonal where the game
   has them), leaving every still-possible candidate, and replaying the move
   reproduces the cleaned board
@@ -1098,7 +1098,7 @@ Undead) SHALL keep the fill-only behaviour.
 
 #### Scenario: An arithmetic cage is not a uniqueness region
 
-- **WHEN** the game is Keen and a cell's pencilled value also appears in its cage but
+- **WHEN** the game is Keen and a cell's penciled value also appears in its cage but
   not in its row or column
 - **THEN** the cleanup does NOT remove that candidate (the value is still legal under
   the cage's arithmetic constraint)
@@ -1123,7 +1123,7 @@ Undead) SHALL keep the fill-only behaviour.
 
 `midend.executeHint(hideAfter?)` SHALL accept an optional `hideAfter` flag
 (default false, threaded through `PuzzleEngineSurface` and the worker adapter).
-When false the behaviour is unchanged — the executed step stays displayed
+When false the behavior is unchanged — the executed step stays displayed
 through its animation and, on settle, the plan advances and the next step is
 **displayed as the auto-play preview**. When `hideAfter` is true the executed
 step still stays displayed through its animation, but on settle the plan
@@ -1260,7 +1260,7 @@ a step only by following it or by an explicit apply action. `Game.hint` SHALL be
 pure on its `state` argument, and the act of showing a hint SHALL leave every
 board value — including pencil notes — untouched. A displayed highlight that
 acts on a board element (e.g. a struck candidate) SHALL be drawn legibly against
-its cell, never in the same colour as the cell's own background fill, so the
+its cell, never in the same color as the cell's own background fill, so the
 element it references remains visible rather than appearing already-resolved.
 
 #### Scenario: Showing a hint leaves the board unchanged
@@ -1268,7 +1268,7 @@ element it references remains visible rather than appearing already-resolved.
 - **WHEN** the player requests a hint (the show, not an apply)
 - **THEN** the game state is byte-for-byte unchanged — only highlighting is added
 - **AND** a struck/acted-on candidate remains visible (its highlight contrasts
-  with the cell background), not hidden behind a same-colour fill
+  with the cell background), not hidden behind a same-color fill
 
 #### Scenario: A kept plan never shows an already-removed candidate
 
@@ -1364,11 +1364,11 @@ the reusable mechanics, the game owns meaning and control flow.
 The placement-classifier in `src/engine/latin-hint.ts` (which re-derives whether a
 recorded generic `single` placement is a naked single, a hidden single, or a forced
 single — see the "Latin-family hints distinguish naked, hidden and forced singles"
-requirement) SHALL generalise to an arbitrary **region list**, so a game reasoning over
+requirement) SHALL generalize to an arbitrary **region list**, so a game reasoning over
 sub-blocks and diagonals (Solo) classifies a hidden single in any of its regions, while
 the row/column games pass only `[row, column]` and are unchanged.
 
-Routing a game's hint through the shared module SHALL be behaviour-preserving: the
+Routing a game's hint through the shared module SHALL be behavior-preserving: the
 game's existing hint requirement and its observable narration, journeys, keep-track
 verdicts, resume guarantee and rendered frames are unchanged. The bespoke and shared
 solvers and the generator/solve paths are untouched — the shared abstraction is
@@ -1409,7 +1409,7 @@ SHALL return `game.requestKeys(params)` for the current params when the hook is
 present and an empty list when it is absent. The worker adapter SHALL forward this
 result rather than returning a fixed empty list, so a TS-served game shows the same
 keypad it showed on the C/WASM path. A game without the hook SHALL show no keypad
-(an empty list), unchanged from prior behaviour.
+(an empty list), unchanged from prior behavior.
 
 #### Scenario: A keypad game's labels are served on the TS path
 
@@ -1441,7 +1441,7 @@ pencil note in one of its regions (subsuming the per-game `basicLatinStrike` /
 strikes from its regions. The placement classifier (`classifyPlacementInRegions`) SHALL
 consume the same provider.
 
-Routing a game's hint through the shared region helper SHALL be behaviour-preserving: the
+Routing a game's hint through the shared region helper SHALL be behavior-preserving: the
 game's observable narration, journeys, keep-track verdicts, resume guarantee and rendered
 frames are unchanged.
 
@@ -1468,7 +1468,7 @@ preference (defaulting off, per the games' default-auto-pencil-off preference), 
 plan via the game's `buildSteps`, refuse when the
 plan is empty, and otherwise return the steps. The standard refusal and empty-plan
 messages SHALL live in this one place. A game's `hint` SHALL be a one-line call passing
-its own `findMistakes` and `buildSteps`; routing through it SHALL be behaviour-preserving.
+its own `findMistakes` and `buildSteps`; routing through it SHALL be behavior-preserving.
 
 #### Scenario: A migrated game's hint refusals and success are unchanged
 
@@ -1485,7 +1485,7 @@ The engine SHALL provide a shared `winFlash(from, to, flashTime)` helper returni
 cheat (`!from.completed && to.completed && !from.cheated && !to.cheated`) and `0`
 otherwise, reading the common `completed` / `cheated` state fields structurally. A game
 whose `flashLength` is this canonical shape SHALL delegate to it; a game with bespoke flash
-timing keeps its own. Delegation SHALL be behaviour-preserving.
+timing keeps its own. Delegation SHALL be behavior-preserving.
 
 #### Scenario: A fresh solve flashes; other transitions do not
 
@@ -1500,7 +1500,7 @@ provide a `narrateLatinReason(reason, ns)` that renders the *generic* Latin dedu
 reasons whose narration is identical across the **row/column** Latin games (`single`,
 `hiddenSingle`, `forcedSingle`, `dup`, `set`, `forcing`). A row/column game (Keen, Unequal)
 SHALL delegate those arms to the shared narrator and keep its game-specific arms (cages,
-inequality/adjacency clues) local. Delegation SHALL be behaviour-preserving — the rendered
+inequality/adjacency clues) local. Delegation SHALL be behavior-preserving — the rendered
 narration strings are byte-identical to before, asserted by each game's hint suite.
 
 A game whose generic-arm wording legitimately diverges SHALL keep its own `narrate` rather
@@ -1523,7 +1523,7 @@ override surface made a shared narrator less readable — both are conforming ou
 
 A candidate-elimination game's hint plan SHALL, once pencil notes first exist on the working
 board — whether the plan just populated them or the board was already noted — emit one
-bulk **obvious-candidate cleanup** step that removes every pencilled value already placed in
+bulk **obvious-candidate cleanup** step that removes every penciled value already placed in
 one of its cell's uniqueness regions, as the adaptive "fill all pencil marks" control's
 second press does (`obviousCandidateMarks` over the game's `regionsOf`). The cleanup SHALL be
 a single `pencilStrike` step (the marks baked into it at plan time), SHALL be flagged
@@ -1587,7 +1587,7 @@ menu label, not the form) and of the preferences surface.
 
 - **WHEN** the "Custom type…" dialog is opened for a TS game that declares
   `paramConfig` (e.g. width/height)
-- **THEN** the form shows a field per descriptor initialised from the current
+- **THEN** the form shows a field per descriptor initialized from the current
   params
 - **AND** submitting valid values validates them with the game's `validateParams`
   and generates a new game at those params
@@ -1601,7 +1601,7 @@ menu label, not the form) and of the preferences surface.
 #### Scenario: A game without paramConfig keeps an empty dialog
 
 - **WHEN** a TS game declares no `paramConfig`
-- **THEN** its custom dialog is empty and no fields are shown (unchanged behaviour)
+- **THEN** its custom dialog is empty and no fields are shown (unchanged behavior)
 
 ### Requirement: A shared deduction-fixpoint scaffold
 
@@ -1615,7 +1615,7 @@ tier's needed rung), and an optional recorder that, when present, gates every
 reason allocation so the generation path stays byte-for-byte unchanged and, when
 absent, runs unguarded. The runner SHALL tick a step budget once per iteration
 **only** on the recording (hint) path, so a non-terminating fixpoint throws a
-labelled error while the generator runs unbudgeted.
+labeled error while the generator runs unbudgeted.
 
 The technique rungs themselves remain per-game (each game's deductions are its
 own); only the loop, cap, recorder-gating, and budget are shared. Games that
@@ -1628,13 +1628,13 @@ or verdicts.
 - **WHEN** a game's solver runs through the shared runner with no recorder
 - **THEN** it reaches the same solved/stuck verdict (and, where graded, the same
   difficulty) as before the extraction
-- **AND** its differential / behavioural regression suite stays green
+- **AND** its differential / behavioral regression suite stays green
 
 #### Scenario: The hint path records off the same runner
 
 - **WHEN** the same game runs the shared runner with a recorder on the hint path
 - **THEN** each firing is recorded with its technique and premise in solver order
-- **AND** a non-terminating fixpoint on the hint path throws a labelled
+- **AND** a non-terminating fixpoint on the hint path throws a labeled
   step-budget error rather than hanging
 
 ### Requirement: A hint step always names a technique — no un-narrated fallback
@@ -1676,7 +1676,7 @@ the reasoning is a **bounded run of individually glanceable steps**:
   **The order SHALL be drawn as an ordinal, not as a path.** A line or arrow
   between consecutive links asserts that each forces the next, which is true of
   some chains and false of others — measured at **34%** false for Clusters, whose
-  links are forced by their own neighbourhood rather than by their predecessor in
+  links are forced by their own neighborhood rather than by their predecessor in
   discovery order. One mark means one thing across the collection, so every game
   draws the weakest claim every chain can make: *this is the order they fall in*.
 
@@ -1759,7 +1759,7 @@ to the acted-on element by a bare deictic alone ("this cell", "this square",
 neither, and the reader must infer the mark-role convention before the sentence
 parses. The narration SHALL tie the acted-on element to the others by one of:
 
-- a **relation the code guarantees** — "its ringed red *neighbour*", "the shaded
+- a **relation the code guarantees** — "its ringed red *neighbor*", "the shaded
   brick *above*", "the end of the shaded run". A relation asserted in prose but
   not enforced in code is a false claim and is forbidden by the same rule that
   governs every other sentence a hint utters;
@@ -1773,10 +1773,10 @@ parses. The narration SHALL tie the acted-on element to the others by one of:
   same kind of thing, which is the general rule the three ties above are each an
   instance of.
 
-A narration SHALL NOT identify an element by its **colour**. Colour is never the
+A narration SHALL NOT identify an element by its **color**. Color is never the
 only cue available to a player: the palette is scheme-relative by construction,
 so a hue named in prose is wrong under the other scheme, and the sentence is
-unreadable to a colour-blind player. This holds even where the game's marks
+unreadable to a color-blind player. This holds even where the game's marks
 differ only by hue — in that case the *marks* need fixing, not the sentence.
 
 Where a step marks exactly one element, a bare deictic is correct and a
@@ -1800,11 +1800,11 @@ explanation and are exempt.
   guarantees, by a concrete value, or by distinct role words — rather than
   referring to the acted-on cell as "this cell" alone
 
-#### Scenario: The tie is never a colour name
+#### Scenario: The tie is never a color name
 
 - **WHEN** a narration must distinguish the acted-on element from another mark
-- **THEN** it does so without naming either element's colour, so the sentence
-  stays true under both colour schemes and to a reader who cannot distinguish
+- **THEN** it does so without naming either element's color, so the sentence
+  stays true under both color schemes and to a reader who cannot distinguish
   the hues
 
 #### Scenario: A single-mark step keeps its bare deictic
@@ -1856,8 +1856,8 @@ needed, while the walk that produces the verdict continues.
 
 - **WHEN** a hint step declares a position for each link of a chain
 - **THEN** those positions are exactly `1..n`, and the frame drawn for that step
-  paints every one of them in the ordinal's own colour
-- **AND** the check is made against the resolved colour rather than a palette
+  paints every one of them in the ordinal's own color
+- **AND** the check is made against the resolved color rather than a palette
   index or the bare glyph, since a candidate game already prints those digits as
   pencil marks
 
@@ -1896,8 +1896,8 @@ needed, while the walk that produces the verdict continues.
 
 The engine SHALL provide `src/engine/findloop.ts`, an idiomatic TS
 port of upstream `findloop.c` (Tarjan's bridge-finding algorithm, the
-non-recursive linked-list variant): `findLoops(nvertices, neighbours)`
-takes a neighbour callback `(vertex: number) => Iterable<number>` over an
+non-recursive linked-list variant): `findLoops(nvertices, neighbors)`
+takes a neighbor callback `(vertex: number) => Iterable<number>` over an
 undirected graph and returns `{ anyLoop, isLoopEdge(u, v),
 isBridge(u, v) }`, where an edge is a loop edge exactly when it is not a
 bridge (its removal would not disconnect its component) and `isBridge`
@@ -1917,7 +1917,7 @@ ported) SHALL consume this helper rather than re-rolling it.
 - **THEN** `anyLoop` is false and every edge is a bridge with correct
   vertex counts on each side
 
-### Requirement: Fit-to-window sizing honours user-size expansion
+### Requirement: Fit-to-window sizing honors user-size expansion
 
 `Midend.size(maxSize, isUserSize, dpr)` SHALL resolve the tile size as
 upstream `midend_size` does: the largest integer tile size whose
@@ -1949,7 +1949,7 @@ way to spotlight one item on the board.
 
 The `Game` interface SHALL define two optional hooks:
 
-- `reference(state, ui): ReferenceModel` — returns a plain, serialisable model of the
+- `reference(state, ui): ReferenceModel` — returns a plain, serializable model of the
   inventory. `ReferenceModel` SHALL be `{ items: ReferenceItem[]; selected: string | null;
   columns?: number }`, and `ReferenceItem` SHALL be `{ key: string; label: string; pips?:
   readonly number[]; status: "outstanding" | "placed" | "conflict" }`. `key` is a stable id;
@@ -1963,7 +1963,7 @@ attributes, and SHALL provide `getReference(): ReferenceModel | null` (returning
 `game.reference(state, ui)` or null) and `selectReference(key): void`. `selectReference`
 SHALL call `game.selectReference(this.ui, key)` and, on a `true` return, take the same
 repaint path as a `UI_UPDATE`: it SHALL NOT create a move, add an undo entry, alter the move
-log, or be serialised into a save. For an unported C/WASM game `hasReference` SHALL be false,
+log, or be serialized into a save. For an unported C/WASM game `hasReference` SHALL be false,
 `getReference()` SHALL return null, and `selectReference()` SHALL be a no-op.
 
 `hasReference`, `getReference`, and `selectReference` SHALL be part of the shared
@@ -2002,8 +2002,8 @@ in both layouts:
   app's short-landscape "horizontal" orientation — the panel SHALL dock beside the board
   (the board reflowing to make room), with no scrim over the board.
 - On a narrow viewport, **or** in the app's "horizontal" orientation (short landscape,
-  where a side dock would shove the board off-centre against the toolbar column), the panel
-  SHALL present as a bottom sheet, leaving the board visible and centred above it, with an
+  where a side dock would shove the board off-center against the toolbar column), the panel
+  SHALL present as a bottom sheet, leaving the board visible and centered above it, with an
   explicit close affordance and no scrim.
 
 The panel SHALL render each `ReferenceItem` with status-distinct styling (drawing `pips` as
@@ -2062,7 +2062,7 @@ Blackbox, Dominosa, Guess, Signpost, Untangle, Inertia), each of which shipped
 completely deaf to touch. Inverting the default makes the dangerous case the one a
 game has to ask for.
 
-A game whose touch behaviour genuinely differs SHALL set `wantsStylusModifier`
+A game whose touch behavior genuinely differs SHALL set `wantsStylusModifier`
 and handle the bit itself. **Pattern and Loopy** are those games: neither has a
 right button available to a finger, so a touch press cycles a cell (Pattern) or
 an edge (Loopy) through its states rather than simply filling it.
@@ -2123,7 +2123,7 @@ on an odd-width torus every slide is an even permutation, so a target that
 distinguishes identical pieces may sit in an unreachable coset while the finished
 picture is a move away.
 
-The planner SHALL be parameterised on what genuinely differs between games — the
+The planner SHALL be parameterized on what genuinely differs between games — the
 grid, the legal move set (including whether a slide may cover more than one
 step), the finished board, the goal test, and **how far from finished a board
 is** — and SHALL contain no game-specific narration or rendering.
@@ -2134,7 +2134,7 @@ runs at all. The second exists because a shortest plan is what makes a recompute
 plan converge — its first move provably shortens the distance to the goal — and
 SHALL be available for that purpose.
 
-Sixteen SHALL be refactored onto the planner with **no change in behaviour**, and
+Sixteen SHALL be refactored onto the planner with **no change in behavior**, and
 the refactor SHALL be guarded by Sixteen's existing hint tests and the diagnostic
 that asserts the no-progress gate still gates.
 
@@ -2228,7 +2228,7 @@ Two rules make it enforceable rather than aspirational:
 ### Requirement: A game can supersede its game description mid-play
 
 The engine SHALL let a game replace the stored game description (and optionally a
-private, serialisation-only description) after a move commits — upstream
+private, serialization-only description) after a move commits — upstream
 `midend_supersede_game_desc` — without games holding a midend back-reference and without
 `executeMove` losing purity. On supersession the midend SHALL emit its id-change
 notification so the shareable game ID reflects the real board, restart SHALL restart the
@@ -2254,7 +2254,7 @@ superseded description, and a save taken after supersession SHALL restore the su
 - **THEN** the restored game is built from the superseded (private, when provided)
   description and replays cleanly
 
-### Requirement: The engine serialises Ui state a move-log replay cannot reconstruct
+### Requirement: The engine serializes Ui state a move-log replay cannot reconstruct
 
 The engine SHALL support optional `encodeUi(ui): string` / `decodeUi(ui, encoded): void`
 `Game` hooks (upstream `encode_ui`/`decode_ui`). The midend SHALL write `encodeUi(ui)` into
@@ -2267,7 +2267,7 @@ This exists because a `Ui` field that lives **outside** the undo history and is 
 `interpretMove` cannot be recovered by replaying the move log: replay goes through
 `executeMove`, never `interpretMove`. Mines' persistent death counter is exactly such a
 field — dying and then undoing removes the death from the move log — so without ui
-serialisation the count would reset on every save/restore.
+serialization the count would reset on every save/restore.
 
 #### Scenario: A persistent Ui counter survives a save
 
@@ -2289,46 +2289,46 @@ unaffected.
 - **WHEN** a timed game's status bar is emitted with 75 seconds elapsed
 - **THEN** the status-bar text begins with `[1:15] `, followed by the game's own status text
 
-### Requirement: Adapting a colour to another scheme preserves its relation to the board
+### Requirement: Adapting a color to another scheme preserves its relation to the board
 
-A calculated per-scheme value SHALL preserve the colour's relationship to its own
-background: a colour close in lightness to the background in one scheme SHALL be close
-to the background in the other, and a colour far from it SHALL stay far from it. The
-failure this forbids is a subtle tint of the board becoming a prominent area of colour
+A calculated per-scheme value SHALL preserve the color's relationship to its own
+background: a color close in lightness to the background in one scheme SHALL be close
+to the background in the other, and a color far from it SHALL stay far from it. The
+failure this forbids is a subtle tint of the board becoming a prominent area of color
 purely because the scheme changed.
 
-This SHALL hold regardless of how colourful the colour is. A rule that treats greys and
-chromatic colours by different principles will make a game's near-background tints
-behave unlike its near-background greys, which is that failure.
+This SHALL hold regardless of how colorful the color is. A rule that treats grays and
+chromatic colors by different principles will make a game's near-background tints
+behave unlike its near-background grays, which is that failure.
 
 #### Scenario: A near-background tint stays near the background
 
-- **WHEN** a colour close in lightness to the game's background is adapted to the
+- **WHEN** a color close in lightness to the game's background is adapted to the
   opposite scheme
 - **THEN** it remains close in lightness to that scheme's background
 
 #### Scenario: Text and fills keep their order
 
-- **WHEN** a colour drawn as text or a thin line, and a colour drawn as a large fill,
+- **WHEN** a color drawn as text or a thin line, and a color drawn as a large fill,
   are both adapted to a dark scheme
-- **THEN** the text colour is lighter than the fill colour it may be drawn over
+- **THEN** the text color is lighter than the fill color it may be drawn over
 
 ### Requirement: A palette may carry its own per-scheme decisions
 
 The engine SHALL report to the frontend, **per palette index**, any decision a palette
-entry makes about its own behaviour when the colour scheme changes — a decision an
-entry may carry where that behaviour is a property of the colour's meaning rather than
+entry makes about its own behavior when the color scheme changes — a decision an
+entry may carry where that behavior is a property of the color's meaning rather than
 of the game showing it. Reporting per index is required because the association between
-a colour and its meaning cannot be assumed to survive transfer to the frontend.
+a color and its meaning cannot be assumed to survive transfer to the frontend.
 
 A per-puzzle adjustment SHALL take precedence over a decision carried by the palette,
 so that a game whose board needs different treatment can still state it.
 
-#### Scenario: A colour's own decision is applied
+#### Scenario: A color's own decision is applied
 
 - **WHEN** a palette entry states that it must not be adapted, and the puzzle declares
   no adjustment for that index
-- **THEN** the frontend leaves that colour unchanged
+- **THEN** the frontend leaves that color unchanged
 
 #### Scenario: A per-puzzle adjustment wins
 
@@ -2336,154 +2336,154 @@ so that a game whose board needs different treatment can still state it.
   declares an adjustment for that index
 - **THEN** the puzzle's adjustment is applied instead
 
-### Requirement: A colour that means "this piece is black or white" is distinct from ink and paper
+### Requirement: A color that means "this piece is black or white" is distinct from ink and paper
 
-The engine SHALL distinguish a colour used as **maximum-contrast foreground or surface**
-(grid lines, glyphs, text, a white cell background) from a colour used to say **a game
+The engine SHALL distinguish a color used as **maximum-contrast foreground or surface**
+(grid lines, glyphs, text, a white cell background) from a color used to say **a game
 object is black or white** (a black peg, a black mine, the filled squares of a
-two-colour game).
+two-color game).
 
 The two SHALL NOT share a role, because they require opposite treatment when the scheme
-changes: foreground and surface colours invert, so that text stays readable against the
+changes: foreground and surface colors invert, so that text stays readable against the
 surface it is drawn on, while a piece's black or white is the game's own meaning and
-SHALL be preserved — inverting it would tell the player the piece is the other colour.
+SHALL be preserved — inverting it would tell the player the piece is the other color.
 
 #### Scenario: Ink inverts so text stays readable
 
-- **WHEN** a colour used for grid lines, glyphs or text is resolved for a dark scheme
+- **WHEN** a color used for grid lines, glyphs or text is resolved for a dark scheme
 - **THEN** it is light enough to read against that scheme's surface
 
 #### Scenario: A black piece stays black
 
-- **WHEN** a colour whose meaning is that a game object is black is resolved for a dark
+- **WHEN** a color whose meaning is that a game object is black is resolved for a dark
   scheme
 - **THEN** it remains black
 - **AND** the game requires no per-puzzle adjustment to keep it black
 
-### Requirement: The engine provides a shared semantic colour palette
+### Requirement: The engine provides a shared semantic color palette
 
-The engine SHALL provide a shared module of **semantic colour roles** — the colours
+The engine SHALL provide a shared module of **semantic color roles** — the colors
 that mean something to the *player* — alongside the existing structural
-`colour-mkhighlight` helpers. A role SHALL be defined in exactly one place, and every
-game SHALL obtain its player-facing colours from there rather than writing an RGB
+`color-mkhighlight` helpers. A role SHALL be defined in exactly one place, and every
+game SHALL obtain its player-facing colors from there rather than writing an RGB
 triple.
 
 A role SHALL be declared in one of two forms, chosen by whether it must survive the
 app's dark-mode adaptation:
 
-- an **absolute** colour, for a role whose purpose is to be unmistakable regardless of
-  the board (the error/mistake colour);
+- an **absolute** color, for a role whose purpose is to be unmistakable regardless of
+  the board (the error/mistake color);
 - a **function of the frontend background**, for any role that must stay legible
   *against the board*. This is required, not stylistic: the app passes a game **pure
-  white** as its default background in dark mode, so a fixed pale colour that reads
+  white** as its default background in dark mode, so a fixed pale color that reads
   correctly in light mode can otherwise land on the background in dark mode.
 
-A colour SHALL be a shared role only where **two or more games use it to mean the same
-thing to the player**. A colour that belongs to one game's visual identity, or that is
+A color SHALL be a shared role only where **two or more games use it to mean the same
+thing to the player**. A color that belongs to one game's visual identity, or that is
 a member of that game's own enumerated set whose job is to be distinguishable from the
-set's other members (peg colours, region colours, tile colour sets, per-number digit
-colours), SHALL remain game-local — but SHALL be **declared** as such rather than left
+set's other members (peg colors, region colors, tile color sets, per-number digit
+colors), SHALL remain game-local — but SHALL be **declared** as such rather than left
 undeclared.
 
 The engine SHALL NOT duplicate the structural background/highlight/lowlight
 derivation, which the `mkhighlight` helpers continue to own.
 
-#### Scenario: Two games needing the same cue get the same colour
+#### Scenario: Two games needing the same cue get the same color
 
 - **WHEN** two games render the same player-facing cue (a hint, a flagged mistake, a
   keyboard cursor)
-- **THEN** both obtain that colour from the same role
-- **AND** neither contains a literal colour value for it
+- **THEN** both obtain that color from the same role
+- **AND** neither contains a literal color value for it
 
 #### Scenario: A role that must stay legible is derived from the background
 
 - **WHEN** a background-derived role is resolved against a light host background and
   against the pure white the app supplies in dark mode
-- **THEN** the resulting colour is visibly distinct from that background in both cases
+- **THEN** the resulting color is visibly distinct from that background in both cases
 
-#### Scenario: A game-specific colour set stays game-specific
+#### Scenario: A game-specific color set stays game-specific
 
-- **WHEN** a game's colours form its own enumerated set whose members must be
+- **WHEN** a game's colors form its own enumerated set whose members must be
   distinguishable from each other rather than carrying a meaning that recurs elsewhere
-- **THEN** those colours remain defined by that game
+- **THEN** those colors remain defined by that game
 - **AND** they are declared as game-local, so the declaration is a recorded decision
   rather than an omission
 
-### Requirement: A game's palette contains no undeclared colour
+### Requirement: A game's palette contains no undeclared color
 
-The suite SHALL fail when any registered game's palette contains a colour that is
+The suite SHALL fail when any registered game's palette contains a color that is
 neither traceable to a shared role or the `mkhighlight` trio, nor listed as a declared
-game-local colour for that game.
+game-local color for that game.
 
-The failure mode this guards is **silent divergence**: a hand-written colour is
+The failure mode this guards is **silent divergence**: a hand-written color is
 invisible to a render snapshot (which records whatever the game emits) and to a
 targeted op assertion (which names the game's own constant), so without this guard a
-new colour, or a second spelling of an existing role, can enter the collection with
+new color, or a second spelling of an existing role, can enter the collection with
 nothing objecting.
 
-#### Scenario: An undeclared colour fails the suite
+#### Scenario: An undeclared color fails the suite
 
-- **WHEN** a game's palette gains a colour that is neither a shared role nor declared
+- **WHEN** a game's palette gains a color that is neither a shared role nor declared
   game-local
-- **THEN** the suite fails, naming the game and the colour
-- **AND** it passes once the colour is either mapped to a role or declared game-local
+- **THEN** the suite fails, naming the game and the color
+- **AND** it passes once the color is either mapped to a role or declared game-local
 
 ### Requirement: A game's palette index order is stable
 
-A game's palette SHALL keep its colour indices stable: the app's per-puzzle dark-mode
-adjustments (`paletteOverrides` and `paletteSwaps`) are keyed by **colour index**, so
+A game's palette SHALL keep its color indices stable: the app's per-puzzle dark-mode
+adjustments (`paletteOverrides` and `paletteSwaps`) are keyed by **color index**, so
 reordering a palette silently re-targets them — the game then renders correctly in one
-colour scheme and incorrectly in the other, with nothing failing.
+color scheme and incorrectly in the other, with nothing failing.
 
-A game that needs an additional colour SHALL **append** it past the indices its
-upstream colour enum defines, rather than inserting or reordering. Changing a colour's
+A game that needs an additional color SHALL **append** it past the indices its
+upstream color enum defines, rather than inserting or reordering. Changing a color's
 *value* is permitted; changing its *position* is not.
 
-#### Scenario: Adopting a shared role does not move a colour
+#### Scenario: Adopting a shared role does not move a color
 
-- **WHEN** a game replaces a literal colour with a shared role
-- **THEN** that colour keeps the palette index it had
+- **WHEN** a game replaces a literal color with a shared role
+- **THEN** that color keeps the palette index it had
 - **AND** any per-puzzle dark-mode adjustment for that index continues to apply to the
-  same colour
+  same color
 
-#### Scenario: A new colour is appended
+#### Scenario: A new color is appended
 
-- **WHEN** a game needs a colour its upstream enum does not define
+- **WHEN** a game needs a color its upstream enum does not define
 - **THEN** it is appended past the upstream indices, leaving every existing index
   untouched
 
-### Requirement: A game contains no colour value
+### Requirement: A game contains no color value
 
-A game SHALL NOT contain a colour value. Every colour a game shows SHALL be a named
-reference to a shared colour token, or the result of a shared function whose inputs are
+A game SHALL NOT contain a color value. Every color a game shows SHALL be a named
+reference to a shared color token, or the result of a shared function whose inputs are
 such tokens.
 
-The second form exists because some colours are genuinely *relative* to another colour —
+The second form exists because some colors are genuinely *relative* to another color —
 a bevel highlight is a function of the surface it sits on, a pencil mark is a function
 of the board it is written on, and an interpolated ramp is a function of its endpoints.
 Requiring literal values for these would replace one correct line of arithmetic with
 many authored values that must then be kept consistent by hand.
 
 A game's palette SHALL depend on nothing but the frontend background: no game requires
-a colour computed from its parameters or its state. A game MAY choose **which** token to
+a color computed from its parameters or its state. A game MAY choose **which** token to
 draw with based on its state; that is selection, not computation.
 
-#### Scenario: A colour is referenced, never written
+#### Scenario: A color is referenced, never written
 
 - **WHEN** a game builds its palette
 - **THEN** each entry is a token reference or a call to a shared derivation
-- **AND** the game source contains no colour value of its own
+- **AND** the game source contains no color value of its own
 
-#### Scenario: A relative colour is derived from tokens
+#### Scenario: A relative color is derived from tokens
 
-- **WHEN** a colour's meaning is defined relative to another colour, such as a bevel
+- **WHEN** a color's meaning is defined relative to another color, such as a bevel
   against its surface
 - **THEN** it is produced by a shared function whose inputs are tokens
 - **AND** it is not authored as an independent value per game
 
-### Requirement: A colour token defines a value per colour scheme
+### Requirement: A color token defines a value per color scheme
 
-A colour token SHALL define its value for **each colour scheme the app offers**, chosen
+A color token SHALL define its value for **each color scheme the app offers**, chosen
 for what the token means to the player under that scheme rather than converted from
 another scheme's value by a general formula.
 
@@ -2493,17 +2493,17 @@ describe its **meaning**, not its appearance, since its appearance differs betwe
 schemes.
 
 Changing a scheme's appearance SHALL be possible by editing the token table alone, and
-adding a colour scheme SHALL require no change to any game.
+adding a color scheme SHALL require no change to any game.
 
 #### Scenario: A scheme is restyled without touching a game
 
 - **WHEN** a scheme's values are changed in the token table
-- **THEN** every game that references those tokens shows the new colours
+- **THEN** every game that references those tokens shows the new colors
 - **AND** no game source is modified
 
 #### Scenario: A scheme is added
 
-- **WHEN** a new colour scheme is introduced
+- **WHEN** a new color scheme is introduced
 - **THEN** it is defined by giving tokens their values for that scheme
 - **AND** no game source is modified
 
@@ -2513,71 +2513,71 @@ adding a colour scheme SHALL require no change to any game.
 - **THEN** its value is calculated from a scheme it does state
 - **AND** the game renders correctly
 
-### Requirement: The collection's colours are a small named set
+### Requirement: The collection's colors are a small named set
 
-The colours the collection uses SHALL be a **small named set**, sized by what the
-games demonstrably need to distinguish rather than by how many colours happen to
-have been written. A colour SHALL NOT be added to it because one game wants a
-shade; a game that needs a colour the set does not have SHALL record what it means
-to the player and why no existing colour serves.
+The colors the collection uses SHALL be a **small named set**, sized by what the
+games demonstrably need to distinguish rather than by how many colors happen to
+have been written. A color SHALL NOT be added to it because one game wants a
+shade; a game that needs a color the set does not have SHALL record what it means
+to the player and why no existing color serves.
 
-Every colour a game shows SHALL be a reference to a **meaning** — an error, a
-hint, a completed clue — except where the colour itself is the meaning: a member
-of a set whose job is to be told apart from the other members, or a colour the
+Every color a game shows SHALL be a reference to a **meaning** — an error, a
+hint, a completed clue — except where the color itself is the meaning: a member
+of a set whose job is to be told apart from the other members, or a color the
 game names to the player.
 
-A meaning SHALL be defined in terms of a colour from the set rather than holding a
-value of its own, so that changing a colour changes every meaning built on it.
+A meaning SHALL be defined in terms of a color from the set rather than holding a
+value of its own, so that changing a color changes every meaning built on it.
 
 #### Scenario: A game asks for a meaning
 
-- **WHEN** a game needs the colour for something being wrong, or for the move a
+- **WHEN** a game needs the color for something being wrong, or for the move a
   hint is proposing
 - **THEN** it references that meaning
-- **AND** the meaning resolves to a colour from the named set
+- **AND** the meaning resolves to a color from the named set
 
-#### Scenario: A colour the set does not have
+#### Scenario: A color the set does not have
 
-- **WHEN** a game needs a colour no existing meaning or named colour provides
-- **THEN** the reason is recorded with the colour: what it means to the player, and
+- **WHEN** a game needs a color no existing meaning or named color provides
+- **THEN** the reason is recorded with the color: what it means to the player, and
   why nothing in the set serves
 
-### Requirement: A named colour's name is true
+### Requirement: A named color's name is true
 
-Where a colour is referenced **by name** rather than by meaning, the name SHALL
-describe the colour as a player would, under **every** colour scheme. A scheme MAY
-change such a colour's shade; it SHALL NOT change it into a colour a player would
+Where a color is referenced **by name** rather than by meaning, the name SHALL
+describe the color as a player would, under **every** color scheme. A scheme MAY
+change such a color's shade; it SHALL NOT change it into a color a player would
 give another name.
 
 This exists because a name reaches the player. A hint that says "fill with yellow"
-is making a claim about the board, and a scheme that renders that colour as
+is making a claim about the board, and a scheme that renders that color as
 something else makes the game lie to the player.
 
-#### Scenario: A hint names a colour
+#### Scenario: A hint names a color
 
-- **WHEN** a hint's explanation refers to a colour by name
-- **THEN** the colour that name resolves to is recognisably that colour in the
+- **WHEN** a hint's explanation refers to a color by name
+- **THEN** the color that name resolves to is recognisably that color in the
   active scheme
 
-#### Scenario: A scheme restyles a named colour
+#### Scenario: A scheme restyles a named color
 
-- **WHEN** a scheme gives a named colour a different value
-- **THEN** the value is a different shade of the same colour
+- **WHEN** a scheme gives a named color a different value
+- **THEN** the value is a different shade of the same color
 - **AND** every explanation that names it is still true
 
-### Requirement: A set of colours meant to be told apart is designed as a set
+### Requirement: A set of colors meant to be told apart is designed as a set
 
-Colours a game relies on to distinguish items SHALL be mutually distinguishable in
+Colors a game relies on to distinguish items SHALL be mutually distinguishable in
 every scheme, and that SHALL be a property of the named set rather than of any one
 game that draws from it.
 
-Mutual distinguishability cannot be established one colour at a time: it is a
-relation between members, so no rule applied to a single colour — including
+Mutual distinguishability cannot be established one color at a time: it is a
+relation between members, so no rule applied to a single color — including
 adapting it to a scheme — can establish or preserve it.
 
 #### Scenario: A scheme is added or changed
 
-- **WHEN** a colour scheme is introduced or restyled
+- **WHEN** a color scheme is introduced or restyled
 - **THEN** the members of the named set remain distinguishable from one another
 - **AND** this is verified by measurement rather than by inspection
 
@@ -2585,12 +2585,12 @@ adapting it to a scheme — can establish or preserve it.
 
 The engine's shared puzzle vocabulary SHALL live under `src/engine/` and SHALL be imported *from* there by the app; it SHALL NOT live in the app layer and be imported upward by the engine and the games.
 
-The vocabulary is `Colour`, `Point`, `Size`, `Rect`, `KeyLabel`,
+The vocabulary is `Color`, `Point`, `Size`, `Rect`, `KeyLabel`,
 `PresetMenuEntry`, `DrawTextOptions`, `ConfigDescription` and the change
 notifications the engine emits.
 
-These declarations are parts of contracts the engine states: `Colour` is what a
-game's `colours()` returns, and `Rect`/`Point`/`Size` are the drawing API's
+These declarations are parts of contracts the engine states: `Color` is what a
+game's `colors()` returns, and `Rect`/`Point`/`Size` are the drawing API's
 coordinate records. They sat in `src/puzzle/types.ts` for a historical reason —
 they were re-exported from the Emscripten-generated `emcc-runtime.d.ts`, so the
 root of the type graph was a generated file in a gitignored assets directory, and
@@ -2615,7 +2615,7 @@ makes it enforceable rather than aspirational.
 
 #### Scenario: A game imports the drawing vocabulary
 
-- **WHEN** a game's `render.ts` needs the `Colour` type for its `colours()`
+- **WHEN** a game's `render.ts` needs the `Color` type for its `colors()`
 - **THEN** it imports it from the engine
 - **AND** no module under `src/engine/` or `src/games/` imports from
   `src/puzzle/`, `src/utils/`, `src/store/` or any other app directory
@@ -2720,15 +2720,15 @@ purpose.
 
 ### Requirement: The hint emphases stay distinguishable in both schemes
 
-Hint-role colours SHALL stay distinguishable in **each** scheme, not only in
-light. Every pair among the acted-on colour, the fill behind text it is about,
+Hint-role colors SHALL stay distinguishable in **each** scheme, not only in
+light. Every pair among the acted-on color, the fill behind text it is about,
 the evidence, and the two premise references SHALL stay more than 0.12 apart in
-OKLCH in each scheme, and the acted-on colour SHALL carry more than twice the
+OKLCH in each scheme, and the acted-on color SHALL carry more than twice the
 chroma of either wash in each scheme.
 
 This is what the narration rule above rests on. A narration may tie two marks
 together in words only where the marks are themselves distinguishable by
-something other than hue; a solid acted-on colour against a wash qualifies
+something other than hue; a solid acted-on color against a wash qualifies
 because it differs in **weight**, which is the cue left to a reader who cannot
 compare hues. An exemption resting on a number is worth exactly as much as the
 assertion that keeps the number true.
@@ -2739,14 +2739,14 @@ the closest pair of the six is the fill-versus-evidence pair in **dark**, at
 0.124, against 0.147 for the same pair in light. A guard that reads only the
 light value stays green through a dark-scheme collapse.
 
-#### Scenario: A scheme's hint colours converge
+#### Scenario: A scheme's hint colors converge
 
-- **WHEN** a colour edit brings two hint roles within 0.12 in either scheme
+- **WHEN** a color edit brings two hint roles within 0.12 in either scheme
 - **THEN** the palette guard fails, naming the pair and the scheme
 
-#### Scenario: The acted-on colour loses its weight
+#### Scenario: The acted-on color loses its weight
 
-- **WHEN** the acted-on hint colour's chroma falls to twice a wash's or below,
+- **WHEN** the acted-on hint color's chroma falls to twice a wash's or below,
   in either scheme
 - **THEN** the palette guard fails, because the narration rule's exemption for
   solid-against-wash marks no longer holds
@@ -2756,9 +2756,9 @@ light value stays green through a dark-scheme collapse.
 For every bevel trio a game exchanges via `paletteSwaps`, the highlight SHALL be
 lighter than the surface it sits on and the lowlight darker, **in both schemes**.
 
-`paletteSwaps` exists because inverting every colour's lightness turns an emboss
-into an inset. It is hand-maintained and keyed by raw colour index, so a wrong
-pair leaves every colour present, every test green, and one game lit from the
+`paletteSwaps` exists because inverting every color's lightness turns an emboss
+into an inset. It is hand-maintained and keyed by raw color index, so a wrong
+pair leaves every color present, every test green, and one game lit from the
 wrong side in one scheme only.
 
 The requirement above is a relationship to that *surface* and not to the board, so
@@ -2773,7 +2773,7 @@ the two schemes, so such a measurement compares a highlight with a lowlight.
 - **THEN** in each scheme its highlight is lighter than its base and its lowlight
   is darker
 
-#### Scenario: A swap names two distinct colours
+#### Scenario: A swap names two distinct colors
 
 - **WHEN** a game declares a `paletteSwaps` pair
 - **THEN** both indices exist in that game's palette, they differ in lightness,
@@ -2816,7 +2816,7 @@ SHALL NOT make that gate vacuous by passing a constant.
 
 ### Requirement: A game rejects a move it cannot play, rather than guessing
 
-`Game.executeMove` SHALL reject a move that its dispatch does not recognise, by
+`Game.executeMove` SHALL reject a move that its dispatch does not recognize, by
 throwing an error naming the game and the move. It SHALL NOT return a state it
 did not compute from that move, SHALL NOT return a non-state, and SHALL NOT
 treat the move as a no-op.
@@ -2839,11 +2839,11 @@ depends on and throw in the same form.
 #### Scenario: A move from another build is refused, not misread
 
 - **WHEN** a saved game is replayed whose move log contains a move this build's
-  dispatch does not recognise
+  dispatch does not recognize
 - **THEN** `executeMove` throws an error naming the game, the midend refuses the
   save, and the board is left playable
 
-#### Scenario: An unrecognised move is never silently ignored
+#### Scenario: An unrecognized move is never silently ignored
 
 - **WHEN** such a move is replayed in a game whose dispatch previously had a
   tolerant catch-all
@@ -2868,7 +2868,7 @@ the documented contract reads as protection while doing nothing, and the gap is
 invisible until the day the capability is first genuinely needed.
 `validateParams`'s `full` flag was passed a literal `true` by all four
 production call sites while sixteen games gated a bound on it, three of them
-with comments describing the behaviour that was not happening — and it silently
+with comments describing the behavior that was not happening — and it silently
 refused game IDs a game had deliberately kept loadable.
 
 A member whose only consumer is a cross-game guard is permitted, since such a
@@ -3000,7 +3000,7 @@ reading — SHALL be **outlined** rather than washed.
 Both marks SHALL be drawn on the space the cell's **border** already occupies,
 which is either the gutter between cells or the cell's own outermost pixels
 depending on how the game is laid out, so that a mark costs the content no room
-and reads as a highlight by *colour* rather than by weight. Where the border
+and reads as a highlight by *color* rather than by weight. Where the border
 belongs to a game object in its own right — a wall in Galaxies or Palisade — the
 mark SHALL be inset inside the cell instead, so it cannot be read as that object.
 
@@ -3011,17 +3011,17 @@ not only *occluded*. A game that keeps a wash is asserting that nothing is drawn
 on it, and SHALL record that reason where it names the role. The target has no
 such allowance: it is ringed even where a fill would hide nothing, because one
 mark means one thing across the collection, and because in a game whose move is
-"give this cell a colour" a fill states with the board what the narration is
+"give this cell a color" a fill states with the board what the narration is
 still proposing.
 
-**A fill behind content cannot be rescued by choosing a different colour**, and
+**A fill behind content cannot be rescued by choosing a different color**, and
 this is a measured fact rather than a preference: the target fill scores 1.91:1
 against a pencil mark in light and 1.96:1 in dark; clearing ~2.6:1 requires a
 wash so pale it collides with the evidence wash, and the only hues that clear it
 sit beside `ERROR_WASH`, which would make the cell a hint points at resemble the
 cell that is wrong. A joint search over both hint fills, every hue, and both
 schemes returns no feasible arrangement. The palette SHALL therefore carry no
-fill counterpart to the acted-on colour at all, so that a future change cannot
+fill counterpart to the acted-on color at all, so that a future change cannot
 reopen this by retuning one.
 
 A **wash** kept for a content-free evidence area faces the mirror of the same
@@ -3032,12 +3032,12 @@ move in opposite directions along one axis, so a wash carrying content loses
 whichever way it is tuned.
 
 Because a mark on a border is read *against* a surface rather than *through* it,
-it SHALL take a **strong** colour rather than a wash step, and specifically a
+it SHALL take a **strong** color rather than a wash step, and specifically a
 step whose lightness differs between schemes (a `_BOLD`), so that it stands off
 the board by a similar margin in each. A step at one lightness under both schemes
 reads soft on a pale board and bright on a dark one.
 
-The evidence colour and the **chain ordinal** that indexes it SHALL be one role
+The evidence color and the **chain ordinal** that indexes it SHALL be one role
 rather than two roles holding the same value: a number saying where a cell falls
 in an ordered chain is an index *into* the evidence, so a name of its own would
 claim the ordered cells were a different kind of premise from the unordered ones.
@@ -3045,7 +3045,7 @@ claim the ordered cells were a different kind of premise from the unordered ones
 Where a mark lies **outside** the cell's content box, no tile owns those pixels,
 so it SHALL be driven by the game's drawstate rather than by its per-tile cache:
 a mark that moves or is dismissed SHALL be erased explicitly, and a mark that
-persists SHALL be repainted each frame, so that a neighbouring cell repainting
+persists SHALL be repainted each frame, so that a neighboring cell repainting
 for its own reasons cannot clip it. Where a mark lies wholly **inside** the box,
 the cell's own repaint undoes it and no such bookkeeping is required — the hint
 overlay is already part of that cell's cache key.
@@ -3053,7 +3053,7 @@ overlay is already part of that cell's cache key.
 Guards on this SHALL assert the mark's **shape** — that a target is a ring of
 thin sides and not a solid fill, and that a contiguous evidence region is one
 contour rather than a ring per cell. An assertion that some primitive carries the
-hint colour is satisfied equally by the fill being removed. The cross-game guard
+hint color is satisfied equally by the fill being removed. The cross-game guard
 SHALL derive each game's hint palette indices from that game's own renderer
 rather than from a list maintained beside it, and SHALL assert how many games it
 examined, so that it cannot shrink in silence.
@@ -3062,7 +3062,7 @@ examined, so that it cannot shrink in silence.
 
 - **WHEN** a hint step marks the cell it acts on
 - **THEN** the mark is a ring of thin sides drawn on the cell's border, and no
-  primitive fills the cell with a hint colour
+  primitive fills the cell with a hint color
 - **AND** the same mark is used whether the step places a value or strikes a
   candidate, so the cell is never identified only by the strike
 - **AND** this holds even where the cell is empty and a fill would hide nothing
@@ -3071,12 +3071,12 @@ examined, so that it cannot shrink in silence.
 
 - **WHEN** a hint step marks an evidence area whose cells carry entered digits,
   pencil marks, clue glyphs, or a background the deduction is reading
-- **THEN** the area is drawn as an outline: a side wherever the neighbour across
+- **THEN** the area is drawn as an outline: a side wherever the neighbor across
   it is not also evidence, so a contiguous region reads as one contour and a
   scattered set as one ring per cell
 - **AND** the content inside it is drawn exactly as it would be without the hint
 
-#### Scenario: A mark outside the content box survives a neighbour's repaint
+#### Scenario: A mark outside the content box survives a neighbor's repaint
 
 - **WHEN** a cell adjacent to a marked one repaints for its own reasons while the
   hint is still displayed
@@ -3118,7 +3118,7 @@ whose press returns `null` — the shipped Galaxies left-drag defect, where ever
 drag frame was silently dropped — as healthy.
 
 A game that sets `wantsStylusModifier` SHALL NOT be skipped by the guard, but
-SHALL be asserted against the touch behaviour it declares — excluding those games
+SHALL be asserted against the touch behavior it declares — excluding those games
 makes the two with bespoke touch handling the two that nothing checks.
 
 #### Scenario: A drag gesture is equivalent from a finger
@@ -3132,7 +3132,7 @@ makes the two with bespoke touch handling the two that nothing checks.
 
 - **WHEN** the collection-wide input guards run
 - **THEN** a game setting `wantsStylusModifier` is not simply skipped, but is
-  asserted against the touch behaviour it declares
+  asserted against the touch behavior it declares
 
 ### Requirement: A game with no secondary meaning is not given a synthetic one
 
@@ -3170,7 +3170,7 @@ correctly.
 - **THEN** the gesture is delivered as a left-button press, drag and release, and
   completes as it would have without the pause
 
-#### Scenario: The declaration cannot drift from the behaviour
+#### Scenario: The declaration cannot drift from the behavior
 
 - **WHEN** a registered game consumes `RIGHT_BUTTON` somewhere on its board
 - **THEN** the guard fails if that game declares `ignoresSecondaryButton`
@@ -3184,7 +3184,7 @@ game copes with the decision; it cannot prove the decision was the right one, an
 those are two different guarantees.
 
 The tests SHALL cover the numbers the gesture arbitrates, because each is a
-behaviour rather than a constant: the hold window, the drag threshold and a
+behavior rather than a constant: the hold window, the drag threshold and a
 wobble inside it, a pointer type that is not touch, both affordances disabled,
 the two-finger tap from either finger's release, and the second finger's **timer
 reset** — which is what makes the documented worst case twice the hold time.
@@ -3239,7 +3239,7 @@ turned off rather than fixed.
 
 - **WHEN** a game's cursor input is supplied by `interpretBorderGridInput` or
   another shared helper rather than by its own `CURSOR_*` branches
-- **THEN** the guard recognises it as covered
+- **THEN** the guard recognizes it as covered
 
 #### Scenario: A cursor that cannot act is not a keyboard
 
@@ -3358,7 +3358,7 @@ enforced from `pointer.ts`'s own export list.
 #### Scenario: A game keeps what it does while moving
 
 - **WHEN** a game paints or fills as its cursor traverses
-- **THEN** that behaviour is unchanged by the shared cursor shape, which reports
+- **THEN** that behavior is unchanged by the shared cursor shape, which reports
   only where the cursor is and whether it is visible
 
 #### Scenario: A cursor under any other field fails the build
@@ -3500,13 +3500,13 @@ census of the whole collection with one game absent from every figure.
 
 ### Requirement: Every game's board sits at one tone
 
-The engine SHALL hand a game's `colours()` a background already shifted off pure
+The engine SHALL hand a game's `colors()` a background already shifted off pure
 white and pure black by `mkhighlightBackground`, from a single resolution point
 (`resolvePalette`) that every consumer of a game's palette — the midend's palette
 and dark-value reporting and the render-scenario harness — goes through. The
-colour a game paints its board with SHALL therefore resolve to the same value
+color a game paints its board with SHALL therefore resolve to the same value
 across the collection for a given host background, whether or not the game's own
-`colours()` calls `mkhighlight`.
+`colors()` calls `mkhighlight`.
 
 A game MAY call `mkhighlight` on the background it receives to obtain the bevel
 trio; the background it gets back SHALL be identical to the one it was handed.
@@ -3516,28 +3516,28 @@ trio; the background it gets back SHALL be identical to the one it was handed.
 - **WHEN** a game that assigns the background it receives as its board, and a
   game that assigns `mkhighlight(...).background`, are both resolved against pure
   white
-- **THEN** the two board colours are equal
+- **THEN** the two board colors are equal
 
 #### Scenario: Every registered game paints the collection's board
 
 - **WHEN** every registered game's palette is resolved against pure white and
   against the light host
-- **THEN** the colour at each game's board index equals the shifted host in both
+- **THEN** the color at each game's board index equals the shifted host in both
   cases
 - **AND** the check counts the games it looked at and fails if the shift did not
   fire
 
 #### Scenario: A game calling mkhighlight is unaffected
 
-- **WHEN** a game's `colours()` calls `mkhighlight` on the background it receives
+- **WHEN** a game's `colors()` calls `mkhighlight` on the background it receives
 - **THEN** the trio it obtains equals the trio derived from the unshifted host,
   because the shift is idempotent
 
 ### Requirement: A ruled-out edge is discernible in both schemes
 
-The shared "ruled out" role (`lineNoColour`) SHALL resolve to a colour a clear
-step off the board in both schemes — a mid grey — and SHALL remain visibly
-distinct from the completed-region fill (`correctRegionColour`) it may be drawn
+The shared "ruled out" role (`lineNoColor`) SHALL resolve to a color a clear
+step off the board in both schemes — a mid gray — and SHALL remain visibly
+distinct from the completed-region fill (`correctRegionColor`) it may be drawn
 across, so that a player, and in particular a keyboard player whose cursor walks
 the edges, can see where a ruled-out edge lies while still reading it as
 disabled rather than drawn.
@@ -3553,33 +3553,33 @@ disabled rather than drawn.
 
 #### Scenario: A ruled-out edge across a completed region still shows
 
-- **WHEN** the role and `correctRegionColour` are resolved against the same
+- **WHEN** the role and `correctRegionColor` are resolved against the same
   board in either scheme
 - **THEN** the two are visibly distinct
 
 ### Requirement: The solved flash is one role
 
-A game whose completion flash is drawn as a fill or line colour SHALL take that
-colour from the shared `FLASH` role, which is maximum contrast against the
+A game whose completion flash is drawn as a fill or line color SHALL take that
+color from the shared `FLASH` role, which is maximum contrast against the
 surface and inverts with the scheme. A game whose flash is an animation rather
-than a colour — a bevel wave, a state swap, a colour cycle, a wash under text —
+than a color — a bevel wave, a state swap, a color cycle, a wash under text —
 keeps its own mechanism and is not covered by this requirement.
 
-#### Scenario: Two white-flashing games flash the same colour
+#### Scenario: Two white-flashing games flash the same color
 
 - **WHEN** two games that flash their board to white on completion are resolved
   in either scheme
-- **THEN** both flash colours are equal
-- **AND** neither is the board's own colour in that scheme
+- **THEN** both flash colors are equal
+- **AND** neither is the board's own color in that scheme
 
 ### Requirement: A departure from a shared role is stated at the assignment
 
-Where the shared palette defines a role for a meaning a game's colour carries
+Where the shared palette defines a role for a meaning a game's color carries
 (the keyboard cursor, a held or dragged item, a flagged mistake, a hint's action
 or evidence, a black or white piece, a retired clue, a correctly completed
-region), the game SHALL assign that role. A game that assigns a different colour
+region), the game SHALL assign that role. A game that assigns a different color
 for that meaning SHALL state, on or immediately above the assignment, why its
-board has spent the role's colour — so that the departure is a recorded decision
+board has spent the role's color — so that the departure is a recorded decision
 and not an unexamined inheritance.
 
 A cross-game check SHALL find every such departure by the shape of the
@@ -3588,14 +3588,14 @@ reason.
 
 #### Scenario: A game whose board has spent the cursor's green says so
 
-- **WHEN** a game assigns its keyboard-cursor slot a colour other than the shared
+- **WHEN** a game assigns its keyboard-cursor slot a color other than the shared
   cursor role
-- **THEN** the assignment carries a one-line reason naming what the role's colour
+- **THEN** the assignment carries a one-line reason naming what the role's color
   is already used for on that board
 
 #### Scenario: An unexplained departure fails the check
 
-- **WHEN** a game assigns a slot whose meaning a shared role covers to a colour
+- **WHEN** a game assigns a slot whose meaning a shared role covers to a color
   other than that role, with no reason at the assignment
 - **THEN** the cross-game check names the game and the slot
 

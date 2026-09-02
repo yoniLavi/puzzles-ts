@@ -10,16 +10,16 @@ import { choosemove, completed, fill, SolverScratch } from "./solver.ts";
 export const FILLX = 0;
 export const FILLY = 0;
 
-/** Upper limit on colours, from the count of distinct RGB values
- * upstream defines (`MAXCOLOURS`). */
-export const MAXCOLOURS = 10;
+/** Upper limit on colors, from the count of distinct RGB values
+ * upstream defines (`MAXCOLORS`). */
+export const MAXCOLORS = 10;
 
 // --- types ------------------------------------------------------------
 
 export interface FloodParams {
   w: number;
   h: number;
-  colours: number;
+  colors: number;
   /** Extra moves permitted above the solver's move count. */
   leniency: number;
 }
@@ -27,9 +27,9 @@ export interface FloodParams {
 export interface FloodState {
   readonly w: number;
   readonly h: number;
-  /** Number of distinct colours in play (cells hold `0..colours-1`). */
-  readonly colours: number;
-  /** Colour per cell in row-major order. */
+  /** Number of distinct colors in play (cells hold `0..colors-1`). */
+  readonly colors: number;
+  /** Color per cell in row-major order. */
   readonly grid: Uint8Array;
   readonly moves: number;
   readonly movelimit: number;
@@ -38,11 +38,11 @@ export interface FloodState {
   readonly cheated: boolean;
 }
 
-/** A fill picks a colour for the corner region; a solve snaps to the
+/** A fill picks a color for the corner region; a solve snaps to the
  * solved board. Both are plain JSON-safe data → the default move codec
  * suffices. Upstream's stored-solution path machinery (`soln`) is
  * dropped — our engine's `hint()` plan replaces it (design D2). */
-export type FloodMove = { type: "fill"; colour: number } | { type: "solve" };
+export type FloodMove = { type: "fill"; color: number } | { type: "solve" };
 
 export interface FloodUi {
   cursor: GridCursor;
@@ -51,18 +51,18 @@ export interface FloodUi {
 // --- params -----------------------------------------------------------
 
 export function defaultParams(): FloodParams {
-  return { w: 12, h: 12, colours: 6, leniency: 5 };
+  return { w: 12, h: 12, colors: 6, leniency: 5 };
 }
 
 export function encodeParams(p: FloodParams, full: boolean): string {
   let s = `${p.w}x${p.h}`;
-  if (full) s += `c${p.colours}m${p.leniency}`;
+  if (full) s += `c${p.colors}m${p.leniency}`;
   return s;
 }
 
 export function decodeParams(s: string): FloodParams {
   // Upstream: w = h = atoi(s); then if 'x' follows the leading digits,
-  // h = atoi(after-x). Then scan for 'c<colours>' / 'm<leniency>'
+  // h = atoi(after-x). Then scan for 'c<colors>' / 'm<leniency>'
   // anywhere in the remainder. A bare "W" yields a square W×W board.
   const ret = defaultParams();
   const dims = parseDimensions(s);
@@ -72,7 +72,7 @@ export function decodeParams(s: string): FloodParams {
   while (i < s.length) {
     if (s[i] === "c") {
       i++;
-      ret.colours = Number.parseInt(s.slice(i), 10) || 0;
+      ret.colors = Number.parseInt(s.slice(i), 10) || 0;
       while (i < s.length && isDigit(s[i])) i++;
     } else if (s[i] === "m") {
       i++;
@@ -88,8 +88,8 @@ export function decodeParams(s: string): FloodParams {
 export function validateParams(p: FloodParams, _full: boolean): string | null {
   if (p.w * p.h < 2) return "Grid must contain at least two squares";
   if (p.w < 1 || p.h < 1) return "Width and height must be at least one";
-  if (p.colours < 3 || p.colours > MAXCOLOURS)
-    return `Must have between 3 and ${MAXCOLOURS} colours`;
+  if (p.colors < 3 || p.colors > MAXCOLORS)
+    return `Must have between 3 and ${MAXCOLORS} colours`;
   if (p.leniency < 0) return "Leniency must be non-negative";
   return null;
 }
@@ -100,10 +100,10 @@ export function presets() {
   const p = (
     w: number,
     h: number,
-    colours: number,
+    colors: number,
     leniency: number,
     title: string,
-  ) => ({ title, params: { w, h, colours, leniency } });
+  ) => ({ title, params: { w, h, colors, leniency } });
   return {
     title: "Type",
     submenu: [
@@ -118,23 +118,23 @@ export function presets() {
   };
 }
 
-// --- colour-character codec -------------------------------------------
+// --- color-character codec -------------------------------------------
 
 function isDigit(ch: string): boolean {
   return ch >= "0" && ch <= "9";
 }
 
-/** Encode a colour as its grid-description character, mirroring
- * upstream `(colour > 9 ? 'A' : '0') + colour`. In practice colours are
- * `0..9` (at most `MAXCOLOURS-1`), so the `A`-branch is unreachable, but
+/** Encode a color as its grid-description character, mirroring
+ * upstream `(color > 9 ? 'A' : '0') + color`. In practice colors are
+ * `0..9` (at most `MAXCOLORS-1`), so the `A`-branch is unreachable, but
  * we mirror it for fidelity. */
-export function encodeColourChar(colour: number): string {
-  return String.fromCharCode((colour > 9 ? 65 : 48) + colour);
+export function encodeColorChar(color: number): string {
+  return String.fromCharCode((color > 9 ? 65 : 48) + color);
 }
 
-/** Decode a grid-description character to a colour, or `-1` if invalid.
+/** Decode a grid-description character to a color, or `-1` if invalid.
  * `'0'..'9'` → `0..9`; `'A'..'Z'` → `10..35` (upstream `validate_desc`). */
-export function decodeColourChar(ch: string): number {
+export function decodeColorChar(ch: string): number {
   const code = ch.charCodeAt(0);
   if (code >= 48 && code <= 57) return code - 48;
   if (code >= 65 && code <= 90) return 10 + (code - 65);
@@ -149,9 +149,9 @@ export function validateDesc(p: FloodParams, desc: string): string | null {
   for (; i < wh; i++) {
     const ch = desc[i];
     if (ch === undefined) return "Not enough data in grid description";
-    const c = decodeColourChar(ch);
+    const c = decodeColorChar(ch);
     if (c < 0) return "Bad character in grid description";
-    if (c >= MAXCOLOURS) return "Colour out of range in grid description";
+    if (c >= MAXCOLORS) return "Colour out of range in grid description";
   }
   if (desc[i] !== ",") return "Expected ',' after grid description";
   i++;
@@ -163,18 +163,18 @@ export function validateDesc(p: FloodParams, desc: string): string | null {
 export function newState(p: FloodParams, desc: string): FloodState {
   const wh = p.w * p.h;
   const grid = new Uint8Array(wh);
-  let colours = 0;
+  let colors = 0;
   for (let i = 0; i < wh; i++) {
-    const c = decodeColourChar(desc[i]);
+    const c = decodeColorChar(desc[i]);
     grid[i] = c;
-    if (c >= colours) colours = c + 1;
+    if (c >= colors) colors = c + 1;
   }
   // desc[wh] is ',' — the move limit follows.
   const movelimit = Number.parseInt(desc.slice(wh + 1), 10) || 0;
   return {
     w: p.w,
     h: p.h,
-    colours,
+    colors,
     grid,
     moves: 0,
     movelimit,
@@ -187,7 +187,7 @@ export function newState(p: FloodParams, desc: string): FloodState {
 
 /** Faithful port of upstream `game_status`: victory only within the
  * limit; defeat once the move count reaches the limit (whether or not
- * the grid is one colour — completing *over* the limit is still a
+ * the grid is one color — completing *over* the limit is still a
  * defeat, exactly as upstream); else ongoing. */
 export function status(state: FloodState): GameStatus {
   if (state.completed && state.moves <= state.movelimit) return "solved";
@@ -202,7 +202,7 @@ export function textFormat(state: FloodState): string {
   const lines: string[] = [];
   for (let y = 0; y < h; y++) {
     let row = "";
-    for (let x = 0; x < w; x++) row += encodeColourChar(grid[y * w + x]);
+    for (let x = 0; x < w; x++) row += encodeColorChar(grid[y * w + x]);
     lines.push(row);
   }
   return `${lines.join("\n")}\n`;
@@ -217,27 +217,27 @@ export function textFormat(state: FloodState): string {
  * limit reproduces only if the TS solver makes the same choices as C
  * (see design D-RISK / the differential test). */
 export function newDesc(p: FloodParams, rng: RandomState): { desc: string } {
-  const { w, h, colours, leniency } = p;
+  const { w, h, colors, leniency } = p;
   const wh = w * h;
   const scratch = new SolverScratch(w, h);
 
   const grid = new Uint8Array(wh);
   do {
-    for (let i = 0; i < wh; i++) grid[i] = randomUpto(rng, colours);
+    for (let i = 0; i < wh; i++) grid[i] = randomUpto(rng, colors);
   } while (completed(grid));
 
   // Run the solver on a copy, counting its moves.
   const work = Uint8Array.from(grid);
   let moves = 0;
   while (!completed(work)) {
-    const move = choosemove(w, h, work, FILLX, FILLY, colours, scratch);
+    const move = choosemove(w, h, work, FILLX, FILLY, colors, scratch);
     fill(w, h, work, FILLX, FILLY, move, scratch.queue0);
     moves++;
   }
   moves += leniency;
 
   let desc = "";
-  for (let i = 0; i < wh; i++) desc += encodeColourChar(grid[i]);
+  for (let i = 0; i < wh; i++) desc += encodeColorChar(grid[i]);
   desc += `,${moves}`;
   return { desc };
 }

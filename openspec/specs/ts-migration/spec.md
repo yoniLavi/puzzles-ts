@@ -21,7 +21,7 @@ standalone bridged seams with characterization corpora.
 
 The migration SHALL NOT be ordered bottom-up by library-dependency
 depth. Delivering user-visible capability early takes precedence over
-maximising how much downstream code each port unblocks.
+maximizing how much downstream code each port unblocks.
 
 #### Scenario: A game port pulls in only the leaf libs it needs
 
@@ -45,7 +45,7 @@ maximising how much downstream code each port unblocks.
 The C source under `puzzles/` SHALL be treated as a readable
 reference implementation and a dev-time differential-check source —
 NOT as an immutable byte-for-byte fidelity oracle. A TS port is
-"done" when the game plays correctly and passes ordinary behavioural
+"done" when the game plays correctly and passes ordinary behavioral
 tests, NOT when it reproduces a recorded golden corpus byte-for-byte.
 
 A dev-time differential harness SHOULD be available to generate N
@@ -63,7 +63,7 @@ parity is a release gate.
 #### Scenario: A ported game is accepted without a golden corpus
 
 - **WHEN** a game has been ported to TS and plays correctly under
-  manual and automated behavioural tests
+  manual and automated behavioral tests
 - **THEN** it is accepted as done
 - **AND** no byte-identical characterization corpus is required for
   acceptance
@@ -81,7 +81,7 @@ parity is a release gate.
 ### Requirement: Clean TS save format; future game IDs stay stable
 
 The project SHALL use a clean TypeScript-native save format. Backward
-compatibility with the C-serialisation save format and with
+compatibility with the C-serialization save format and with
 historical (pre-pivot) shared game IDs is explicitly NOT required —
 those are accepted as expendable.
 
@@ -91,7 +91,7 @@ produce reproducible boards across builds from the pivot onward.
 
 #### Scenario: Old C-format save is not required to load
 
-- **WHEN** a save produced by the pre-pivot C-serialisation path is
+- **WHEN** a save produced by the pre-pivot C-serialization path is
   presented to the TS engine
 - **THEN** the engine is NOT required to load it
 - **AND** this is not treated as a defect
@@ -167,14 +167,14 @@ the leaf-bridge flag machinery SHALL all be deleted. This is the terminal state
 the per-game hybrid was migrating toward; reaching it retires the hybrid rather
 than contradicting it.
 
-Removal SHALL preserve the artefacts the app still depends on that were
+Removal SHALL preserve the artifacts the app still depends on that were
 previously produced by the Emscripten build — the game catalog and the in-app
 manual — by generating them without the C toolchain. The game catalog's metadata
 SHALL move to a committed TypeScript source, since it existed only in the CMake
 files being deleted.
 
 `puzzles/` SHALL NOT survive the migration. Retirement leaves it holding only
-the MIT `LICENCE` notices and the upstream-authored help sources the app serves;
+the MIT `LICENSE` notices and the upstream-authored help sources the app serves;
 each of those then goes where its role says it belongs, and the directory is
 deleted. **No C source and no build system SHALL remain in the repository's
 working tree** at any point after retirement.
@@ -183,14 +183,14 @@ working tree** at any point after retirement.
   overview fragments — SHALL live under `help/`, because a page the app serves
   is an input to this project's build rather than upstream reference material.
   Their relocation SHALL change no URL and no word of their content.
-- The upstream MIT notices SHALL live in `licences/`, byte-identical to what
+- The upstream MIT notices SHALL live in `licenses/`, byte-identical to what
   each upstream project ships. What they cover after the migration is the whole
   of `src/engine/` and `src/games/` and the served help sources, so they are not a subdirectory's
   concern.
 
 A C source kept as a **reading reference** for scaffolded future work SHALL live
 with the change that reads it (`openspec/changes/<change>/reference/`), not in
-`puzzles/`, and SHALL carry a README recording its provenance, its licence, and
+`puzzles/`, and SHALL carry a README recording its provenance, its license, and
 the fact that it cannot be compiled or run. Colocating it this way means the
 reference is archived alongside the work that consumed it, and that a reference
 nobody ends up needing is deleted with its change rather than accumulating in a
@@ -201,7 +201,7 @@ tree whose remaining purpose is unrelated.
 - **WHEN** the repository is inspected after retirement and rehoming
 - **THEN** `puzzles/` does not exist
 - **AND** the served help sources are under `help/` and the MIT notices under
-  `licences/`
+  `licenses/`
 - **AND** no C source and no build system remain in the working tree
 
 #### Scenario: A reading reference is kept with its change
@@ -209,7 +209,7 @@ tree whose remaining purpose is unrelated.
 - **WHEN** an upstream C source is retained as reading material for a scaffolded
   change
 - **THEN** it lives under that change's `reference/` directory
-- **AND** a README there states its provenance, its licence, and that it does
+- **AND** a README there states its provenance, its license, and that it does
   not compile
 
 #### Scenario: No game runs on C after retirement
@@ -228,7 +228,7 @@ tree whose remaining purpose is unrelated.
 ### Requirement: Game work is accepted by exercising it, not by a green suite
 
 Acceptance of work on a game SHALL require the owner to exercise the actual
-behaviour — rendering, animation, and input, not merely internal state
+behavior — rendering, animation, and input, not merely internal state
 transitions. This covers a new game, a rendering or input change, an animation,
 and a hint. A passing automated suite alone SHALL NOT be treated as done.
 
@@ -321,7 +321,7 @@ gains a tier cannot ship a stale declaration.
 
 The guard SHALL sample **enough boards per tier to catch the defect it names**,
 and that sample size SHALL be established by removing a known exemption and
-confirming the guard fires — not chosen by judgement. The first version of this
+confirming the guard fires — not chosen by judgment. The first version of this
 guard sampled one board per tier and did **not** catch Boats with its
 `nonMonotone` declaration removed, because Boats' first seed happens to be
 monotone while 7 of 8 are not. A guard that has never been shown to fail is not
@@ -405,11 +405,11 @@ description codec, so no differential or render snapshot may move.
 
 - **WHEN** a change alters a `paramConfig` or preference declaration
 - **THEN** the affected dialogs are opened and checked in a browser
-- **BECAUSE** a regression here surfaces as an empty or mislabelled dialog, which
+- **BECAUSE** a regression here surfaces as an empty or mislabeled dialog, which
   no unit test observes — the failure that made `add-ts-custom-params-config`
   necessary in the first place
 
-#### Scenario: A helper is parameterised by a player-visible string
+#### Scenario: A helper is parameterized by a player-visible string
 
 - **WHEN** a shared declarative helper's label differs between games because it
   states a game-specific fact (the auto-pencil preference names the regions that
@@ -470,7 +470,7 @@ the requested tier, reporting it through parameter validation, rather than quiet
 producing a board of some other difficulty. The refusal SHALL apply to generation
 only, so that a saved game or a game ID carrying its own description still loads.
 
-Silently substituting a neighbouring tier is the same defect as an unbinding gate,
+Silently substituting a neighboring tier is the same defect as an unbinding gate,
 differing only in having a known trigger: the player asks for one difficulty and
 is given another without being told. Refusing is also what the collection already
 does for a configuration with no puzzles at all.
@@ -493,7 +493,7 @@ revisited.
 ### Requirement: A tier probe runs on state uncontaminated by earlier candidates
 
 A generator's check that the tier below cannot solve a candidate SHALL run on
-solver state initialised for that candidate alone, and SHALL NOT leave state
+solver state initialized for that candidate alone, and SHALL NOT leave state
 behind that affects later candidates.
 
 Several ports reuse one solver scratch across a whole generation run, and some

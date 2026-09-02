@@ -99,7 +99,7 @@ function firstHint(st: TowersState) {
 
 describe("towers hint", () => {
   it("populates before the first elimination (forced placements may precede)", () => {
-    // Notes are pencilled in lazily: forced placements that need no notes
+    // Notes are penciled in lazily: forced placements that need no notes
     // (extreme-clue lines, facing pairs) come first, and the populate step
     // appears only when an elimination first needs something to cross out — but
     // always *before* that first elimination.
@@ -501,17 +501,17 @@ describe("towers hint render", () => {
     const evidence = markSides(recording.ops, COL_HINT_CELL);
     expect(evidence.length).toBeGreaterThan(0);
     for (const s of evidence) expect(isThin(s)).toBe(true);
-    // The struck candidate keeps its normal pencil colour (legible) and is
-    // crossed through with a same-colour (COL_PENCIL) line — the strikethrough,
-    // not a recolour, is the "ruled out" cue (highest contrast against the
+    // The struck candidate keeps its normal pencil color (legible) and is
+    // crossed through with a same-color (COL_PENCIL) line — the strikethrough,
+    // not a recolor, is the "ruled out" cue (highest contrast against the
     // lighter hint background).
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_PENCIL)).toBe(
       true,
     );
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
+    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_PENCIL)).toBe(
       true,
     );
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
+    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_HINT)).toBe(
       false,
     );
     // ...and the strike cell is **ringed** COL_HINT rather than filled with it.
@@ -541,7 +541,7 @@ describe("towers hint render", () => {
     expect((hint?.move as TowersMove)?.type).toBe("set");
     // A placement target is ringed COL_HINT, and carries no struck digit/line.
     expectRing(recording.ops, COL_HINT, (hint?.highlights as AnyStep)?.targets.length);
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_HINT)).toBe(
       false,
     );
   });

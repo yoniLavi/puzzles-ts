@@ -115,7 +115,7 @@ the state completed and cheated.
 
 `redraw` SHALL draw the grid-corner dots and background once on first draw,
 then per-tile (diffed against an `Int32Array` flag cache) draw the four border
-edges coloured wall/no-wall/unknown, the clue text, and the half-grid cursor
+edges colored wall/no-wall/unknown, the clue text, and the half-grid cursor
 box. It SHALL redden, from the current borders, any wall whose region is too
 large or too small and any wall dangling within a single region, and redden a
 clue whose wall count is already impossible. `flashLength` SHALL return a
@@ -129,7 +129,7 @@ every move (it is not sticky); `cheated` stays set as the permanent
 #### Scenario: An over-large region reddens its walls
 
 - **WHEN** the player's walls enclose a region larger than `k`
-- **THEN** `redraw` emits the boundary walls of that region in the error colour
+- **THEN** `redraw` emits the boundary walls of that region in the error color
 
 #### Scenario: A player completion flashes; the Solve command does not
 
@@ -212,7 +212,7 @@ step), and `"off"` otherwise.
 
 The renderer SHALL paint **every** edge the current step's firing forces — the
 action edge and the firing's other forced edges alike — in `COL_HINT`: they
-share a fate (all walls or all open), so they share a colour, signalling the
+share a fate (all walls or all open), so they share a color, signaling the
 player to treat them as one set. It SHALL shade every referenced cell in a
 `COL_HINT_CELL` background, folding the highlight into the per-tile cache so it
 appears when shown and clears when the midend drops the plan. For the
@@ -265,29 +265,29 @@ generator paths are unchanged).
 
 - **WHEN** `redraw` is given a displayed multi-edge firing step (an action edge,
   the firing's other forced edge, and referenced cells)
-- **THEN** both forced edges are painted in `COL_HINT` (the same colour, since
+- **THEN** both forced edges are painted in `COL_HINT` (the same color, since
   they share a fate)
 - **AND** every referenced cell is shaded in `COL_HINT_CELL`
-- **AND** with no hint step the tiles draw without any of those hint colours
+- **AND** with no hint step the tiles draw without any of those hint colors
 
-### Requirement: Palisade hint colour legend
+### Requirement: Palisade hint color legend
 
 When a Palisade hint is displayed, `redraw` SHALL distinguish the element types
-the deduction names using a stable colour legend, each colour paired with a
-non-colour cue:
+the deduction names using a stable color legend, each color paired with a
+non-color cue:
 
 - The **forced edge(s)** (the move) SHALL be drawn `COL_HINT` as wall segments on
   the relevant cell borders. A firing that forces several equivalent edges draws
-  them all in the same `COL_HINT` (equivalent moves share one colour — the legend
+  them all in the same `COL_HINT` (equivalent moves share one color — the legend
   governs element *types*, not distinct cells of one type).
 - A cited **region** the deduction reasons over SHALL be shaded `COL_HINT_CELL`
   across its cells.
 - A cited **clue** is identified by its **drawn digit** on the (shaded) cell — it
-  is not given a separate fill colour, the same way a number premise is treated
-  elsewhere; the digit is the non-colour cue.
+  is not given a separate fill color, the same way a number premise is treated
+  elsewhere; the digit is the non-color cue.
 
 No Palisade hint cites a *decided cell* that would otherwise collide with the
-move colour, so no premise ring colour is needed. The legend SHALL be consistent
+move color, so no premise ring color is needed. The legend SHALL be consistent
 across the deduction rules.
 
 #### Scenario: Forced edges and cited region are distinct
@@ -295,17 +295,17 @@ across the deduction rules.
 - **WHEN** a `notTooBig`/`notTooSmall`/`equivalentEdges` hint names a region and
   the edge(s) it forces
 - **THEN** the forced edge(s) draw `COL_HINT` and the cited region shades
-  `COL_HINT_CELL`, in different colours
+  `COL_HINT_CELL`, in different colors
 
-#### Scenario: Equivalent forced edges share one colour
+#### Scenario: Equivalent forced edges share one color
 
 - **WHEN** one firing forces several edges that share a fate (e.g. all remaining
   edges of an exhausted clue)
-- **THEN** every forced edge draws the same `COL_HINT`, not distinct colours
+- **THEN** every forced edge draws the same `COL_HINT`, not distinct colors
 
 ### Requirement: Palisade shades completed correct regions
 
-The render SHALL shade a wall-bounded region with the shared completed-region colour (a neutral `COL_CORRECT` grey, matching Rectangles) once
+The render SHALL shade a wall-bounded region with the shared completed-region color (a neutral `COL_CORRECT` gray, matching Rectangles) once
 it is a completed, correct region — exactly `k` cells, every clue in it equal to
 its wall count, and no wall interior to it — giving the player the same
 local-correctness feedback Galaxies and Rectangles give. The untouched board (one

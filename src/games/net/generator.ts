@@ -4,7 +4,7 @@
  * The RNG-consuming phases, in this exact order (the order is load-bearing: the
  * differential asserts the desc byte-for-byte against C for the same seed):
  *
- *   1. Grow the solved grid outward from the centre as a spanning tree.
+ *   1. Grow the solved grid outward from the center as a spanning tree.
  *   2. If `unique`, run the solver + `perturb` until the grid is uniquely
  *      solvable (regenerating from scratch if perturbation stalls).
  *   3. Collect the barrier candidates (edges the solution leaves unwired) and
@@ -217,7 +217,7 @@ function shuffle(tiles: Uint8Array, w: number, h: number, rs: RandomState): void
 /**
  * Randomly perturb an ambiguous section to steer toward unique solvability —
  * an idiomatic port of `perturb` in net.c. We know the tile at
- * `(startx, starty)` is ambiguous and its neighbour in direction `startd` is
+ * `(startx, starty)` is ambiguous and its neighbor in direction `startd` is
  * fully specified.
  *
  * The technique: trace the perimeter of the ambiguous area; find a perimeter

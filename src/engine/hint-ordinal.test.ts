@@ -22,11 +22,11 @@
  *    zero, or repeated a digit would read as a different chain from the one the
  *    solver found;
  *  - **the ordinals are on the canvas** — the frame's text ops *in the ordinal's
- *    own colour* are exactly the declared numbers. Asserted against the resolved
- *    `rgb`, not against a palette index, because an index is a name for a colour
- *    and not the colour (the lesson `clusters-hint.test.ts` records at length).
+ *    own color* are exactly the declared numbers. Asserted against the resolved
+ *    `rgb`, not against a palette index, because an index is a name for a color
+ *    and not the color (the lesson `clusters-hint.test.ts` records at length).
  *
- * **The colour clause is load-bearing, and it was proved so.** The first cut
+ * **The color clause is load-bearing, and it was proved so.** The first cut
  * asked only whether the text "1" appeared anywhere on the frame, and it passed
  * with Keen's ordinal draw deleted outright — because a Keen cell already prints
  * "1" as a pencil mark. A guard is worth exactly what it fails on, so this one
@@ -38,12 +38,12 @@
  * can never quietly go from guarding six games to guarding none.
  */
 import { describe, expect, it } from "vitest";
-import { HINT_EVIDENCE } from "./colour/palette.ts";
+import { HINT_EVIDENCE } from "./color/palette.ts";
 import type { PresetMenu } from "./game.ts";
 import { randomNew } from "./random/index.ts";
 import { firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
 import { DEFAULT_BACKGROUND, renderScenario } from "./testing/render-scenario.ts";
-import type { Colour } from "./types.ts";
+import type { Color } from "./types.ts";
 
 const SEEDS = ["ord-a", "ord-b", "ord-c"];
 
@@ -78,7 +78,7 @@ const ORDERING_GAMES = new Set([
  * use instead.
  *
  * The tier sweep varies difficulty and keeps the first preset's **size**, which
- * is right for the narration guards it is modelled on — but a forcing chain
+ * is right for the narration guards it is modeled on — but a forcing chain
  * needs a board big enough for two-candidate cells to line up, and Solo's first
  * preset is a 4x4 (`2x2 Trivial`). At 3x3 Extreme it fires on 8 of 8 seeds.
  * Named by preset title rather than hand-written params so the entry cannot
@@ -86,18 +86,18 @@ const ORDERING_GAMES = new Set([
  */
 const BIGGER_BOARD: Record<string, string> = { solo: "3x3 Extreme" };
 
-/** A palette colour as the `rgb(r, g, b)` label `RecordingDrawing` records. */
-function rgbOf(colour: Colour): string {
+/** A palette color as the `rgb(r, g, b)` label `RecordingDrawing` records. */
+function rgbOf(color: Color): string {
   const c = (v: number): number => Math.round(v * 255);
-  return `rgb(${c(colour[0])}, ${c(colour[1])}, ${c(colour[2])})`;
+  return `rgb(${c(color[0])}, ${c(color[1])}, ${c(color[2])})`;
 }
 
-/** The ordinal's colour as that label — computed once, so a game whose palette
- * index drifted would fail rather than quietly match a neighbour.
+/** The ordinal's color as that label — computed once, so a game whose palette
+ * index drifted would fail rather than quietly match a neighbor.
  *
  * It is `HINT_EVIDENCE`, and by construction rather than by coincidence: the
  * number is an *index into* the evidence, so it is the same role as the evidence
- * outline it numbers rather than a fourth hint colour. */
+ * outline it numbers rather than a fourth hint color. */
 const ORDINAL_RGB = rgbOf(HINT_EVIDENCE);
 
 /** The leaf preset with this exact title, or undefined. */
@@ -115,7 +115,7 @@ function presetTitled<P>(menu: PresetMenu<P>, title: string): P | undefined {
  *
  * Reads **any** array field carrying `order`, not `area` specifically: the six
  * Latin games put their chain in `area` because that is their evidence channel,
- * while Clusters has a `chain` field of its own (its links carry the colour the
+ * while Clusters has a `chain` field of its own (its links carry the color the
  * hypothesis would force them to, which no other game has). The invariant is
  * *where a game declares an order it must draw it* — naming one field would make
  * this guard a check on a spelling rather than on the property, which is the
@@ -185,18 +185,18 @@ describe("an ordered hint chain carries its order to the canvas", () => {
               showHint: true,
               hintUntil: (s) => s.explanation === step.explanation,
             });
-            // **In the ordinal's own colour.** The first cut asked only whether
+            // **In the ordinal's own color.** The first cut asked only whether
             // the *text* "1" reached the canvas, and passed with Keen's ordinal
             // draw deleted outright — because a Keen cell already prints "1" as
             // a pencil mark. It was proved vacuous by removing the wiring and
             // watching it stay green, which is the only way that class of
             // assertion is ever caught. Matching the resolved `rgb` rather than
             // the palette index keeps it off the other proxy: an index is a
-            // name for a colour, not the colour.
+            // name for a color, not the color.
             //
             // Compared as **sets**, not as a multiset: Towers repaints each tile
             // up to four times inside one clip rect (its 3D towers spill into
-            // their neighbours, so a cache miss redraws a 2x2 block and lets the
+            // their neighbors, so a cache miss redraws a 2x2 block and lets the
             // clip trim it), which draws a chain cell's ordinal four times over.
             // That is the renderer working as designed, and the property here is
             // *which numbers are on the board*, not how many draw calls put them

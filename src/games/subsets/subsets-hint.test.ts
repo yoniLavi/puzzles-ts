@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
-import { CONTRADICTION_UNLOCALISED } from "../../engine/hint-refusal.ts";
+import { CONTRADICTION_UNLOCALIZED } from "../../engine/hint-refusal.ts";
 import { Midend } from "../../engine/index.ts";
 import { CURSOR_DOWN, LEFT_BUTTON, newCursor } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
@@ -378,7 +378,7 @@ describe("hint", () => {
     const res = subsetsGame.hint?.(wrong);
     expect(res?.ok).toBe(false);
     if (res?.ok !== false) return;
-    expect(res.error).toBe(CONTRADICTION_UNLOCALISED);
+    expect(res.error).toBe(CONTRADICTION_UNLOCALIZED);
   });
 });
 
@@ -513,7 +513,7 @@ describe("reference-aid affordance", () => {
       UI_UPDATE,
     );
     expect(ui.highlightCell).toBeNull();
-    // Editing a slot (the top-left slot centre, below the icon) does NOT focus.
+    // Editing a slot (the top-left slot center, below the icon) does NOT focus.
     const slotPoint = { x: cx * 3 * ts + ts, y: cy * 3 * ts + ts };
     subsetsGame.interpretMove(state, ui, ds, slotPoint, LEFT_BUTTON);
     expect(ui.highlightCell).toBeNull();
@@ -627,8 +627,8 @@ describe("hint rendering (tier 2.5)", () => {
     });
     expect(result.hint).toBeDefined();
     const ops = result.recording.ops;
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HINT)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HINT_CELL)).toBe(true);
     expect(ops).toMatchSnapshot();
   });
 
@@ -655,12 +655,12 @@ describe("hint rendering (tier 2.5)", () => {
     const hl = result.hint?.highlights as SubsetsHintHighlights;
     // A collapse boxes the surviving sets in the tally (COL_HINT_CELL), and may
     // also frame one blocker cell for the "why not X" clause (#2). A box rather
-    // than a tint: the label's own colour carries the state (error red, used-up
-    // grey), so a fill behind it competes with what has to be read.
+    // than a tint: the label's own color carries the state (error red, used-up
+    // gray), so a fill behind it competes with what has to be read.
     expect(hl.sets.length).toBeGreaterThan(0);
     const ops = result.recording.ops;
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HINT)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HINT_CELL)).toBe(true);
     expect(ops).toMatchSnapshot();
   });
 
@@ -686,8 +686,8 @@ describe("hint rendering (tier 2.5)", () => {
     const hl = result.hint?.highlights as SubsetsHintHighlights;
     expect(hl.spotlight.length).toBe(1);
     const ops = result.recording.ops;
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_SPOT)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HINT)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HINT_SPOT)).toBe(true);
     expect(ops).toMatchSnapshot();
   });
 });
@@ -707,16 +707,16 @@ describe("reference-aid rendering (tier 2.5)", () => {
       if (candidateCells(state, v).length >= 2) pick = v;
     }
     expect(pick).toBeGreaterThanOrEqual(0);
-    const palette = subsetsGame.colours([0.827, 0.827, 0.827]);
+    const palette = subsetsGame.colors([0.827, 0.827, 0.827]);
     const rec = new RecordingDrawing(palette);
     const ds = newDrawState(state);
     setTileSize(ds, 36);
     const ui = { cursor: newCursor(), highlightSet: pick, highlightCell: null };
     redraw(rec, ds, null, state, 0, ui, 0, 0, undefined, undefined);
-    expect(rec.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_SPOT)).toBe(
+    expect(rec.ops.some((o) => o.op === "rect" && o.color === COL_HINT_SPOT)).toBe(
       true,
     );
-    expect(rec.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(
+    expect(rec.ops.some((o) => o.op === "rect" && o.color === COL_HINT_CELL)).toBe(
       true,
     );
   });

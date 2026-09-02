@@ -146,7 +146,7 @@ other cell sharing a row, column, block (or diagonal) with it. `executeMove` SHA
 return a new state and never mutate its input; a placement that completes the grid
 with no errors SHALL mark the state completed.
 
-#### Scenario: Placing and pencilling digits
+#### Scenario: Placing and penciling digits
 
 - **WHEN** a non-given cell is highlighted and a digit key is pressed
 - **THEN** `interpretMove` yields a `set` move that places (or, in pencil mode,
@@ -169,7 +169,7 @@ digits, an auto-sized grid of pencil marks per empty cell, the cursor and
 pencil-mode highlights, live rule-violation errors, the Check & Save mistake
 overlay, and a completion flash. A CapsLock-style pencil-mode indicator SHALL be
 shown while persistent pencil mode is on. The palette SHALL be index-for-index with
-the upstream colour enum. Rendering SHALL use a per-tile diff cache keyed on an
+the upstream color enum. Rendering SHALL use a per-tile diff cache keyed on an
 `Int32Array`, with every overlay that is not part of the tile value (the mistake
 overlay) included in the diff key so it repaints on an already-drawn cell.
 
@@ -258,9 +258,9 @@ its sum clue), then the reasoning, then a necessity-voice conclusion ("must cros
 out the N" for an elimination, "can only be N" for a placement). A single technique
 firing forcing several strikes SHALL be one journey (continuation legs flagged
 `continuesPrevious`), and equivalent strikes of one firing SHALL share the target
-hint colour. When a single step names two or more board-element types at once, each
-type SHALL carry a stable per-game colour always paired with a non-colour cue
-(shade / ring / cross-through), per the cross-game hint colour-legend convention.
+hint color. When a single step names two or more board-element types at once, each
+type SHALL carry a stable per-game color always paired with a non-color cue
+(shade / ring / cross-through), per the cross-game hint color-legend convention.
 
 The trivial region eliminations a placement implies SHALL be governed by the
 auto-pencil preference (read from `ui`): with it on they are folded silently into
@@ -294,14 +294,14 @@ SHALL map to exactly one `group` so a hint step never mixes regions.
 
 #### Scenario: A region elimination is taught as a note strike
 
-- **WHEN** the player asks for a hint on a fully-pencilled board where a placed
+- **WHEN** the player asks for a hint on a fully-penciled board where a placed
   digit, or a deductive technique, rules a digit out of a cell
 - **THEN** the hint returns a step whose `pencilStrike` move clears exactly those
   candidates
 - **AND** the narration names the firing region (row / column / sub-block /
   diagonal, or a killer cage by its sum clue) and concludes in the necessity voice
 - **AND** the region's cells are shaded and the struck candidates marked in the
-  hint colour
+  hint color
 
 #### Scenario: A killer-cage deduction is taught on a killer board
 
@@ -347,9 +347,9 @@ SHALL map to exactly one `group` so a hint step never mixes regions.
 ### Requirement: Solo provides on-screen key labels
 
 Solo SHALL implement `requestKeys(params)` returning the digit keypad for its grid:
-one button per symbol `1..cr` (where `cr = c·r`), labelled by the symbol character
+one button per symbol `1..cr` (where `cr = c·r`), labeled by the symbol character
 (`"1".."9"`, then `"a"`, `"b"`, … for `cr > 9`), followed by a clear key (button
-code `8`, the backspace, labelled `"Clear"`). This reproduces upstream
+code `8`, the backspace, labeled `"Clear"`). This reproduces upstream
 `game_request_keys` so the keypad is identical to the C build.
 
 #### Scenario: A 9-symbol board shows digits 1–9 plus clear

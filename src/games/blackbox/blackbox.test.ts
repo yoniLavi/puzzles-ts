@@ -6,7 +6,7 @@
  *
  * The tracer is exercised through the public `Game` surface (build a
  * state with known balls, fire via `executeMove`, read `exits`) rather
- * than the internal functions, so the tests pin observable behaviour.
+ * than the internal functions, so the tests pin observable behavior.
  */
 
 import { describe, expect, it } from "vitest";

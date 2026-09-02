@@ -6,7 +6,7 @@
  * so a faithful port reproduces the C desc **byte-for-byte** for the same seed —
  * the strongest bar (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"). On top of that we decode each C-published
  * board and assert the TS solver reaches the *same* (diff, kdiff) the C solver
- * recorded — the solver-gated minimiser depends on that exact agreement
+ * recorded — the solver-gated minimizer depends on that exact agreement
  * (docs/games/solver-and-generator.md § "Solver-gated generation"), so it is the real proof the solver is faithful.
  *
  * The fixture is **frozen and cannot be regenerated**. It was captured by

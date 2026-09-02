@@ -3,7 +3,7 @@
 exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 337,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -19,7 +19,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -55,7 +55,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -75,7 +75,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -115,7 +115,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -135,7 +135,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -175,7 +175,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -195,7 +195,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -235,7 +235,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -255,7 +255,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -295,7 +295,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -315,7 +315,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -355,7 +355,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -375,7 +375,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -411,7 +411,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -431,7 +431,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -471,7 +471,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -491,7 +491,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -501,7 +501,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -535,7 +535,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -545,7 +545,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -579,7 +579,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -589,7 +589,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -623,7 +623,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -633,7 +633,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -667,7 +667,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -677,7 +677,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -711,7 +711,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -751,7 +751,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -771,7 +771,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -811,7 +811,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -831,7 +831,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -841,7 +841,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -875,7 +875,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -885,7 +885,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -919,7 +919,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -929,7 +929,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -963,7 +963,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -973,7 +973,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1007,7 +1007,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1017,7 +1017,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1051,7 +1051,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1091,7 +1091,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1111,7 +1111,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1151,7 +1151,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1171,7 +1171,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1181,7 +1181,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1215,7 +1215,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1225,7 +1225,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1259,7 +1259,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1269,7 +1269,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1303,7 +1303,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1313,7 +1313,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1347,7 +1347,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1357,7 +1357,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1391,7 +1391,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1431,7 +1431,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1451,7 +1451,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1491,7 +1491,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1511,7 +1511,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1521,7 +1521,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1555,7 +1555,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1565,7 +1565,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1599,7 +1599,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1609,7 +1609,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1643,7 +1643,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1653,7 +1653,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1687,7 +1687,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1697,7 +1697,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1731,7 +1731,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1771,7 +1771,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1791,7 +1791,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 240,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1831,7 +1831,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1851,7 +1851,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 240,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1861,7 +1861,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1895,7 +1895,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 240,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1905,7 +1905,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1939,7 +1939,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 240,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1949,7 +1949,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1975,7 +1975,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -1995,7 +1995,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 240,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2005,7 +2005,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2039,7 +2039,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 240,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2049,7 +2049,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2083,7 +2083,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 240,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2123,7 +2123,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2143,7 +2143,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2179,7 +2179,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2199,7 +2199,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2239,7 +2239,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2259,7 +2259,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2299,7 +2299,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2319,7 +2319,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2359,7 +2359,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2379,7 +2379,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2419,7 +2419,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2439,7 +2439,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2479,7 +2479,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2499,7 +2499,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
     "y": 288,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2535,7 +2535,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2553,7 +2553,7 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
 exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outlines) 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 223,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2613,7 +2613,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2647,7 +2647,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -2701,7 +2701,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2777,7 +2777,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2811,7 +2811,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -2865,7 +2865,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2941,7 +2941,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2975,7 +2975,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -3029,7 +3029,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3105,7 +3105,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3191,7 +3191,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3225,7 +3225,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -3279,7 +3279,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3355,7 +3355,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3389,7 +3389,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -3443,7 +3443,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3477,7 +3477,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -3531,7 +3531,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3565,7 +3565,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -3619,7 +3619,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3695,7 +3695,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3771,7 +3771,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3847,7 +3847,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3923,7 +3923,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3999,7 +3999,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4075,7 +4075,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4115,7 +4115,7 @@ exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outline
 exports[`ascent render > Rectangle: fresh board fills a background, draws tile borders and clues 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 241,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4131,7 +4131,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4141,7 +4141,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4175,7 +4175,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4185,7 +4185,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4219,7 +4219,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4238,7 +4238,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "r": 3,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4249,7 +4249,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4275,7 +4275,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -4295,7 +4295,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4314,7 +4314,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "r": 3,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4325,7 +4325,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4351,7 +4351,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -4371,7 +4371,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4380,7 +4380,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 1,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4400,7 +4400,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "r": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4411,7 +4411,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4437,7 +4437,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -4457,7 +4457,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4466,7 +4466,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 49,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4477,7 +4477,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4511,7 +4511,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4521,7 +4521,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4547,7 +4547,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -4567,7 +4567,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4586,7 +4586,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "r": 3,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4597,7 +4597,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4623,7 +4623,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -4643,7 +4643,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4652,7 +4652,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 49,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4663,7 +4663,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4697,7 +4697,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 48,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4716,7 +4716,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "r": 3,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4727,7 +4727,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4753,7 +4753,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -4773,7 +4773,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4792,7 +4792,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "r": 3,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4803,7 +4803,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4829,7 +4829,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -4849,7 +4849,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4858,7 +4858,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 97,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4869,7 +4869,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4903,7 +4903,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4913,7 +4913,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4947,7 +4947,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -4966,7 +4966,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "r": 3,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -4977,7 +4977,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5003,7 +5003,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -5023,7 +5023,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 96,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5032,7 +5032,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 97,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -5043,7 +5043,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5077,7 +5077,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5086,7 +5086,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 145,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -5097,7 +5097,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5131,7 +5131,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5150,7 +5150,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "r": 3,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -5161,7 +5161,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5187,7 +5187,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -5207,7 +5207,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5227,7 +5227,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5253,7 +5253,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",
@@ -5273,7 +5273,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5282,7 +5282,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 145,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -5293,7 +5293,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5327,7 +5327,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5337,7 +5337,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5371,7 +5371,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5381,7 +5381,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5415,7 +5415,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5424,7 +5424,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 193,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
@@ -5435,7 +5435,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5469,7 +5469,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5479,7 +5479,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5513,7 +5513,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5523,7 +5523,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5557,7 +5557,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
     "y": 192,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 47,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -5567,7 +5567,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   },
   {
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "polygon",
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -5593,7 +5593,7 @@ exports[`ascent render > Rectangle: fresh board fills a background, draws tile b
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 5,
+    "color": 5,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(21, 113, 233)",

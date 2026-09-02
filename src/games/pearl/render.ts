@@ -6,16 +6,16 @@
  *
  * Two appearance styles select off the `appearance` preference on the Ui:
  * traditional Masyu (square cell outlines + a full grid border) and loopy
- * (centre dots + inter-cell grid lines). A per-cell packed `Int32Array`
+ * (center dots + inter-cell grid lines). A per-cell packed `Int32Array`
  * cache mirrors upstream's `lflags`; the `findMistakes` wrong-edge overlay
  * rides its own bit field in that word so it is part of the diff key
- * (docs/games/rendering.md § "The tile cache and the diff key"). The palette is index-for-index with the C colour enum
+ * (docs/games/rendering.md § "The tile cache and the diff key"). The palette is index-for-index with the C color enum
  * (Pearl's one dark-mode `paletteOverrides` entry in augmentation.ts targets
  * index 0, the board).
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLACK, WHITE } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLACK, WHITE } from "../../engine/color/colors.ts";
 import {
   DRAG_ADD,
   DRAG_REMOVE,
@@ -23,9 +23,9 @@ import {
   FLASH,
   GRID_DARK,
   highlightWash,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import { interpretUiDrag } from "./moves.ts";
 import {
   CW,
@@ -47,7 +47,7 @@ import {
 export const PREFERRED_TILE_SIZE = 31;
 export const FLASH_TIME = 0.5;
 
-// --- palette (index-for-index with the pearl.c colour enum) ---------------
+// --- palette (index-for-index with the pearl.c color enum) ---------------
 export const COL_BACKGROUND = 0;
 export const COL_HIGHLIGHT = 1;
 export const COL_LOWLIGHT = 2;
@@ -64,9 +64,9 @@ export const COL_MISTAKE = 10; // appended past the C enum (findMistakes overlay
  * index 0. */
 export const COL_CURSOR_BACKGROUND = 11;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
@@ -253,7 +253,7 @@ function drawSquare(
     }
   }
 
-  // Laid lines. Order matters for the exposed end-cap colours.
+  // Laid lines. Order matters for the exposed end-cap colors.
   drawLinesSpecific(dr, m, x, y, lflags, 0, lflags & DS_FLASH ? COL_FLASH : COL_BLACK);
   drawLinesSpecific(dr, m, x, y, lflags, DS_ESHIFT, COL_ERROR);
   drawLinesSpecific(dr, m, x, y, lflags, DS_XSHIFT, COL_MISTAKE);

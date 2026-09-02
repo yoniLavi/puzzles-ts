@@ -12,7 +12,7 @@
  */
 
 import { assertNever, rejectMove } from "../../engine/assert-never.ts";
-import { PURPLE } from "../../engine/colour/colours.ts";
+import { PURPLE } from "../../engine/color/colors.ts";
 import {
   CURSOR,
   DRAG_ADD,
@@ -21,8 +21,8 @@ import {
   HINT_EVIDENCE,
   INK,
   PAPER,
-} from "../../engine/colour/palette.ts";
-import { galaxiesBlackRegion } from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/palette.ts";
+import { galaxiesBlackRegion } from "../../engine/color/palette-games.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { ALREADY_SOLVED, FIX_MISTAKES_FIRST } from "../../engine/hint-refusal.ts";
 import {
@@ -49,7 +49,7 @@ import {
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
 import {
   type GalaxiesHint,
@@ -78,7 +78,7 @@ import {
   COL_WHITEBG,
   COL_WHITEDOT,
   type GalaxiesDrawState,
-  NCOLOURS,
+  NCOLORS,
   newDrawState,
   redraw,
   setTileSize,
@@ -131,7 +131,7 @@ export interface GalaxiesMove {
 }
 
 /** A cell flagged by `findMistakes`. `(x, y)` are grid coords: a
- * `"tile"` is a tile centre (odd/odd) the player associated with the
+ * `"tile"` is a tile center (odd/odd) the player associated with the
  * wrong dot; an `"edge"` is a wall (one even coord) the player set
  * inside what the unique solution leaves as a single region. */
 export type GalaxiesMistake =
@@ -272,13 +272,13 @@ function edgePlacementLegal(s: GalaxiesState, x: number, y: number): boolean {
   return !((flagsHere | v1 | v2) & F_DOT);
 }
 
-/** Coordinate of the screen pixel centre of a grid cell, in the
+/** Coordinate of the screen pixel center of a grid cell, in the
  * tile-size convention used here. */
 function scoord(c: number, tileSize: number, border: number): number {
   return (c * tileSize) / 2 + border;
 }
 
-/** Snap one pixel axis to the tile-centre grid coordinate under it —
+/** Snap one pixel axis to the tile-center grid coordinate under it —
  * the drop target a release commits to. Mirrors upstream's
  * `2*FROMCOORD(x + TILE_SIZE) - 1`; always yields an odd (tile)
  * coordinate, possibly off-grid when the pointer leaves the board. */
@@ -368,11 +368,11 @@ function executeMove(s: GalaxiesState, move: GalaxiesMove): GalaxiesState {
 // --- the association drag -------------------------------------------
 
 /** How far a press may travel and still count as a click. Small enough that a
- * deliberate drag is recognised at once, large enough that a finger's wobble
+ * deliberate drag is recognized at once, large enough that a finger's wobble
  * on a tap does not silently become one. */
 const DRAG_SLOP_PX = 5;
 
-function travelled(ui: GalaxiesUi, x: number, y: number): boolean {
+function traveled(ui: GalaxiesUi, x: number, y: number): boolean {
   const dx = x - ui.pressX;
   const dy = y - ui.pressY;
   return dx * dx + dy * dy > DRAG_SLOP_PX * DRAG_SLOP_PX;
@@ -473,7 +473,7 @@ function beginDrag(
 
 /** Pick the nearest dot this cell could legally join, within one tile of the
  * pointer. Beyond that nothing is picked (`dotx = -1`) — the preview then
- * draws nothing, which is how a reverse drag is cancelled. Nearest-legal-dot-
+ * draws nothing, which is how a reverse drag is canceled. Nearest-legal-dot-
  * anywhere was rejected: it commits across the board and leaves no way to let
  * go harmlessly. Returns true when the pick changed. */
 function aimAtDot(
@@ -578,7 +578,7 @@ function interpretMove(
   // touch long-press promoted to RIGHT_BUTTON finishes its own drag
   // (input.md § "A touch hold arrives as the right button").
   if (isMouseDrag(button)) {
-    if (ui.pressPending && travelled(ui, x, y)) {
+    if (ui.pressPending && traveled(ui, x, y)) {
       ui.pressPending = false;
       // Start from where the press landed, not from here: the source is
       // whatever the player put their pointer on, and by now it has moved
@@ -604,11 +604,11 @@ function interpretMove(
     }
     // A press that never became a drag is a click — but only if it ended
     // where it started. `view-interactive.ts`'s cancelPointerTracking
-    // synthesises a release at (-100, -100) when the pointer leaves the
+    // synthesizes a release at (-100, -100) when the pointer leaves the
     // canvas mid-press, and that must not toggle an edge on the far side of
     // the board. Measuring against the press pixel covers it without a
     // special case.
-    if (button !== LEFT_RELEASE || !pending || travelled(ui, x, y)) return null;
+    if (button !== LEFT_RELEASE || !pending || traveled(ui, x, y)) return null;
     const e = coordRoundToEdge(ui.pressX, ui.pressY, tile, border);
     if (!inUi(s, e.x, e.y)) return null;
     if (!edgePlacementLegal(s, e.x, e.y)) return null;
@@ -1180,12 +1180,12 @@ export const galaxiesGame: Game<
   textFormat,
   statusbarText,
 
-  colours(defaultBackground: Colour): Colour[] {
+  colors(defaultBackground: Color): Color[] {
     // The background arrives already shifted off pure white (the midend's
     // `resolvePalette`), so `COL_WHITEBG` below is visibly brighter than it
     // and a closed white region never disappears into the page.
     const bg = defaultBackground;
-    const ret = new Array<Colour>(NCOLOURS);
+    const ret = new Array<Color>(NCOLORS);
     ret[COL_BACKGROUND] = bg;
     ret[COL_WHITEBG] = PAPER;
     ret[COL_BLACKBG] = galaxiesBlackRegion(bg);
@@ -1194,14 +1194,14 @@ export const galaxiesGame: Game<
     ret[COL_GRID] = GRID_MID;
     ret[COL_EDGE] = INK;
     ret[COL_ARROW] = INK;
-    // Both transient affordances are *authored* colours rather than
+    // Both transient affordances are *authored* colors rather than
     // board-relative tints. Upstream tinted both (a warm shift of the board,
-    // `#ffaaaa` on a `#d5d5d5` board), which is a colour that cannot be
+    // `#ffaaaa` on a `#d5d5d5` board), which is a color that cannot be
     // prominent by construction — and being computed, dark mode adapts it by
     // calculation, so it is a faint tint of the board in *both* schemes. The
     // owner reported the drag preview as unreadable in each (2026-08-08); the
-    // cursor is the same colour with the same problem. Galaxies' board spends
-    // greys, black, white and red, so the collection's default cursor green is
+    // cursor is the same color with the same problem. Galaxies' board spends
+    // grays, black, white and red, so the collection's default cursor green is
     // free (`CURSOR`'s doc comment), and blue is free for the drag.
     ret[COL_CURSOR] = CURSOR;
     ret[COL_DRAG] = DRAG_ADD;
@@ -1216,7 +1216,7 @@ export const galaxiesGame: Game<
     // player drags to follow the hint, so a shared hue would make the hint
     // unreadable exactly when it is being used. Purple is the collection's
     // answer when blue and green are both taken (`spokes`, `subsets`,
-    // `sticks`), and the drag's blue is the colour owner acceptance settled in
+    // `sticks`), and the drag's blue is the color owner acceptance settled in
     // `widen-galaxies-association-gestures`. Evidence keeps the cross-game
     // `HINT_EVIDENCE` teal, which is a different hue from both.
     ret[COL_HINT] = PURPLE;

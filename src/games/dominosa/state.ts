@@ -280,7 +280,7 @@ export interface DominosaUi {
   highlight2: number;
   /** The reference-panel spotlight: a domino index (`0…DCOUNT-1`) whose
    * candidate placements are boxed on the board, or `null` for none.
-   * Ui-only, never a move, never serialised; cleared on completion. */
+   * Ui-only, never a move, never serialized; cleared on completion. */
   highlightPair: number | null;
 }
 

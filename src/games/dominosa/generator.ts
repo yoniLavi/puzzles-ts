@@ -67,7 +67,7 @@ class AllocScratch {
 
   /** The domino location on one side of location (p0,p1); null if OOB or not a
    * domino in the layout. Mirrors `alloc_find_neighbour`. */
-  private findNeighbour(p0: number, p1: number): [number, number] | null {
+  private findNeighbor(p0: number, p1: number): [number, number] | null {
     const w = this.w;
     const h = this.h;
     const x0 = p0 % w;
@@ -126,10 +126,10 @@ class AllocScratch {
       let canLo0 = true;
       let canLo1 = true;
 
-      let nb = this.findNeighbour(loc[0], loc[1]);
+      let nb = this.findNeighbor(loc[0], loc[1]);
       if (nb && (this.numbers[nb[0]] === val.hi || this.numbers[nb[1]] === val.lo))
         canLo0 = false;
-      nb = this.findNeighbour(loc[1], loc[0]);
+      nb = this.findNeighbor(loc[1], loc[0]);
       if (nb && (this.numbers[nb[0]] === val.hi || this.numbers[nb[1]] === val.lo))
         canLo1 = false;
 
@@ -215,7 +215,7 @@ class AllocScratch {
 
           for (let wi = 0; wi < 2; wi++) {
             const whichLo = wi ^ flip;
-            const nb = this.findNeighbour(loc[whichLo], loc[1 - whichLo]);
+            const nb = this.findNeighbor(loc[whichLo], loc[1 - whichLo]);
             if (nb && (numbers[nb[0]] === val.hi || numbers[nb[1]] === val.lo)) break; // can't place this way round → give up on this location
 
             if (confoundersNeeded === 0) {

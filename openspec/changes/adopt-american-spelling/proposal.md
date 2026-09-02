@@ -120,7 +120,9 @@ tasks are listed but marked as waiting on that decision.
 
 - **Affected specs**: `repo-layout` (1 added), `ts-engine` (3 modified, 1 of
   them renamed), `grid` (1 modified + renamed), `pegs` (1 modified),
-  `licensing` (1 modified), `ts-migration` (1 modified); plus a mechanical
+  `licensing` (1 modified), `ts-migration` (1 modified), `build-pipeline`
+  (1 modified — the gate gains the spelling guard in its fast prefix; design
+  D6 records why it is a gate script and not a vitest file); plus a mechanical
   spelling sweep over the rest, shape-proved.
 - **Affected code**: ~500 `.ts` files edited, 18 tracked files renamed, 65
   snapshots re-baselined, 1 fixture key renamed, 11 probe anchors moved. Every

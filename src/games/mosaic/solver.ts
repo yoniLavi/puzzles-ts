@@ -4,7 +4,7 @@
  * `hide_clues` / `new_game_desc`).
  *
  * One deduction rule, three drivers: generation feasibility
- * (`solveCheck`, desc-side, knows full/empty), clue minimisation
+ * (`solveCheck`, desc-side, knows full/empty), clue minimization
  * (`hideClues`), and the Solve command / mistake check
  * (`solveGameActual`, board-side, clue numbers only).
  */
@@ -47,7 +47,7 @@ function newSolution(size: number): Solution {
 
 type CellResult = "progress" | "none" | "contradiction";
 
-/** Set every still-unmarked neighbour (3×3, clipped) to `mark`. */
+/** Set every still-unmarked neighbor (3×3, clipped) to `mark`. */
 function markAround(
   width: number,
   height: number,
@@ -88,7 +88,7 @@ function countAroundSol(
 /**
  * The whole deduction rule (upstream `solve_cell`). `clue < 0` means
  * the cell shows no clue; `full`/`empty` are the generation-side
- * shortcuts (the clue saturates its neighbourhood / is zero) and are
+ * shortcuts (the clue saturates its neighborhood / is zero) and are
  * always false on the board-side drivers.
  */
 export function solveCell(
@@ -130,7 +130,7 @@ export function solveCell(
       if (total !== marked + blank) sol.needed[pos] = 1;
       markAround(width, height, sol, x, y, STATE_MARKED);
     } else if (total === marked + blank) {
-      // Neighbourhood fully determined but the clue is unmet.
+      // Neighborhood fully determined but the clue is unmet.
       return "contradiction";
     } else {
       return "none";
@@ -138,7 +138,7 @@ export function solveCell(
     return "progress";
   }
   if (total === marked + blank) {
-    // No clue here; solved once its neighbourhood is determined.
+    // No clue here; solved once its neighborhood is determined.
     sol.solved[pos] = 1;
     return "progress";
   }
@@ -157,8 +157,8 @@ export interface GenCells {
 }
 
 /** Compute one cell's clue from the image (upstream `populate_cell`):
- * count the black cells of the clipped 3×3 neighbourhood including the
- * cell itself, and detect "full" — clue saturates the neighbourhood —
+ * count the black cells of the clipped 3×3 neighborhood including the
+ * cell itself, and detect "full" — clue saturates the neighborhood —
  * at 9 interior / 6 edge / 4 corner, "empty" at 0. */
 export function populateCell(
   width: number,

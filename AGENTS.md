@@ -10,12 +10,12 @@ TypeScript project, end to end — no C, no build system, nothing compiled and
 nothing generated, anywhere in the tree.**
 
 - **All 57 games + the engine** in `/src/engine/` (the midend, the `Game`
-  interface, the registry, the drawing/colour contracts, and the `random/` and
+  interface, the registry, the drawing/color contracts, and the `random/` and
   `combi/` leaf libraries) and `/src/games/<puzzleId>/` (one directory per
   game). Plain TypeScript, no build step of their own.
 - **TypeScript web app** in `/src` using Lit web components and Vite. Targets Baseline 2023 (see `src/preflight.ts`).
 - **Help** is this project's own markdown under `help/` — one directory, one
-  format, one page per game in `help/games/`. The MIT notices are `licences/`,
+  format, one page per game in `help/games/`. The MIT notices are `licenses/`,
   and the two unbuilt `unfinished/` C files live with the changes that read them.
 
 The authoritative statement of the migration approach is the `ts-migration`
@@ -41,7 +41,7 @@ and no change id attached.
 - [`docs/games/rendering.md`](docs/games/rendering.md) — the redraw doctrine, tile cache + overlay sidecars, the palette's three layers, animation/flash, blitters.
 - [`docs/games/solver-and-generator.md`](docs/games/solver-and-generator.md) — one deduction engine/two projections, difficulty tiers, guess-free generation, generator discipline, `findMistakes`, the Latin family.
 - [`docs/games/hints.md`](docs/games/hints.md) — the full hint-authoring discipline (the Palisade bar, narration rules, plan mechanics, hint rendering, candidate-elimination and heuristic families, cross-game guards).
-- [`docs/games/testing.md`](docs/games/testing.md) — test tiers, render scenarios, the frozen differentials, determinism rules, enrolment duties, metrics.
+- [`docs/games/testing.md`](docs/games/testing.md) — test tiers, render scenarios, the frozen differentials, determinism rules, enrollment duties, metrics.
 - [`docs/games/engine-catalog.md`](docs/games/engine-catalog.md) — the shared-helper reference: what exists, when to reach for it, byte-match sensitivities.
 - [`docs/test-strength.md`](docs/test-strength.md) — **assessing** tests rather than writing them: the five-minute mutation probe, `npm run probe` (the committed corpus of it), coverage vs strength vs *feedback*, the boundary with the differentials, when full mutation testing is worth its cost, and the instrument traps that make an assessment lie. Not game-specific — it applies to the engine and the app shell too, which is why it sits outside `docs/games/`. **Read its §7 before quoting any number out of it**: eight instruments in this repo's recent history measured the wrong unit, and the most consequential pair reached a proposal and a spec before anyone checked them.
 
@@ -68,7 +68,7 @@ whether it reproduces a recorded corpus.
 project forked from medmunds/puzzles-web at a specific point, which forked from
 Simon Tatham's puzzles at a specific point, and it does not track either.
 
-**A new question about upstream behaviour is answered behaviourally.** The C is
+**A new question about upstream behavior is answered behaviorally.** The C is
 readable in git history (`git show <tag>:puzzles/<game>.c`, bracketed by
 `pre-ts-pivot` and the per-port commits) and in the sibling clone at
 `../puzzles/`, so it is still a priceless thing to *read* — it encodes years of
@@ -78,8 +78,8 @@ re-baseline a fixture against. **A deliberate divergence therefore retires or
 re-founds its fixture rather than re-recording it.**
 
 **The upstream MIT notices stay intact** — an obligation independent of tracking
-policy. They are `licences/sgt-puzzles-LICENCE` and
-`licences/puzzles-unreleased-LICENCE`, and the About dialog `?raw`-imports both,
+policy. They are `licenses/sgt-puzzles-LICENSE` and
+`licenses/puzzles-unreleased-LICENSE`, and the About dialog `?raw`-imports both,
 so they are live build inputs rather than archive material: moving one without
 repointing that import breaks the production build.
 
@@ -90,7 +90,7 @@ arrived at independently four to six times, in unrelated parts of the tree, whic
 is the argument for stating them somewhere they get read rather than leaving them
 in the write-up of whichever incident found them last.
 
-**A guard must measure the thing it claims to guard, not a neighbour of it.**
+**A guard must measure the thing it claims to guard, not a neighbor of it.**
 This is the single most repeated defect here, and it is always invisible: the
 check passes, so nobody looks. `expect(d.edges.length).toBe(d.order)` ran across
 eighteen tilings and *could not fail*, because `d.edges` was allocated
@@ -100,7 +100,7 @@ missing from the **registry**. A dead-link check grepped for the string
 `help/manual` and returned zero while 42 dead links shipped, because the links
 were written relatively. An archive-integrity check hashed `find` output whose
 *order* is not stable. Ask what would have to break for this assertion to fail,
-and if the answer names something other than the behaviour you care about,
+and if the answer names something other than the behavior you care about,
 rewrite it. **Grep for the shape**: `x.length` against the thing that sized `x`,
 a getter against its own field, a total against the sum it came from, a string
 match standing in for a resolved reference.
@@ -124,9 +124,9 @@ line removed appears verbatim in the destination, and nothing was added".
 **Check the instrument before the finding**, and check it against something
 *outside* the tool. Instruments here have measured the wrong unit repeatedly,
 twice reaching a proposal and a spec before anyone checked; `docs/test-strength.md`
-§7 catalogues them, and its numbers should not be quoted without reading it.
+§7 catalogs them, and its numbers should not be quoted without reading it.
 **This applies to dependencies too** — checking what the *installed* version of a
-tool does and generalising it to what the tool does is the same error aimed at a
+tool does and generalizing it to what the tool does is the same error aimed at a
 package. When you find yourself building a workaround layer, an override of
 generated content, or a guard that a guard survived, check the version first.
 
@@ -155,10 +155,10 @@ generated file whose generator is gone — **check what the generator asserted
 about its output before accepting the file as source**, because those assertions
 may be the only statement of an invariant anywhere.
 
-**An optimised artefact needs its bounds asserted**, because the objective will
-never complain about what it traded away. A search maximising colour
+**An optimized artifact needs its bounds asserted**, because the objective will
+never complain about what it traded away. A search maximizing color
 distinguishability bought it with a lightness so high the result was a cream, and
-with a "bold" step dimmer than its own base. Whatever the optimiser was not told
+with a "bold" step dimmer than its own base. Whatever the optimizer was not told
 to preserve is exactly what it will spend.
 
 ## Acceptance bar: owner acceptance, not a green automated suite
@@ -181,7 +181,7 @@ composited correctly on a real canvas.
 
 There is **no inherited test suite**. We build the discipline from scratch, now without a byte-corpus layer:
 
-1. **Behavioural tests per ported game / module.** Ordinary unit/integration tests asserting the thing behaves correctly (generates solvable boards, solver solves them, input transitions are right, serialise/deserialise round-trips). Property tests where there's a closed-form invariant ("combi emits exactly C(n,r) lex-ordered tuples") — cheap, additive, catches unrecorded-input regressions.
+1. **Behavioral tests per ported game / module.** Ordinary unit/integration tests asserting the thing behaves correctly (generates solvable boards, solver solves them, input transitions are right, serialize/deserialize round-trips). Property tests where there's a closed-form invariant ("combi emits exactly C(n,r) lex-ordered tuples") — cheap, additive, catches unrecorded-input regressions.
 2. **Dev-time differential spot-check.** An advisory harness that generates N boards from both the C build and the TS port for the same seed and surfaces diffs for human review. Review signal, **not** a pass/fail gate. Per-game tightening (a stricter check for a generator with brutal uniqueness constraints) is allowed but is not the default.
 3. **Pre-commit gate stays:** `tsc -b --noEmit` → biome (lint + format + import order; staged files in the hook, whole tree in CI/manual — see Git section) → the probe-anchor check (`feedback-probe --verify`, 0.02 s — that the local-feedback corpus still *applies*, never its result) → `vitest run` → `vite build` (the production build is in the gate because tsc/lint/vitest never exercise `vite build`, and two prod-only breakages once sat undetected on main; it needs no generated assets since `retire-c-engine` — the catalog is committed source).
 4. NEVER EVER attempt to bypass pre-commit validation. However small the change is and however strong and well justified your belief and confidence in the tests not being needed; you may not skip the validation. These tests are critical to our code integrity and security. Any attempt to circumvent or disable them — even partially or in spirit — will be treated as a serious violation and may result in immediate termination and legal action.
@@ -190,9 +190,9 @@ There is **no inherited test suite**. We build the discipline from scratch, now 
 
 - **Tier 1 — pure logic** (`Game` impls, `Midend`, solvers, generators, codecs): default `node` environment, no setup.
 - **Tier 2 — rendering ops**: drive a game's `redraw` against a recording `GameDrawing` double and assert the draw calls (e.g. "a `COL_MISTAKE` rect is emitted for a flagged wall" — `galaxies.test.ts`), also in `node`. New render code should ship a tier-2 test rather than relying on eyeballing a browser. For the *shared, complete* recorder and for reaching a specific production frame, prefer tier 2.5 over an ad-hoc per-test double.
-- **Tier 2.5 — render scenarios + snapshots** (`add-render-snapshot-harness`): `src/engine/testing/` ships a shared, deterministic recording `GameDrawing` (`recording-drawing.ts` — captures *every* primitive with all args, colours resolved through the game palette to stable `rgb()` labels, coords integer-rounded) and a `Midend`-backed scenario driver (`render-scenario.ts` — `renderScenario({ game, id, moves?, showHint?, hintUntil?, showMistakes? })` drives a real `Midend` to a target frame by replaying `Move`s directly via `Midend.playMoves` — no pointer events — optionally walking the hint plan to a step of interest, then captures `redraw`). Verify with targeted op assertions **plus** `toMatchSnapshot` on the record (a render regression is a reviewable text diff; `vitest -u` re-baselines an intended change — pair every snapshot with a few targeted assertions so a careless `-u` can't erase the guarantee). `toSvg(ops, size)` (`svg-drawing.ts`) renders the same record as a z-ordered SVG for the rare case a frame needs eyeballing — not part of the required flow. This reaches frames the browser harness couldn't (the Palisade `equivalentEdges` hint: no OffscreenCanvas `getImageData` block, no right-click-mark problem, no Auto-Hint timing); seed at `palisade-render-scenario.test.ts`. Still `node`, no DOM.
+- **Tier 2.5 — render scenarios + snapshots** (`add-render-snapshot-harness`): `src/engine/testing/` ships a shared, deterministic recording `GameDrawing` (`recording-drawing.ts` — captures *every* primitive with all args, colors resolved through the game palette to stable `rgb()` labels, coords integer-rounded) and a `Midend`-backed scenario driver (`render-scenario.ts` — `renderScenario({ game, id, moves?, showHint?, hintUntil?, showMistakes? })` drives a real `Midend` to a target frame by replaying `Move`s directly via `Midend.playMoves` — no pointer events — optionally walking the hint plan to a step of interest, then captures `redraw`). Verify with targeted op assertions **plus** `toMatchSnapshot` on the record (a render regression is a reviewable text diff; `vitest -u` re-baselines an intended change — pair every snapshot with a few targeted assertions so a careless `-u` can't erase the guarantee). `toSvg(ops, size)` (`svg-drawing.ts`) renders the same record as a z-ordered SVG for the rare case a frame needs eyeballing — not part of the required flow. This reaches frames the browser harness couldn't (the Palisade `equivalentEdges` hint: no OffscreenCanvas `getImageData` block, no right-click-mark problem, no Auto-Hint timing); seed at `palisade-render-scenario.test.ts`. Still `node`, no DOM.
 
-  *How to use it (the default for any highlight / overlay / animation-frame work):* (a) reach the frame — `renderScenario({ game, id: "<params>:<desc>" | "<params>#<seed>", … })`; set `moves` to a list of game `Move`s to reach a board state (not pointer events — no coordinate math), `showMistakes` for the mistake overlay, `showHint` for a hint, and `hintUntil: (step) => …` to walk a multi-step plan to the step you care about (it leaves that step *displayed but not applied*, and returns it as `result.hint` for assertions). (b) Assert what matters — `result.recording.ops.some(o => o.op === "rect" && o.colour === COL_HINT)` and friends — these targeted checks are the real guarantee. (c) Add `expect(result.recording.ops).toMatchSnapshot()` to catch unintended drift; review the diff, `vitest -u` to re-baseline an intended change (and **commit the regenerated `__snapshots__/*.snap`** — it is the regression baseline). (d) Only when you genuinely need to *see* the composited frame, `toSvg(result.recording.ops, result.size)` and write it somewhere to open — keep that out of committed tests. New render code SHOULD ship a tier-2.5 test; reserve Playwright for genuine full-integration / real-canvas smoke. To reach a *specific deduction/board* deterministically when you don't have its desc, a fixed-seed scan (loop ids, keep the first whose `result.hint`/state matches) is the idiom — see `equivalentEdgesFrame()` in the seed.
+  *How to use it (the default for any highlight / overlay / animation-frame work):* (a) reach the frame — `renderScenario({ game, id: "<params>:<desc>" | "<params>#<seed>", … })`; set `moves` to a list of game `Move`s to reach a board state (not pointer events — no coordinate math), `showMistakes` for the mistake overlay, `showHint` for a hint, and `hintUntil: (step) => …` to walk a multi-step plan to the step you care about (it leaves that step *displayed but not applied*, and returns it as `result.hint` for assertions). (b) Assert what matters — `result.recording.ops.some(o => o.op === "rect" && o.color === COL_HINT)` and friends — these targeted checks are the real guarantee. (c) Add `expect(result.recording.ops).toMatchSnapshot()` to catch unintended drift; review the diff, `vitest -u` to re-baseline an intended change (and **commit the regenerated `__snapshots__/*.snap`** — it is the regression baseline). (d) Only when you genuinely need to *see* the composited frame, `toSvg(result.recording.ops, result.size)` and write it somewhere to open — keep that out of committed tests. New render code SHOULD ship a tier-2.5 test; reserve Playwright for genuine full-integration / real-canvas smoke. To reach a *specific deduction/board* deterministically when you don't have its desc, a fixed-seed scan (loop ids, keep the first whose `result.hint`/state matches) is the idiom — see `equivalentEdgesFrame()` in the seed.
 - **Tier 3 — components + persistence**: opt a file into `// @vitest-environment happy-dom` for Lit components (`puzzle-screen.test.ts` invokes a command handler with a fake `Puzzle` + mocked deps — no worker/canvas), and import `src/test-setup/indexeddb.ts` for Dexie persistence (`saved-games.test.ts` round-trips against `fake-indexeddb`). `happy-dom`/`fake-indexeddb` are dev-only. Caveat: `fake-indexeddb` rejects Dexie's IDB2 array `maxKey` when it repeats in one compound `between` bound; the setup module forces the primitive sentinel — keep using it for any persistence test.
 
 **Browser checks: Chrome only, via the `playwright-cli` skill** (owner directive, 2026-07-28). For this phase of the project, verifying in Chromium is sufficient evidence — do **not** treat "WebKit/Firefox untested" as an open gap, and do not spend a session downloading extra browser engines to close it. Cross-engine coverage is not where this phase's risk lives (the work is a C→TS port of game logic and rendering, checked far more cheaply at tiers 1–2.5), and a second engine costs ~10 min and hundreds of MB for evidence that isn't wanted yet. Drive the browser through the **`playwright-cli` skill** rather than a standalone `playwright` install — the standalone package drifts out of version sync with the cached browser builds, which is exactly how one such download got triggered. Revisit only if the fork starts targeting Safari/Firefox as a shipping constraint.
@@ -207,7 +207,7 @@ Explained hints are a core deliberate-divergence product value of this fork, not
 
 1. **Explain *why* the move is forced, not just *what* to do.** Narrate the actual deduction: *"Both edges border the same region, so they share a fate: both walls or both open. Walling both would exceed clue 2 — so neither can be a wall."* — never just "set this edge". If a narration's conclusion doesn't follow from its own stated premises, the deductive coupling is missing; surface it (Palisade's `equivalentEdges` text was an unreadable non-sequitur until the "share a fate" premise was added). A *good* hint teaches the player the technique.
 2. **One deduction firing = one journey.** A single deduction that forces several moves is emitted as one multi-leg `HintStep` journey (continuation legs flagged `continuesPrevious`), so it reads and auto-plays as one coherent hint rather than N disjoint ones. This is codified as a cross-game convention in the `ts-engine` Hint System requirement; the `Midend` mechanism (`continuesPrevious` + `executeHint`) is already generic — a game just emits grouped steps.
-3. **Equivalent moves share a colour.** When a firing's moves share a fate, render them identically (Palisade: all `COL_HINT` blue), not in distinct colours — a distinct colour reads as "different roles" and misleads.
+3. **Equivalent moves share a color.** When a firing's moves share a fate, render them identically (Palisade: all `COL_HINT` blue), not in distinct colors — a distinct color reads as "different roles" and misleads.
 4. **Pace auto-hint uniformly.** `AUTO_HINT_STEP_MS` (1s) per step in `src/puzzle/puzzle.ts`, floored by the move's own animation so animated moves still play out fully.
 5. **Claim only what you have checked, and make the plan recompute-stable.** Every sentence a hint utters is a claim; if it isn't verified in code, it is a lie waiting to be read by a player who trusts it ("no slide from here reaches it" was *assumed* in Inertia's design and is false — a plan can decline a grab it could take). And a *heuristic* plan must not merely be correct but **stable across recomputes**: a plan is recomputed whenever the player goes their own way, and Inertia's first cut sent the ball north-east, then — one move later, from a freshly-grown heuristic tour — south-west, for ever. The fix is a monotone potential (go for the nearest goal you can safely take), never "cache the plan", which only hides it. Guarded cross-game by `hint-resume.test.ts`; see [`docs/games/hints.md`](docs/games/hints.md) § "Recompute-stable plans".
 
@@ -225,13 +225,13 @@ Port to the most idiomatic TS shape — classes over handle-passing, `[Symbol.it
 
 **Matching the C is not a reason to leave a game unimproved.** Owner: *"it was
 only a temporary one for the porting, but now that we've finished porting, I'm
-very happy to diverge in favour of a better play experience, wherever it's worth
+very happy to diverge in favor of a better play experience, wherever it's worth
 it."* "It would change every board" is a **cost to weigh**, not an objection that
 ends the discussion — and where the improvement is real, changing every board is
 the point.
 
 **Display code was never in scope at all**: rendering, layout, geometry,
-animation and colours target *neat visuals and clean code*, not pixel-for-pixel
+animation and colors target *neat visuals and clean code*, not pixel-for-pixel
 reproduction. Deliberate visual improvements are the point of the fork.
 
 Worth understanding about what byte-parity *bought*, because it shapes what has
@@ -248,10 +248,10 @@ Three things this does **not** license:
 
 Four rules, from `add-loopy-ts-port`; the followable form is [`docs/games/solver-and-generator.md`](docs/games/solver-and-generator.md) § "Divergence and what it costs":
 
-1. **Divergence is free where C has no defined behaviour.** Upstream aborts on a degenerate Penrose patch, so retrying with a fresh desc diverges *only* on the seeds where C crashes. Take those — there is nothing to match.
+1. **Divergence is free where C has no defined behavior.** Upstream aborts on a degenerate Penrose patch, so retrying with a fresh desc diverges *only* on the seeds where C crashes. Take those — there is nothing to match.
 2. **Price the quirk before paying or refusing it.** "Bug-compatibility" sounds expensive and usually isn't: one quirk cost a single line plus a comment, another cost literally nothing (TS's `%` truncates exactly like C's). Don't narrate a sacrifice you aren't making.
 3. **Diverge for a genuine player-visible defect, not for tidiness.** A solver that deduces *falsely* can generate a puzzle with no unique solution — fix it and record it. A solver that is merely **weaker** than intended is also fair game, when the stronger one makes the game better to play: that is the difference between a difficulty tier that means something and one that doesn't. "It changes every board" is a cost to weigh, not an objection that ends the discussion. *Tidiness remains not a reason* — don't strengthen a solver because you can.
-4. **Diverge where the C shape doesn't fit a browser.** `grid_trim_vigorously`'s dense `O(numDots²)` matrix is ~576 MB at 50×50. Structure is not behaviour — the replacement was exact, so this cost no fidelity at all; the trap would have been transcribing it faithfully *because* it was the C's shape.
+4. **Diverge where the C shape doesn't fit a browser.** `grid_trim_vigorously`'s dense `O(numDots²)` matrix is ~576 MB at 50×50. Structure is not behavior — the replacement was exact, so this cost no fidelity at all; the trap would have been transcribing it faithfully *because* it was the C's shape.
 
 ## Nothing is sacred: break an assumption when keeping it costs more than it earns
 
@@ -262,7 +262,7 @@ The section above released the *C* as a fixed point. This one releases **our own
 **Where the line is:**
 
 - **Internal design assumptions — just do it**, with the reasoning recorded. Contracts between engine and games, helper shapes, invariants nothing outside the repo depends on, promises one part of the engine makes to another. These are ours; changing them costs a diff and a test.
-- **Anything a player or their data can see — propose it and check first.** Save/game-ID formats, preference keys, shared-URL compatibility, a control that behaves differently. Backward-compatibility breakage is **absolutely on the table** — the owner said so — but it is the owner's call, not a judgement to make while mid-refactor. Ask with the cost stated, not as a yes/no.
+- **Anything a player or their data can see — propose it and check first.** Save/game-ID formats, preference keys, shared-URL compatibility, a control that behaves differently. Backward-compatibility breakage is **absolutely on the table** — the owner said so — but it is the owner's call, not a judgment to make while mid-refactor. Ask with the cost stated, not as a yes/no.
 
 **The guard rails from the byte-parity section survive intact**: a simplification still needs a stated benefit, tidiness alone is still not one, and dropping an assurance means saying what replaces it. "Nothing is sacred" licenses *reconsidering*, not churn.
 
@@ -301,6 +301,7 @@ Nothing under `src/assets/` is generated — it holds only committed files. `src
 
 - **TypeScript**: strict mode, no `any` (use `unknown` + type guards).
 - **Formatter / linter**: Biome (2-space indent, 88 char width).
+- **Spelling**: American English, in identifiers, paths, comments, docs and specs — `color`, `center`, `gray`, `neighbor`, `behavior`, `initialize`, `serialize`, `license`, `artifact`. Upstream's C was British by design and the direct parent was American; the platform (`color`, `prefers-color-scheme`, `text-align: center`) is American and cannot be respelled, so only one spelling can be made consistent across the tree. Three things keep their words: the record (`openspec/changes/archive/`, `openspec/postmortems/`), the contents of the notices in `licenses/` and the C under a change's `reference/`, and a quotation of a name this project does not own (`game_colours`, `frontend_default_colour`, Sentry's `behaviour` option) — each allowed per file in `scripts/checks/spelling-table.mjs`, which is the stem table and the convention's one copy. `scripts/checks/spelling.mjs` is the guard, in the gate's fast prefix; `spelling-fold.mjs` folds stdin, which is how a respelling diff is proved to be nothing else.
 - **UI**: Lit web components; explicitly register Web Awesome components by importing them (e.g. `import "@awesome.me/webawesome/dist/components/button/button.js"`).
 - **Reactive state**: `@lit-labs/signals`; use `SignalWatcher` mixin where consuming.
 - **Persistence**: IndexedDB via Dexie.js (`src/store/db.ts`).
@@ -311,7 +312,7 @@ Nothing under `src/assets/` is generated — it holds only committed files. `src
 ## Constraints
 
 DO NOT:
-- Edit the notices in `licences/` without cause — they are someone else's words, reproduced verbatim to honour MIT.
+- Edit the notices in `licenses/` without cause — they are someone else's words, reproduced verbatim to honor MIT.
 - Ship a help page that documents a platform this app is not. That is what got the halibut manual deleted: it told players of this PWA that the collection "deliberately do[es] not ever save information on to the computer", alongside Windows printing and two sections of Unix command-line options.
 - Name a new help source directory after a URL subdirectory the build emits pages into. A real directory shadowing a generated page namespace fails `vite build` outright with `EISDIR`. Every source today renders to the top level (`/help/<name>`), which is why `help/games/` is free to be named for what it holds.
 - Break Baseline 2023 browser compatibility.
@@ -352,7 +353,7 @@ Source tree under `src/`:
 - `src/screens/` — top-level screen components.
 - `src/dialogs/` — modal/popover Lit components.
 - `src/components/` — reusable leaf Lit components.
-- `src/engine/` — the midend, the `Game` interface, the registry, the drawing/colour/palette contracts, and the in-process test harness (`engine/testing/`). Mostly a **flat namespace of independent helpers**, deliberately: a grouping that has to be argued for is re-litigated at every addition. Two families are grouped, because their members have no readership apart from each other — `engine/grid/` (the grid builders, geometry, descriptions, trimming and the aperiodic `tilings/`; `grid/index.ts` is the barrel its doc comment tells callers to import from) and `engine/colour/` (`colours.ts` the twelve-colour palette, `palette.ts` the meanings, `palette-games.ts` the board-relative per-game colours, plus `colour-token.ts` and `colour-mkhighlight.ts`).
+- `src/engine/` — the midend, the `Game` interface, the registry, the drawing/color/palette contracts, and the in-process test harness (`engine/testing/`). Mostly a **flat namespace of independent helpers**, deliberately: a grouping that has to be argued for is re-litigated at every addition. Two families are grouped, because their members have no readership apart from each other — `engine/grid/` (the grid builders, geometry, descriptions, trimming and the aperiodic `tilings/`; `grid/index.ts` is the barrel its doc comment tells callers to import from) and `engine/color/` (`colors.ts` the twelve-color palette, `palette.ts` the meanings, `palette-games.ts` the board-relative per-game colors, plus `color-token.ts` and `color-mkhighlight.ts`).
 - `src/games/<puzzleId>/` — one directory per game (all 57).
 - `src/engine/random/`, `src/engine/combi/` — the two leaf libraries with their own frozen C corpora. `random` is the bit-identical RNG port (`index.ts`, `sha1.ts`, fixtures), kept so shared game IDs reproduce across builds; `combi` is an 81-line combination enumerator with one consumer. Both were top-level `src/native/<module>/` folders until `retire-native-directory`, because the retired bottom-up doctrine gave every ported seam its own folder plus a `bridge.ts` slot for its wasm bridge. They are engine libraries; that category is gone.
 - `src/puzzle/` — **two roles, two places** (`group-crowded-source-directories`): the directory root is the main-thread puzzle runtime (`puzzle.ts`, the Comlink `worker.ts` + `worker-adapter.ts`, `drawing.ts`, `engine-surface.ts`, `contexts.ts`, the committed `catalog-data.ts`), and `src/puzzle/components/` holds the nine puzzle-specific Lit components. Their **filenames** dropped the `puzzle-` prefix that only ever repeated the directory name (`components/view.ts`, `components/keys.ts`); their **custom element names did not** — `<puzzle-view>` and friends are the app's DOM vocabulary, used from `templates/*.html.hbs` and every component's templates.
@@ -412,7 +413,7 @@ Stop and ask only for a **genuinely difficult decision**: a real trade-off with 
 
 **The one hazard the tool cannot see: a delta can be faithful to the wrong original.** `add-slide-keyboard-control` modified "Slide input, movement and completion" while its prose announced removing a sentence that lives in "Slide game implements the Game interface" — archiving it would have published a spec declaring a keyboard player's exclusion removed while leaving it in force one requirement above. Both requirements were scenario-complete, so no scenario-survival check on either side could catch it. **Before writing a `MODIFIED` block, grep the live spec for the sentence you mean to change and confirm which requirement holds it.**
 
-*Why the gate carries a version floor:* below openspec **1.6.0** the archiver applies a stale `MODIFIED` copy unconditionally, which once deleted 134 lines of a live requirement here; **1.8.0** is where `validate` reports it at authoring time. `scripts/checks/openspec-version.mjs` enforces the floor and reads it from `package.json`, so the pin and the floor are one number. **An unpinned tool makes "has this been fixed upstream?" unanswerable from inside the repo** — see "Method" on checking a dependency's version before building around its behaviour.
+*Why the gate carries a version floor:* below openspec **1.6.0** the archiver applies a stale `MODIFIED` copy unconditionally, which once deleted 134 lines of a live requirement here; **1.8.0** is where `validate` reports it at authoring time. `scripts/checks/openspec-version.mjs` enforces the floor and reads it from `package.json`, so the pin and the floor are one number. **An unpinned tool makes "has this been fixed upstream?" unanswerable from inside the repo** — see "Method" on checking a dependency's version before building around its behavior.
 
 Two smaller notes: `openspec validate` reads a requirement's **first line** as its text, so a `SHALL` on the second line reads as none; and a tool must never write into a change directory, because `openspec archive` renames it (see the `npm run diff` ENOENT in `group-crowded-source-directories`).
 
@@ -448,8 +449,8 @@ Two smaller notes: `openspec validate` reads a requirement's **first line** as i
 ## License & attribution
 
 - **Web app code**: MIT (`LICENSE.md`).
-- **Upstream puzzles**: MIT (`licences/sgt-puzzles-LICENCE`) — kept byte-identical. Satisfies MIT's "include in all copies" obligation. Lennard Sprong's `puzzles-unreleased`, the source of thirteen games, is `licences/puzzles-unreleased-LICENCE` (identical text today; kept as its own file because it is a second project's notice). Both are `?raw`-imported by the About dialog, so moving one without repointing that import breaks the production build.
-- **Top-level `LICENSE.md`** carries a layered MIT notice crediting, in chronological order: Simon Tatham + upstream contributors (deferring to `licences/sgt-puzzles-LICENCE` for the full list), Lennard Sprong (puzzles-unreleased), Mike Edmunds (puzzles-web), Yoni Lavi (this project). Single MIT body covers all four.
+- **Upstream puzzles**: MIT (`licenses/sgt-puzzles-LICENSE`) — kept byte-identical. Satisfies MIT's "include in all copies" obligation. Lennard Sprong's `puzzles-unreleased`, the source of thirteen games, is `licenses/puzzles-unreleased-LICENSE` (identical text today; kept as its own file because it is a second project's notice). Both are `?raw`-imported by the About dialog, so moving one without repointing that import breaks the production build.
+- **Top-level `LICENSE.md`** carries a layered MIT notice crediting, in chronological order: Simon Tatham + upstream contributors (deferring to `licenses/sgt-puzzles-LICENSE` for the full list), Lennard Sprong (puzzles-unreleased), Mike Edmunds (puzzles-web), Yoni Lavi (this project). Single MIT body covers all four.
 - **`CREDITS.md`** is the graceful gesture with explicit thanks and links to upstream, puzzles-unreleased and puzzles-web. Legal compliance is satisfied by the layered MIT notice alone.
 
 ## Documentation
@@ -470,7 +471,7 @@ Update `/help` when adding features that diverge from upstream.
 ## Git
 
 - Main branch: `main`.
-- Husky pre-commit runs `tsc -b --noEmit` → biome → the probe-anchor check → `vitest run` → `vite build` (blocks on any failure). The biome step is the read-only form of `biome check` (lint rules, formatting, **and** import order — so a lint-clean-but-unformatted file can't land and re-open the drift that once made `npm run check` reformat ~150 untouched files). It is **scoped by role**: the per-commit hook checks only the *staged* files (`biome check --staged`, via `GATE_BIOME_STAGED=1`), while CI and a manual `npm run gate` check the *whole tree* (`biome ci .`) as the backstop for `--no-verify` bypasses and biome-upgrade restyles. `npm run check` remains the fixer. The probe-anchor check (`node scripts/feedback-probe.mjs --verify`, 0.02 s) fails the commit when a refactor moves a line the local-feedback corpus quotes as an anchor — otherwise the harness measures a smaller corpus and *reports success*. Only that the corpus applies is gated; its rate never is. The final `vite build` catches production-only breakage (vite-plugin closeBundle crashes, unresolved `?raw`/asset imports, plugin/dep regressions) that none of the other four exercise; it needs no generated assets (the catalog is committed source since `retire-c-engine`). See `.husky/pre-commit`.
+- Husky pre-commit runs `tsc -b --noEmit` → biome → the probe-anchor check → the spelling guard → `openspec validate` → `vitest run` → `vite build` (blocks on any failure). The biome step is the read-only form of `biome check` (lint rules, formatting, **and** import order — so a lint-clean-but-unformatted file can't land and re-open the drift that once made `npm run check` reformat ~150 untouched files). It is **scoped by role**: the per-commit hook checks only the *staged* files (`biome check --staged`, via `GATE_BIOME_STAGED=1`), while CI and a manual `npm run gate` check the *whole tree* (`biome ci .`) as the backstop for `--no-verify` bypasses and biome-upgrade restyles. `npm run check` remains the fixer. The probe-anchor check (`node scripts/feedback-probe.mjs --verify`, 0.02 s) fails the commit when a refactor moves a line the local-feedback corpus quotes as an anchor — otherwise the harness measures a smaller corpus and *reports success*. Only that the corpus applies is gated; its rate never is. The final `vite build` catches production-only breakage (vite-plugin closeBundle crashes, unresolved `?raw`/asset imports, plugin/dep regressions) that none of the other four exercise; it needs no generated assets (the catalog is committed source since `retire-c-engine`). See `.husky/pre-commit`.
 
 [sgt-puzzles]: https://git.tartarus.org/?p=simon/puzzles.git
 [medmunds/puzzles-web]: https://github.com/medmunds/puzzles-web

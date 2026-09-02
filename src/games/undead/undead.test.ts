@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Undead port (tier 1 + a tier-2.5 render smoke).
+ * Behavioral tests for the Undead port (tier 1 + a tier-2.5 render smoke).
  *
  * Generation is seeded for determinism, so the heavy generate/solve blocks do
  * fixed work and need no clock gate (docs/games/testing.md § "Seed-deterministic, never clock-gated"). End-to-end consistency is checked by
@@ -164,7 +164,7 @@ describe("undead executeMove", () => {
     const s0 = emptyState();
     const s1 = undeadGame.executeMove(s0, { type: "set", cell: 0, monster: MON_GHOST });
     const s2 = undeadGame.executeMove(s1, { type: "markAll" });
-    expect(s2.pencils[0]).toBe(0); // cell 0 is placed, not pencilled
+    expect(s2.pencils[0]).toBe(0); // cell 0 is placed, not penciled
     for (let i = 1; i < s2.common.numTotal; i++) expect(s2.pencils[i]).toBe(7);
   });
 

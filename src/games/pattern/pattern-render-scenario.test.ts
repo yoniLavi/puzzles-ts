@@ -41,13 +41,13 @@ describe("Pattern hint render scenarios", () => {
     // still-undecided squares, so nothing is drawn on them.
     expect(
       recording.ops.some(
-        (o) => o.op === "rect" && o.colour === COL_HINT_CELL && !isThin(o),
+        (o) => o.op === "rect" && o.color === COL_HINT_CELL && !isThin(o),
       ),
     ).toBe(true);
     // The clue numbers are still drawn (the hint overlays, it doesn't erase).
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
     // The outer grid frame is drawn.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_GRID)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_GRID)).toBe(
       true,
     );
     // The board fills its declared size.
@@ -71,9 +71,9 @@ describe("Pattern hint render scenarios", () => {
 
     const hl = hint?.highlights as PatternHint | undefined;
     expect(hl?.blackRefs.length ?? 0).toBeGreaterThan(0);
-    // The cited black premise is ringed in the black-reference colour.
+    // The cited black premise is ringed in the black-reference color.
     expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_BLACKREF),
+      recording.ops.some((o) => o.op === "rect" && o.color === COL_HINT_BLACKREF),
     ).toBe(true);
   });
 });

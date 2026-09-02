@@ -2,8 +2,8 @@
  * Netslide — Richard Boulton's cross between Net and Sixteen.
  *
  * The board is a Net wiring grid whose solved form is a spanning tree rooted at
- * the centre. Instead of rotating a tile, you slide a whole row or column, and
- * it wraps around. The centre row and centre column cannot be slid — that one
+ * the center. Instead of rotating a tile, you slide a whole row or column, and
+ * it wraps around. The center row and center column cannot be slid — that one
  * restriction is what turns a shuffle into a puzzle.
  *
  * There is no solver: the generator saves the unshuffled grid as `aux` and
@@ -30,7 +30,7 @@ import { netslideHint, netslideHintKeepTrack, parseAux } from "./hint.ts";
 import { reconstructSolution } from "./reconstruct.ts";
 import {
   ANIM_TIME,
-  colours,
+  colors,
   computeSize,
   FLASH_FRAME,
   type NetslideDrawState,
@@ -134,7 +134,7 @@ function executeMove(s: NetslideState, m: NetslideMove): NetslideState {
 
 /**
  * A click in the gutter beside a row or column slides that line; the **right
- * button reverses** the direction. A click beside the centre row or centre
+ * button reverses** the direction. A click beside the center row or center
  * column does nothing — those lines cannot be slid.
  *
  * The keyboard cursor walks the ring of arrow positions and select slides the
@@ -324,7 +324,7 @@ export const netslideGame: Game<
     return `${text} Active: ${active}/${total}`;
   },
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize,
@@ -335,7 +335,7 @@ export const netslideGame: Game<
 
   flashLength: (a, b) => {
     if (a.completed || !b.completed || a.cheated || b.cheated) return 0;
-    // The flash ripples outward from the centre, so it must run long enough to
+    // The flash ripples outward from the center, so it must run long enough to
     // reach the furthest corner and then finish that tile's four frames.
     const reach = Math.max(b.cx + 1, b.cy + 1, b.w - b.cx, b.h - b.cy);
     return FLASH_FRAME * (reach + 4);

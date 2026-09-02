@@ -15,14 +15,14 @@ import type { GameStatus } from "../../engine/types.ts";
 // --- feedback codes (upstream FEEDBACK_*) -----------------------------
 
 export const FEEDBACK_CORRECTPLACE = 1;
-export const FEEDBACK_CORRECTCOLOUR = 2;
+export const FEEDBACK_CORRECTCOLOR = 2;
 
-export const MAXCOLOURS = 10;
+export const MAXCOLORS = 10;
 
 // --- types ------------------------------------------------------------
 
 export interface GuessParams {
-  ncolours: number;
+  ncolors: number;
   npegs: number;
   nguesses: number;
   allowBlank: boolean;
@@ -30,8 +30,8 @@ export interface GuessParams {
 }
 
 /** A row of pegs and its feedback (both length `npegs`). Pegs are
- * `1..ncolours`; `0` is empty. Feedback per slot is `0`, or
- * `FEEDBACK_CORRECTPLACE` / `FEEDBACK_CORRECTCOLOUR` packed
+ * `1..ncolors`; `0` is empty. Feedback per slot is `0`, or
+ * `FEEDBACK_CORRECTPLACE` / `FEEDBACK_CORRECTCOLOR` packed
  * black-markers-then-white-markers (upstream `mark_pegs`). */
 export interface PegRow {
   pegs: number[];
@@ -46,7 +46,7 @@ export interface GuessState {
   /** Holds as they stood when the last guess was submitted (length
    * `npegs`). The *live* holds the player is editing live in `GuessUi`. */
   readonly holds: readonly boolean[];
-  /** The hidden answer, length `npegs`, values `1..ncolours`. */
+  /** The hidden answer, length `npegs`, values `1..ncolors`. */
   readonly solution: readonly number[];
   /** `0..nguesses`; `nextGo === nguesses` means the rows are exhausted. */
   readonly nextGo: number;
@@ -67,14 +67,14 @@ export interface GuessUi {
   /** Live holds, length `npegs`. */
   holds: boolean[];
   /** The picker cursor: `x` is the left-right peg position, `0..npegs`
-   * (`npegs` = the submit button); `y` is the up-down colour, `0..ncolours-1`.
+   * (`npegs` = the submit button); `y` is the up-down color, `0..ncolors-1`.
    * It runs over the picker rather than a board, but it is the same cursor the
    * rest of the collection has, so it is the same shape. */
   cursor: GridCursor;
   markable: boolean;
-  /** `0` = not dragging, else a colour `1..ncolours`. */
+  /** `0` = not dragging, else a color `1..ncolors`. */
   dragCol: number;
-  /** Drag position — *centre* of the floating peg, in pixels. */
+  /** Drag position — *center* of the floating peg, in pixels. */
   dragX: number;
   dragY: number;
   /** Source peg index when dragging from a current-row peg, else `-1`. */
@@ -111,7 +111,7 @@ export function cloneState(s: GuessState): GuessState {
 export function defaultParams(): GuessParams {
   // The canonical Mastermind ruleset.
   return {
-    ncolours: 6,
+    ncolors: 6,
     npegs: 4,
     nguesses: 10,
     allowBlank: false,
@@ -128,7 +128,7 @@ export const GUESS_PRESETS: GuessPreset[] = [
   {
     name: "Standard",
     params: {
-      ncolours: 6,
+      ncolors: 6,
       npegs: 4,
       nguesses: 10,
       allowBlank: false,
@@ -138,7 +138,7 @@ export const GUESS_PRESETS: GuessPreset[] = [
   {
     name: "Super",
     params: {
-      ncolours: 8,
+      ncolors: 8,
       npegs: 5,
       nguesses: 12,
       allowBlank: false,
@@ -156,7 +156,7 @@ export function presets() {
 
 export function encodeParams(p: GuessParams, _full: boolean): string {
   return (
-    `c${p.ncolours}p${p.npegs}g${p.nguesses}` +
+    `c${p.ncolors}p${p.npegs}g${p.nguesses}` +
     `${p.allowBlank ? "b" : "B"}${p.allowMultiple ? "m" : "M"}`
   );
 }
@@ -167,14 +167,14 @@ function isDigit(ch: string): boolean {
 
 export function decodeParams(s: string): GuessParams {
   // Lenient, like upstream `decode_params`: scan letter-prefixed fields,
-  // ignore anything unrecognised.
+  // ignore anything unrecognized.
   const p = defaultParams();
   let i = 0;
   while (i < s.length) {
     const ch = s[i++];
     switch (ch) {
       case "c":
-        p.ncolours = Number.parseInt(s.slice(i), 10) || 0;
+        p.ncolors = Number.parseInt(s.slice(i), 10) || 0;
         while (i < s.length && isDigit(s[i])) i++;
         break;
       case "p":
@@ -206,10 +206,10 @@ export function decodeParams(s: string): GuessParams {
 }
 
 export function validateParams(p: GuessParams, _full: boolean): string | null {
-  if (p.ncolours < 2 || p.npegs < 2) return "Trivial solutions are uninteresting";
-  if (p.ncolours > MAXCOLOURS) return "Too many colours";
+  if (p.ncolors < 2 || p.npegs < 2) return "Trivial solutions are uninteresting";
+  if (p.ncolors > MAXCOLORS) return "Too many colours";
   if (p.nguesses < 1) return "Must have at least one guess";
-  if (!p.allowMultiple && p.ncolours < p.npegs) {
+  if (!p.allowMultiple && p.ncolors < p.npegs) {
     return "Disallowing multiple colours requires at least as many colours as pegs";
   }
   return null;
@@ -219,9 +219,9 @@ export function validateParams(p: GuessParams, _full: boolean): string | null {
 
 /** Whether a working row may be submitted: enough pegs filled (all,
  * unless `allowBlank` lets a single peg suffice), and — when
- * `allowMultiple` is false — no colour repeats. Mirrors `is_markable`. */
+ * `allowMultiple` is false — no color repeats. Mirrors `is_markable`. */
 export function isMarkable(params: GuessParams, pegs: readonly number[]): boolean {
-  const colcount = new Array(params.ncolours).fill(0);
+  const colcount = new Array(params.ncolors).fill(0);
   const nrequired = params.allowBlank ? 1 : params.npegs;
   let nset = 0;
   for (let i = 0; i < params.npegs; i++) {
@@ -233,7 +233,7 @@ export function isMarkable(params: GuessParams, pegs: readonly number[]): boolea
   }
   if (nset < nrequired) return false;
   if (!params.allowMultiple) {
-    for (let i = 0; i < params.ncolours; i++) {
+    for (let i = 0; i < params.ncolors; i++) {
       if (colcount[i] > 1) return false;
     }
   }
@@ -243,36 +243,36 @@ export function isMarkable(params: GuessParams, pegs: readonly number[]): boolea
 // --- feedback (Knuth) -------------------------------------------------
 
 /** Score `pegs` against `solution`: `ncPlace` correct-position matches,
- * then `ncColour = Σ_colour min(#guess, #solution) − ncPlace`
- * correct-colour-only matches. Returns the feedback row (black markers
+ * then `ncColor = Σ_color min(#guess, #solution) − ncPlace`
+ * correct-color-only matches. Returns the feedback row (black markers
  * first, then white markers, rest zero) and the black count. Mirrors
  * `mark_pegs`. */
 export function markPegs(
   pegs: readonly number[],
   solution: readonly number[],
-  ncolours: number,
+  ncolors: number,
 ): { feedback: number[]; ncPlace: number } {
   const npegs = pegs.length;
   let ncPlace = 0;
   for (let i = 0; i < npegs; i++) {
     if (pegs[i] === solution[i]) ncPlace++;
   }
-  let ncColour = 0;
-  for (let c = 1; c <= ncolours; c++) {
+  let ncColor = 0;
+  for (let c = 1; c <= ncolors; c++) {
     let nGuess = 0;
     let nSolution = 0;
     for (let j = 0; j < npegs; j++) {
       if (pegs[j] === c) nGuess++;
       if (solution[j] === c) nSolution++;
     }
-    ncColour += Math.min(nGuess, nSolution);
+    ncColor += Math.min(nGuess, nSolution);
   }
-  ncColour -= ncPlace;
+  ncColor -= ncPlace;
 
   const feedback = new Array(npegs).fill(0);
   let j = 0;
   for (let i = 0; i < ncPlace; i++) feedback[j++] = FEEDBACK_CORRECTPLACE;
-  for (let i = 0; i < ncColour; i++) feedback[j++] = FEEDBACK_CORRECTCOLOUR;
+  for (let i = 0; i < ncColor; i++) feedback[j++] = FEEDBACK_CORRECTCOLOR;
   return { feedback, ncPlace };
 }
 
@@ -280,11 +280,11 @@ export function markPegs(
 
 export function newDesc(p: GuessParams, rng: RandomState): { desc: string } {
   const bmp = new Uint8Array(p.npegs);
-  const colcount = new Int32Array(p.ncolours);
+  const colcount = new Int32Array(p.ncolors);
   for (let i = 0; i < p.npegs; i++) {
     let c: number;
     do {
-      c = randomUpto(rng, p.ncolours);
+      c = randomUpto(rng, p.ncolors);
     } while (!p.allowMultiple && colcount[c]);
     colcount[c]++;
     bmp[i] = c + 1;
@@ -298,7 +298,7 @@ export function validateDesc(p: GuessParams, desc: string): string | null {
   const bmp = hex2bin(desc, p.npegs);
   obfuscateBitmap(bmp, p.npegs * 8, true);
   for (let i = 0; i < p.npegs; i++) {
-    if (bmp[i] < 1 || bmp[i] > p.ncolours) return "Game description is corrupted";
+    if (bmp[i] < 1 || bmp[i] > p.ncolors) return "Game description is corrupted";
   }
   return null;
 }

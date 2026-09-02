@@ -39,21 +39,21 @@ export class SolverScratch {
   }
 }
 
-/** Enact a flood-fill move on `grid` in place: recolour the corner
- * region (and everything it newly reaches) from `(x0,y0)`'s old colour
- * to `newcolour`. `queue` is scratch of length ≥ `w*h`. */
+/** Enact a flood-fill move on `grid` in place: recolor the corner
+ * region (and everything it newly reaches) from `(x0,y0)`'s old color
+ * to `newcolor`. `queue` is scratch of length ≥ `w*h`. */
 export function fill(
   w: number,
   h: number,
   grid: Uint8Array,
   x0: number,
   y0: number,
-  newcolour: number,
+  newcolor: number,
   queue: Int32Array,
 ): void {
-  const oldcolour = grid[y0 * w + x0];
-  if (oldcolour === newcolour) return; // upstream asserts this never happens
-  grid[y0 * w + x0] = newcolour;
+  const oldcolor = grid[y0 * w + x0];
+  if (oldcolor === newcolor) return; // upstream asserts this never happens
+  grid[y0 * w + x0] = newcolor;
   queue[0] = y0 * w + x0;
   let qtail = 0;
   let qhead = 1;
@@ -67,8 +67,8 @@ export function fill(
       const x1 = x + (dir === 0 ? 1 : dir === 2 ? -1 : 0);
       if (x1 >= 0 && x1 < w && y1 >= 0 && y1 < h) {
         const pos1 = y1 * w + x1;
-        if (grid[pos1] === oldcolour) {
-          grid[pos1] = newcolour;
+        if (grid[pos1] === oldcolor) {
+          grid[pos1] = newcolor;
           queue[qhead++] = pos1;
         }
       }
@@ -76,7 +76,7 @@ export function fill(
   }
 }
 
-/** True iff every cell of `grid` is the same colour. */
+/** True iff every cell of `grid` is the same color. */
 export function completed(grid: Uint8Array): boolean {
   for (let i = 1; i < grid.length; i++) if (grid[i] !== grid[0]) return false;
   return true;
@@ -93,9 +93,9 @@ export interface SearchResult {
 
 /**
  * Find the most distant square(s) from `(x0,y0)`. A cell's "distance"
- * is the number of fills needed to absorb it: stepping to a same-colour
- * neighbour is free (stays in the current layer), stepping to a
- * different-colour neighbour costs one. Returns that maximum distance,
+ * is the number of fills needed to absorb it: stepping to a same-color
+ * neighbor is free (stays in the current layer), stepping to a
+ * different-color neighbor costs one. Returns that maximum distance,
  * the count of squares at it, and the size of the distance-0 set.
  *
  * Ported from upstream `search` — a two-queue layered BFS where
@@ -167,12 +167,12 @@ export function search(
 }
 
 /**
- * Try every possible move and choose the one that minimises `search`'s
+ * Try every possible move and choose the one that minimizes `search`'s
  * result, looking `RECURSION_DEPTH` moves ahead. A winning move is
  * immediately best (and records the depth at which it wins, so shallower
  * wins are preferred). Ported branch-for-branch from
  * `choosemove_recurse`; the tie-break order is `dist`, then `number`,
- * then larger `control`, then first colour to achieve it.
+ * then larger `control`, then first color to achieve it.
  */
 function choosemoveRecurse(
   w: number,
@@ -238,8 +238,8 @@ function choosemoveRecurse(
   return bestmove;
 }
 
-/** Pick the solver's next fill colour for `grid` from `(x0,y0)`,
- * considering colours `0..maxmove-1`. */
+/** Pick the solver's next fill color for `grid` from `(x0,y0)`,
+ * considering colors `0..maxmove-1`. */
 export function choosemove(
   w: number,
   h: number,
@@ -254,12 +254,12 @@ export function choosemove(
 }
 
 /** Run the solver to completion from `grid`, returning the full list of
- * fill colours it plays. Used by `solve` (snap) and `hint` (plan). */
+ * fill colors it plays. Used by `solve` (snap) and `hint` (plan). */
 export function solveMoves(
   w: number,
   h: number,
   grid: Uint8Array,
-  colours: number,
+  colors: number,
 ): number[] {
   const scratch = new SolverScratch(w, h);
   const work = Uint8Array.from(grid);
@@ -270,7 +270,7 @@ export function solveMoves(
   const budget = stepBudget("flood solve");
   while (!completed(work)) {
     budget.tick();
-    const move = choosemove(w, h, work, 0, 0, colours, scratch);
+    const move = choosemove(w, h, work, 0, 0, colors, scratch);
     fill(w, h, work, 0, 0, move, scratch.queue0);
     moves.push(move);
   }

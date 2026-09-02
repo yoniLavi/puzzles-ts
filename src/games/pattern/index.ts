@@ -43,10 +43,10 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newPatternDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -261,11 +261,11 @@ function interpretMove(
 // --- hint ------------------------------------------------------------------
 
 /** Highlight data for a Pattern hint step. `cells` are the forced target
- * squares (all one colour — `value`), drawn as a `COL_HINT` highlight only,
+ * squares (all one color — `value`), drawn as a `COL_HINT` highlight only,
  * never pre-filled (the narration says black vs white). `line` is the row /
  * column the deduction reasons over — its clue and line of sight shade
  * `COL_HINT_CELL`. `blackRefs` / `whiteRefs` are the already-placed marks the
- * deduction leans on, ringed teal / violet so their own colour stays visible
+ * deduction leans on, ringed teal / violet so their own color stays visible
  * (the cross-game element-type legend). */
 export interface PatternHint {
   cells: number[];
@@ -435,7 +435,7 @@ export const patternGame: Game<
   findMistakes,
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: PatternParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

@@ -11,7 +11,7 @@
  * The per-cell flag word keeps upstream's exact bit layout (an `Int32Array`
  * of `sflags`): the solver is byte-match-critical, so reproducing its bit
  * arithmetic verbatim is the lowest-risk choice (docs/games/solver-and-generator.md § "Solver-gated generation"). Edges are
- * shared between neighbouring cells — setting one cell's edge mirrors the bit
+ * shared between neighboring cells — setting one cell's edge mirrors the bit
  * onto the adjacent cell — so the two never disagree.
  */
 
@@ -197,7 +197,7 @@ export function sEFlags(b: Board, x: number, y: number, d: number): number {
   return (t ? E_TRACK : 0) | (nt ? E_NOTRACK : 0);
 }
 
-/** The neighbour across edge `d`, and the reciprocal direction, or null. */
+/** The neighbor across edge `d`, and the reciprocal direction, or null. */
 function sEAdj(
   b: Board,
   x: number,
@@ -211,7 +211,7 @@ function sEAdj(
   return null;
 }
 
-/** Set a flag on a given edge of a square (and its shared neighbour edge). */
+/** Set a flag on a given edge of a square (and its shared neighbor edge). */
 export function sESet(b: Board, x: number, y: number, d: number, eflag: number): void {
   const shift = eflag === E_TRACK ? S_TRACK_SHIFT : S_NOTRACK_SHIFT;
   b.sflags[y * b.w + x] |= d << shift;
@@ -219,7 +219,7 @@ export function sESet(b: Board, x: number, y: number, d: number, eflag: number):
   if (adj) b.sflags[adj.ay * b.w + adj.ax] |= adj.ad << shift;
 }
 
-/** Clear a flag on a given edge of a square (and its shared neighbour edge). */
+/** Clear a flag on a given edge of a square (and its shared neighbor edge). */
 export function sEClear(
   b: Board,
   x: number,
@@ -440,7 +440,7 @@ export function status(s: TracksState): GameStatus {
   return s.completed ? "solved" : "ongoing";
 }
 
-// --- completion flash labelling (upstream set_flash_data) ------------------
+// --- completion flash labeling (upstream set_flash_data) ------------------
 
 /** Label each track tile with how far along the track it is (an 8-bit field),
  * so the completion flash can travel along the route. */
@@ -466,7 +466,7 @@ export function setFlashData(b: Board): void {
 
 // --- completion / error analysis (upstream check_completion) --------------
 
-function* tracksNeighbours(b: Board, vertex: number): Iterable<number> {
+function* tracksNeighbors(b: Board, vertex: number): Iterable<number> {
   const { w } = b;
   const x = vertex % w;
   const y = Math.floor(vertex / w);
@@ -514,14 +514,14 @@ export function checkCompletion(b: Board, mark: boolean): boolean {
   }
 
   // No loop allowed.
-  const loops = findLoops(w * h, (v) => tracksNeighbours(b, v));
+  const loops = findLoops(w * h, (v) => tracksNeighbors(b, v));
   if (loops.anyLoop) {
     ret = false;
     if (mark) {
       for (let x = 0; x < w; x++) {
         for (let y = 0; y < h; y++) {
           const u = y * w + x;
-          for (const v of tracksNeighbours(b, u)) {
+          for (const v of tracksNeighbors(b, u)) {
             if (loops.isLoopEdge(u, v)) b.sflags[u] |= S_ERROR;
           }
         }

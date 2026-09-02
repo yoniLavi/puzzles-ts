@@ -99,7 +99,7 @@ const DEDUCTIVE = new Set([
  *
  * **It matches the compressed chain, not the hypothesis.** The first cut also
  * caught "if this cell were …" and instantly failed Clusters on *"If this cell
- * were blue, at most one neighbour could ever match it"* — a sound single-step
+ * were blue, at most one neighbor could ever match it"* — a sound single-step
  * refutation, i.e. a Check, and exactly what the rule permits everywhere. A
  * hypothesis framing is not the defect; asking the reader to carry it forward
  * unaided is.

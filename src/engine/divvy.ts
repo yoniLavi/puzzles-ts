@@ -22,7 +22,7 @@ import { type RandomState, randomUpto } from "./random/index.ts";
 import { shuffle } from "./shuffle.ts";
 
 /**
- * `addremcommon`: walk the eight 8-adjacent neighbours of `(x, y)` in cyclic
+ * `addremcommon`: walk the eight 8-adjacent neighbors of `(x, y)` in cyclic
  * order and count transitions between "owned by `val`" and "not owned". Returns
  * true iff that count is exactly 2 — the criterion that adding the square to (or
  * removing it from) omino `val` keeps the omino simply connected. First requires
@@ -36,28 +36,28 @@ function addremcommon(
   own: Int32Array,
   val: number,
 ): boolean {
-  const neighbours = new Int32Array(8);
+  const neighbors = new Int32Array(8);
   for (let dir = 0; dir < 8; dir++) {
     const dx = (dir & 3) === 2 ? 0 : dir > 2 && dir < 6 ? 1 : -1;
     const dy = (dir & 3) === 0 ? 0 : dir < 4 ? -1 : 1;
     const sx = x + dx;
     const sy = y + dy;
-    neighbours[dir] = sx < 0 || sx >= w || sy < 0 || sy >= h ? -1 : own[sy * w + sx];
+    neighbors[dir] = sx < 0 || sx >= w || sy < 0 || sy >= h ? -1 : own[sy * w + sx];
   }
 
-  // 4-adjacency check (directions 0/2/4/6 are the orthogonal neighbours).
+  // 4-adjacency check (directions 0/2/4/6 are the orthogonal neighbors).
   if (
-    neighbours[0] !== val &&
-    neighbours[2] !== val &&
-    neighbours[4] !== val &&
-    neighbours[6] !== val
+    neighbors[0] !== val &&
+    neighbors[2] !== val &&
+    neighbors[4] !== val &&
+    neighbors[6] !== val
   )
     return false;
 
   let count = 0;
   for (let dir = 0; dir < 8; dir++) {
     const next = (dir + 1) & 7;
-    if ((neighbours[dir] === val) !== (neighbours[next] === val)) count++;
+    if ((neighbors[dir] === val) !== (neighbors[next] === val)) count++;
   }
   return count === 2;
 }

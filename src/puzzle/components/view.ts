@@ -9,10 +9,10 @@ import { styleMap } from "lit/directives/style-map.js";
 import { currentColorScheme } from "../../color-scheme.ts";
 import type { FontInfo, Size } from "../../engine/types.ts";
 import {
-  colourToOKLCH,
+  colorToOKLCH,
   cssColorToOKLCH,
   isGrayChroma,
-  oklchToColour,
+  oklchToColor,
   oklchToCSSColor,
   tintGrays,
 } from "../../utils/color.ts";
@@ -444,16 +444,16 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     const [bgl, bgc, bgh] = bglch;
     // In dark mode, generate from pure white; the engine shifts it off the
     // extreme before any game sees it (`resolvePalette`).
-    const defaultBackgroundColour = isDarkMode
-      ? oklchToColour([1, 0, 0])
-      : oklchToColour([bgl, 0, 0]);
-    const paletteRGB = await this.puzzle.getColourPalette(defaultBackgroundColour);
-    let palette = paletteRGB.map(colourToOKLCH);
+    const defaultBackgroundColor = isDarkMode
+      ? oklchToColor([1, 0, 0])
+      : oklchToColor([bgl, 0, 0]);
+    const paletteRGB = await this.puzzle.getColorPalette(defaultBackgroundColor);
+    let palette = paletteRGB.map(colorToOKLCH);
 
     // Apply dark mode adjustments and overrides — see `dark-palette.ts` for the
     // rule and for why it is a module rather than a block here.
     if (isDarkMode) {
-      const authored = await this.puzzle.darkPalette(defaultBackgroundColour);
+      const authored = await this.puzzle.darkPalette(defaultBackgroundColor);
       palette = darkModePalette(palette, darkMode, authored, bgl);
     }
 

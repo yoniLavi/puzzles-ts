@@ -1,5 +1,5 @@
 /**
- * Bricks behavioural tests (tiers 1 and 2.5). The byte-match generator /
+ * Bricks behavioral tests (tiers 1 and 2.5). The byte-match generator /
  * solver / codec are covered by `bricks-differential.test.ts`; here we pin the
  * hex geometry, the input mapping (the one place a shear-coordinate bug hides),
  * completion/solve through a real `Midend`, findMistakes, and the render frames.
@@ -23,7 +23,7 @@ import {
   type BricksParams,
   type BricksState,
   type BricksUi,
-  bitsColour,
+  bitsColor,
   COL_MASK,
   DIFF_EASY,
   DIFF_NORMAL,
@@ -53,8 +53,8 @@ const FIX_ID = `${encodeParams(FIX_PARAMS, true)}:${FIX.desc}`;
 
 const TS = 48; // PREFERRED_TILE_SIZE, already even
 
-/** Pixel centre of padded-grid cell (col, row) at the default tile size. */
-function centre(
+/** Pixel center of padded-grid cell (col, row) at the default tile size. */
+function center(
   state: BricksState,
   col: number,
   row: number,
@@ -205,7 +205,7 @@ describe("bricks input", () => {
     const state = newState(FIX_PARAMS, FIX.desc);
     const ui = bricksGame.newUi(state);
     const { col, row, i } = firstBlank(state);
-    const c = centre(state, col, row);
+    const c = center(state, col, row);
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
     const move = press(state, ui, LEFT_RELEASE, c.x, c.y);
     expect(move).toMatchObject({ kind: "paint", cells: [{ index: i, to: "shade" }] });
@@ -229,8 +229,8 @@ describe("bricks input", () => {
       }
     }
     expect(a).toBeGreaterThanOrEqual(0);
-    const ca = centre(state, a % state.w, (a / state.w) | 0);
-    const cb = centre(state, (a + 1) % state.w, (a / state.w) | 0);
+    const ca = center(state, a % state.w, (a / state.w) | 0);
+    const cb = center(state, (a + 1) % state.w, (a / state.w) | 0);
     press(state, ui, LEFT_BUTTON, ca.x, ca.y);
     press(state, ui, LEFT_DRAG, cb.x, cb.y);
     const move = press(state, ui, LEFT_RELEASE, cb.x, cb.y) as BricksMove;
@@ -273,7 +273,7 @@ describe("bricks completion and solve (through a real Midend)", () => {
     const cells = [];
     for (let i = 0; i < st.w * st.h; i++) {
       if (!(st.grid[i] & COL_MASK)) continue;
-      cells.push({ index: i, to: bitsColour(grid[i]) });
+      cells.push({ index: i, to: bitsColor(grid[i]) });
     }
     const done = bricksGame.executeMove(st, { kind: "paint", cells });
     expect(done.completed).toBe(true);
@@ -415,7 +415,7 @@ describe("bricks rendering (tier 2.5)", () => {
     });
     expect(result.mistakeCount).toBeGreaterThan(0);
     expect(
-      result.recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR),
+      result.recording.ops.some((o) => o.op === "rect" && o.color === COL_ERROR),
     ).toBe(true);
   });
 });

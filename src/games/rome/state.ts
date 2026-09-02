@@ -129,7 +129,7 @@ export interface RomeState extends RomeBoard {
 /**
  * A move is a *place* (set or clear an arrow), a *pencil* (toggle one mark, or
  * clear the square's marks), or a *solve* (the full-grid solution). Upstream
- * serialises these as `"R x,y,c"` / `"P x,y,c"` / `"S<letters>"`; the
+ * serializes these as `"R x,y,c"` / `"P x,y,c"` / `"S<letters>"`; the
  * discriminated union is the idiomatic-TS equivalent (Loopy D5 / Pearl /
  * Clusters convention).
  */
@@ -153,7 +153,7 @@ export interface RomeUi {
    * a mouse drag. */
   cursor: GridCursor;
   /** `KEYMODE_*`: what the keyboard cursor is armed for — plain movement,
-   * placing an arrow, or pencilling one. Whether the cursor is *shown* is
+   * placing an arrow, or penciling one. Whether the cursor is *shown* is
    * `cursor.visible`, like every other game's. */
   kmode: number;
   /** `MOUSEMODE_*`: the in-flight drag's mode, `OFF` when idle. */
@@ -215,7 +215,7 @@ export function decodeParams(s: string): RomeParams {
   }
   if (s[pos] === "d") {
     pos++;
-    // Upstream: a `d` with an absent or unrecognised char leaves the
+    // Upstream: a `d` with an absent or unrecognized char leaves the
     // difficulty out of range, so `validateParams` rejects it.
     p.diff = DIFFCOUNT + 1;
     if (pos < s.length) {

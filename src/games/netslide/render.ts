@@ -12,18 +12,18 @@
  * build does.
  */
 
-import { BLUE, RED, TEAL } from "../../engine/colour/colours.ts";
+import { BLUE, RED, TEAL } from "../../engine/color/colors.ts";
 import {
   CURSOR,
   FLASH,
   GRID_MID,
   HINT_ACTION,
   INK,
-} from "../../engine/colour/palette.ts";
-import { netslideLowlight } from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/palette.ts";
+import { netslideLowlight } from "../../engine/color/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { NetslideHint } from "./hint.ts";
 import {
   ACTIVE,
@@ -59,7 +59,7 @@ function border(tileSize: number): number {
   return Math.floor((3 * tileSize) / 4) + 1;
 }
 
-// --- palette (mirrors the netslide.c colour enum index-for-index) ---------
+// --- palette (mirrors the netslide.c color enum index-for-index) ---------
 export const COL_BACKGROUND = 0;
 export const COL_FLASHING = 1;
 export const COL_BORDER = 2;
@@ -70,17 +70,17 @@ export const COL_BARRIER = 6;
 export const COL_LOWLIGHT = 7;
 export const COL_TEXT = 8;
 
-/** The hint's colours, appended *past* upstream's enum so the palette above stays
+/** The hint's colors, appended *past* upstream's enum so the palette above stays
  * index-for-index with it. Safe to append here because Netslide declares no
  * dark-mode `paletteOverrides` — nothing addresses a palette slot by number
  * (docs/games/rendering.md § "The palette: three layers, meaning first"). */
 export const COL_HINT = 9;
 /** Likewise appended: the keyboard cursor's gutter arrow, which upstream drew
- * in the powered-wire colour. */
+ * in the powered-wire color. */
 export const COL_CURSOR = 10;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   // The board is the background as handed in: `resolvePalette` has already
   // shifted it off the extremes, so this is the same tone `mkhighlight` games
   // paint (upstream's `frontend_default_colour` versus `game_mkhighlight` is not
@@ -178,26 +178,26 @@ function rectCoords(
   y1: number,
   x2: number,
   y2: number,
-  colour: number,
+  color: number,
 ): void {
   const x = Math.min(x1, x2);
   const y = Math.min(y1, y2);
-  dr.drawRect({ x, y, w: Math.abs(x2 - x1) + 1, h: Math.abs(y2 - y1) + 1 }, colour);
+  dr.drawRect({ x, y, w: Math.abs(x2 - x1) + 1, h: Math.abs(y2 - y1) + 1 }, color);
 }
 
-/** A wire: a coloured line cored inside a black outline, drawn as four offset
- * black lines with the coloured one over the top (upstream
+/** A wire: a colored line cored inside a black outline, drawn as four offset
+ * black lines with the colored one over the top (upstream
  * `draw_filled_line`). */
-function filledLine(dr: GameDrawing, p1: Point, p2: Point, colour: number): void {
+function filledLine(dr: GameDrawing, p1: Point, p2: Point, color: number): void {
   dr.drawLine({ x: p1.x - 1, y: p1.y }, { x: p2.x - 1, y: p2.y }, COL_WIRE, 1);
   dr.drawLine({ x: p1.x + 1, y: p1.y }, { x: p2.x + 1, y: p2.y }, COL_WIRE, 1);
   dr.drawLine({ x: p1.x, y: p1.y - 1 }, { x: p2.x, y: p2.y - 1 }, COL_WIRE, 1);
   dr.drawLine({ x: p1.x, y: p1.y + 1 }, { x: p2.x, y: p2.y + 1 }, COL_WIRE, 1);
-  dr.drawLine(p1, p2, colour, 1);
+  dr.drawLine(p1, p2, color, 1);
 }
 
 /**
- * One tile, including its borders — so a neighbour's wire that reaches into
+ * One tile, including its borders — so a neighbor's wire that reaches into
  * this tile's border is drawn here too.
  *
  * `x`/`y` may be one step outside the grid: while a line is mid-slide the tile
@@ -220,10 +220,10 @@ function drawTile(
   const bx = b + ts * x + Math.trunc(xshift * ts);
   const by = b + ts * y + Math.trunc(yshift * ts);
 
-  // Blank the tile: a border-coloured rect with a background-coloured one inset
+  // Blank the tile: a border-colored rect with a background-colored one inset
   // by the tile border. The tile the hint is placing takes no fill — it is
   // **double-ringed** at the end of this function instead, so the wires that say
-  // *which piece* this is keep their own colour rather than sitting on blue.
+  // *which piece* this is keep their own color rather than sitting on blue.
   const background = tile & FLASHING ? COL_FLASHING : COL_BACKGROUND;
   dr.drawRect({ x: bx, y: by, w: ts + TILE_BORDER, h: ts + TILE_BORDER }, COL_BORDER);
   dr.drawRect(
@@ -239,10 +239,10 @@ function drawTile(
   const cx = TILE_BORDER + (ts - TILE_BORDER) / 2 - 0.5;
   const cy = cx;
   const arm = (ts - TILE_BORDER - 1) / 2;
-  const wireColour = tile & ACTIVE ? COL_POWERED : COL_WIRE;
+  const wireColor = tile & ACTIVE ? COL_POWERED : COL_WIRE;
 
-  // Black outlines first, then the coloured cores over them, so a wire's
-  // outline never paints over a neighbouring wire's core.
+  // Black outlines first, then the colored cores over them, so a wire's
+  // outline never paints over a neighboring wire's core.
   for (const dir of DIRECTIONS) {
     if (!(tile & dir)) continue;
     const from = { x: bx + Math.trunc(cx), y: by + Math.trunc(cy) };
@@ -260,19 +260,19 @@ function drawTile(
         x: bx + Math.trunc(cx + arm * dirX(dir)),
         y: by + Math.trunc(cy + arm * dirY(dir)),
       },
-      wireColour,
+      wireColor,
       1,
     );
   }
 
-  // The box in the middle: black at the centrepiece, and at a dead end either
+  // The box in the middle: black at the centerpiece, and at a dead end either
   // cyan (powered) or blue (not). Nothing at all on a through-tile.
-  let boxColour = -1;
-  if (x === s.cx && y === s.cy) boxColour = COL_WIRE;
+  let boxColor = -1;
+  if (x === s.cx && y === s.cy) boxColor = COL_WIRE;
   else if (wireCount(tile) === 1) {
-    boxColour = tile & ACTIVE ? COL_POWERED : COL_ENDPOINT;
+    boxColor = tile & ACTIVE ? COL_POWERED : COL_ENDPOINT;
   }
-  if (boxColour >= 0) {
+  if (boxColor >= 0) {
     const corners: [number, number][] = [
       [+1, +1],
       [+1, -1],
@@ -283,12 +283,12 @@ function drawTile(
       x: bx + Math.trunc(cx + ts * 0.24 * sx),
       y: by + Math.trunc(cy + ts * 0.24 * sy),
     }));
-    dr.drawPolygon(points, boxColour, COL_WIRE);
+    dr.drawPolygon(points, boxColor, COL_WIRE);
   }
 
-  // Where a neighbour's wire reaches into our border: draw the join across the
+  // Where a neighbor's wire reaches into our border: draw the join across the
   // border when we are wired to it too, and otherwise just a dot marking that
-  // the neighbour comes this far.
+  // the neighbor comes this far.
   for (const dir of DIRECTIONS) {
     const dx = dirX(dir);
     const dy = dirY(dir);
@@ -306,7 +306,7 @@ function drawTile(
 
     if (xshift === 0 && yshift === 0 && tile & dir) {
       // Fully connected: draw right across the tile border. Our own ACTIVE
-      // state is the right colour to use — if we are connected to the other
+      // state is the right color to use — if we are connected to the other
       // tile then the two ACTIVE states agree.
       rectCoords(dr, px - vx, py - vy, px + lx + vx, py + ly + vy, COL_WIRE);
       rectCoords(dr, px, py, px + lx, py + ly, tile & ACTIVE ? COL_POWERED : COL_WIRE);
@@ -317,7 +317,7 @@ function drawTile(
 
   // The hinted tile's own mark: a **double** ring on the tile's frame, drawn
   // last so no wire crosses it. Double, and on the frame rather than inset,
-  // because `drawHintOutline` already puts a single inset ring in this colour on
+  // because `drawHintOutline` already puts a single inset ring in this color on
   // the destination *cell* — the two marks say different things ("move this
   // piece" against "to here"), so they have to look different (the same reason
   // Clusters doubles its danger ring). A mark on a **tile** belongs here rather
@@ -351,7 +351,7 @@ function drawTile(
  * cell's own unshifted position — and not inside `drawTile`, whose whole job is
  * to draw a tile *where the tile currently is*. Drawn there, the destination
  * outline slid along with the line under it (owner-reported): the tile moves, the
- * cell it is being taken to does not. Painting last also keeps a neighbour sliding
+ * cell it is being taken to does not. Painting last also keeps a neighbor sliding
  * across the cell from covering the outline.
  */
 function drawHintTargets(
@@ -739,7 +739,7 @@ export function redraw(
       }
 
       // The completion flash ripples outward: a tile at Chebyshev distance
-      // `dist` from the centre flashes on and off over frames dist … dist+3.
+      // `dist` from the center flashes on and off over frames dist … dist+3.
       if (frame >= 0) {
         const dist = Math.max(Math.abs(x - state.cx), Math.abs(y - state.cy));
         if (frame >= dist && frame < dist + 4) {
@@ -823,7 +823,7 @@ function drawExteriorBarriers(
 }
 
 /** An arrow in the gutter beside every slidable line — every row and column
- * except the centre ones. */
+ * except the center ones. */
 function drawSlideArrows(
   dr: GameDrawing,
   ds: NetslideDrawState,

@@ -11,7 +11,7 @@
  * full tile — parity is with what the browser actually showed.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import {
   ERROR,
   GRID_MID,
@@ -20,11 +20,11 @@ import {
   HINT_EVIDENCE,
   highlightWash,
   INK,
-} from "../../engine/colour/palette.ts";
-import { slantGrounded } from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/palette.ts";
+import { slantGrounded } from "../../engine/color/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { SlantHint } from "./index.ts";
 import type {
   SlantMistake,
@@ -37,7 +37,7 @@ import type {
 export const PREFERRED_TILE_SIZE = 32;
 export const FLASH_TIME = 0.3;
 
-// --- palette (mirrors the slant.c colour enum index-for-index) -----------
+// --- palette (mirrors the slant.c color enum index-for-index) -----------
 export const COL_BACKGROUND = 0;
 export const COL_GRID = 1;
 export const COL_INK = 2;
@@ -52,9 +52,9 @@ export const COL_HINT = 9; // forced square(s), ringed on their own border
 export const COL_HINT_CELL = 10; // evidence area, outlined
 export const COL_HINT_REF = 11; // a cited filled anchor (a doubled ring)
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_GRID] = GRID_MID;
   out[COL_INK] = INK;
@@ -93,10 +93,10 @@ const ERR_BL = 0x00010000;
 const ERR_BR = 0x00020000;
 const CURSOR = 0x00040000;
 const GROUNDED = 0x00080000;
-// Our findMistakes overlay bit (no upstream analogue): an inset red outline.
+// Our findMistakes overlay bit (no upstream analog): an inset red outline.
 const MISTAKE = 0x00100000;
-// Fork hint overlay bits (no upstream analogue). Target/evidence/ring are
-// per-square; the four HINT_* corner bits recolour a driving clue's digit in
+// Fork hint overlay bits (no upstream analog). Target/evidence/ring are
+// per-square; the four HINT_* corner bits recolor a driving clue's digit in
 // the four tiles that draw it (mirroring the ERR_TL/TR/BL/BR clue pattern).
 const HINT_TARGET = 0x00200000;
 const HINT_EVID = 0x00400000;
@@ -194,9 +194,9 @@ function drawTile(
 
   // No hint role in the background. The target is ringed and the evidence
   // outlined, at the end of this function: a Slant evidence square is one of the
-  // clue's *already-decided* neighbours by construction, so it carries the very
+  // clue's *already-decided* neighbors by construction, so it carries the very
   // diagonal the deduction is reasoning from, and a fill over that hides the
-  // premise. The target keeps its own colour for the same reason the move does —
+  // premise. The target keeps its own color for the same reason the move does —
   // a blue square would read as a slash already placed.
   dr.drawRect(
     { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
@@ -257,7 +257,7 @@ function drawTile(
     dr.drawLine({ x: x0, y: y0 + 1 }, { x: x1 + 1, y: y1 }, scol, 1);
   }
 
-  // Dots on grid corners that appear when a slash is in a neighbouring cell.
+  // Dots on grid corners that appear when a slash is in a neighboring cell.
   if (v & (L_T | BACKSLASH)) {
     dr.drawRect(
       { x: coord(x, ts), y: coord(y, ts) + 1, w: 1, h: 1 },
@@ -410,7 +410,7 @@ export function redraw(
   const flashing = flashTime > 0 && Math.floor((flashTime * 3) / FLASH_TIME) !== 1;
 
   // Work out where all the slashes are — a slash in one square affects the
-  // drawing of its neighbours (corner dots), hence the two-phase build.
+  // drawing of its neighbors (corner dots), hence the two-phase build.
   for (let y = -1; y <= h; y++) {
     for (let x = -1; x <= w; x++) {
       todraw[ti(x, y)] = x >= 0 && x < w && y >= 0 && y < h && flashing ? FLASH : 0;
@@ -475,7 +475,7 @@ export function redraw(
   }
 
   // Hint overlay: target square(s) blue, evidence shaded, anchor ringed, the
-  // driving clue's digit recoloured in the four tiles that draw it.
+  // driving clue's digit recolored in the four tiles that draw it.
   const hl = hint?.highlights;
   if (hl) {
     todraw[ti(hl.target.x, hl.target.y)] |= HINT_TARGET;

@@ -47,8 +47,8 @@ describe("Untangle render scenarios", () => {
     const lines = recording.ops.filter((o) => o.op === "line");
     // Plain edges and at least one crossed (red) edge — the board starts
     // tangled and show-crossed-edges defaults ON.
-    expect(lines.some((o) => o.colour === COL_LINE)).toBe(true);
-    expect(lines.some((o) => o.colour === COL_CROSSEDLINE)).toBe(true);
+    expect(lines.some((o) => o.color === COL_LINE)).toBe(true);
+    expect(lines.some((o) => o.color === COL_CROSSEDLINE)).toBe(true);
 
     // Every vertex is drawn as a COL_POINT blob (none is being dragged).
     const pointBlobs = recording.ops.filter(
@@ -58,7 +58,7 @@ describe("Untangle render scenarios", () => {
 
     // The playable-area border is drawn (4 COL_OUTLINE frame lines).
     const borderLines = recording.ops.filter(
-      (o) => o.op === "line" && o.colour === COL_OUTLINE,
+      (o) => o.op === "line" && o.color === COL_OUTLINE,
     );
     expect(borderLines.length).toBe(4);
 
@@ -109,7 +109,7 @@ describe("Untangle render scenarios", () => {
 
     // A COL_HINT line (the move suggestion) and a COL_HINT marker circle
     // at the destination.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_HINT)).toBe(
       true,
     );
     expect(recording.ops.some((o) => o.op === "circle" && o.fill === COL_HINT)).toBe(
@@ -136,21 +136,21 @@ describe("Untangle render scenarios", () => {
       () => {},
     );
     midend.newGameFromId(id);
-    const palette = untangleGame.colours(DEFAULT_BACKGROUND);
+    const palette = untangleGame.colors(DEFAULT_BACKGROUND);
 
     const before = new RecordingDrawing(palette);
     midend.redraw(before);
-    expect(
-      before.ops.some((o) => o.op === "line" && o.colour === COL_CROSSEDLINE),
-    ).toBe(true);
+    expect(before.ops.some((o) => o.op === "line" && o.color === COL_CROSSEDLINE)).toBe(
+      true,
+    );
 
     midend.setPreferences({ "show-crossed-edges": false });
     const after = new RecordingDrawing(palette);
     midend.redraw(after);
-    // No edge is red now; every edge is the plain line colour.
-    expect(after.ops.some((o) => o.op === "line" && o.colour === COL_CROSSEDLINE)).toBe(
+    // No edge is red now; every edge is the plain line color.
+    expect(after.ops.some((o) => o.op === "line" && o.color === COL_CROSSEDLINE)).toBe(
       false,
     );
-    expect(after.ops.some((o) => o.op === "line" && o.colour === COL_LINE)).toBe(true);
+    expect(after.ops.some((o) => o.op === "line" && o.color === COL_LINE)).toBe(true);
   });
 });

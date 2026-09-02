@@ -44,8 +44,8 @@ must clear:
    several moves is emitted as one multi-leg `HintStep` journey (continuation
    legs flagged `continuesPrevious`), so it reads and auto-plays as one
    coherent hint, not N disjoint ones.
-3. **Equivalent moves share a colour.** Moves that share a fate render
-   identically (Palisade: all `COL_HINT`); a distinct colour reads as
+3. **Equivalent moves share a color.** Moves that share a fate render
+   identically (Palisade: all `COL_HINT`); a distinct color reads as
    "different roles" and misleads.
 4. **Pace auto-hint uniformly.** `AUTO_HINT_STEP_MS` (1s) per step in
    [`src/puzzle/puzzle.ts`](../../src/puzzle/puzzle.ts), floored by the move's
@@ -87,7 +87,7 @@ carry the state, so the player never holds the chain in their head; each
 individual hint then narrates a single, self-evident step. This is exactly the
 candidate-elimination pattern (populate → strike one candidate with a one-line
 reason → … → place a naked single): each strike is one step, the marks are the
-externalised memory.
+externalized memory.
 
 ### The forcing boundary
 
@@ -166,7 +166,7 @@ Measure the *shape of the call*, not the length of the sentence.
 The narration *is* the product value, so most of this guide's hard-won lessons
 are about prose. The arc every nontrivial hint follows:
 
-> **indication** (the spotted pattern, named in board terms and generalisable)
+> **indication** (the spotted pattern, named in board terms and generalizable)
 > → **reasoning** (why that pattern forces the move) → **conclusion** (the
 > action, in the necessity voice).
 
@@ -184,7 +184,7 @@ description. The collection has **two houses**, chosen by whether the move is
   white" describes a continuing state instead of a forced decision and reads
   as flat — rewrite to "so it **must be** white". The necessity is the
   *teaching*. Keep the modal in the **conclusion clause only** — *premise*
-  clauses still state facts plainly ("One of these matching neighbours
+  clauses still state facts plainly ("One of these matching neighbors
   **stays** white …, so every other copy **must be** shaded").
 - **Movement / objective games** (Fifteen, Sixteen, Flood — the suggested move
   is *not* a logical necessity, just the recommended next action): use the
@@ -201,7 +201,7 @@ already explicit in the premise.
 
 **Guarded cross-game** (`src/engine/hint-quality.test.ts`): every deductive
 game's steps must match the shared necessity vocabulary; mechanical
-populate/cleanup openers are recognised, and an owner-endorsed phrasing that
+populate/cleanup openers are recognized, and an owner-endorsed phrasing that
 carries necessity in its own words (Filling's "fits exactly into") is a
 *declared idiom* in that file — add to the idiom table deliberately, never by
 loosening the shared pattern. Game-specific phrasing rules (the exact modal
@@ -210,7 +210,7 @@ for a strike vs a placement) stay per-game tests.
 ### Lead with the indication
 
 **Every nontrivial hint SHALL open by naming the *indication* — the
-recognisable board pattern that triggered the deduction — before any
+recognizable board pattern that triggered the deduction — before any
 reasoning** (owner-directed, 2026-06-19). The player should come away able to
 *spot this pattern themselves next time*, not merely convinced that this one
 instance is valid.
@@ -219,7 +219,7 @@ A hint is **pedagogy, not a terse textbook proof**. A proof that jumps
 straight to "shading either of these would force a contradiction, so both are
 white" leaves understanding *as an exercise to the reader*. Good teaching
 states **what you noticed** first, phrased as a pattern the player can learn
-to recognise ("there's a pair of 5s in one column and a pair of 1s in the
+to recognize ("there's a pair of 5s in one column and a pair of 1s in the
 next"), not buried mid-sentence or left implicit in the highlight.
 
 Worked example — Singles `offset`. Even value-aware it still *opened on the
@@ -240,7 +240,7 @@ ones that need care are the multi-element deductions (offset, the corners, the
 sandwich/pair pattern). When in doubt, lead with the indication; it is never
 wrong to.
 
-### Two marks on the board, one "this cell" — tie them, and never by colour
+### Two marks on the board, one "this cell" — tie them, and never by color
 
 **If a step marks more than one element *of the same kind*, a bare "this cell"
 points at neither** (owner-reported, 2026-08-14, on a Clusters frame showing a
@@ -253,10 +253,10 @@ so the sentence is one word short and the player has to know the convention
 before it parses. With **one** mark in view, "this cell" is right and a qualifier
 is noise.
 
-**The fix is never the colour.** *"the cell marked purple"* is the obvious
+**The fix is never the color.** *"the cell marked purple"* is the obvious
 reading and the one thing ruled out: the palette is scheme-relative by
 construction, so a hue named in prose is false under the other scheme, and it is
-unreadable to a colour-blind player. If two marks differ *only* by hue, the marks
+unreadable to a color-blind player. If two marks differ *only* by hue, the marks
 need fixing, not the sentence.
 
 **A solid against a wash is not a hue-only pair** — it differs in *weight*, which
@@ -272,8 +272,8 @@ out to be `HINT_FILL`/`HINT_EVIDENCE` in **dark**, at 0.124.
 Tie them by something the code guarantees, cheapest first:
 
 - **A relation.** Clusters' `contradictionAround` only ever reports the placed
-  cell or one of its four orthogonal neighbours, so *"its ringed red
-  **neighbour**"* identifies both squares at once and is shorter than what it
+  cell or one of its four orthogonal neighbors, so *"its ringed red
+  **neighbor**"* identifies both squares at once and is shorter than what it
   replaced. Bricks already had the shape in one branch — *"The shaded brick
   **above** rests only on this cell"*. **Check the relation holds in code first:**
   Clusters' chain branch could *not* use it, because that break is adjacent to
@@ -355,15 +355,15 @@ the second subtler:
 referent is obvious** — *"This 3 … so it must be shaded"* is fine. When one
 firing forces **several squares of differing values**, list them (`joinNums` →
 *"These squares — 3, 5 and 2 — touch a shaded square…"*); when they **share**
-a value, name it once and pluralise (*"These 3s share a line…"*). For a square
+a value, name it once and pluralize (*"These 3s share a line…"*). For a square
 that is *empty* when acted on there is no value to name — anchor it on a
-concrete neighbour (*"The shaded region of N has only this one empty square to
+concrete neighbor (*"The shaded region of N has only this one empty square to
 grow into"*). Exemplar: every branch of `narrate` in
 [`singles/index.ts`](../../src/games/singles/index.ts) names a value.
 
 The same lesson, learned the hard way on the multi-link deductions:
 
-- **Concrete values beat role words on a subtle deduction.** Distinct colours
+- **Concrete values beat role words on a subtle deduction.** Distinct colors
   alone weren't enough for Singles' corner case — even ambered and shaded, the
   owner couldn't follow *"shading this square would seal off the highlighted
   corner…"*. What unblocked it was making the narration **value-aware** (read
@@ -406,7 +406,7 @@ another is a bug, even when the move is right.** Caught on Singles' all-equal
 leaves one white per line is this diagonal" — but *both* diagonals of an
 all-equal 2×2 leave one white per line, so the premise doesn't justify shading
 *this* diagonal. The real reason is connectivity (at a grid corner the corner
-cell's only neighbours are its two sides, so shading the other diagonal
+cell's only neighbors are its two sides, so shading the other diagonal
 strands it). When two candidate moves both satisfy the stated premise, you're
 describing the wrong reason — find the premise that actually discriminates and
 say *that*. Cheap guard: assert the discriminating phrase present and the
@@ -414,7 +414,7 @@ false one absent (`singles-hint.test.ts` "corner4" checks
 `not.toContain("one white per line")`).
 
 **One technique can be forced several different ways — carry *which*, don't
-pick a favourite (Crossing).** A "only one candidate is left" rung looks like
+pick a favorite (Crossing).** A "only one candidate is left" rung looks like
 it needs one sentence, but the candidates can die of unrelated causes, and
 naming the wrong one is this same bug. Crossing's whole-run placement fires
 when exactly one listed number still fits a run, and the others can be out
@@ -438,7 +438,7 @@ each cause's phrasing *and* that the ones with nothing entered never say
 
 Explaining *why* is the bar, but say it in one sentence, not three
 (owner-directed). Filling's first cut spelled out the full deduction
-("…without exceeding N cells — every other neighbour would overshoot. So it
+("…without exceeding N cells — every other neighbor would overshoot. So it
 must extend here: a N.") and read as a wall of text; the owner trimmed it to
 *"The shaded region of N has only this one empty square to grow into."* —
 same logical content, a third the length. Lean on the picture (the shaded area
@@ -449,7 +449,7 @@ long, cut to the single premise the highlight doesn't already show.
 **Guarded cross-game** (`hint-quality.test.ts`): a hard 300-character ceiling
 per step (longest shipped: 281, Undead's sightline teach). The ceiling catches
 the "rulebook bled into the step" class; terseness *below* it is still an
-editing judgement.
+editing judgment.
 
 ### Conclude with the action the move makes
 
@@ -487,10 +487,10 @@ that value can take.** (And re-read the *fresh-board* firing — see
 
 A name is a claim, and "claim only what you have checked" applies to it
 (owner-flagged 2026-07-14, Netslide). Netslide's hint called the immovable
-tile *"the centre tile"* and its frozen lines *"the centre row / centre
+tile *"the center tile"* and its frozen lines *"the center row / center
 column"* — but `cx` is `⌊w/2⌋`, so on a 4×4 board the tile is at row 3, column
 3, and the player is looking straight at a square that is visibly **not** the
-centre. Two fixes, both of which also came out *shorter*:
+center. Two fixes, both of which also came out *shorter*:
 
 - **Name the element by what it does and how it's drawn.** Netslide's fixed
   tile became *"the source"* — the black box the power comes from — which the
@@ -514,7 +514,7 @@ true of the whole board, every step, forever, is a **rule**, and repeating it
 is noise the player learns to skip (owner-flagged 2026-07-14). Netslide opened
 12% of its steps with
 
-> The centre tile can never move, so the network has to be built around it —
+> The center tile can never move, so the network has to be built around it —
 > and this corner belongs right beside it: take it to row 2 (setting up).
 
 The preamble is a rule the board *already shows*, and the move does not follow
@@ -610,14 +610,14 @@ in its game. Three things worth knowing before you wire it up:
 - **`status()` is called before `next()` every iteration, and that ordering
   can be load-bearing.** Subsets' validator refills the `counts` array its
   later rungs read, so the status call is not merely a check — don't
-  "optimise" it away.
+  "optimize" it away.
 - **Omit `apply` when your rungs mutate as they detect.** Re-applying a firing
   that has already been applied is not merely redundant; for a rung that reads
   its own effect it is wrong.
 
 Adopters: Spokes, Bricks, Clusters, Subsets, Boats. Each refactor was proved
-behaviour-preserving by its existing hint tests passing **unedited** — if a
-test has to change, the extraction changed behaviour; stop and re-evaluate
+behavior-preserving by its existing hint tests passing **unedited** — if a
+test has to change, the extraction changed behavior; stop and re-evaluate
 rather than updating it.
 
 ### Recording the deduction
@@ -670,7 +670,7 @@ cells, give that firing's ops a shared `group` id
 ([`deduction-record.ts`](../../src/engine/deduction-record.ts)) and **merge
 records by group into one multi-cell `HintStep`** (quality-bar rule 2).
 Records of one firing are queued consecutively, so a first-seen-order bucket
-keeps the plan's order. A genuine *chain* (a black → neighbours white → those
+keeps the plan's order. A genuine *chain* (a black → neighbors white → those
 blacken line-mates → …) stays *separate* steps — each link is its own
 teachable local deduction.
 
@@ -693,7 +693,7 @@ clue's line").
 **Never write a refusal message.** Import it from
 [`src/engine/hint-refusal.ts`](../../src/engine/hint-refusal.ts):
 `ALREADY_SOLVED`, `FIX_MISTAKES_FIRST`, `NO_DEDUCTION_LEFT`,
-`CONTRADICTION_UNLOCALISED`, `NO_MOVE_WORTH_MAKING` and friends. The two-line
+`CONTRADICTION_UNLOCALIZED`, `NO_MOVE_WORTH_MAKING` and friends. The two-line
 opening most deductive games want is `commonHintRefusal(completed, mistakes)`.
 
 `hint-refusal.test.ts` enforces it in both directions — a new phrasing fails,
@@ -711,11 +711,11 @@ opposite responses. That is unteachable if the wording changes between games.
 `findMistakes(state).length > 0` guard. Where the board is inconsistent but no
 single entry is provably wrong — or where the game's `findMistakes` is a *rule
 validator* that cannot see a wrong-but-legal entry — the honest message is
-`CONTRADICTION_UNLOCALISED`, which asks the player to undo rather than pointing
+`CONTRADICTION_UNLOCALIZED`, which asks the player to undo rather than pointing
 at a highlight that never comes.
 
 **Which of the two you need is decided by your own `findMistakes`, so read it
-rather than copying a neighbour.** A game whose `findMistakes` re-solves the
+rather than copying a neighbor.** A game whose `findMistakes` re-solves the
 clues and compares already catches a wrong-but-legal entry, and needs no second
 check; a rule validator does not, and its `hint` must make that check itself
 before deducing onward from a doomed board. Every game that needs the second
@@ -733,7 +733,7 @@ The refusal message reaches the player via the banner on **both** paths —
 manual Hint and Auto-Hint route the returned string into the transient banner
 ([`src/puzzle/puzzle.ts`](../../src/puzzle/puzzle.ts) `hint()` →
 `setAutoHintMessage`). A hint-carrying game with `wantsStatusbar = false`
-(e.g. Range) still shows and clears the banner. (Both behaviours are
+(e.g. Range) still shows and clears the banner. (Both behaviors are
 requirements in the [`ts-engine`](../../openspec/specs/ts-engine/spec.md)
 Hint System.)
 
@@ -741,7 +741,7 @@ Hint System.)
 
 Render the hint in `redraw` from the displayed `HintStep` (the midend hands it
 in). The base conventions: the forced cell in `COL_HINT`, equivalent moves in
-the **same** colour, the hint bits folded into the per-tile `Int32Array` cache
+the **same** color, the hint bits folded into the per-tile `Int32Array` cache
 ([`rendering.md`](./rendering.md) § "The tile cache and the diff key"). Exemplar:
 [`range/render.ts`](../../src/games/range/render.ts).
 
@@ -750,7 +750,7 @@ the **same** colour, the hint bits folded into the per-tile `Int32Array` cache
 **The displayed (manual) hint must only mark the cell(s) to act on — paint the
 target `COL_HINT` blue — and must NOT pre-render the move's result**
 (owner-directed, 2026-06-20). Do not fill the cell with the black square /
-circle / colour / digit the move would place. Two reasons, both flagged on
+circle / color / digit the move would place. Two reasons, both flagged on
 Singles: a pre-filled mark (a) **obscures the cell's own content** (Singles
 painted a target black, hiding the `1` printed there, so the hint read as
 nonsense against its own narration), and (b) **reads as already-done** when
@@ -772,11 +772,11 @@ primitives and needs **nothing from a game's `hint()`**; it does mean a player
 experiences the plan at per-step granularity, so the "one deduction firing =
 one journey" grouping is also what makes the stepper read well.
 
-### Echo the move's shape in the hint colour
+### Echo the move's shape in the hint color
 
 When a game's moves come in more than one visible *kind* — Spokes draws a
 **line** between hubs *or* places a **rule-out mark** — the hint highlight
-must use the shape that matches the move, recoloured `COL_HINT`, not force
+must use the shape that matches the move, recolored `COL_HINT`, not force
 every suggestion into one shape. Spokes' first cut drew every forced spoke as
 a `COL_HINT` line; but three of its five rungs force a *mark*, and a solid
 blue line for a rule-out reads as *"connect these"* — the exact opposite of
@@ -784,12 +784,12 @@ the narration, a picture-lies bug. The fix: a `SPOKE_LINE` suggestion is a
 `COL_HINT` line, a `SPOKE_MARKED` suggestion is a `COL_HINT` dot at the
 spoke's rim — the same two shapes the game already draws for a real line and a
 real mark. Rule of thumb: **the hint borrows the game's own vocabulary for the
-action, in the hint colour** — it never invents a shape the player would have
+action, in the hint color** — it never invents a shape the player would have
 to translate, and never shows the shape of the *wrong* action. (Exemplar:
 `spokes/render.ts` line-bit vs mark-bit branches. Sticks draws its forced
 square as a `COL_HINT` **bar in the forced orientation** for the same reason —
 a uniform tint cannot express an orientation.) This is the converse of
-"highlight, never perform": you show *where and which action*, in hint colour,
+"highlight, never perform": you show *where and which action*, in hint color,
 without performing it.
 
 ### Show the evidence as an area
@@ -818,17 +818,17 @@ deduction's evidence area is non-empty — is still worth a per-game test: the
 "visible evidence" test in
 [`range-hint.test.ts`](../../src/games/range/range-hint.test.ts) caught a
 `connect` step whose known-white filter left the area empty (the connectivity
-rule treats every non-black cell as white, so shade non-black neighbours, not
+rule treats every non-black cell as white, so shade non-black neighbors, not
 only marked-white ones).
 
 **Filtering the target out of the evidence is a *per-technique* call, not a
 house rule (Sticks).** Most games drop the acted-on cell from the evidence
-list so the one solid target colour is never diluted — and copying that
+list so the one solid target color is never diluted — and copying that
 everywhere is what emptied a Sticks `unreachable` step: the span its sentence
 counts ("room for only 1 square") *was* the target square, so the frame showed
 a lone blue bar and nothing else. Ask per technique whether the acted-on
 square is genuinely part of the area being reasoned over. A run whose *length*
-is the argument contains it; a clue's already-counted neighbours do not. Same
+is the argument contains it; a clue's already-counted neighbors do not. Same
 list, opposite answers, and the same per-game non-empty assertion catches it.
 
 **The strongest form of "the words and the picture agree" is a count you can
@@ -848,7 +848,7 @@ on "which listed numbers still fit this run" — a fact that lives in the number
 panel under the board — so the hint highlights **both**: the run's squares as
 the area, and the still-fitting numbers as a patch behind their text in the
 panel, with the number a whole-run placement writes in taking the stronger
-target colour. The narration and the picture then agree: *"only one number in
+target color. The narration and the picture then agree: *"only one number in
 the list is 6 digits"* points at exactly one highlighted clue. Two things that
 made it cheap and one that made it correct:
 
@@ -861,11 +861,11 @@ made it cheap and one that made it correct:
   to be folded into *that* key too or the patch never paints
   ([`rendering.md`](./rendering.md) § "The tile cache and the diff key" applies per surface, not
   per game).
-- **Ride behind the existing aid, don't replace it.** Crossing already colours
+- **Ride behind the existing aid, don't replace it.** Crossing already colors
   the clue list by which run each number could go in. The hint draws its patch
-  *under* that ink instead of overriding the colour, so both aids stay
+  *under* that ink instead of overriding the color, so both aids stay
   readable. Guard: assert the step names at least one clue **and** that a
-  hint-coloured rect lands below the grid (`crossing-hint.test.ts`).
+  hint-colored rect lands below the grid (`crossing-hint.test.ts`).
 
 ### Suppression must dismiss on UI_UPDATE
 
@@ -902,7 +902,7 @@ Two shapes:
 problem.** The hint owns the background on those squares, so a
 *background-only* selection cue is invisible exactly when the player is about
 to type there. Fall back to a **foreground** cue on hinted squares, in a
-colour that reads against the hint: Crossing draws the keyboard cursor's
+color that reads against the hint: Crossing draws the keyboard cursor's
 corner marks for a mouse selection too, in dark `COL_GRID` rather than the
 near-white the green would swallow. Guard it with the *discriminator*, not
 just the presence: assert the corner cue appears on a hinted square **and does
@@ -921,15 +921,15 @@ Group) do **not** set it: their hints suppress nothing, so a click there still
 visibly moves the selection. The trigger for this rule is *suppression*, not
 selection.
 
-### The element-type colour legend
+### The element-type color legend
 
-Quality-bar rule 3 ("equivalent moves share a colour") has a converse:
-**premise cells that play *different* roles must NOT share a colour**, or the
+Quality-bar rule 3 ("equivalent moves share a color") has a converse:
+**premise cells that play *different* roles must NOT share a color**, or the
 highlight lies. Singles' 2×2-corner deduction is the cautionary tale — its
-first cut shaded three cells one colour and called them all "two corner
+first cut shaded three cells one color and called them all "two corner
 squares", but those cells are *two* roles: the **matching pair** (cells that
 share a number) and the **corner being protected** (a different cell that gets
-sealed off). The fix: a third highlight role with its own colour
+sealed off). The fix: a third highlight role with its own color
 (`COL_HINT_STRAND`, amber) for the protected corner, disjoint from the shaded
 `COL_HINT_CELL` matching pair and the `COL_HINT` target. Carry the roles as
 separate lists on the hint type and apply them with a clear precedence in
@@ -937,53 +937,53 @@ separate lists on the hint type and apply them with a clear precedence in
 Exemplar: `SinglesHint` + `strandOf`/`narrate` in
 [`singles/index.ts`](../../src/games/singles/index.ts).
 
-This generalises into a **stable per-game colour legend**: when a hint
+This generalizes into a **stable per-game color legend**: when a hint
 narration names more than one distinct *kind* of board element, give each
-*type* its own highlight colour so the words map to the picture — and keep it
-stable (a "shaded square" is the *same* colour in every hint that cites one),
+*type* its own highlight color so the words map to the picture — and keep it
+stable (a "shaded square" is the *same* color in every hint that cites one),
 so the player learns it. Normative rule + scenarios:
 [`ts-engine`](../../openspec/specs/ts-engine/spec.md) Hint System
-("element-type colour legend"). Three non-negotiables:
+("element-type color legend"). Three non-negotiables:
 
-- **Colour is never the sole carrier** (colourblind users). Every legend
-  colour is paired with a non-colour cue — ring vs shade vs fill, the drawn
-  digit, or position — and colour *names* never go in the narration text.
+- **Color is never the sole carrier** (colorblind users). Every legend
+  color is paired with a non-color cue — ring vs shade vs fill, the drawn
+  digit, or position — and color *names* never go in the narration text.
 - **This is orthogonal to rule 3.** The legend governs *premise/element
-  types*; equivalent *forced moves* still all share the one target colour.
-  Don't colour two cells differently just because they're different cells —
+  types*; equivalent *forced moves* still all share the one target color.
+  Don't color two cells differently just because they're different cells —
   only different *types*.
 - **A foreground highlight must contrast with the cell it sits on — never
-  paint the acted-on glyph the same colour as its background fill.** A struck
+  paint the acted-on glyph the same color as its background fill.** A struck
   candidate *digit* must stay legible; a first cut filled its *cell*
   `COL_HINT` *and* drew the digit `COL_HINT`, so it was blue-on-blue and
   vanished — the candidate read as already-removed, exactly the "the hint
   deleted my note" bug (`fix-stale-hint-step`, owner-reported). The solid
-  `COL_HINT` fill is the *placement*-target colour (a cell with no foreground
+  `COL_HINT` fill is the *placement*-target color (a cell with no foreground
   glyph to hide); a **strike** cell keeps the lighter
   `COL_HINT_CELL`/normal background, and the struck candidate is drawn in its
-  normal `COL_PENCIL` colour with a same-colour **strikethrough** as the
+  normal `COL_PENCIL` color with a same-color **strikethrough** as the
   "ruled out" cue. Guard with a tier-2.5 assertion that a strike frame draws
   **no** `COL_HINT` background rect (`towers-hint.test.ts`).
 
 What each game's hints actually do — copy the matching row when you add a hint
 to a similar game:
 
-| game | move | premise type(s) → colour + cue |
+| game | move | premise type(s) → color + cue |
 | --- | --- | --- |
 | Singles | forced cell, blue fill | matching number → `COL_HINT_CELL` shade + digit; cited **black** square → teal `COL_HINT_BLACKREF` ring; cited **white** circle → violet `COL_HINT_WHITEREF` ring; protected corner → amber `COL_HINT_STRAND` |
 | Range | forced cell, blue fill (no mark preview) | undecided premise → `COL_HINT_CELL` shade; cited **black** square → teal `COL_HINT_BLACKREF` ring (same hue as Singles) |
-| Unruly | forced cell, blue fill (grow anim only on auto-hint execution) | empty journey siblings → `COL_HINT_CELL` shade; cited premise / pivotal cells → orange `COL_HINT_REF` ring (**one** colour, not the black/white split — its rings land on black cells, a balanced both-colour row, *and* empty windows, so a state-derived colour is ill-defined) |
+| Unruly | forced cell, blue fill (grow anim only on auto-hint execution) | empty journey siblings → `COL_HINT_CELL` shade; cited premise / pivotal cells → orange `COL_HINT_REF` ring (**one** color, not the black/white split — its rings land on black cells, a balanced both-color row, *and* empty windows, so a state-derived color is ill-defined) |
 | Palisade | forced edge(s), blue `COL_HINT` segments (equivalent edges share it) | region → `COL_HINT_CELL` shade; clue → its drawn digit on the shaded cell |
 | Filling | target square(s), *mild* `COL_HINT` fill, **no digit** | region premise → `COL_HINT_CELL` shade + digit on top |
 | Towers | struck candidate digit(s) `COL_HINT` + cross-through (on a *non*-`COL_HINT` cell so the digit shows); placement target `COL_HINT` fill (no digit to hide) | driving **clue cell(s)** *and* their line of sight → `COL_HINT_CELL` shade (clue + sightline read as one premise region) |
-| Pattern | forced cell(s), blue `COL_HINT` fill (highlight only, no mark) — the reasoned line's clue digits also recolour `COL_HINT` to tie clue↔line | reasoned **row/column** → `COL_HINT_CELL` shade on its *undecided* cells; an overlap run's anchoring **black** mark → teal `COL_HINT_BLACKREF` ring (white anchors → violet `COL_HINT_WHITEREF`). White ("no run reaches here") firings ring *nothing* — that deduction leans on the whole line's packing, so a ring would over-claim; the shaded line + highlighted clue is the evidence. |
-| Light Up | forced square(s), blue `COL_HINT` fill (bulb *and* mark targets identical — the narration says which) | evidence squares carried as one list, cue split by the cell's own state: a **dark** square → `COL_HINT_CELL` shade, a **lit/bulb** square → teal `COL_HINT_LITREF` ring (a fill would hide the "already lit" premise); the unlit square a deduction protects → amber `COL_HINT_DARKREF` ring; the driving clue → its digit recolours `COL_HINT` (the light `COL_HINT_CELL` was tried first and is unreadable as a cue — nearly white on black) |
-| Slant | forced square(s), blue `COL_HINT` fill (no slash preview); a clue firing lights all its forced squares and drops them as its multi-leg journey advances | a **clue** firing → the clue's digit recolours `COL_HINT` + its already-decided neighbour squares `COL_HINT_CELL` shade; a **loop/dead-end** firing → the connectivity chain / trapped-point components `COL_HINT_CELL` shade (plus the trapped points' incident squares); an **equivalence** firing → teal `COL_HINT_REF` ring on the cited already-filled anchor |
-| Netslide | the tile being placed, `COL_HINT` fill (its wires still drawn on top); the border arrow to press, `COL_HINT` | its destination outlined `COL_HINT` — **solid** when the finished board really wants that tile's wires there, **dashed** when the plan is only passing through (the non-colour cue distinguishing *arrived* from *setting up*) |
+| Pattern | forced cell(s), blue `COL_HINT` fill (highlight only, no mark) — the reasoned line's clue digits also recolor `COL_HINT` to tie clue↔line | reasoned **row/column** → `COL_HINT_CELL` shade on its *undecided* cells; an overlap run's anchoring **black** mark → teal `COL_HINT_BLACKREF` ring (white anchors → violet `COL_HINT_WHITEREF`). White ("no run reaches here") firings ring *nothing* — that deduction leans on the whole line's packing, so a ring would over-claim; the shaded line + highlighted clue is the evidence. |
+| Light Up | forced square(s), blue `COL_HINT` fill (bulb *and* mark targets identical — the narration says which) | evidence squares carried as one list, cue split by the cell's own state: a **dark** square → `COL_HINT_CELL` shade, a **lit/bulb** square → teal `COL_HINT_LITERF` ring (a fill would hide the "already lit" premise); the unlit square a deduction protects → amber `COL_HINT_DARKREF` ring; the driving clue → its digit recolors `COL_HINT` (the light `COL_HINT_CELL` was tried first and is unreadable as a cue — nearly white on black) |
+| Slant | forced square(s), blue `COL_HINT` fill (no slash preview); a clue firing lights all its forced squares and drops them as its multi-leg journey advances | a **clue** firing → the clue's digit recolors `COL_HINT` + its already-decided neighbor squares `COL_HINT_CELL` shade; a **loop/dead-end** firing → the connectivity chain / trapped-point components `COL_HINT_CELL` shade (plus the trapped points' incident squares); an **equivalence** firing → teal `COL_HINT_REF` ring on the cited already-filled anchor |
+| Netslide | the tile being placed, `COL_HINT` fill (its wires still drawn on top); the border arrow to press, `COL_HINT` | its destination outlined `COL_HINT` — **solid** when the finished board really wants that tile's wires there, **dashed** when the plan is only passing through (the non-color cue distinguishing *arrived* from *setting up*) |
 | Crossing | the squares to write into, solid **green** `COL_HINT` (green, not the collection's blue — see below); a struck note keeps its normal `COL_PENCIL` digit + strikethrough on a *non*-target background | the run(s) reasoned over → pale-green `COL_HINT_CELL` shade; **and the still-fitting listed numbers → the same two shades as a patch behind their text in the clue panel** (§ "Off-board evidence") |
-| Spokes | the forced spoke, in `COL_HINT` — **a line** when the move draws a line, **a rim dot** when the move places a mark (§ "Echo the move's shape in the hint colour") | the hubs whose clue/lines/connectivity are the argument → `COL_HINT_CELL` ring. A saturated hub forces several spokes as one multi-leg journey, all in the one colour |
-| Sticks | the forced square drawn as a `COL_HINT` **bar in the forced orientation**; green `COL_LINE` stays the placed line, so the hint is never mistaken for the move | the run / span / clue-sides the argument counts → one `evidence` list, cue split by the square's own state: a **white** square is washed `COL_HINT_CELL`, a **black clue** is *ringed* the same colour (a wash would hide the blackness the argument is about). The list's length equals the number the sentence states |
-| Galaxies | the **deduced** cell, solid **purple** `COL_HINT` (not blue — see below); the 180° partner the same move claims, a `COL_HINT` **outline over the ordinary evidence shading** (same hue, they share a fate; far less weight, only one is what the words are about); the wall it draws, a `COL_HINT` bar drawn *whether or not the wall exists yet*; the dot it points at, a **filled `COL_HINT` halo with the dot repainted on top** — **unless the dot stands on a cell just filled**, where a mark in the fill's own colour is invisible and the narration names the dot by position instead | the cells / walls / dots the argument reasons over → `COL_HINT_CELL` teal (a galaxy's reach, a cut-off piece, the partner across a dot, an already-drawn wall). One ring role at a time, so "the ringed dot" is never ambiguous |
+| Spokes | the forced spoke, in `COL_HINT` — **a line** when the move draws a line, **a rim dot** when the move places a mark (§ "Echo the move's shape in the hint color") | the hubs whose clue/lines/connectivity are the argument → `COL_HINT_CELL` ring. A saturated hub forces several spokes as one multi-leg journey, all in the one color |
+| Sticks | the forced square drawn as a `COL_HINT` **bar in the forced orientation**; green `COL_LINE` stays the placed line, so the hint is never mistaken for the move | the run / span / clue-sides the argument counts → one `evidence` list, cue split by the square's own state: a **white** square is washed `COL_HINT_CELL`, a **black clue** is *ringed* the same color (a wash would hide the blackness the argument is about). The list's length equals the number the sentence states |
+| Galaxies | the **deduced** cell, solid **purple** `COL_HINT` (not blue — see below); the 180° partner the same move claims, a `COL_HINT` **outline over the ordinary evidence shading** (same hue, they share a fate; far less weight, only one is what the words are about); the wall it draws, a `COL_HINT` bar drawn *whether or not the wall exists yet*; the dot it points at, a **filled `COL_HINT` halo with the dot repainted on top** — **unless the dot stands on a cell just filled**, where a mark in the fill's own color is invisible and the narration names the dot by position instead | the cells / walls / dots the argument reasons over → `COL_HINT_CELL` teal (a galaxy's reach, a cut-off piece, the partner across a dot, an already-drawn wall). One ring role at a time, so "the ringed dot" is never ambiguous |
 
 **If the game has already spent the hint hue, the *hint* moves — and takes the
 board with it (Crossing).** `COL_HINT` blue is the collection's default, not a
@@ -994,7 +994,7 @@ is within eight hundredths of that wash in OKLCH — a hint mark the player
 reads as "across". So Crossing's hint took **green**, the far corner of the
 wheel from both dimension hues, and — the half that actually settles it — **a
 displayed hint suppresses the run wash entirely**, so only one meaning of
-"washed square" is ever on screen. Rule of thumb: check the new hint colour
+"washed square" is ever on screen. Rule of thumb: check the new hint color
 against the game's *existing* legend in OKLCH before assuming the default, and
 when two washes would coexist, decide which one owns the board while it is up.
 
@@ -1005,7 +1005,7 @@ together the moment the player drags to follow the hint (a cell→dot drag rings
 every dot the cell may join; the hint rings the one it must). Same shape, same
 object, same instant, so the hint took **purple**. The tell that this is the
 real thing and not a tidy-up: the two roles agree about *what* they point at,
-which is exactly when one shared colour is most confusing rather than least.
+which is exactly when one shared color is most confusing rather than least.
 
 **But when the thing holding the hue is the *cursor*, the cursor moves
 (Sticks).** Crossing's blue carried *information about the puzzle*, which is
@@ -1019,12 +1019,12 @@ spent is **purple**, twice already (`spokes/render.ts`,
 Two reusable legend readings: (1) **teal = "a cited black square", violet =
 "a cited white square"** is a cross-game reading worth preserving — reuse
 those hues for a decided black/white premise, and pick a *different* hue
-(Unruly's orange) when a game's premise ring isn't a single decided colour.
-(2) When the ring set is **mixed** (filled + empty, or both colours), use
-**one** premise colour, not a per-cell split.
+(Unruly's orange) when a game's premise ring isn't a single decided color.
+(2) When the ring set is **mixed** (filled + empty, or both colors), use
+**one** premise color, not a per-cell split.
 
 **Single-action *imperative* hints are exempt.** Movement/objective games name
-only **one** element type — the tile/colour being moved — so there is no
+only **one** element type — the tile/color being moved — so there is no
 premise type to disambiguate. The legend bites only when a hint narrates a
 *premise* distinct from the *move*.
 
@@ -1035,21 +1035,21 @@ evidence area is outlined unless the game can say that nothing is drawn on it.
 The mechanism is [`engine/hint-mark.ts`](../../src/engine/hint-mark.ts); this
 section is the rule and the reasoning.
 
-#### Why a fill cannot work, whatever colour it is
+#### Why a fill cannot work, whatever color it is
 
 `HINT_FILL` behind a pencil mark scored **1.91:1** in light and **1.96:1** in
-dark, and behind an entered digit 2.20 / 2.71. It is not fixable by recolouring:
+dark, and behind an entered digit 2.20 / 2.71. It is not fixable by recoloring:
 the pale end of the palette holds exactly one cool wash and the evidence has it,
 so the only hues clearing ~2.6:1 are the ones nearest `ERROR_WASH` — which would
 make the cell the hint points at look like the cell that is *wrong*. A joint
 search over both hint roles, every hue and both schemes returns **no feasible
 arrangement** (owner-reported, 2026-08-22; the search is in
 `walk-tactic-hint-chains` D7). The role is gone from the palette, so nobody
-reopens the question by retuning a colour.
+reopens the question by retuning a color.
 
 A mark drawn on the cell's **border** is read *against* a surface rather than
 *through* it, so the constraint disappears instead of being traded, and the mark
-can take a strong colour — **`HINT_ACTION`**, the emphatic blue this cell always
+can take a strong color — **`HINT_ACTION`**, the emphatic blue this cell always
 meant. It also unifies two branches the candidate games had split: they
 suppressed the fill whenever candidates were struck (Towers: *"painting the cell
 COL_HINT as well would hide the very digit the hint is crossing out"*), so on a
@@ -1060,7 +1060,7 @@ to hunt for the strikethrough.
 a genuinely empty cell — measured, one frame at a time — and were converted
 anyway (owner, 2026-08-22). Two reasons: one mark should mean one thing across
 the collection, and in a shading game (Bricks, Clusters, Unruly, Singles,
-Pattern, Slant) the move *is* "give this cell a colour", so a solid fill says
+Pattern, Slant) the move *is* "give this cell a color", so a solid fill says
 with the board what the narration is still proposing.
 
 #### Where the band goes, and who rubs it out
@@ -1072,8 +1072,8 @@ it decides who undoes the mark:
 - **Outside** (`outer > 0`) — Keen and Solo have a `2·GRIDEXTRA + 1` gutter of
   `COL_GRID` backing; Unequal has a `TILESIZE/2` gap. The mark costs the content
   nothing. **No tile owns those pixels**, so `HintMarks` is told the gutter's
-  resting colour: it paints a moved mark back, and **restamps a mark that stayed
-  every frame**, because a neighbour repainting for its own reasons widens its
+  resting color: it paints a moved mark back, and **restamps a mark that stayed
+  every frame**, because a neighbor repainting for its own reasons widens its
   background into the shared gutter and would clip a side off.
 - **Inside** (`outer = 0`) — Towers, Filling, Crossing, Dominosa and Salad tile
   exactly and draw their own per-cell outline, so the band replaces it. Nothing
@@ -1086,9 +1086,9 @@ it decides who undoes the mark:
   read as one.
 
 The band is the width of the border it replaces, not the heaviest line that fits:
-it reads as a highlight by **colour**, not by weight. The inner reach is bounded
-by the content, and the bound is arithmetic rather than taste — Undead's pencilled
-monster is a circle of radius `2/5` of its `TILESIZE/2` box centred a quarter-tile
+it reads as a highlight by **color**, not by weight. The inner reach is bounded
+by the content, and the bound is arithmetic rather than taste — Undead's penciled
+monster is a circle of radius `2/5` of its `TILESIZE/2` box centered a quarter-tile
 in, so it clears the edge by `TILESIZE/20`; Unequal's greater-than chevron reaches
 to within `GAP/4 − 1` of the cell it points away from. Each game's `markBand`
 records its own.
@@ -1098,7 +1098,7 @@ records its own.
 **Outline** where the cells carry anything the player has to read — digits,
 pencil marks, clue glyphs, a placed slash, an association's own black or white
 background. One rule draws both shapes it needs: paint a side wherever the
-neighbour across it is not also evidence, so a contiguous region (a cage, a row,
+neighbor across it is not also evidence, so a contiguous region (a cage, a row,
 a line of sight) comes out as a single contour, concave corners and all, and a
 scattered set (a forcing chain's cells) as one ring per cell — honest, because
 they really are separate cells.
@@ -1126,7 +1126,7 @@ Note what is *not* an option: dropping the evidence mark. Keen's narration says
 the only thing identifying which — the deixis rule two sections up, enforced by
 geometry rather than prose.
 
-Give an outline a **`_BOLD`** colour, not the base. `colour-dark-check` is what
+Give an outline a **`_BOLD`** color, not the base. `color-dark-check` is what
 settles it: a base step at the same lightness in both schemes lands close to a
 pale board and far from a dark one — a soft line under one scheme and a bright
 one under the other — and the check flags exactly that. The bold step is defined
@@ -1138,11 +1138,11 @@ that happen to agree.
 
 #### Guarding it
 
-Guard the *shape*, not the colour: "some rect is `COL_HINT`" is precisely what a
+Guard the *shape*, not the color: "some rect is `COL_HINT`" is precisely what a
 fill also satisfies, so it would pass unchanged through the very rewrite that
 removed the fills. [`hint-mark.test.ts`](../../src/engine/hint-mark.test.ts)
-sweeps the `hint-games.ts` enrolment and asserts that no rect in a game's hint
-colours is cell-sized and thick in both directions, reading each game's palette
+sweeps the `hint-games.ts` enrollment and asserts that no rect in a game's hint
+colors is cell-sized and thick in both directions, reading each game's palette
 indices out of its own `render.ts` exports so there is no second list to drift.
 Per-game, [`mark-shape.ts`](../../src/engine/testing/mark-shape.ts) gives
 `expectRing` (four thin rects, none solid) and `expectContour` (`2w + 2` sides
@@ -1236,7 +1236,7 @@ narration never mentioned, and decide them **wrongly**. Two rules:
 
 Three of Filling's four techniques have clean local evidence; the fourth —
 candidate elimination — reasons *globally* (a number is ruled out because an
-orthogonal neighbour equals it **or** because no region of that size can reach
+orthogonal neighbor equals it **or** because no region of that size can reach
 the cell). Don't fabricate a tidy area — state *both* mechanisms honestly
 ("it would sit next to an equal number, or belong to a region that can't reach
 the right size here") and **assert the visible-evidence invariant only for the
@@ -1250,7 +1250,7 @@ deduction carries evidence".
 A per-line solver like Pattern's (`doRow`/`doRecurse`) computes a line's
 forced cells by **intersecting every legal run placement** — it returns
 *which* cells are forced but carries **no reason**, so narrating "why" needs
-re-derivation, not a threaded recorder. Compute the recognisable named
+re-derivation, not a threaded recorder. Compute the recognizable named
 techniques directly from the line's **leftmost and rightmost feasible run
 packings**:
 
@@ -1263,9 +1263,9 @@ packings**:
 Both are **subsets** of what the full intersection solver forces, so keep the
 complete `doRow` solver as the **general single-line intersection** bottom
 rung for any cell the two elegant techniques miss. This is **not** a "just
-because" catch-all — every cell `doRow` forces is that colour in *every*
+because" catch-all — every cell `doRow` forces is that color in *every*
 arrangement of the line's runs consistent with its marks, i.e. overlap
-generalised to the whole clue, so it is a real named technique. Narrate it in
+generalized to the whole clue, so it is a real named technique. Narrate it in
 the necessity voice — *"Whichever way this row's runs fit, these cells must be
 black / must stay white."* — **never** the misleading *"only one arrangement
 fits"* (the deduction is all-arrangements-agree, not one-arrangement-only).
@@ -1295,7 +1295,7 @@ state-of-being verb ("has nowhere to slide") rather than loosening the guard.
 When the solver forces a move by **contradiction** — tentatively set a cell,
 and if the board's validity oracle returns INVALID the cell is forced the
 other way — you often need *no separate recorder at all*, because the oracle
-**already localises which rule broke and where**. Bricks' `bricksValidate` ORs
+**already localizes which rule broke and where**. Bricks' `bricksValidate` ORs
 a per-cell `FE_*` flag for each violation; the hint's `nextForcedMove` re-runs
 the rejected trial with an `errors` array and reads the flags back to build
 the reason — with the evidence cells falling straight out of the flagged
@@ -1303,7 +1303,7 @@ positions. Two things make this clean:
 
 - **The reason is the rejected trial's flags, not the accepted move's.** The
   move is "cell must be *unshaded*"; the *why* lives in what shading it broke.
-  Set the trial colour, validate into `errors`, classify, restore. A fixed
+  Set the trial color, validate into `errors`, classify, restore. A fixed
   priority (Bricks: three → gravity → count) picks the clearest when several
   fire.
 - **The recording path stays out of the generator.**
@@ -1348,7 +1348,7 @@ source.
 ### The honest chain tier
 
 Sometimes a whole **technique is intrinsically a multi-step chain the game has
-no vocabulary to externalise**, and the honest treatment is the only compliant
+no vocabulary to externalize**, and the honest treatment is the only compliant
 one (Slant, `add-slant-hint`). Slant's four move-producing techniques: three
 are clean and glance-able — clue-counting, loop avoidance, dead-end
 avoidance — and cover ~94–98% of firings (*measure first*: a throwaway
@@ -1360,7 +1360,7 @@ The fourth, **equivalence-to-an-already-filled-square**, is the Palisade
 "share a fate" idea, but its justification is a *chain* — the lock was
 established by a pairing or v-shape argument several fixpoint passes earlier —
 and Slant has **no pencil mark** to accumulate that chain onto the board (the
-externalisation route is closed). So compressing it into one glance-able
+externalization route is closed). So compressing it into one glance-able
 sentence is impossible without lying. The honest tier: name the technique and
 cite the anchor — *"This square is locked to the same slant as the ringed one
 — the clues around them leave no other pairing — so since that one is a
@@ -1396,7 +1396,7 @@ Slant's honest tier cites its chain's *anchor* and stops; Clusters
 depth-1 chains are frequent** (39–56% of boards — measured first): the whole
 hypothetical is displayed **statically in one step's highlights**. The target
 stays a plain `COL_HINT` fill ("suppose this cell were blue"), each cell the
-hypothesis would force carries a **small centre mark of its forced colour**
+hypothesis would force carries a **small center mark of its forced color**
 (deliberately tile-unlike in size, so it reads as hypothetical, not placed —
 this is NOT the "highlight, never perform" pre-placement, which governs the
 *target*), and the tile where the contradiction lands gets a **double danger
@@ -1429,7 +1429,7 @@ ring**. Four transferable mechanics:
 
 Exemplars: `deduceHintPlan`/`chainToContradiction` in
 [`clusters/solver.ts`](../../src/games/clusters/solver.ts) (a parallel
-recorder re-deriving each firing's reason via a neighbourhood-only error
+recorder re-deriving each firing's reason via a neighborhood-only error
 check), `narrate` in [`clusters/index.ts`](../../src/games/clusters/index.ts).
 
 ### Number the chain — the order is the fact the marks used to lose
@@ -1467,7 +1467,7 @@ tile's bottom-right corner in `HINT_ORDER`. Three things to know:
 and it was prototyped and rejected on measurement: an arrow claims *this link
 forces that one*, which is false in **34%** of Clusters' links (delete the
 predecessor and the successor is still forced — what forces it is its own
-neighbourhood, not the cell before it in discovery order), and half its links are
+neighborhood, not the cell before it in discovery order), and half its links are
 not adjacent, so the arrows crossed the board. A *true* implication chain like the
 Latin family's is not thereby entitled to arrows either: one mark should mean one
 thing collection-wide, so every game draws the weakest claim every chain can
@@ -1483,7 +1483,7 @@ games, `LatinVocab` for heights/elements/letters), and Clusters'
 
 Most deductive hints only ever *place*; a game whose own move set includes a
 "this can't be filled" annotation (Dominosa's **barrier edge**) can
-externalise its rule-out deductions directly onto the board instead of
+externalize its rule-out deductions directly onto the board instead of
 cramming the reasoning into a placement's narration. Dominosa's hint emits
 **two kinds of step** off one recorder:
 
@@ -1549,7 +1549,7 @@ copying to any game whose notation and whose goal are different move sets:
 
 - **A cell the move *comes along to* is not the cell the words are about.**
   The same move claims a cell and its 180° partner, and painting both the
-  action colour made every "this cell" ambiguous (owner-reported at
+  action color made every "this cell" ambiguous (owner-reported at
   acceptance). They are not equivalent moves in rule 3's sense — one is
   deduced, the other follows by a symmetry the player already knows — so the
   deduced cell fills solid and the partner takes an **outline of the same
@@ -1567,7 +1567,7 @@ copying to any game whose notation and whose goal are different move sets:
 - **A hairline is not a highlight.** `drawCircle` strokes one pixel wide, so
   the concentric-ring trick for weight (borrowed from the drag preview) was
   nearly invisible beside a solid cell fill. A **filled halo with the dot
-  repainted on top** carries weight and keeps the dot's own colour, which the
+  repainted on top** carries weight and keeps the dot's own color, which the
   narration names ("the ringed *white* dot") — filling the dot itself would
   have cost the sentence its noun.
 
@@ -1582,7 +1582,7 @@ copying to any game whose notation and whose goal are different move sets:
   **any bound on a plan must be a bound on its output, because a bound on its
   input silently becomes a refusal.**
 - **A search is not a technique, so it is not a hint (owner, 2026-08-11).**
-  Galaxies shipped a rung for the top tier that hypothesised a cell's dot, ran
+  Galaxies shipped a rung for the top tier that hypothesized a cell's dot, ran
   the whole deduction fixpoint from it, and concluded from the one alternative
   that did not break the board. It was sound, it was narrated, it solved every
   Unreasonable board — and it was **removed**, because "I tried them all and
@@ -1610,8 +1610,8 @@ copying to any game whose notation and whose goal are different move sets:
 
 Two smaller ones, both from reading real frames rather than the data:
 
-- **Don't ring what you have just filled.** The action colour on a dot standing
-  inside an action-coloured cell is invisible. That firing's narration names the
+- **Don't ring what you have just filled.** The action color on a dot standing
+  inside an action-colored cell is invisible. That firing's narration names the
   dot by position instead ("the white dot between them"), and the renderer skips
   a ring on any cell it has filled — the words and the picture change together.
 - **A cell that *holds* its dot shows no arrow**, so "these two cells point at
@@ -1622,9 +1622,9 @@ Two smaller ones, both from reading real frames rather than the data:
 
 A game with no upstream move animation (`animLength` 0) can still make
 auto-hint read as motion with a short **geometric** placement animation:
-`drawRect` takes a palette **index**, not RGB, so don't colour-tween — grow
-the new colour from the cell centre over `animTime`, drawing the previous
-colour beneath (animating cells bypass the cache via the Flip 255-sentinel
+`drawRect` takes a palette **index**, not RGB, so don't color-tween — grow
+the new color from the cell center over `animTime`, drawing the previous
+color beneath (animating cells bypass the cache via the Flip 255-sentinel
 idiom). Return a small base `animLength` for a single-cell change (0 for bulk
 `solve`/no-ops); because it's > 0 the midend stretches a hint-executed move to
 the uniform `HINT_ANIM_S`, so each auto-hint step plays as a visible fill with
@@ -1695,7 +1695,7 @@ narration would fabricate a non-sequitur, and the hint ships with an **empty
   repeat until solved / no improvement / step cap — yields a multi-step plan
   auto-hint plays as a progressive cleanup.
 - **Secondary objectives as a tie-break, not a second pass.** The plain
-  barycentric step collapses the layout toward the centre; give each move
+  barycentric step collapses the layout toward the center; give each move
   several candidate targets and, among those with the *best primary score*,
   pick the best on a secondary objective (pairwise anti-clustering). Keep the
   primary strictly primary; verify with a same-board A/B that the enhanced
@@ -1734,7 +1734,7 @@ An empty `explanation` is the *floor*. **Inertia**
 ([`inertia/hint.ts`](../../src/games/inertia/hint.ts)) is the exemplar of the
 richer shape: no move is *forced* by logic, but every move has a concrete
 consequence, and the thing beginners get wrong — *you don't choose where you
-stop* — is exactly what a hint can say out loud. Its narration is organised as
+stop* — is exactly what a hint can say out loud. Its narration is organized as
 **verified claims**, one branch per claim it can actually check: forced (every
 other direction is a mine — a genuine necessity claim), collecting (what the
 slide sweeps up, and what brings it to a halt), stranding (grabbing that gem
@@ -1810,7 +1810,7 @@ partial-plan return. A game supplies its board, its finished board, its legal
 moves, **a `heuristic(board)`**, and when to run the exact search. Exemplar:
 [`netslide/hint.ts`](../../src/games/netslide/hint.ts).
 
-Two lessons, both of which cost a full debugging cycle and generalise past
+Two lessons, both of which cost a full debugging cycle and generalize past
 this family:
 
 **(a) A distance measure must be recomputed against the board it is measuring
@@ -1862,7 +1862,7 @@ load-bearing properties, **each got wrong first**:
    that finishes it.**
 
 And a structural note: **the planner works on the board the player sees, not
-on labelled pieces.** For a game with identical pieces that is *necessary* —
+on labeled pieces.** For a game with identical pieces that is *necessary* —
 every slide on an odd-width torus is an even permutation, so a target that
 distinguishes identical tiles can sit in a coset the board cannot reach, while
 the finished *picture* is two moves away.
@@ -1883,15 +1883,15 @@ puzzle"*, on a board a player was staring at. Owner-reported, and not
 acceptable — that is an ordinary way to play.
 
 The answer was recoverable all along, because the board constrains it savagely
-(`netslide/reconstruct.ts`): the tiles are the same tiles, the centre tile
+(`netslide/reconstruct.ts`): the tiles are the same tiles, the center tile
 cannot have moved, wires must meet and may not cross a barrier, and the
 network is a tree. Fill the grid **most-hemmed-in cell first** — every placed
-neighbour *forces* one of a tile's wires — and the search is under a
-millisecond on most boards. Two lessons generalise:
+neighbor *forces* one of a tile's wires — and the search is under a
+millisecond on most boards. Two lessons generalize:
 
 - **The recovered answer is slide-invariant, and that is where its stability
   comes from.** It turns only on the tile multiset, the barriers and the
-  centre tile — none of which a slide changes — so it is the *same* grid for
+  center tile — none of which a slide changes — so it is the *same* grid for
   the whole game. Free stability, by construction. The enumeration order must
   not depend on the current board: picking "the finished grid nearest to where
   the tiles are now" would hand the instability straight back.
@@ -1900,7 +1900,7 @@ millisecond on most boards. Two lessons generalise:
   when `k` is odd — so on a 3×3 every move is even and only *half* the
   arrangements exist at all. A repeated tile buys a parity flip for free —
   **but only if both copies are movable**; a duplicate that merely matches the
-  *centre* tile buys nothing, which is the bug the brute-force check caught.
+  *center* tile buys nothing, which is the bug the brute-force check caught.
   Do not reason your way to a parity rule and trust it: enumerate a small
   board's entire reachable set and assert the predicate agrees.
 
@@ -1908,7 +1908,7 @@ millisecond on most boards. Two lessons generalise:
 
 ### A hint must resume from any position
 
-The single most important behavioural guarantee, and the one most easily
+The single most important behavioral guarantee, and the one most easily
 missed: **a hint asked from a board the player reached by their own play must
 still make progress and lead to a solved board** (as long as it's solvable
 with no mistakes). In the app a self-played move drops any stored plan, so the
@@ -1954,7 +1954,7 @@ until no progress" fixpoint where a rule reports progress without changing the
 board never returns, and the only backstop is a wall-clock timeout (slow,
 opaque, load-sensitive). Tick a
 [`stepBudget`](../../src/engine/step-budget.ts) once per fixpoint iteration so
-a non-terminating loop throws a labelled error in milliseconds. Make it
+a non-terminating loop throws a labeled error in milliseconds. Make it
 **opt-in on the hint path** — gate it on the recorder/hint signal the function
 already carries — so the generator runs the same fixpoint *unguarded and
 byte-for-byte unchanged* (a budget that fired during generate-and-check would
@@ -2007,7 +2007,7 @@ deduction without its desc, do a fixed-seed scan (loop ids, keep the first
 whose `result.hint` matches). See [`testing.md`](./testing.md) for the tier
 definitions.
 
-Two testing gotchas worth internalising:
+Two testing gotchas worth internalizing:
 
 - **A narration substring can match more than one deduction.** Predicating
   `hintUntil` on a phrase is handy, but pick a phrase *unique to that
@@ -2113,7 +2113,7 @@ off-plan"), `strike(marks)` builds a strike in the game's own shape, an
 optional `bit(n)` supplies the mask encoding. Omit it and the Latin games'
 call sites are untouched. Crossing wires both hooks in ~10 lines; Group's
 hand-rolled ~78-line copy was deleted for a 12-line adapter (its tests passing
-unedited proved the extraction behaviour-preserving).
+unedited proved the extraction behavior-preserving).
 
 **The note *encoding* is a parameter too — and only the half that had a
 consumer.** The mark helpers take an optional
@@ -2176,7 +2176,7 @@ shared shape.
   strikes it. Don't bake it into a "smart" populate (keep `pencilAll` a plain
   fill so the player sees the same notes Mark-all gives). Instead emit **one**
   bulk cleanup step via the shared `emitObviousCleanStep(...)`: it strikes
-  every pencilled value already placed in a region as one `pencilStrike`,
+  every penciled value already placed in a region as one `pencilStrike`,
   flagged `continuesPrevious` when it follows the populate fill and standalone
   otherwise. Gate it to fire **once** and run it *as a step in the walk* — not
   inside `ensurePopulated` — so it also cleans a **pre-noted board**: a clean
@@ -2216,7 +2216,7 @@ slice (a genuine **naked single**), a *row* slice and a *column* slice (a
 **hidden single** — digit `n` fits only one cell of that line, while the cell
 itself still shows several candidates). Narrating all of them as "every other
 number has been ruled out in this cell" is **wrong for a hidden single**: the
-player is looking at a cell that visibly still has 1, 2, 3, 4 pencilled
+player is looking at a cell that visibly still has 1, 2, 3, 4 penciled
 (owner-flagged on Keen, 2026-06-23). A hidden single must instead name its
 line — *"In this row, 3 can go in only this cell — every other cell in the row
 has ruled it out — so it must be 3"* — and shade the whole row/column as
@@ -2387,7 +2387,7 @@ mutually-exclusive UI focus, suppressed while a hint is on screen; (b) **when
 a collapse still fires, name one *excluded* competitor and why**
 (`pickExclusion`) — prefer the concrete "already placed elsewhere" reason and
 highlight the blocker so "the highlighted cell" has a referent; (c)
-**distinguish "is placed here" from "could go here"** with a separate colour;
+**distinguish "is placed here" from "could go here"** with a separate color;
 (d) a **location→values inspect affordance must be a dedicated, touch-sized,
 inspect-only control**, not a side effect of an editing tap. And a cross-game
 narration note that bit here: **a continuation leg must name its referent in
@@ -2416,7 +2416,7 @@ kept the differential byte-identical by construction. Solo's is **not** —
 tier — so re-deriving it would risk diverging the byte-match. Thread instead,
 and lean on the gate:
 
-- **Gate every behavioural change on `this.recorder`, enabled only *after* the
+- **Gate every behavioral change on `this.recorder`, enabled only *after* the
   givens are placed.** A nullable `recorder` field (promoted from a
   `pendingRecorder` stash right after the given-clue placement loop) means the
   generator/solve path runs the original code untouched (the existing
@@ -2509,7 +2509,7 @@ will hit:
    `valuesFor(bit)` collapse arm found **no consumer**, because a shared helper
    only ever asks "which note bit does this *placed* value occupy?" — and the
    hole symbol is never placed on the player's grid. **Look for the uniform
-   view before generalising the helper.**
+   view before generalizing the helper.**
 2. **A conclusion that writes no value into the grid is a fourth move
    shape.** Salad settles a square's *emptiness* with a marker
    (`set { value: "cross" | "circle" }`) — neither a placement nor a strike.
@@ -2558,7 +2558,7 @@ recorder).
 mark-all move used to (owner-reported 2026-07-29).** The opener reused the
 game's mark-all move, which reset every fillable cell to the full candidate
 set. Fine for a *player* to ask for; destructive for a *hint* to do on their
-behalf: on any board with some pencilled cells and some blank ones it threw
+behalf: on any board with some penciled cells and some blank ones it threw
 away deductions already made — and the "populate is needed" latch (*some* cell
 lacks notes) meant one blank cell triggered a whole-board reset.
 
@@ -2572,14 +2572,14 @@ candidates the player had already crossed out. All ten games offering the
 press fill additively, as does the shared `lazyPopulate`; guarded by
 `engine/mark-all.test.ts`, which every such game joins with one row. The guard
 was **mutation-checked against all ten** — worth knowing because its *first*
-cut passed against the old behaviour, since a fill that resets writes back
+cut passed against the old behavior, since a fill that resets writes back
 exactly what was there unless some cell is genuinely **narrowed**. A test for
 this class must narrow a cell by hand.
 
 **Known follow-up, not a defect:** Salad has no auto-pencil preference, so —
 like Group — its plan teaches every placement's row/column note cull as an
 explicit `continuesPrevious` strike. If Salad ever gains the pref, those legs
-fold away for free (the walk already honours `autoClean`).
+fold away for free (the walk already honors `autoClean`).
 
 ## Probe before trusting a diagnosis
 

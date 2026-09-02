@@ -28,7 +28,7 @@
  *
  * - **`ignoreStatic: true`, and it skips far less than its name suggests.** A
  *   "static" mutant lives in code that runs at **module load** — a top-level
- *   table, a constant initialiser — so per-test coverage cannot always be
+ *   table, a constant initializer — so per-test coverage cannot always be
  *   attributed to it. Of 2,168 mutants here, 836 are static; with this flag on,
  *   **831 of them were still evaluated** and only **5** were ignored (the ones
  *   Stryker could attribute no coverage to at all). What the flag actually
@@ -110,10 +110,10 @@ export default {
   timeoutMS: 30_000,
   timeoutFactor: 2,
   // Mutations routinely produce type errors (a `string` where a `number` went);
-  // the audit is about runtime behaviour, so the sandbox copies are `@ts-nocheck`d.
+  // the audit is about runtime behavior, so the sandbox copies are `@ts-nocheck`d.
   disableTypeChecks: true,
-  // No ratchet, ever. A score that invites maximising invites tests written
-  // against mutants rather than against behaviour; the deliverable is the
+  // No ratchet, ever. A score that invites maximizing invites tests written
+  // against mutants rather than against behavior; the deliverable is the
   // triaged survivor list.
   thresholds: { high: 100, low: 0, break: null },
 };

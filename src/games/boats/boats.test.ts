@@ -1,5 +1,5 @@
 /**
- * Boats — behavioural tests (tier 1) plus render scenarios (tier 2.5).
+ * Boats — behavioral tests (tier 1) plus render scenarios (tier 2.5).
  *
  * The byte-match differential (`boats-differential.test.ts`) covers the
  * generator, the solver and the codec against the C. What it cannot reach is
@@ -499,7 +499,7 @@ describe("boats moves", () => {
     // Upstream's win test is "every row/column count is met, the fleet
     // inventory is exact, no boats touch, and every given clue agrees" — it
     // never asks for water. `adjustShips` closes the gap: once the placed
-    // ships equal the fleet's total, every undecided neighbour counts as
+    // ships equal the fleet's total, every undecided neighbor counts as
     // water, so the last boat resolves the shapes and the board is complete.
     const p = params({ w: 8, h: 8, fleet: 4, fleetData: defaultFleet(4) });
     const state = generated(p, "boats-win-without-water");
@@ -649,7 +649,7 @@ describe("boats rendering", () => {
 
     // A given water/ship clue paints the water background.
     expect(
-      result.recording.ops.some((o) => o.op === "rect" && o.colour === COL_WATER),
+      result.recording.ops.some((o) => o.op === "rect" && o.color === COL_WATER),
     ).toBe(true);
     // The row/column numbers are drawn as text.
     expect(result.recording.ops.some((o) => o.op === "text")).toBe(true);
@@ -695,7 +695,7 @@ describe("boats rendering", () => {
     ).toBe(true);
     expect(
       result.recording.ops.some(
-        (o) => o.op === "rect" && o.colour === COL_COLLISION_TEXT,
+        (o) => o.op === "rect" && o.color === COL_COLLISION_TEXT,
       ),
     ).toBe(true);
   });
@@ -748,7 +748,7 @@ describe("boats rendering", () => {
     // boat on the "off" half — not which half comes first, so assert both
     // phases occur rather than pinning one to a timestamp (docs/games/testing.md § "Seed-deterministic, never clock-gated":
     // assert a load-independent property, not a clock reading).
-    const palette = boatsGame.colours([1, 1, 1]);
+    const palette = boatsGame.colors([1, 1, 1]);
     const counts: number[] = [];
     for (let i = 0; i < 12; i++) {
       midend.timer(FLASH_TIME / 10);
@@ -790,7 +790,7 @@ describe("boats rendering", () => {
 
     expect(result.mistakeCount).toBeGreaterThan(0);
     expect(
-      result.recording.ops.some((o) => o.op === "line" && o.colour === COL_SHIP_ERROR),
+      result.recording.ops.some((o) => o.op === "line" && o.color === COL_SHIP_ERROR),
     ).toBe(true);
   });
 });

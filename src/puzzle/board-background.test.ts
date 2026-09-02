@@ -1,5 +1,5 @@
 /**
- * **Every game paints the same board.** The one place a game's `colours()` is
+ * **Every game paints the same board.** The one place a game's `colors()` is
  * called is `resolvePalette`, which hands it the host background already shifted
  * off the extremes — so whether a port's C called `game_mkhighlight` or took
  * `frontend_default_colour` raw, the index it paints its board with resolves to
@@ -15,28 +15,28 @@ import { describe, expect, it } from "vitest";
 import {
   mkhighlightBackground,
   resolvePalette,
-} from "../engine/colour/colour-mkhighlight.ts";
+} from "../engine/color/color-mkhighlight.ts";
 import { getTsGame, registeredGameIds } from "../engine/registry.ts";
-import type { Colour, PuzzleId } from "../engine/types.ts";
-import { oklchToColour } from "../utils/color.ts";
+import type { Color, PuzzleId } from "../engine/types.ts";
+import { oklchToColor } from "../utils/color.ts";
 import { puzzleAugmentations } from "./augmentation.ts";
 import "../games/index.ts";
 
 /** What `puzzle-view.ts` hands the engine in dark mode. */
-const WHITE = oklchToColour([1, 0, 0]);
+const WHITE = oklchToColor([1, 0, 0]);
 /** What it hands the engine under the light theme (L 0.87). */
-const LIGHT = oklchToColour([0.87, 0, 0]);
+const LIGHT = oklchToColor([0.87, 0, 0]);
 
 /** The board a game is expected to paint for a given host background. */
-const board = (host: Colour): Colour => mkhighlightBackground(host);
+const board = (host: Color): Color => mkhighlightBackground(host);
 
-function boardOf(id: string, host: Colour): Colour {
+function boardOf(id: string, host: Color): Color {
   const game = getTsGame(id);
   if (!game) throw new Error(`${id} is not registered`);
   const index = puzzleAugmentations[id as PuzzleId]?.paletteBgIndex ?? 0;
-  const colour = resolvePalette(game, host)[index];
-  if (!colour) throw new Error(`${id} has no colour at its board index ${index}`);
-  return colour;
+  const color = resolvePalette(game, host)[index];
+  if (!color) throw new Error(`${id} has no colour at its board index ${index}`);
+  return color;
 }
 
 describe("the board every game paints", () => {

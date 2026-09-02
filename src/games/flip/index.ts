@@ -13,8 +13,8 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
-import { CURSOR, GRID_MID, HINT_ACTION, PAPER } from "../../engine/colour/palette.ts";
-import { flipWrongFace } from "../../engine/colour/palette-games.ts";
+import { CURSOR, GRID_MID, HINT_ACTION, PAPER } from "../../engine/color/palette.ts";
+import { flipWrongFace } from "../../engine/color/palette-games.ts";
 import {
   dimensionParamConfig,
   fromCoord as fromCoordE,
@@ -36,7 +36,7 @@ import {
 } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 
 // --- types ----------------------------------------------------------
 
@@ -79,7 +79,7 @@ export interface FlipDrawState {
   tiles: Int16Array;
 }
 
-// Colour palette indices (mirror flip.c's enum).
+// Color palette indices (mirror flip.c's enum).
 const COL_BACKGROUND = 0;
 const COL_WRONG = 1;
 const COL_RIGHT = 2;
@@ -87,7 +87,7 @@ const COL_GRID = 3;
 const COL_DIAG = 4;
 const COL_HINT = 5;
 const COL_CURSOR = 6;
-const NCOLOURS = 7;
+const NCOLORS = 7;
 
 const PREFERRED_TILE_SIZE = 48;
 const ANIM_TIME = 0.25;
@@ -210,7 +210,7 @@ function addsq(
   }
 }
 
-function addneighbours(
+function addneighbors(
   t: Trees,
   w: number,
   h: number,
@@ -240,7 +240,7 @@ function genRandomMatrix(w: number, h: number, rng: RandomState): Uint8Array {
     for (let i = 0; i < wh; i++) {
       const ix = i % w;
       const iy = (i / w) | 0;
-      addneighbours(t, w, h, ix, iy, ix, iy, matrix);
+      addneighbors(t, w, h, ix, iy, ix, iy, matrix);
     }
 
     let limit = 4 * wh - 2 * (w + h);
@@ -314,7 +314,7 @@ function genRandomMatrix(w: number, h: number, rng: RandomState): Uint8Array {
         t.osize.add(sq2);
       }
 
-      addneighbours(t, w, h, sq.cx, sq.cy, sq.x, sq.y, matrix);
+      addneighbors(t, w, h, sq.cx, sq.cy, sq.x, sq.y, matrix);
     }
 
     // Reject if any two matrix rows are identical (flip.c does the same).
@@ -750,14 +750,14 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     return `${prefix}Moves: ${s.moves}`;
   },
 
-  colours(defaultBackground): Colour[] {
+  colors(defaultBackground): Color[] {
     const bg = defaultBackground;
-    const ret: Colour[] = new Array(NCOLOURS);
+    const ret: Color[] = new Array(NCOLORS);
     ret[COL_BACKGROUND] = bg;
     ret[COL_WRONG] = flipWrongFace(bg);
     ret[COL_RIGHT] = PAPER;
     // The mid step, not the dark one: the diagonal marks sit on both the
-    // paper face and the dark face, and only a mid grey shows on each.
+    // paper face and the dark face, and only a mid gray shows on each.
     ret[COL_GRID] = GRID_MID;
     ret[COL_DIAG] = ret[COL_GRID];
     ret[COL_HINT] = HINT_ACTION;
@@ -800,7 +800,7 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
       // any time the drawstate is fresh — initial setup, canvas
       // resize, palette replacement — this branch is responsible
       // for clearing the whole window to the puzzle's background
-      // colour. (Mirrors `midend.c`'s first-draw rect, just located
+      // color. (Mirrors `midend.c`'s first-draw rect, just located
       // where it belongs: in the game.)
       const winW = tile * w + 2 * border;
       const winH = tile * h + 2 * border;
@@ -886,9 +886,9 @@ function drawTile(
       { x: bx, y: by + ts },
       { x: bx + ts - at, y: by + ts - at },
     ];
-    let colour = tile & 1 ? COL_WRONG : COL_RIGHT;
-    if (animTime < 0.5) colour = COL_WRONG + COL_RIGHT - colour;
-    dr.drawPolygon(coords, colour, COL_GRID);
+    let color = tile & 1 ? COL_WRONG : COL_RIGHT;
+    if (animTime < 0.5) color = COL_WRONG + COL_RIGHT - color;
+    dr.drawPolygon(coords, color, COL_GRID);
   }
 
   for (let i = 0; i < h; i++) {

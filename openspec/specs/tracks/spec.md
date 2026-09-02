@@ -61,8 +61,8 @@ order at each difficulty. At Easy: edge/square flag propagation
 (`update_flags`), row/column track-count deductions (`count_clues`), and
 immediate loop avoidance over a `Dsf` (`check_loop`). At Tricky, additionally:
 single-track reasoning (`check_single`), loose-end reasoning
-(`check_loose_ends`), and the one-way neighbour deduction
-(`check_neighbours(false)`). At Hard, additionally: the two-way neighbour
+(`check_loose_ends`), and the one-way neighbor deduction
+(`check_neighbours(false)`). At Hard, additionally: the two-way neighbor
 deduction (`check_neighbours(true)`) and the bridge-parity argument
 (`check_bridge_parity`) over the shared `findLoops` bridge finder. The solver
 SHALL return impossible / unique / non-converged verdicts identical to the C
@@ -131,10 +131,10 @@ the completed flag SHALL latch.
 
 `interpretMove` SHALL support: a left-drag that paints track along a single
 straight row or column (right-drag paints no-track), toggling based on the
-drag-start cell's current state; a click near a cell centre that toggles the
+drag-start cell's current state; a click near a cell center that toggles the
 square's track (or no-track on right-click); a click near a cell edge that
 toggles that edge's track (or no-track); and a half-grid keyboard cursor whose
-select toggles a square (at a cell centre) or an edge (on a cell border), with
+select toggles a square (at a cell center) or an edge (on a cell border), with
 select2 toggling no-track. Moves that would change nothing, and interactions
 outside the grid, SHALL produce no history move.
 
@@ -191,15 +191,15 @@ blue, a cleared piece in `COL_DRAGOFF` light blue), row/column clue numbers
 that travels along the finished track. The drawstate SHALL diff a per-cell
 `Int32Array` of committed and drag flags plus a clue-error sidecar, with the
 findMistakes overlay carried in the diff key. The palette SHALL be
-index-for-index with the C colour enum.
+index-for-index with the C color enum.
 
 #### Scenario: A completed row clue turns red when over-filled
 
 - **WHEN** a row holds more track cells than its clue
-- **THEN** that row's clue number renders in the error colour
+- **THEN** that row's clue number renders in the error color
 
 #### Scenario: A drag preview shows provisional pieces
 
 - **WHEN** a left-drag is in progress over blank cells
-- **THEN** the covered cells render their provisional track in the drag colour
+- **THEN** the covered cells render their provisional track in the drag color
 

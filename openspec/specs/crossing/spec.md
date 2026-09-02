@@ -48,7 +48,7 @@ then lexicographically, matching the order the description emits.
 Validation SHALL reject a description containing an unknown wall character, a
 description that supplies more cell data than the board holds, a clue number
 longer than the maximum row length, and a duplicate clue number. Validation SHALL
-reproduce upstream's behaviour, including its deliberately absent checks (it does
+reproduce upstream's behavior, including its deliberately absent checks (it does
 not reject an over-short description or an invalid digit character).
 
 #### Scenario: A generated description round-trips
@@ -112,8 +112,8 @@ cell whose pencil notes have crossed out its solution digit, returning nothing
 when the board is not yet uniquely determined. The game SHALL be reported complete
 when every run matches exactly one clue number and each clue number is used once,
 and SHALL flash on that completion. Rendering SHALL draw walls and placed digits as
-bevelled tiles with per-digit colours, pencil marks, the run-error highlights, and
-a number-list panel below the grid coloured by how many times each clue is placed.
+beveled tiles with per-digit colors, pencil marks, the run-error highlights, and
+a number-list panel below the grid colored by how many times each clue is placed.
 
 #### Scenario: Entering the wrong digit is caught by Check & Save
 
@@ -137,7 +137,7 @@ a number-list panel below the grid coloured by how many times each clue is place
 
 Entering a digit SHALL move the selection to the next cell of the run being
 filled, so that a complete number can be typed without selecting each cell — the
-enhancement the game's own documentation asks for. The behaviour SHALL be
+enhancement the game's own documentation asks for. The behavior SHALL be
 available as a preference, enabled by default.
 
 The direction SHALL be remembered between entries, and SHALL be set by: the
@@ -207,7 +207,7 @@ validating the generator, solver and codec together.
 
 #### Scenario: Upstream's boards remain reproducible on request
 
-- **WHEN** the generator is asked for upstream's isolated-cell behaviour on a
+- **WHEN** the generator is asked for upstream's isolated-cell behavior on a
   seed where upstream produces such a board
 - **THEN** it reproduces that board, and the shipped default produces a
   different one in which every cell is reachable
@@ -223,25 +223,25 @@ Where **both** runs through the selected cell can take the clue, it SHALL be
 placed in the run whose squares are already the more written-in, and only a tie
 SHALL be settled by the current fill direction. Agreeing with digits the player
 has entered is evidence of which run they meant; a blank run admits every unused
-clue of its length and so is no evidence at all. The clue list SHALL be coloured
-by the same rule, so that the colour a clue is written in always names the run a
+clue of its length and so is no evidence at all. The clue list SHALL be colored
+by the same rule, so that the color a clue is written in always names the run a
 click would actually send it to.
 
 Selecting a cell SHALL indicate which clues can still go in **either** run
 through it, since clicking either places it in the corresponding run. Horizontal
-and vertical runs SHALL be distinguished by colour, and the same two colours
+and vertical runs SHALL be distinguished by color, and the same two colors
 SHALL be used both to mark a run on the board and to write the clues that fit it,
-so that the correspondence needs no legend. The colour SHALL denote the run's
+so that the correspondence needs no legend. The color SHALL denote the run's
 direction rather than whether it is the one being filled, so that changing the
-fill direction does not change what any colour means. The two colours SHALL be
+fill direction does not change what any color means. The two colors SHALL be
 of equal strength, so that neither direction reads as more important — equal in
-perceived lightness and colourfulness, not merely in their colour components,
-and verified against the colours actually rendered.
+perceived lightness and colorfulness, not merely in their color components,
+and verified against the colors actually rendered.
 
 A clue already written into the grid SHALL remain distinguishable from one that
 merely cannot go in the selected run.
 
-Marking the runs on the board and colouring the clue list SHALL be separately
+Marking the runs on the board and coloring the clue list SHALL be separately
 available as preferences, both enabled by default.
 
 A clue can go in a run when it is the run's length, agrees with every digit
@@ -262,7 +262,7 @@ preference, enabled by default.
   agrees with, the crossing run is blank, and both could take the clue
 - **THEN** the clue is written into the partly-written run, whichever way the
   fill direction happens to be pointing, and the clue list shows it in that
-  run's colour
+  run's color
 
 The preview SHALL distinguish what it knows from what it is guessing: every run
 that could take the clue SHALL be indicated, but the clue's digits SHALL be shown
@@ -288,20 +288,20 @@ board SHALL indicate the run it occupies.
 #### Scenario: Both runs through the selected cell are answered for
 
 - **WHEN** a cell lying in both a horizontal and a vertical run is selected
-- **THEN** both runs are marked on the board, each in its direction's colour,
-  and each clue is written in the colour of the run it fits — or dimmed when it
+- **THEN** both runs are marked on the board, each in its direction's color,
+  and each clue is written in the color of the run it fits — or dimmed when it
   fits neither
 
-#### Scenario: Neither direction's colour is stronger than the other's
+#### Scenario: Neither direction's color is stronger than the other's
 
-- **WHEN** the colours the renderer emits for the two directions are measured
+- **WHEN** the colors the renderer emits for the two directions are measured
   perceptually
-- **THEN** they have the same lightness and the same colourfulness
+- **THEN** they have the same lightness and the same colorfulness
 
-#### Scenario: The board marking and the list colouring are independent
+#### Scenario: The board marking and the list coloring are independent
 
 - **WHEN** the preference for marking runs on the board is turned off
-- **THEN** the board is no longer marked, and the clue list is still coloured
+- **THEN** the board is no longer marked, and the clue list is still colored
 
 #### Scenario: A clue on the board stays distinguishable from an unavailable one
 
@@ -392,7 +392,7 @@ single remaining number that fits it.
 
 The three kinds of action Crossing admits — placing a whole number into a run,
 entering a single digit, and ruling a candidate out of a cell's notes — SHALL
-each be marked in the shape of the action it represents, so that one hint colour
+each be marked in the shape of the action it represents, so that one hint color
 cannot stand for two different actions. A ruled-out candidate SHALL be marked on
 the candidate itself rather than on the whole cell.
 
@@ -403,14 +403,14 @@ the candidate itself rather than on the whole cell.
 
 ### Requirement: A displayed hint gives the board back as soon as the player acts
 
-A displayed hint SHALL be dismissed, and the board's ordinary colouring restored, by
+A displayed hint SHALL be dismissed, and the board's ordinary coloring restored, by
 any interaction that changes the display without making a move — selecting a square,
 moving the cursor, switching to pencil marks, or picking a clue up from the list —
 **unless** that interaction puts the selection on one of the squares the hint is
 about, in which case the hint SHALL remain displayed.
 
 This is required rather than cosmetic because a displayed hint owns the board's
-colouring, suppressing the wash that marks the runs through the selected square so
+coloring, suppressing the wash that marks the runs through the selected square so
 that a washed square never means two things at once. Without dismissal, an
 interaction with the board would produce no visible change at all; without the
 exception, selecting a hinted square in order to type its number in by hand would
@@ -418,7 +418,7 @@ delete the explanation of what to type.
 
 Because the hint owns the background of the squares it marks, a selection on such a
 square SHALL still be shown by a cue that remains legible against the hint's own
-colours.
+colors.
 
 #### Scenario: Clicking away from the hint puts it away
 

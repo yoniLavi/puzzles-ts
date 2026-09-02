@@ -66,7 +66,7 @@ exhaustive over a small grid of `(r, n)` rather than sampled, since that grid is
 tiny and enumerating it is free.
 
 **This is the one frozen C corpus a closed-form property states better**, and the
-distinction matters because it does not generalise. A per-game differential and
+distinction matters because it does not generalize. A per-game differential and
 `random`'s corpus assert facts that *cannot* be derived — which boards a
 solver-gated generator produces, what bit sequence a seed yields — so the
 recorded fixture is the only statement of them, and they are kept. `combi`
@@ -104,8 +104,8 @@ have been lost in silence, on a scenario this same capability requires.
 
 #### Scenario: Retiring a fixture accounts for everything it covered
 
-- **WHEN** a frozen fixture is retired in favour of properties
-- **THEN** every behaviour that only the fixture's replay exercised is given a
+- **WHEN** a frozen fixture is retired in favor of properties
+- **THEN** every behavior that only the fixture's replay exercised is given a
   direct test in the same change
 - **AND** the replacement is named in the change, so the assurance is not dropped
   silently

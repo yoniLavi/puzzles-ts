@@ -10,9 +10,9 @@ TBD - created by archiving change add-mosaic-ts-port. Update Purpose after archi
 The engine SHALL provide a registered `mosaic` game implementing
 `Game<MosaicParams, MosaicState, MosaicMove, MosaicUi, MosaicDrawState>`: a
 grid-fill puzzle in which numeric clues state how many cells in the clue's
-3×3 neighbourhood (including itself) are black, and the player marks every
+3×3 neighborhood (including itself) are black, and the player marks every
 cell black or white. Params SHALL be `width`, `height`, and `aggressive`
-(harder generation via clue minimisation), encoded `{w}x{h}` with an
+(harder generation via clue minimization), encoded `{w}x{h}` with an
 `h{0|1}` suffix when `aggressive` differs from the default (true). The 6
 upstream presets — 3×3, 5×5, 10×10, 15×15, 25×25 (aggressive) and 50×50
 (non-aggressive) — SHALL be offered, and the type summary SHALL render via
@@ -61,7 +61,7 @@ equal to the number of shown clues.
 
 `newDesc` SHALL generate a random black/white image (one `randomBits` bit
 per cell), compute every cell's clue (a border cell counting only in-bounds
-neighbours, with "full" detected at clue 9 interior / 6 edge / 4 corner and
+neighbors, with "full" detected at clue 9 interior / 6 edge / 4 corner and
 "empty" at clue 0), regenerate until the board has a usable starting
 deduction and the shuffled-order deductive solver completes it, then hide
 clues: every clue whose deduction never narrowed anything is hidden, and in
@@ -90,7 +90,7 @@ every affected clue — `SOLVED` when exactly satisfied with no unknowns,
 post-toggle state of the clicked cell and paint it through aligned drags
 and the release; non-aligned drags reset the anchor; margin clicks are
 ignored; after completion only cursor movement is accepted. A keyboard
-cursor with select/select2 SHALL mirror the click behaviours.
+cursor with select/select2 SHALL mirror the click behaviors.
 
 #### Scenario: Toggling cycles a cell
 
@@ -104,11 +104,11 @@ cursor with select/select2 SHALL mirror the click behaviours.
 - **THEN** the unmarked cells become blank and the already-marked cell is
   unchanged
 
-#### Scenario: A satisfied clue greys out and a contradicted clue reddens
+#### Scenario: A satisfied clue grays out and a contradicted clue reddens
 
-- **WHEN** a clue's neighbourhood is fully determined with exactly the clue's
+- **WHEN** a clue's neighborhood is fully determined with exactly the clue's
   count marked
-- **THEN** the clue carries the `SOLVED` flag (drawn grey)
+- **THEN** the clue carries the `SOLVED` flag (drawn gray)
 - **AND** when more cells are marked around a clue than its value, it carries
   the `ERROR` flag (drawn red)
 
@@ -124,7 +124,7 @@ The Solve command SHALL run the deductive solver on the clue board and apply
 the full solution (cells flagged solved, `cheated` set, status bar reading
 `Auto solved`), failing with an error when deduction cannot complete the
 board. `findMistakes` SHALL return every cell the player has determined
-whose mark contradicts the deduced solution, rendered as an error-coloured
+whose mark contradicts the deduced solution, rendered as an error-colored
 outline overlay, and SHALL return no mistakes when deduction stalls or the
 marks are consistent.
 

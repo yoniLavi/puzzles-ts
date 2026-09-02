@@ -340,7 +340,7 @@ export type BoatsMove =
 
 /**
  * Ephemeral input state (upstream `game_ui`): the keyboard cursor and the
- * in-progress line drag. None of it is serialised — a save replays the move
+ * in-progress line drag. None of it is serialized — a save replays the move
  * log, and a drag is never half-committed.
  */
 export interface BoatsUi {
@@ -519,7 +519,7 @@ export function validateDesc(p: BoatsParams, desc: string): string | null {
 }
 
 /**
- * The inverse of {@link newState} — upstream's serialisation tail in
+ * The inverse of {@link newState} — upstream's serialization tail in
  * `new_game_desc`. **Byte-match surface**, including the quirk that a trailing
  * run of clue-less cells is dropped rather than flushed (the loop only emits a
  * run when it meets a clue or hits the 26-cell cap).

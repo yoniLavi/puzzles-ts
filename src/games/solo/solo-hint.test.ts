@@ -409,13 +409,13 @@ describe("solo hint render", () => {
     expect(pred(hint?.explanation ?? "")).toBe(true);
     // The evidence region is shaded COL_HINT_CELL.
     expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
+      recording.ops.some((o) => o.op === "rect" && o.color === COL_HINT_CELL),
     ).toBe(true);
     // The struck candidate keeps its COL_PENCIL digit, crossed through in COL_PENCIL.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_PENCIL)).toBe(
       true,
     );
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
+    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_PENCIL)).toBe(
       true,
     );
     expect(recording.ops).toMatchSnapshot();

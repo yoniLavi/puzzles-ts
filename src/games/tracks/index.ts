@@ -5,8 +5,8 @@
  * loop, so every row/column clue counts the track-bearing cells in it.
  *
  * Left-drag lays track along a straight run; right-drag lays "no track". A
- * click near a cell centre toggles the square; near an edge toggles that
- * edge. A half-grid keyboard cursor toggles squares (centre) and edges
+ * click near a cell center toggles the square; near an edge toggles that
+ * edge. A half-grid keyboard cursor toggles squares (center) and edges
  * (borders); select2 does the no-track variant.
  */
 
@@ -33,7 +33,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import {
   copyAndApplyDrag,
@@ -44,7 +44,7 @@ import {
 } from "./moves.ts";
 import {
   centeredCoord,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   metrics,
@@ -235,7 +235,7 @@ function interpretMove(
     ui.cursor.x += dx;
     ui.cursor.y += dy;
     if (ui.cursor.x % 2 === 0 && ui.cursor.y % 2 === 0) {
-      // Skip square corners: only centres and edges are selectable.
+      // Skip square corners: only centers and edges are selectable.
       ui.cursor.x += dx;
       ui.cursor.y += dy;
     }
@@ -394,7 +394,7 @@ export const tracksGame: Game<
 
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: TracksParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

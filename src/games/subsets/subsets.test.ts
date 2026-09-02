@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Subsets port (add-subsets-ts-port): params and
+ * Behavioral tests for the Subsets port (add-subsets-ts-port): params and
  * desc codecs with upstream's exact validation messages, the six-rule
  * solver's three verdicts, the generator's tier-1 properties, the
  * tri-state slot input (pointer + keyboard, gap-skipping cursor),
@@ -113,8 +113,8 @@ function press(
   );
 }
 
-/** Pixel centre of letter slot (sx, sy) of cell (cx, cy) at 36px tiles. */
-const slotCentre = (
+/** Pixel center of letter slot (sx, sy) of cell (cx, cy) at 36px tiles. */
+const slotCenter = (
   cx: number,
   cy: number,
   sx: number,
@@ -358,7 +358,7 @@ describe("subsets input", () => {
   it("left-click cycles a slot unknown -> known -> cleared -> unknown", () => {
     let state = newState(PARAMS, FIX.desc);
     const i = state.immutable.indexOf(0);
-    const c = slotCentre(i % 4, Math.floor(i / 4), 0, 0);
+    const c = slotCenter(i % 4, Math.floor(i / 4), 0, 0);
     const ui = newUi();
 
     const m1 = press(state, ui, LEFT_BUTTON, c.x, c.y);
@@ -376,7 +376,7 @@ describe("subsets input", () => {
   it("right-click cycles the other way; middle resets to unknown", () => {
     let state = newState(PARAMS, FIX.desc);
     const i = state.immutable.indexOf(0);
-    const c = slotCentre(i % 4, Math.floor(i / 4), 1, 1);
+    const c = slotCenter(i % 4, Math.floor(i / 4), 1, 1);
     const ui = newUi();
 
     const m1 = press(state, ui, RIGHT_BUTTON, c.x, c.y);
@@ -394,7 +394,7 @@ describe("subsets input", () => {
   it("an immutable slot rejects every toggle", () => {
     const state = newState(PARAMS, FIX.desc);
     const i = state.immutable.findIndex((m) => m !== 0);
-    const c = slotCentre(i % 4, Math.floor(i / 4), 0, 0);
+    const c = slotCenter(i % 4, Math.floor(i / 4), 0, 0);
     expect(press(state, newUi(), LEFT_BUTTON, c.x, c.y)).toBeNull();
     expect(press(state, newUi(), RIGHT_BUTTON, c.x, c.y)).toBeNull();
   });
@@ -613,12 +613,12 @@ describe("subsets rendering (tier 2.5)", () => {
     const result = renderScenario({ game: subsetsGame, id: FIX_ID });
     const ops = result.recording.ops;
     // Bevel-highlight slots for decided (given) letters exist.
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_HIGHLIGHT)).toBe(true);
     // Undecided slots use the inner background.
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_INNERBG)).toBe(true);
-    // Horseshoe arrows are drawn (circles) and no error colour yet.
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_INNERBG)).toBe(true);
+    // Horseshoe arrows are drawn (circles) and no error color yet.
     expect(ops.some((o) => o.op === "circle")).toBe(true);
-    expect(ops.some((o) => "colour" in o && o.colour === COL_ERROR)).toBe(false);
+    expect(ops.some((o) => "color" in o && o.color === COL_ERROR)).toBe(false);
     expect(result.recording.ops).toMatchSnapshot();
   });
 
@@ -646,10 +646,10 @@ describe("subsets rendering (tier 2.5)", () => {
     expect(result.mistakeCount).toBeGreaterThan(0);
     // The duplicate shows red: the tally count and the overlay frame.
     expect(
-      result.recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR),
+      result.recording.ops.some((o) => o.op === "rect" && o.color === COL_ERROR),
     ).toBe(true);
     expect(
-      result.recording.ops.some((o) => o.op === "text" && o.colour === COL_ERROR),
+      result.recording.ops.some((o) => o.op === "text" && o.color === COL_ERROR),
     ).toBe(true);
     expect(result.recording.ops).toMatchSnapshot();
   });
@@ -661,18 +661,18 @@ describe("subsets rendering (tier 2.5)", () => {
     const ds = newDrawState(solution);
     setTileSize(ds, 36);
     const ui = newUi();
-    const dr = new RecordingDrawing(subsetsGame.colours([1, 1, 1]));
+    const dr = new RecordingDrawing(subsetsGame.colors([1, 1, 1]));
     // Flash-on beat: floor(0.15 / 0.12) = 1 -> odd -> slots blink off.
     redraw(dr, ds, null, solution, 1, ui, 0, 0.15);
-    expect(dr.ops.some((o) => o.op === "rect" && o.colour === COL_INNERBG)).toBe(true);
-    expect(dr.ops.some((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)).toBe(
+    expect(dr.ops.some((o) => o.op === "rect" && o.color === COL_INNERBG)).toBe(true);
+    expect(dr.ops.some((o) => o.op === "rect" && o.color === COL_HIGHLIGHT)).toBe(
       false,
     );
     // A flash-off beat shows the bevel again (same drawstate — the flash
     // bit is in the diff key, so the repaint actually happens).
-    const dr2 = new RecordingDrawing(subsetsGame.colours([1, 1, 1]));
+    const dr2 = new RecordingDrawing(subsetsGame.colors([1, 1, 1]));
     redraw(dr2, ds, null, solution, 1, ui, 0, 0.05);
-    expect(dr2.ops.some((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)).toBe(
+    expect(dr2.ops.some((o) => o.op === "rect" && o.color === COL_HIGHLIGHT)).toBe(
       true,
     );
     expect(dr.ops).toMatchSnapshot();

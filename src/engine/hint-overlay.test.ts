@@ -15,7 +15,7 @@
  * repaints unconditionally), then display a hint and require the very
  * next frame — same drawstate, same board — to emit paint ops. A game
  * whose hint bits are missing from its diff key fails here, for every
- * hinting game at once, without any per-game colour knowledge.
+ * hinting game at once, without any per-game color knowledge.
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "./midend.ts";
@@ -40,7 +40,7 @@ describe("a newly displayed hint repaints a warm, otherwise-unchanged frame", ()
         const err = midend.newGameFromId(id);
         expect(err, `${name}/${seed}: bad id ${id}`).toBeUndefined();
 
-        const palette = game.colours(DEFAULT_BACKGROUND);
+        const palette = game.colors(DEFAULT_BACKGROUND);
 
         for (let opener = 0; ; opener++) {
           // Settle any pending animation, then warm the drawstate cache

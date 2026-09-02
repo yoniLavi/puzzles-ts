@@ -307,7 +307,7 @@ export function gradeUndead(
 // independent uniqueness oracle.
 
 /** Highest deductive technique a board needs (or `RECURSION` if the ladder
- * stalls — that board needs nested hypothesising = guessing). */
+ * stalls — that board needs nested hypothesizing = guessing). */
 export const RUNG_ARC = 0;
 export const RUNG_COUNTING = 1;
 export const RUNG_FORCING = 2;
@@ -430,7 +430,7 @@ function arcCountFixpoint(common: UndeadCommon, guess: Uint8Array): Step {
 /**
  * Rung 3 — one forcing pass (depth-1, the `DIFF_EXTREME` forcing technique,
  * classed as deduction). For each undecided cell and each of its remaining
- * candidates, hypothesise that candidate and run the arc+counting fixpoint on a
+ * candidates, hypothesize that candidate and run the arc+counting fixpoint on a
  * copy; if that yields a contradiction, eliminate the candidate from the real
  * grid. **The inner fixpoint never forces** — a hypothesis that needs a *further*
  * hypothesis to resolve is recursion (guessing), which this ladder never does; such
@@ -555,7 +555,7 @@ export function solveDeductive(
       guess,
     };
 
-  // The ladder stalled: this board needs recursion (nested hypothesising).
+  // The ladder stalled: this board needs recursion (nested hypothesizing).
   return fail(false, arc.passes);
 }
 
@@ -632,7 +632,7 @@ export function isUniquelySolvable(common: UndeadCommon): boolean {
  *   every still-undecided cell (`checkNumbers` surfaced honestly, §5.6);
  * - `onlyCells` — exactly as many cells can still hold a type as remain to place,
  *   so each of them is forced to it (counting's dual, a placement);
- * - `forcing` — hypothesising the candidate forces an immediate contradiction
+ * - `forcing` — hypothesizing the candidate forces an immediate contradiction
  *   (the depth-1 forcing rung, §1B.1). */
 export type UndeadReason =
   | { kind: "sightline"; path: number }
@@ -813,7 +813,7 @@ export function recordUndeadDeductions(
   };
   runDeductionFixpoint({
     // **No forcing rung** (`audit-guessing-tier-names`, design D4/D8). Rung 3
-    // hypothesises a candidate and runs the arc+counting *fixpoint* from it —
+    // hypothesizes a candidate and runs the arc+counting *fixpoint* from it —
     // a multi-step search with backtracking, which the collection classes as
     // non-deductive and permits only on an `Unreasonable` board, never as
     // something a hint presents as a technique. `deduceUndead` (which the

@@ -33,7 +33,7 @@ The desc SHALL encode the immutable clue cells in scan order: a lowercase letter
 `a`–`z` advances past a run of `1`–`26` empty (unclued) cells, and a digit
 places a clue of that value. `validateDesc` SHALL reject any other character and
 SHALL require the decoded area to equal `w·h` exactly. `newState` SHALL decode
-the desc into an immutable `clues` grid and a mutable player `board` initialised
+the desc into an immutable `clues` grid and a mutable player `board` initialized
 to a copy of the clues.
 
 #### Scenario: Description decodes to the clued board
@@ -104,7 +104,7 @@ move.
 ### Requirement: Filling rendering shows regions, errors, and completion
 
 `redraw` SHALL draw each cell's number (clue cells and player-filled cells in
-distinct colours), bold borders between cells that differ where at least one is
+distinct colors), bold borders between cells that differ where at least one is
 filled or either region is complete/overfull, a selection highlight, a cursor
 outline, a completed-region shade, and an error shade for a region whose size
 exceeds its number or an incomplete region that is fully boxed in. On the
@@ -150,7 +150,7 @@ the empty squares a region cannot reach its size without — SHALL be emitted as
 those squares (the group completes the region) or the region being unable to
 *fully grow* without them (it still needs more). Cells no region-growth group
 covers SHALL be forced individually by the remaining rules — a cell no
-neighbouring region can grow into (a region of one — a 1), a cell where every
+neighboring region can grow into (a region of one — a 1), a cell where every
 number but one is eliminated (the survivor), or a region's single
 flood-reachable growth square. Each step's narration SHALL name the deduction
 that forces it and SHALL avoid repeating the region's number. `hintKeepTrack`
@@ -162,8 +162,8 @@ touches any other cell or uses the wrong value.
 `redraw` SHALL render the displayed step: the target square(s) given a **mild
 "fill here" highlight with no digit drawn in them** (a call to action, not a
 filled-in answer — the value is read from the narration), and the deduction's
-**evidence shaded as an area** in a lighter hint colour — the region the
-deduction reasons about, or the neighbouring cells that pin a lonely /
+**evidence shaded as an area** in a lighter hint color — the region the
+deduction reasons about, or the neighboring cells that pin a lonely /
 eliminated cell — so the shaded picture the narration names is visible. The
 evidence cells' digits SHALL remain readable on the shaded fill, and the shaded
 area SHALL never include a target square.
@@ -204,22 +204,22 @@ area SHALL never include a target square.
 - **AND** a move touching any other cell, or using a different value, returns
   `"off"`
 
-### Requirement: Filling hint colour legend
+### Requirement: Filling hint color legend
 
 When a Filling hint is displayed, `redraw` SHALL distinguish the element types
-the deduction names using a stable colour legend, each colour paired with a
-non-colour cue:
+the deduction names using a stable color legend, each color paired with a
+non-color cue:
 
 - The **target square(s)** (the move) SHALL be filled `COL_HINT` as a *mild*
   highlight with **no digit drawn**, so the cell reads as a call to action ("fill
   here"), not as a pre-printed answer.
 - The cited **region** premise (the numbered cells a deduction grows or blocks,
-  or the neighbours that rule out a value) SHALL be shaded `COL_HINT_CELL` with
-  the cell's **digit drawn on top** — the digit is the non-colour cue and stays
+  or the neighbors that rule out a value) SHALL be shaded `COL_HINT_CELL` with
+  the cell's **digit drawn on top** — the digit is the non-color cue and stays
   readable, which is why Filling shades premises rather than ringing them.
 
 A firing that forces several target squares fills them all `COL_HINT`
-(equivalent moves share one colour). The legend SHALL be consistent across the
+(equivalent moves share one color). The legend SHALL be consistent across the
 deduction kinds (`growth` exact/partial, `blocked`, `lonely`, `bitmap`).
 
 #### Scenario: The empty target reads distinct from the shaded premise
@@ -227,18 +227,18 @@ deduction kinds (`growth` exact/partial, `blocked`, `lonely`, `bitmap`).
 - **WHEN** a `growth` hint names a region of N and the empty squares it must grow
   into
 - **THEN** the target squares fill `COL_HINT` with no digit, and the cited region
-  shades `COL_HINT_CELL` with its digits drawn on top, in different colours
+  shades `COL_HINT_CELL` with its digits drawn on top, in different colors
 
-#### Scenario: Grouped target squares share one colour
+#### Scenario: Grouped target squares share one color
 
 - **WHEN** one deduction forces several empty squares at once
-- **THEN** every forced square fills the same `COL_HINT`, not distinct colours
+- **THEN** every forced square fills the same `COL_HINT`, not distinct colors
 
 ### Requirement: Filling provides on-screen key labels
 
 Filling SHALL implement `requestKeys()` returning the fixed digit keypad `1..9`
-(labelled by the digit character) followed by a clear key (button code `8`,
-labelled `"Clear"`), reproducing upstream `game_request_keys` (which is fixed to
+(labeled by the digit character) followed by a clear key (button code `8`,
+labeled `"Clear"`), reproducing upstream `game_request_keys` (which is fixed to
 digits 1–9 regardless of board size) so the keypad matches the C build.
 
 #### Scenario: The keypad is digits 1–9 plus clear

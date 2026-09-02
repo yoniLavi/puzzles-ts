@@ -11,7 +11,7 @@
 > (the in-process tiers, the render harness, determinism under load, the
 > differential helper) ·
 > [`ts-migration`](../../openspec/specs/ts-migration/spec.md) (test discipline).
-> Neighbouring guides: [`rendering.md`](./rendering.md) (what to draw),
+> Neighboring guides: [`rendering.md`](./rendering.md) (what to draw),
 > [`hints.md`](./hints.md) (hint verification recipe),
 > [`solver-and-generator.md`](./solver-and-generator.md) (when to diverge from a
 > fixture, and what replaces it).
@@ -87,16 +87,16 @@ Seed exemplar:
 matches.** The shared `RecordingDrawing` records a *filled* `drawRect` as
 `op === "rect"`, but `drawRectOutline` — a stroked box: hint ring, error
 outline, cursor frame — records as `op === "line"` segments. A test checking a
-ring colour must match `"line"`, not `"rect"` (asserting Range's premise ring
+ring color must match `"line"`, not `"rect"` (asserting Range's premise ring
 cost a debug cycle on exactly this). A `drawCircle` records with
-`fill`/`outline` fields, **not** `colour` — matching
-`o.op === "circle" && o.colour === …` type-errors and always misses (Light Up's
+`fill`/`outline` fields, **not** `color` — matching
+`o.op === "circle" && o.color === …` type-errors and always misses (Light Up's
 bulb assertions hit this). Prefer the shared recorder over ad-hoc doubles — a
 local recorder that names ops differently is a second vocabulary to misremember.
 
-**An op carries both forms of its colour**: `op.colour` is the palette index
+**An op carries both forms of its color**: `op.color` is the palette index
 the game passed; `op.rgb` the resolved `"rgb(r, g, b)"` label. Assert against
-the game's own constant (`o.colour === COL_HINT`); the resolved label exists so
+the game's own constant (`o.color === COL_HINT`); the resolved label exists so
 a *snapshot* diff stays readable when a palette index moves, not for tests to
 match on. Narrowing note: `DrawOp` is a discriminated union, so a chained
 `.filter(o => o.op === "rect").filter(o => o.w …)` doesn't narrow — put the
@@ -104,7 +104,7 @@ whole predicate in one `filter`, or write a type guard.
 
 ## What a new game ships
 
-**A new game has no oracle; its assurance is behavioural, and the standard
+**A new game has no oracle; its assurance is behavioral, and the standard
 floor is a generation-invariant property test**: every generated board is
 uniquely solvable at *exactly* its stated difficulty, across a fixed-seed
 sweep. `scripts/new-game-port.sh` scaffolds a `<game>-generation.test.ts` stub
@@ -112,8 +112,8 @@ for exactly this (the scaffold deliberately emits no differential stub — see
 the [`repo-layout`](../../openspec/specs/repo-layout/spec.md) scaffolding
 requirement). Beyond that floor:
 
-- Tier-1 behavioural tests: input→move mapping, `executeMove` purity,
-  serialise/deserialise round-trips, completion detection.
+- Tier-1 behavioral tests: input→move mapping, `executeMove` purity,
+  serialize/deserialize round-trips, completion detection.
 - A tier-2.5 scenario for anything the game renders beyond plain tiles.
 - Property tests wherever a closed-form invariant exists — cheap, additive,
   and they catch inputs no fixture recorded.
@@ -121,7 +121,7 @@ requirement). Beyond that floor:
 **Drive `executeMove` to completion in a unit test — no differential exercises
 the interactive completion path.** A generator/solver check runs the solver's
 verdict-only completion; the *interactive* completion path (error marking,
-loop/path marking, flash labelling) is different code. Tracks shipped an
+loop/path marking, flash labeling) is different code. Tracks shipped an
 infinite loop confined to it: the connectivity `Dsf` build dropped an in-grid
 guard, an out-of-bounds merge corrupted the union-find, and `canonify` hung —
 behind a green 22-fixture differential. It surfaced only when a
@@ -196,10 +196,10 @@ improve a game (the divergence policy and what must replace a retired oracle
 live in [`solver-and-generator.md`](./solver-and-generator.md)). What stays
 live here:
 
-- **A byte-match proves a substitution changed no behaviour — which makes it
-  the safest possible ground for optimisation.** Slide's key-encoding rewrite
+- **A byte-match proves a substitution changed no behavior — which makes it
+  the safest possible ground for optimization.** Slide's key-encoding rewrite
   (35% of generation time → a hash + exact compare, 3.4× faster) was provable
-  precisely because the differential pinned the output. When an optimisation
+  precisely because the differential pinned the output. When an optimization
   looks risky, check whether a fixture already pins its observable output.
 - **Try to keep both.** Spokes ships a corrected difficulty-acceptance check
   *and* retains upstream's original one, reachable by the differential alone —
@@ -213,16 +213,16 @@ live here:
   refactors of any fixture-pinned generator today, including the RNG-bearing
   leaf libraries (`latin.ts`'s `matching`, `loopgen.ts`, `laydomino.ts`) — a
   fixture-pinned game's generator is byte-sensitive *through* them.
-- **A recorded artefact with no right answer is a yardstick, not an answer
+- **A recorded artifact with no right answer is a yardstick, not an answer
   key.** Inertia's recorded C solver routes stopped being a byte-match target
-  (an approximate optimiser has many equally good outputs, and a byte-match
+  (an approximate optimizer has many equally good outputs, and a byte-match
   welds the port to C's shape and forbids improvement) and became a quality
   bar: the test asserts the TS route is legal, complete, and **no longer than
   C's** — a regression bar a byte-match could never give, since a byte-match is
   equally satisfied by faithfully reproducing a bad answer. Exemplar:
   [`inertia-differential.test.ts`](../../src/games/inertia/inertia-differential.test.ts).
 - **Read what the reader accepts before deciding what a writer owes it.** Two
-  codec lessons that generalise: an encoder that never flushes its trailing run
+  codec lessons that generalize: an encoder that never flushes its trailing run
   is a *format*, not a bug — "completing" it diverges every desc (Boats); and a
   writer can emit what its own reader mis-parses, in which case the undefined
   range is free to fix — validate the fix by round-tripping through a decoder
@@ -277,7 +277,7 @@ pre-change self. Two gotchas that have burned real time:
   original `for (…; …; ++j, board[i] = 1)` also ran its side effect after the
   final iteration; a naive translation won't. If a fixpoint refactor touches
   such a site (they are commented at the sites that survived porting), the
-  after-last-iteration effect is part of the behaviour.
+  after-last-iteration effect is part of the behavior.
 
 If the change is a *deliberate* divergence, the fixture is retired or
 re-founded — never hand-edited to pass; see
@@ -318,7 +318,7 @@ Normative: the `repo-layout` "deterministic under parallel load" requirement.
 "Contention on work that terminates" is a complete diagnosis and its fix is
 removing the clock gate — reach for the other causes (shared state, order
 dependence, non-termination) only when evidence points there; re-run the file
-alone, then the suite under `--sequence.shuffle.files=true` to localise a
+alone, then the suite under `--sequence.shuffle.files=true` to localize a
 cross-file leak.
 
 ## Right-sizing the gate
@@ -346,7 +346,7 @@ it catches.** Three treatments, in order of how little they lose:
 
 **Writing a test is not the same as the test working — flip the line it is
 for, watch it go red, put it back.** This applies double to a test you just
-made cheaper: the failure mode optimisation causes is a test that still passes
+made cheaper: the failure mode optimization causes is a test that still passes
 and no longer catches anything. `wires.test.ts`'s both-sides check passed with
 the checked code *deleted*, because its chosen case was caught by an unrelated
 guard. Seconds of work; it is the only thing distinguishing an assertion from a
@@ -365,9 +365,9 @@ named rule in 100 ms, and it is invisible to the run-just-what-I-touched habit.
 stating the rules its doc comment claims rather than pinning values. Exemplar:
 [`wires.test.ts`](../../src/engine/wires.test.ts).
 
-## Enrolment duties
+## Enrollment duties
 
-**The cross-game guards derive their populations mechanically; a game enrols
+**The cross-game guards derive their populations mechanically; a game enrolls
 by declaring, not by being remembered.**
 
 - **Hints**: a game that ships `hint()` adds one line to
@@ -377,7 +377,7 @@ by declaring, not by being remembered.**
   cache), `hint-quality.test.ts` (narration form). Recipe and rationale:
   [`hints.md`](./hints.md).
 - **Difficulty tiers**: declaring `Game.difficulty`
-  ([`difficulty.ts`](../../src/engine/difficulty.ts)) *is* the enrolment —
+  ([`difficulty.ts`](../../src/engine/difficulty.ts)) *is* the enrollment —
   [`difficulty-contract.test.ts`](../../src/engine/difficulty-contract.test.ts)
   derives its set from the registry, so a tiered game that fails to declare
   fails a test. The guards: cap-monotonicity (Boats shipped without it and it
@@ -393,7 +393,7 @@ by declaring, not by being remembered.**
   together.
 - **Layering**: [`module-layering.test.ts`](../../src/module-layering.test.ts)
   enforces that no game imports another game, the engine imports no game
-  (except `testing/hint-games.ts`, the enrolment file), neither imports the app
+  (except `testing/hint-games.ts`, the enrollment file), neither imports the app
   shell — and ratchets runtime import cycles at zero. Every rule there has been
   verified to fail when violated; a layering rule that has never fired may not
   work.

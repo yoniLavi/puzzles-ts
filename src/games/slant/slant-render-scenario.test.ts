@@ -1,7 +1,7 @@
 /**
  * Tier-2.5 render scenarios for the Slant hint: drive a real Midend to a
  * displayed hint step and capture `redraw`. Targeted op assertions (the blue
- * `COL_HINT` target fill, the recoloured clue digit, the `COL_HINT_CELL`
+ * `COL_HINT` target fill, the recolored clue digit, the `COL_HINT_CELL`
  * evidence shade) plus one snapshot so a render regression is a reviewable
  * text diff (`vitest -u` re-baselines an intended change; the targeted
  * assertions survive a careless `-u`).
@@ -39,15 +39,13 @@ describe("Slant hint render scenarios", () => {
     // The target and any siblings are **ringed**, four thin rects each and none
     // solid: a blue square in Slant would read as a slash already placed.
     expectRing(recording.ops, COL_HINT, 1 + (h?.siblings?.length ?? 0));
-    // The driving clue's digit recolours COL_HINT (the clue↔move tie).
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
+    // The driving clue's digit recolors COL_HINT (the clue↔move tie).
+    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_HINT)).toBe(
       true,
     );
     // Other clue digits still drawn; the grid frame is present.
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
-    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_GRID)).toBe(
-      true,
-    );
+    expect(recording.ops.some((o) => "color" in o && o.color === COL_GRID)).toBe(true);
     expect(size.w).toBeGreaterThan(0);
 
     expect(recording.ops).toMatchSnapshot();
@@ -84,7 +82,7 @@ describe("Slant hint render scenarios", () => {
     const h = hl(hint);
     expect(h?.ref).toBeDefined();
     expectRing(recording.ops, COL_HINT);
-    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_HINT_REF)).toBe(
+    expect(recording.ops.some((o) => "color" in o && o.color === COL_HINT_REF)).toBe(
       true,
     );
   });

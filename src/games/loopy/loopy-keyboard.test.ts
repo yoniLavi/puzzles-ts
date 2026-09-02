@@ -512,13 +512,13 @@ describe("the cursor is drawn, on an aperiodic tiling", () => {
     expect(midend.newGameFromId(`${encodeParams(p, true)}:${desc}`)).toBeUndefined();
     midend.size(computeSize(p, PREFERRED_TILE_SIZE));
     const capture = () => {
-      const rec = new RecordingDrawing(loopyGame.colours(DEFAULT_BACKGROUND));
+      const rec = new RecordingDrawing(loopyGame.colors(DEFAULT_BACKGROUND));
       midend.redraw(rec);
       return rec.ops;
     };
     return { s, midend, capture };
   }
-  const isHalo = (o: DrawOp) => o.op === "line" && o.colour === COL_CURSOR;
+  const isHalo = (o: DrawOp) => o.op === "line" && o.color === COL_CURSOR;
   const isDisc = (o: DrawOp) => o.op === "circle" && o.fill === COL_CURSOR;
   const cursorOps = (ops: readonly DrawOp[]) =>
     ops.filter((o) => isHalo(o) || isDisc(o));

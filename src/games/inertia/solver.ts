@@ -6,7 +6,7 @@
  *    squares that lie on some round trip from the start back to the start.
  *
  * 2. `solveRoute` finds a route collecting every remaining gem. That is a
- *    travelling-salesman problem, so it does not try to be optimal: it grows a
+ *    traveling-salesman problem, so it does not try to be optimal: it grows a
  *    tour by splicing in a detour to one uncollected gem after another, then
  *    repeatedly shortens redundant stretches until the tour stops shrinking.
  *
@@ -124,7 +124,7 @@ function floodDirections(
     const x = board.x(square);
     const y = board.y(square);
 
-    // Two kinds of neighbour: one square along the current direction (or one
+    // Two kinds of neighbor: one square along the current direction (or one
     // square back, searching backwards); or the same square facing some other
     // way, which is the ball stopping here and turning.
     for (let n = -1; n < DIRECTIONS; n++) {
@@ -590,7 +590,7 @@ function encodeRoute(g: MoveGraph, tour: number[]): number[] {
   return route;
 }
 
-/** Direction index by (dx, dy) step, each in -1..1; -1 for the centre of the
+/** Direction index by (dx, dy) step, each in -1..1; -1 for the center of the
  * 3×3, which is no move at all. */
 const DIRECTION_BY_STEP: readonly number[] = (() => {
   const table = new Array<number>(9).fill(-1);

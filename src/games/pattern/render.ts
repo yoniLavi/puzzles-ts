@@ -2,13 +2,13 @@
  * Pattern rendering — faithful port of `game_redraw` / `grid_square` /
  * `draw_numbers` in pattern.c. Per-cell `Int32Array` cache keyed on the
  * cell's displayed value (drag- and flash-adjusted) plus cursor/mistake
- * overlay bits; a per-line cache of the last clue-number colour, recoloured
+ * overlay bits; a per-line cache of the last clue-number color, recolored
  * red when a completed line contradicts its clue (`check_errors`). The
- * palette mirrors the C colour enum index-for-index.
+ * palette mirrors the C color enum index-for-index.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLACK, WHITE } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLACK, WHITE } from "../../engine/color/colors.ts";
 import {
   CURSOR,
   ERROR,
@@ -19,10 +19,10 @@ import {
   HINT_WHITEREF,
   INK,
   UNDECIDED,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { PatternHint } from "./index.ts";
 import { lineHasError } from "./solver.ts";
 import {
@@ -39,7 +39,7 @@ import {
 export const PREFERRED_TILE_SIZE = 24;
 export const FLASH_TIME = 0.13;
 
-// --- palette (mirrors the pattern.c colour enum index-for-index) ---------
+// --- palette (mirrors the pattern.c color enum index-for-index) ---------
 export const COL_BACKGROUND = 0;
 export const COL_EMPTY = 1;
 export const COL_FULL = 2;
@@ -49,7 +49,7 @@ export const COL_GRID = 5;
 export const COL_CURSOR = 6;
 export const COL_ERROR = 7;
 export const COL_CURSOR_GUIDE = 8;
-// Hint colours — appended past the C colour enum (0–8) so the dark-mode
+// Hint colors — appended past the C color enum (0–8) so the dark-mode
 // palette overrides (which target the C indices) leave them unchanged. The
 // forced cell is **ringed** COL_HINT (blue); the reasoned line's still-undecided
 // cells shade COL_HINT_CELL — the evidence wash, which is right here because
@@ -61,8 +61,8 @@ export const COL_HINT_CELL = 10;
 export const COL_HINT_BLACKREF = 11;
 export const COL_HINT_WHITEREF = 12;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   // Upstream pattern.c shifts COL_BACKGROUND off pure white via mkhighlight
   // so a pure-white empty cell stays distinguishable from the surround.
   out[COL_BACKGROUND] = mkhighlight(defaultBackground).background;
@@ -72,7 +72,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_FULL] = BLACK;
   out[COL_EMPTY] = WHITE;
   // The clue numbers of the cursor's own row and column: the cursor, projected
-  // into the margin, so it takes the cursor's colour rather than a grey of its own.
+  // into the margin, so it takes the cursor's color rather than a gray of its own.
   out[COL_CURSOR_GUIDE] = CURSOR;
   out[COL_CURSOR] = CURSOR;
   out[COL_ERROR] = ERROR;
@@ -116,8 +116,8 @@ export interface PatternDrawState {
   h: number;
   /** Per-cell packed display key; -1 forces a redraw. */
   visible: Int32Array;
-  /** Per-line last-drawn clue colour; -1 forces a redraw. */
-  numColours: Int32Array;
+  /** Per-line last-drawn clue color; -1 forces a redraw. */
+  numColors: Int32Array;
 }
 
 export function newDrawState(state: PatternState): PatternDrawState {
@@ -128,14 +128,14 @@ export function newDrawState(state: PatternState): PatternDrawState {
     w,
     h,
     visible: new Int32Array(w * h).fill(-1),
-    numColours: new Int32Array(w + h).fill(-1),
+    numColors: new Int32Array(w + h).fill(-1),
   };
 }
 
 // Packed display-key bits beyond the 2-bit cell value.
 const K_CURSOR = 1 << 2;
 const K_MISTAKE = 1 << 3;
-// Hint-overlay bits (no upstream analogue), also folded into the cache key.
+// Hint-overlay bits (no upstream analog), also folded into the cache key.
 const K_HINT_TARGET = 1 << 4; // a forced cell (COL_HINT highlight)
 const K_HINT_SHADE = 1 << 5; // an undecided cell of the reasoned line
 const K_HINT_BLACKREF = 1 << 6; // a cited black mark (teal ring)
@@ -148,12 +148,12 @@ function rectOutline(
   w: number,
   h: number,
   thick: number,
-  colour: number,
+  color: number,
 ): void {
-  dr.drawRect({ x, y, w, h: thick }, colour);
-  dr.drawRect({ x, y: y + h - thick, w, h: thick }, colour);
-  dr.drawRect({ x, y, w: thick, h }, colour);
-  dr.drawRect({ x: x + w - thick, y, w: thick, h }, colour);
+  dr.drawRect({ x, y, w, h: thick }, color);
+  dr.drawRect({ x, y: y + h - thick, w, h: thick }, color);
+  dr.drawRect({ x, y, w: thick, h }, color);
+  dr.drawRect({ x: x + w - thick, y, w: thick, h }, color);
 }
 
 function gridSquare(
@@ -188,7 +188,7 @@ function gridSquare(
   // move will place, and in a game whose move is exactly "make this square black
   // or white" a solid fill says with the board what the narration is proposing.
   // An undecided cell of the reasoned line *shades*: nothing is drawn on it, so
-  // the wash covers nothing. A cited mark keeps its own colour (the premise) and
+  // the wash covers nothing. A cited mark keeps its own color (the premise) and
   // gets a ring below.
   const baseFill =
     val === GRID_FULL ? COL_FULL : val === GRID_EMPTY ? COL_EMPTY : COL_UNKNOWN;
@@ -248,7 +248,7 @@ function drawNumbers(
   ds: PatternDrawState,
   state: PatternState,
   i: number,
-  colour: number,
+  color: number,
 ): void {
   const ts = ds.tilesize;
   const { w, h, clues, fontLarge } = state.common;
@@ -292,7 +292,7 @@ function drawNumbers(
             fontType: "variable",
             size: fontsize,
           },
-          colour,
+          color,
           String(rowdata[j]),
         );
       }
@@ -308,7 +308,7 @@ function drawNumbers(
           fontType: "variable",
           size: fontsize,
         },
-        colour,
+        color,
         str,
       );
     }
@@ -339,7 +339,7 @@ export function redraw(
       : null;
 
   // Hint overlay: forced targets, the reasoned line's cells (line of sight),
-  // and the cited marks to ring by their own colour.
+  // and the cited marks to ring by their own color.
   const hl = hint?.highlights;
   const hintTargets = hl ? new Set(hl.cells) : null;
   const hintBlackRefs = hl ? new Set(hl.blackRefs) : null;
@@ -426,18 +426,18 @@ export function redraw(
     }
   }
 
-  // Recolour clue numbers: red on a contradicting completed line, else the
+  // Recolor clue numbers: red on a contradicting completed line, else the
   // cursor guide for the cursor's row/column, else plain text.
   for (let i = 0; i < w + h; i++) {
-    let colour = lineHasError(state, i) ? COL_ERROR : COL_TEXT;
-    if (colour === COL_TEXT && ((cx >= 0 && i === cx) || (cy >= 0 && i === cy + w))) {
-      colour = COL_CURSOR_GUIDE;
+    let color = lineHasError(state, i) ? COL_ERROR : COL_TEXT;
+    if (color === COL_TEXT && ((cx >= 0 && i === cx) || (cy >= 0 && i === cy + w))) {
+      color = COL_CURSOR_GUIDE;
     }
     // The reasoned line's clue is highlighted so it ties to the shaded line.
-    if (i === hintLine) colour = COL_HINT;
-    if (ds.numColours[i] !== colour) {
-      ds.numColours[i] = colour;
-      drawNumbers(dr, ds, state, i, colour);
+    if (i === hintLine) color = COL_HINT;
+    if (ds.numColors[i] !== color) {
+      ds.numColors[i] = color;
+      drawNumbers(dr, ds, state, i, color);
     }
   }
 }

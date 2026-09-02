@@ -125,7 +125,7 @@ describe("dline bit accessors", () => {
     expect(setAtMostOne(dlines, 2)).toBe(true);
     expect(setAtMostOne(dlines, 2)).toBe(false);
     expect(isAtMostOne(dlines, 2)).toBe(true);
-    // The two bits are independent, and neither leaks into a neighbouring slot.
+    // The two bits are independent, and neither leaks into a neighboring slot.
     expect(dlines[1]).toBe(0);
     expect(dlines[3]).toBe(0);
   });

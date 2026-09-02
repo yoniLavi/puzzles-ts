@@ -212,7 +212,7 @@ describe("hint", () => {
 
   it("separates a corner deduction's protected corner from the matching pair", () => {
     // The user-reported confusion: a 2×2-corner hint shaded the corner cell
-    // the same colour as the matching numbers and called them all "corner
+    // the same color as the matching numbers and called them all "corner
     // squares". The corner is now its own `strand` role, disjoint from the
     // shaded matching `evidence`. Reproduce the reported shape directly:
     // top-left 2×2 = [[4,3],[5,3]] → the two 3s match (evidence), the 4 is
@@ -349,7 +349,7 @@ describe("singles hint render", () => {
     expectRing(ops, COL_HINT, forced.length);
     expect(
       markSides(ops, COL_HINT_CELL).length > 0 ||
-        // a decided premise is ringed in its own legend colour rather than here
+        // a decided premise is ringed in its own legend color rather than here
         markSides(ops, COL_HINT_BLACKREF).length > 0 ||
         markSides(ops, COL_HINT_WHITEREF).length > 0,
     ).toBe(true);
@@ -359,8 +359,8 @@ describe("singles hint render", () => {
   });
 
   it("rings a cited shaded square in COL_HINT_BLACKREF, distinct from the blue target", () => {
-    // Walk to an adjBlack frame: a decided black square forces a neighbour
-    // white. The black premise must ring in the black-ref legend colour, not
+    // Walk to an adjBlack frame: a decided black square forces a neighbor
+    // white. The black premise must ring in the black-ref legend color, not
     // the same blue as the forced cell.
     const { recording } = renderScenario({
       game: singlesGame,
@@ -369,15 +369,15 @@ describe("singles hint render", () => {
       hintUntil: (s) => s.explanation.includes("can't be adjacent"),
     });
     const ops = recording.ops;
-    const colour = (c: number) => ops.some((o) => "colour" in o && o.colour === c);
-    expect(colour(COL_HINT_BLACKREF)).toBe(true); // cited black premise ring
-    expect(colour(COL_HINT)).toBe(true); // forced cell, a different colour
+    const color = (c: number) => ops.some((o) => "color" in o && o.color === c);
+    expect(color(COL_HINT_BLACKREF)).toBe(true); // cited black premise ring
+    expect(color(COL_HINT)).toBe(true); // forced cell, a different color
     expect(COL_HINT_BLACKREF).not.toBe(COL_HINT);
   });
 
   it("rings a cited ringed-white square in COL_HINT_WHITEREF", () => {
     // Walk to a sameLine frame: a circled white square forces line-mates
-    // shaded. The white premise rings in the white-ref legend colour.
+    // shaded. The white premise rings in the white-ref legend color.
     const { recording } = renderScenario({
       game: singlesGame,
       id: "6x6dk#scan-0",
@@ -387,6 +387,6 @@ describe("singles hint render", () => {
       hintUntil: (s) => s.explanation.includes("share a line"),
     });
     const ops = recording.ops;
-    expect(ops.some((o) => "colour" in o && o.colour === COL_HINT_WHITEREF)).toBe(true);
+    expect(ops.some((o) => "color" in o && o.color === COL_HINT_WHITEREF)).toBe(true);
   });
 });

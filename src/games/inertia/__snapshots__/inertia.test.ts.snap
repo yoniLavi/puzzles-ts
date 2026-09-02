@@ -3,7 +3,7 @@
 exports[`inertia rendering > draws the opening frame 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 259,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -12,7 +12,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -22,7 +22,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 1,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -32,7 +32,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 33,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -42,7 +42,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 65,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -52,7 +52,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 97,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -62,7 +62,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 129,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -72,7 +72,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 161,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -82,7 +82,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 193,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -92,7 +92,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 225,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -102,7 +102,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -112,7 +112,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -122,7 +122,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -132,7 +132,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -142,7 +142,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -152,7 +152,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -162,7 +162,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -172,7 +172,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -182,7 +182,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -192,7 +192,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -202,7 +202,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y2": 257,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(168, 168, 168)",
     "thickness": 1,
@@ -219,7 +219,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -238,7 +238,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -247,7 +247,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 4,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -256,7 +256,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 15,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -275,7 +275,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -294,7 +294,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -303,7 +303,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 4,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -312,7 +312,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 15,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -331,7 +331,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -382,7 +382,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -401,7 +401,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -445,7 +445,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -496,7 +496,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -515,7 +515,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -527,14 +527,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 177,
     "cy": 17,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -543,7 +543,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -562,7 +562,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -606,7 +606,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -657,7 +657,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -676,7 +676,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -727,7 +727,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -746,7 +746,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -758,14 +758,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 305,
     "cy": 17,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -774,7 +774,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 2,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -793,7 +793,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -805,14 +805,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 17,
     "cy": 49,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -821,7 +821,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -840,7 +840,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -859,7 +859,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -868,7 +868,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 36,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -877,7 +877,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 47,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -896,7 +896,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -940,7 +940,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -991,7 +991,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -1010,7 +1010,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1022,14 +1022,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 145,
     "cy": 49,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1038,7 +1038,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1057,7 +1057,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1076,7 +1076,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1088,14 +1088,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 209,
     "cy": 49,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1104,7 +1104,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1123,7 +1123,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1142,7 +1142,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1151,7 +1151,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 36,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1160,7 +1160,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 47,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -1179,7 +1179,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1198,7 +1198,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1210,14 +1210,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 305,
     "cy": 49,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1226,7 +1226,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 34,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1245,7 +1245,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1264,7 +1264,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1273,7 +1273,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 68,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1282,7 +1282,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 79,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -1301,7 +1301,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1313,14 +1313,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 49,
     "cy": 81,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1329,7 +1329,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1348,7 +1348,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1367,7 +1367,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1376,7 +1376,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 68,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1385,7 +1385,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 79,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -1404,7 +1404,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1423,7 +1423,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1467,7 +1467,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1486,7 +1486,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1505,7 +1505,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1514,7 +1514,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 68,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1523,7 +1523,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 79,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -1542,7 +1542,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1586,7 +1586,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1598,14 +1598,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 273,
     "cy": 81,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1614,7 +1614,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1633,7 +1633,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 66,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1684,7 +1684,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -1703,7 +1703,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1722,7 +1722,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1741,7 +1741,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1760,7 +1760,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1769,7 +1769,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 100,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1778,7 +1778,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 111,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -1797,7 +1797,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1848,7 +1848,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -1867,7 +1867,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1911,7 +1911,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1930,7 +1930,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1939,7 +1939,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 100,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1948,7 +1948,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 111,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -1967,7 +1967,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1986,7 +1986,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -1995,7 +1995,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 100,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2004,7 +2004,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 111,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -2023,7 +2023,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2074,7 +2074,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -2093,7 +2093,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2144,7 +2144,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -2163,7 +2163,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 98,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2207,7 +2207,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2219,14 +2219,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 17,
     "cy": 145,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2235,7 +2235,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2254,7 +2254,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2273,7 +2273,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2282,7 +2282,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 132,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2291,7 +2291,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 143,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -2310,7 +2310,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2329,7 +2329,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2373,7 +2373,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2417,7 +2417,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2468,7 +2468,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -2487,7 +2487,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2531,7 +2531,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2550,7 +2550,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2569,7 +2569,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2581,14 +2581,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 305,
     "cy": 145,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2597,7 +2597,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 130,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2616,7 +2616,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2628,14 +2628,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 17,
     "cy": 177,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2644,7 +2644,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2663,7 +2663,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2714,7 +2714,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -2733,7 +2733,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2777,7 +2777,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2821,7 +2821,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2833,14 +2833,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 145,
     "cy": 177,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2849,7 +2849,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2868,7 +2868,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2887,7 +2887,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2906,7 +2906,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2915,7 +2915,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 164,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -2924,7 +2924,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 175,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -2943,7 +2943,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2955,14 +2955,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 241,
     "cy": 177,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2971,7 +2971,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2990,7 +2990,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3034,7 +3034,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3046,14 +3046,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 305,
     "cy": 177,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3062,7 +3062,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 162,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3081,7 +3081,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3100,7 +3100,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3109,7 +3109,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 196,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3118,7 +3118,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 207,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3137,7 +3137,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3188,7 +3188,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -3207,7 +3207,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3226,7 +3226,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3235,7 +3235,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 196,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3244,7 +3244,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 207,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3263,7 +3263,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3282,7 +3282,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3301,7 +3301,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3310,7 +3310,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 196,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3319,7 +3319,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 207,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",
@@ -3338,7 +3338,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3350,14 +3350,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 177,
     "cy": 209,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3366,7 +3366,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3385,7 +3385,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3436,7 +3436,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -3455,7 +3455,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3499,7 +3499,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3550,7 +3550,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -3569,7 +3569,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 194,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3588,7 +3588,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3600,14 +3600,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 17,
     "cy": 241,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3616,7 +3616,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3635,7 +3635,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3654,7 +3654,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3705,7 +3705,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -3724,7 +3724,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3743,7 +3743,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3787,7 +3787,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3806,7 +3806,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3850,7 +3850,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3862,14 +3862,14 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 241,
     "cy": 241,
     "fill": -1,
-    "fillRgb": "colour#-1",
+    "fillRgb": "color#-1",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
     "r": 13,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3878,7 +3878,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 7,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3897,7 +3897,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3948,7 +3948,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     ],
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 26,
     "op": "rect",
     "rgb": "rgb(222, 222, 222)",
@@ -3967,7 +3967,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 226,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -3986,7 +3986,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "r": 10,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 27,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -3995,7 +3995,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 228,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 5,
     "op": "rect",
     "rgb": "rgb(0, 0, 0)",
@@ -4004,7 +4004,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "y": 239,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 3,
     "op": "rect",
     "rgb": "rgb(253, 253, 253)",

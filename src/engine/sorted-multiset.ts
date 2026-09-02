@@ -52,7 +52,7 @@ export class SortedMultiset<T> {
   /**
    * Insert `item`. Returns `true` if inserted, `false` if an element
    * comparing equal is already present (left untouched) — upstream
-   * `add234`'s "already there" behaviour.
+   * `add234`'s "already there" behavior.
    */
   add(item: T): boolean {
     const i = this.lowerBound(item);

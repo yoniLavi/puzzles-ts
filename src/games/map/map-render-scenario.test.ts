@@ -22,14 +22,14 @@ describe("map render scenarios", () => {
   it("opener frame: region fills + grid lines drawn", () => {
     const { recording } = renderScenario({ game: mapGame, id: ID });
 
-    // Clue regions are painted with a map colour (COL_0..COL_3).
+    // Clue regions are painted with a map color (COL_0..COL_3).
     expect(
       recording.ops.some(
-        (o) => o.op === "rect" && o.colour >= COL_0 && o.colour <= COL_3,
+        (o) => o.op === "rect" && o.color >= COL_0 && o.color <= COL_3,
       ),
     ).toBe(true);
     // Region boundaries draw grid lines.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_GRID)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_GRID)).toBe(
       true,
     );
 
@@ -37,7 +37,7 @@ describe("map render scenarios", () => {
   });
 
   it("error frame: two same-coloured adjacent regions draw a red diamond", () => {
-    // Colour a blank region the same as an adjacent clue → adjacency error.
+    // Color a blank region the same as an adjacent clue → adjacency error.
     const { desc } = newMapDesc(P, randomNew(SEED));
     const st = mapGame.newState(P, desc) as MapState;
     const { graph, ngraph, immutable } = st.map;
@@ -49,7 +49,7 @@ describe("map render scenarios", () => {
       const clue = immutable[a] ? a : immutable[b] ? b : -1;
       const blank = immutable[a] ? b : a;
       if (clue >= 0 && !immutable[blank])
-        move = { ops: [{ op: "colour", region: blank, colour: st.colouring[clue] }] };
+        move = { ops: [{ op: "color", region: blank, color: st.coloring[clue] }] };
     }
     if (!move) throw new Error("no clue/blank adjacency");
 

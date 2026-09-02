@@ -11,7 +11,7 @@
  * A `StepBudget` is ticked once per fixpoint iteration. Honest deduction
  * finishes in at most ~one iteration per board cell, orders of magnitude under
  * the limit, so the guard never fires on real work — it converts a future
- * non-terminating loop into an immediate, labelled failure instead.
+ * non-terminating loop into an immediate, labeled failure instead.
  *
  * It is **opt-in**: only the hint/recording path constructs one, so generators
  * (which run the same fixpoints without a recorder) are entirely unaffected.

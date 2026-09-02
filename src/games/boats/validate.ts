@@ -6,7 +6,7 @@
  *
  * **`adjustShips` mutates the board, and that is load-bearing.** Upstream's
  * `boats_adjust_ships` rewrites every `SHIP_VAGUE` into its resolved shape
- * (`TOP`/`LEFT`/`CENTER`/…) from its neighbours, and `boats_validate_full_state`
+ * (`TOP`/`LEFT`/`CENTER`/…) from its neighbors, and `boats_validate_full_state`
  * calls it in the middle of validating. Both the solver and `executeMove`
  * depend on that side effect — several deductions test for a specific shape,
  * and the fleet inventory only counts boats it can see a `LEFT`…`RIGHT` or
@@ -60,9 +60,9 @@ export interface BoatsRun {
   horizontal: boolean;
 }
 
-/** The four orthogonal neighbours of `(x, y)`, with off-board treated as
+/** The four orthogonal neighbors of `(x, y)`, with off-board treated as
  * water — the idiom every upstream deduction opens with. */
-export function neighbours(
+export function neighbors(
   b: BoatsBoard,
   x: number,
   y: number,
@@ -87,7 +87,7 @@ export function fleetShipCount(b: BoatsBoard): number {
  * Upstream `boats_count_ships`: per-row and per-column tallies of ships and
  * water, checked against the border numbers. `blankCounts`/`shipCounts` are
  * indexed columns `0…w−1` then rows `w…w+h−1`; `errs` (same indexing) receives
- * the per-line `STATUS_*` the renderer colours the number with.
+ * the per-line `STATUS_*` the renderer colors the number with.
  */
 export function countShips(
   b: BoatsBoard,
@@ -150,13 +150,13 @@ export function countShips(
 
 /**
  * Upstream `boats_adjust_ships` — **mutates `b.grid`**. Every ship square is
- * rewritten to the shape its neighbours imply: surrounded by water ⇒ a single;
- * ships on both sides ⇒ a centre; water (or a given end-cap clue) on one side
+ * rewritten to the shape its neighbors imply: surrounded by water ⇒ a single;
+ * ships on both sides ⇒ a center; water (or a given end-cap clue) on one side
  * and a ship on the other ⇒ the matching end; otherwise still vague.
  *
  * The "exactly enough ships are placed" shortcut is what turns the last
  * placement into finished boats: once the ship count equals the fleet's total,
- * every remaining unknown neighbour is treated as water.
+ * every remaining unknown neighbor is treated as water.
  */
 export function adjustShips(b: BoatsBoard): number {
   const { w, h, grid, gridClues } = b;
@@ -176,7 +176,7 @@ export function adjustShips(b: BoatsBoard): number {
     for (let y = 0; y < h; y++) {
       if (!isShip(grid[y * w + x])) continue;
 
-      let { left, right, up, down } = neighbours(b, x, y);
+      let { left, right, up, down } = neighbors(b, x, y);
 
       const clue = gridClues[y * w + x];
       // A given end-cap clue already says which way the boat runs.
@@ -368,7 +368,7 @@ export function collectRuns(b: BoatsBoard): BoatsRun[] {
 
 /**
  * Upstream `boats_validate_gridclues`: does each given clue still agree with
- * the board? A given end-cap must have a ship on its open side, a centre must
+ * the board? A given end-cap must have a ship on its open side, a center must
  * have ships on one whole axis, and a resolved shape must equal the clue.
  * Also reports `STATUS_INCOMPLETE` while any square is still `SHIP_VAGUE`.
  */
@@ -394,7 +394,7 @@ export function validateGridClues(b: BoatsBoard, errs?: Int32Array): number {
       ) {
         error = true;
       } else {
-        const { left, right, up, down } = neighbours(b, x, y);
+        const { left, right, up, down } = neighbors(b, x, y);
         if (gridClues[i] === SHIP_LEFT && right === WATER) error = true;
         else if (gridClues[i] === SHIP_RIGHT && left === WATER) error = true;
         else if (gridClues[i] === SHIP_TOP && down === WATER) error = true;

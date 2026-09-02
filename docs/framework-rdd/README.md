@@ -7,8 +7,8 @@
 > documented in [`docs/games/`](../games/README.md); where the two disagree,
 > `docs/games/` is the truth. When part of this vision ships, the shipping
 > change moves the now-true material into the real guides and updates or
-> retires the fiction — no file here may claim unshipped behaviour in the
-> present tense (see the repo-layout spec, "Design-fiction docs are labelled
+> retires the fiction — no file here may claim unshipped behavior in the
+> present tense (see the repo-layout spec, "Design-fiction docs are labeled
 > and quarantined").
 
 This collection stopped being a port in 2026-08. What it is now is a body of 57
@@ -96,7 +96,7 @@ Three commitments shape everything here:
    collection already learned the hard way. Nothing may ship hintless.
 
 3. **AI-native, by design rather than by accident.** Nearly all work here is
-   done by AI sessions, and the framework optimises for that reader — see the
+   done by AI sessions, and the framework optimizes for that reader — see the
    principles below.
 
 ## The document set
@@ -106,7 +106,7 @@ Three commitments shape everything here:
 | [`game-definition.md`](./game-definition.md) | What a game *declares* — the manifest: params, board model, moves, gestures, presentation, techniques — and what the framework derives from each declaration. |
 | [`deduction.md`](./deduction.md) | The technique contract and its five projections; planners for non-deductive games; escape hatches and their obligations; how the known no-gos of the shared fixpoint are accommodated instead of denied. |
 | [`presentation.md`](./presentation.md) | The tile renderer the framework owns (cache, diff keys, overlays, animation — inverted from today's per-game loops), why this is *not* the withdrawn scene graph, and the bespoke-`redraw` escape hatch. |
-| [`guarantees.md`](./guarantees.md) | The conformance suite: what is asserted for every game automatically, enrolment-free, the moment a capability is declared. |
+| [`guarantees.md`](./guarantees.md) | The conformance suite: what is asserted for every game automatically, enrollment-free, the moment a capability is declared. |
 | [`migration.md`](./migration.md) | The path from today's `Game` interface: which engine modules become framework organs, the adapter story, the order of adoption, and the invariants that must not regress. |
 
 ## Adding a game, in one paragraph (the target experience)
@@ -121,7 +121,7 @@ the difficulty contract fall out); a **technique list** (solve, grade,
 generate, hint, refuse all fall out); and a **tile painter** (the cache, diff
 keys, overlays and animation bookkeeping fall out). What is left in your hands
 is exactly the two things that make your game *your game*: the deduction logic
-and the words the player reads. The conformance suite enrols you in every
+and the words the player reads. The conformance suite enrolls you in every
 cross-game guard the moment the manifest exists; nothing about correctness
 depends on remembering to sign up for it. A worked re-expression of Towers —
 today ~2,600 lines across seven files — is the running example through these
@@ -136,17 +136,17 @@ These bind every design decision in this directory:
   session that has seen one framework game has seen the file layout of all of
   them.
 - **Contracts are enforced by machines, not remembered by sessions.**
-  Declaring a capability auto-enrols its guards (the way
+  Declaring a capability auto-enrolls its guards (the way
   `difficulty-contract.test.ts` and `touch-input.test.ts` already work, made
-  universal). Hand-maintained enrolment lists (`testing/hint-games.ts`) are
+  universal). Hand-maintained enrollment lists (`testing/hint-games.ts`) are
   retired: a list a session must remember to edit is a defect class, not a
   convention.
 - **Totality over vigilance.** Where today a rule lives in a guide ("every
   hint must explain why"), the framework makes the compliant shape the only
-  one that type-checks. Review attention is spent on wording and judgement,
+  one that type-checks. Review attention is spent on wording and judgment,
   never on remembering.
 - **Lessons live as assertions.** The repo already converts war stories into
-  guards (colour bounds, vacuous-assertion sweeps, the probe corpus). The
+  guards (color bounds, vacuous-assertion sweeps, the probe corpus). The
   framework continues this: a session should benefit from a lesson without
   having read its story, because the lesson bites as a red test, not as a
   paragraph.
@@ -161,7 +161,7 @@ These bind every design decision in this directory:
 
 ## What this vision must not break
 
-Constraints inherited from paid-for experience, honoured explicitly in the
+Constraints inherited from paid-for experience, honored explicitly in the
 detail docs:
 
 - **The scene-graph postmortem.** No retained render tree, no reconciler, no

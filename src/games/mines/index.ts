@@ -16,18 +16,15 @@ import {
   BLACK,
   BLUE,
   BLUE_BOLD,
+  GRAY,
   GREEN,
-  GREY,
   PINK,
   RED,
   RED_BOLD,
   TEAL,
-} from "../../engine/colour/colours.ts";
-import { ERROR, ERROR_WASH, INK, PAPER } from "../../engine/colour/palette.ts";
-import {
-  minesLowlight,
-  minesUnclearedFace,
-} from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/colors.ts";
+import { ERROR, ERROR_WASH, INK, PAPER } from "../../engine/color/palette.ts";
+import { minesLowlight, minesUnclearedFace } from "../../engine/color/palette-games.ts";
 import { fromCoord } from "../../engine/geometry.ts";
 import {
   type Game,
@@ -55,7 +52,7 @@ import {
 } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   Point,
@@ -86,7 +83,7 @@ import {
   COL_WRONGNUMBER,
   computeSize,
   type MinesDrawState,
-  NCOLOURS,
+  NCOLORS,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
@@ -135,7 +132,7 @@ function openSquare(state: MinesState, x: number, y: number): void {
 
   if (!layout.mines) {
     // === the single deliberate mutation of a shared object (design D1) ===
-    // The layout is a memoisation of a deterministic function of the desc's RNG
+    // The layout is a memoization of a deterministic function of the desc's RNG
     // state and this click, so replaying the move log reproduces it exactly.
     layout.mines = minegen(
       w,
@@ -361,7 +358,7 @@ export const minesGame: Game<
     let cy = fromCoord(p.y, tileSize, border);
 
     /** The `uncover` chord path (upstream `goto uncover`, mines.c:2682): if the
-     * clicked number's flags match, either open all covered neighbours (`C`),
+     * clicked number's flags match, either open all covered neighbors (`C`),
      * or — if a to-open square is really a mine (mis-flagged) — reveal *only*
      * those mines and count a death (design D7). */
     const uncover = (): MinesMove | null | UiUpdate => {
@@ -677,12 +674,12 @@ export const minesGame: Game<
     return !(s.dead || s.completed || ui.everCompleted || !s.layout.mines);
   },
 
-  colours(defaultBackground: Colour): Colour[] {
+  colors(defaultBackground: Color): Color[] {
     const bg = defaultBackground;
-    const ret: Colour[] = new Array(NCOLOURS);
+    const ret: Color[] = new Array(NCOLORS);
     ret[COL_BACKGROUND] = bg;
     ret[COL_BACKGROUND2] = minesUnclearedFace(bg);
-    // Upstream's count colours, and by now most players' expectation of what a
+    // Upstream's count colors, and by now most players' expectation of what a
     // minesweeper looks like: 1 blue, 2 green, 3 red, 4 navy, 5 maroon, 6 teal.
     // The two dark ones are why the palette has a bold step at all — a wash is a
     // fill, and these are digits.
@@ -693,7 +690,7 @@ export const minesGame: Game<
     ret[COL_5] = RED_BOLD;
     ret[COL_6] = TEAL;
     ret[COL_7] = INK;
-    ret[COL_8] = GREY;
+    ret[COL_8] = GRAY;
     ret[COL_MINE] = BLACK;
     ret[COL_BANG] = ERROR;
     ret[COL_CROSS] = ERROR;
@@ -706,7 +703,7 @@ export const minesGame: Game<
     ret[COL_LOWLIGHT] = minesLowlight(bg);
     ret[COL_WRONGNUMBER] = ERROR_WASH;
     // Pink: it has to read on a cleared square and an uncleared one alike, and
-    // the board's own greys and the count digits have the rest spoken for.
+    // the board's own grays and the count digits have the rest spoken for.
     ret[COL_CURSOR] = PINK;
     return ret;
   },

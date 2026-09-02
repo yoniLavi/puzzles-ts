@@ -33,7 +33,7 @@ import {
 
 /** True iff placing a dot at `(x,y)` would not collide with another
  * dot or set edge nearby. Mirrors `dot_is_possible(state, sp, false)`.
- * `allowAssoc=false` means we also reject if any neighbour is already
+ * `allowAssoc=false` means we also reject if any neighbor is already
  * associated with another dot. */
 function dotIsPossible(s: GalaxiesState, sx: number, sy: number): boolean {
   const t = spaceTypeAt(sx, sy);

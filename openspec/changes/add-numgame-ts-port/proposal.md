@@ -10,7 +10,7 @@ Puzzles user interface written yet. Unlike Group, Slide and Sokoban, there is no
 upstream never built**, over a solver that already exists.
 
 It is scaffolded now so the decision is captured and the shape is scoped, not
-because it is next. The engine is complete and every catalogued game is ported,
+because it is next. The engine is complete and every cataloged game is ported,
 so this is exploratory: the collection *could* grow a mental-arithmetic puzzle,
 but whether it should — and whether an arithmetic game fits the "logic puzzle"
 character of the collection — is an open product call. Expect this to be done

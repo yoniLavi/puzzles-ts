@@ -59,12 +59,12 @@ describe("magnets render scenarios", () => {
     const { recording } = renderScenario({ game: magnetsGame, id, moves });
 
     // The magnet symbols are drawn in COL_POSITIVE / COL_NEGATIVE background.
-    expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_POSITIVE),
-    ).toBe(true);
-    expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_NEGATIVE),
-    ).toBe(true);
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_POSITIVE)).toBe(
+      true,
+    );
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_NEGATIVE)).toBe(
+      true,
+    );
   });
 
   it("findMistakes overlay repaints even when the cell was already drawn", () => {
@@ -86,7 +86,7 @@ describe("magnets render scenarios", () => {
     // The mistake overlay (inset red outline) appears on a frame *after* the
     // move that placed the cell (docs/games/rendering.md § "Overlay sidecars" — overlay must be in the diff
     // key). Both ends of the wrong magnet are flagged.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(
       true,
     );
     void partner;

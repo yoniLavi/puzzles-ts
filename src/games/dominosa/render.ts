@@ -11,20 +11,20 @@
  * desktop `¾·TS`.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { GREEN, PURPLE, RED, RED_BOLD } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { GREEN, PURPLE, RED, RED_BOLD } from "../../engine/color/colors.ts";
 import {
   ERROR,
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
-  lineNoColour,
+  lineNoColor,
   PAPER,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { DominosaHint } from "./index.ts";
 import {
   DINDEX,
@@ -43,7 +43,7 @@ import {
 export const PREFERRED_TILE_SIZE = 32;
 export const FLASH_TIME = 0.13;
 
-// --- palette (mirrors the dominosa.c colour enum index-for-index) ----------
+// --- palette (mirrors the dominosa.c color enum index-for-index) ----------
 export const COL_BACKGROUND = 0;
 export const COL_TEXT = 1;
 export const COL_DOMINO = 2;
@@ -59,12 +59,12 @@ export const COL_HINT = 9; // the acted-on square's ring / the suggested edge
 export const COL_HINT_CELL = 10; // the evidence squares' outline
 // Fork reference-panel spotlight: boxes a domino's candidate placements. Violet,
 // distinct from the mistake (red), hint (blue), and value-highlight (red/green)
-// colours; appended past the enum so no dark-mode override touches it.
+// colors; appended past the enum so no dark-mode override touches it.
 export const COL_REFERENCE = 11;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_TEXT] = INK;
   out[COL_DOMINO] = INK;
@@ -72,13 +72,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_DOMINOTEXT] = PAPER;
   // A barrier edge is "no domino crosses here" — the player ruling an edge
   // out, which is what Loopy's and Palisade's ruled-out edges mean.
-  out[COL_EDGE] = lineNoColour(background);
+  out[COL_EDGE] = lineNoColor(background);
   out[COL_HIGHLIGHT_1] = RED;
   out[COL_HIGHLIGHT_2] = GREEN;
   out[COL_MISTAKE] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   // Both hint marks are outlines on the square's own border, so both take a
-  // strong colour: every Dominosa square carries a number, so a fill behind one
+  // strong color: every Dominosa square carries a number, so a fill behind one
   // is exactly what has no working value.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_REFERENCE] = PURPLE;
@@ -105,7 +105,7 @@ const DF_CURSOR_XBASE = 0x10000;
 const DF_CURSOR_XMASK = 0x30000;
 const DF_CURSOR_YBASE = 0x40000;
 const DF_CURSOR_YMASK = 0xc0000;
-// Fork mistake overlay bit (no upstream analogue): an inset red outline.
+// Fork mistake overlay bit (no upstream analog): an inset red outline.
 const DF_MISTAKE = 0x100000;
 // Fork hint overlay bits.
 const DF_HINT_TARGET = 0x200000; // act-on cell → COL_HINT background
@@ -162,7 +162,7 @@ export function newDrawState(state: DominosaState): DominosaDrawState {
  *
  * Dominosa's squares tile exactly, so the band lies wholly inside the box
  * (`outer` 0) and a square whose hint flags change repaints itself and takes its
- * mark with it. Every square carries a number, drawn centred, so the border is
+ * mark with it. Every square carries a number, drawn centered, so the border is
  * the only place a mark can go — a fill behind those numbers is what this
  * replaces, and it was the collection's *strongest* case of it: `HINT_ACTION` is
  * the emphatic blue rather than a wash.
@@ -287,7 +287,7 @@ function drawTile(
     dr.drawRect({ x: sx + span - t, y: sy, w: t, h: span }, COL_REFERENCE);
   }
 
-  // Hint: recolour the suggested barrier edge blue (a thick COL_HINT bar).
+  // Hint: recolor the suggested barrier edge blue (a thick COL_HINT bar).
   if (flags & (DF_HINT_EDGE_L | DF_HINT_EDGE_R | DF_HINT_EDGE_T | DF_HINT_EDGE_B)) {
     const th = Math.max(2, Math.floor(ts / 12));
     if (flags & DF_HINT_EDGE_T)
@@ -442,7 +442,7 @@ export function redraw(
   const cellAt = (i: number): MarkCell => ({ x: i % w, y: (i / w) | 0 });
   ds.marks.paint(dr, [...hintTargets].map(cellAt), [...hintEvidence].map(cellAt), {
     band: (x, y) => markBand(ds, x, y),
-    targetColour: COL_HINT,
-    evidenceColour: COL_HINT_CELL,
+    targetColor: COL_HINT,
+    evidenceColor: COL_HINT_CELL,
   });
 }

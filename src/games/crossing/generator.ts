@@ -90,7 +90,7 @@ function checkPool(w: number, h: number, cells: Uint8Array): boolean {
 
 /**
  * Upstream `crossing_gen_walls_checkdsf`: are all open cells one connected
- * component? Neighbours merge when their *three-valued* states are equal, so a
+ * component? Neighbors merge when their *three-valued* states are equal, so a
  * class is homogeneous and "the largest class containing an open cell holds
  * every open cell" is exactly the connectivity test.
  *
@@ -179,7 +179,7 @@ function genNumbers(
 export interface CrossingGenOptions {
   /**
    * Accept a board containing an **isolated** open cell — one with no open
-   * orthogonal neighbour, so it lies in no run and no clue number can ever
+   * orthogonal neighbor, so it lies in no run and no clue number can ever
    * reach it. Upstream produces these (its first generator TODO is "Some
    * puzzles have isolated squares (1x1 areas)"): the cell stays blank on a
    * finished board, and because the completion check only inspects runs, a

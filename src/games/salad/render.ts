@@ -15,8 +15,8 @@
  * every square that contradicts the *unique solution* with an inset red box.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { GREEN_WASH } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { GREEN_WASH } from "../../engine/color/colors.ts";
 import {
   ERROR,
   HINT_ACTION,
@@ -25,9 +25,9 @@ import {
   INK,
   PAPER,
   PENCIL_BODY,
-  pencilColour,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
+  pencilColor,
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
@@ -38,7 +38,7 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { SaladHint } from "./hint.ts";
 import type { SaladMistake } from "./solver.ts";
 import {
@@ -64,7 +64,7 @@ export const COL_LOWLIGHT = 2;
 export const COL_BORDER = 3;
 export const COL_BORDERCLUE = 4;
 export const COL_PENCIL = 5;
-export const COL_I_NUM = 6; // immutable (given) colours
+export const COL_I_NUM = 6; // immutable (given) colors
 export const COL_I_BALL = 7;
 export const COL_I_BALLBG = 8;
 export const COL_I_HOLE = 9;
@@ -81,7 +81,7 @@ export const COL_E_HOLE = 16;
 export const COL_MISTAKE = 17;
 /** Fork addition: the yellow body of the pencil-mode indicator glyph. */
 export const COL_PENCIL_BODY = 18;
-// Fork additions: the explained-hint legend (docs/games/hints.md § "The element-type colour legend").
+// Fork additions: the explained-hint legend (docs/games/hints.md § "The element-type color legend").
 /** The square(s) / candidate(s) / entry the deduction acts on. */
 export const COL_HINT = 19;
 /** The deduction's evidence — a clue's line of sight, or a whole line, outlined
@@ -92,24 +92,24 @@ export const COL_HINT_CELL = 20;
  * lowlight, a tint of the board. */
 export const COL_CURSOR = 21;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BORDER] = INK;
   out[COL_BORDERCLUE] = INK;
-  out[COL_PENCIL] = pencilColour(background);
+  out[COL_PENCIL] = pencilColor(background);
   out[COL_I_NUM] = INK;
   out[COL_I_BALL] = INK;
   out[COL_I_BALLBG] = PAPER;
   out[COL_I_HOLE] = INK;
   // The player's letter, ball ring and cross are one meaning — "you put this
   // here", against the given ones in ink — drawn in the entry green.
-  out[COL_G_NUM] = playerEntryColour(background);
-  out[COL_G_BALL] = playerEntryColour(background);
-  out[COL_G_HOLE] = playerEntryColour(background);
+  out[COL_G_NUM] = playerEntryColor(background);
+  out[COL_G_BALL] = playerEntryColor(background);
+  out[COL_G_HOLE] = playerEntryColor(background);
   // The inside of the player's ball: the entry green as a fill, where a given
   // ball's inside is paper. No role covers an entry *fill*, so the named wash.
   out[COL_G_BALLBG] = GREEN_WASH;
@@ -148,7 +148,7 @@ const FD_HINT = 0x20;
 /** Bits 0–1 are the shared target/area flags and bits 2+ the struck candidates
  * (`hintMarkBit(n)`, `n` up to `nums + 1` ⇒ at most bit 11). The *entry* a step
  * asks for — Salad has three move shapes, and §5.1a wants each echoed in the
- * hint colour — is packed above them: a symbol `1..9` verbatim, or one of the two
+ * hint color — is packed above them: a symbol `1..9` verbatim, or one of the two
  * marker codes. */
 const HINT_GHOST_SHIFT = 16;
 const HINT_GHOST_MASK = 0xf << HINT_GHOST_SHIFT;
@@ -351,10 +351,10 @@ function drawBall(
     // Letters mode draws the ball "transparent" over whatever is behind it.
     bg = flags & FD_CURSOR ? COL_CURSOR : COL_BACKGROUND;
   }
-  const colour = s.gridclues[i] ? COL_I_BALL : COL_G_BALL;
+  const color = s.gridclues[i] ? COL_I_BALL : COL_G_BALL;
 
-  dr.drawCircle({ x: tx, y: ty }, ts * 0.4, colour, colour);
-  dr.drawCircle({ x: tx, y: ty }, ts * 0.38, bg, colour);
+  dr.drawCircle({ x: tx, y: ty }, ts * 0.4, color, color);
+  dr.drawCircle({ x: tx, y: ty }, ts * 0.38, bg, color);
 }
 
 function drawCross(
@@ -371,7 +371,7 @@ function drawCross(
 
   const tx = (x + 1) * ts;
   const ty = (y + 1) * ts;
-  const colour = s.gridclues[i]
+  const color = s.gridclues[i]
     ? COL_I_HOLE
     : flags & FD_ERROR
       ? COL_E_HOLE
@@ -380,13 +380,13 @@ function drawCross(
   dr.drawLine(
     { x: tx + ts * 0.2, y: ty + ts * 0.2 },
     { x: tx + ts * 0.8, y: ty + ts * 0.8 },
-    colour,
+    color,
     thick,
   );
   dr.drawLine(
     { x: tx + ts * 0.2, y: ty + ts * 0.8 },
     { x: tx + ts * 0.8, y: ty + ts * 0.2 },
-    colour,
+    color,
     thick,
   );
 }
@@ -396,7 +396,7 @@ function drawCross(
  *
  * `struck` is the hint's set of candidates this deduction rules out (bit `n` for
  * candidate `n`, so bit `nums + 1` is the X mark). A struck mark keeps its normal
- * pencil colour — high contrast, still reading as a real note — and gains a
+ * pencil color — high contrast, still reading as a real note — and gains a
  * strikethrough, the Towers convention. */
 function drawPencilMarks(
   dr: GameDrawing,
@@ -500,7 +500,7 @@ function drawGhost(
 }
 
 /** The fork's Check & Save marker: an inset red box, the same cue Towers uses,
- * so a wrong *empty* square (which has no glyph to recolour) is still visible. */
+ * so a wrong *empty* square (which has no glyph to recolor) is still visible. */
 function drawMistakeBox(dr: GameDrawing, tx: number, ty: number, ts: number): void {
   const r = tx + ts - 1;
   const b = ty + ts - 1;
@@ -608,13 +608,13 @@ export function redraw(
       // hinted square keeps showing its ghost entry and its struck notes.
       const hinted = flash === -1 && (overlay & (HINT_TARGET | HINT_AREA)) !== 0;
       if (s.mode === GAMEMODE_LETTERS && flash >= 0) {
-        const colour =
+        const color =
           (x + y) % 3 === flash
             ? COL_BACKGROUND
             : (x + y + 1) % 3 === flash
               ? COL_LOWLIGHT
               : COL_HIGHLIGHT;
-        dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, colour);
+        dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, color);
       } else {
         dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, COL_BACKGROUND);
       }
@@ -670,7 +670,7 @@ export function redraw(
           drawPencilMarks(dr, s, x, y, base, ts, tx, ty, struck);
         }
       } else if (s.grid[i] !== 0) {
-        const colour =
+        const color =
           s.gridclues[i] > 0 && s.gridclues[i] <= o
             ? COL_I_NUM
             : flags[i] & FD_ERROR
@@ -684,7 +684,7 @@ export function redraw(
             fontType: "variable",
             size: Math.floor(ts / 2),
           },
-          colour,
+          color,
           String.fromCharCode(base + s.grid[i]),
         );
       }
@@ -722,8 +722,8 @@ export function redraw(
     }
     ds.marks.paint(dr, targets, evidence, {
       band: (x, y) => markBand(ds, x, y),
-      targetColour: COL_HINT,
-      evidenceColour: COL_HINT_CELL,
+      targetColor: COL_HINT,
+      evidenceColor: COL_HINT_CELL,
     });
   }
 
@@ -732,7 +732,7 @@ export function redraw(
   // Each clue erases its own margin tile before drawing the letter, and the
   // erase rect is **deliberately asymmetric on the right edge** (`inset`). A
   // clue tile abuts the play area, and the grid's outermost boundary line is
-  // drawn *by the neighbouring cell*, on the shared pixel — so an erase that
+  // drawn *by the neighboring cell*, on the shared pixel — so an erase that
   // includes that pixel wipes it. Only the right column is affected: the last
   // cell's right edge sits at exactly `(o+1)·ts`, which is the right clue
   // tile's own origin, whereas the top/left/bottom boundaries land at
@@ -754,7 +754,7 @@ export function redraw(
       if (ds.borderfs[spot.j] === ds.borderDrawn[spot.j]) continue;
       ds.borderDrawn[spot.j] = ds.borderfs[spot.j];
 
-      const colour =
+      const color =
         ds.borderfs[spot.j] & FD_ERROR
           ? COL_E_BORDERCLUE
           : ds.borderfs[spot.j] & FD_HINT
@@ -775,7 +775,7 @@ export function redraw(
           fontType: "variable",
           size: Math.floor(ts / 2),
         },
-        colour,
+        color,
         String.fromCharCode(64 + s.borderclues[spot.j]),
       );
       dr.drawUpdate(erase);

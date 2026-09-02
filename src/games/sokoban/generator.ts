@@ -263,7 +263,7 @@ export function sokobanGenerate(
       grid[chosen.oy * w + chosen.ox] = TARGET;
   }
 
-  // Finalise the player's square.
+  // Finalize the player's square.
   grid[py * w + px] = grid[py * w + px] === TARGET ? PLAYERTARGET : PLAYER;
 }
 

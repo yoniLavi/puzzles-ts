@@ -39,7 +39,7 @@ pre-filled immutable clue squares using the run-length alphabet (`a`/`A` … wit
 fork's generator emits none, but `validateDesc` and `newState` SHALL still parse
 it so such descs round-trip. `validateDesc` SHALL reject a clue that is
 non-positive or grossly excessive, a line whose clues cannot fit in its length,
-too few or too many line specifications, and any unrecognised character in
+too few or too many line specifications, and any unrecognized character in
 either section. `newState` SHALL parse the desc into the immutable clue arrays
 and an all-`Unknown` grid (with any immutable suffix applied), `completed` and
 `cheated` both false.
@@ -107,7 +107,7 @@ already-marked cells untouched, so dragging across the board never rewrites a
 mark the player already placed. A **single-cell** action SHALL overwrite the
 cell (so a deliberate click can change a mark), and a **clear** drag (value
 `Unknown`) SHALL still reset marked cells. This is carried by an `onlyBlank`
-flag on the `fill` move, honoured by `executeMove` and previewed consistently by
+flag on the `fill` move, honored by `executeMove` and previewed consistently by
 `redraw`.
 
 Keyboard cursor movement with the control/shift modifiers SHALL set cells to
@@ -123,15 +123,15 @@ keys SHALL cycle a cell's state. Immutable cells SHALL never be overwritten.
 #### Scenario: A multi-cell paint drag leaves placed marks
 
 - **WHEN** the player drag-paints a line that crosses a cell they have already
-  marked the opposite colour
-- **THEN** that already-marked cell keeps its colour and only the blank cells of
+  marked the opposite color
+- **THEN** that already-marked cell keeps its color and only the blank cells of
   the line are painted
 
 #### Scenario: A single click still overwrites a mark
 
 - **WHEN** the player clicks a single already-marked cell with the other paint
   button
-- **THEN** the cell takes the new colour
+- **THEN** the cell takes the new color
 
 #### Scenario: A no-op drag produces no move
 
@@ -144,7 +144,7 @@ keys SHALL cycle a cell's state. Immutable cells SHALL never be overwritten.
 `redraw` SHALL draw the grid, the row/column clue numbers, the cursor, and the
 drag-rectangle preview, and SHALL drive the solve-completion flash. When a line
 is fully determined (no `Unknown` cells) but its runs contradict its clue, that
-line's clue numbers SHALL be drawn in the error colour (upstream `check_errors`).
+line's clue numbers SHALL be drawn in the error color (upstream `check_errors`).
 The game SHALL implement `findMistakes(state)`: every player-marked cell whose
 `Full`/`Empty` value contradicts the unique solution is flagged (an `Unknown`
 cell is never flagged), rendered with the `COL_MISTAKE` overlay. Every overlay
@@ -155,7 +155,7 @@ it is computed.
 #### Scenario: A contradicting completed line shows red clues
 
 - **WHEN** a row is fully filled in but its black runs do not match its clue
-- **THEN** that row's clue numbers are drawn in the error colour
+- **THEN** that row's clue numbers are drawn in the error color
 
 #### Scenario: Check & Save flags a wrong cell
 
@@ -168,7 +168,7 @@ it is computed.
 
 Pattern SHALL implement the Hint System hooks (`hint`, `hintKeepTrack`, and
 rendering of the displayed step) to the explained-hint quality bar: each hint
-SHALL teach *why* the move is forced by a recognisable nonogram line technique
+SHALL teach *why* the move is forced by a recognizable nonogram line technique
 (run overlap, line completion, unreachable gap, edge/anchor extension, or the
 general single-line **intersection** — the cells forced in *every* arrangement of
 one line's runs consistent with its marks), not merely state the move. Because the
@@ -178,7 +178,7 @@ reveal the stored solution or run a search.
 
 A single line deduction that forces several cells SHALL be emitted as **one**
 multi-cell `HintStep` whose move fills all of them (one firing = one step), with
-each technique's forced set a single colour so the step is understandable at a
+each technique's forced set a single color so the step is understandable at a
 glance. The narration SHALL lead with the indication (the clue and the spotted
 pattern, in board terms) and conclude in the necessity voice (`must be` /
 `must stay` / `are always`), never a bare state-of-being verb.
@@ -228,16 +228,16 @@ otherwise.
 - **THEN** it returns `{ ok: false }` with a message and the mistaken cells are
   highlighted
 
-### Requirement: Pattern hint colour legend
+### Requirement: Pattern hint color legend
 
 The displayed hint SHALL render forced cells in `COL_HINT` as a highlight only,
 never pre-filling the black/white mark the move would place (the cell's own
-state stays visible and the narration says which colour). Premise elements SHALL
-follow the stable element-type colour legend, each colour paired with a
-non-colour cue and never named in the narration text: the reasoned-about line's
+state stays visible and the narration says which color). Premise elements SHALL
+follow the stable element-type color legend, each color paired with a
+non-color cue and never named in the narration text: the reasoned-about line's
 clue and line of sight shaded `COL_HINT_CELL`; a cited already-placed **black**
 cell ringed `COL_HINT_BLACKREF` (teal) and a cited **white** cell ringed
-`COL_HINT_WHITEREF` (violet), so a ring never hides the cell's own colour. Hint
+`COL_HINT_WHITEREF` (violet), so a ring never hides the cell's own color. Hint
 overlay bits SHALL be folded into the per-cell render cache key so they repaint
 on the frame they are shown.
 
@@ -247,10 +247,10 @@ on the frame they are shown.
 - **THEN** those cells are drawn with the `COL_HINT` highlight and their prior
   (undecided) state is still visible — the black mark is not pre-rendered
 
-#### Scenario: Premise marks are ringed by their colour
+#### Scenario: Premise marks are ringed by their color
 
 - **WHEN** a hint cites an already-placed black cell and an already-placed white
   cell as evidence
-- **THEN** the black cell is ringed in the black-reference colour and the white
-  cell in the white-reference colour, each leaving the cell's own colour visible
+- **THEN** the black cell is ringed in the black-reference color and the white
+  cell in the white-reference color, each leaving the cell's own color visible
 

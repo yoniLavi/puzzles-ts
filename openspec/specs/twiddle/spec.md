@@ -48,7 +48,7 @@ A `TwiddleMove` SHALL be either a rotation carrying the top-left corner of the
 `n×n` region and a direction (`{ type: "rotate", x, y, dir: 1 | -1 }`) or a
 solve (`{ type: "solve" }`). `interpretMove` SHALL convert a left/right click to
 a rotation by offsetting the click by `(n−1)/2` tiles so it selects the region
-*centred* on the click, mapping to grid coordinates and rejecting clicks whose
+*centered* on the click, mapping to grid coordinates and rejecting clicks whose
 region falls outside `0 ≤ x ≤ w−n`, `0 ≤ y ≤ h−n`; left-click rotates `dir +1`,
 right-click `dir −1`. Cursor keys SHALL move a cursor over the
 `(w−n+1)×(h−n+1)` rotation-origin space (clamped, no wrap) returning a UI update,
@@ -90,16 +90,16 @@ replace the grid with the solved arrangement, clear orientations, set
 
 ### Requirement: Twiddle renders tiles, cursor, rotation animation, and flash
 
-The Twiddle `redraw` SHALL draw a one-time recessed bevelled border, then each
-tile as a bevelled square with its centred number (and, when orientable, an
+The Twiddle `redraw` SHALL draw a one-time recessed beveled border, then each
+tile as a beveled square with its centered number (and, when orientable, an
 orientation triangle), maintaining a per-tile cache so a tile is repainted only
 when its number/orientation changed, it lies within an animating block, the
 cursor moved onto or off it, or the flash background changed. A rotation SHALL
-animate the `n×n` block turning 90° about its centre over an animation duration
+animate the `n×n` block turning 90° about its center over an animation duration
 proportional to `sqrt(n−1)`, with the four bevel edges of each turning tile
-recoloured through the rotation; tiles outside the block draw normally. A
+recolored through the rotation; tiles outside the block draw normally. A
 genuine completion (not a solve) SHALL flash the background. When the cursor is
-visible its `n×n` region SHALL be outlined with cursor-coloured bevel edges. The
+visible its `n×n` region SHALL be outlined with cursor-colored bevel edges. The
 status bar SHALL show the move count (with a `COMPLETED!` prefix when solved and
 the `(target K)` suffix when a move target is set), or `Moves since auto-solve`
 after a solve.
@@ -108,14 +108,14 @@ after a solve.
 
 - **WHEN** `redraw` runs against a recording `GameDrawing` double for a fresh
   board
-- **THEN** the recorded operations include the recessed border and one bevelled
+- **THEN** the recorded operations include the recessed border and one beveled
   tile with its number for each cell
 
 #### Scenario: A rotation animates the block
 
 - **WHEN** a rotation move has just executed and `redraw` runs mid-animation
 - **THEN** the tiles inside the rotated block are drawn at coordinates rotated
-  about the block centre (and settle on their final cells at animation end),
+  about the block center (and settle on their final cells at animation end),
   while tiles outside the block are drawn unrotated
 
 #### Scenario: Completion flashes only on a genuine win

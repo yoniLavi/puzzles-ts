@@ -33,7 +33,7 @@ export const GS_NOTNEUTRAL = 16;
 export const GS_MARK = 32;
 export const GS_NOTMASK = GS_NOTPOSITIVE | GS_NOTNEGATIVE | GS_NOTNEUTRAL;
 
-/** The NOT-flag bit for a given colour (0 for out of range). */
+/** The NOT-flag bit for a given color (0 for out of range). */
 export const notFlag = (which: number): number =>
   which === NEUTRAL
     ? GS_NOTNEUTRAL
@@ -84,7 +84,7 @@ export interface MagnetsState {
   readonly grid: Int8Array;
   /** Per-cell GS_SET | GS_ERROR | GS_NOTNEUTRAL, cloned per move. */
   readonly flags: Int32Array;
-  /** `2·(w+h)` clue-grey toggles, cloned per move. */
+  /** `2·(w+h)` clue-gray toggles, cloned per move. */
   readonly countsDone: Uint8Array;
   readonly completed: boolean;
   readonly cheated: boolean;
@@ -295,7 +295,7 @@ export function parseDesc(p: MagnetsParams, desc: string): Parsed | { error: str
     }
   }
 
-  // Consistency: each end points back, and to an orthogonal neighbour.
+  // Consistency: each end points back, and to an orthogonal neighbor.
   for (let idx = 0; idx < wh; idx++) {
     const other = dominoes[idx];
     if (
@@ -402,7 +402,7 @@ export function clueIndex(w: number, h: number, x: number, y: number): number {
 const inGrid = (w: number, h: number, x: number, y: number): boolean =>
   x >= 0 && x < w && y >= 0 && y < h;
 
-/** Count cells of colour `which` in a row/column, or (which < 0) the empty,
+/** Count cells of color `which` in a row/column, or (which < 0) the empty,
  * not-yet-set cells. Upstream count_rowcol. */
 export function countRowcol(
   state: MagnetsState,

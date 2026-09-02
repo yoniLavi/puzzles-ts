@@ -41,7 +41,7 @@ a hidden clue.
 Validation SHALL reject a description whose clue count is not exactly
 `(width + height) × letters`, distinguishing too few clues from too many, whose row
 clue exceeds `1 + width / 2` or whose column clue exceeds `1 + height / 2`, or that
-contains an unrecognised character. Encoding and decoding SHALL be exact inverses.
+contains an unrecognized character. Encoding and decoding SHALL be exact inverses.
 
 #### Scenario: A generated description round-trips
 
@@ -66,7 +66,7 @@ its required count. The solver SHALL NOT depend on any leaf library.
 The generator SHALL fill the grid with random letters that respect the no-touch
 rule, count the resulting clues, and accept the puzzle only when the solver reports
 it uniquely solvable, retrying otherwise. When "remove clues" is set, the generator
-SHALL hide clues in a randomised order, keeping each removal only while the puzzle
+SHALL hide clues in a randomized order, keeping each removal only while the puzzle
 stays uniquely solvable. Generation from a given seed SHALL be reproducible.
 
 #### Scenario: The solver classifies a puzzle
@@ -93,10 +93,10 @@ An entry that would leave the state exactly as it is SHALL produce no move, and 
 no history entry: re-entering the letter a cell already holds, or clearing a cell
 that is already empty and carries no marks. Clearing an empty cell that *does*
 carry marks SHALL remain a real move, because it wipes them. The decision SHALL be
-made locally from that cell's own contents, never by comparing serialised states.
+made locally from that cell's own contents, never by comparing serialized states.
 
 Rendering SHALL draw the letter grid with edge clues and corner letters, SHALL show
-pencil marks in empty cells and the cursor highlight, SHALL colour a clue and a
+pencil marks in empty cells and the cursor highlight, SHALL color a clue and a
 letter red while a rule is violated (a clue over- or under-satisfied, or identical
 letters adjacent — orthogonally, and diagonally when that is disallowed), and SHALL
 flash on completion. There SHALL be no move animation.

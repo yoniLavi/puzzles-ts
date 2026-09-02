@@ -149,7 +149,7 @@ export function decodeParams(s: string): MathraxParams {
   p.o = digits ? Number.parseInt(digits, 10) : 0; // atoi("") === 0
   if (s[i] === "d") {
     i++;
-    // An unrecognised (or missing) letter leaves the difficulty invalid, which
+    // An unrecognized (or missing) letter leaves the difficulty invalid, which
     // `validateParams` then rejects — faithful to `decode_params`.
     const idx = i < s.length ? DIFF_CHARS.indexOf(s[i]) : -1;
     p.diff = idx >= 0 ? diffFromLevel(idx) : ("invalid" as MathraxDiff);
@@ -486,7 +486,7 @@ export function mathraxOptions(clue: number, mark: number, simple: boolean): num
  *
  * Upstream's `is_solver` parameter (read the cell's marks instead of "any digit"
  * for a blank cell) is never passed `true` by the shipped game, so only that
- * branch is ported (docs/games/solver-and-generator.md § "Solver-gated generation": port the shipped behaviour).
+ * branch is ported (docs/games/solver-and-generator.md § "Solver-gated generation": port the shipped behavior).
  */
 export function mathraxValidate(
   o: number,

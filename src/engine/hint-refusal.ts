@@ -13,7 +13,7 @@
  * **What a game may still differ on.** The bar is whether we can say what a game
  * would legitimately want to do differently, and there are three real answers:
  * a game whose board can be *inconsistent without any single cell being
- * provably wrong* needs {@link CONTRADICTION_UNLOCALISED}, because
+ * provably wrong* needs {@link CONTRADICTION_UNLOCALIZED}, because
  * {@link FIX_MISTAKES_FIRST} promises a highlight that will not appear; a
  * **non-deductive** game must not say "deduced" at all
  * ({@link NO_MOVE_WORTH_MAKING}); and a game with a genuinely game-shaped dead
@@ -41,7 +41,7 @@ export const FIX_MISTAKES_FIRST =
  * Distinct because the player's next action differs: they cannot fix the cell
  * they are shown, only undo or clear what they are unsure of.
  */
-export const CONTRADICTION_UNLOCALISED =
+export const CONTRADICTION_UNLOCALIZED =
   "These entries contradict each other — one of them must be wrong. Undo, or clear the ones you are unsure of.";
 
 /** Nothing further follows from what is on the board. The counterpart to

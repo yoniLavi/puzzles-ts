@@ -1,7 +1,7 @@
 // Tier-2 render test: drive Same Game's `redraw` against a recording
 // `GameDrawing` double and assert the draw-call structure — the recessed
-// bevel, the seamless join fill between same-colour neighbours, the
-// selection outer rect (COL_SEL), and the impossible-board inner recolour
+// bevel, the seamless join fill between same-color neighbors, the
+// selection outer rect (COL_SEL), and the impossible-board inner recolor
 // (COL_IMPOSSIBLE).
 import { describe, expect, it } from "vitest";
 import type { GameDrawing } from "../../engine/game.ts";
@@ -16,7 +16,7 @@ import {
 
 interface Op {
   op: string;
-  colour?: number;
+  color?: number;
   x?: number;
   y?: number;
   w?: number;
@@ -32,11 +32,11 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
+      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
     drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", colour: c }),
+      ops.push({ op: "drawLine", color: c }),
     drawPolygon: (p: { x: number; y: number }[], f: number) =>
-      ops.push({ op: "drawPolygon", colour: f, x: p[0].x, y: p[0].y }),
+      ops.push({ op: "drawPolygon", color: f, x: p[0].x, y: p[0].y }),
     drawCircle: () => ops.push({ op: "drawCircle" }),
     drawText: () => ops.push({ op: "drawText" }),
     blitterNew: () => ({}),
@@ -77,21 +77,21 @@ describe("Same Game redraw", () => {
   });
 
   it("fills the gap between same-colour neighbours (a seamless join)", () => {
-    // Two colour-1 tiles side by side: the left tile joins right, so it
-    // paints a full-TILE_SIZE-wide rect in its colour (COL_1 = 1).
+    // Two color-1 tiles side by side: the left tile joins right, so it
+    // paints a full-TILE_SIZE-wide rect in its color (COL_1 = 1).
     const state = mkState("1,1");
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 1, emptyUi(state), 0, 0);
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === 1 && o.w === TS)).toBe(
+    expect(ops.some((o) => o.op === "drawRect" && o.color === 1 && o.w === TS)).toBe(
       true,
     );
     // A differing pair leaves the inner-only width (no full-width join fill).
     const state2 = mkState("1,2");
     const r2 = recordingDrawing();
     redraw(r2.dr, freshDs(state2), null, state2, 1, emptyUi(state2), 0, 0);
-    expect(
-      r2.ops.some((o) => o.op === "drawRect" && o.colour === 1 && o.w === TS),
-    ).toBe(false);
+    expect(r2.ops.some((o) => o.op === "drawRect" && o.color === 1 && o.w === TS)).toBe(
+      false,
+    );
   });
 
   it("draws a COL_SEL outer rect for a selected tile", () => {
@@ -102,7 +102,7 @@ describe("Same Game redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 1, ui, 0, 0);
     // COL_SEL = palette index 11.
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === 11)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.color === 11)).toBe(true);
   });
 
   it("recolours tile innards to COL_IMPOSSIBLE on a stuck board", () => {
@@ -110,6 +110,6 @@ describe("Same Game redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 1, emptyUi(state), 0, 0);
     // COL_IMPOSSIBLE = palette index 10 (drawn as the inner square).
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === 10)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.color === 10)).toBe(true);
   });
 });

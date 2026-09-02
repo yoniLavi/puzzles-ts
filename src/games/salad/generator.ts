@@ -59,9 +59,9 @@ import {
  */
 const MAX_ATTEMPTS = 50_000;
 
-/** `'A' - 1` — the serialise base for border clues and a letters-mode grid. */
+/** `'A' - 1` — the serialize base for border clues and a letters-mode grid. */
 const BASE_LETTER = 64;
-/** `'0'` — the serialise base for a Number Ball grid. */
+/** `'0'` — the serialize base for a Number Ball grid. */
 const BASE_DIGIT = 48;
 
 function blankBoard(p: SaladParams): SaladBoard {

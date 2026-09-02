@@ -12,7 +12,7 @@
  * A triangle is located not by coordinates but by a *string of letters*: the
  * first says which half-tile it is, the second which half-tile of the larger
  * "parent" tile it sits inside, and so on outwards for ever. Stepping across
- * an edge to the neighbouring triangle is then a lookup in {@link TRANSITIONS}
+ * an edge to the neighboring triangle is then a lookup in {@link TRANSITIONS}
  * — and when the step leaves the parent entirely, a recursion one level up
  * followed by {@link TRANSITIONS_IN} to come back down. The string is grown
  * lazily and *randomly*: the tiling has no origin, so what lies above the
@@ -34,7 +34,7 @@
  * ## Rules that must not be "tidied"
  *
  * 1. **{@link chooseRandom} always draws**, even from a one-entry list. A
- *    random draw is an observable side effect: skipping it desynchronises the
+ *    random draw is an observable side effect: skipping it desynchronizes the
  *    stream and yields a different — entirely valid, entirely plausible —
  *    tiling, with nothing asserting.
  * 2. **The weights are verbatim Fibonacci integers**, not recomputed from √5.
@@ -42,7 +42,7 @@
  *    bit-exact replay target; see its doc comment.
  * 4. **The two transition tables are hand-transcribed control flow**, keyed on
  *    a string-literal `Letter` union so TypeScript checks the transcription
- *    exhaustively. That exhaustiveness is the main defence against a typo.
+ *    exhaustively. That exhaustiveness is the main defense against a typo.
  */
 
 import { type RandomState, randomNew, randomUpto } from "../../random/index.ts";
@@ -103,7 +103,7 @@ export function penroseValidLetter(c: string, which: PenroseWhich): c is Letter 
 
 /**
  * Which half-tile types a given type may sit inside. Upstream's
- * `penrose_valid_parents` returns `NULL` for an unrecognised letter and the
+ * `penrose_valid_parents` returns `NULL` for an unrecognized letter and the
  * caller feeds that straight to `strchr` — safe there only because
  * `penrose_valid_letter` happens to run first in the same loop iteration. A
  * `Record<Letter, …>` is **total** by construction, so the ordering of those
@@ -154,7 +154,7 @@ function siblingEdgeIndex(c: Letter): number {
  * Coefficients may carry **negative zero** — `pointMulByT` negates, and
  * multiplication by a zero coefficient produces `-0`. That is harmless
  * *inside* this module (`-0 === 0`, and `` `${-0}` === "0" `` so it cannot
- * split a visited-set key), and it is deliberately normalised at one reviewable
+ * split a visited-set key), and it is deliberately normalized at one reviewable
  * choke point instead: the tiling→grid callback in `penrose-grid.ts`, per the
  * change's D8. Do not sprinkle `|| 0` through the arithmetic here.
  */
@@ -597,7 +597,7 @@ const RELATIVE_PROBABILITY: Record<Letter, number> = {
  *
  * **Never short-circuit the single-candidate case.** `randomUpto` advances the
  * random stream whether or not the answer was in doubt, so an `if (n === 1)
- * return possibilities[0]` fast path desynchronises everything drawn
+ * return possibilities[0]` fast path desynchronizes everything drawn
  * afterwards. The failure is silent: the tiling that comes out is still a
  * perfectly valid Penrose tiling, just not the one the description names.
  */
@@ -621,7 +621,7 @@ function chooseRandom(possibilities: readonly Letter[], rng: RandomState): Lette
 /**
  * A patch of Penrose tiling, in the form recorded in a grid description: the
  * combinatorial coordinates of the starting triangle, which of its vertices
- * sits at the centre of the patch, and the orientation of its base edge in
+ * sits at the center of the patch, and the orientation of its base edge in
  * tenths of a turn.
  */
 export interface PenrosePatchParams {
@@ -732,7 +732,7 @@ class PenroseContext {
 
   /**
    * Step across `edge` of the triangle at `pc`, rewriting `pc` in place to the
-   * neighbour's coordinates and returning which of *its* edges we entered by.
+   * neighbor's coordinates and returning which of *its* edges we entered by.
    */
   step(pc: Letter[], edge: number): number {
     return this.stepRecurse(pc, 0, edge);
@@ -798,8 +798,8 @@ class PenroseContext {
       reported: false,
     };
     const dstEdge = this.step(dst.pc, srcEdge);
-    // The shared edge runs the opposite way round the neighbour, so its ends
-    // swap: our edge's far vertex is the neighbour's near one.
+    // The shared edge runs the opposite way round the neighbor, so its ends
+    // swap: our edge's far vertex is the neighbor's near one.
     place(dst, srcTri.vertices[(srcEdge + 1) % 3], srcTri.vertices[srcEdge], dstEdge);
     return dst;
   }
@@ -825,7 +825,7 @@ interface Bounds {
   readonly yMax: Coord;
 }
 
-/** Upstream `penrose_set_bounds`: a `w × h` box centred on the origin. */
+/** Upstream `penrose_set_bounds`: a `w × h` box centered on the origin. */
 function setBounds(w: number, h: number): Bounds {
   const xOff = Math.trunc(w / 2);
   const yOff = Math.trunc(h / 2);
@@ -885,7 +885,7 @@ function generate(
   placed.set(triangleKey(first), first);
   // If the seed triangle is already out of bounds the queue stays empty and no
   // tile is ever emitted. That happens for small patches, and it is upstream's
-  // behaviour too (it then aborts in `dsf_new(0)`); here the empty grid is
+  // behavior too (it then aborts in `dsf_new(0)`); here the empty grid is
   // caught by `gridTrimVigorously`, which is the better failure.
   if (inBounds(bounds, first)) queue.push(first);
 
@@ -894,10 +894,10 @@ function generate(
     const siblingEdge = siblingEdgeIndex(tri.pc[0]);
 
     for (let edge = 0; edge < 3; edge++) {
-      const neighbour = ctx.adjacentTriangle(tri, edge);
-      if (!inBounds(bounds, neighbour)) continue;
+      const neighbor = ctx.adjacentTriangle(tri, edge);
+      if (!inBounds(bounds, neighbor)) continue;
 
-      const found = placed.get(triangleKey(neighbour));
+      const found = placed.get(triangleKey(neighbor));
       if (found !== undefined) {
         /*
          * We have met a triangle we already know. If we reached it across our
@@ -916,7 +916,7 @@ function generate(
           const foundSiblingEdge = siblingEdgeIndex(found.pc[0]);
           // The four corners in this order are the tile's boundary, walked
           // from our half round to the other's. The winding is observable
-          // through dot indices downstream — do not sort or normalise it.
+          // through dot indices downstream — do not sort or normalize it.
           tile([
             vertexOf(tri.vertices[(siblingEdge + 1) % 3], bounds),
             vertexOf(tri.vertices[(siblingEdge + 2) % 3], bounds),
@@ -929,13 +929,13 @@ function generate(
         continue;
       }
 
-      placed.set(triangleKey(neighbour), neighbour);
-      queue.push(neighbour);
+      placed.set(triangleKey(neighbor), neighbor);
+      queue.push(neighbor);
     }
   }
 }
 
-/** Upstream `really_output_tile`: shift the patch's centre back to the box. */
+/** Upstream `really_output_tile`: shift the patch's center back to the box. */
 function vertexOf(p: Point, bounds: Bounds): PenroseTileVertex {
   const x = pointX(p);
   const y = pointY(p);
@@ -960,7 +960,7 @@ function vertexOf(p: Point, bounds: Bounds): PenroseTileVertex {
  * would record too few coordinates, and replay would then invent the missing
  * ones from the `"dummy"` RNG instead.
  */
-export function penroseTilingRandomise(
+export function penroseTilingRandomize(
   which: PenroseWhich,
   w: number,
   h: number,

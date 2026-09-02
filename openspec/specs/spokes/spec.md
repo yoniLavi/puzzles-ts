@@ -17,7 +17,7 @@ board can require a step the hint cannot explain.
 Where a single deduction forces several spokes at once — a hub with exactly as
 many free spokes as it still needs lines, or one that already has all of them —
 those SHALL be emitted as one multi-leg journey rather than as separate hints, and
-all of its legs SHALL be rendered in the same colour, because they share a fate.
+all of its legs SHALL be rendered in the same color, because they share a fate.
 
 A hint plan SHALL be stable across recomputation: re-requesting a hint after the
 player has followed a step SHALL continue the same line of reasoning rather than
@@ -40,7 +40,7 @@ satisfied advances nothing and SHALL NOT be hinted.
   one, and the player asks for a hint
 - **THEN** the hint states that the hub's remaining count and its remaining places
   are equal, and concludes that every one of those spokes is a line
-- **AND** all of those spokes are presented as one hint in one colour
+- **AND** all of those spokes are presented as one hint in one color
 
 #### Scenario: The two-ones rule names the connectivity constraint
 
@@ -170,7 +170,7 @@ lifting it would silently make the middle tier a search.
 
 The generator SHALL use the solver to keep every board uniquely soluble: it SHALL
 start from every horizontal and vertical line plus a random diagonal per cell, then
-remove lines in a randomised order, keeping a removal only while every hub retains at
+remove lines in a randomized order, keeping a removal only while every hub retains at
 least one line and the board stays uniquely soluble at the target difficulty and no
 easier. Generation from a given seed SHALL be reproducible.
 
@@ -214,26 +214,26 @@ SHALL retain a way to run upstream's original check, used by that differential a
 ### Requirement: Spokes marks hubs whose spoke count is met
 
 Rendering SHALL distinguish a hub that already carries as many lines as its clue
-requires from one that does not, by a fill colour clearly separated from the board
+requires from one that does not, by a fill color clearly separated from the board
 background in both light and dark presentation. The distinction SHALL be visual
 only: a marked hub remains fully editable. A preference SHALL let the player turn
 the marking off.
 
 Upstream nominally fills such a hub with pure white, which is indistinguishable
-from the background the application supplies in either colour scheme; that is
+from the background the application supplies in either color scheme; that is
 treated as a defect of presentation, which this project's display code is free to
 correct.
 
 #### Scenario: Meeting a clue marks the hub
 
 - **WHEN** a hub's drawn lines reach the number its clue requires
-- **THEN** that hub is filled in the satisfied colour, and hubs that have not
+- **THEN** that hub is filled in the satisfied color, and hubs that have not
   reached their clue are not
 
 #### Scenario: The marking can be switched off
 
 - **WHEN** the satisfied-hub preference is turned off
-- **THEN** no hub is filled in the satisfied colour, whatever its line count
+- **THEN** no hub is filled in the satisfied color, whatever its line count
 
 ### Requirement: Spokes input, movement and completion
 
@@ -246,7 +246,7 @@ valid change SHALL leave the board unchanged.
 
 Rendering SHALL draw each hub as a circle carrying its available spokes and clue,
 SHALL draw lines between connected hubs, SHALL highlight the hub being dragged from,
-SHALL colour an over-filled or isolated hub as an error, and SHALL flash on
+SHALL color an over-filled or isolated hub as an error, and SHALL flash on
 completion. There SHALL be no interpolated line-drawing animation.
 
 `findMistakes` SHALL flag every line the player has drawn that the unique solution

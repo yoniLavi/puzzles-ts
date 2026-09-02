@@ -23,7 +23,7 @@ game already hand-writes, with its bookkeeping inverted into the framework:
   `paintTile(dr, i, key, overlays): void`; the framework owns the loop, the
   cache, the miss test, the overlay sidecars (hint, mistake, reference — every
   declared overlay is *in the diff key by construction*), the commit, and the
-  first-frame background fill in the game's declared background colour.
+  first-frame background fill in the game's declared background color.
 
 The paint call is exactly as imperative as today, runs at the same time it
 runs today, and emits the same ops the recording double already asserts on.
@@ -66,7 +66,7 @@ per-game test someone remembered to write.
   blitter sprite; cursors default into the tile key (the existing rule, with
   the Spokes-style exception available by declaring the cursor a sprite).
 - **Palette** — unchanged from the current three-layer discipline; the
-  framework's contribution is only that a game's colour list is derived from
+  framework's contribution is only that a game's color list is derived from
   the meanings it names, so an unused palette entry or an unnamed literal is
   a type error rather than an inventory-test catch.
 
@@ -77,5 +77,5 @@ rational-coordinate canvas, Inertia's full-board repaints, or anything the
 tile model genuinely does not fit, keep it. Obligations that follow a bespoke
 `redraw` (conformance-enforced): every declared overlay still renders (the
 paint-twice guard runs regardless), the doctrine invariants hold (no pixels
-from the engine, `canvasCleared` honoured), and the game carries its own
+from the engine, `canvasCleared` honored), and the game carries its own
 tier-2.5 scenario tests for what the framework can no longer generate.

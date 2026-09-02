@@ -36,12 +36,12 @@ function dindex(st: BridgesState, x: number, y: number): number {
 }
 
 /**
- * Neighbours of grid vertex `v` for loop detection — mirrors C
+ * Neighbors of grid vertex `v` for loop detection — mirrors C
  * `bridges_neighbour`. An island vertex reports every island it currently has a
  * bridge to; a bridge-carrying empty square reports the two cells the line runs
  * between (each edge is thus reported from both ends, as findloop requires).
  */
-function bridgesNeighbours(st: BridgesState, v: number): number[] {
+function bridgesNeighbors(st: BridgesState, v: number): number[] {
   const w = st.w;
   const x = v % w;
   const y = (v / w) | 0;
@@ -79,12 +79,12 @@ function bridgesNeighbours(st: BridgesState, v: number): number[] {
 /** C `map_hasloops`: returns true if the current bridges contain a loop. */
 function mapHasloops(st: BridgesState, mark: boolean): boolean {
   const wh = st.w * st.h;
-  const res = findLoops(wh, (v) => bridgesNeighbours(st, v));
+  const res = findLoops(wh, (v) => bridgesNeighbors(st, v));
   if (mark) {
     for (let y = 0; y < st.h; y++) {
       for (let x = 0; x < st.w; x++) {
         const u = y * st.w + x;
-        for (const v of bridgesNeighbours(st, u)) {
+        for (const v of bridgesNeighbors(st, u)) {
           if (res.isLoopEdge(u, v)) st.grid[u] |= G_WARN;
         }
       }
@@ -374,7 +374,7 @@ class Solver {
 
     // Pass 2: a currently-empty direction that must carry >=1 bridge to avoid
     // isolating a subgraph reached by connecting maximally to all *other*
-    // neighbours at once (the multi-target case pass 1 can't see).
+    // neighbors at once (the multi-target case pass 1 can't see).
     for (let i = 0; i < is.points.length; i++) {
       let got = false;
       const before: number[] = [];

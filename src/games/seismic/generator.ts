@@ -77,7 +77,7 @@ import {
  * only by the *grading* stage — a Hard request that came out solvable at Easy.
  * Measured, that costs a handful of attempts at every preset and never more than
  * low hundreds. Ten thousand leaves three orders of magnitude of headroom while
- * still turning a porting divergence into a labelled error in seconds rather
+ * still turning a porting divergence into a labeled error in seconds rather
  * than a hung worker.
  */
 const MAX_ATTEMPTS = 10_000;
@@ -142,7 +142,7 @@ function genNumbers(board: SeismicBoard, rng: RandomState): boolean {
  *
  * The relabel is upstream's, reproduced as written: the map is built by
  * repeatedly taking the most frequent remaining digit (ties keeping the lower
- * digit), and then applied as `grid[i] = map[grid[i] - 1]`. Any relabelling is
+ * digit), and then applied as `grid[i] = map[grid[i] - 1]`. Any relabeling is
  * sound — the rules only ever compare digits for equality — so this is a
  * byte-match surface, not a correctness one.
  */
@@ -167,7 +167,7 @@ function tectonicGenNumbers(board: SeismicBoard, rng: RandomState): boolean {
       }
     }
     // Unreachable: cells are filled in row-major order and the regions are still
-    // singletons here, so at most four already-placed neighbours (left and the
+    // singletons here, so at most four already-placed neighbors (left and the
     // three above) can veto digits, leaving at least one of five. Upstream has
     // no guard and would index `map[-1]` if this ever fired.
     if (!placed) throw new Error("seismic: tectonic fill found no legal digit");
@@ -272,18 +272,18 @@ export function maxRegionSize(mode: number): number {
  * only make the fill backtrack.
  *
  * This table aims a little larger than upstream (mean draw 3.5) because the
- * *realised* distribution comes out smaller than the draw — a region stops early
- * when it runs out of free neighbours, and the leftover pockets are small. The
- * realised mean lands at ~2.9 against upstream's 2.62, with the same shape and
+ * *realized* distribution comes out smaller than the draw — a region stops early
+ * when it runs out of free neighbors, and the leftover pockets are small. The
+ * realized mean lands at ~2.9 against upstream's 2.62, with the same shape and
  * the same size-6 ceiling. Deliberately **not** matched exactly: there is no
  * oracle for region layout (it is display-adjacent taste — docs/games/solver-and-generator.md § "Divergence and what it costs"), the C's
- * distribution is an artefact of a broken algorithm rather than a design, and
+ * distribution is an artifact of a broken algorithm rather than a design, and
  * its 28% singletons are the least interesting cells on the board — a size-1
  * region is forced to `1`, so it is a free given.
  */
 const SEISMIC_REGION_SIZES: readonly number[] = [2, 3, 3, 4, 4, 5];
 
-/** Tectonic wants fives (upstream realises 63.5% of them, and five-cell regions
+/** Tectonic wants fives (upstream realizes 63.5% of them, and five-cell regions
  * are what the puzzle is called after); it still gets a tail of smaller regions
  * from pockets, exactly as upstream does. */
 const TECTONIC_REGION_SIZE = 5;
@@ -326,7 +326,7 @@ export function maxGeneratedRegionSize(mode: number): number {
  * inverted: upstream's stage 2 could fail, this cannot.
  *
  * Two heuristics keep the shapes reasonable:
- *  - **Seed at the most constrained free cell** (fewest free neighbours, ties
+ *  - **Seed at the most constrained free cell** (fewest free neighbors, ties
  *    broken randomly). Consuming awkward cells — corners, and the necks left
  *    behind by earlier regions — before they are surrounded is what keeps the
  *    board from filling up with stranded singletons.
@@ -334,7 +334,7 @@ export function maxGeneratedRegionSize(mode: number): number {
  *    rather than the rigid combs a min-degree growth rule produces.
  *
  * A region that runs out of frontier before reaching its target simply ends
- * short; that is legal, and it is where the small tail of the realised size
+ * short; that is legal, and it is where the small tail of the realized size
  * distribution comes from.
  */
 export function growRegions(board: SeismicBoard, rng: RandomState): void {
@@ -347,7 +347,7 @@ export function growRegions(board: SeismicBoard, rng: RandomState): void {
   let remaining = s;
 
   const nb: number[] = [];
-  const neighbours = (i: number): number[] => {
+  const neighbors = (i: number): number[] => {
     nb.length = 0;
     const x = i % w;
     const y = (i / w) | 0;
@@ -359,14 +359,14 @@ export function growRegions(board: SeismicBoard, rng: RandomState): void {
   };
   const freeDegree = (i: number): number => {
     let n = 0;
-    for (const j of neighbours(i)) if (free[j]) n++;
+    for (const j of neighbors(i)) if (free[j]) n++;
     return n;
   };
 
   const frontier: number[] = [];
 
   while (remaining > 0) {
-    // Seed: fewest free neighbours, ties broken by reservoir sampling so the
+    // Seed: fewest free neighbors, ties broken by reservoir sampling so the
     // choice is uniform among equally-constrained cells.
     let seed = -1;
     let bestDegree = 5;
@@ -389,13 +389,13 @@ export function growRegions(board: SeismicBoard, rng: RandomState): void {
     free[seed] = 0;
     remaining--;
     frontier.length = 0;
-    for (const j of neighbours(seed)) if (free[j]) frontier.push(j);
+    for (const j of neighbors(seed)) if (free[j]) frontier.push(j);
 
     while (size < target && frontier.length > 0) {
       // Swap-remove a uniformly random frontier entry. Entries can be stale
-      // (claimed by this same region via another neighbour) or duplicated;
+      // (claimed by this same region via another neighbor) or duplicated;
       // both are filtered here rather than kept unique, which would cost a set
-      // lookup per push for no behavioural difference.
+      // lookup per push for no behavioral difference.
       const k = randomUpto(rng, frontier.length);
       const cell = frontier[k];
       frontier[k] = frontier[frontier.length - 1];
@@ -406,7 +406,7 @@ export function growRegions(board: SeismicBoard, rng: RandomState): void {
       remaining--;
       dsf.merge(seed, cell);
       size++;
-      for (const j of neighbours(cell)) if (free[j]) frontier.push(j);
+      for (const j of neighbors(cell)) if (free[j]) frontier.push(j);
     }
   }
 }

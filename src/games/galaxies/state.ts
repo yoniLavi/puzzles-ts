@@ -227,7 +227,7 @@ export function tileOpposite(
   return spaceOppositeDot(s, tx, ty, s.dotx[i], s.doty[i]);
 }
 
-/** For a centre cell, the four edge-neighbours and tile-neighbours
+/** For a center cell, the four edge-neighbors and tile-neighbors
  * (skipping two-cell jumps if off-grid). Order: left, right, up, down. */
 export function adjacencies(
   s: GalaxiesState,
@@ -339,20 +339,17 @@ export function decodeGame(s: GalaxiesState, desc: string): string | null {
 export interface CompletionResult {
   /** True iff every cell of `w*h` is part of a valid component. */
   complete: boolean;
-  /** Per-cell colour for rendering: 0 = invalid, 1 = white, 2 = black. */
-  colours?: Int8Array;
+  /** Per-cell color for rendering: 0 = invalid, 1 = white, 2 = black. */
+  colors?: Int8Array;
 }
 
 /**
  * Returns whether the current edge layout partitions the board into
  * valid components — each rotationally symmetric around a unique dot.
- * If `colours` is requested, fills it with per-cell region colour.
+ * If `colors` is requested, fills it with per-cell region color.
  * Mirrors `check_complete` in galaxies.c.
  */
-export function checkComplete(
-  s: GalaxiesState,
-  wantColours: boolean,
-): CompletionResult {
+export function checkComplete(s: GalaxiesState, wantColors: boolean): CompletionResult {
   const w = s.w;
   const h = s.h;
   const dsf = new Dsf(w * h);
@@ -377,7 +374,7 @@ export function checkComplete(
   const valid = new Uint8Array(w * h);
   const cx = new Int16Array(w * h);
   const cy = new Int16Array(w * h);
-  const colour = new Int8Array(w * h);
+  const color = new Int8Array(w * h);
   for (let i = 0; i < w * h; i++) {
     minx[i] = w + 1;
     miny[i] = h + 1;
@@ -395,7 +392,7 @@ export function checkComplete(
     }
   }
 
-  // Per component, determine the dot at the centre of symmetry.
+  // Per component, determine the dot at the center of symmetry.
   for (let i = 0; i < w * h; i++) {
     if (!valid[i]) continue;
     const ccx = minx[i] + maxx[i] + 1;
@@ -415,7 +412,7 @@ export function checkComplete(
       valid[i] = 0;
       continue;
     }
-    colour[i] = s.flags[idx(s, ccx, ccy)] & F_DOT_BLACK ? 2 : 1;
+    color[i] = s.flags[idx(s, ccx, ccy)] & F_DOT_BLACK ? 2 : 1;
   }
 
   // Extraneous dots / interior edges disqualify components.
@@ -460,12 +457,12 @@ export function checkComplete(
   }
 
   let complete = true;
-  const cols = wantColours ? new Int8Array(w * h) : undefined;
+  const cols = wantColors ? new Int8Array(w * h) : undefined;
   for (let i = 0; i < w * h; i++) {
     const ci = dsf.canonify(i);
     const ok = valid[ci] === 1;
-    if (cols) cols[i] = ok ? colour[ci] : 0;
+    if (cols) cols[i] = ok ? color[ci] : 0;
     if (!ok) complete = false;
   }
-  return { complete, colours: cols };
+  return { complete, colors: cols };
 }

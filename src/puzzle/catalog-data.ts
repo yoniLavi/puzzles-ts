@@ -24,7 +24,7 @@ export interface PuzzleData {
   objective: string;
   collection: "original" | "unreleased";
   /** An upstream *unfinished* puzzle someone opted into building. Nothing in
-   * the shipped catalog sets this today; the home screen still honours it. */
+   * the shipped catalog sets this today; the home screen still honors it. */
   unfinished?: boolean;
 }
 

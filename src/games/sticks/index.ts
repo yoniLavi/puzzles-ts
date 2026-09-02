@@ -10,7 +10,7 @@
  * blank→vertical→horizontal→blank and a right click cycles the other way;
  * middle-drag clears; a keyboard cursor places lines with Enter/Space/
  * 0/1/2/backspace and draws across two cells with Shift/Ctrl+arrows.
- * Violated clue numbers red live (upstream behaviour); Check & Save
+ * Violated clue numbers red live (upstream behavior); Check & Save
  * additionally flags lines contradicting the unique solution
  * (`findMistakes`).
  */
@@ -56,11 +56,11 @@ import {
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { SYMMETRY_CHOICES } from "../../engine/symmetric-blacks.ts";
-import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
 import { newSticksDesc } from "./generator.ts";
 import {
   border,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -594,7 +594,7 @@ export const sticksGame: Game<
   hintKeepTrack,
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SticksParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

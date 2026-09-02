@@ -4,7 +4,7 @@
  * `divvyRectangle` picks a random `k`-omino partition; then we repeatedly fill
  * each omino with a shuffled set of the `k` letters and run the solver. The
  * solver records (via `genLock`) which squares' letters a deduction depended on;
- * those stay fixed while the rest are re-randomised, so the board is refined
+ * those stay fixed while the rest are re-randomized, so the board is refined
  * toward one the solver can fully solve. A board is kept only when the solver
  * solves it completely, guaranteeing unique deducibility; a partition that never
  * yields a solvable board is abandoned for a fresh `divvyRectangle`.

@@ -39,7 +39,7 @@ function generate(rs: RandomState, w: number, h: number, grid: Uint8Array): void
   }
 
   // One averaging pass: each cell becomes the mean of its (up to) nine
-  // neighbours. Special case: along a dimension of size 2 we don't average
+  // neighbors. Special case: along a dimension of size 2 we don't average
   // (else a 2×2 grid would be four identical cells).
   const fgrid2 = new Float64Array(n);
   for (let i = 0; i < h; i++) {
@@ -91,16 +91,16 @@ export function newPatternDesc(p: PatternParams, rng: RandomState): { desc: stri
     let ok = true;
     if (w > 2) {
       for (let i = 0; i < h && ok; i++) {
-        let colours = 0;
-        for (let j = 0; j < w; j++) colours |= grid[i * w + j] === GRID_FULL ? 2 : 1;
-        if (colours !== 3) ok = false;
+        let colors = 0;
+        for (let j = 0; j < w; j++) colors |= grid[i * w + j] === GRID_FULL ? 2 : 1;
+        if (colors !== 3) ok = false;
       }
     }
     if (ok && h > 2) {
       for (let j = 0; j < w && ok; j++) {
-        let colours = 0;
-        for (let i = 0; i < h; i++) colours |= grid[i * w + j] === GRID_FULL ? 2 : 1;
-        if (colours !== 3) ok = false;
+        let colors = 0;
+        for (let i = 0; i < h; i++) colors |= grid[i * w + j] === GRID_FULL ? 2 : 1;
+        if (colors !== 3) ok = false;
       }
     }
     if (!ok) continue;

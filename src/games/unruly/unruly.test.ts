@@ -276,7 +276,7 @@ describe("moves", () => {
     const good = executeMove(state, { type: "place", x, y, value: right });
     expect(findMistakes(good)).toHaveLength(0);
 
-    // The opposite colour → flagged at that cell.
+    // The opposite color → flagged at that cell.
     const wrong: Cell = sol[idx] === "1" ? ZERO : ONE;
     const bad = executeMove(state, { type: "place", x, y, value: wrong });
     const mistakes = findMistakes(bad);

@@ -11,7 +11,7 @@
 #
 # Its value is the DIFF BETWEEN ROUNDS, not per-commit
 # freshness — which is why it is deliberately NOT part of scripts/gate.sh or
-# .husky/pre-commit. A slow whole-tree scan in a gate optimised for wall-clock
+# .husky/pre-commit. A slow whole-tree scan in a gate optimized for wall-clock
 # would buy nothing; see the build-pipeline spec, "Refactoring metrics are
 # measured on demand and ratcheted in the gate".
 #
@@ -141,7 +141,7 @@ npx knip >"$OUT/knip.txt" 2>&1 || true
 # CAVEAT, learned the hard way. scripts/metrics-complexity.json sets
 # `recommended: false` so only the complexity rule runs — which means every
 # `biome-ignore` comment in the tree for any OTHER rule shows up in this output
-# as `suppressions/unused`. It is an artefact of the measuring config, not a
+# as `suppressions/unused`. It is an artifact of the measuring config, not a
 # finding: measured against the ROOT config the count is 0. This cost one
 # spurious "35 free deletions" line in a change proposal before anyone checked.
 # metrics-summary.mjs therefore reads ONLY CognitiveComplexity diagnostics from
@@ -149,7 +149,7 @@ npx knip >"$OUT/knip.txt" 2>&1 || true
 echo "  complexity…"
 # Measured against a SUPPRESSION-STRIPPED COPY of src, deliberately.
 #
-# The gate honours `biome-ignore` — that is what an accepted exception means. The
+# The gate honors `biome-ignore` — that is what an accepted exception means. The
 # *harness* must not: a suppressed function vanishing from the measurement is how
 # a baseline records "our worst function is 145" when nineteen functions are
 # worse, and how a later round reads a fall in the maximum as progress it did not
@@ -172,7 +172,7 @@ find "$STRIP/src" -name '*.ts' -exec \
   src) >"$OUT/complexity.json" 2>/dev/null || true
 
 # jscpd's raw report embeds the full source text of every clone (~456 KB, ~90% of
-# the snapshot) and a snapshot is committed once per round. Distil it to what a
+# the snapshot) and a snapshot is committed once per round. Distill it to what a
 # later round actually diffs against — where each clone is and how long it is.
 # The source itself is in git already.
 node -e '

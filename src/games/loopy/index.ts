@@ -75,7 +75,7 @@ import {
 } from "./params.ts";
 import {
   border,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   type LoopyDrawState,
@@ -114,7 +114,7 @@ export type LoopyMove =
   | { kind: "set"; ops: readonly LoopyOp[] }
   | { kind: "solve"; ops: readonly LoopyOp[] };
 
-/** How much an edge click drags its neighbours along with it. */
+/** How much an edge click drags its neighbors along with it. */
 export const AF_OFF = 0;
 export const AF_FIXED = 1;
 export const AF_ADAPTIVE = 2;
@@ -218,7 +218,7 @@ export function nextLineState(
  * loop, contradicting its own comment about needing to terminate both. The
  * difference is immaterial to the resulting board — tracing a closed loop from
  * the second end merely revisits the same edges, and ops are absolute sets — so
- * this is a tidy-up, not a behaviour change. `loopy.test.ts` pins the
+ * this is a tidy-up, not a behavior change. `loopy.test.ts` pins the
  * closed-loop case specifically.
  */
 export function autofollowEdges(
@@ -496,7 +496,7 @@ export const loopyGame: Game<
   textFormat,
   prefs,
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize,

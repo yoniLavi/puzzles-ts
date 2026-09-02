@@ -268,7 +268,7 @@ function ascentAddEdges(
 
 /** Blank as many clues as the graded solver still permits (upstream
  * `ascent_remove_numbers`). Mutates `grid`; always succeeds. */
-function ascentRemoveNumbers(
+function ascentermoveNumbers(
   sc: SolverScratch,
   grid: Int16Array,
   params: AscentParams,
@@ -359,7 +359,7 @@ export function newAscentDesc(
     success =
       params.mode === MODE_EDGES
         ? ascentAddEdges(sc, grid, params, rng)
-        : ascentRemoveNumbers(sc, grid, params, rng);
+        : ascentermoveNumbers(sc, grid, params, rng);
 
     // The tier gate (the divergence): a board the tier below already cracks is
     // not the difficulty the player asked for.

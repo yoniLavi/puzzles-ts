@@ -10,7 +10,7 @@
  *
  * Notable divergences / decisions (see the change's design.md):
  *  - **No `supersede_desc`**: the public desc is edges-only and never
- *    changes; the player's dragged positions ride the serialised move
+ *    changes; the player's dragged positions ride the serialized move
  *    log, which the midend save format already replays. (Mines remains
  *    the forcing function for `supersede_desc`.)
  *  - **Editor build excluded**: no `E` add/delete-edge moves, no text
@@ -30,9 +30,9 @@
  */
 
 import { rejectMove } from "../../engine/assert-never.ts";
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLUE, BLUE_WASH, ORANGE, PURPLE } from "../../engine/colour/colours.ts";
-import { ERROR, FLASH, HELD, INK } from "../../engine/colour/palette.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLUE, BLUE_WASH, ORANGE, PURPLE } from "../../engine/color/colors.ts";
+import { ERROR, FLASH, HELD, INK } from "../../engine/color/palette.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -56,7 +56,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newUntangleDesc } from "./generator.ts";
 import { deduceUntangleHintPlan, type UntangleHint } from "./hint.ts";
 import { redrawUntangle } from "./render.ts";
@@ -436,7 +436,7 @@ export const untangleGame: Game<
         ? { ok: false, error: "Internal error: aux_info badly formatted" }
         : { ok: false, error: "Solution not known for this puzzle" };
     }
-    // Quantise the dihedral-matched model-unit solution to the d=2 grid
+    // Quantize the dihedral-matched model-unit solution to the d=2 grid
     // upstream's solve emits.
     const points = dihedralSolvedUnits(curr, auxPts).map((p, i) => ({
       i,
@@ -492,10 +492,10 @@ export const untangleGame: Game<
   ],
 
   // --- rendering -----------------------------------------------------
-  colours: (defaultBackground: Colour): Colour[] => {
+  colors: (defaultBackground: Color): Color[] => {
     const { background, lowlight } = mkhighlight(defaultBackground);
     // Index-for-index with the upstream COL_* enum (untangle.c:57) up to the
-    // flash, whose two colours (a grey and a white the board alternated
+    // flash, whose two colors (a gray and a white the board alternated
     // between) fold into one: the board blinks between itself and the flash.
     return [
       lowlight, // 0 COL_SYSBACKGROUND (dead space, darker)
@@ -508,7 +508,7 @@ export const untangleGame: Game<
       // 7 COL_CURSORPOINT. Purple, because the board has spent the usual two:
       // green is the held vertex (the cursor's own next state), blue a vertex.
       PURPLE,
-      BLUE_WASH, // 8 COL_NEIGHBOUR — the vertices joined to the held one
+      BLUE_WASH, // 8 COL_NEIGHBOR — the vertices joined to the held one
       FLASH, // 9 COL_FLASH
       // 10 COL_HINT. Orange rather than the hint blue: the vertices are blue,
       // and the hint is a line and a marker among them.

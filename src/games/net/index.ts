@@ -43,7 +43,7 @@ import {
 import { newDesc } from "./generator.ts";
 import {
   ANIM_TIME,
-  colours,
+  colors,
   computeSize,
   FLASH_FRAME,
   lineThick,
@@ -496,7 +496,7 @@ export const netGame: Game<NetParams, NetState, NetMove, NetUi, NetDrawState> = 
 
   statusbarText,
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p, ts): Size => computeSize(p, ts),
   setTileSize,

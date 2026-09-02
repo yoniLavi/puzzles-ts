@@ -90,7 +90,7 @@ begin/end a drag with the select key, nudge a held vertex with the arrows, and c
 the selection. `executeMove` SHALL apply the placement(s), recompute crossings, and
 throw on a malformed move (including a non-integer coordinate — the `RationalPoint`
 integer invariant the exact crossing test depends on). The move SHALL be
-structured-clone-safe (default serialise/deserialise). The editor-only edge
+structured-clone-safe (default serialize/deserialize). The editor-only edge
 add/delete moves SHALL NOT be mapped.
 
 #### Scenario: A drag moves one vertex and updates crossings
@@ -107,7 +107,7 @@ add/delete moves SHALL NOT be mapped.
 
 #### Scenario: A saved game reloads to the same layout via the move log
 
-- **WHEN** a game with dragged vertices is serialised and reloaded
+- **WHEN** a game with dragged vertices is serialized and reloaded
 - **THEN** the reconstructed positions exactly match (the layout is restored by
   replaying the move log — Untangle requires no `supersede_desc` mechanism)
 
@@ -131,22 +131,22 @@ as solved-with-help.
 - **WHEN** the player invokes Solve on a game restored from a save (no `aux`)
 - **THEN** the game reports that the solution is not known
 
-### Requirement: Rendering frames the play area and colours roles distinctly
+### Requirement: Rendering frames the play area and colors roles distinctly
 
 `redraw` SHALL draw a visible border around the playable area so the drop zone is
 unambiguous (distinguishing it from any surrounding dead space). It SHALL draw edges
 as lines — **red** for an edge involved in a crossing (when the show-crossed-edges
 preference is on), black otherwise — and vertices as blobs (or index numbers, per
 the vertex-style preference) in a fixed z-order so the dragged vertex sits on top.
-The colours SHALL keep the "danger" colour (red) reserved for crossings: a vertex
+The colors SHALL keep the "danger" color (red) reserved for crossings: a vertex
 adjacent to the one being dragged SHALL be highlighted in a distinct **non-red**
-colour (light blue), the dragged vertex white, and the keyboard-cursor vertex grey.
+color (light blue), the dragged vertex white, and the keyboard-cursor vertex gray.
 
-#### Scenario: Crossed edges and dragged-vertex neighbours are visually distinct
+#### Scenario: Crossed edges and dragged-vertex neighbors are visually distinct
 
-- **WHEN** the player drags a vertex that has neighbours while crossings exist
+- **WHEN** the player drags a vertex that has neighbors while crossings exist
 - **THEN** crossed edges render red, the dragged vertex renders white, and its
-  neighbour vertices render light blue (not red), so neighbours are not mistaken
+  neighbor vertices render light blue (not red), so neighbors are not mistaken
   for a crossing/error indication
 
 ### Requirement: Untangle provides a move hint with animation
@@ -162,7 +162,7 @@ When the generator's solution is available (`aux` present), `hint` SHALL derive 
 plan from that known solution: it SHALL take the dihedral-symmetry image of the
 solution closest to the current positions, **rescale it with a uniform scale to
 fill the play box** (preserving planarity, so the result is both crossing-free and
-well-spaced rather than clustered toward the centre), and emit a plan that places
+well-spaced rather than clustered toward the center), and emit a plan that places
 vertices one at a time, choosing at each step the still-unplaced vertex whose move
 to its solved position yields the fewest resulting crossings. Applying the whole
 plan SHALL leave the board untangled.
@@ -170,16 +170,16 @@ plan SHALL leave the board untangled.
 When no solution is available (`aux` absent), `hint` SHALL fall back to a local
 heuristic: from the current positions, repeatedly select — among the vertices on a
 currently-crossed edge — the single vertex move that strictly reduces the number of
-edge-crossing pairs, offering each candidate the centroid of its graph-neighbours
+edge-crossing pairs, offering each candidate the centroid of its graph-neighbors
 plus outward-pushed variants and preferring, among equally-untangling targets, the
 one that most reduces a pairwise clustering score so the layout spreads rather than
-collapsing to the centre. The fallback SHALL refuse when no single move reduces the
+collapsing to the center. The fallback SHALL refuse when no single move reduces the
 crossings.
 
 Each returned `HintStep` SHALL carry a legal `executeMove` move and a highlight
 identifying the vertex and its suggested destination. `redraw` SHALL render the
-displayed step by drawing a hint-coloured line from the hinted vertex to its
-suggested destination and a hint-coloured marker at the destination. Because
+displayed step by drawing a hint-colored line from the hinted vertex to its
+suggested destination and a hint-colored marker at the destination. Because
 Untangle already animates vertex moves and the midend stretches a hint-executed
 move to the uniform hint-step duration, executing a hint step SHALL animate the
 vertex sliding to its destination; auto-hint SHALL thus progressively untangle the
@@ -191,7 +191,7 @@ board.
 - **THEN** it returns `{ ok: true }` with a non-empty list of steps
 - **AND** each step's move is a legal `executeMove`
 - **AND** applying every step in order leaves the board with no crossings and the
-  vertices spread across most of the play box (not clustered in the centre)
+  vertices spread across most of the play box (not clustered in the center)
 
 #### Scenario: Hint falls back to the heuristic without a solution
 
@@ -208,6 +208,6 @@ board.
 #### Scenario: Displayed hint is rendered
 
 - **WHEN** a hint step is on display
-- **THEN** `redraw` draws a hint-coloured line to, and a hint-coloured marker at,
+- **THEN** `redraw` draws a hint-colored line to, and a hint-colored marker at,
   the suggested destination of the hinted vertex
 

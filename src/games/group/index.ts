@@ -65,16 +65,10 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
-import type {
-  Colour,
-  ConfigValues,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { Color, ConfigValues, KeyLabel, Point, Size } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   flashLength,
   fromCoord,
@@ -405,7 +399,7 @@ function executeMove(from: GroupState, move: GroupMove): GroupState {
       const all = (1 << (w + 1)) - (1 << 1); // bits 1..w set
       // **Additive**: fill only the cells that have no notes yet, never reset one
       // the player has narrowed. Resetting threw away their own deductions on any
-      // board with some pencilled cells and some blank ones (owner-reported on
+      // board with some penciled cells and some blank ones (owner-reported on
       // Salad, 2026-07-29); `adaptiveMarkAll`'s contract always said "fill every
       // *note-less* empty cell" — this is the games catching up with it.
       for (let i = 0; i < a; i++) {
@@ -681,7 +675,7 @@ function emitIdentityFillJourney(
 
 /** Emit one recorded placement (Group's own or a generic single), re-deriving a
  * generic `single` reason into naked/hidden/forced from the working board. */
-function emitRecordedPlacement(
+function emitercordedPlacement(
   steps: HintStep<GroupMove, GroupHint>[],
   wGrid: Uint8Array,
   wPen: Int32Array,
@@ -758,7 +752,7 @@ function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
     // ever reached: the guard's own tier sweep exists because a tier-gated rung
     // can never fire on a game's easiest preset.
     if (ops.length > 0 && firstUnreflectedPlaceIndex(ops, wGrid, w) === 0) {
-      emitRecordedPlacement(steps, wGrid, wPen, w, id, ops, ops[0]);
+      emitercordedPlacement(steps, wGrid, wPen, w, id, ops, ops[0]);
       ops = recordGroupDeductions(wGrid, w, maxdiff);
       continue;
     }
@@ -806,7 +800,7 @@ function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
     //    the notes now reflect) is next.
     const pl = nextPlace(ops, wGrid, w);
     if (pl) {
-      emitRecordedPlacement(steps, wGrid, wPen, w, id, ops, pl);
+      emitercordedPlacement(steps, wGrid, wPen, w, id, ops, pl);
       ops = recordGroupDeductions(wGrid, w, maxdiff);
       continue;
     }
@@ -975,7 +969,7 @@ export const groupGame: Game<
     },
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: GroupParams, ts: number): Size => computeSize(p.w, ts),
   setTileSize,

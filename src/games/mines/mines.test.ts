@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Mines port. Tiers per the docs/games/testing.md § "The test tiers":
+ * Behavioral tests for the Mines port. Tiers per the docs/games/testing.md § "The test tiers":
  * tier-1 logic (params/desc/solver/generator/game), tier-1 midend integration
  * (supersede, save/load, timer), tier-2.5 render scenarios + snapshots.
  */
@@ -322,12 +322,12 @@ describe("mines supersede + midend", () => {
   it("a mis-flagged chord reveals only the mined square (design D7)", () => {
     // 3x3, mine at (0,0). Player has opened (1,1) showing 1, and wrongly flagged
     // (1,0) instead of the real mine (0,0). Chording the satisfied '1' must emit
-    // an open of *only* the true mine (0,0), not the whole neighbourhood, and
+    // an open of *only* the true mine (0,0), not the whole neighborhood, and
     // bump the death counter.
     const p = decodeParams("3x3n1");
     const layout = decodeDesc(p, "u800").layout; // mine at (0,0)
     const grid = new Int8Array(9).fill(COVERED);
-    grid[4] = 1; // (1,1) open, showing 1 neighbouring mine
+    grid[4] = 1; // (1,1) open, showing 1 neighboring mine
     grid[1] = -1; // (1,0) wrongly flagged
     const s: MinesState = {
       w: 3,
@@ -373,7 +373,7 @@ describe("mines supersede + midend", () => {
     const solved = minesGame.executeMove(alive, { type: "solve" });
     expect(solved.cheated).toBe(true);
     expect(solved.grid[0]).toBe(-1); // the mine, flagged
-    // every non-mine square carries its neighbour count (not covered)
+    // every non-mine square carries its neighbor count (not covered)
     for (let i = 1; i < 9; i++) expect(solved.grid[i]).toBeGreaterThanOrEqual(0);
   });
 
@@ -479,7 +479,7 @@ describe("mines chord preview", () => {
     minesGame.interpretMove(s, ui, ds as never, at(1, 1), LEFT_BUTTON);
     const move = minesGame.interpretMove(s, ui, ds as never, at(1, 1), LEFT_RELEASE);
     expect(move).toEqual({ type: "ops", ops: [{ op: "C", x: 1, y: 1 }] });
-    // Executing it opens the covered safe neighbour.
+    // Executing it opens the covered safe neighbor.
     const next = minesGame.executeMove(s, move as MinesMove);
     expect(next.grid[2 * 3 + 2]).toBeGreaterThanOrEqual(0); // (2,2) now open
   });
@@ -544,7 +544,7 @@ describe("mines render", () => {
     const p = decodeParams("9x9n10");
     const { desc } = minesGame.newDesc(p, randomNew("hl"));
     const s = minesGame.newState(p, desc); // blank pre-click board, all covered
-    const palette = minesGame.colours(BG);
+    const palette = minesGame.colors(BG);
     const ui = minesGame.newUi(s);
     const ds = minesGame.newDrawState?.(s) ?? null;
     minesGame.setTileSize?.(ds as never, 20);

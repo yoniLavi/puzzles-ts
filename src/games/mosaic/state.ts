@@ -1,7 +1,7 @@
 /**
  * Mosaic state, params, and desc codec — idiomatic TS port of the
  * state half of `mosaic.c` (a Fill-a-Pix-style puzzle: numeric clues
- * say how many cells of the clue's 3×3 neighbourhood, itself included,
+ * say how many cells of the clue's 3×3 neighborhood, itself included,
  * are black).
  */
 
@@ -209,9 +209,9 @@ export function newState(p: MosaicParams, desc: string): MosaicState {
   };
 }
 
-// --- neighbourhood counting ----------------------------------------------
+// --- neighborhood counting ----------------------------------------------
 
-/** Count the marked / blank / total cells of the 3×3 neighbourhood of
+/** Count the marked / blank / total cells of the 3×3 neighborhood of
  * (x,y), clipped to the board (upstream `count_around_state`). */
 export function countAround(
   width: number,
@@ -235,7 +235,7 @@ export function countAround(
 }
 
 /** Re-derive the SOLVED/ERROR overlay of every shown clue in the 3×3
- * neighbourhood of a just-changed cell (upstream
+ * neighborhood of a just-changed cell (upstream
  * `update_board_state_around`). Mutates `cells` in place — callers pass
  * the already-cloned next state's array. */
 export function updateBoardStateAround(

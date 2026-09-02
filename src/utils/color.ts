@@ -6,7 +6,7 @@ import {
   parse,
   sRGB as sRGBspace,
 } from "colorjs.io/fn";
-import type { Colour } from "../engine/types.ts";
+import type { Color } from "../engine/types.ts";
 import { clamp } from "./math.ts";
 
 // Register color spaces for parse() function.
@@ -14,7 +14,7 @@ import { clamp } from "./math.ts";
 ColorSpace.register(OKLCHspace);
 ColorSpace.register(sRGBspace);
 
-// A "Colour" (from the C puzzle code) is an [r, g, b] triplet
+// A "Color" (from the C puzzle code) is an [r, g, b] triplet
 // with each component in the range [0, 1] (in sRGB space).
 
 /**
@@ -39,10 +39,10 @@ const coords3 = (c: readonly (number | null)[]): [number, number, number] => [
   c[2] ?? 0,
 ];
 
-export const colourToOKLCH = (rgb: Colour): OKLCH =>
+export const colorToOKLCH = (rgb: Color): OKLCH =>
   coords3(convert({ space: sRGBspace, coords: rgb }, OKLCHspace).coords);
 
-export const oklchToColour = (lch: OKLCH): Colour =>
+export const oklchToColor = (lch: OKLCH): Color =>
   coords3(convert({ space: OKLCHspace, coords: lch }, sRGBspace).coords);
 
 export const cssColorToOKLCH = (cssColor: string): OKLCH =>
@@ -61,12 +61,12 @@ export const isGrayChroma = (c: number) => c < 0.01;
  * `l` is clamped to its stated domain first, and that clamp is load-bearing
  * rather than defensive tidiness: `boost` is fractional, and a *negative* base
  * raised to a fractional power is `NaN`. The out-of-domain input is real and
- * arrives from the ordinary path — `colourToOKLCH([1, 1, 1])` returns
+ * arrives from the ordinary path — `colorToOKLCH([1, 1, 1])` returns
  * `1.0000000000000002` (float drift in the OKLab round trip), so
  * {@link invertLightness}'s `1 - l` is a hair below zero for anything pure
  * white. Without the clamp the whole conversion yields `oklch(NaN% 0 0)`, which
  * a canvas rejects **silently** — `ctx.fillStyle` keeps its previous value, so
- * the shape is still painted, in the wrong colour, with nothing logged. That
+ * the shape is still painted, in the wrong color, with nothing logged. That
  * cost 57 palette entries across 42 games their dark-mode value (every game
  * whose palette holds a pure white, which after `game_mkhighlight` is most of
  * the ones with a 3D bevel: Slide lost the lowlight half of every bevel).
@@ -127,7 +127,7 @@ function invertLightness([l, c, h]: OKLCH, bgl: number): OKLCH {
  * spreads them and puts them in the right order.
  *
  * This is now the FALLBACK, for colors that are a game's own. A color that comes
- * from a shared role in `engine/colour/palette.ts` carries an authored value per
+ * from a shared role in `engine/color/palette.ts` carries an authored value per
  * scheme and never reaches here — see `hand-author-dark-palette`.
  */
 function adjustChromatic([l, c, h]: OKLCH, bgl: number): OKLCH {

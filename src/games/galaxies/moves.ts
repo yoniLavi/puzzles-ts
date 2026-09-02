@@ -25,7 +25,7 @@ import {
 } from "./state.ts";
 
 /**
- * The tiles a dot physically sits on: one for a dot at a tile's centre, the
+ * The tiles a dot physically sits on: one for a dot at a tile's center, the
  * two it separates for a dot on an edge, the four it meets for a dot on a
  * vertex. Every one of them is in that dot's galaxy by definition — the
  * region contains its dot — which is what makes them a *rule* of the game
@@ -58,11 +58,11 @@ function dotTiles(
  * This exists because `okToAddAssocWithOpposite` alone is too lenient to be
  * honest. Upstream's precheck asks only whether the tile and its 180° image
  * are in-grid and dot-free, so it will happily accept an arrow for a cell no
- * galaxy centred on that dot could ever contain — owner-reported 2026-08-08,
+ * galaxy centered on that dot could ever contain — owner-reported 2026-08-08,
  * with a cell two steps from its dot whose only routes were cut off. A
  * galaxy is a *connected* region, so connectivity is as much a rule as
  * symmetry is, and a preview that ignores it promises a move the puzzle
- * cannot honour.
+ * cannot honor.
  *
  * Two deliberate limits keep this a statement of the rules rather than a
  * solver:
@@ -106,7 +106,7 @@ export function reachableFromDot(s: GalaxiesState, dx: number, dy: number): Uint
       const i = idx(s, n.x, n.y);
       if (reached[i] || blocked[i]) continue;
       // Symmetry makes this a pair move: a tile can only join the galaxy if
-      // its 180° image can join too, so a neighbour whose image is off the
+      // its 180° image can join too, so a neighbor whose image is off the
       // board or under another dot is not reachable however open it looks.
       const opp = spaceOppositeDot(s, n.x, n.y, dx, dy);
       if (!opp || !inUi(s, opp.x, opp.y)) continue;
@@ -123,7 +123,7 @@ export function reachableFromDot(s: GalaxiesState, dx: number, dy: number): Uint
  * Mirrors upstream's `ok_to_add_assoc_with_opposite` precheck: the
  * target must be an in-grid tile without a dot, its 180° image about
  * the dot must exist and be dot-free, and neither tile may sit inside
- * a locally-valid (coloured) region. Safe on arbitrary coordinates —
+ * a locally-valid (colored) region. Safe on arbitrary coordinates —
  * the drag target tracks the raw pointer, which can be off the board.
  *
  * On top of upstream, the tile must also be **reachable** from the dot —
@@ -132,7 +132,7 @@ export function reachableFromDot(s: GalaxiesState, dx: number, dy: number): Uint
  * deliberate divergence on the input path only. Nothing in the generator or
  * the solver reaches this module, so no board changes.
  *
- * `cols` is the completion check's per-tile colour array, and `reach` the
+ * `cols` is the completion check's per-tile color array, and `reach` the
  * dot's reachable set; pass either when the caller already has one (the
  * renderer has both), or omit to compute.
  */
@@ -150,10 +150,10 @@ export function okToAddAssocWithOpposite(
   const opp = spaceOppositeDot(s, tx, ty, dx, dy);
   if (!opp) return false;
   if (s.flags[idx(s, opp.x, opp.y)] & F_DOT) return false;
-  const colours = cols ?? checkComplete(s, true).colours;
-  if (!colours) return false;
-  if (colours[((ty - 1) >> 1) * s.w + ((tx - 1) >> 1)]) return false;
-  if (colours[((opp.y - 1) >> 1) * s.w + ((opp.x - 1) >> 1)]) return false;
+  const colors = cols ?? checkComplete(s, true).colors;
+  if (!colors) return false;
+  if (colors[((ty - 1) >> 1) * s.w + ((tx - 1) >> 1)]) return false;
+  if (colors[((opp.y - 1) >> 1) * s.w + ((opp.x - 1) >> 1)]) return false;
   // The reachable set is symmetric about the dot, so testing the tile also
   // tests its 180° image.
   const reachable = reach ?? reachableFromDot(s, dx, dy);
@@ -207,7 +207,7 @@ export function legalDotsFor(
   ty: number,
 ): { x: number; y: number }[] {
   if (!inUi(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return [];
-  const cols = checkComplete(s, true).colours;
+  const cols = checkComplete(s, true).colors;
   if (!cols) return [];
   return s.dots.filter((d) =>
     okToAddAssocWithOpposite(s, tx, ty, d.x, d.y, cols, reachableFromDot(s, d.x, d.y)),

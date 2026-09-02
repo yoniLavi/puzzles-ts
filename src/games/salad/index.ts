@@ -41,7 +41,7 @@ import {
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   KeyLabel,
@@ -51,7 +51,7 @@ import type {
 import { newSaladDesc } from "./generator.ts";
 import { hint, hintKeepTrack, refreshHintStep } from "./hint.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -253,7 +253,7 @@ function interpretMove(
   // Mark-all press — fill the squares that have no marks yet, else clear the
   // candidates a placed symbol already rules out of its row or column. **Only
   // ever adds or removes; never resets** (owner-directed 2026-07-29), so pressing
-  // it can't undo deductions the player has pencilled. Upstream's resetting `M`
+  // it can't undo deductions the player has penciled. Upstream's resetting `M`
   // (`markAll`) is no longer reachable from input.
   if (button === 77 || button === 109) {
     return adaptiveMarkAll<SaladMove, SaladMark>(needsPencilFill(state), () =>
@@ -317,7 +317,7 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
       return next;
     }
     // Named rather than left as the `default`, which used to be this working
-    // arm: an unrecognised move fell into it and was read as an entry at
+    // arm: an unrecognized move fell into it and was read as an entry at
     // `(undefined, undefined)`. The `default` below is now only a guard.
     case "set":
     case "pencil": {
@@ -344,7 +344,7 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
           next.holes[i] = CROSS;
         }
       } else {
-        // A pencilled circle is upstream's oddity: it toggles the *real* marker
+        // A penciled circle is upstream's oddity: it toggles the *real* marker
         // without emptying the square.
         if (pencil) {
           if (next.holes[i] === 0) next.holes[i] = CIRCLE;
@@ -488,7 +488,7 @@ export const saladGame: Game<
 
   prefs: [stickyPencilPref<SaladUi>()],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SaladParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

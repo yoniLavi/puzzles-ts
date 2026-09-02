@@ -13,7 +13,7 @@
  * differentials already pin exactly and which no restatement here could pin
  * better.
  *
- * **That division of labour was checked, not assumed.** Mutating
+ * **That division of labor was checked, not assumed.** Mutating
  * `if (!rotate) rw += wodd` to drop its guard changes the 4-fold *region size*
  * on an odd-width board — so it changes which boards exist without breaking any
  * symmetry, and it survives everything here. Light Up's and Sticks' frozen
@@ -68,7 +68,7 @@ describe("SYMMETRY_CHOICES", () => {
 
 describe("the symmetry each mode actually produces", () => {
   // Even dimensions throughout: the region then tiles the board exactly, so the
-  // symmetry is total rather than approximate at an odd centre line.
+  // symmetry is total rather than approximate at an odd center line.
   const W = 8;
   const H = 8;
   const PC = 30;
@@ -158,7 +158,7 @@ describe("guards and bounds", () => {
 describe("odd dimensions — where the region overlaps its own copy", () => {
   it("includes the centre row in the region, so it can be blackened at all", () => {
     // The degree-2 region is `floor(h/2) + hodd` rows. Drop the `+ hodd` and the
-    // centre row falls out of both the region *and* the mirror copy's range —
+    // center row falls out of both the region *and* the mirror copy's range —
     // leaving it permanently white, which at 100% is unmistakable.
     const { grid } = place(7, 7, 100, SYMM_REF2);
     expect(countBlack(grid)).toBe(49);
@@ -174,25 +174,25 @@ describe("odd dimensions — where the region overlaps its own copy", () => {
   it("SYMM_ROT4 on an odd square gives the centre its own extra draw", () => {
     // Upstream's fix-up: the quarter-turn copy never writes the middle cell, so
     // it is decided by one further `randomUpto(rs, 100) <= blackpc` draw.
-    const centre = (pc: number, seed: string) =>
+    const center = (pc: number, seed: string) =>
       place(7, 7, pc, SYMM_ROT4, seed).at(3, 3);
-    expect(centre(100, "odd-100")).toBe(true);
+    expect(center(100, "odd-100")).toBe(true);
 
     // The `<=` is load-bearing and off-by-one-able, and it only shows itself on
     // the draw that equals `blackpc`. At 0% no placement draws happen at all, so
-    // the centre draw is the seed's *first*, and "c-123" is a seed whose first
+    // the center draw is the seed's *first*, and "c-123" is a seed whose first
     // `randomUpto(rs, 100)` is exactly 0 — black under `<=`, white under `<`.
-    expect(centre(0, "c-123")).toBe(true);
+    expect(center(0, "c-123")).toBe(true);
     // Any other 0% seed leaves it white, so this is the boundary and not a
     // "0% blackens things" bug.
-    expect(centre(0, "odd-0")).toBe(false);
+    expect(center(0, "odd-0")).toBe(false);
   });
 
   it("SYMM_ROT4 on an odd square is still quarter-turn symmetric off-centre", () => {
     const { at } = place(7, 7, 40, SYMM_ROT4);
     for (let y = 0; y < 7; y++)
       for (let x = 0; x < 7; x++) {
-        if (x === 3 && y === 3) continue; // the centre is its own orbit
+        if (x === 3 && y === 3) continue; // the center is its own orbit
         expect(at(x, y)).toBe(at(6 - y, x));
       }
   });

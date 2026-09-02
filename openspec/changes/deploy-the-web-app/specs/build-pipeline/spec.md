@@ -14,14 +14,14 @@ Verification SHALL be performed **against the deployed origin**, not against a
 local build, for the four things that fail silently there:
 
 - a route loads by its **clean URL** (`/pegs` served from `pegs.html`) —
-  extensionless resolution is host behaviour and is a configuration switch on
+  extensionless resolution is host behavior and is a configuration switch on
   some hosts, so it is checked, never assumed;
 - the **security headers arrive** as headers, confirmed by inspecting the
   response, not inferred from `dist/_headers` existing in the output;
 - the **service worker registers on that origin** and the app opens with the
   network off — registration is scope- and `base`-sensitive, and a local preview
   does not exercise either;
-- the **canonical-URL-gated artefacts** (`sitemap.xml`, `robots.txt`) are
+- the **canonical-URL-gated artifacts** (`sitemap.xml`, `robots.txt`) are
   present, since they are emitted only when `VITE_CANONICAL_BASE_URL` is set and
   their absence is invisible.
 

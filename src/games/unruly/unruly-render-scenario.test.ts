@@ -22,17 +22,16 @@ describe("Unruly render scenarios", () => {
     const { recording, size } = renderScenario({ game: unrulyGame, id });
 
     const ts = unrulyGame.preferredTileSize ?? 32;
-    const fullBody = (colour: number) =>
+    const fullBody = (color: number) =>
       recording.ops.some(
-        (o) =>
-          o.op === "rect" && o.colour === colour && o.w === ts - 1 && o.h === ts - 1,
+        (o) => o.op === "rect" && o.color === color && o.w === ts - 1 && o.h === ts - 1,
       );
 
-    // The board has clues of both colours (black ones, white zeros).
+    // The board has clues of both colors (black ones, white zeros).
     expect(fullBody(COL_1)).toBe(true);
     expect(fullBody(COL_0)).toBe(true);
     // The outer grid frame is drawn.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_GRID)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_GRID)).toBe(
       true,
     );
     // The board fills its declared size.
@@ -74,8 +73,8 @@ describe("Unruly render scenarios", () => {
     });
 
     expect(mistakeCount).toBeGreaterThanOrEqual(1);
-    // The mistake overlay paints inset error-coloured strips on the wrong cell.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(
+    // The mistake overlay paints inset error-colored strips on the wrong cell.
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_ERROR)).toBe(
       true,
     );
   });
@@ -98,14 +97,14 @@ describe("Unruly render scenarios", () => {
     expect(hl).toBeDefined();
 
     // The forced cell is painted COL_HINT (both the target fill and any
-    // premise ring use it), so the hint colour is on the frame.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+    // premise ring use it), so the hint color is on the frame.
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_HINT)).toBe(
       true,
     );
     // Clues are still drawn (the hint overlays, it doesn't erase the board).
     expect(
       recording.ops.some(
-        (o) => o.op === "rect" && (o.colour === COL_0 || o.colour === COL_1),
+        (o) => o.op === "rect" && (o.color === COL_0 || o.color === COL_1),
       ),
     ).toBe(true);
 

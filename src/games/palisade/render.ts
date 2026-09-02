@@ -3,7 +3,7 @@
  *
  * Per-tile diffed loop over an `Int32Array` flag cache (the no-BigInt
  * pattern). Each tile draws its four border edges (wall / no-wall /
- * unknown / error coloured), the clue, and any cursor box. The live
+ * unknown / error colored), the clue, and any cursor box. The live
  * error highlighting is recomputed every frame from two DSFs over the
  * current borders (black = wall-separated regions, yellow = no-wall
  * regions); the `findMistakes` overlay folds into the same error bits.
@@ -21,9 +21,9 @@ import {
   outOfBounds,
 } from "../../engine/border-grid.ts";
 import {
-  correctRegionColour,
+  correctRegionColor,
   mkhighlight,
-} from "../../engine/colour/colour-mkhighlight.ts";
+} from "../../engine/color/color-mkhighlight.ts";
 import {
   CURSOR,
   ERROR,
@@ -31,12 +31,12 @@ import {
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
-  lineMaybeColour,
-  lineNoColour,
-} from "../../engine/colour/palette.ts";
+  lineMaybeColor,
+  lineNoColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   bitcount,
   EMPTY,
@@ -61,14 +61,14 @@ export const COL_LINE_NO = 4;
 export const COL_ERROR = 5;
 export const COL_HINT = 6; // every edge the deduction forces this step (blue)
 export const COL_HINT_CELL = 7; // referenced-cell outline, inset inside the cell
-export const COL_CORRECT = 8; // a completed, correct region (shared grey shade)
+export const COL_CORRECT = 8; // a completed, correct region (shared gray shade)
 /** The keyboard cursor's box, which upstream drew in the grid's own ink. Appended
  * past the C enum; Palisade has no dark-mode `paletteOverrides`. */
 export const COL_CURSOR = 9;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_FLASH] = FLASH;
   out[COL_GRID] = INK;
@@ -76,9 +76,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_CORRECT] = correctRegionColour(background);
-  out[COL_LINE_MAYBE] = lineMaybeColour(background);
-  out[COL_LINE_NO] = lineNoColour(background);
+  out[COL_CORRECT] = correctRegionColor(background);
+  out[COL_LINE_MAYBE] = lineMaybeColor(background);
+  out[COL_LINE_NO] = lineNoColor(background);
   return out;
 }
 
@@ -134,11 +134,11 @@ export function newDrawState(state: PalisadeState): PalisadeDrawState {
 
 // --- tile drawing ----------------------------------------------------------
 
-/** Colour for edge `dir`, given the tile's packed flags. Every edge the
+/** Color for edge `dir`, given the tile's packed flags. Every edge the
  * current hint forces this step (the action edge plus the firing's other
- * edges — they share a fate, so they share a colour) is in `HINT_EDGE`
+ * edges — they share a fate, so they share a color) is in `HINT_EDGE`
  * and wins over the normal edge states. */
-function edgeColour(flags: number, dir: number): number {
+function edgeColor(flags: number, dir: number): number {
   const b = BORDER(dir);
   if (flags & HINT_EDGE(b)) return COL_HINT;
   if (flags & BORDER_ERROR(b)) return COL_ERROR;
@@ -198,10 +198,10 @@ function drawTile(
   }
 
   // Four border edges (U, R, D, L).
-  dr.drawRect({ x: x + w, y, w: ts - w, h: w }, edgeColour(flags, 0));
-  dr.drawRect({ x: x + ts, y: y + w, w, h: ts - w }, edgeColour(flags, 1));
-  dr.drawRect({ x: x + w, y: y + ts, w: ts - w, h: w }, edgeColour(flags, 2));
-  dr.drawRect({ x, y: y + w, w, h: ts - w }, edgeColour(flags, 3));
+  dr.drawRect({ x: x + w, y, w: ts - w, h: w }, edgeColor(flags, 0));
+  dr.drawRect({ x: x + ts, y: y + w, w, h: ts - w }, edgeColor(flags, 1));
+  dr.drawRect({ x: x + w, y: y + ts, w: ts - w, h: w }, edgeColor(flags, 2));
+  dr.drawRect({ x, y: y + w, w, h: ts - w }, edgeColor(flags, 3));
 
   dr.unclip();
   dr.drawUpdate({ x, y, w: ts + w, h: ts + w });
@@ -219,7 +219,7 @@ function drawCursor(dr: GameDrawing, ts: number, curX: number, curY: number): vo
   const centerX = x + (offX === 0 ? Math.floor(w / 2) : center(ts));
   const centerY = y + (offY === 0 ? Math.floor(w / 2) : center(ts));
 
-  // cur_type = (offX<<1)+offY: 0 TL-corner, 1 left-border, 2 top-border, 3 centre.
+  // cur_type = (offX<<1)+offY: 0 TL-corner, 1 left-border, 2 top-border, 3 center.
   const third = Math.floor(ts / 3);
   const twoThird = Math.floor((2 * ts) / 3);
   const cw = offX === 0 ? third : twoThird;
@@ -256,7 +256,7 @@ export function redraw(
 
   // Fold the displayed hint step into per-tile hint channels. The action
   // edge and the firing's other forced edges (`hl.edges`) all paint
-  // COL_HINT — they share a fate, so they share a colour — so both are
+  // COL_HINT — they share a fate, so they share a color — so both are
   // marked into the one edge mask; the referenced cells (the clue pair /
   // region) shade COL_HINT_CELL. Both sides of each edge are marked (same
   // pixels).
@@ -297,7 +297,7 @@ export function redraw(
 
   // Completed-and-correct regions: a wall-bounded (black) component of exactly
   // `k` cells, every clue in it satisfied, and no wall interior to it. These
-  // shade with the shared completed-region colour (Rect's convention), the same
+  // shade with the shared completed-region color (Rect's convention), the same
   // feedback Galaxies/Rect give (a *local* correctness check, not a
   // global-solution check). Start each right-sized component valid, then
   // invalidate on a clue mismatch or an interior (dangling) wall.

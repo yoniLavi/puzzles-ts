@@ -21,7 +21,7 @@ function fromSeed(params: string, seed: string): RangeState {
 
 describe("deduceHintPlan", () => {
   it("records an adjacency reason for a black cell's neighbour", () => {
-    // 3x3, centre black, no clues — adjacency forces the 4 neighbours white.
+    // 3x3, center black, no clues — adjacency forces the 4 neighbors white.
     const grid = Int8Array.from([
       EMPTY,
       EMPTY,
@@ -94,9 +94,9 @@ describe("hint", () => {
   it("ties 'this cell' to the second mark, on every step of every reason", () => {
     // Every Range step shows a second mark (the test above pins that), so a
     // bare "this cell" would point at neither it nor the target
-    // (`disambiguate-hint-deixis`). The tie is geometric — never a colour
+    // (`disambiguate-hint-deixis`). The tie is geometric — never a color
     // name, which `docs/games/hints.md` § "Two marks on the board" forbids as
-    // scheme-relative and invisible to a colour-blind reader.
+    // scheme-relative and invisible to a color-blind reader.
     const TIE =
       /right next to the ringed black square|the next one out past the outlined run|along the outlined run as far as this cell|the outlined cells around it/;
     const kinds = new Set<string>();

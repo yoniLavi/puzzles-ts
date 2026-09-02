@@ -22,7 +22,7 @@ import {
   type HatPatchParams,
   hatTilingGenerate,
   hatTilingParamsInvalid,
-  hatTilingRandomise,
+  hatTilingRandomize,
   metatileCharToType,
 } from "./hat.ts";
 
@@ -69,7 +69,7 @@ function descToHatParams(desc: string): ParseResult {
 
 /** Generate a random hat patch description covering `width × height` squares. */
 export function hatsNewDesc(width: number, height: number, rng: RandomState): string {
-  const hp = hatTilingRandomise(width, height, rng);
+  const hp = hatTilingRandomize(width, height, rng);
   let out = "";
   for (const c of hp.coords) {
     if (c >= 100) {
@@ -100,7 +100,7 @@ export function hatsValidateDesc(
  * 1. **The face order comes from the callback's `nvertices`**, not a literal.
  *    Penrose faces are always 4 and spectre's always 14, but the hat API
  *    promises no constant — so read it from the callback.
- * 2. **No re-centring.** Penrose and spectres shift their trimmed patch to sit
+ * 2. **No re-centering.** Penrose and spectres shift their trimmed patch to sit
  *    inside the extent `gridComputeSize` reports; hats keeps whatever survived
  *    trimming, so its bounding box generally will *not* match that extent. The
  *    asymmetry is upstream's, and is load-bearing for byte-match.

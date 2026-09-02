@@ -22,7 +22,7 @@
  * shuffle; everything after that is decided by the solver's verdict on each
  * intermediate board. So one byte-for-byte desc comparison against the C
  * validates the generator, the tiered solver *and* the codec at once — but it
- * also means any reordering or "optimisation" of the draws silently diverges
+ * also means any reordering or "optimization" of the draws silently diverges
  * every board.
  */
 
@@ -98,7 +98,7 @@ function spokesGenerateHubs(
 /**
  * Reset a board's playable spokes to `EMPTY` and re-derive the hidden ones
  * from the clue numbers (upstream `spokes_generate_clear`) — a hub with clue
- * `0` is a hole, so it loses its spokes and its neighbours lose theirs
+ * `0` is a hole, so it loses its spokes and its neighbors lose theirs
  * pointing at it. This is the `'0'` half of `newState`'s hole processing; the
  * generator never produces the wider `'X'` hole.
  */

@@ -4,21 +4,21 @@
  * The board is one black rectangle with each cell painted back over it, inset by
  * a pixel on any side that is a *region* boundary — so the region walls are the
  * black left showing through, and there is no wall-drawing code at all. The four
- * corner pixels each cell may owe (where its diagonal neighbour is in another
+ * corner pixels each cell may owe (where its diagonal neighbor is in another
  * region) are painted after the cell, because the cell's own fill can cover
  * them.
  *
  * That geometry depends only on the region partition, which never changes for
  * the life of a game — so the per-tile cache (`Int32Array`, docs/games/rendering.md § "The tile cache and the diff key") keys
  * on the cell's *contents* alone: its digit, pencil marks, error flags and the
- * background colour the cursor/flash chose. The Check-&-Save mistake overlay
+ * background color the cursor/flash chose. The Check-&-Save mistake overlay
  * rides in an `OverlaySidecar` so it repaints a cell whose contents are
  * otherwise unchanged.
  *
  * **Two deliberate divergences, both display-only** (byte-parity was never in
  * scope for drawing — docs/games/solver-and-generator.md § "Divergence and what it costs"):
  *  - upstream stores the 9-bit pencil bitmask in a `char` before drawing it, so
- *    a pencilled **9** is truncated away and never appears. Fixed here (§3.2's
+ *    a penciled **9** is truncated away and never appears. Fixed here (§3.2's
  *    "a display-only value with the wrong type is a bug you may just fix");
  *  - upstream repaints every cell every frame (its own "optimize drawing
  *    routines" TODO) and its `game_drawstate` is a literal `int FIXME`. This
@@ -30,18 +30,18 @@
  * to put it. The grid's own geometry is untouched.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import {
   ERROR,
   INK,
   PENCIL_BODY,
-  pencilColour,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
+  pencilColor,
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   FM_ERRORMASK,
   FM_FIXED,
@@ -79,17 +79,17 @@ export const COL_ERRORDIST = 8;
  * `paletteOverrides`, so appending is safe): the pencil indicator's body. */
 export const COL_PENCIL_BODY = 9;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BORDER] = INK;
   out[COL_NUM_FIXED] = INK;
-  out[COL_NUM_GUESS] = playerEntryColour(background);
+  out[COL_NUM_GUESS] = playerEntryColor(background);
   out[COL_NUM_ERROR] = ERROR;
-  out[COL_NUM_PENCIL] = pencilColour(background);
+  out[COL_NUM_PENCIL] = pencilColor(background);
   out[COL_ERRORDIST] = ERROR;
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   return out;
@@ -131,7 +131,7 @@ export interface SeismicDrawState {
   h: number;
   /** Per-tile last-drawn contents (−1 = never drawn): the digit in bits 0–3, the
    * pencil bitmask in bits 4–12, the cell flags in 13–15, the chosen background
-   * colour in 16–17 and the pencil-cursor marker in bit 18. */
+   * color in 16–17 and the pencil-cursor marker in bit 18. */
   tiles: Int32Array;
   /** The Check-&-Save mistake overlay. */
   wrong: OverlaySidecar;
@@ -227,7 +227,7 @@ function drawTile(
   state: SeismicState,
   x: number,
   y: number,
-  colour: number,
+  color: number,
   pencilCursor: boolean,
   wrong: boolean,
 ): void {
@@ -241,7 +241,7 @@ function drawTile(
   dr.clip({ x: tx, y: ty, w: ts, h: ts });
   dr.drawUpdate({ x: tx, y: ty, w: ts, h: ts });
 
-  dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, colour);
+  dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, color);
 
   // The pencil-entry cursor: a triangle in the cell's top-left corner.
   if (pencilCursor) {
@@ -256,7 +256,7 @@ function drawTile(
     );
   }
 
-  // A cell whose *diagonal* neighbour is in another region owes that corner a
+  // A cell whose *diagonal* neighbor is in another region owes that corner a
   // black pixel — drawn after the fill, which can otherwise cover it.
   const corner = (px: number, py: number) =>
     dr.drawRect({ x: px, y: py, w: GRIDEXTRA, h: GRIDEXTRA }, COL_BORDER);
@@ -375,11 +375,11 @@ export function redraw(
       const highlighted = cshow && ui.cursor.x === x && ui.cursor.y === y;
       const pencilCursor = highlighted && ui.cpencil;
 
-      let colour: number;
+      let color: number;
       if (flash === -1) {
-        colour = highlighted && !ui.cpencil ? COL_HIGHLIGHT : COL_BACKGROUND;
+        color = highlighted && !ui.cpencil ? COL_HIGHLIGHT : COL_BACKGROUND;
       } else {
-        colour =
+        color =
           (x + y) % 3 === flash
             ? COL_BACKGROUND
             : (x + y + 1) % 3 === flash
@@ -391,11 +391,11 @@ export function redraw(
         state.grid[i] |
         (state.marks[i] << 4) |
         (state.flags[i] << 13) |
-        (colour << 16) |
+        (color << 16) |
         ((pencilCursor ? 1 : 0) << 18);
 
       if (ds.tiles[i] !== tile || ds.wrong.stale(i)) {
-        drawTile(dr, ds, state, x, y, colour, pencilCursor, ds.wrong.at(i));
+        drawTile(dr, ds, state, x, y, color, pencilCursor, ds.wrong.at(i));
         ds.tiles[i] = tile;
         ds.wrong.commit(i);
       }

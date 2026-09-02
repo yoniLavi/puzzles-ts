@@ -69,12 +69,12 @@ uniqueness gate and tuned against the two quality failures upstream names:
 - the add-vs-extend priority knob (add-where-possible gives too many trivial
   short paths; extend-where-possible gives hopelessly interwoven, non-unique
   grids) — find the middle, gated by the solver;
-- boring paths (a whole edge row as a single path) — reject or penalise.
+- boring paths (a whole edge row as a single path) — reject or penalize.
 
 Its `tree234` usage becomes idiomatic Map/Set lookups (the leaf rule); do not
 transcribe tree234.
 
-## D3 — No differential; assurance is behavioural
+## D3 — No differential; assurance is behavioral
 
 There is no C game and no C solver, so there is nothing to byte-match. Assurance
 rests entirely on the solver's own correctness (proven on hand-authored boards
@@ -88,7 +88,7 @@ Upstream never built the UI but sketched it in the header: a connection-based
 data model (track links between adjacent cells, so a player can lay path
 sections before joining them to an endpoint) and click-drag-to-link input. That
 sketch is the starting point; the rest is designed by this change and covered by
-behavioural + render tests.
+behavioral + render tests.
 
 ## Risks
 

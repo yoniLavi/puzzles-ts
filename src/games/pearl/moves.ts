@@ -114,7 +114,7 @@ export function updateUiDrag(
       if (leg.dx === gx && leg.dy === gy) lines ^= F(leg.oldstate) ^ F(leg.newstate);
     }
     if (NBITS(lines) > 2) {
-      // Bad vertex degree: fall back to backtracking behaviour.
+      // Bad vertex degree: fall back to backtracking behavior.
       ui.ndragcoords = 1;
       return;
     }

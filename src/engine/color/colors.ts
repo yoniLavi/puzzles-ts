@@ -1,42 +1,42 @@
 /**
- * **The collection's colours** — the whole set of them, by name.
+ * **The collection's colors** — the whole set of them, by name.
  *
- * Twelve names (eight hues, plus grey, brown, black and white), each available
+ * Twelve names (eight hues, plus gray, brown, black and white), each available
  * at a small fixed number of intensities. Everything any game shows is one of
  * these, or a *meaning* defined over them in [`palette.ts`](./palette.ts), or a
- * colour derived from the board it sits on.
+ * color derived from the board it sits on.
  *
  * ## Why the set is small, and why it is exactly this size
  *
- * `colour-tokens-per-scheme` gave every colour in the collection a name and a
+ * `colour-tokens-per-scheme` gave every color in the collection a name and a
  * home: 687 palette entries across 57 games resolving to ~190 tokens. That was
- * the precondition, not the answer — ~190 named colours is still 190 independent
+ * the precondition, not the answer — ~190 named colors is still 190 independent
  * decisions, and pure blue arrived six times under six names because upstream
  * wrote each game separately.
  *
  * The number here is not taste. **Flood, Guess and Samegame need ten members a
  * player can tell apart**, in every scheme; nothing else the collection does
- * needs more. So the palette is sized by that, and "how many colours should there
+ * needs more. So the palette is sized by that, and "how many colors should there
  * be" has an answer rather than a preference.
  *
  * ## Two things a name has to be
  *
  * 1. **True.** Flood's hint says *"Fill with yellow"*, and the hint quality bar
  *    says every sentence a hint utters is a claim that must be checked. A scheme
- *    may give {@link YELLOW} a different shade; it may not make it a colour a
+ *    may give {@link YELLOW} a different shade; it may not make it a color a
  *    player would call something else. That is why the intensity steps are named
  *    `_WASH` and `_BOLD` — by **role**, not by appearance: the wash step is light
  *    in light mode and *dark* in dark mode (content on top of it has to stay
  *    readable either way), so a name like `_PALE` would be a lie in one of the
  *    two schemes.
- * 2. **Load-bearing.** A game reaches for a name here only where the colour *is*
- *    the meaning — a member of a set whose job is to be told apart, or a colour
+ * 2. **Load-bearing.** A game reaches for a name here only where the color *is*
+ *    the meaning — a member of a set whose job is to be told apart, or a color
  *    the game names to the player. Everywhere else it references a meaning from
  *    `palette.ts`, so that "what should an error look like" stays one decision.
  *
  * ## The three intensities
  *
- * - **base** — the colour: a mark, a line, a piece, a tile.
+ * - **base** — the color: a mark, a line, a piece, a tile.
  * - **`_WASH`** — a fill that content must stay readable *on top of*. Light in
  *   light mode, dark in dark mode.
  * - **`_WASH_DEEP`** — the same, for a fill that has to carry the collection's
@@ -55,9 +55,9 @@
  * wash cannot supply — a wash of blue is a fill, not a digit. That is the case on
  * record for the third step; anything further needs its own.
  *
- * **A colour carries only the steps something asks for**, which is why orange has
+ * **A color carries only the steps something asks for**, which is why orange has
  * no wash and yellow, purple and pink have no bold. An intensity nobody
- * references is a colour decision nobody can see, and it will be wrong by the
+ * references is a color decision nobody can see, and it will be wrong by the
  * time somebody looks — `palette-source.test.ts` fails on one.
  *
  * ## Authored in OKLCH, on purpose
@@ -68,17 +68,17 @@
  * top" is a lightness, and "Crossing's across and down must carry equal weight"
  * is an equality of lightness *and* chroma that RGB cannot express (the port
  * found this the hard way: the obvious RGB mirror of a blue made an amber that
- * measured both lighter and more colourful, and duly looked more important).
+ * measured both lighter and more colorful, and duly looked more important).
  *
  * The conversion to sRGB is done here, in ~20 lines, rather than by importing the
- * app's colour library: this module is reached from the puzzle worker, and the
+ * app's color library: this module is reached from the puzzle worker, and the
  * arithmetic is fixed, standard and cheaper than the dependency.
- * `colours.test.ts` pins it against `colorjs.io` and measures every set that has
+ * `colors.test.ts` pins it against `colorjs.io` and measures every set that has
  * to stay distinguishable, in **both** schemes.
  */
 
-import type { Colour } from "../types.ts";
-import { token } from "./colour-token.ts";
+import type { Color } from "../types.ts";
+import { token } from "./color-token.ts";
 
 // --- OKLCH → sRGB ------------------------------------------------------
 
@@ -87,7 +87,7 @@ import { token } from "./colour-token.ts";
  * Every value in {@link DESIGN} is inside the sRGB gamut by construction (its
  * chroma is 94% of the most that hue and lightness can carry), so the clamp here
  * is a guard against a future edit rather than a gamut-mapping step. */
-function oklch(l: number, c: number, hDegrees: number): Colour {
+function oklch(l: number, c: number, hDegrees: number): Color {
   const h = (hDegrees * Math.PI) / 180;
   const a = c * Math.cos(h);
   const b = c * Math.sin(h);
@@ -102,16 +102,16 @@ function oklch(l: number, c: number, hDegrees: number): Colour {
   return linear.map((v) => {
     const encoded = v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055;
     return Math.min(1, Math.max(0, encoded));
-  }) as unknown as Colour;
+  }) as unknown as Color;
 }
 
 // --- the design --------------------------------------------------------
 
-/** One intensity of one colour, in one scheme: `[lightness, chroma]`. */
+/** One intensity of one color, in one scheme: `[lightness, chroma]`. */
 type Step = readonly [l: number, c: number];
 
-/** A colour's intensities under one scheme. Every step but `base` is absent
- * where nothing needs it — an unused intensity is a colour decision nobody can
+/** A color's intensities under one scheme. Every step but `base` is absent
+ * where nothing needs it — an unused intensity is a color decision nobody can
  * see, and it will be wrong by the time somebody looks. */
 type Steps = { base: Step; wash?: Step; washQuiet?: Step; bold?: Step };
 
@@ -119,31 +119,31 @@ type Steps = { base: Step; wash?: Step; washQuiet?: Step; bold?: Step };
  * **The palette.** Hue per name, then lightness and chroma per intensity per
  * scheme.
  *
- * The lightnesses are not free-hand: they are the result of maximising the worst
+ * The lightnesses are not free-hand: they are the result of maximizing the worst
  * pairwise distance inside every set the collection needs a player to tell apart
  * — the ten-member set, Mines' six counts, Signpost's eight region fills, Map's
- * four, the hint vocabulary, and each colour's own three steps — subject to each
+ * four, the hint vocabulary, and each color's own three steps — subject to each
  * name staying true (a "yellow" at lightness 0.45 is olive; a "blue" at 0.9 is
  * not blue). Where several solutions cleared every bar, the one closest to the
- * lightness each name naturally wants was taken. `colours.test.ts` re-measures
+ * lightness each name naturally wants was taken. `colors.test.ts` re-measures
  * all of it, so a future edit that trades one set away is a failing test rather
  * than a discovery.
  *
- * One pair is **tied rather than optimised**: blue's and orange's **bold** steps
+ * One pair is **tied rather than optimized**: blue's and orange's **bold** steps
  * carry the same lightness *and* the same chroma in both schemes, because
- * Crossing colours across-runs in one and down-runs in the other — on the board
- * *and* in the clue list, which is one colour per direction rather than two — and
+ * Crossing colors across-runs in one and down-runs in the other — on the board
+ * *and* in the clue list, which is one color per direction rather than two — and
  * either being stronger makes one direction look like the important one. Blue's
  * chroma is held down to what orange can reach, the constraint running that way
  * because orange's gamut is the narrower of the two at that lightness.
  *
  * ## Three bounds the dark column is held inside, and why
  *
- * A search maximises separation, and left alone it will buy separation with
+ * A search maximizes separation, and left alone it will buy separation with
  * anything not nailed down. Three bounds are what stop it, each from a defect it
  * produced on the way — **do not widen them to recover a decimal place**:
  *
- * - **A colour may not leave its own name.** Dark yellow first came out at
+ * - **A color may not leave its own name.** Dark yellow first came out at
  *   lightness 0.95 and chroma 0.104: the lightest entry in the palette, at half
  *   the chroma it can carry, which is a **cream**. It bought the ten-set 0.158
  *   that way. Yellow is now capped at 0.86, the set is 0.143, and that is the
@@ -173,7 +173,7 @@ const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
     h: 62,
     // No wash step: nothing needs one. Crossing was its only consumer and now
     // inks its down-runs with the same value the clue list uses, which is the
-    // bold step. An intensity nobody references is a colour decision nobody can
+    // bold step. An intensity nobody references is a color decision nobody can
     // see, and it would be wrong by the time somebody looked.
     light: { base: [0.72, 0.156], bold: [0.42, 0.091] },
     dark: { base: [0.69, 0.149], bold: [0.84, 0.076] },
@@ -223,7 +223,7 @@ const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
     light: { base: [0.72, 0.198], wash: [0.84, 0.07] },
     dark: { base: [0.75, 0.171], wash: [0.4, 0.12] },
   },
-  GREY: {
+  GRAY: {
     h: 0,
     light: { base: [0.6, 0], wash: [0.78, 0], bold: [0.42, 0] },
     dark: { base: [0.44, 0], wash: [0.3, 0], bold: [0.84, 0] },
@@ -239,7 +239,7 @@ const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
   },
 };
 
-const of = (name: string, step: keyof Steps): Colour => {
+const of = (name: string, step: keyof Steps): Color => {
   const d = DESIGN[name];
   const light = d.light[step];
   const dark = d.dark[step];
@@ -247,37 +247,37 @@ const of = (name: string, step: keyof Steps): Colour => {
   return token(oklch(light[0], light[1], d.h), oklch(dark[0], dark[1], d.h));
 };
 
-// --- the named colours -------------------------------------------------
+// --- the named colors -------------------------------------------------
 
 /** Red. The collection's *error* meaning is built on it, but so are Flood's red
  * tile and Magnets' positive pole, which are not errors — see `palette.ts`. */
-export const RED: Colour = of("RED", "base");
+export const RED: Color = of("RED", "base");
 /** @see RED */
-export const RED_WASH: Colour = of("RED", "wash");
+export const RED_WASH: Color = of("RED", "wash");
 /** @see RED */
-export const RED_BOLD: Colour = of("RED", "bold");
+export const RED_BOLD: Color = of("RED", "bold");
 
 /** Orange. */
-export const ORANGE: Colour = of("ORANGE", "base");
+export const ORANGE: Color = of("ORANGE", "base");
 /** @see ORANGE */
-export const ORANGE_BOLD: Colour = of("ORANGE", "bold");
+export const ORANGE_BOLD: Color = of("ORANGE", "bold");
 
 /** Yellow. */
-export const YELLOW: Colour = of("YELLOW", "base");
+export const YELLOW: Color = of("YELLOW", "base");
 /** @see YELLOW */
-export const YELLOW_WASH: Colour = of("YELLOW", "wash");
+export const YELLOW_WASH: Color = of("YELLOW", "wash");
 
 /** Green. */
-export const GREEN: Colour = of("GREEN", "base");
+export const GREEN: Color = of("GREEN", "base");
 /** @see GREEN */
-export const GREEN_WASH: Colour = of("GREEN", "wash");
+export const GREEN_WASH: Color = of("GREEN", "wash");
 /** @see GREEN */
-export const GREEN_BOLD: Colour = of("GREEN", "bold");
+export const GREEN_BOLD: Color = of("GREEN", "bold");
 
 /** Teal. */
-export const TEAL: Colour = of("TEAL", "base");
+export const TEAL: Color = of("TEAL", "base");
 /** @see TEAL */
-export const TEAL_WASH: Colour = of("TEAL", "wash");
+export const TEAL_WASH: Color = of("TEAL", "wash");
 /**
  * @see TEAL — the **quiet** wash: a fill the hint's own marks are drawn on top
  * of, so it has to stay close enough to the board that they still win. Its one
@@ -285,7 +285,7 @@ export const TEAL_WASH: Colour = of("TEAL", "wash");
  *
  * **Why this is a step and not a retune of {@link TEAL_WASH}.** `TEAL_WASH` is a
  * member of {@link EIGHT_FILLS} and {@link FOUR_FILLS}, so its dark lightness is
- * an *output* of the search that keeps Signpost's sixteen region colours and
+ * an *output* of the search that keeps Signpost's sixteen region colors and
  * Map's four mutually distinguishable — it is not free to move for a reason
  * outside that set.
  *
@@ -298,64 +298,64 @@ export const TEAL_WASH: Colour = of("TEAL", "wash");
  * conclusion whispered. Lightness 0.30 is where the wash reaches light mode's
  * own visibility (1.31 against 1.29) and leaves the ring 3.54.
  */
-export const TEAL_WASH_QUIET: Colour = of("TEAL", "washQuiet");
+export const TEAL_WASH_QUIET: Color = of("TEAL", "washQuiet");
 /** @see TEAL */
-export const TEAL_BOLD: Colour = of("TEAL", "bold");
+export const TEAL_BOLD: Color = of("TEAL", "bold");
 
 /** Blue. */
-export const BLUE: Colour = of("BLUE", "base");
+export const BLUE: Color = of("BLUE", "base");
 /** @see BLUE */
-export const BLUE_WASH: Colour = of("BLUE", "wash");
+export const BLUE_WASH: Color = of("BLUE", "wash");
 /** @see BLUE */
-export const BLUE_BOLD: Colour = of("BLUE", "bold");
+export const BLUE_BOLD: Color = of("BLUE", "bold");
 
 /** Purple. */
-export const PURPLE: Colour = of("PURPLE", "base");
+export const PURPLE: Color = of("PURPLE", "base");
 /** @see PURPLE */
-export const PURPLE_WASH: Colour = of("PURPLE", "wash");
+export const PURPLE_WASH: Color = of("PURPLE", "wash");
 
 /** Pink. */
-export const PINK: Colour = of("PINK", "base");
+export const PINK: Color = of("PINK", "base");
 /** @see PINK */
-export const PINK_WASH: Colour = of("PINK", "wash");
+export const PINK_WASH: Color = of("PINK", "wash");
 
-/** Grey — the achromatic member, and the tenth member of {@link TEN}. */
-export const GREY: Colour = of("GREY", "base");
-/** @see GREY */
-export const GREY_WASH: Colour = of("GREY", "wash");
-/** @see GREY */
-export const GREY_BOLD: Colour = of("GREY", "bold");
+/** Gray — the achromatic member, and the tenth member of {@link TEN}. */
+export const GRAY: Color = of("GRAY", "base");
+/** @see GRAY */
+export const GRAY_WASH: Color = of("GRAY", "wash");
+/** @see GRAY */
+export const GRAY_BOLD: Color = of("GRAY", "bold");
 
 /** Brown. @see DESIGN for why it is a name and not an intensity of orange. */
-export const BROWN: Colour = of("BROWN", "base");
+export const BROWN: Color = of("BROWN", "base");
 
 /**
  * **This game object is black** — a black peg, a black mine, the filled squares
- * of a two-colour game. Not the `INK` meaning, despite being the same colour: ink
+ * of a two-color game. Not the `INK` meaning, despite being the same color: ink
  * is *maximum contrast against the surface* and must invert in dark mode, while
  * this is the piece's own identity, and inverting it would tell the player the
- * piece is the other colour.
+ * piece is the other color.
  */
-export const BLACK: Colour = token([0, 0, 0], [0, 0, 0]);
+export const BLACK: Color = token([0, 0, 0], [0, 0, 0]);
 
 /** The counterpart to {@link BLACK}: **this game object is white** — a white
- * peg, a white pearl, the empty squares of a two-colour game. */
-export const WHITE: Colour = token([1, 1, 1], [1, 1, 1]);
+ * peg, a white pearl, the empty squares of a two-color game. */
+export const WHITE: Color = token([1, 1, 1], [1, 1, 1]);
 
 // --- the sets ----------------------------------------------------------
 
 /**
- * **Ten colours a player can tell apart**, and the reason the palette is the size
+ * **Ten colors a player can tell apart**, and the reason the palette is the size
  * it is: Flood's tiles, Guess's pegs, Samegame's nine (which takes all but the
- * grey — a grey tile among coloured ones reads as a hole in the board).
+ * gray — a gray tile among colored ones reads as a hole in the board).
  *
  * Upstream wrote Flood's and Guess's ten out twice, character for character, and
  * they were never designed as a set: measured worst pair 0.134 in light and
  * **0.070** in dark, because mutual distinguishability is a property of the set
- * and no per-colour rule — including adapting one to a scheme — can establish it.
+ * and no per-color rule — including adapting one to a scheme — can establish it.
  * This set measures 0.159 light and 0.158 dark.
  */
-export const TEN: readonly Colour[] = [
+export const TEN: readonly Color[] = [
   RED,
   YELLOW,
   GREEN,
@@ -365,7 +365,7 @@ export const TEN: readonly Colour[] = [
   BROWN,
   TEAL,
   PINK,
-  GREY,
+  GRAY,
 ];
 
 /**
@@ -374,7 +374,7 @@ export const TEN: readonly Colour[] = [
  *
  * Parallel to {@link TEN} and exported *with* it so the two cannot drift: Flood's
  * hint reads "Fill with orange", and the only thing standing between that and a
- * lie is that the word and the colour come from the same place.
+ * lie is that the word and the color come from the same place.
  */
 export const TEN_NAMES: readonly string[] = [
   "red",
@@ -386,7 +386,7 @@ export const TEN_NAMES: readonly string[] = [
   "brown",
   "teal",
   "pink",
-  "grey",
+  "gray",
 ];
 
 /**
@@ -395,16 +395,16 @@ export const TEN_NAMES: readonly string[] = [
  * The wash step throughout, because a region fill has to follow the board: light
  * under a light scheme, dark under a dark one, with the number and arrow the game
  * draws on top staying readable either way. That is also why a region set cannot
- * simply borrow {@link TEN}: those are colours, and half of them are too dark to
+ * simply borrow {@link TEN}: those are colors, and half of them are too dark to
  * write on in light mode and too light in dark mode.
  *
- * Eight washes cannot be as separated as eight colours — a pastel set is close
+ * Eight washes cannot be as separated as eight colors — a pastel set is close
  * together by construction, which is why upstream's own eight measured 0.071.
  * These measure 0.087 light and 0.081 dark, so the set is better than the one it
  * replaces without pretending to be something a wash cannot be.
  */
-export const EIGHT_FILLS: readonly Colour[] = [
-  GREY_WASH,
+export const EIGHT_FILLS: readonly Color[] = [
+  GRAY_WASH,
   RED_WASH,
   GREEN_WASH,
   PURPLE_WASH,
@@ -416,16 +416,16 @@ export const EIGHT_FILLS: readonly Colour[] = [
 
 /**
  * **Four fills**, for the one set in the collection whose size is a *theorem* —
- * four colours suffice to colour any planar map, which is Map's puzzle.
+ * four colors suffice to color any planar map, which is Map's puzzle.
  *
  * The widest spread {@link EIGHT_FILLS} allows, because a Map board is almost
- * entirely region fill and the whole game is telling neighbouring regions apart.
+ * entirely region fill and the whole game is telling neighboring regions apart.
  * Upstream's four muted earth tones measured 0.077; these measure 0.115 light and
  * 0.123 dark. The earth tones went deliberately — they were chosen so that four
  * saturated hues at that area were not unpleasant to look at for the length of a
  * game, and the wash step already answers that without also being hard to read.
  */
-export const FOUR_FILLS: readonly Colour[] = [
+export const FOUR_FILLS: readonly Color[] = [
   RED_WASH,
   YELLOW_WASH,
   TEAL_WASH,

@@ -9,8 +9,8 @@
  * Check & Save (`findMistakes`) get an inset error outline.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLACK, GREY, ORANGE, WHITE } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLACK, GRAY, ORANGE, WHITE } from "../../engine/color/colors.ts";
 import {
   CURSOR,
   ERROR,
@@ -21,11 +21,11 @@ import {
   HINT_EVIDENCE,
   HINT_WHITEREF,
   INK,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { SinglesHint } from "./index.ts";
 import {
   F_BLACK,
@@ -58,15 +58,15 @@ export const COL_HINT = 9; // the cell(s) the displayed hint forces (blue)
 export const COL_HINT_CELL = 10; // the deduction's premise/evidence (light blue)
 export const COL_HINT_STRAND = 11; // the corner a corner-deduction protects (amber)
 // Element-type legend: a decided premise cell the reason *cites* rings in a
-// colour fixed by its type, so "a shaded square" and "the ringed white square"
+// color fixed by its type, so "a shaded square" and "the ringed white square"
 // read as distinct from the blue forced cell (and from each other) — paired
-// with the cell's own black/white appearance as the non-colour cue.
+// with the cell's own black/white appearance as the non-color cue.
 export const COL_HINT_BLACKREF = 12; // a cited shaded (black) premise (teal ring)
 export const COL_HINT_WHITEREF = 13; // a cited ringed-white premise (violet ring)
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_TEXT] = INK;
   out[COL_FLASH] = FLASH;
@@ -75,7 +75,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   // Its white counterpart, likewise pinned. The renderer never draws it — a
   // white cell shows the board — but the slot keeps the upstream index.
   out[COL_WHITE] = WHITE;
-  out[COL_BLACKNUM] = GREY;
+  out[COL_BLACKNUM] = GRAY;
   out[COL_GRID] = GRID_MID;
   out[COL_CURSOR] = CURSOR;
   out[COL_ERROR] = ERROR;
@@ -96,8 +96,8 @@ const crad = (ts: number): number => Math.floor(ts / 2) - 1;
 const textsz = (ts: number): number => Math.floor((14 * crad(ts)) / 10) - 1;
 const coord = (v: number, ts: number): number => v * ts + border(ts);
 /** A hint mark's thickness: it replaces the cell's own grid outline, and reads
- * as a highlight by colour rather than by weight. Bounded by the number the cell
- * always carries, which is drawn at `textsz(ts)` centred. */
+ * as a highlight by color rather than by weight. Bounded by the number the cell
+ * always carries, which is drawn at `textsz(ts)` centered. */
 const markT = (ts: number): number => Math.max(2, ts >> 4);
 
 export function computeSize(p: { w: number; h: number }, ts: number): Size {
@@ -116,7 +116,7 @@ const DS_IMPOSSIBLE = 0x40;
 const DS_MISTAKE = 0x80;
 // Hint overlay (fork addition): a forced-black target, a forced-white
 // (circle) target, and an evidence cell (shaded if undecided, ringed if
-// it is a decided black/circle premise — the colour is then the reason).
+// it is a decided black/circle premise — the color is then the reason).
 const DS_HINT_BLACK = 0x100;
 const DS_HINT_WHITE = 0x200;
 const DS_HINT_EVID = 0x400;
@@ -198,8 +198,8 @@ function tileRedraw(
   // (No forced-mark preview: the hint highlights where to act, it doesn't
   // place the black square / circle for the player — see the override above.)
 
-  // A decided premise cell (its black/circle colour is the reason): ring
-  // it rather than shading over it. The ring colour follows the legend —
+  // A decided premise cell (its black/circle color is the reason): ring
+  // it rather than shading over it. The ring color follows the legend —
   // strand amber for a protected corner, else by the cell's type so a cited
   // shaded square and a cited ringed-white square read distinct from each
   // other and from the blue forced cell.

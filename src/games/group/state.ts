@@ -127,7 +127,7 @@ export function decodeParams(s: string): GroupParams {
       p.id = false;
       i++;
     } else {
-      i++; // unrecognised character
+      i++; // unrecognized character
     }
   }
   return p;

@@ -2,12 +2,12 @@
  * Bricks (Tawamurenga) — native TS port of `puzzles/unreleased/bricks.c`.
  * Shade cells in a hexagonal grid so that every shaded cell is supported by a
  * shaded cell below it, no three shade in a horizontal line, and each clue
- * equals its count of shaded neighbours.
+ * equals its count of shaded neighbors.
  *
  * Input: left-click/drag cycles a cell shade→unshade→empty (right-click the
- * reverse) and paints the whole drag with the first cell's target colour; a
+ * reverse) and paints the whole drag with the first cell's target color; a
  * hex-aware keyboard cursor moves with the arrow/numpad keys (up/down alternate
- * orthogonal and diagonal steps across the shear) and places colours with
+ * orthogonal and diagonal steps across the shear) and places colors with
  * Enter/Space/0/1/2/Backspace. Rule violations show live while dragging;
  * Check & Save (`findMistakes`) hard-blocks on any current violation.
  */
@@ -26,7 +26,7 @@ import {
 } from "../../engine/game.ts";
 import {
   ALREADY_SOLVED,
-  CONTRADICTION_UNLOCALISED,
+  CONTRADICTION_UNLOCALIZED,
   FIX_MISTAKES_FIRST,
   NO_DEDUCTION_LEFT,
   PUZZLE_NOT_REASONABLE,
@@ -52,11 +52,11 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
 import { newBricksDesc } from "./generator.ts";
 import {
   type BricksDrawState,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -78,11 +78,11 @@ import {
   type BricksParams,
   type BricksState,
   type BricksUi,
-  bitsColour,
-  type CellColour,
+  bitsColor,
+  type CellColor,
   COL_MASK,
   cloneState,
-  colourBits,
+  colorBits,
   DIFF_NAMES,
   DIFF_TRICKY,
   decodeParams,
@@ -250,7 +250,7 @@ function interpretMove(
   }
 
   if (isMouseRelease(button) && ui.drag.length > 0) {
-    const to = bitsColour(ui.dragtype);
+    const to = bitsColor(ui.dragtype);
     const cells: { index: number; to: typeof to }[] = [];
     for (const j of ui.drag) {
       if (!(grid[j] & COL_MASK)) continue;
@@ -302,12 +302,12 @@ function executeMove(state: BricksState, move: BricksMove): BricksState {
   if (move.kind === "solve") {
     for (let i = 0; i < w * h; i++) {
       if (!(state.grid[i] & COL_MASK)) continue;
-      next.grid[i] = colourBits(move.grid[i]);
+      next.grid[i] = colorBits(move.grid[i]);
     }
     next.cheated = true;
   } else if (move.kind === "paint") {
     for (const { index, to } of move.cells) {
-      if (state.grid[index] & COL_MASK) next.grid[index] = colourBits(to);
+      if (state.grid[index] & COL_MASK) next.grid[index] = colorBits(to);
     }
   } else {
     return assertNever(move, "bricks: executeMove");
@@ -322,19 +322,19 @@ function solve(orig: BricksState): SolveResult<BricksMove> {
   solveGame(grid, w, h, DIFF_TRICKY, true, true);
   if (bricksValidate(grid, w, h, false) === "invalid")
     return { ok: false, error: "Puzzle is invalid." };
-  const colours2 = Array.from({ length: w * h }, (_, i) => bitsColour(grid[i]));
-  return { ok: true, move: { kind: "solve", grid: colours2 } };
+  const colors2 = Array.from({ length: w * h }, (_, i) => bitsColor(grid[i]));
+  return { ok: true, move: { kind: "solve", grid: colors2 } };
 }
 
 // --- hint (a second projection of the contradiction solver) -----------------
 
 /** Highlight data for a Bricks hint step: the forced cell (`target`, drawn
- * `COL_HINT`), the colour it is forced to (`forced` — the narration says
+ * `COL_HINT`), the color it is forced to (`forced` — the narration says
  * which; the render never pre-places it), and the deduction's `evidence`
  * cells (ringed `COL_HINT_CELL`). All are padded-grid indices. */
 export interface BricksHint {
   target: number;
-  forced: CellColour;
+  forced: CellColor;
   evidence: number[];
 }
 
@@ -364,7 +364,7 @@ function evidenceOf(reason: BricksReason): number[] {
  * what the player can see. Every branch that has a second mark ties "this
  * cell" to it, because with a solid target *and* a ring on screen a bare
  * deictic points at neither (`disambiguate-hint-deixis`; the tie is geometric,
- * never a colour name — `docs/games/hints.md` § "Two marks on the board").
+ * never a color name — `docs/games/hints.md` § "Two marks on the board").
  * The relations asserted below are the ones the solver guarantees, checked
  * against a sweep of ~55k deductions over ~4,800 partial positions of the
  * fixture boards: `shadeRun` never leaves the target's row and is contiguous
@@ -374,7 +374,7 @@ function evidenceOf(reason: BricksReason): number[] {
  * `below`/`above` are the brick-wall supports one row down/up. */
 function narrate(
   reason: BricksReason,
-  forced: CellColour,
+  forced: CellColor,
   state: BricksState,
   evidence: readonly number[],
 ): string {
@@ -384,7 +384,7 @@ function narrate(
       return "This cell sits next to the ringed shaded bricks — shading it would make three in a row, and no row may have three, so it must stay clear.";
     case "unsupported":
       // A ringed cell below is an unshaded brick *or a clue* — `validateGravity`
-      // masks a clue down to no colour, so a clue supports nothing (seen live:
+      // masks a clue down to no color, so a clue supports nothing (seen live:
       // the opener's ring is a `4`). "Isn't a shaded brick" therefore says it
       // better than "is not shaded", which reads as a mark the player could go
       // and place. An *empty* cell below does not trigger the rule at all, so
@@ -399,7 +399,7 @@ function narrate(
     case "overcount": {
       const n = clueVal(reason.clue);
       // docs/games/hints.md § "Sanity-read at the degenerate extremes": "more
-      // than its 0 shaded neighbours" came out of the running app on the opener
+      // than its 0 shaded neighbors" came out of the running app on the opener
       // board and is nonsense — a 0 allows none at all.
       return n === 0
         ? "The ringed 0 beside this cell allows no shaded neighbours at all — so this cell must stay clear."
@@ -412,7 +412,7 @@ function narrate(
       return `The ringed ${n} beside this cell still needs more shaded neighbours, and this is one of the last cells that can supply one — clearing it would put ${n} out of reach, so it must be shaded.`;
     }
     case "localBreak": {
-      // The direct rung's *unclassified* case: one colour placed, one validator
+      // The direct rung's *unclassified* case: one color placed, one validator
       // call, the board breaks — but at a cell none of the four named arms
       // above matched. It used to be narrated as "following the forced
       // consequences", which described the recursive rung that no longer feeds
@@ -457,7 +457,7 @@ function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
     if ((pc === F_SHADE || pc === F_UNSHADE) && pc !== (sol[i] & COL_MASK)) {
       return {
         ok: false,
-        error: CONTRADICTION_UNLOCALISED,
+        error: CONTRADICTION_UNLOCALIZED,
       };
     }
   }
@@ -480,7 +480,7 @@ function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
 }
 
 /** A move completes the step when it paints the target cell to the hinted
- * colour; touching the target with a different colour, or not touching it, is
+ * color; touching the target with a different color, or not touching it, is
  * off-plan (Bricks steps are single-cell — no partial-subset case). */
 function hintKeepTrack(
   m: BricksMove,
@@ -589,7 +589,7 @@ export const bricksGame: Game<
   findMistakes,
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: BricksParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

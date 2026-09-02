@@ -4,8 +4,8 @@
  *
  * The board is a `cr × cr` grid drawn on a `COL_GRID` backing rectangle so the
  * thin grid lines show between cells. Each cell's background is widened by
- * `GRIDEXTRA` toward same-*block* neighbours (so a sub-block reads as one merged
- * region), with explicit corner-jut squares where a diagonal neighbour is a
+ * `GRIDEXTRA` toward same-*block* neighbors (so a sub-block reads as one merged
+ * region), with explicit corner-jut squares where a diagonal neighbor is a
  * different block — exactly Keen's cage drawing, but driven by
  * `blocks.whichblock` (rectangular or jigsaw) rather than a cage dsf. On top of
  * that, four composable variants add their own marks:
@@ -15,7 +15,7 @@
  *    (offset `GRIDEXTRA*3` from the cell edge), plus the cage-sum clue text.
  *  - givens render `COL_CLUE` (black), player digits `COL_USER` (green); a
  *    digit that duplicates within its row/col/block/diagonal/cage, or a cage
- *    whose full sum is wrong, recolours to `COL_ERROR`.
+ *    whose full sum is wrong, recolors to `COL_ERROR`.
  *
  * A cell's drawn pixels depend only on its own digit + pencil bitmap + a small
  * highlight byte (cursor/flash/error/cage-sum) plus the immutable block/cage
@@ -31,10 +31,10 @@ import {
   highlightWash,
   INK,
   PENCIL_BODY,
-  pencilColour,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
-import { soloKiller, soloXDiagonals } from "../../engine/colour/palette-games.ts";
+  pencilColor,
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
+import { soloKiller, soloXDiagonals } from "../../engine/color/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
@@ -46,7 +46,7 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   checkKillerCageSum,
   onDiag0,
@@ -71,7 +71,7 @@ export const COL_HIGHLIGHT = 5;
 export const COL_ERROR = 6;
 export const COL_PENCIL = 7;
 export const COL_KILLER = 8;
-// Fork additions, appended past the upstream enum (NCOLOURS = 9). Solo's only
+// Fork additions, appended past the upstream enum (NCOLORS = 9). Solo's only
 // dark-mode override touches index 2, so a plain append is safe.
 export const COL_PENCIL_BODY = 9; // the yellow body of the pencil-mode indicator
 export const COL_HINT = 10; // the acted-on cell's ring (drawn in redraw's last block)
@@ -79,22 +79,22 @@ export const COL_HINT = 10; // the acted-on cell's ring (drawn in redraw's last 
  * one index, because they are one role: the number indexes the evidence. */
 export const COL_HINT_CELL = 11;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const bg = defaultBackground;
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_XDIAGONALS] = soloXDiagonals(bg);
   out[COL_GRID] = INK;
   out[COL_CLUE] = INK;
-  out[COL_USER] = playerEntryColour(bg);
+  out[COL_USER] = playerEntryColor(bg);
   out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_ERROR] = ERROR;
-  out[COL_PENCIL] = pencilColour(bg);
+  out[COL_PENCIL] = pencilColor(bg);
   out[COL_KILLER] = soloKiller(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
   // Both hint marks are outlines in the cell's gutter, so both take a strong
-  // colour and differ in shape rather than in weight — a region's contour
+  // color and differ in shape rather than in weight — a region's contour
   // against one cell's ring. `HINT_EVIDENCE` covers the chain ordinal too; see
   // its doc comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
@@ -102,7 +102,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 }
 
 /** Highlight payload a Solo hint step carries (built in `index.ts`). The
- * element-type legend (docs/games/hints.md § "The element-type colour legend"): the driving region's cells shaded
+ * element-type legend (docs/games/hints.md § "The element-type color legend"): the driving region's cells shaded
  * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
  * shown struck. */
 export interface SoloHint {
@@ -197,8 +197,8 @@ export function setTileSize(ds: SoloDrawState, ts: number): void {
  * block is as wide as the cell, leaving a glyph only its own font padding at the
  * edge, and the gutter is `2·ge + 1` of `COL_GRID` backing that belongs to no
  * tile. Two cells in the same sub-block sit a single pixel apart (each widens by
- * `ge` toward the other), so a mark there overlaps the neighbour's background by
- * `ge` on that side; it is grid-coloured space either way, and the block
+ * `ge` toward the other), so a mark there overlaps the neighbor's background by
+ * `ge` on that side; it is grid-colored space either way, and the block
  * boundary — the wide gutter — is where the ring is thickest and reads best.
  */
 function markBand(ds: SoloDrawState, x: number, y: number): MarkBand {
@@ -245,7 +245,7 @@ function drawNumber(
   const cell = y * cr + x;
   const colKiller = hl & HL_KSUM ? COL_ERROR : COL_KILLER;
 
-  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): both
+  // Hint overlay (docs/games/hints.md § "The element-type color legend"): both
   // cell-level marks are read in `redraw`, which draws the target's ring and the
   // evidence region's outline in the gutter. What is left here is `struck`, the
   // set of candidates this firing rules out, crossed through among the marks.
@@ -261,7 +261,7 @@ function drawNumber(
   let cw = tw;
   let ch = th;
 
-  // Widen the background toward same-block neighbours so the sub-block merges.
+  // Widen the background toward same-block neighbors so the sub-block merges.
   if (x > 0 && wb[cell] === wb[cell - 1]) {
     cx -= ge;
     cw += ge;
@@ -299,7 +299,7 @@ function drawNumber(
     );
   }
 
-  // Corner juts: a GRIDEXTRA square where the diagonal neighbour is a different
+  // Corner juts: a GRIDEXTRA square where the diagonal neighbor is a different
   // block (so the grid corner shows through the merged region).
   if (x > 0 && y > 0 && wb[cell] !== wb[(y - 1) * cr + x - 1])
     dr.drawRect({ x: tx - ge, y: ty - ge, w: ge, h: ge }, COL_GRID);
@@ -318,7 +318,7 @@ function drawNumber(
   if (killer) {
     const kwb = killer.kblocks.whichblock;
     const t = ge * 3;
-    // In jigsaw mode, offset from the cell *centre* lines so adjacent cage
+    // In jigsaw mode, offset from the cell *center* lines so adjacent cage
     // outlines line up; otherwise from the cell edge.
     const jigsaw = state.params.r === 1;
     const kcx = jigsaw ? tx : cx;
@@ -496,7 +496,7 @@ function drawNumber(
   // A forcing chain's place in the order it fires, so the narration can cite
   // the cells by number rather than asking the player to reconstruct the chain
   // (`walk-tactic-hint-chains`). Inside the clip, so it can never spill into a
-  // neighbouring block.
+  // neighboring block.
   if (hintOrder > 0)
     drawHintOrdinal(dr, { x: tx, y: ty }, ts - 2 * ge, hintOrder, COL_HINT_CELL);
 
@@ -538,7 +538,7 @@ function drawPencilMarks(
     if (state.killerData && state.killerData.kgrid[cell] !== 0) pt += (ts / 4) | 0;
   }
 
-  // Choose the grid layout maximising the font size.
+  // Choose the grid layout maximizing the font size.
   let bestsize = 0;
   let pbest = 0;
   for (let pw = 3; pw < Math.max(npencil, 4); pw++) {
@@ -581,8 +581,8 @@ function drawPencilMarks(
       COL_PENCIL,
       digitChar(i + 1),
     );
-    // A hint-ruled-out candidate keeps its normal pencil colour with a
-    // same-colour strikethrough — the "ruled out" cue (docs/games/hints.md § "The element-type colour legend").
+    // A hint-ruled-out candidate keeps its normal pencil color with a
+    // same-color strikethrough — the "ruled out" cue (docs/games/hints.md § "The element-type color legend").
     if (struck & (1 << (i + 1))) {
       const r = Math.max(2, (fontsize / 3) | 0);
       dr.drawLine({ x: gx - r, y: gy }, { x: gx + r, y: gy }, COL_PENCIL, 2);
@@ -742,7 +742,7 @@ export function redraw(
   }
 
   // The hint marks, **after** the tile loop and outside every clip, because they
-  // live in the gutter, which no tile owns. `gutterColour` is what tells
+  // live in the gutter, which no tile owns. `gutterColor` is what tells
   // `HintMarks` to undo a mark that moved: the cell underneath does repaint (the
   // sidecar sees the overlay change) but stops at its own edge.
   const targets: MarkCell[] = [];
@@ -754,9 +754,9 @@ export function redraw(
   }
   ds.marks.paint(dr, targets, evidence, {
     band: (x, y) => markBand(ds, x, y),
-    targetColour: COL_HINT,
-    evidenceColour: COL_HINT_CELL,
-    gutterColour: COL_GRID,
+    targetColor: COL_HINT,
+    evidenceColor: COL_HINT_CELL,
+    gutterColor: COL_GRID,
   });
 
   // Pencil-mode indicator (fork addition).

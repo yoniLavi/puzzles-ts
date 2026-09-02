@@ -20,17 +20,17 @@ export interface SamegameState {
   readonly h: number;
   readonly ncols: number;
   readonly scoresub: number;
-  /** Colour per cell in row-major order; `0` is empty, `1..ncols` a colour. */
+  /** Color per cell in row-major order; `0` is empty, `1..ncols` a color. */
   readonly tiles: readonly number[];
   readonly score: number;
   readonly completed: boolean;
-  /** No two orthogonally-adjacent tiles share a colour (no move remains).
+  /** No two orthogonally-adjacent tiles share a color (no move remains).
    * NOT a loss — upstream treats it as rescuable by Undo (design D8). */
   readonly impossible: boolean;
 }
 
 /** Remove the listed grid indices (upstream's `M12,13,...` string). The
- * indices are a connected same-colour region of size ≥ 2, enforced at
+ * indices are a connected same-color region of size ≥ 2, enforced at
  * `interpretMove` time; `executeMove` only range-checks (design D3).
  * Plain JSON-safe data → the default move codec suffices. */
 export type SamegameMove = { type: "remove"; tiles: number[] };
@@ -105,7 +105,7 @@ export function validateParams(p: SamegameParams, _full: boolean): string | null
     if (p.w * p.h <= 1) return "Grid area must be greater than 1";
   } else {
     if (p.ncols < 2) return "Number of colours must be at least three";
-    // Need at least two of each colour for theoretical solubility.
+    // Need at least two of each color for theoretical solubility.
     if (p.w * p.h < p.ncols * 2)
       return "Too many colours makes given grid size impossible";
   }
@@ -138,22 +138,22 @@ export function presets() {
  * blob whose removal would reproduce the previous grid, so the computer's
  * intended solution always receives the minimum possible score.
  *
- * Every `randomUpto` call happens in the same order as C — the blob-colour
+ * Every `randomUpto` call happens in the same order as C — the blob-color
  * seed, the shuffle-and-consume of the insertion list, the
- * neighbour-excluding colour pick, and the extension-direction pick — so
+ * neighbor-excluding color pick, and the extension-direction pick — so
  * the generated grid reproduces bit-for-bit (the differential anchor,
- * design D6/R1). Returns the grid as a flat colour array.
+ * design D6/R1). Returns the grid as a flat color array.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: grid generation with colour-run constraints and solvability retry.
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: grid generation with color-run constraints and solvability retry.
 function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
   const wh = w * h;
-  const tc = nc + 1; // sentinel "provisional" colour during verification
+  const tc = nc + 1; // sentinel "provisional" color during verification
   const grid = new Array<number>(wh).fill(0);
   const grid2 = new Array<number>(wh).fill(0);
   const list = new Array<number>(wh + w).fill(0);
 
   for (;;) {
-    // Start with two or three squares (parity of w*h) of a random colour.
+    // Start with two or three squares (parity of w*h) of a random color.
     grid.fill(0);
     const j = 2 + (wh % 2);
     let c = 1 + randomUpto(rng, nc);
@@ -212,7 +212,7 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
         // above y up by one).
         for (let i = 0; i + 1 <= y; i++) grid2[i * w + x] = grid2[(i + 1) * w + x];
 
-        // Pick a colour distinct from all neighbours of (x,y).
+        // Pick a color distinct from all neighbors of (x,y).
         {
           const wrongcol: number[] = [];
           if (x > 0) wrongcol.push(grid2[y * w + (x - 1)]);
@@ -220,7 +220,7 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
           if (y > 0) wrongcol.push(grid2[(y - 1) * w + x]);
           if (y + 1 < h) wrongcol.push(grid2[(y + 1) * w + x]);
           // Sort ascending + dedupe in place via selection (matches C so
-          // the colour-skip arithmetic below stays identical).
+          // the color-skip arithmetic below stays identical).
           let nwrong = wrongcol.length;
           let jdst = 0;
           for (let i = 0; ; i++) {
@@ -240,7 +240,7 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
           }
           nwrong = jdst;
 
-          if (nwrong === nc) continue; // no colour will go here
+          if (nwrong === nc) continue; // no color will go here
           c = 1 + randomUpto(rng, nc - nwrong);
           for (let i = 0; i < nwrong; i++) {
             if (c >= wrongcol[i]) c++;
@@ -248,7 +248,7 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
           }
         }
 
-        // Place the new square provisionally as the sentinel colour `tc`.
+        // Place the new square provisionally as the sentinel color `tc`.
         grid2[y * w + x] = tc;
 
         // Extend the blob left, right, or up.
@@ -356,7 +356,7 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
         // and hopes to avoid the offending move. We do the same.
         if (!ok) continue;
 
-        // BFS-fill the `tc` region as colour `c` (also proves connectivity).
+        // BFS-fill the `tc` region as color `c` (also proves connectivity).
         {
           const queue: number[] = [fillstart];
           let qi = 0;
@@ -394,7 +394,7 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
 
 // --- legacy random generator ------------------------------------------
 
-/** Faithful port of `gen_grid_random`: place two of each colour at random
+/** Faithful port of `gen_grid_random`: place two of each color at random
  * empty cells, then fill the rest at random. Not guaranteed soluble. */
 function genGridRandom(w: number, h: number, nc: number, rng: RandomState): number[] {
   const n = w * h;
@@ -503,7 +503,7 @@ export function snuggle(tiles: number[], w: number, h: number): void {
 }
 
 /** Upstream `sg_check`: `complete` iff the grid is empty; `impossible`
- * iff no two orthogonally-adjacent tiles share a colour. */
+ * iff no two orthogonally-adjacent tiles share a color. */
 export function check(
   tiles: readonly number[],
   w: number,

@@ -188,7 +188,7 @@ export function decodeParams(s: string): SubsetsParams {
     pos = r.next;
   }
   // An ID with no `d` keeps the default tier (see `defaultParams`); an
-  // unrecognised char lands out of range so `validateParams` rejects it rather
+  // unrecognized char lands out of range so `validateParams` rejects it rather
   // than silently playing some other difficulty.
   if (s[pos] === "d" && pos + 1 < s.length) {
     const idx = DIFF_CHARS.indexOf(s[pos + 1]);

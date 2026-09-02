@@ -163,7 +163,7 @@ describe("the cube with a repeated symbol", () => {
   it("a forcing chain never starts from or runs through the repeated symbol", () => {
     // Two cells with candidates {1, HOLE} in the same row: a chain from one
     // through the other would conclude 1 is impossible somewhere — but the
-    // link "this cell is the hole, so its neighbour cannot be" is false.
+    // link "this cell is the hole, so its neighbor cannot be" is false.
     const s = new LatinSolver(O, { times: TIMES });
     s.alloc(new Uint8Array(O * O));
     for (const x of [0, 1]) for (const n of [2, 3]) s.cube[s.cubepos(x, 0, n)] = 0;

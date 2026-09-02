@@ -45,14 +45,14 @@ type AnyStep = any;
  * Asserted as a shape rather than "some rect is COL_HINT", because the whole
  * point of the change is *which* rect. A fill measured **1.91:1** against a
  * pencil mark in light and 1.96 in dark — the digits the hint is talking about
- * were the thing it painted over — and no colour in the palette can fix that
+ * were the thing it painted over — and no color in the palette can fix that
  * without landing next to `ERROR_WASH`. A ring sits beside the content instead
  * of under it, so it can use the emphatic `HINT_ACTION` blue.
  */
 function expectRing(ops: readonly { op: string }[]): void {
   const sides = ops.filter(
-    (o): o is { op: "rect"; colour: number; w: number; h: number } =>
-      o.op === "rect" && (o as { colour?: number }).colour === COL_HINT,
+    (o): o is { op: "rect"; color: number; w: number; h: number } =>
+      o.op === "rect" && (o as { color?: number }).color === COL_HINT,
   );
   expect(sides.length, "the target ring is four rects").toBe(4);
   // Every one is thin in exactly one direction — a solid fill would be thick in
@@ -419,13 +419,13 @@ describe("keen hint render", () => {
     expect(hint?.explanation).toMatch(/this cage/);
     // The cage's cells are shaded COL_HINT_CELL evidence.
     expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
+      recording.ops.some((o) => o.op === "rect" && o.color === COL_HINT_CELL),
     ).toBe(true);
     // The struck candidate keeps its COL_PENCIL digit, crossed through in COL_PENCIL.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_PENCIL)).toBe(
       true,
     );
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
+    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_PENCIL)).toBe(
       true,
     );
     // The target is **ringed** COL_HINT — four thin rects, never a solid fill.
@@ -452,7 +452,7 @@ describe("keen hint render", () => {
     // end — so a line that lost its target cell, or that drew a ring per cell
     // instead of one contour, fails here.
     const sides = recording.ops.filter(
-      (o) => o.op === "rect" && o.colour === COL_HINT_CELL,
+      (o) => o.op === "rect" && o.color === COL_HINT_CELL,
     );
     expect(sides.length).toBe(2 * small.w + 2);
     expectRing(recording.ops);

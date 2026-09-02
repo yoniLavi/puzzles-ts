@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Ascent port (tier 1 + a midend save round-trip).
+ * Behavioral tests for the Ascent port (tier 1 + a midend save round-trip).
  *
  * Generation is solver-gated, so "generates a board that decodes, re-solves
  * to a single completion, and round-trips through the codec" exercises the
@@ -219,10 +219,9 @@ describe("ascent typed-number line preview", () => {
       const ds = ascentGame.newDrawState?.(state);
       if (!ds) throw new Error("no drawstate");
       ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
-      const rec = new RecordingDrawing(ascentGame.colours([0.83, 0.83, 0.83]));
+      const rec = new RecordingDrawing(ascentGame.colors([0.83, 0.83, 0.83]));
       ascentGame.redraw?.(rec, ds, null, state, 1, ui, 0, 0);
-      return rec.ops.filter((o) => o.op === "line" && o.colour === COL_HIGHLIGHT)
-        .length;
+      return rec.ops.filter((o) => o.op === "line" && o.color === COL_HIGHLIGHT).length;
     };
 
     // The preview must add at least one highlight (path) line.
@@ -257,28 +256,28 @@ describe("ascent auto-advance past a placed run", () => {
     const ds = ascentGame.newDrawState?.(state);
     if (!ds) throw new Error("no drawstate");
     ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
-    const centre = (cell: number) => ({
+    const center = (cell: number) => ({
       x: ds.offsetX + (cell % w) * ds.tileSize + ds.tileSize / 2,
       y: ds.offsetY + Math.trunc(cell / w) * ds.tileSize + ds.tileSize / 2,
     });
-    return { state, ui, ds, centre };
+    return { state, ui, ds, center };
   }
 
   it("jumps the focus to the run's leading edge and recommends the next open number", () => {
-    const { state, ui, ds, centre } = scratch();
-    ascentGame.interpretMove(state, ui, ds, centre(0), LEFT_BUTTON); // hold 0
+    const { state, ui, ds, center } = scratch();
+    ascentGame.interpretMove(state, ui, ds, center(0), LEFT_BUTTON); // hold 0
     expect(ui.select).toBe(1);
-    const m = ascentGame.interpretMove(state, ui, ds, centre(1), LEFT_BUTTON); // place 1
+    const m = ascentGame.interpretMove(state, ui, ds, center(1), LEFT_BUTTON); // place 1
     expect(m).toMatchObject({ kind: "place", cell: 1, n: 1 });
     expect(ui.held).toBe(3); // jumped past the placed 2-3 run
     expect(ui.select).toBe(4); // now recommends the next open number
   });
 
   it("stays on the placed cell when the preference is off", () => {
-    const { state, ui, ds, centre } = scratch();
+    const { state, ui, ds, center } = scratch();
     ui.autoAdvanceRuns = false;
-    ascentGame.interpretMove(state, ui, ds, centre(0), LEFT_BUTTON);
-    ascentGame.interpretMove(state, ui, ds, centre(1), LEFT_BUTTON);
+    ascentGame.interpretMove(state, ui, ds, center(0), LEFT_BUTTON);
+    ascentGame.interpretMove(state, ui, ds, center(1), LEFT_BUTTON);
     expect(ui.held).toBe(1); // no jump — focus stays on the placed cell
   });
 });
@@ -318,13 +317,13 @@ describe("ascent right-click two-option toggle", () => {
     if (!ds) throw new Error("no drawstate");
     ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
     const ts = ds.tileSize;
-    const centre = {
+    const center = {
       x: ds.offsetX + (cellB % w) * ts + ts / 2,
       y: ds.offsetY + Math.trunc(cellB / w) * ts + ts / 2,
     };
 
     const rightClick = () => {
-      const m = ascentGame.interpretMove(state, ui, ds, centre, RIGHT_BUTTON);
+      const m = ascentGame.interpretMove(state, ui, ds, center, RIGHT_BUTTON);
       if (m && typeof m === "object") {
         const old = state;
         state = ascentGame.executeMove(state, m as AscentMove);

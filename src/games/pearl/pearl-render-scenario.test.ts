@@ -4,7 +4,7 @@
  * circles, laid loop segments as thick lines, the `COL_MISTAKE` overlay) plus
  * a snapshot so a render regression is a reviewable text diff. A second
  * scenario switches the `appearance` preference to the loopy style and
- * asserts the centre-dot grid it draws.
+ * asserts the center-dot grid it draws.
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/midend.ts";
@@ -53,7 +53,7 @@ describe("Pearl render scenarios", () => {
       moves: [flipR(1, 1)],
     });
     // draw_lines_specific lays the segment as filled rects in COL_BLACK.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_BLACK)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_BLACK)).toBe(
       true,
     );
   });
@@ -77,7 +77,7 @@ describe("Pearl render scenarios", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBeGreaterThan(0);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(
       true,
     );
   });
@@ -87,10 +87,10 @@ describe("Pearl render scenarios", () => {
     expect(midend.newGameFromId(ID)).toBeUndefined();
     // Switch to the loopy appearance (choice index 1).
     expect(midend.setPreferences({ appearance: 1 })).toBeUndefined();
-    const palette = pearlGame.colours([0.9, 0.9, 0.9]);
+    const palette = pearlGame.colors([0.9, 0.9, 0.9]);
     const recording = new RecordingDrawing(palette);
     midend.redraw(recording);
-    // Loopy style draws centre dots (filled COL_GRID circles); traditional
+    // Loopy style draws center dots (filled COL_GRID circles); traditional
     // draws none.
     expect(recording.ops.some((o) => o.op === "circle" && o.fill === COL_GRID)).toBe(
       true,

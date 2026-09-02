@@ -4,7 +4,7 @@ import type { GridCursor } from "../../engine/pointer.ts";
  *
  * Faithful port of the data model in `puzzles/bridges.c`: a flat grid of `G_*`
  * flag words plus the per-cell line/possible/max counts, and an island list
- * with orthogonal-neighbour adjacency (`surrounds`). The C keeps the five count
+ * with orthogonal-neighbor adjacency (`surrounds`). The C keeps the five count
  * arrays as slices of one `wha` block; here they are five typed arrays. The
  * refcounted `solver_state` (two dsfs) is *not* part of the logical state — the
  * solver creates its own dsf on demand — so it is omitted here.
@@ -224,7 +224,7 @@ export interface BridgesUi {
   nlines: number;
   cursor: GridCursor;
   showHints: boolean;
-  /** Fork aid: auto-grey an island whose bridge-count is met (purely visual —
+  /** Fork aid: auto-gray an island whose bridge-count is met (purely visual —
    * does NOT lock its bridges, unlike a manual mark). Default on. */
   autoMark: boolean;
 }

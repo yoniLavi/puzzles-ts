@@ -13,14 +13,14 @@
  * Optional members model genuinely optional upstream capabilities (a
  * game with no solver omits `solve`, a game with no preferences omits
  * `getPrefs`, …). The midend treats an absent optional member as "this
- * game does not have that capability", which is the correct behaviour,
+ * game does not have that capability", which is the correct behavior,
  * not a stub.
  */
 
 import type { DifficultyContract } from "./difficulty.ts";
 import type { RandomState } from "./random/index.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   DrawTextOptions,
   GameStatus,
@@ -131,7 +131,7 @@ export type GamePref<Ui> =
     };
 
 /** One configurable field of a game's **custom params** — the params
- * analogue of `GamePref`, describing the "Custom type…" dialog. The
+ * analog of `GamePref`, describing the "Custom type…" dialog. The
  * engine builds the app's `ConfigDescription` from this list and parses
  * a submitted `ConfigValues` back through it; validity is decided by the
  * game's own `validateParams`, so the custom dialog rejects exactly the
@@ -193,16 +193,16 @@ export interface GameDrawing<Blitter = unknown> {
   drawUpdate(rect: Rect): void;
   clip(rect: Rect): void;
   unclip(): void;
-  drawRect(rect: Rect, colour: number): void;
-  drawLine(p1: Point, p2: Point, colour: number, thickness: number): void;
-  drawPolygon(coords: Point[], fillColour: number, outlineColour: number): void;
+  drawRect(rect: Rect, color: number): void;
+  drawLine(p1: Point, p2: Point, color: number, thickness: number): void;
+  drawPolygon(coords: Point[], fillColor: number, outlineColor: number): void;
   drawCircle(
-    centre: Point,
+    center: Point,
     radius: number,
-    fillColour: number,
-    outlineColour: number,
+    fillColor: number,
+    outlineColor: number,
   ): void;
-  drawText(origin: Point, options: DrawTextOptions, colour: number, text: string): void;
+  drawText(origin: Point, options: DrawTextOptions, color: number, text: string): void;
   blitterNew(size: Size): Blitter;
   blitterFree(blitter: Blitter): void;
   blitterSave(blitter: Blitter, origin: Point): void;
@@ -258,7 +258,7 @@ export interface Game<
   /**
    * The game wants to know that a press came from a finger or a pen, and will
    * handle the `MOD_STYLUS` bit itself. Defaults to false, and **should stay
-   * false unless the game genuinely gives touch its own behaviour**: the midend
+   * false unless the game genuinely gives touch its own behavior**: the midend
    * strips `MOD_STYLUS` before `interpretMove` for every other game, so that a
    * plain `button === LEFT_BUTTON` test cannot silently ignore every touch.
    *
@@ -281,7 +281,7 @@ export interface Game<
    * Undead's Ghost/Vampire/Zombie). It depends on `params` only — the
    * keypad does not vary with play and the app's key panel reloads only
    * on param change — so it deliberately takes neither state nor ui.
-   * Absent ⇒ no keypad (the correct behaviour for games like Flip that
+   * Absent ⇒ no keypad (the correct behavior for games like Flip that
    * upstream gave none). */
   requestKeys?(p: Params): KeyLabel[];
 
@@ -382,7 +382,7 @@ export interface Game<
    * best hint derives from the known solution (Untangle) uses it when
    * present and falls back otherwise; deductive games ignore it.
    *
-   * `ui` is the live game UI, passed so a hint can honour a player
+   * `ui` is the live game UI, passed so a hint can honor a player
    * preference that changes how moves behave or how the hint should be
    * expressed (e.g. Towers' auto-pencil mode, which decides whether the
    * hint teaches the trivial row/column note eliminations or folds them
@@ -425,7 +425,7 @@ export interface Game<
    * and the suppression is invisible until the player touches it — at which
    * point nothing happens at all, and there is no way out of hint mode. Subsets'
    * reference aid draws in the hint's overlay space; Crossing's hint takes over
-   * the board's colouring from the selected-run wash. Both shipped that bug.
+   * the board's coloring from the selected-run wash. Both shipped that bug.
    *
    * `() => true` dismisses on every UI change — the simplest rule, and enough
    * when the game has no "follow this by hand" flow to protect. Answering per
@@ -435,7 +435,7 @@ export interface Game<
    * typed in by hand without the explanation vanishing.
    *
    * A game that answers `false` anywhere its hint paints **must** make sure its
-   * cursor cue still reads against the hint colours — the hint owns the
+   * cursor cue still reads against the hint colors — the hint owns the
    * background there, so a background-only selection cue becomes invisible
    * exactly when the player needs it (see `crossing/render.ts`).
    *
@@ -480,7 +480,7 @@ export interface Game<
   statusbarText?(s: State, ui: Ui): string;
 
   /** The game's user preferences (upstream `get_prefs`/`set_prefs`),
-   * declarative: each entry maps a labelled config item to a field on
+   * declarative: each entry maps a labeled config item to a field on
    * `Ui`. The midend builds the app's preferences dialog from these,
    * reads current values via `get`, applies edits via `set` (then
    * repaints — a pref like "highlight crossed edges" changes
@@ -517,7 +517,7 @@ export interface Game<
    * background. Receives the frontend default background so a game can
    * derive its palette from the host (upstream's
    * `frontend_default_colour`). */
-  colours(defaultBackground: Colour): Colour[];
+  colors(defaultBackground: Color): Color[];
   /** Upstream's `preferred_tilesize`; the size baseline. Default 32. */
   readonly preferredTileSize?: number;
   computeSize(p: Params, tileSize: number): Size;
@@ -528,7 +528,7 @@ export interface Game<
   setTileSize?(ds: DrawState, tileSize: number): void;
   /** Build the per-game draw state (the tile cache and whatever else `redraw`
    * needs). Required, not optional: all 57 games have one, the midend has no
-   * sensible behaviour without one, and while it *was* optional every game
+   * sensible behavior without one, and while it *was* optional every game
    * received a `DrawState | null` and wrote a guard against a null the engine
    * could not produce (`audit-vestigial-contract-surface`). */
   newDrawState(s: State): DrawState;
@@ -549,18 +549,18 @@ export interface Game<
   flashLength?(a: State, b: State, dir: number, ui: Ui): number;
   timingState?(s: State, ui: Ui): boolean;
 
-  /** Serialise/parse a move for the save file. Default: the move must
+  /** Serialize/parse a move for the save file. Default: the move must
    * be structured-clone/JSON-safe and is stored as-is. */
-  serialiseMove?(m: Move): unknown;
-  deserialiseMove?(raw: unknown): Move;
+  serializeMove?(m: Move): unknown;
+  deserializeMove?(raw: unknown): Move;
 
-  /** Serialise the parts of the `Ui` that must survive a save (upstream
+  /** Serialize the parts of the `Ui` that must survive a save (upstream
    * `encode_ui`/`decode_ui`). The `Ui` is otherwise rebuilt from `newUi`
    * on load and reconstructed by replaying the move log — but a field that
    * lives *outside* the undo history and is set by `interpretMove` (which
    * replay never calls) cannot be recovered that way. Mines' persistent
    * death counter and its "was ever completed" flag are exactly that: dying
-   * then undoing removes the death from the move log, so only serialising
+   * then undoing removes the death from the move log, so only serializing
    * the `Ui` keeps the count. The midend writes `encodeUi(ui)` into the save
    * and, after replaying the move log on load, restores it via `decodeUi`.
    * Absent ⇒ the `Ui` carries no save-surviving state (every other game). */

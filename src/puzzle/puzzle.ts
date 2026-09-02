@@ -4,7 +4,7 @@ import { proxy, releaseProxy, transfer, wrap } from "comlink";
 import { assertNever } from "../engine/assert-never.ts";
 import type {
   ChangeNotification,
-  Colour,
+  Color,
   ConfigDescription,
   ConfigValues,
   FontInfo,
@@ -108,7 +108,7 @@ export class Puzzle {
     // 'Tracks' vs API 'Train Tracks'") — but that was the C midend reporting
     // upstream's own name; the TS midend answers `game.id`, which is the
     // lowercase puzzle id and never a name to show anyone. So the fallback could
-    // only ever have made things worse, and the field travelled three layers to
+    // only ever have made things worse, and the field traveled three layers to
     // be discarded. `catalog-registry.test.ts` holds the catalog and the registry
     // equal in both directions, so the `?? puzzleId` below is unreachable for any
     // puzzle the app can route to.
@@ -594,13 +594,13 @@ export class Puzzle {
     await this.workerPuzzle.redraw();
   }
 
-  public async getColourPalette(defaultBackground: Colour): Promise<Colour[]> {
-    return this.workerPuzzle.getColourPalette(defaultBackground);
+  public async getColorPalette(defaultBackground: Color): Promise<Color[]> {
+    return this.workerPuzzle.getColorPalette(defaultBackground);
   }
 
   /** The authored dark-mode value (sRGB) of each palette index whose token
    * states one. An absent index is adapted by calculation instead. */
-  public async darkPalette(defaultBackground: Colour): Promise<Record<number, Colour>> {
+  public async darkPalette(defaultBackground: Color): Promise<Record<number, Color>> {
     return this.workerPuzzle.darkPalette(defaultBackground);
   }
 

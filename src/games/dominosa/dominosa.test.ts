@@ -1,5 +1,5 @@
 /**
- * Tier-1 behavioural tests for the dominosa port + a tier-2.5 render smoke.
+ * Tier-1 behavioral tests for the dominosa port + a tier-2.5 render smoke.
  * Heavy generation/solve is seed-fixed, never clock-gated (docs/games/testing.md § "Seed-deterministic, never clock-gated").
  */
 import { describe, expect, it } from "vitest";
@@ -309,7 +309,7 @@ describe("dominosa reference aid", () => {
 
     const withRef = renderScenario({ game: dominosaGame, id, selectReference: key });
     const refRects = withRef.recording.ops.filter(
-      (o) => o.op === "rect" && o.colour === COL_REFERENCE,
+      (o) => o.op === "rect" && o.color === COL_REFERENCE,
     );
     expect(refRects.length).toBeGreaterThan(0);
     expect(withRef.recording.ops).toMatchSnapshot();
@@ -317,7 +317,7 @@ describe("dominosa reference aid", () => {
     const withoutRef = renderScenario({ game: dominosaGame, id });
     expect(
       withoutRef.recording.ops.some(
-        (o) => o.op === "rect" && o.colour === COL_REFERENCE,
+        (o) => o.op === "rect" && o.color === COL_REFERENCE,
       ),
     ).toBe(false);
   });
@@ -387,7 +387,7 @@ describe("dominosa render", () => {
       moves: moves ?? undefined,
     });
     const clash = recording.ops.some(
-      (o) => o.op === "rect" && o.colour === COL_DOMINOCLASH,
+      (o) => o.op === "rect" && o.color === COL_DOMINOCLASH,
     );
     expect(clash).toBe(true);
   });

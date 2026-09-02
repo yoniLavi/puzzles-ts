@@ -5,7 +5,7 @@
  * (Adjacent mode). Left-click / cursor select highlights a cell for a real
  * entry; right-click / select2 toggles pencil mode; a digit enters (or
  * pencil-toggles) that number; clicking a clue sign in the gap between two cells
- * greys it out ("spent"). Rule violations highlight live; Check & Save
+ * grays it out ("spent"). Rule violations highlight live; Check & Save
  * additionally flags cells that contradict the unique solution.
  */
 
@@ -71,7 +71,7 @@ import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   KeyLabel,
@@ -80,7 +80,7 @@ import type {
 } from "../../engine/types.ts";
 import { newUnequalDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   coord,
   FLASH_TIME,
@@ -357,7 +357,7 @@ function executeMove(state: UnequalState, move: UnequalMove): UnequalState {
       const all = (1 << (o + 1)) - (1 << 1); // bits 1..o set
       // **Additive**: fill only the cells that have no notes yet, never reset one
       // the player has narrowed. Resetting threw away their own deductions on any
-      // board with some pencilled cells and some blank ones (owner-reported on
+      // board with some penciled cells and some blank ones (owner-reported on
       // Salad, 2026-07-29); `adaptiveMarkAll`'s contract always said "fill every
       // *note-less* empty cell" — this is the games catching up with it.
       for (let i = 0; i < o * o; i++) {
@@ -902,7 +902,7 @@ export const unequalGame: Game<
     pencilKeepHighlightPref<UnequalUi>(),
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: UnequalParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

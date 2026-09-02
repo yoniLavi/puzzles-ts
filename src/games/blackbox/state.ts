@@ -355,7 +355,7 @@ function fireLaserInternal(
 ): number {
   const lno = grid2range(st.w, st.h, x0, y0) as number;
 
-  // Entry-cell special cases: hit prioritised over reflection.
+  // Entry-cell special cases: hit prioritized over reflection.
   if (isball(st, x0, y0, direction, LOOK_FORWARD)) return LASER_HIT;
   if (
     isball(st, x0, y0, direction, LOOK_LEFT) ||

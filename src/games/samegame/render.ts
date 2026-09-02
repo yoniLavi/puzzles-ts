@@ -1,9 +1,9 @@
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { TEN } from "../../engine/colour/colours.ts";
-import { INK, PAPER } from "../../engine/colour/palette.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { TEN } from "../../engine/color/colors.ts";
+import { INK, PAPER } from "../../engine/color/palette.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { SamegameState, SamegameUi } from "./state.ts";
 
 // --- tile-size metrics ------------------------------------------------
@@ -29,7 +29,7 @@ const TILE_JOINDIAG = 0x0800;
 const TILE_HASSEL = 0x1000;
 const TILE_IMPOSSIBLE = 0x2000;
 
-// --- colour palette indices -------------------------------------------
+// --- color palette indices -------------------------------------------
 
 const COL_BACKGROUND = 0;
 const COL_1 = 1; // COL_1..COL_9 are 1..9
@@ -37,11 +37,11 @@ const COL_IMPOSSIBLE = 10;
 const COL_SEL = 11;
 const COL_HIGHLIGHT = 12;
 const COL_LOWLIGHT = 13;
-const NCOLOURS = 14;
+const NCOLORS = 14;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = new Array<Colour>(NCOLOURS);
+  const out: Color[] = new Array<Color>(NCOLORS);
   out[COL_BACKGROUND] = background;
   for (let i = 0; i < 9; i++) out[COL_1 + i] = TEN[i];
   out[COL_IMPOSSIBLE] = INK;
@@ -69,8 +69,8 @@ export interface SamegameDrawState {
   tilegap: number;
   w: number;
   h: number;
-  /** Last-drawn background colour index (flash drives this globally). */
-  bgcolour: number;
+  /** Last-drawn background color index (flash drives this globally). */
+  bgcolor: number;
   /** Per-cell cache of the last-drawn packed tile value; `-1` forces a
    * redraw (the no-BigInt Int32Array cache pattern). */
   grid: Int32Array;
@@ -84,7 +84,7 @@ export function newDrawState(state: SamegameState): SamegameDrawState {
     tilegap: 0,
     w: state.w,
     h: state.h,
-    bgcolour: -1,
+    bgcolor: -1,
     grid: new Int32Array(state.w * state.h).fill(-1),
   };
 }
@@ -99,8 +99,8 @@ export function setTileSize(ds: SamegameDrawState, ts: number): void {
 
 /**
  * Draw one tile and the gaps to its right and below (upstream
- * `tile_redraw`). If we share a colour with our right / down / diagonal
- * neighbour the corresponding gap is filled, so a connected region paints
+ * `tile_redraw`). If we share a color with our right / down / diagonal
+ * neighbor the corresponding gap is filled, so a connected region paints
  * as a single seamless block.
  */
 function tileRedraw(
@@ -111,15 +111,15 @@ function tileRedraw(
   dright: boolean,
   dbelow: boolean,
   tile: number,
-  bgcolour: number,
+  bgcolor: number,
 ): void {
   const ts = ds.tilesize;
   const inner = ds.tileinner;
   const tgap = ds.tilegap;
   const col = tile & TILE_COLMASK;
 
-  let outerCol = bgcolour;
-  let innerCol = bgcolour;
+  let outerCol = bgcolor;
+  let innerCol = bgcolor;
   if (col) {
     if (tile & TILE_IMPOSSIBLE) {
       outerCol = col;
@@ -141,10 +141,10 @@ function tileRedraw(
   const cy = coord(y, ts);
 
   // Draw the background if any of it will be visible.
-  if (outerW !== tileW || outerH !== tileH || outerCol === bgcolour)
-    dr.drawRect({ x: cx, y: cy, w: tileW, h: tileH }, bgcolour);
+  if (outerW !== tileW || outerH !== tileH || outerCol === bgcolor)
+    dr.drawRect({ x: cx, y: cy, w: tileW, h: tileH }, bgcolor);
   // Draw the piece.
-  if (outerCol !== bgcolour)
+  if (outerCol !== bgcolor)
     dr.drawRect({ x: cx, y: cy, w: outerW, h: outerH }, outerCol);
   if (innerCol !== outerCol)
     dr.drawRect(
@@ -160,10 +160,10 @@ function tileRedraw(
   if (
     (tile & (TILE_JOINRIGHT | TILE_JOINDOWN | TILE_JOINDIAG)) ===
       (TILE_JOINRIGHT | TILE_JOINDOWN) &&
-    outerCol !== bgcolour &&
+    outerCol !== bgcolor &&
     tgap !== 0
   )
-    dr.drawRect({ x: cx + inner, y: cy + inner, w: tgap, h: tgap }, bgcolour);
+    dr.drawRect({ x: cx + inner, y: cy + inner, w: tgap, h: tgap }, bgcolor);
 
   if (tile & TILE_HASSEL) {
     const sx = cx + 2;
@@ -218,14 +218,14 @@ export function redraw(
     ds.started = true;
   }
 
-  let bgcolour: number;
+  let bgcolor: number;
   if (flashTime > 0) {
     const frame = Math.floor(flashTime / FLASH_FRAME);
-    bgcolour = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
+    bgcolor = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
   } else {
-    bgcolour = COL_BACKGROUND;
+    bgcolor = COL_BACKGROUND;
   }
-  const bgChanged = ds.bgcolour !== bgcolour;
+  const bgChanged = ds.bgcolor !== bgcolor;
 
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
@@ -255,10 +255,10 @@ export function redraw(
         tile |= TILE_HASSEL;
 
       if (ds.grid[i] !== tile || bgChanged) {
-        tileRedraw(dr, ds, x, y, dright, dbelow, tile, bgcolour);
+        tileRedraw(dr, ds, x, y, dright, dbelow, tile, bgcolor);
         ds.grid[i] = tile;
       }
     }
   }
-  ds.bgcolour = bgcolour;
+  ds.bgcolor = bgcolor;
 }

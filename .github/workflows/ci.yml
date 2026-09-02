@@ -16,7 +16,7 @@
 # (`src/puzzle/catalog-data.ts`) and the types are hand-authored. An apt install
 # of halibut and a `build:assets` step outlived it by one change, to build the
 # in-app manual; `retire-the-upstream-help-tree` deleted the manual, so the last
-# native tool and the last generated artefact went with it. There is no longer
+# native tool and the last generated artifact went with it. There is no longer
 # any tool to provision here, on any platform.
 name: CI
 

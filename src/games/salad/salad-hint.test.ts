@@ -352,7 +352,7 @@ describe("salad hint — refusals and resumption", () => {
 
 describe("salad hint — the opener never destroys the player's own notes", () => {
   it("fills only the squares that carry no mark yet", () => {
-    // Owner-reported 2026-07-29: on a board with *some* pencilled squares and
+    // Owner-reported 2026-07-29: on a board with *some* penciled squares and
     // *some* blank ones, the opener used upstream's `markAll`, which resets every
     // fillable square — throwing away deductions the player had already made.
     const state = board(LETTERS, "fill-1");

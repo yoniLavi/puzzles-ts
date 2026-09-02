@@ -1,5 +1,5 @@
 /**
- * Netslide behavioural tests.
+ * Netslide behavioral tests.
  *
  * Tier 1 (pure logic) for the codec, the slide primitives, the ring cursor, the
  * generator's structural invariants, input mapping and the win condition; tier
@@ -216,7 +216,7 @@ describe("netslide generator", () => {
         const { desc, aux } = newDesc(p, randomNew(seed));
         const solution = { ...newState(p, desc), tiles: hexGrid(aux) };
 
-        // Every tile is powered from the centre.
+        // Every tile is powered from the center.
         expect(isComplete(solution)).toBe(true);
 
         // No full crosses: a four-armed tile is identical in every orientation,
@@ -276,7 +276,7 @@ describe("netslide generator", () => {
  * Input.
  */
 
-/** The pixel at the centre of a gutter cell: `(-1, y)` is the gutter beside row
+/** The pixel at the center of a gutter cell: `(-1, y)` is the gutter beside row
  * `y` on the left, `(w, y)` the one on the right, and so on around the ring. */
 function gutterPoint(cx: number, cy: number) {
   const ts = PREFERRED_TILE_SIZE;
@@ -361,7 +361,7 @@ describe("netslide input", () => {
         CURSOR_RIGHT,
       );
       expect(ui.cursor.visible).toBe(true);
-      // Never parked beside the centre column or the centre row...
+      // Never parked beside the center column or the center row...
       expect(ui.cursor.x === s.cx && ui.cursor.y >= 0 && ui.cursor.y < s.h).toBe(false);
       expect(ui.cursor.y === s.cy && ui.cursor.x >= 0 && ui.cursor.x < s.w).toBe(false);
       // ...and never off the ring.
@@ -558,7 +558,7 @@ describe("netslide solve and save", () => {
     me.timer(10);
 
     const render = (m: typeof me) => {
-      const rec = new RecordingDrawing(netslideGame.colours([1, 1, 1]));
+      const rec = new RecordingDrawing(netslideGame.colors([1, 1, 1]));
       m.redraw(rec);
       return rec.ops;
     };
@@ -578,14 +578,14 @@ describe("netslide rendering", () => {
     });
     const { ops } = recording;
 
-    // Wires are lines. The centre tile is powered by definition, so some wire is
-    // always drawn in the powered colour — and on a scrambled board, most are
+    // Wires are lines. The center tile is powered by definition, so some wire is
+    // always drawn in the powered color — and on a scrambled board, most are
     // not.
-    expect(ops.some((o) => o.op === "line" && o.colour === COL_POWERED)).toBe(true);
-    expect(ops.some((o) => o.op === "line" && o.colour === COL_WIRE)).toBe(true);
+    expect(ops.some((o) => o.op === "line" && o.color === COL_POWERED)).toBe(true);
+    expect(ops.some((o) => o.op === "line" && o.color === COL_WIRE)).toBe(true);
 
     // A barrier-probability-1 non-wrapping board is walled all the way round.
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_BARRIER)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_BARRIER)).toBe(true);
 
     expect(ops).toMatchSnapshot();
   });
@@ -600,11 +600,11 @@ describe("netslide rendering", () => {
     const mid = renderScenario({ game: netslideGame, id, moves });
     const settled = renderScenario({ game: netslideGame, id, moves, settle: true });
 
-    // Every tile is blanked with a border-coloured (ts+1)² rect before its wires
+    // Every tile is blanked with a border-colored (ts+1)² rect before its wires
     // go on, so those rects' x-origins are exactly where the tiles are drawn.
     const ts = PREFERRED_TILE_SIZE;
     const isTileBlank = (o: DrawOp): o is Extract<DrawOp, { op: "rect" }> =>
-      o.op === "rect" && o.colour === COL_BORDER && o.w === ts + 1 && o.h === ts + 1;
+      o.op === "rect" && o.color === COL_BORDER && o.w === ts + 1 && o.h === ts + 1;
     const tileOrigins = (r: typeof mid) =>
       new Set(r.recording.ops.filter(isTileBlank).map((o) => o.x));
 
@@ -660,15 +660,15 @@ describe("netslide rendering", () => {
       const ds = netslideGame.newDrawState?.(won);
       if (!ds) throw new Error("netslide has a draw state");
       netslideGame.setTileSize?.(ds, PREFERRED_TILE_SIZE);
-      const rec = new RecordingDrawing(netslideGame.colours([1, 1, 1]));
+      const rec = new RecordingDrawing(netslideGame.colors([1, 1, 1]));
       netslideGame.redraw?.(rec, ds, null, won, 1, newUi(won), 0, flashTime);
-      return rec.ops.filter((o) => o.op === "rect" && o.colour === COL_FLASHING).length;
+      return rec.ops.filter((o) => o.op === "rect" && o.color === COL_FLASHING).length;
     };
 
     // Each tile blinks off-on-off-on over the four frames starting at its
-    // Chebyshev distance from the centre, so the celebration reads as a ripple
+    // Chebyshev distance from the center, so the celebration reads as a ripple
     // spreading outward. On this 5×5 that means: frame 0 nothing lit yet, frame
-    // 1 the centre tile alone, frame 2 the ring of 8 around it (the centre is
+    // 1 the center tile alone, frame 2 the ring of 8 around it (the center is
     // back in its off phase).
     expect(flashingTilesAt(FLASH_FRAME * 0.5)).toBe(0);
     expect(flashingTilesAt(FLASH_FRAME * 1.5)).toBe(1);

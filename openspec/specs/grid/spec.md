@@ -46,11 +46,11 @@ of every part it re-exports.
 ### Requirement: RNG-faithful random loop generation
 
 The engine SHALL provide `src/engine/loopgen.ts` exposing
-`generateLoop(grid, board, rng, bias?)` which colours every face of `grid`
+`generateLoop(grid, board, rng, bias?)` which colors every face of `grid`
 inside (white) or outside (black) so that the white/black boundary is a single
-closed loop, writing the colouring into `board`. It SHALL reproduce the upstream
+closed loop, writing the coloring into `board`. It SHALL reproduce the upstream
 `generate_loop` RNG draw order exactly — a per-face 31-bit random score, a random
-seed face, a per-iteration random candidate colour, a shuffle of the face list,
+seed face, a per-iteration random candidate color, a shuffle of the face list,
 and a final random flip pass — with candidate faces ordered by score, then their
 random score field, then face index (reproducing upstream's pointer-order tie
 break). An optional `bias` callback (the upstream contract: invoked with a face
@@ -61,8 +61,8 @@ the generated loop SHALL be reproducible.
 #### Scenario: Loop generation yields a single closed loop
 
 - **WHEN** `generateLoop` runs on a square grid with a fixed seed and no bias
-- **THEN** the resulting white/black face colouring has a boundary that is one
-  closed loop, and the same seed yields the same colouring every run
+- **THEN** the resulting white/black face coloring has a boundary that is one
+  closed loop, and the same seed yields the same coloring every run
 
 ### Requirement: Periodic tilings
 
@@ -100,7 +100,7 @@ ragged boundary "ears") and the desc `"0"` selects the current ear-trimmed one.
 - **THEN** the two grids are identical in every dot coordinate, edge and face,
   and in the same order; and no dot coordinate is fractional
 
-#### Scenario: Triangular honours its version desc
+#### Scenario: Triangular honors its version desc
 
 - **WHEN** the triangular tiling is built with no desc and again with the desc
   `"0"`
@@ -114,7 +114,7 @@ tiling's natural `tileSize` and its `xExtent`/`yExtent`, as a pure integer
 function of its arguments requiring no constructed grid, for **all 18 tilings**.
 Consumers size their drawing surface from it.
 
-For the Penrose and spectre tilings the constructed grid is re-centred within the
+For the Penrose and spectre tilings the constructed grid is re-centered within the
 reported extent; for the hat tiling it deliberately is not, so a hat grid's
 bounding box will generally not equal its reported extent.
 
@@ -146,14 +146,14 @@ that on an exact tie the lowest-index edge wins by iteration order.
 - **WHEN** `gridNearestEdge` is given a point far from every edge
 - **THEN** it returns null
 
-### Requirement: Face incentre for label placement
+### Requirement: Face incenter for label placement
 
-`grid.ts` SHALL provide `gridFindIncentre(face)` computing the centre of the
+`grid.ts` SHALL provide `gridFindIncenter(face)` computing the center of the
 largest circle inscribable in a face — the point at which a clue digit or symbol
 most easily fits. It SHALL be computed lazily on first request and cached on the
 face.
 
-The incentre is **display-only**: it SHALL NOT influence any grid description,
+The incenter is **display-only**: it SHALL NOT influence any grid description,
 generation or solving, and its exact coordinates SHALL NOT be treated as
 byte-parity surface.
 
@@ -171,14 +171,14 @@ another implementation's answer. A comparison to a peer is green whenever both
 implementations are wrong in the same way, which is exactly how the truncation
 above survived for as long as it existed.
 
-#### Scenario: The incentre lies inside its face
+#### Scenario: The incenter lies inside its face
 
-- **WHEN** `gridFindIncentre` is called on any face of any tiling, including
+- **WHEN** `gridFindIncenter` is called on any face of any tiling, including
   concave and highly non-convex faces
 - **THEN** the returned point lies strictly inside that face, admitting a circle
   of non-zero radius
 
-#### Scenario: The incentre admits nearly the largest circle the face allows
+#### Scenario: The incenter admits nearly the largest circle the face allows
 
 - **WHEN** the inscribed radius at the returned point is compared with the best
   inscribed radius over the integer points of the face, derived independently of
@@ -188,9 +188,9 @@ above survived for as long as it existed.
 - **AND** the tilings swept are enumerated from `ALL_GRID_TYPES`, so a newly
   added tiling joins the sweep without anyone remembering to add it
 
-#### Scenario: The incentre is cached
+#### Scenario: The incenter is cached
 
-- **WHEN** `gridFindIncentre` is called twice on the same face
+- **WHEN** `gridFindIncenter` is called twice on the same face
 - **THEN** the second call returns the cached result without recomputing
 
 ### Requirement: Grid parameter validation
@@ -228,7 +228,7 @@ converted to integer pixels exactly once, at the tiling-to-grid boundary, by
 `nTimesRootK`. The rational and irrational parts SHALL be scaled separately and
 then summed, so that exactly one rounding occurs.
 
-Dot coordinates SHALL be normalised so that no coordinate is negative zero,
+Dot coordinates SHALL be normalized so that no coordinate is negative zero,
 because dot deduplication is by exact coordinate equality and a negative zero
 produces a structurally correct grid that nonetheless differs from the reference.
 

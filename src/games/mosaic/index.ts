@@ -1,6 +1,6 @@
 /**
  * Mosaic — native TS port of `mosaic.c` (Fill-a-Pix): numeric clues
- * count the black cells of their 3×3 neighbourhood (itself included);
+ * count the black cells of their 3×3 neighborhood (itself included);
  * mark every cell black or white. Click toggles
  * unmarked→black→white→unmarked (right-click cycles the other way);
  * aligned drags paint the click's mark across a straight run.
@@ -23,9 +23,9 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   type MosaicDrawState,
@@ -280,7 +280,7 @@ export const mosaicGame: Game<
   textFormat,
   statusbarText,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: MosaicParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

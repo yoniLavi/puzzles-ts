@@ -13,19 +13,19 @@
  * them, rather than all at once when the move lands.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLACK, GREEN, PURPLE, TEAL } from "../../engine/colour/colours.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLACK, GREEN, PURPLE, TEAL } from "../../engine/color/colors.ts";
 import {
   DRAG_ADD,
   ERROR,
   FLASH,
   HINT_ACTION,
   INK,
-  wallColour,
-} from "../../engine/colour/palette.ts";
+  wallColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { coord as coordE } from "../../engine/geometry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { InertiaHintHighlights } from "./hint.ts";
 import {
   BLANK,
@@ -60,9 +60,9 @@ export const COL_HINT = 9;
  * aiming replaces the route arrow until the swipe is released. */
 export const COL_AIM = 10;
 /** Appended: the ring round the gem a hint is going for. The hint's two roles
- * get two colours, each with a cue of its own (docs/games/hints.md § "The element-type colour legend") — the
+ * get two colors, each with a cue of its own (docs/games/hints.md § "The element-type color legend") — the
  * direction is a blue *arrow* (`COL_HINT`, the route arrow's own shape and
- * colour: both mean "the solver says go this way"), and the subgoal gem is a
+ * color: both mean "the solver says go this way"), and the subgoal gem is a
  * violet *ring*. The app's dark-mode `paletteOverrides` for inertia touch only
  * index 6, so appending past the C enum is safe. */
 export const COL_HINT_GOAL = 11;
@@ -70,9 +70,9 @@ export const COL_HINT_GOAL = 11;
  * is also the wall bevel and the mine's glint, which do not flash. */
 export const COL_FLASH = 12;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const ret: Colour[] = new Array(13);
+  const ret: Color[] = new Array(13);
 
   ret[COL_BACKGROUND] = background;
   ret[COL_HIGHLIGHT] = highlight;
@@ -82,7 +82,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   ret[COL_DEAD_PLAYER] = ERROR;
   ret[COL_MINE] = BLACK;
   ret[COL_GEM] = TEAL;
-  ret[COL_WALL] = wallColour(background, highlight);
+  ret[COL_WALL] = wallColor(background, highlight);
   ret[COL_HINT] = HINT_ACTION;
   ret[COL_AIM] = DRAG_ADD;
   // A third hint cue, the subgoal: neither the action (the blue arrow) nor
@@ -168,7 +168,7 @@ function drawTile(dr: GameDrawing, ts: number, x: number, y: number, v: number):
   dr.drawRect({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 }, bg);
 
   if (cell === WALL) {
-    // A bevelled block: lit from the top left.
+    // A beveled block: lit from the top left.
     dr.drawPolygon(
       [
         { x: tx + ts, y: ty + ts },
@@ -239,11 +239,11 @@ function drawTile(dr: GameDrawing, ts: number, x: number, y: number, v: number):
   // The gem a hint is going for. Inertia's gems are anonymous, so the narration
   // says "the marked gem" and this is the mark it means.
   if (v & HINT_GOAL) {
-    const centre = { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) };
+    const center = { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) };
     const r = Math.floor(ts / 2) - 2;
     // Two circles: one pixel of ring is too thin to read at any tile size.
-    dr.drawCircle(centre, r, -1, COL_HINT_GOAL);
-    dr.drawCircle(centre, r - 1, -1, COL_HINT_GOAL);
+    dr.drawCircle(center, r, -1, COL_HINT_GOAL);
+    dr.drawCircle(center, r - 1, -1, COL_HINT_GOAL);
   }
 
   dr.unclip();
@@ -262,7 +262,7 @@ function drawPlayer(
   y: number,
   dead: boolean,
   arrowDir: number,
-  arrowColour: number,
+  arrowColor: number,
 ): void {
   const half = Math.floor(ts / 2);
 
@@ -329,7 +329,7 @@ function drawPlayer(
         { x: ox - t(px, 9) + t(ax * 2, 3), y: oy - t(py, 9) + t(ay * 2, 3) },
         { x: ox - t(px, 9), y: oy - t(py, 9) },
       ],
-      arrowColour,
+      arrowColor,
       COL_OUTLINE,
     );
   }

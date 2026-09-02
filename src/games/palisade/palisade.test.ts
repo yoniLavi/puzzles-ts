@@ -301,7 +301,7 @@ describe("palisade hint", () => {
     expect(forced.length).toBeGreaterThan(0);
     const ids = forced.map((e) => physicalEdge(e, P.w));
     // No physical edge appears twice (the dedup pass) and every edge is
-    // interior (its neighbour is on the grid).
+    // interior (its neighbor is on the grid).
     expect(new Set(ids).size).toBe(ids.length);
     for (const e of forced) {
       const nx = e.x + DX[e.dir];

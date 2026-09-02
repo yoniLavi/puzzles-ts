@@ -97,7 +97,7 @@ class SetStore {
     s.todo = true;
   }
 
-  /** Normalise (x, y) to the mask's bounding box, then insert; if a set with
+  /** Normalize (x, y) to the mask's bounding box, then insert; if a set with
    * the same (x, y, mask) already exists it is left untouched (upstream
    * `ss_add`, mines.c:465). */
   add(x: number, y: number, mask: number, mines: number): void {
@@ -275,7 +275,7 @@ export function minesolve(
       const y = Math.floor(i / w);
 
       if (grid[i] >= 0) {
-        // Empty square: build the set of unknown neighbours + its mine count.
+        // Empty square: build the set of unknown neighbors + its mine count.
         let mines = grid[i];
         let bit = 1;
         let val = 0;

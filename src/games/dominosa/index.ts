@@ -41,7 +41,7 @@ import {
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type {
-  Colour,
+  Color,
   Point,
   ReferenceItem,
   ReferenceModel,
@@ -49,7 +49,7 @@ import type {
 } from "../../engine/types.ts";
 import { newDominosaDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   type DominosaDrawState,
   FLASH_TIME,
@@ -219,7 +219,7 @@ function interpretMove(
 }
 
 /** Erase every barrier edge lurking around a square that has just become part
- * of a domino (clearing the reciprocal bit on the neighbour). */
+ * of a domino (clearing the reciprocal bit on the neighbor). */
 function clearEdgesAround(edges: Int32Array, d: number, w: number): void {
   if (edges[d] & EDGE_L) edges[d - 1] &= ~EDGE_R;
   if (edges[d] & EDGE_R) edges[d + 1] &= ~EDGE_L;
@@ -354,7 +354,7 @@ function findMistakes(state: DominosaState): readonly DominosaMistake[] {
 /** Highlight payload for a dominosa hint step. `targets` are the cells to act
  * on (a placement's two cells, or a barrier's two cells) → `COL_HINT`;
  * `evidence` are the squares the deduction reasons over → `COL_HINT_CELL`;
- * `edge` (barrier only) is the `[a, b]` pair whose shared edge to recolour. */
+ * `edge` (barrier only) is the `[a, b]` pair whose shared edge to recolor. */
 export interface DominosaHint {
   kind: "place" | "barrier";
   targets: number[];
@@ -747,7 +747,7 @@ export const dominosaGame: Game<
 
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: DominosaParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

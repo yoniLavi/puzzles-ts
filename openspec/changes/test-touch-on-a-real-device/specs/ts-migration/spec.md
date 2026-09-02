@@ -2,7 +2,7 @@
 
 ## ADDED Requirements
 
-### Requirement: Touch acceptance happens on a device, and a synthesised pointer is not one
+### Requirement: Touch acceptance happens on a device, and a synthesized pointer is not one
 
 Work whose correctness is *how it feels under a finger* SHALL be accepted on a
 real touch device against a deployed build. The in-process tiers and a
@@ -25,13 +25,13 @@ reads as a device pass.
 
 #### Scenario: A touch fix is accepted
 
-- **WHEN** a change repairs or alters behaviour under touch
+- **WHEN** a change repairs or alters behavior under touch
 - **THEN** its acceptance is performed on a real device against a deployed
   build, or is explicitly carried forward by a named change
 
 #### Scenario: A browser pass is not written up as a device pass
 
-- **WHEN** a change reports a Chrome pass using synthesised touch pointers
+- **WHEN** a change reports a Chrome pass using synthesized touch pointers
 - **THEN** it states what that evidence covers — the frontend's decision — and
   what it does not: hit targets, gesture timings suited to a hand, and how the
   result feels

@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Light Up port: params/desc codecs (tier 1),
+ * Behavioral tests for the Light Up port: params/desc codecs (tier 1),
  * board mechanics and input (tier 1), solver difficulty coupling (tier 1),
  * findMistakes (tier 1), and render scenarios (tier 2/2.5).
  *
@@ -77,7 +77,7 @@ function mark(x: number, y: number): LightupMove {
   return { ops: [{ kind: "impossible", x, y }] };
 }
 
-/** Pixel at the centre of cell (x, y) at the preferred tile size 32. */
+/** Pixel at the center of cell (x, y) at the preferred tile size 32. */
 function px(cell: number): number {
   return 16 + cell * 32 + 16;
 }
@@ -151,7 +151,7 @@ describe("lightup board mechanics", () => {
     setLight(state, 0, 0, true);
     expect(state.flags[idx(0, 0, state.w)] & F_LIGHT).toBeTruthy();
     expect(state.lights[idx(0, 0, state.w)]).toBe(1);
-    // Row neighbour is lit; a cell beyond a black square is not. Row 1
+    // Row neighbor is lit; a cell beyond a black square is not. Row 1
     // holds blacks at (1,1) and (2,1) on this board, so (0,1) is lit from
     // (0,0) but (3,1) is not.
     expect(state.lights[idx(1, 0, state.w)]).toBeGreaterThan(0);
@@ -461,11 +461,11 @@ describe("lightup rendering", () => {
     const ops = result.recording.ops;
     // Black squares are filled COL_BLACK.
     expect(
-      ops.some((o) => o.op === "rect" && o.colour === COL_BLACK && o.w === 32),
+      ops.some((o) => o.op === "rect" && o.color === COL_BLACK && o.w === 32),
     ).toBe(true);
     // Clue digits (the fixture has 0/1/3 clues) in COL_LIGHT.
     expect(
-      ops.some((o) => o.op === "text" && o.colour === COL_LIGHT && o.text === "3"),
+      ops.some((o) => o.op === "text" && o.color === COL_LIGHT && o.text === "3"),
     ).toBe(true);
     expect(result.recording.ops).toMatchSnapshot();
   });
@@ -479,7 +479,7 @@ describe("lightup rendering", () => {
     expect(recording.ops.some((o) => o.op === "circle" && o.fill === COL_LIGHT)).toBe(
       true,
     );
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_LIT)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_LIT)).toBe(
       true,
     );
   });
@@ -504,7 +504,7 @@ describe("lightup rendering", () => {
     });
     expect(
       recording.ops.some(
-        (o) => o.op === "text" && o.colour === COL_ERROR && o.text === "0",
+        (o) => o.op === "text" && o.color === COL_ERROR && o.text === "0",
       ),
     ).toBe(true);
   });
@@ -527,25 +527,25 @@ describe("lightup rendering", () => {
     }
     me.playMoves([light(emptyCell % st.w, Math.floor(emptyCell / st.w))]);
 
-    const palette = lightupGame.colours(DEFAULT_BACKGROUND);
+    const palette = lightupGame.colors(DEFAULT_BACKGROUND);
     me.redraw(new RecordingDrawing(palette)); // first paint: no overlay yet
     expect(me.findMistakes()).toBe(1);
     const after = new RecordingDrawing(palette);
     me.redraw(after);
     // The doubled red inset ring records as line segments.
-    expect(after.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(true);
+    expect(after.ops.some((o) => o.op === "line" && o.color === COL_ERROR)).toBe(true);
   });
 
   it("the show-lit-blobs preference suppresses blobs on lit squares", () => {
     // Mark (0,0), then light (3,0): the mark's square becomes lit.
     const blobRect = (rec: RecordingDrawing) =>
       rec.ops.some(
-        (o) => o.op === "rect" && o.colour === COL_BLACK && o.w === 8, // ts/4 at 32
+        (o) => o.op === "rect" && o.color === COL_BLACK && o.w === 8, // ts/4 at 32
       );
     const me = new Midend(lightupGame);
     expect(me.newGameFromId(EASY_ID)).toBeUndefined();
     me.playMoves([mark(0, 0), light(3, 0)]);
-    const palette = lightupGame.colours(DEFAULT_BACKGROUND);
+    const palette = lightupGame.colors(DEFAULT_BACKGROUND);
     const on = new RecordingDrawing(palette);
     me.redraw(on);
     expect(blobRect(on)).toBe(true);

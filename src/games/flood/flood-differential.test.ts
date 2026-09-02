@@ -24,7 +24,7 @@ import { type FloodParams, newDesc } from "./state.ts";
 interface Fixture {
   w: number;
   h: number;
-  colours: number;
+  colors: number;
   leniency: number;
   seed: string;
   desc: string;
@@ -35,7 +35,7 @@ const data = cReference as { fixtures: Fixture[] };
 describeDescDifferential<Fixture, FloodParams>({
   title: "Flood differential (frozen C reference)",
   fixtures: data.fixtures,
-  label: (f) => `${f.w}x${f.h}c${f.colours}m${f.leniency} seed=${f.seed}`,
-  params: (f) => ({ w: f.w, h: f.h, colours: f.colours, leniency: f.leniency }),
+  label: (f) => `${f.w}x${f.h}c${f.colors}m${f.leniency} seed=${f.seed}`,
+  params: (f) => ({ w: f.w, h: f.h, colors: f.colors, leniency: f.leniency }),
   newDesc,
 });

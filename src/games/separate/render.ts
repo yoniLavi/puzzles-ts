@@ -22,18 +22,18 @@ import {
   outOfBounds,
 } from "../../engine/border-grid.ts";
 import {
-  correctRegionColour,
+  correctRegionColor,
   mkhighlight,
-} from "../../engine/colour/colour-mkhighlight.ts";
+} from "../../engine/color/color-mkhighlight.ts";
 import {
   ERROR,
   FLASH,
   INK,
-  lineMaybeColour,
-  lineNoColour,
-} from "../../engine/colour/palette.ts";
+  lineMaybeColor,
+  lineNoColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type {
   SeparateMistake,
   SeparateParams,
@@ -50,22 +50,22 @@ const A = "A".charCodeAt(0);
 
 export const COL_BACKGROUND = 0;
 export const COL_FLASH = 1;
-export const COL_GRID = 2; // == letter colour == wall colour
+export const COL_GRID = 2; // == letter color == wall color
 export const COL_LINE_MAYBE = 3;
 export const COL_LINE_NO = 4;
 export const COL_ERROR = 5;
-export const COL_CORRECT = 6; // a completed, correct region (shared grey shade)
+export const COL_CORRECT = 6; // a completed, correct region (shared gray shade)
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_FLASH] = FLASH;
   out[COL_GRID] = INK;
   out[COL_ERROR] = ERROR;
-  out[COL_CORRECT] = correctRegionColour(background);
-  out[COL_LINE_MAYBE] = lineMaybeColour(background);
-  out[COL_LINE_NO] = lineNoColour(background);
+  out[COL_CORRECT] = correctRegionColor(background);
+  out[COL_LINE_MAYBE] = lineMaybeColor(background);
+  out[COL_LINE_NO] = lineNoColor(background);
   return out;
 }
 
@@ -119,7 +119,7 @@ export function newDrawState(state: SeparateState): SeparateDrawState {
 
 // --- tile drawing ----------------------------------------------------------
 
-function edgeColour(flags: number, dir: number): number {
+function edgeColor(flags: number, dir: number): number {
   const b = BORDER(dir);
   if (flags & BORDER_ERROR(b)) return COL_ERROR;
   if (flags & b) return COL_GRID; // wall
@@ -159,10 +159,10 @@ function drawTile(
   );
 
   // Four border edges (U, R, D, L).
-  dr.drawRect({ x: x + w, y, w: ts - w, h: w }, edgeColour(flags, 0));
-  dr.drawRect({ x: x + ts, y: y + w, w, h: ts - w }, edgeColour(flags, 1));
-  dr.drawRect({ x: x + w, y: y + ts, w: ts - w, h: w }, edgeColour(flags, 2));
-  dr.drawRect({ x, y: y + w, w, h: ts - w }, edgeColour(flags, 3));
+  dr.drawRect({ x: x + w, y, w: ts - w, h: w }, edgeColor(flags, 0));
+  dr.drawRect({ x: x + ts, y: y + w, w, h: ts - w }, edgeColor(flags, 1));
+  dr.drawRect({ x: x + w, y: y + ts, w: ts - w, h: w }, edgeColor(flags, 2));
+  dr.drawRect({ x, y: y + w, w, h: ts - w }, edgeColor(flags, 3));
 
   dr.unclip();
   dr.drawUpdate({ x, y, w: ts + w, h: ts + w });
@@ -251,7 +251,7 @@ export function redraw(
 
   // Completed-and-correct regions: a wall-bounded (black) component of exactly
   // `k` cells holding one of each letter (no duplicate) with no wall interior to
-  // it. These shade with the shared completed-region colour (Rect's convention)
+  // it. These shade with the shared completed-region color (Rect's convention)
   // to signal validity — the same local-correctness feedback Galaxies/Rect give.
   // Start each right-sized component valid, then invalidate on a duplicate letter
   // or an interior (dangling) wall.

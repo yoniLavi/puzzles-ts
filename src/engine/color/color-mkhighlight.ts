@@ -1,5 +1,5 @@
 /**
- * Shared colour-mkhighlight helper — idiomatic TS port of
+ * Shared color-mkhighlight helper — idiomatic TS port of
  * `misc.c`'s `game_mkhighlight_specific` background-adjustment
  * logic.
  *
@@ -15,57 +15,57 @@
  * equal, preventing `K / dw` from overflowing to ~2.89e14 and
  * shifting the background wildly past white into out-of-gamut pink.
  */
-import type { Colour } from "../types.ts";
-import { darkValue, token } from "./colour-token.ts";
+import type { Color } from "../types.ts";
+import { darkValue, token } from "./color-token.ts";
 
 const K = Math.sqrt(3) / 6;
 
-const colourDistance = (a: Colour, b: Colour) =>
+const colorDistance = (a: Color, b: Color) =>
   Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2);
 
-const colourMix = (a: Colour, b: Colour, t: number): Colour => [
+const colorMix = (a: Color, b: Color, t: number): Color => [
   a[0] + (b[0] - a[0]) * t,
   a[1] + (b[1] - a[1]) * t,
   a[2] + (b[2] - a[2]) * t,
 ];
 
-const black: Colour = [0, 0, 0];
-const white: Colour = [1, 1, 1];
+const black: Color = [0, 0, 0];
+const white: Color = [1, 1, 1];
 
 // Treat anything within IEEE round-trip drift of exact equality as equal,
-// preventing `K / d` from overflowing when a base colour is a hair off an
+// preventing `K / d` from overflowing when a base color is a hair off an
 // extreme (see `mkhighlightBackground`).
 const EPS = 1e-9;
 
 /**
- * Adjust a background colour away from pure white or pure black so
+ * Adjust a background color away from pure white or pure black so
  * that a highlight (pure white) or lowlight (pure black) is visibly
  * distinct. Mirrors `misc.c` lines 232-288.
  *
- * Returns the (possibly shifted) background colour. Games should
- * call this in their `colours()` method before deriving their
+ * Returns the (possibly shifted) background color. Games should
+ * call this in their `colors()` method before deriving their
  * palette overrides.
  */
-export function mkhighlightBackground(bg: Colour): Colour {
+export function mkhighlightBackground(bg: Color): Color {
   // Treat anything within IEEE round-trip drift of exact equality
   // as equal. The C path operates in float32 where a JS-side pure
   // white round-trips exactly (so its `dw == 0.0F` branch fires),
-  // but our doubles pick up ~1e-15 drift from `oklchToColour([1, 0, 0])`
+  // but our doubles pick up ~1e-15 drift from `oklchToColor([1, 0, 0])`
   // — without this epsilon, `K / dw` overflows to ~2.89e14 and shifts
   // the background wildly past white into out-of-gamut pink.
-  let out: Colour = [bg[0], bg[1], bg[2]];
+  let out: Color = [bg[0], bg[1], bg[2]];
   // First, the lowlight pass (matching upstream order so the shifted
   // background ends up identical when only one pass triggers).
-  const db = colourDistance(out, black);
+  const db = colorDistance(out, black);
   if (db < K) {
-    if (db < EPS) out = colourMix(black, white, K / Math.sqrt(3));
-    else out = colourMix(black, out, K / db);
+    if (db < EPS) out = colorMix(black, white, K / Math.sqrt(3));
+    else out = colorMix(black, out, K / db);
   }
   // Then the highlight pass.
-  const dw = colourDistance(out, white);
+  const dw = colorDistance(out, white);
   if (dw < K) {
-    if (dw < EPS) out = colourMix(white, black, K / Math.sqrt(3));
-    else out = colourMix(white, out, K / dw);
+    if (dw < EPS) out = colorMix(white, black, K / Math.sqrt(3));
+    else out = colorMix(white, out, K / dw);
   }
   return out;
 }
@@ -80,27 +80,27 @@ export function mkhighlightBackground(bg: Colour): Colour {
  * sits a hair inside K of the extreme it was shifted away from.
  *
  * Games wanting the standard bg/highlight/lowlight trio destructure
- * this instead of re-deriving the colours locally; palette index
+ * this instead of re-deriving the colors locally; palette index
  * placement stays per-game.
  */
-export function mkhighlight(defaultBackground: Colour): {
-  background: Colour;
-  highlight: Colour;
-  lowlight: Colour;
+export function mkhighlight(defaultBackground: Color): {
+  background: Color;
+  highlight: Color;
+  lowlight: Color;
 } {
   const bg = mkhighlightBackground(defaultBackground);
 
-  const dw = colourDistance(bg, white);
-  const highlight: Colour = dw < K ? [1, 1, 1] : colourMix(bg, white, K / dw);
+  const dw = colorDistance(bg, white);
+  const highlight: Color = dw < K ? [1, 1, 1] : colorMix(bg, white, K / dw);
 
-  const db = colourDistance(bg, black);
-  const lowlight: Colour = db < K ? [0, 0, 0] : colourMix(bg, black, K / db);
+  const db = colorDistance(bg, black);
+  const lowlight: Color = db < K ? [0, 0, 0] : colorMix(bg, black, K / db);
 
   return { background: bg, highlight, lowlight };
 }
 
 /**
- * **The board every game paints sits at the same tone.** A game's `colours()`
+ * **The board every game paints sits at the same tone.** A game's `colors()`
  * is handed the host background already shifted off pure white and pure black
  * by {@link mkhighlightBackground}, and this is the one place that hands it.
  *
@@ -118,24 +118,24 @@ export function mkhighlight(defaultBackground: Colour): {
  * is exactly K from the extreme, and the shift fires only strictly inside K).
  */
 export function resolvePalette(
-  game: { colours(defaultBackground: Colour): Colour[] },
-  hostBackground: Colour,
-): Colour[] {
-  return game.colours(mkhighlightBackground(hostBackground));
+  game: { colors(defaultBackground: Color): Color[] },
+  hostBackground: Color,
+): Color[] {
+  return game.colors(mkhighlightBackground(hostBackground));
 }
 
 /**
  * Faithful port of `misc.c`'s `game_mkhighlight_specific`: derive a
  * highlight (toward white) and lowlight (toward black) from an
- * **arbitrary base colour**, each a distance `K` from the base.
+ * **arbitrary base color**, each a distance `K` from the base.
  *
  * Unlike {@link mkhighlight} (which starts from the frontend background
  * and pre-shifts it away from the extremes), this takes a fixed base
- * — e.g. Unruly's near-white `COL_0` (0.95 grey) or dark `COL_1` (0.2
- * grey) — and, when that base sits within `K` of white or black,
+ * — e.g. Unruly's near-white `COL_0` (0.95 gray) or dark `COL_1` (0.2
+ * gray) — and, when that base sits within `K` of white or black,
  * **extrapolates the base itself** along the line to the extreme so the
  * highlight/lowlight stay in gamut (saturating to pure white/black).
- * The returned `base` is therefore the possibly-shifted colour the
+ * The returned `base` is therefore the possibly-shifted color the
  * caller should paint, exactly as the C writes back into the palette.
  *
  * One subtle C detail is preserved: when the highlight pass shifts the
@@ -148,18 +148,18 @@ export function resolvePalette(
  * neutral darkening of the cell background to 75%, matching upstream
  * Rectangles' `COL_CORRECT` (`0.75 × COL_BACKGROUND`). Grid-partition games
  * (Separate, Palisade) fill a completed correct region with this rather than
- * inventing a per-game colour, so "done and correct" reads the same everywhere
- * — a settled grey, not a semantic green. Pass the background the game actually
+ * inventing a per-game color, so "done and correct" reads the same everywhere
+ * — a settled gray, not a semantic green. Pass the background the game actually
  * paints its cells with (post-`mkhighlight`).
  */
-export function correctRegionColour(background: Colour): Colour {
+export function correctRegionColor(background: Color): Color {
   return [background[0] * 0.75, background[1] * 0.75, background[2] * 0.75];
 }
 
-export function mkhighlightSpecific(base: Colour): {
-  base: Colour;
-  highlight: Colour;
-  lowlight: Colour;
+export function mkhighlightSpecific(base: Color): {
+  base: Color;
+  highlight: Color;
+  lowlight: Color;
 } {
   const light = mkhighlightSpecificValue(base);
   const darkBase = darkValue(base);
@@ -168,7 +168,7 @@ export function mkhighlightSpecific(base: Colour): {
   // tiles, which must not invert) hands that decision on to the trio built
   // from it: each member's dark value is the same derivation applied to the
   // dark base. Without this the trio would be three untagged arrays, adapted
-  // by calculation, and the pieces would swap colours in dark mode — which is
+  // by calculation, and the pieces would swap colors in dark mode — which is
   // what a six-index `false` override in `augmentation.ts` used to prevent.
   const dark = mkhighlightSpecificValue(darkBase);
   return {
@@ -178,39 +178,35 @@ export function mkhighlightSpecific(base: Colour): {
   };
 }
 
-function mkhighlightSpecificValue(base: Colour): {
-  base: Colour;
-  highlight: Colour;
-  lowlight: Colour;
+function mkhighlightSpecificValue(base: Color): {
+  base: Color;
+  highlight: Color;
+  lowlight: Color;
 } {
-  let bg: Colour = [base[0], base[1], base[2]];
-  let lowlight: Colour;
-  let highlight: Colour;
+  let bg: Color = [base[0], base[1], base[2]];
+  let lowlight: Color;
+  let highlight: Color;
 
   // Lowlight pass (toward black).
-  const db = colourDistance(bg, black);
+  const db = colorDistance(bg, black);
   if (db < K) {
     lowlight = [0, 0, 0];
     bg =
-      db < EPS
-        ? colourMix(black, white, K / Math.sqrt(3))
-        : colourMix(black, bg, K / db);
+      db < EPS ? colorMix(black, white, K / Math.sqrt(3)) : colorMix(black, bg, K / db);
   } else {
-    lowlight = colourMix(bg, black, K / db);
+    lowlight = colorMix(bg, black, K / db);
   }
 
   // Highlight pass (toward white).
-  const dw = colourDistance(bg, white);
+  const dw = colorDistance(bg, white);
   if (dw < K) {
     highlight = [1, 1, 1];
     bg =
-      dw < EPS
-        ? colourMix(white, black, K / Math.sqrt(3))
-        : colourMix(white, bg, K / dw);
+      dw < EPS ? colorMix(white, black, K / Math.sqrt(3)) : colorMix(white, bg, K / dw);
     // The base moved; recompute lowlight from it, reusing the original db.
-    lowlight = colourMix(bg, black, K / db);
+    lowlight = colorMix(bg, black, K / db);
   } else {
-    highlight = colourMix(bg, white, K / dw);
+    highlight = colorMix(bg, white, K / dw);
   }
 
   return { base: bg, highlight, lowlight };

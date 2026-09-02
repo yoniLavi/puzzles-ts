@@ -20,9 +20,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: [
-      "scripts/checks/colour-inventory.test.ts",
-      "scripts/checks/colour-dark-check.test.ts",
-      "scripts/checks/colour-collide.test.ts",
+      "scripts/checks/color-inventory.test.ts",
+      "scripts/checks/color-dark-check.test.ts",
+      "scripts/checks/color-collide.test.ts",
       "scripts/checks/hint-deixis.test.ts",
     ],
     environment: "node",

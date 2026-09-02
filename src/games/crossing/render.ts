@@ -5,8 +5,8 @@
  * The board sits inside a **half-tile margin** on every side (so the pointer
  * conversion subtracts `tilesize/2`, unlike the zero-border `NARROW_BORDERS`
  * geometry most ports use), with a three-tile **number-list panel** below it.
- * Every cell is a bevelled tile: walls are drawn indented in grey, an entered
- * digit outdented in that digit's own colour, and an empty cell shows the inner
+ * Every cell is a beveled tile: walls are drawn indented in gray, an entered
+ * digit outdented in that digit's own color, and an empty cell shows the inner
  * background (or the selection highlight) plus its pencil marks. A run that is
  * full but reads as no listed number gets a thick red frame drawn around the
  * whole run, one clipped tile at a time.
@@ -20,8 +20,8 @@
  * state changes.
  *
  * Two deliberate display divergences, both recorded in the change's design.md:
- * the completion flash animates through the nine digit colours (upstream
- * declares its frame counter `bool`, so its "flash" is a single static colour
+ * the completion flash animates through the nine digit colors (upstream
+ * declares its frame counter `bool`, so its "flash" is a single static color
  * shift — clearly not the intent of `FLASH_TIME = 9 × FLASH_FRAME`), and the
  * sticky pencil mode adds a mode-indicator glyph in the top-left margin.
  */
@@ -29,13 +29,13 @@
 import {
   mkhighlight,
   mkhighlightSpecific,
-} from "../../engine/colour/colour-mkhighlight.ts";
+} from "../../engine/color/color-mkhighlight.ts";
 import {
   BLUE_BOLD,
   GREEN,
   GREEN_BOLD,
   ORANGE_BOLD,
-} from "../../engine/colour/colours.ts";
+} from "../../engine/color/colors.ts";
 import {
   ERROR,
   GRID_DARK,
@@ -43,9 +43,9 @@ import {
   INK,
   PAPER,
   PENCIL_BODY,
-  pencilColour,
-} from "../../engine/colour/palette.ts";
-import { crossingGhost } from "../../engine/colour/palette-games.ts";
+  pencilColor,
+} from "../../engine/color/palette.ts";
+import { crossingGhost } from "../../engine/color/palette-games.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
@@ -62,7 +62,7 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Colour, DrawTextOptions, Size } from "../../engine/types.ts";
+import type { Color, DrawTextOptions, Size } from "../../engine/types.ts";
 import type { CrossingMistake } from "./solver.ts";
 import {
   type CrossingMove,
@@ -105,10 +105,10 @@ export const COL_HELD = 12;
  * everywhere and always. A run washed blue and a clue written in blue are
  * saying the same thing, so the list needs no legend. Tying the hue to the
  * dimension rather than to "the run being filled" keeps it stable — otherwise
- * toggling the fill direction would swap every colour on screen.
+ * toggling the fill direction would swap every color on screen.
  *
  * Blue/amber is also the safest pair to tell apart with any common form of
- * colour blindness, which matters here because the hue *is* the information.
+ * color blindness, which matters here because the hue *is* the information.
  */
 export const COL_ACROSS = 13;
 export const COL_DOWN = 14;
@@ -122,8 +122,8 @@ export const COL_HINT_CELL = 18;
 /**
  * A placed digit sitting **on** a run highlight.
  *
- * The run colours are the same values the clue list inks its numbers in, so the
- * board and the list say "across" and "down" with one colour each rather than
+ * The run colors are the same values the clue list inks its numbers in, so the
+ * board and the list say "across" and "down" with one color each rather than
  * two shades of each. That makes the highlight a *strong* fill — light under a
  * dark scheme, dark under a light one — and `COL_GRID` is the wrong ink on it in
  * both, being exactly the opposite in each. This is `PAPER`, which adapts the
@@ -134,12 +134,12 @@ export const COL_RUNTEXT = 19;
 /**
  * **Type here** — the empty square the keyboard is pointing at.
  *
- * A colour of its own rather than `COL_HIGHLIGHT`, which is what it used to be:
+ * A color of its own rather than `COL_HIGHLIGHT`, which is what it used to be:
  * the highlight is `mkhighlight`'s near-white, and the app's dark-mode pass
  * inverts it, so the one square that should be the most inviting on the board
  * came out **pure black** — reading as a hole rather than an invitation. Anything
  * defined as "brightest" has that problem, because brightest is relative to the
- * scheme; only an authored colour is prominent in both.
+ * scheme; only an authored color is prominent in both.
  *
  * `highlightWash`, the collection's "type here" wash (Solo's family): a step
  * *down* from the board survives the dark-mode pass, where a step up inverts.
@@ -149,10 +149,10 @@ export const COL_RUNTEXT = 19;
  * an error.
  */
 export const COL_SELECTED = 20;
-export const NCOLOURS = 21;
+export const NCOLORS = 21;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = new Array(NCOLOURS);
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = new Array(NCOLORS);
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
   out[COL_OUTERBG] = defaultBackground;
   out[COL_INNERBG] = background;
@@ -166,21 +166,21 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_WALL_H] = wall.highlight;
   out[COL_WALL_L] = wall.lowlight;
 
-  // A muted blue-grey for pencil marks, the collection's convention (ABCD,
+  // A muted blue-gray for pencil marks, the collection's convention (ABCD,
   // Towers): clearly subordinate to an entered digit without vanishing.
-  out[COL_PENCIL] = pencilColour(background);
+  out[COL_PENCIL] = pencilColor(background);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_GHOST] = crossingGhost(background);
   // Not `HELD`: green is the hint, and blue would say "across" round a down
-  // clue. Held is a box, not a colour — see `COL_HELD`'s declaration.
+  // clue. Held is a box, not a color — see `COL_HELD`'s declaration.
   out[COL_HELD] = INK;
-  // **One colour per direction**, on the board and in the clue list alike.
+  // **One color per direction**, on the board and in the clue list alike.
   //
   // These four slots used to be two shades of each hue: a wash under the board's
   // run highlight, and the bold step for the list's ink. That is defensible — a
   // fill and an ink want opposite lightness — but it made the player learn the
   // link between a navy square and light-blue text, when the whole point of the
-  // hue is to say "across" in one glance. So the board takes the list's colour,
+  // hue is to say "across" in one glance. So the board takes the list's color,
   // and the digit that lands on a highlighted square switches to
   // {@link COL_RUNTEXT} rather than the highlight giving way.
   //
@@ -189,14 +189,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   // RGB — the obvious thing, and the first thing tried — does not work, because
   // the channels carry wildly different luminance: the "mirrored" pair
   // rgb(152,194,211) / rgb(211,194,152) measured L=0.789 C=0.051 against
-  // L=0.818 C=0.059, so the amber was both lighter *and* more colourful and duly
-  // looked stronger. Perceived colourfulness is what the eye compares, so it is
+  // L=0.818 C=0.059, so the amber was both lighter *and* more colorful and duly
+  // looked stronger. Perceived colorfulness is what the eye compares, so it is
   // what has to be equal — and that match is the palette's job now, pinned by
-  // `colours.test.ts`, not a discipline this file has to keep.
+  // `colors.test.ts`, not a discipline this file has to keep.
   // The board slot and the list slot hold the same value on purpose — that *is*
   // the change. They stay two indices because they are two surfaces, and a
   // future scheme wanting to separate them again should not have to re-derive
-  // which is which; `scripts/checks/colour-collide.test.ts` reports the pair, and this
+  // which is which; `scripts/checks/color-collide.test.ts` reports the pair, and this
   // is the note that says it is meant.
   out[COL_ACROSS] = BLUE_BOLD;
   out[COL_ACROSSFIT] = BLUE_BOLD;
@@ -217,7 +217,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   //
   // Green's **bold** step for the evidence outline, not its base — the base sits
   // at one lightness under both schemes and comes out a soft line on a pale
-  // board and a bright one on a dark board, which `colour-dark-check` measures.
+  // board and a bright one on a dark board, which `color-dark-check` measures.
   // The target keeps the base, as the emphatic end of its own hue.
   out[COL_HINT] = GREEN;
   out[COL_HINT_CELL] = GREEN_BOLD; // the evidence outline, per the note above
@@ -278,7 +278,7 @@ export interface CrossingHint {
   targets: { x: number; y: number }[];
   /** The candidate(s) a rule-out strikes — marked on the candidate glyph, not
    * on the whole square (striking one note is not the same action as filling
-   * the square, and one colour over both would read as one action). */
+   * the square, and one color over both would read as one action). */
   marks: { x: number; y: number; n: number }[];
   /** The listed numbers that still fit — the premise, highlighted in the panel. */
   numbers: number[];
@@ -297,7 +297,7 @@ export interface CrossingDrawState {
    * *after* the move that drew the board, so without it in the diff key the
    * overlay would never paint (docs/games/rendering.md § "Overlay sidecars"). */
   hint: OverlaySidecar;
-  /** Per-number last-drawn panel state: the colour class, plus the hint class
+  /** Per-number last-drawn panel state: the color class, plus the hint class
    * in the high nibble (-1 = never drawn). */
   numberState: Int8Array;
   /** The hint target's ring and the evidence region's outline (fork additions),
@@ -332,7 +332,7 @@ export function setTileSize(ds: CrossingDrawState, ts: number): void {
  * Crossing's squares tile exactly, so the band lies wholly inside the box
  * (`outer` 0) and a square whose overlay changes repaints itself and takes its
  * mark with it. Room comes from the bevel: a placed digit is drawn at half the
- * tile size in the centre and the pencil-mark grid is inset inside the bevel
+ * tile size in the center and the pencil-mark grid is inset inside the bevel
  * faces, so the outermost pixels are already frame rather than content.
  */
 function markBand(ds: CrossingDrawState, x: number, y: number): MarkBand {
@@ -353,7 +353,7 @@ const textOpts = (
   fontType: DrawTextOptions["fontType"] = "variable",
 ): DrawTextOptions => ({ align, baseline, fontType, size });
 
-/** Upstream `draw_tile`: a bevelled square. Passing `(low, mid, high)` draws it
+/** Upstream `draw_tile`: a beveled square. Passing `(low, mid, high)` draws it
  * outdented, `(high, mid, low)` indented. */
 function drawBevelTile(
   dr: GameDrawing,
@@ -424,7 +424,7 @@ function drawErrRectangle(
 }
 
 /** Upstream's pencil-selection cue: a small triangle in the tile's top-left.
- * Drawn dark on a hinted square, where the pale `COL_LOWLIGHT` grey reads
+ * Drawn dark on a hinted square, where the pale `COL_LOWLIGHT` gray reads
  * poorly against the hint green (the same reason the corner cue switches). */
 function drawPencilCorner(
   dr: GameDrawing,
@@ -434,21 +434,21 @@ function drawPencilCorner(
   onHint = false,
 ): void {
   const half = Math.floor(ts / 2);
-  const colour = onHint ? COL_GRID : COL_LOWLIGHT;
+  const color = onHint ? COL_GRID : COL_LOWLIGHT;
   dr.drawPolygon(
     [
       { x: tx, y: ty },
       { x: tx + half, y: ty },
       { x: tx, y: ty + half },
     ],
-    colour,
-    colour,
+    color,
+    color,
   );
 }
 
 /** The pencil-mark grid inside an empty cell (upstream's inline block).
  * `struck` is the hint's rule-out set, in the same bit-`n−1` encoding: those
- * candidates keep their normal pencil colour (they are still real notes) and
+ * candidates keep their normal pencil color (they are still real notes) and
  * gain a strikethrough — the Towers cue, and the reason the whole square is
  * *not* filled `COL_HINT` for a rule-out (it would hide the very digit being
  * crossed out). */
@@ -535,7 +535,7 @@ function drawCell(
   const selected = (flags & DF_SELECT) !== 0;
   // Both cell-level hint marks are drawn in `redraw`, which rings the target and
   // outlines the evidence on the square's own border, so a hint never takes the
-  // background from the run wash or from the pencilled candidates it is ruling
+  // background from the run wash or from the penciled candidates it is ruling
   // out. What is left here is `struck`: `hintMarkBit(n)` is bit `2 + n` and the
   // pencil grid indexes digit `n` at bit `n − 1`, so shifting by 3 re-bases one
   // onto the other.
@@ -552,11 +552,11 @@ function drawCell(
   } else if (digit) {
     // An entered digit is a raised neutral tile: the bevel is what says
     // "placed", and the digit is plain black on it. Upstream painted each digit
-    // its own saturated colour — a leftover from a scrapped drag-and-drop design
+    // its own saturated color — a leftover from a scrapped drag-and-drop design
     // that its author asked to have removed (see the module note).
     //
     // The completion flash sweeps a diagonal wave of highlight/lowlight across
-    // the board (the shape ABCD uses) in place of upstream's colour cycle.
+    // the board (the shape ABCD uses) in place of upstream's color cycle.
     const mid =
       flash < 0
         ? wash
@@ -739,17 +739,17 @@ export function numberAtPoint(
   return -1;
 }
 
-/** Draw the clue list. `colourOf` gives each clue's colour; `struckOf` marks the
+/** Draw the clue list. `colorOf` gives each clue's color; `struckOf` marks the
  * ones already written into the grid, which are crossed off the list exactly as
  * a player does on paper — the distinction between "used up" and "cannot go in
- * the run you are looking at" has to survive both being greyed. */
+ * the run you are looking at" has to survive both being grayed. */
 function drawNumbers(
   dr: GameDrawing,
   ts: number,
   w: number,
   h: number,
   numbers: readonly string[],
-  colourOf: (i: number) => number,
+  colorOf: (i: number) => number,
   struckOf: (i: number) => boolean,
   heldOf: (i: number) => boolean,
   hintOf: (i: number) => number = () => 0,
@@ -760,7 +760,7 @@ function drawNumbers(
   const pad = Math.max(2, Math.round(fontsz * 0.15));
   const markT = Math.max(2, Math.round(fontsz / 8));
   for (let i = 0; i < slots.length; i++) {
-    const colour = colourOf(i);
+    const color = colorOf(i);
     const hinted = hintOf(i);
     if (hinted) {
       // A **box**, not a patch behind the number. A clue's own ink is what says
@@ -786,18 +786,18 @@ function drawNumbers(
         hinted === 2 ? COL_HINT : COL_HINT_CELL,
       );
     }
-    dr.drawText({ x: slots[i].x, y: slots[i].y }, opts, colour, numbers[i]);
+    dr.drawText({ x: slots[i].x, y: slots[i].y }, opts, color, numbers[i]);
     if (struckOf(i)) {
       const y = Math.round(slots[i].y - fontsz * 0.3);
       dr.drawLine(
         { x: slots[i].x, y },
         { x: slots[i].x + slots[i].hit.w, y },
-        colour,
+        color,
         Math.max(1, Math.round(fontsz / 12)),
       );
     }
     if (heldOf(i)) {
-      // Held is marked by a box, not a colour: the hues are spoken for by the
+      // Held is marked by a box, not a color: the hues are spoken for by the
       // two dimensions, and a held clue still belongs to one of them.
       drawRectOutline(
         dr,
@@ -894,7 +894,7 @@ export function redraw(
   const acrossWash = new Uint8Array(w * h);
   const downWash = new Uint8Array(w * h);
   const markRun = (r: number): void => {
-    // A displayed hint owns the board's colouring: a washed square must not
+    // A displayed hint owns the board's coloring: a washed square must not
     // mean two things at once ("this run passes through your selection" /
     // "this run is the hint's evidence"), and the hint's own green is
     // deliberately nothing like either dimension hue. Dismissing the hint
@@ -905,7 +905,7 @@ export function redraw(
   };
 
   // The two runs through the selected cell: the one being filled, and the one
-  // crossing it. The crossing run is washed so that the second colour used for
+  // crossing it. The crossing run is washed so that the second color used for
   // its clues in the list below has something to point at.
   const selCell = cshow && !ui.cpencil ? ui.cursor.y * w + ui.cursor.x : -1;
   const activeRun =
@@ -999,7 +999,7 @@ export function redraw(
   }
 
   // The hint marks, after the cell loop and outside every clip, so a mark on a
-  // shared square edge is not half-covered by the neighbour drawing its own
+  // shared square edge is not half-covered by the neighbor drawing its own
   // grid outline.
   const targets: MarkCell[] = [];
   const evidence: MarkCell[] = [];
@@ -1010,23 +1010,23 @@ export function redraw(
   }
   ds.marks.paint(dr, targets, evidence, {
     band: (x, y) => markBand(ds, x, y),
-    targetColour: COL_HINT,
-    evidenceColour: COL_HINT_CELL,
+    targetColor: COL_HINT,
+    evidenceColor: COL_HINT_CELL,
   });
 
   // The number panel. Each clue reads as one of: held, already written in
   // (struck off), duplicated, fits the run being filled, fits the *crossing*
   // run instead, or cannot go here at all.
-  const colourClass = (l: number): number => {
+  const colorClass = (l: number): number => {
     if (done[l] > 1) return 2;
     if (done[l] === 1) return 1; // already on the board — struck off
     if (ui.fitHighlight && selCell >= 0) {
-      // Each of the two runs through the selected cell has its own colour, and
+      // Each of the two runs through the selected cell has its own color, and
       // the board washes that run in the matching shade. A clue that fits
       // either is one click from being placed there.
       //
       // *Which* run is asked of `runForNumber` — the same function the click
-      // itself goes through — so the colour can never name one run while a
+      // itself goes through — so the color can never name one run while a
       // click sends the clue to the other. (It could: both runs often admit a
       // clue, and the tie is settled by how much of each is already written,
       // not by the fill direction. Duplicating that rule here is exactly how
@@ -1047,7 +1047,7 @@ export function redraw(
   };
   // 0 across-fit · 1 placed (struck) · 2 duplicated · 3 held · 4 nowhere here
   // · 5 down-fit · 6 no selection.
-  const CLASS_COLOUR = [
+  const CLASS_COLOR = [
     COL_ACROSSFIT,
     COL_LOWLIGHT,
     COL_ERROR,
@@ -1059,14 +1059,14 @@ export function redraw(
 
   // The hint's half of the evidence (design D2): the numbers the deduction
   // reasons over get a pale patch behind them, and the one a whole-run
-  // placement writes in gets the solid target colour — the same two shades the
+  // placement writes in gets the solid target color — the same two shades the
   // board uses, so the words ("only one number left fits this run") point at
   // something the player can see. It rides *behind* the fit-highlight ink
   // rather than replacing it, so the two aids stay legible together and the
   // clue list keeps saying which numbers can go where.
   const hintClass = (l: number): number =>
     l === hintNumberTarget ? 2 : hintNumbers.has(l) ? 1 : 0;
-  const panelState = (l: number): number => colourClass(l) | (hintClass(l) << 4);
+  const panelState = (l: number): number => colorClass(l) | (hintClass(l) << 4);
 
   let panelStale = false;
   for (let l = 0; l < numbers.length; l++) {
@@ -1086,8 +1086,8 @@ export function redraw(
       w,
       h,
       numbers,
-      (l) => CLASS_COLOUR[colourClass(l)],
-      (l) => colourClass(l) === 1,
+      (l) => CLASS_COLOR[colorClass(l)],
+      (l) => colorClass(l) === 1,
       (l) => l === ui.heldNumber,
       hintClass,
     );

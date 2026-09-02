@@ -5,7 +5,7 @@
  * `hand-author-dark-palette` F2 is the reason it exists: a screenshot said Flood
  * had regressed, the measurement said it had improved by nearly 3×, and the
  * screenshot was about to cost a correct change. An eye comparing two dark greens
- * adjacent to seven other colours is not a reliable instrument.
+ * adjacent to seven other colors is not a reliable instrument.
  *
  * It reproduces `puzzle-view.ts`'s dark-mode pipeline exactly — including that
  * games are handed **pure white** as their background in dark mode — and reports
@@ -14,55 +14,55 @@
  * - **set separation**: the worst pairwise OKLCH distance inside each enumerated
  *   set, in light and in dark. A set's members exist to be told apart from *each
  *   other*, which is a property no background-relative rule can protect.
- * - **the background relationship**: `ΔL(colour, background)` in each scheme. A
- *   colour that is a subtle tint of the board in light mode should be one in dark
+ * - **the background relationship**: `ΔL(color, background)` in each scheme. A
+ *   color that is a subtle tint of the board in light mode should be one in dark
  *   mode too; `hand-author-dark-palette` drove violations of this from 150 to 2.
  *
  * Not part of the gate. Run it with:
  *
- *     npx vitest run -c scripts/checks/diff.vitest.config.mts colour-dark-check
+ *     npx vitest run -c scripts/checks/diff.vitest.config.mts color-dark-check
  */
 import { writeFileSync } from "node:fs";
 import { it } from "vitest";
-import { darkValue } from "../../src/engine/colour/colour-token.ts";
+import { darkValue } from "../../src/engine/color/color-token.ts";
 import { getTsGame } from "../../src/engine/registry.ts";
-import type { Colour, PuzzleId } from "../../src/engine/types.ts";
+import type { Color, PuzzleId } from "../../src/engine/types.ts";
 import { puzzleAugmentations } from "../../src/puzzle/augmentation.ts";
 import { puzzleIds } from "../../src/puzzle/catalog.ts";
 import { darkModePalette } from "../../src/puzzle/dark-palette.ts";
 import {
-  colourToOKLCH,
+  colorToOKLCH,
   isGrayChroma,
   type OKLCH,
-  oklchToColour,
+  oklchToColor,
 } from "../../src/utils/color.ts";
 import "../../src/games/index.ts";
 
-const OUT = "/tmp/colour-dark-check.md";
+const OUT = "/tmp/color-dark-check.md";
 
-/** A light host: the app's own surface lightness, as a neutral grey. */
+/** A light host: the app's own surface lightness, as a neutral gray. */
 const LIGHT_BG_L = 0.9;
 /** A dark host. `utils/color.ts` names ~0.18 as the realistic off-black. */
 const DARK_BG_L = 0.2;
 
 /** What `puzzle-view.ts` passes a game in each scheme. In **dark** mode it passes
- * pure white, precisely because games derive colours by scaling the background
+ * pure white, precisely because games derive colors by scaling the background
  * down; the whole palette is inverted afterwards. */
-const lightInput = oklchToColour([LIGHT_BG_L, 0, 0]);
-const darkInput = oklchToColour([1, 0, 0]);
+const lightInput = oklchToColor([LIGHT_BG_L, 0, 0]);
+const darkInput = oklchToColor([1, 0, 0]);
 
 /** `puzzle-view.ts`'s dark-mode pass — the real one, since
  * `refine-slide-appearance` extracted it. This file used to carry a second copy
  * under the instruction "Keep in step with it", which is how a rule ends up with
  * no owner. */
-function darkPalette(id: string, palette: Colour[]): OKLCH[] {
-  const authored: Record<number, Colour> = {};
+function darkPalette(id: string, palette: Color[]): OKLCH[] {
+  const authored: Record<number, Color> = {};
   palette.forEach((c, i) => {
     const d = c && darkValue(c);
     if (d) authored[i] = [...d];
   });
   return darkModePalette(
-    palette.map((c) => colourToOKLCH(c)),
+    palette.map((c) => colorToOKLCH(c)),
     puzzleAugmentations[id as PuzzleId]?.darkMode,
     authored,
     DARK_BG_L,
@@ -115,10 +115,10 @@ it("measures dark mode", () => {
     const game = getTsGame(id);
     if (!game) continue;
     const light = game
-      .colours(lightInput)
+      .colors(lightInput)
       .slice(lo, hi + 1)
-      .map(colourToOKLCH);
-    const dark = darkPalette(id, game.colours(darkInput)).slice(lo, hi + 1);
+      .map(colorToOKLCH);
+    const dark = darkPalette(id, game.colors(darkInput)).slice(lo, hi + 1);
     const wl = worstPair(light);
     const wd = worstPair(dark);
     lines.push(
@@ -147,9 +147,9 @@ it("measures dark mode", () => {
   for (const id of [...puzzleIds].sort()) {
     const game = getTsGame(id);
     if (!game) continue;
-    const lightPal = game.colours(lightInput);
-    const light = lightPal.map((c) => (c ? colourToOKLCH(c) : null));
-    const dark = darkPalette(id, game.colours(darkInput));
+    const lightPal = game.colors(lightInput);
+    const light = lightPal.map((c) => (c ? colorToOKLCH(c) : null));
+    const dark = darkPalette(id, game.colors(darkInput));
     const swaps = swapped(id);
     const bgIndex = puzzleAugmentations[id as PuzzleId]?.paletteBgIndex ?? 0;
     const lbg = light[bgIndex]?.[0] ?? LIGHT_BG_L;

@@ -257,7 +257,7 @@ export type SaladMove =
    *
    * Deliberately *not* upstream's resetting `markAll` below, and that is the
    * whole point: resetting every square to the full candidate set silently threw
-   * away deductions the player had already pencilled (owner-reported
+   * away deductions the player had already penciled (owner-reported
    * 2026-07-29, on the hint's opener and then on the Mark-all button itself).
    * Additive, so it is idempotent and resume-safe. */
   | { type: "pencilAll" }
@@ -266,7 +266,7 @@ export type SaladMove =
    *
    * **Legacy replay only.** No input emits it any more (the Mark-all button and
    * the `M` key go through the adaptive, additive path above), but a saved move
-   * log recorded before that change replays through here, so its behaviour must
+   * log recorded before that change replays through here, so its behavior must
    * not drift. */
   | { type: "markAll" }
   /** Upstream `S…` — the solved board, one entry per cell (0 = a hole). */

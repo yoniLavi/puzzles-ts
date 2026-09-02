@@ -9,9 +9,9 @@ The engine SHALL provide a registered `netslide` game implementing
 `Game<NetslideParams, NetslideState, NetslideMove, NetslideUi,
 NetslideDrawState>`: a `w × h` grid of Net wire tiles (a 4-bit mask of
 connections `R=1`, `U=2`, `L=4`, `D=8`) whose solved configuration is a
-spanning tree rooted at the centre tile, scrambled by toroidal row/column
-slides. The player SHALL slide rows and columns — never the centre row or the
-centre column — until every tile is connected to the centre.
+spanning tree rooted at the center tile, scrambled by toroidal row/column
+slides. The player SHALL slide rows and columns — never the center row or the
+center column — until every tile is connected to the center.
 
 Params SHALL be `w`, `h`, `wrapping`, `barrierProbability` and `movetarget`,
 encoded `{w}x{h}[w][b{prob}][m{target}]` (square shorthand `{n}`; the `b`
@@ -61,7 +61,7 @@ SHALL therefore be shared, frozen, across every state of a game.
 
 ### Requirement: Netslide generates a spanning-tree grid, then shuffles it
 
-`newDesc` SHALL construct the solved grid by growing outward from the centre
+`newDesc` SHALL construct the solved grid by growing outward from the center
 tile: it maintains a set of candidate `(x, y, direction)` extensions ordered
 lexicographically by `x`, then `y`, then `direction`, repeatedly picks one
 uniformly at random, connects it, and updates the candidate set so that no
@@ -83,7 +83,7 @@ It SHALL save the unshuffled grid as `aux`.
 #### Scenario: The solved grid is a spanning tree
 
 - **WHEN** a grid is generated
-- **THEN** every tile is reachable from the centre, no tile has four arms, and
+- **THEN** every tile is reachable from the center, no tile has four arms, and
   the wires contain no closed loop
 
 #### Scenario: Raising the barrier probability on one seed adds barriers
@@ -98,16 +98,16 @@ It SHALL save the unshuffled grid as `aux`.
 A move SHALL be a single-step toroidal slide of one row or one column in one
 direction, or the solve move. `interpretMove` SHALL map a click in the border
 gutter beside a row or column to a slide of that line — with the **right
-button reversing the direction** — and SHALL refuse a click beside the centre
-row or the centre column, which cannot be slid.
+button reversing the direction** — and SHALL refuse a click beside the center
+row or the center column, which cannot be slid.
 
 A keyboard cursor SHALL walk the ring of border arrow positions (top row
 left-to-right, right column downwards, bottom row right-to-left, left column
-upwards), skipping the un-slidable centre row and column, with select
+upwards), skipping the un-slidable center row and column, with select
 performing the slide.
 
 The game SHALL compute the set of *active* (powered) tiles as those reachable
-from the centre tile through mutually-connected wires not separated by a
+from the center tile through mutually-connected wires not separated by a
 barrier. A row or column that is mid-slide SHALL be treated as unpowered so
 the highlight does not appear to jump across a line in motion. The game is
 complete when every tile is active.
@@ -124,14 +124,14 @@ complete when every tile is active.
   button
 - **THEN** the two moves slide the same line in opposite directions
 
-#### Scenario: The centre line cannot be slid
+#### Scenario: The center line cannot be slid
 
-- **WHEN** the gutter beside the centre row or centre column is clicked
+- **WHEN** the gutter beside the center row or center column is clicked
 - **THEN** no move is produced
 
 #### Scenario: Completion is every tile powered
 
-- **WHEN** a slide leaves every tile reachable from the centre
+- **WHEN** a slide leaves every tile reachable from the center
 - **THEN** the game reports itself complete and plays a completion flash
 
 ### Requirement: Netslide solves by replaying the generator's grid
@@ -158,10 +158,10 @@ quick-save.
 
 ### Requirement: Netslide renders wires, barriers, arrows and the slide animation
 
-`redraw` SHALL draw each tile's wires — in the powered colour when the tile is
-active and the wire colour otherwise — with a box at the centre tile and at
+`redraw` SHALL draw each tile's wires — in the powered color when the tile is
+active and the wire color otherwise — with a box at the center tile and at
 every endpoint (a single-armed tile), and SHALL draw the connection stubs
-across tile borders. Barriers SHALL be drawn in the barrier colour with their
+across tile borders. Barriers SHALL be drawn in the barrier color with their
 corner flags joining them cleanly at junctions. Slide arrows SHALL be drawn in
 the border gutter beside every slidable row and column, with the cursor's
 arrow highlighted.
@@ -171,7 +171,7 @@ Geometry SHALL follow the **`NARROW_BORDERS`** variant (`BORDER =
 
 A slide SHALL be animated by offsetting the moving line, drawing the wrapping
 tile in its off-grid position for the duration; completion SHALL flash tiles
-outward from the centre.
+outward from the center.
 
 The status bar SHALL report the move count (and the target move count when
 set), whether the game is complete or was auto-solved, and how many tiles are
@@ -179,9 +179,9 @@ currently active.
 
 #### Scenario: Powered and unpowered wires differ
 
-- **WHEN** a board is drawn with some tiles connected to the centre
-- **THEN** the connected tiles' wires are drawn in the powered colour and the
-  rest in the plain wire colour
+- **WHEN** a board is drawn with some tiles connected to the center
+- **THEN** the connected tiles' wires are drawn in the powered color and the
+  rest in the plain wire color
 
 #### Scenario: A slide is animated
 
@@ -199,15 +199,15 @@ Because Netslide has no solver, the hint SHALL plan against a finished grid: the
 generator's `aux` (the unshuffled grid) when the game came with one, and
 otherwise a grid **recovered from the board itself**. The plan's goal test SHALL
 be "every tile is powered", not "the board equals the target", so a board the
-player completes by another route is recognised as finished.
+player completes by another route is recognized as finished.
 
 The hint SHALL meet the collection's hint quality bar:
 
 - It SHALL name board elements as the player can **see or count** them, never by a
   claim it has not checked. The immovable tile SHALL be called **the source** — the
   tile power flows from, drawn as the black box — and SHALL NOT be called "the
-  centre": it sits at `⌊w/2⌋, ⌊h/2⌋`, which on an even-sized board is visibly not
-  the centre. A line that cannot be slid SHALL be named by its **number** ("row 3
+  center": it sits at `⌊w/2⌋, ⌊h/2⌋`, which on an even-sized board is visibly not
+  the center. A line that cannot be slid SHALL be named by its **number** ("row 3
   never slides"), which is true at every board size.
 - It SHALL lead with what the game can prove about **this move**: a tile in the
   source's row can only be moved by sliding its column, and vice versa — the single
@@ -250,11 +250,11 @@ The hint SHALL meet the collection's hint quality bar:
 - **WHEN** a hint step says a tile belongs at a cell
 - **THEN** the finished board holds exactly that tile's wires in that cell
 
-#### Scenario: The immovable tile is never called the centre
+#### Scenario: The immovable tile is never called the center
 
 - **WHEN** any hint step is narrated, on a board of any size
 - **THEN** its explanation calls the immovable tile the source, and never the
-  centre — which on an even-sized board would name a tile the player can see it is
+  center — which on an even-sized board would name a tile the player can see it is
   not
 
 #### Scenario: A frozen line is named by its number
@@ -321,9 +321,9 @@ the finished grid from the board itself, rather than refusing.
 
 `redraw` SHALL show the current hint step: the tile being placed highlighted, the
 cell the plan is taking it to marked, and the slide arrow the player should press
-drawn in the hint colour. A destination the tile genuinely belongs in SHALL be
+drawn in the hint color. A destination the tile genuinely belongs in SHALL be
 marked distinctly from one it is only passing through, so a setting-up move never
-reads as the answer. Hint colours SHALL be appended past the upstream colour enum
+reads as the answer. Hint colors SHALL be appended past the upstream color enum
 so the game's palette stays index-for-index with it.
 
 The hint overlay SHALL be part of the render cache's diff key, so it repaints on

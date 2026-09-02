@@ -1,11 +1,11 @@
 /**
  * The dark-scheme pass, and in particular **`paletteSwaps`** — the one part of
- * the pipeline that is hand-maintained, keyed by raw colour index, and silent
+ * the pipeline that is hand-maintained, keyed by raw color index, and silent
  * when it is wrong.
  *
  * A swap exists because inverting lightness turns an emboss into an inset: a
  * game built on `game_mkhighlight` draws each surface with a lighter band on the
- * side the light comes from and a darker one opposite, and if every colour's
+ * side the light comes from and a darker one opposite, and if every color's
  * lightness inverts, so does the direction of the light. Exchanging each trio's
  * highlight and lowlight puts it back.
  *
@@ -13,23 +13,23 @@
  * the pipeline does to the numbers, a bevel highlight has to stay lighter than
  * the surface it sits on and a lowlight darker, **in both schemes**. Nothing
  * asserted it before. A swap naming the wrong index — `[16, 18]` for `[16, 17]`
- * — leaves every test green, every colour in the palette, and one game's blocks
+ * — leaves every test green, every color in the palette, and one game's blocks
  * lit from the wrong side in dark mode only.
  */
 import { describe, expect, it } from "vitest";
 import {
   mkhighlightBackground,
   resolvePalette,
-} from "../engine/colour/colour-mkhighlight.ts";
-import { darkValue } from "../engine/colour/colour-token.ts";
-import { correctRegionColour, lineNoColour } from "../engine/colour/palette.ts";
+} from "../engine/color/color-mkhighlight.ts";
+import { darkValue } from "../engine/color/color-token.ts";
+import { correctRegionColor, lineNoColor } from "../engine/color/palette.ts";
 import { getTsGame } from "../engine/registry.ts";
-import type { Colour, PuzzleId } from "../engine/types.ts";
+import type { Color, PuzzleId } from "../engine/types.ts";
 import {
-  colourToOKLCH,
+  colorToOKLCH,
   darkModeColor,
   type OKLCH,
-  oklchToColour,
+  oklchToColor,
 } from "../utils/color.ts";
 import { puzzleAugmentations } from "./augmentation.ts";
 import { darkModePalette } from "./dark-palette.ts";
@@ -38,17 +38,17 @@ import "../games/index.ts";
 /** The lightness a dark-mode board background sits at, per `utils/color.ts`. */
 const DARK_BG_L = 0.2;
 /** What `puzzle-view.ts` hands the engine in dark mode, and why: games derive
- * colours by scaling the background down, so the palette is generated light and
+ * colors by scaling the background down, so the palette is generated light and
  * inverted afterwards. (`resolvePalette` shifts it off pure white before the
  * game sees it, exactly as the midend does.) */
-const DARK_INPUT = oklchToColour([1, 0, 0]);
+const DARK_INPUT = oklchToColor([1, 0, 0]);
 
 function schemes(id: PuzzleId): { light: OKLCH[]; dark: OKLCH[] } {
   const game = getTsGame(id);
   if (!game) throw new Error(`${id} is not registered`);
   const rgb = resolvePalette(game, DARK_INPUT);
-  const light = rgb.map(colourToOKLCH);
-  const authored: Record<number, Colour> = {};
+  const light = rgb.map(colorToOKLCH);
+  const authored: Record<number, Color> = {};
   rgb.forEach((c, i) => {
     const d = c && darkValue(c);
     if (d) authored[i] = [...d];
@@ -76,7 +76,7 @@ describe("dark-mode palette swaps", () => {
   it.each(PAIRS)("%s swaps two real, different colours (%i, %i)", (id, a, b) => {
     // What can be checked without knowing a game's palette LAYOUT. An index past
     // the end of the palette leaves `undefined` in it, which reaches the canvas
-    // as a colour it silently refuses; a pair naming two equal lightnesses is a
+    // as a color it silently refuses; a pair naming two equal lightnesses is a
     // swap that does nothing, which means the emboss it was written to fix is
     // still inverted.
     const { light } = schemes(id);
@@ -115,13 +115,13 @@ describe("the ruled-out edge", () => {
     // through the same adaptation the app applies. Lives here rather than in
     // the engine's palette test because the dark half needs `utils/color.ts`,
     // which the engine may not import.
-    const L = (c: Colour) => colourToOKLCH(c)[0];
-    const dark = (c: Colour) =>
-      darkValue(c) ?? oklchToColour(darkModeColor(colourToOKLCH(c), DARK_BG_L));
-    for (const host of [[0.827, 0.827, 0.827] as Colour, DARK_INPUT]) {
+    const L = (c: Color) => colorToOKLCH(c)[0];
+    const dark = (c: Color) =>
+      darkValue(c) ?? oklchToColor(darkModeColor(colorToOKLCH(c), DARK_BG_L));
+    for (const host of [[0.827, 0.827, 0.827] as Color, DARK_INPUT]) {
       const board = mkhighlightBackground(host);
-      const ruledOut = lineNoColour(board);
-      const finished = correctRegionColour(board);
+      const ruledOut = lineNoColor(board);
+      const finished = correctRegionColor(board);
       // Light: a clear step below the board, well above ink.
       expect(L(board) - L(ruledOut)).toBeGreaterThan(0.2);
       expect(L(ruledOut)).toBeGreaterThan(0.4);

@@ -13,12 +13,12 @@
  *
  * 2. **The route is not.** `solve_game` is deterministic, so an exactly faithful
  *    port would reproduce C's route too — and the original port did, which is
- *    how it caught a bug. But a route is a *travelling-salesman tour*: there is
+ *    how it caught a bug. But a route is a *traveling-salesman tour*: there is
  *    no right answer to match, only better and worse answers, and byte-matching
  *    one pins the port to C's in-place `memmove` splicing (see the tour history
  *    in `solver.ts`). The byte-parity scope doctrine (docs/games/solver-and-generator.md § "Divergence and what it costs") puts the
  *    generator/solver/codec under fidelity and everything else under "write it
- *    well", and an approximate optimiser is squarely the latter.
+ *    well", and an approximate optimizer is squarely the latter.
  *
  *    So the route is checked on what actually matters — it is **legal** (every
  *    move is a real slide, and it never touches a mine), it **collects every

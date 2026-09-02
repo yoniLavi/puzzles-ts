@@ -30,7 +30,7 @@ The engine SHALL provide a registered `pegs` game implementing `Game<PegsParams,
 - **WHEN** the player releases (LEFT_RELEASE) on a valid jump target
 - **THEN** the jump move is executed
 - **WHEN** the player releases on an invalid target
-- **THEN** the drag is cancelled with no move
+- **THEN** the drag is canceled with no move
 
 #### Scenario: Keyboard cursor with jump-select
 
@@ -39,13 +39,13 @@ The engine SHALL provide a registered `pegs` game implementing `Game<PegsParams,
 - **WHEN** an arrow key is pressed while in jumping mode
 - **THEN** if the direction has a peg then a hole, the jump is executed and the cursor moves to the target
 - **WHEN** CURSOR_SELECT is pressed again while jumping
-- **THEN** jumping mode is cancelled
+- **THEN** jumping mode is canceled
 
 ### Requirement: Pegs derives its palette via the shared mkhighlight helper
 
-The Pegs `colours()` method SHALL derive its background, highlight, and lowlight colours from the shared `mkhighlight` helper in `src/engine/colour/colour-mkhighlight.ts`, with no local copy of the derivation.
+The Pegs `colors()` method SHALL derive its background, highlight, and lowlight colors from the shared `mkhighlight` helper in `src/engine/color/color-mkhighlight.ts`, with no local copy of the derivation.
 
-#### Scenario: Pegs colours on a near-white host
+#### Scenario: Pegs colors on a near-white host
 
 - **WHEN** the host background is near-white
 - **THEN** the shared helper shifts the background away from pure white

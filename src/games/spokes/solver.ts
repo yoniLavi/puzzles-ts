@@ -556,7 +556,7 @@ function findExhaustion(b: SpokesBoard, s: SpokesScratch): SpokesFiring | null {
 
 /** Classify why an invalid board is impossible, and name the hubs at fault, so
  * a contradiction hint can point at the break rather than assert one. */
-function analyseBreak(
+function analyzeBreak(
   b: SpokesBoard,
   s: SpokesScratch,
 ): { breakKind: SpokesBreakKind; hubs: number[] } {
@@ -618,7 +618,7 @@ function findContradiction(
         copyBoard(b, copy);
         spokesPlace(copy, i, dir, trialState);
         if (spokesSolve(copy, s, subdiff) === "invalid") {
-          const { breakKind, hubs } = analyseBreak(copy, s);
+          const { breakKind, hubs } = analyzeBreak(copy, s);
           return {
             kind: "contradiction",
             forced: [{ index: i, dir, state: forcedState }],

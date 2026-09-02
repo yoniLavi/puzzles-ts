@@ -1,12 +1,12 @@
 /**
- * Tier-1 behavioural tests for the Pattern (Nonograms) explained hint.
+ * Tier-1 behavioral tests for the Pattern (Nonograms) explained hint.
  *
  * The cross-game guarantees (a hint solves from any mid-game position; a plan
  * step is never a no-op; `hint()` is pure) live in
  * `engine/hint-resume.test.ts`, which already includes `patternGame`. This file
  * covers the Pattern-specific bar: the plan completes the board, every forced
  * cell agrees with the unique solution, the narration teaches (indication-led,
- * necessity voice), the colour-legend roles are disjoint, and refusal +
+ * necessity voice), the color-legend roles are disjoint, and refusal +
  * keep-track behave.
  */
 import { describe, expect, it } from "vitest";
@@ -182,7 +182,7 @@ describe("pattern hint — colour legend", () => {
   });
 
   it("a cited ref is an actually-placed mark of its own colour", () => {
-    // Rings must sit on decided cells (their colour is the evidence), never on
+    // Rings must sit on decided cells (their color is the evidence), never on
     // an undecided cell or a forced target.
     for (const seed of SEEDS) {
       const state = freshBoard(seed);

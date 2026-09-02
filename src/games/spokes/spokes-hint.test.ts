@@ -6,7 +6,7 @@
  *
  * Cross-game guarantees (necessity voice, overlay-reaches-cache, solve-from-any
  * position, recompute-stability, no-op-free plans) come free from Spokes'
- * enrolment in `engine/testing/hint-games.ts`; what lives here is everything
+ * enrollment in `engine/testing/hint-games.ts`; what lives here is everything
  * game-specific — that each rung fires the move the unique solution agrees with,
  * and that its narration states the premise the move actually rests on.
  */
@@ -283,7 +283,7 @@ describe("a saturated hub is one multi-leg journey, one colour", () => {
     expect(legs[0].continuesPrevious).toBeFalsy();
     for (let i = 1; i < k; i++) expect(legs[i].continuesPrevious).toBe(true);
 
-    // All legs render the same set of spokes (shared fate, shared colour) —
+    // All legs render the same set of spokes (shared fate, shared color) —
     // one highlight object across the firing.
     const first = legs[0].highlights as SpokesHint;
     for (const leg of legs) expect(leg.highlights).toBe(first);
@@ -394,10 +394,10 @@ describe("the hint frame paints the overlay", () => {
     });
 
     const ops = result.recording.ops;
-    // The forced diagonal line at hint colour — completed across the grid
+    // The forced diagonal line at hint color — completed across the grid
     // corner (design D5), so both a plus-shape half and a corner-box half
     // come out COL_HINT.
-    expect(ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(true);
+    expect(ops.some((o) => o.op === "line" && o.color === COL_HINT)).toBe(true);
     // The evidence ring behind a hub.
     expect(ops.some((o) => o.op === "circle" && o.fill === COL_HINT_CELL)).toBe(true);
     // The displayed step really carries a diagonal line spoke.
@@ -437,7 +437,7 @@ describe("the top tier's look-ahead never reaches a hint", () => {
     }
     // The control: the Tricky rung really does add firings an Easy plan lacks,
     // so the equality above is a live fact about the top tier rather than an
-    // artefact of every tier producing the same plan.
+    // artifact of every tier producing the same plan.
     expect(sawTricky, "no board where the Tricky rung adds a firing").toBe(true);
   });
 });

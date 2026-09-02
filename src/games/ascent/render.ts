@@ -8,12 +8,12 @@
  * (`animLength = 0`); the only motion is the completion flash.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLUE, YELLOW_WASH } from "../../engine/colour/colours.ts";
-import { CURSOR, ERROR, INK, playerEntryColour } from "../../engine/colour/palette.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { BLUE, YELLOW_WASH } from "../../engine/color/colors.ts";
+import { CURSOR, ERROR, INK, playerEntryColor } from "../../engine/color/palette.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Point } from "../../engine/types.ts";
+import type { Color, Point } from "../../engine/types.ts";
 import {
   type AscentMistake,
   type AscentState,
@@ -57,7 +57,7 @@ export const COL_IMMUTABLE = 5;
 export const COL_ERROR = 6;
 export const COL_CURSOR = 7;
 export const COL_ARROW = 8;
-export const NCOLOURS = 9;
+export const NCOLORS = 9;
 
 const FLASH_FRAME = 0.03;
 const FLASH_SIZE = 4;
@@ -80,7 +80,7 @@ export interface AscentDrawState {
   pxH: number;
 
   /** Committed per-cell caches (mirroring upstream `ds`). */
-  colours: Int32Array;
+  colors: Int32Array;
   oldnum: Int32Array;
   oldpath: Int32Array;
   path: Int32Array;
@@ -120,7 +120,7 @@ export function newAscentDrawState(state: AscentState): AscentDrawState {
     thickness: 2,
     pxW: 0,
     pxH: 0,
-    colours: new Int32Array(s).fill(-1),
+    colors: new Int32Array(s).fill(-1),
     oldnum: new Int32Array(s).fill(-0x7fff),
     oldpath: new Int32Array(s).fill(-1),
     path: new Int32Array(s),
@@ -138,14 +138,14 @@ export function newAscentDrawState(state: AscentState): AscentDrawState {
 //
 // Hexagon/Honeycomb are drawn as *actual* pointy-top hexagons rather than
 // upstream's offset squares. The mechanics are already hexagonal (the
-// movement table gives 6 neighbours), so this is faithful to the rules and a
+// movement table gives 6 neighbors), so this is faithful to the rules and a
 // clearer picture. With circumradius R = ts/√3 and row pitch ts·√3/2, the
 // horizontal layout is identical to the square version (so `computeOffsets`
 // and the width are unchanged) and the six movement directions land exactly
-// on the six hexagon neighbours; only the vertical pitch, the cell outline
+// on the six hexagon neighbors; only the vertical pitch, the cell outline
 // and pixel→cell hit-testing differ.
 
-/** Hexagon circumradius (centre → vertex) for a given tile width. */
+/** Hexagon circumradius (center → vertex) for a given tile width. */
 export function hexR(tileSize: number): number {
   return tileSize / Math.sqrt(3);
 }
@@ -179,8 +179,8 @@ export function ascentComputeSize(
   return { w: x, h: y };
 }
 
-/** Centre of cell `i` in pixel space, branching on grid mode. */
-function cellCentre(
+/** Center of cell `i` in pixel space, branching on grid mode. */
+function cellCenter(
   i: number,
   w: number,
   mode: number,
@@ -202,7 +202,7 @@ function cellCentre(
   };
 }
 
-/** The six pointy-top hexagon vertices around a centre. */
+/** The six pointy-top hexagon vertices around a center. */
 function hexVertices(cx: number, cy: number, tileSize: number): Point[] {
   const r = hexR(tileSize);
   const hw = tileSize / 2; // R·√3/2
@@ -245,16 +245,16 @@ export function setAscentTileSize(ds: AscentDrawState, tileSize: number): void {
   ds.pxH = size.h;
 }
 
-// --- colours -------------------------------------------------------
+// --- colors -------------------------------------------------------
 
-export function ascentColours(defaultBackground: Colour): Colour[] {
+export function ascentColors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const ret: Colour[] = new Array(NCOLOURS);
+  const ret: Color[] = new Array(NCOLORS);
   ret[COL_MIDLIGHT] = background;
   ret[COL_HIGHLIGHT] = highlight;
   ret[COL_LOWLIGHT] = lowlight;
   ret[COL_BORDER] = INK;
-  ret[COL_LINE] = playerEntryColour(background);
+  ret[COL_LINE] = playerEntryColor(background);
   ret[COL_IMMUTABLE] = BLUE;
   ret[COL_ERROR] = ERROR;
   ret[COL_CURSOR] = CURSOR;
@@ -271,12 +271,12 @@ function thickLine(
   y1: number,
   x2: number,
   y2: number,
-  colour: number,
+  color: number,
 ): void {
   dr.drawLine(
     { x: x1, y: y1 },
     { x: x2, y: y2 },
-    colour,
+    color,
     Math.max(1, Math.round(thickness)),
   );
 }
@@ -401,7 +401,7 @@ export function redrawAscent(
     dr.drawRect({ x: 0, y: 0, w: ds.pxW, h: ds.pxH }, COL_MIDLIGHT);
     dr.drawUpdate({ x: 0, y: 0, w: ds.pxW, h: ds.pxH });
     ds.started = true;
-    ds.colours.fill(-1);
+    ds.colors.fill(-1);
     ds.oldpath.fill(-1);
   }
 
@@ -435,7 +435,7 @@ export function redrawAscent(
   /* Deliberate divergence: preview the connecting line for a *typed* number
    * (keyboard entry) before it is committed with Enter, so the link shows
    * immediately. Add reciprocal segments between the preview cell and each
-   * placed consecutive neighbour it is genuinely adjacent to — only when
+   * placed consecutive neighbor it is genuinely adjacent to — only when
    * adjacent, so a real cell never flashes an error because of a preview. */
   const typingN = ui.typingCell >= 0 && ui.typingNumber > 0 ? ui.typingNumber - 1 : -1;
   if (typingN >= 0 && typingN <= state.last && positions[typingN] < 0) {
@@ -465,7 +465,7 @@ export function redrawAscent(
     if (ds.oldpath[i] !== ds.path[i]) {
       dirty = true;
       for (let i2 = Math.max(0, i - (w + 1)); i2 < w * h && i2 < i + w + 1; i2++) {
-        if (isNear(i, i2, w, state.mode)) ds.colours[i2] = -1;
+        if (isNear(i, i2, w, state.mode)) ds.colors[i2] = -1;
       }
       ds.oldpath[i] = ds.path[i];
     }
@@ -485,14 +485,14 @@ export function redrawAscent(
     }
     if ((cursorCell === i) !== (ds.oldcursor === i)) dirty = true;
 
-    if (dirty) ds.colours[i] = -1;
+    if (dirty) ds.colors[i] = -1;
   }
   ds.oldcursor = cursorCell;
 
   for (let n = 0; n <= state.last; n++) {
     if (ds.oldpositions[n] !== positions[n]) {
-      if (ds.oldpositions[n] >= 0) ds.colours[ds.oldpositions[n]] = -1;
-      if (positions[n] >= 0) ds.colours[positions[n]] = -1;
+      if (ds.oldpositions[n] >= 0) ds.colors[ds.oldpositions[n]] = -1;
+      if (positions[n] >= 0) ds.colors[positions[n]] = -1;
       ds.oldpositions[n] = positions[n];
     }
   }
@@ -501,18 +501,18 @@ export function redrawAscent(
   const hex = isHexagonal(state.mode);
   const r = hexR(tilesize);
   for (let i = 0; i < w * h; i++) {
-    const { cx, cy } = cellCentre(i, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
+    const { cx, cy } = cellCenter(i, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
     const tx1 = Math.round(cx);
     const ty1 = Math.round(cy);
-    /* Top-left of a tile-sized box centred on the cell — used for the
-     * square outline (non-hex) and for centred decorations. */
+    /* Top-left of a tile-sized box centered on the cell — used for the
+     * square outline (non-hex) and for centered decorations. */
     const tx = Math.round(cx - tilesize / 2);
     const ty = Math.round(cy - tilesize / 2);
     let sn = state.grid[i];
 
     if (sn === NUMBER_BOUND) continue;
 
-    const colour =
+    const color =
       sn === NUMBER_WALL
         ? COL_BORDER
         : flash >= sn && flash <= sn + FLASH_SIZE
@@ -529,15 +529,15 @@ export function redrawAscent(
                   ? COL_HIGHLIGHT
                   : COL_MIDLIGHT;
 
-    if (ds.colours[i] === colour) continue;
+    if (ds.colors[i] === color) continue;
 
     const fn = displayNumber(i, ui, state);
     sn = fn < 0 ? fn : fn & ~NUMBER_FLAG_MASK;
 
-    const fillColour = isNumberEdge(sn) ? COL_MIDLIGHT : colour;
+    const fillColor = isNumberEdge(sn) ? COL_MIDLIGHT : color;
     if (hex) {
       /* Clip to the hexagon's bounding box (for drawUpdate); fill only the
-       * hexagon itself so interlocking neighbours aren't erased. */
+       * hexagon itself so interlocking neighbors aren't erased. */
       const clip = {
         x: tx1 - Math.ceil(tilesize / 2) - 1,
         y: ty1 - Math.ceil(r) - 1,
@@ -547,19 +547,19 @@ export function redrawAscent(
       dr.clip(clip);
       dr.drawUpdate(clip);
       const verts = hexVertices(cx, cy, tilesize);
-      dr.drawPolygon(verts, fillColour, fillColour);
+      dr.drawPolygon(verts, fillColor, fillColor);
     } else {
       dr.clip({ x: tx, y: ty, w: tilesize + 1, h: tilesize + 1 });
       dr.drawUpdate({ x: tx, y: ty, w: tilesize + 1, h: tilesize + 1 });
       dr.drawRect(
         { x: tx + 1, y: ty + 1, w: tilesize - 1, h: tilesize - 1 },
-        fillColour,
+        fillColor,
       );
     }
-    ds.colours[i] = colour;
+    ds.colors[i] = color;
 
     if (ui.typingCell !== i) {
-      const linecolour = ds.path[i] & FLAG_USER ? COL_LINE : COL_HIGHLIGHT;
+      const linecolor = ds.path[i] & FLAG_USER ? COL_LINE : COL_HIGHLIGHT;
 
       if (!isHexagonal(state.mode)) {
         for (let dy = -1; dy <= 1; dy += 2) {
@@ -609,22 +609,22 @@ export function redrawAscent(
         dr.drawCircle(
           { x: tx1, y: ty1 },
           Math.trunc(ds.thickness / 2),
-          linecolour,
-          linecolour,
+          linecolor,
+          linecolor,
         );
       }
 
-      /* Path lines to neighbours. In hex modes draw to the shared-edge
-       * midpoint (= the midpoint of the two centres) so the line stays inside
-       * this cell; the neighbour draws its own half. Square modes draw the
+      /* Path lines to neighbors. In hex modes draw to the shared-edge
+       * midpoint (= the midpoint of the two centers) so the line stays inside
+       * this cell; the neighbor draws its own half. Square modes draw the
        * full segment and rely on the tile clip. */
       for (let dir = 0; dir < movement.dircount; dir++) {
         if (!(ds.path[i] & (1 << dir))) continue;
         const i2 = i + w * movement.dirs[dir].dy + movement.dirs[dir].dx;
-        const nc = cellCentre(i2, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
+        const nc = cellCenter(i2, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
         const ex = hex ? (cx + nc.cx) / 2 : nc.cx;
         const ey = hex ? (cy + nc.cy) / 2 : nc.cy;
-        thickLine(dr, ds.thickness, tx1, ty1, ex, ey, linecolour);
+        thickLine(dr, ds.thickness, tx1, ty1, ex, ey, linecolor);
       }
     } else if (i === ui.typingCell) {
       /* The typing cell skips the block above (it shows the typed number on a
@@ -633,7 +633,7 @@ export function redrawAscent(
       for (let dir = 0; dir < movement.dircount; dir++) {
         if (!(ds.path[i] & (1 << dir))) continue;
         const i2 = i + w * movement.dirs[dir].dy + movement.dirs[dir].dx;
-        const nc = cellCentre(i2, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
+        const nc = cellCenter(i2, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
         const ex = hex ? (cx + nc.cx) / 2 : nc.cx;
         const ey = hex ? (cy + nc.cy) / 2 : nc.cy;
         thickLine(dr, ds.thickness, tx1, ty1, ex, ey, COL_HIGHLIGHT);
@@ -660,12 +660,12 @@ export function redrawAscent(
 
     /* Light circle on possible endpoints. */
     if (state.grid[i] === NUMBER_EMPTY && (sn === 0 || sn === state.last)) {
-      dr.drawCircle({ x: tx1, y: ty1 }, Math.trunc(tilesize / 3), colour, COL_LOWLIGHT);
+      dr.drawCircle({ x: tx1, y: ty1 }, Math.trunc(tilesize / 3), color, COL_LOWLIGHT);
     }
 
     /* Background circle over lines so numbers stay readable. */
     if (sn > 0 && sn < state.last && state.path && state.path[i] & ~FLAG_COMPLETE) {
-      dr.drawCircle({ x: tx1, y: ty1 }, Math.trunc(tilesize / 3), colour, colour);
+      dr.drawCircle({ x: tx1, y: ty1 }, Math.trunc(tilesize / 3), color, color);
       if (fn > 0 && fn & NUMBER_FLAG_MOVE)
         dr.drawCircle({ x: tx1, y: ty1 }, tilesize * 0.22, COL_LOWLIGHT, COL_LOWLIGHT);
     } else if (sn > 0 && sn < state.last && fn & NUMBER_FLAG_MOVE) {

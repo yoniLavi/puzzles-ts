@@ -20,10 +20,10 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
-  COLOUR_NAMES,
-  colours,
+  COLOR_NAMES,
+  colors,
   computeSize,
   type FloodDrawState,
   newDrawState,
@@ -57,12 +57,12 @@ const DEFEAT_FLASH_FRAME = 0.1;
 
 // --- move logic -------------------------------------------------------
 
-/** Apply a single fill colour to a (cloned) grid and return the new
+/** Apply a single fill color to a (cloned) grid and return the new
  * state, advancing the move count and completion flag. */
-function applyFill(state: FloodState, colour: number): FloodState {
+function applyFill(state: FloodState, color: number): FloodState {
   const grid = Uint8Array.from(state.grid);
   const queue = new Int32Array(state.w * state.h);
-  fill(state.w, state.h, grid, FILLX, FILLY, colour, queue);
+  fill(state.w, state.h, grid, FILLX, FILLY, color, queue);
   const moves = state.moves + 1;
   return { ...state, grid, moves, completed: completed(grid) };
 }
@@ -73,7 +73,7 @@ export function executeMove(state: FloodState, move: FloodMove): FloodState {
     // (design D5). Upstream stores a path instead; our `hint()` gives the
     // step-by-step experience, so Solve just completes the board.
     if (state.completed) throw new Error("Puzzle is already solved");
-    const moves = solveMoves(state.w, state.h, state.grid, state.colours);
+    const moves = solveMoves(state.w, state.h, state.grid, state.colors);
     const grid = Uint8Array.from(state.grid);
     const queue = new Int32Array(state.w * state.h);
     for (const c of moves) fill(state.w, state.h, grid, FILLX, FILLY, c, queue);
@@ -89,14 +89,14 @@ export function executeMove(state: FloodState, move: FloodMove): FloodState {
 
   const corner = state.grid[FILLY * state.w + FILLX];
   if (
-    move.colour < 0 ||
-    move.colour >= state.colours ||
-    move.colour === corner ||
+    move.color < 0 ||
+    move.color >= state.colors ||
+    move.color === corner ||
     state.completed
   ) {
-    throw new Error(`Illegal flood fill with colour ${move.colour}`);
+    throw new Error(`Illegal flood fill with colour ${move.color}`);
   }
-  return applyFill(state, move.colour);
+  return applyFill(state, move.color);
 }
 
 // --- UI / input -------------------------------------------------------
@@ -145,7 +145,7 @@ function interpretMove(
     return null;
   }
 
-  let colour = -1;
+  let color = -1;
   if (
     tx >= 0 &&
     tx < w &&
@@ -153,11 +153,11 @@ function interpretMove(
     ty < h &&
     state.grid[FILLY * w + FILLX] !== state.grid[ty * w + tx]
   ) {
-    colour = state.grid[ty * w + tx];
+    color = state.grid[ty * w + tx];
   }
 
-  if (colour >= 0 && !state.completed) {
-    return { type: "fill", colour };
+  if (color >= 0 && !state.completed) {
+    return { type: "fill", color };
   }
   return uiUpdated ? UI_UPDATE : null;
 }
@@ -188,20 +188,20 @@ function statusbarText(state: FloodState, _ui: FloodUi): string {
  * solver-backed ports. */
 function hint(state: FloodState): HintResult<FloodMove> {
   if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-  const moves = solveMoves(state.w, state.h, state.grid, state.colours);
+  const moves = solveMoves(state.w, state.h, state.grid, state.colors);
   if (moves.length === 0) return { ok: false, error: NO_MOVE_WORTH_MAKING };
 
   const steps: HintStep<FloodMove>[] = [];
-  for (const colour of moves) {
+  for (const color of moves) {
     steps.push({
-      move: { type: "fill", colour },
-      explanation: `Fill with ${COLOUR_NAMES[colour] ?? `colour ${colour}`}`,
+      move: { type: "fill", color },
+      explanation: `Fill with ${COLOR_NAMES[color] ?? `colour ${color}`}`,
     });
   }
   return { ok: true, steps };
 }
 
-/** A player fill of the step's colour completes it (the plan advances);
+/** A player fill of the step's color completes it (the plan advances);
  * anything else deviates and drops the plan. */
 function hintKeepTrack(
   m: FloodMove,
@@ -209,7 +209,7 @@ function hintKeepTrack(
   _state: FloodState,
 ): HintTrackVerdict {
   if (m.type !== "fill" || step.move.type !== "fill") return "off";
-  return m.colour === step.move.colour ? "completed" : "off";
+  return m.color === step.move.color ? "completed" : "off";
 }
 
 // --- flash ------------------------------------------------------------
@@ -229,7 +229,7 @@ function flashLength(
   const newStatus = status(newState);
   if (oldStatus === "ongoing" && newStatus !== "ongoing") {
     if (newStatus === "solved") {
-      const frames = newState.w + newState.h + newState.colours - 2;
+      const frames = newState.w + newState.h + newState.colors - 2;
       return VICTORY_FLASH_FRAME * frames;
     }
     return DEFEAT_FLASH_FRAME * 3;
@@ -251,7 +251,7 @@ export const floodGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  // Choosing a colour is the only gesture; the secondary button has no
+  // Choosing a color is the only gesture; the secondary button has no
   // meaning, so a touch player's held press must not be promoted into one.
   ignoresSecondaryButton: true,
 
@@ -263,12 +263,12 @@ export const floodGame: Game<
   paramConfig: [
     ...dimensionParamConfig<FloodParams>(),
     {
-      kw: "colours",
-      name: "Colours",
+      kw: "colors",
+      name: "Colors",
       type: "string",
-      get: (p) => String(p.colours),
+      get: (p) => String(p.colors),
       set: (p, v) => {
-        p.colours = parseConfigInt(v);
+        p.colors = parseConfigInt(v);
       },
     },
     {
@@ -282,7 +282,7 @@ export const floodGame: Game<
     },
   ],
   describeParams: (p) => ({
-    colours: String(p.colours),
+    colors: String(p.colors),
     "extra-moves-permitted": String(p.leniency),
   }),
 
@@ -306,7 +306,7 @@ export const floodGame: Game<
   textFormat,
   statusbarText,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: FloodParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

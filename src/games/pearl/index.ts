@@ -37,12 +37,12 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import { executeMove, interpretUiDrag, updateUiDrag } from "./moves.ts";
 import {
   centeredCoord,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -266,7 +266,7 @@ function interpretMove(
       const cy = centeredCoord(gy, m);
       if (!inGrid(state, gx, gy)) return UI_UPDATE;
       if (Math.max(Math.abs(x - cx), Math.abs(y - cy)) < m.tile / 4) {
-        // Near the centre: a cell click, which does nothing (upstream TODO).
+        // Near the center: a cell click, which does nothing (upstream TODO).
         return UI_UPDATE;
       }
       const direction =
@@ -430,7 +430,7 @@ export const pearlGame: Game<
 
   prefs,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: PearlParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

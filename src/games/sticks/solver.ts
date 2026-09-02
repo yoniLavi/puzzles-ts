@@ -10,7 +10,7 @@
  * the deduction oracle — it merges adjacent same-orientation line cells
  * into segments with a dsf, then checks each clued segment's length (too
  * long, or provably unable to reach its clue) and each clued black cell's
- * connected-line / free-neighbour counts. Generation gates on this solver
+ * connected-line / free-neighbor counts. Generation gates on this solver
  * (a single implicit guess-free difficulty tier), so its exact deductive
  * power is byte-match surface: the two `x > 1` / `y > 1` reachability
  * quirks below are ported verbatim.
@@ -207,8 +207,8 @@ function segmentClues(numbers: Int16Array, dsf: Dsf, c: number, s: number): numb
 
 /**
  * A black clue's four sides, split the way {@link sticksValidate} counts them:
- * `lines` are the neighbours whose line runs into the clue (its `conn`), `open`
- * are the neighbours a line could still reach it from (the complement of
+ * `lines` are the neighbors whose line runs into the clue (its `conn`), `open`
+ * are the neighbors a line could still reach it from (the complement of
  * `other` — off-board sides and walls are in neither list, having no cell).
  */
 function blackSides(
@@ -275,7 +275,7 @@ export function sticksValidate(
 
       let error = false;
       if (grid[i] & F_BLOCK) {
-        // A black clue: `conn` lines connected, `other` neighbours that can
+        // A black clue: `conn` lines connected, `other` neighbors that can
         // never connect (walls and edges count as unconnectable).
         let conn = 0;
         let other = 0;
@@ -532,7 +532,7 @@ function reasonKey(r: SticksReason): string {
  * no cascade priming (§7.1).
  *
  * Where `sticksTry` returns at its first success, this keeps scanning: a black
- * clue that has run out of lines to give rules out *all* its open neighbours at
+ * clue that has run out of lines to give rules out *all* its open neighbors at
  * once, and telling the player that four times over is four hints for one
  * insight. Measured over 20 boards at the 7×7 preset, 21% of firings decide
  * more than one cell (mean 1.2, max 5), and the black-clue rules cluster hardest

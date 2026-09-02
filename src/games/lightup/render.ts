@@ -8,12 +8,12 @@
  * impossible-mark is a small black blob, and the completion flash is a
  * 3-phase background blink.
  *
- * The palette stays index-for-index with the upstream colour enum —
+ * The palette stays index-for-index with the upstream color enum —
  * the app's dark-mode `paletteOverrides` for lightup target indices 2
  * (black) and 3 (light).
  */
 
-import { BLACK, WHITE, YELLOW_WASH } from "../../engine/colour/colours.ts";
+import { BLACK, WHITE, YELLOW_WASH } from "../../engine/color/colors.ts";
 import {
   CURSOR,
   ERROR_WASH,
@@ -22,11 +22,11 @@ import {
   HINT_BLACKREF,
   HINT_EVIDENCE_WASH,
   HINT_WHITEREF,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { LightupHint, LightupMistake } from "./index.ts";
 import {
   F_BLACK,
@@ -52,17 +52,17 @@ export const COL_LIGHT = 3; // white: bulbs and clue digits
 export const COL_LIT = 4; // yellow lit-square fill
 export const COL_ERROR = 5;
 export const COL_CURSOR = 6;
-// Fork hint colours, appended past the C enum (lightup's dark-mode
+// Fork hint colors, appended past the C enum (lightup's dark-mode
 // paletteOverrides touch only indices 2/3, so these are safe). The digit
-// of a driving clue recolours COL_HINT (the Pattern clue↔move tie).
+// of a driving clue recolors COL_HINT (the Pattern clue↔move tie).
 export const COL_HINT = 7; // forced cell(s), blue fill (highlight only)
 export const COL_HINT_CELL = 8; // evidence: the shade on a *dark* square
-export const COL_HINT_LITREF = 9; // cited lit/bulb premise (green ring)
+export const COL_HINT_LITERF = 9; // cited lit/bulb premise (green ring)
 export const COL_HINT_DARKREF = 10; // the unlit square a deduction is about (violet ring)
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const bg = defaultBackground;
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = GRID_MID;
   // Pinned: a wall *is* black and a bulb *is* white, in either scheme.
@@ -78,9 +78,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_CURSOR] = CURSOR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE_WASH;
-  out[COL_HINT_LITREF] = HINT_BLACKREF;
+  out[COL_HINT_LITERF] = HINT_BLACKREF;
   // The unlit square is the *empty* reference cell, so it takes the white-ref
-  // premise colour (Pattern's and Singles' empty reference is the same violet).
+  // premise color (Pattern's and Singles' empty reference is the same violet).
   out[COL_HINT_DARKREF] = HINT_WHITEREF;
   return out;
 }
@@ -117,7 +117,7 @@ const DF_BLOBS_PREF = 1024;
 const DF_HINT_TARGET = 2048; // forced cell — blue COL_HINT fill
 const DF_HINT_AREA = 4096; // evidence — shade when dark, green ring when lit
 const DF_HINT_DARKREF = 8192; // the unlit square the deduction is about — violet ring
-const DF_HINT_CLUE = 16384; // driving clue — digit recoloured
+const DF_HINT_CLUE = 16384; // driving clue — digit recolored
 
 export interface LightupDrawState {
   started: boolean;
@@ -195,7 +195,7 @@ function tileRedraw(
   if (dsFlags & DF_BLACK) {
     dr.drawRect({ x: dx, y: dy, w: ts, h: ts }, COL_BLACK);
     if (dsFlags & DF_NUMBERED) {
-      // A hint's driving clue recolours its digit COL_HINT (the Pattern
+      // A hint's driving clue recolors its digit COL_HINT (the Pattern
       // clue↔move tie; the light COL_HINT_CELL would be unreadable as a
       // cue — nearly white on black). A provably-wrong clue stays red.
       const ccol =
@@ -225,7 +225,7 @@ function tileRedraw(
     // the role doing its job: the premise there is that the square is **not
     // lit**, which a teal shade preserves — it is not yellow — where a *lit*
     // evidence square's premise is the yellow itself, so that one keeps its
-    // colour and takes a green ring instead.
+    // color and takes a green ring instead.
     const fill =
       dsFlags & DF_HINT_AREA && !(dsFlags & DF_LIT)
         ? COL_HINT_CELL
@@ -243,8 +243,8 @@ function tileRedraw(
       );
     }
     if (dsFlags & DF_HINT_AREA && dsFlags & DF_LIT) {
-      drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, COL_HINT_LITREF);
-      drawRectOutline(dr, dx + 2, dy + 2, ts - 3, ts - 3, COL_HINT_LITREF);
+      drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, COL_HINT_LITERF);
+      drawRectOutline(dr, dx + 2, dy + 2, ts - 3, ts - 3, COL_HINT_LITERF);
     }
     if (dsFlags & DF_HINT_DARKREF) {
       drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, COL_HINT_DARKREF);

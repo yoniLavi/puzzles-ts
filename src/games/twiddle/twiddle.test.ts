@@ -1,4 +1,4 @@
-// Tier-1 behavioural tests for the Twiddle port: params codecs, presets,
+// Tier-1 behavioral tests for the Twiddle port: params codecs, presets,
 // generation, desc round-trip, the block-rotation transform, move
 // semantics (rotation + orientation + completion), solve, input mapping,
 // and text format.
@@ -176,7 +176,7 @@ describe("Twiddle doRotate", () => {
     const nums = Int32Array.from(Array.from({ length: 9 }, (_, i) => i + 1));
     const orient = new Uint8Array(9);
     doRotate(nums, orient, 3, 3, 3, true, 0, 0, 1);
-    expect(orient[4]).toBe(1); // centre of the 3×3 block at (0,0)
+    expect(orient[4]).toBe(1); // center of the 3×3 block at (0,0)
   });
 });
 
@@ -248,14 +248,14 @@ describe("Twiddle input", () => {
   );
 
   it("maps a centred click to the region whose centre it lands in", () => {
-    // Tile size 48, border 24. A click at the centre of the region whose
-    // top-left is (1,1): block centre is at coord(1)+ts = 24+48+24 = ... use
-    // the region-centre pixel. Region (1,1) spans tiles (1,1)-(2,2); its
-    // centre is at pixel (coord(1)+ts, coord(1)+ts) = (72+48?, ...). Simpler:
-    // click the centre of tile (1,1)'s top-left → maps via the (n-1) offset.
+    // Tile size 48, border 24. A click at the center of the region whose
+    // top-left is (1,1): block center is at coord(1)+ts = 24+48+24 = ... use
+    // the region-center pixel. Region (1,1) spans tiles (1,1)-(2,2); its
+    // center is at pixel (coord(1)+ts, coord(1)+ts) = (72+48?, ...). Simpler:
+    // click the center of tile (1,1)'s top-left → maps via the (n-1) offset.
     const ts = 48;
     const border = 24;
-    // Centre of the 2×2 region with top-left (1,1) = pixel of the shared
+    // Center of the 2×2 region with top-left (1,1) = pixel of the shared
     // corner between the four tiles = coord(2) = 2*48+24 = 120 in each axis.
     const px = 2 * ts + border;
     const { move } = interpret(s, LEFT_BUTTON, { x: px, y: px });
@@ -365,7 +365,7 @@ describe("Twiddle input", () => {
       y: 0,
       dir: 1,
     });
-    // numpad 5 → centre (w-n and h-n are 2, both even).
+    // numpad 5 → center (w-n and h-n are 2, both even).
     expect(interpret(s, MOD_NUM_KEYPAD | 0x35).move).toEqual({
       type: "rotate",
       x: 1,

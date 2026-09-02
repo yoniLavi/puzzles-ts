@@ -22,7 +22,7 @@
  * per-game `index ↔ render` pairs are `render.ts` importing nothing from
  * `index.ts` but the game's hint type). Dynamic `import()` is likewise not a
  * cycle edge: it is evaluated at call time, so it cannot close an
- * initialisation loop, which is the hazard being guarded.
+ * initialization loop, which is the hazard being guarded.
  */
 import { describe, expect, it } from "vitest";
 
@@ -150,7 +150,7 @@ describe("module layering", () => {
         if (to && to !== from) offenders.push(`${path} → ${target}`);
       }
     }
-    // Shared behaviour belongs in src/engine/, never in a sibling game.
+    // Shared behavior belongs in src/engine/, never in a sibling game.
     expect(offenders).toEqual([]);
   });
 

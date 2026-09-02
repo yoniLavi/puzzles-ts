@@ -33,7 +33,7 @@ export const DIFF_NAMES = ["Easy", "Tricky"] as const;
 export const DIFF_CHARS = "et"; // ENCODE chars, indexed by difficulty
 
 // --- link directions (upstream N,U,L,R,D) ---------------------------------
-// The solver walks orthogonal neighbours in this fixed order; the generator
+// The solver walks orthogonal neighbors in this fixed order; the generator
 // and completion check reuse dx/dy so byte-order-sensitive loops match.
 export const N = 0;
 export const U = 1;
@@ -262,7 +262,7 @@ export function newState(p: TentsParams, desc: string): TentsState {
 
 /** True iff the trees and tents in `grid` admit a perfect one-to-one
  * orthogonal-adjacency matching (upstream's `matching(m, m, …, NULL)`: left =
- * trees, right = adjacent tents; count == m ⇒ a perfect matching). Neighbour
+ * trees, right = adjacent tents; count == m ⇒ a perfect matching). Neighbor
  * order U,L,R,D exactly as upstream. */
 function tentsTreesMatch(w: number, h: number, grid: Int8Array): boolean {
   const gridids = new Int32Array(w * h);

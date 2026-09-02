@@ -43,7 +43,7 @@ import {
 /**
  * Great-hexagonal tiling: hexagons separated by squares and triangles. Six
  * face kinds per cell — the hexagon unconditionally, then four squares and two
- * triangles each gated on the cell having a neighbour to attach to. Mirrors
+ * triangles each gated on the cell having a neighbor to attach to. Mirrors
  * `grid_new_greathexagonal`.
  */
 export function gridNewGreathexagonal(width: number, height: number): Grid {
@@ -53,7 +53,7 @@ export function gridNewGreathexagonal(width: number, height: number): Grid {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      /* centre of hexagon */
+      /* center of hexagon */
       const px = (3 * a + b) * x;
       let py = (2 * a + 2 * b) * y;
       if (x % 2) py += a + b;
@@ -124,7 +124,7 @@ export function gridNewKagome(width: number, height: number): Grid {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      /* centre of hexagon */
+      /* center of hexagon */
       let px = 4 * a * x;
       const py = 2 * b * y;
       if (y % 2) px += 2 * a;
@@ -169,7 +169,7 @@ export function gridNewKagome(width: number, height: number): Grid {
 /**
  * Truncated-square tiling: octagons on a square lattice with diamonds in the
  * gaps. The diamond straddles the cell's top-left corner, so it is emitted
- * only when both neighbours exist. Mirrors `grid_new_octagonal`.
+ * only when both neighbors exist. Mirrors `grid_new_octagonal`.
  */
 export function gridNewOctagonal(width: number, height: number): Grid {
   const a = OCTAGONAL_A;
@@ -265,7 +265,7 @@ export function gridNewKites(width: number, height: number): Grid {
 
 /**
  * Floret (rosette) tiling: six congruent irregular pentagons pinwheeling about
- * each cell centre. Mirrors `grid_new_floret`.
+ * each cell center. Mirrors `grid_new_floret`.
  *
  * **Every division here truncates toward zero.** `py` is negative, so `qy`,
  * `ry` and `cy` all carry negative components, and TypeScript's `/` would
@@ -295,9 +295,9 @@ export function gridNewFloret(width: number, height: number): Grid {
   /* generate pentagonal faces */
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      /* face centre */
+      /* face center */
       const cx = xStep * x;
-      /* `|| 0` normalises negative zero: `yStep` is negative, so `yStep * 0`
+      /* `|| 0` normalizes negative zero: `yStep` is negative, so `yStep * 0`
        * is IEEE `-0` in JS where C's integer multiply gives plain 0. It
        * compares equal under `===` but not under a structural comparison
        * (`Object.is(-0, 0)` is false), which is exactly what the differential
@@ -307,7 +307,7 @@ export function gridNewFloret(width: number, height: number): Grid {
         cy -= yStagger;
       } else if (y && y === height - 1 && width > 1) {
         /* Upstream deliberately skips this rosette purely for appearance —
-         * it squares off the bottom edge (try 3x3). Not an optimisation and
+         * it squares off the bottom edge (try 3x3). Not an optimization and
          * not optional: dropping it changes the face and dot indices. */
         continue;
       }

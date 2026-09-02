@@ -6,17 +6,17 @@
  * included), the cover/lock/ball/reveal arena states with the red
  * wrong-guess cross, the firing-range tiles with their hit/reflect/number
  * text and wrong/omitted markers, the press-to-highlight laser flash, the
- * bevelled outline, and the reveal button. The engine paints no pixels of
+ * beveled outline, and the reveal button. The engine paints no pixels of
  * its own, so the first-draw branch fills the background explicitly.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { GREEN, RED } from "../../engine/colour/colours.ts";
-import { ERROR, GRID_MID, INK } from "../../engine/colour/palette.ts";
-import { blackboxCover, blackboxLock } from "../../engine/colour/palette-games.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { GREEN, RED } from "../../engine/color/colors.ts";
+import { ERROR, GRID_MID, INK } from "../../engine/color/palette.ts";
+import { blackboxCover, blackboxLock } from "../../engine/color/palette-games.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
+import type { Color, Point, Rect, Size } from "../../engine/types.ts";
 import {
   BALL_CORRECT,
   BALL_GUESS,
@@ -36,7 +36,7 @@ import {
   range2grid,
 } from "./state.ts";
 
-// --- colour indices (upstream enum, order load-bearing for dark-mode
+// --- color indices (upstream enum, order load-bearing for dark-mode
 //     palette swaps in augmentation.ts) -------------------------------
 
 export const COL_BACKGROUND = 0;
@@ -51,7 +51,7 @@ export const COL_BALL = 8;
 export const COL_WRONG = 9;
 export const COL_BUTTON = 10;
 const COL_CURSOR = 11;
-const NCOLOURS = 12;
+const NCOLORS = 12;
 
 export const PREFERRED_TILE_SIZE = 32;
 const FLASH_FRAME = 0.2;
@@ -101,9 +101,9 @@ export function computeSize(p: BlackboxParams, tilesize: number): Size {
   };
 }
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background: bg, highlight, lowlight } = mkhighlight(defaultBackground);
-  const ret: Colour[] = new Array(NCOLOURS);
+  const ret: Color[] = new Array(NCOLORS);
   ret[COL_BACKGROUND] = bg;
   ret[COL_HIGHLIGHT] = highlight;
   ret[COL_LOWLIGHT] = lowlight;
@@ -344,7 +344,7 @@ export function redraw(
     const x1 = todraw(ds, state.w + 2);
     const y1 = todraw(ds, state.h + 2);
 
-    // Bevelled outline, clockwise from the point behind (1,1).
+    // Beveled outline, clockwise from the point behind (1,1).
     dr.drawLine(pt(x0 + ts, y0 + ts), pt(x0 + ts, y0), COL_HIGHLIGHT, 1);
     dr.drawLine(pt(x0 + ts, y0), pt(x1 - ts, y0), COL_HIGHLIGHT, 1);
     dr.drawLine(pt(x1 - ts, y0), pt(x1 - ts, y0 + ts), COL_LOWLIGHT, 1);

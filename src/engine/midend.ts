@@ -14,8 +14,8 @@
  * never need to erase generics (no `any`).
  */
 
-import { resolvePalette } from "./colour/colour-mkhighlight.ts";
-import { darkValue } from "./colour/colour-token.ts";
+import { resolvePalette } from "./color/color-mkhighlight.ts";
+import { darkValue } from "./color/color-token.ts";
 import {
   type ActiveHint,
   type Game,
@@ -29,7 +29,7 @@ import { randomNew } from "./random/index.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 import type {
   ChangeNotification,
-  Colour,
+  Color,
   ConfigDescription,
   ConfigValues,
   GameStatus,
@@ -121,10 +121,10 @@ export interface EngineCore {
   /** Apply the supplied preference values (only the keys present),
    * retaining them across future new games, and repaint. */
   setPreferences(values: ConfigValues): string | undefined;
-  getColourPalette(defaultBackground: Colour): Colour[];
+  getColorPalette(defaultBackground: Color): Color[];
   /** The authored dark-mode value of each palette index that has one; see
    * the implementation on {@link Midend}. */
-  darkPalette(defaultBackground: Colour): Record<number, Colour>;
+  darkPalette(defaultBackground: Color): Record<number, Color>;
   preferredSize(): Size;
   /** Purely informational: compute the puzzle's preferred pixel size
    * for the given max, record the resolved tile/window size, and
@@ -165,7 +165,7 @@ export interface EngineCore {
   /** Drop the per-game drawstate (so any cache it holds is gone)
    * and run a redraw. The worker adapter calls this when the
    * existing palette or font is replaced — neither clears the
-   * canvas, but they invalidate the colour/font assumptions baked
+   * canvas, but they invalidate the color/font assumptions baked
    * into any cached tile. Mirrors `webapp.cpp`'s `forceRedraw()` on
    * the C path, minus the engine bg-fill step (the game's own
    * `!ds.started` branch paints its background). */
@@ -226,7 +226,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * across new games / loads because the midend recreates `ui` (via
    * `newUi`) on every `startFrom`, which would otherwise reset prefs to
    * their `newUi` defaults; `applyPrefs()` re-applies these onto each
-   * fresh ui. Never serialised (the app persists prefs per-puzzle). */
+   * fresh ui. Never serialized (the app persists prefs per-puzzle). */
   private prefValues: ConfigValues = {};
   /** The stored hint plan; `steps[index]` is the step on display.
    * Invariant: when non-null, `index < steps.length` (advancing past
@@ -391,7 +391,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // For a game that has superseded its desc, `history[0]` is the board it
     // started from — for Mines, the blank pre-click grid whose layout did not
     // exist yet. Upstream rebuilds the restart state from the (public) desc
-    // instead, "so that Mines gets slightly more sensible behaviour (restart
+    // instead, "so that Mines gets slightly more sensible behavior (restart
     // goes to _after_ the first click so you don't have to remember where you
     // clicked)" (midend.c:991). Every other game's `history[0]` *is*
     // `newState(params, desc)`, so this branch is theirs alone.
@@ -427,7 +427,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * `Game.interpretMove`'s promise true — `ds` is non-null *and* sized, so a
    * game reads `ds.tilesize` rather than guessing at the preferred size.
    * Every game that had a `ds?.tilesize || PREFERRED_TILE_SIZE` was defending
-   * against the gap between these two lines (`newDrawState` initialises
+   * against the gap between these two lines (`newDrawState` initializes
    * `tilesize: 0`), which is a gap only a fourth caller splitting them could
    * open (`audit-vestigial-contract-surface`).
    */
@@ -444,7 +444,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (this.drawState === null) return false;
     // A press from a finger or a pen arrives with MOD_STYLUS set. Strip it,
     // unless the game has asked to see it (`wantsStylusModifier`): a game with
-    // no touch-specific behaviour must not have to *remember* to strip a bit it
+    // no touch-specific behavior must not have to *remember* to strip a bit it
     // does not care about, because forgetting makes it silently ignore every
     // touch — which is exactly what nine ported games shipped doing.
     const b = this.game.wantsStylusModifier ? button : button & ~MOD_STYLUS;
@@ -603,7 +603,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * support), so the resulting midend is indistinguishable from one
    * reached by clicking. This is the engine's scriptable-replay
    * primitive: the in-process render-scenario harness uses it to reach
-   * a target frame without synthesising pointer events (no coordinate
+   * a target frame without synthesizing pointer events (no coordinate
    * math, no right-button quirks), and it is a natural entry for any
    * future move-scripting feature. It does NOT consult the active hint
    * plan (`hintKeepTrack`) — replayed moves are setup, not player
@@ -691,7 +691,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   /** Spotlight a reference item (or clear it when `key` is null) by
    * mutating the live `Ui` through the game's hook, then repaint — the
    * same in-place path a `UI_UPDATE` takes: no move, no history entry,
-   * no serialisation. A no-op (or an absent hook) skips the repaint. */
+   * no serialization. A no-op (or an absent hook) skips the repaint. */
   selectReference(key: string | null): void {
     if (!this.game.selectReference) return;
     if (this.game.selectReference(this.ui, key)) {
@@ -1115,11 +1115,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
   }
 
-  /** The game's palette against `defaultBackground` — the host's colour, which
+  /** The game's palette against `defaultBackground` — the host's color, which
    * `resolvePalette` shifts off the extremes before the game sees it, so every
-   * game's board sits at one tone whether or not its own `colours()` calls
+   * game's board sits at one tone whether or not its own `colors()` calls
    * `mkhighlight`. */
-  getColourPalette(defaultBackground: Colour): Colour[] {
+  getColorPalette(defaultBackground: Color): Color[] {
     return resolvePalette(this.game, defaultBackground);
   }
 
@@ -1128,24 +1128,24 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * one, as sRGB in the same unit the token table is written in.
    *
    * A token carries its dark value as a property of the array (see
-   * `colour-token.ts`), which cannot survive transfer to the frontend —
+   * `color-token.ts`), which cannot survive transfer to the frontend —
    * structured clone keeps an array's indices and drops its other own
    * properties. So it is read off here, engine-side, and sent as plain
    * per-index data.
    *
    * An index that is **absent** has no authored dark value and is adapted by
-   * `utils/color.ts`'s calculation, which is what every colour did before
+   * `utils/color.ts`'s calculation, which is what every color did before
    * tokens existed. That is what lets a scheme be authored token by token.
    *
    * A per-puzzle entry in `augmentation.ts` still wins over this: it is the more
    * specific statement, and a game that wants its black *lifted* rather than
    * preserved (Light Up's wall) says so there.
    */
-  darkPalette(defaultBackground: Colour): Record<number, Colour> {
-    const out: Record<number, Colour> = {};
-    resolvePalette(this.game, defaultBackground).forEach((colour, i) => {
-      const dark = colour && darkValue(colour);
-      if (dark) out[i] = [...dark] as Colour;
+  darkPalette(defaultBackground: Color): Record<number, Color> {
+    const out: Record<number, Color> = {};
+    resolvePalette(this.game, defaultBackground).forEach((color, i) => {
+      const dark = color && darkValue(color);
+      if (dark) out[i] = [...dark] as Color;
     });
     return out;
   }
@@ -1228,7 +1228,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   // --- save / load -------------------------------------------------
 
   saveGame(): Uint8Array<ArrayBuffer> {
-    const serMove = this.game.serialiseMove ?? ((m: Move) => m as unknown);
+    const serMove = this.game.serializeMove ?? ((m: Move) => m as unknown);
     const envelope: SaveEnvelope = {
       v: 2,
       puzzleId: this.game.id,
@@ -1274,7 +1274,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.descSuperseded = true;
       this.emitIdChange();
     }
-    const deMove = this.game.deserialiseMove ?? ((raw: unknown) => raw as Move);
+    const deMove = this.game.deserializeMove ?? ((raw: unknown) => raw as Move);
     try {
       for (const raw of env.moves) {
         this.applyMove(deMove(raw));
@@ -1402,7 +1402,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   /** Drop the per-game drawstate (so any cache it holds is gone) and
    * run a redraw. The worker adapter calls this when an
    * already-installed palette or font is replaced — neither clears
-   * the canvas, but the colour/font choices baked into cached tiles
+   * the canvas, but the color/font choices baked into cached tiles
    * are now stale. The game's `!ds.started` branch will repaint
    * from scratch over the existing canvas content (including its
    * own background paint). */

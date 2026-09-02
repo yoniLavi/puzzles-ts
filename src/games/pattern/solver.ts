@@ -1,5 +1,5 @@
 /**
- * Pattern line-solver — faithful behavioural port of `do_recurse` /
+ * Pattern line-solver — faithful behavioral port of `do_recurse` /
  * `do_row` / `solve_puzzle` in pattern.c. It only ever reasons about a
  * single row or column at a time (upstream's documented limitation), so it
  * cannot crack puzzles needing cross-line deductions; the generator only
@@ -32,9 +32,9 @@ const S_STILL_UNKNOWN = 3;
  * Enumerate every legal placement of the remaining runs (`data` from
  * `ndone` on) into the tail of the line starting at `lowest`, OR-ing the
  * cells common to all legal placements into `deduced`. The `minpos/maxpos`
- * arrays memoise, per run index, the window of start positions already
+ * arrays memoize, per run index, the window of start positions already
  * explored (`*_done`) and those leading to a legal completion (`*_ok`), so
- * a tail that has already been fully analysed short-circuits. Returns
+ * a tail that has already been fully analyzed short-circuits. Returns
  * whether a legal completion exists from this `(ndone, lowest)`.
  */
 function doRecurse(
@@ -359,8 +359,8 @@ export function lineHasError(state: PatternState, line: number): boolean {
 // =====================================================================
 //
 // The hint teaches *why* a cell is forced, so it decomposes each single-line
-// deduction into the recognisable named techniques (overlap → black,
-// unreachable gap → white), each firing forcing a single-colour contiguous
+// deduction into the recognizable named techniques (overlap → black,
+// unreachable gap → white), each firing forcing a single-color contiguous
 // segment. The two techniques are computed from the line's leftmost and
 // rightmost feasible run packings (respecting the current marks): a cell in a
 // run's leftmost∩rightmost span is black in every placement (overlap), and a
@@ -371,7 +371,7 @@ export function lineHasError(state: PatternState, line: number): boolean {
 // (`intersectionFiring`): run `doRow` on one line and surface the cells forced
 // the same way across *every* arrangement of that line's runs consistent with
 // its marks. That is a real, named technique — the same family as overlap (which
-// is the single-run special case), generalised to the whole clue — not a "just
+// is the single-run special case), generalized to the whole clue — not a "just
 // because"; it is the always-explained completion that keeps the plan complete
 // on every board the generator published (which is line-solvable by
 // construction). All three are *parallel* recorders in the Undead sense
@@ -389,7 +389,7 @@ export type PatternHintReason =
 /** One hint step: a contiguous set of same-value cells one line deduction
  * forces, the line reasoned over (for the line-of-sight shade + clue), the
  * reason, and the already-placed marks the deduction leans on (ringed by their
- * own colour). All indices are absolute grid positions. */
+ * own color). All indices are absolute grid positions. */
 export interface PatternHintMove {
   cells: number[];
   value: GridVal; // GRID_FULL (black) or GRID_EMPTY (white)
@@ -487,7 +487,7 @@ function packRight(
   return out;
 }
 
-/** Absolute grid indices of the line's already-placed marks, split by colour,
+/** Absolute grid indices of the line's already-placed marks, split by color,
  * within the line-local window `[from, to)`. */
 function collectRefs(
   known: Uint8Array,
@@ -605,7 +605,7 @@ function rangeAbs(abs: (p: number) => number, from: number, to: number): number[
  * solver on some line and surface its first forced same-value contiguous
  * segment. Every cell `doRow` forces is black (or white) in *every* arrangement
  * of that line's runs consistent with its marks — the general intersection, the
- * same family as overlap generalised to the whole clue. Covers the gap-based
+ * same family as overlap generalized to the whole clue. Covers the gap-based
  * deductions the two elegant techniques don't name, keeping the plan complete
  * with an honest, named step (never a "just because"). */
 function intersectionFiring(

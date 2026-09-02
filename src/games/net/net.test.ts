@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Net port (tier 1 — pure logic).
+ * Behavioral tests for the Net port (tier 1 — pure logic).
  *
  * The byte-for-byte fidelity of the generator/solver is guarded separately by
  * `net-differential.test.ts`; these assert the port *behaves* — round-trips its
@@ -212,7 +212,7 @@ describe("moves", () => {
 
   it("a rotate on a locked tile yields no move", () => {
     const s = base();
-    // The cursor starts at the centre (2,2); lock that tile, then 'a' rotates it.
+    // The cursor starts at the center (2,2); lock that tile, then 'a' rotates it.
     const locked = netGame.executeMove(s, { type: "lock", x: 2, y: 2 });
     const ui = newUi(locked);
     expect(

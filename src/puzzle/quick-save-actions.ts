@@ -2,7 +2,7 @@
  * Quick-save actions shared by every surface that triggers them — the
  * game menu, the bottom-right toolbar button (`puzzle-history`), and the
  * Cmd/Ctrl+S shortcut (`puzzle-screen`). One implementation so the
- * check→save→confirm behaviour is identical wherever it's invoked.
+ * check→save→confirm behavior is identical wherever it's invoked.
  */
 import { showAlert } from "../dialogs/alert-dialog.ts";
 import { showToast } from "../dialogs/toast.ts";

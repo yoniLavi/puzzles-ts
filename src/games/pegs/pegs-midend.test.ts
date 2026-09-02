@@ -39,7 +39,7 @@ function gridToPixel(gx: number, gy: number, ts = 33): { x: number; y: number } 
   return { x: border + gx * ts, y: border + gy * ts };
 }
 
-// Known 7×7 cross board with centre hole at (3,3).
+// Known 7×7 cross board with center hole at (3,3).
 const CROSS_7x7 = "7x7cross:OOPPPOOOOPPPOOPPPPPPPPPPHPPPPPPPPPPOOPPPOOOOPPPOO";
 
 describe("Pegs midend integration — lifecycle", () => {
@@ -234,7 +234,7 @@ describe("Pegs midend integration — keyboard input", () => {
 
     // Show cursor.
     h.m.processInput(0, 0, CURSOR_SELECT);
-    // Move to the centre hole (3,3). On the cross board, the cursor
+    // Move to the center hole (3,3). On the cross board, the cursor
     // should skip over it. Selecting a hole should be a no-op.
     // (This is hard to test without knowing exact cursor position,
     // so we just verify the flow doesn't crash.)

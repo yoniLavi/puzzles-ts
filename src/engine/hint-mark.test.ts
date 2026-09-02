@@ -2,15 +2,15 @@
  * The cross-game guard on how a hint marks the board: **beside the content,
  * never behind it**.
  *
- * One sweep over the `hint-games.ts` enrolment, so a newly ported game with a
+ * One sweep over the `hint-games.ts` enrollment, so a newly ported game with a
  * `hint()` is covered by adding the one line it already has to add. Each game's
  * own `COL_HINT` / `COL_HINT_CELL` indices are read out of its `render.ts`
  * exports rather than listed here, so nothing to maintain and nothing to drift.
  *
- * **Shape, not colour.** "Some rect carries the hint colour" is satisfied by
+ * **Shape, not color.** "Some rect carries the hint color" is satisfied by
  * exactly the thing this forbids — a solid fill over the digits a hint is
  * talking about — so it would have passed unchanged through the whole rewrite
- * that removed the fills. What is asserted is that no rect in a hint colour is
+ * that removed the fills. What is asserted is that no rect in a hint color is
  * *cell-sized and thick in both directions*.
  *
  * The measurement behind the rule is in `hint-mark.ts`; the per-game calls are
@@ -47,16 +47,16 @@ const EVIDENCE_WASH_GAMES = new Set([
 
 interface Op {
   op: string;
-  colour?: number;
+  color?: number;
   w?: number;
   h?: number;
 }
 
 /** A rect that is thick in both directions and at least half a cell across —
  * i.e. a fill, not a mark. */
-function solidFills(ops: readonly Op[], colour: number, cell: number): Op[] {
+function solidFills(ops: readonly Op[], color: number, cell: number): Op[] {
   return ops.filter((o) => {
-    if (o.op !== "rect" || o.colour !== colour) return false;
+    if (o.op !== "rect" || o.color !== color) return false;
     const w = o.w ?? 0;
     const h = o.h ?? 0;
     return Math.min(w, h) * 4 >= Math.max(w, h) && Math.min(w, h) >= cell / 2;
@@ -68,7 +68,7 @@ function renderersById(): Map<string, Record<string, unknown>> {
   const byId = new Map<string, Record<string, unknown>>();
   for (const [path, mod] of Object.entries(RENDERERS)) {
     const m = path.match(/\/games\/([^/]+)\//);
-    // Throwing rather than skipping: a path shape this does not recognise is a
+    // Throwing rather than skipping: a path shape this does not recognize is a
     // module silently dropped from the sweep, which is how a guard goes quiet.
     if (!m) throw new Error(`unexpected renderer path ${path}`);
     byId.set(m[1], mod);
@@ -87,7 +87,7 @@ function hintFrames(
   game: (typeof HINT_GAMES)[number][1],
 ): { ops: Op[]; cell: number }[] {
   const params = firstLeaf(game.presets());
-  const palette = game.colours(DEFAULT_BACKGROUND);
+  const palette = game.colors(DEFAULT_BACKGROUND);
   const frames: { ops: Op[]; cell: number }[] = [];
   for (let s = 0; s < 6; s++) {
     const midend = new Midend(game);
@@ -108,7 +108,7 @@ function hintFrames(
 
 describe("a hint marks beside the content, never behind it", () => {
   const byId = renderersById();
-  /** Games that declare a cell-level target colour, i.e. the ones this sweep can
+  /** Games that declare a cell-level target color, i.e. the ones this sweep can
    * say anything about. The grid-move games (Fifteen, Flood, Sixteen, Netslide's
    * arrows, Untangle, Inertia) mark something other than a cell and are absent. */
   const CHECKED = HINT_GAMES.filter(

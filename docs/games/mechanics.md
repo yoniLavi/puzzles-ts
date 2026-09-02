@@ -10,7 +10,7 @@ marked. Normative requirements live in the
 
 Sibling guides: [input](./input.md) · [rendering](./rendering.md) ·
 [solver & generator](./solver-and-generator.md) · [hints](./hints.md) ·
-[testing](./testing.md) · [engine catalogue](./engine-catalog.md). Exemplar to
+[testing](./testing.md) · [engine catalog](./engine-catalog.md). Exemplar to
 read end-to-end: [`src/games/galaxies/`](../../src/games/galaxies/).
 
 ## The Game contract at a glance
@@ -21,7 +21,7 @@ A game is one object implementing
 instead of `dup`/`free`, discriminated unions instead of integer sentinels. A
 game depends on this interface only — never on the `Midend` — so the interface
 is the sole seam between a game and the engine. **An absent optional member
-means "this game does not have that capability"** — that is correct behaviour,
+means "this game does not have that capability"** — that is correct behavior,
 not a stub: a game with no solver omits `solve`, a permutation game with no
 notion of a wrong-but-legal position omits `findMistakes`.
 
@@ -96,7 +96,7 @@ encoding is **frozen into shared ids** — changing one changes which boards
 every existing link names. Decode leniently (garbage in a param string is user
 input), validate with a human-readable reason (`null` = valid). For a leading
 `WxH` prefix reach for `parseDimensions`
-([engine catalogue](./engine-catalog.md) § "params.ts — param-string decoding + config helpers") rather than
+([engine catalog](./engine-catalog.md) § "params.ts — param-string decoding + config helpers") rather than
 hand-slicing.
 
 ### Float params round-trip through %g
@@ -189,7 +189,7 @@ Exemplars: [`pattern/index.ts`](../../src/games/pattern/index.ts) (pure w/h),
 `tierOf`/`withTier` accessor pair, and a capped solve.** The point is that
 properties *about* tiers — above all cap-monotonicity, whose absence silently
 broke Check & Save on every Boats Easy board — are asserted for all tiered
-games at once by `difficulty-contract.test.ts`; declaring the contract enrols
+games at once by `difficulty-contract.test.ts`; declaring the contract enrolls
 the game in those guards automatically. The accessors exist because eight
 games type their difficulty as a string union or enum, so no cross-game caller
 can write `{ ...p, diff: cap }`. Tier names must match the game's own
@@ -250,10 +250,10 @@ Mines' shared mine-layout box (below), commented at the mutation site.
 A move is a typed discriminated union the compiler covers exhaustively — not a
 `sscanf` string. (Galaxies' 140-line C `execute_move` with `goto badmove`
 became a union the type-checker fully covers.) For the save file a move must be
-structured-clone-safe as-is, or the game supplies `serialiseMove`/
-`deserialiseMove`.
+structured-clone-safe as-is, or the game supplies `serializeMove`/
+`deserializeMove`.
 
-### A move you do not recognise is refused, never guessed
+### A move you do not recognize is refused, never guessed
 
 `executeMove`'s signature says `(state, move) => State` and *lies*: a save is
 untrusted input. `SaveEnvelope.moves` is `unknown[]` and is **cast** to `Move` on
@@ -304,7 +304,7 @@ the game.
 the solve move's `executeMove` arm runs the completion check (so the game
 reports solved-with-help) and sets `cheated` (so the win flash doesn't fire on
 a solver fill). Where upstream forgot that bookkeeping, fix it — that class of
-quirk is missing bookkeeping, not behaviour (owner directive, 2026-07-21;
+quirk is missing bookkeeping, not behavior (owner directive, 2026-07-21;
 exemplar divergence comment in
 [`subsets/index.ts`](../../src/games/subsets/index.ts)). The solver side of
 Solve is [solver & generator](./solver-and-generator.md) § "Solve and the generator's aux".
@@ -319,7 +319,7 @@ Solve is [solver & generator](./solver-and-generator.md) § "Solve and the gener
 | `canFormatAsText` | `textFormat` present | may still return `undefined` for params with no rendering (Loopy: square grid only) |
 | `canMarkAll` | game handles the `M`/`m` key; shell shows the button | see "Pencil marks" |
 | `needsRightButton` | game is unplayable without a secondary action | **nothing reads it today** — eighteen games declare it and the trail ends at `Puzzle.needsRightButton`; the touch affordance is offered to every game unconditionally. Kept pending `audit-input-mode-parity` task 4b.1, which wants the per-game control this is half of |
-| `wantsStylusModifier` | game handles `MOD_STYLUS` itself | **keep false** unless touch has its own behaviour; the midend strips the bit for everyone else — [input](./input.md) § "Touch is stripped for you" |
+| `wantsStylusModifier` | game handles `MOD_STYLUS` itself | **keep false** unless touch has its own behavior; the midend strips the bit for everyone else — [input](./input.md) § "Touch is stripped for you" |
 
 **A param-dependent capability the static flag can't express: widen the
 return, don't add a hook.** Loopy's text format works on the square lattice
@@ -355,14 +355,14 @@ render half.
 **A `Ui` field set in `interpretMove` that lives outside the undo history
 cannot be rebuilt by replay** — replay runs `executeMove`, never
 `interpretMove`. Mines' death counter is the case: dying then undoing removes
-the death from the log. Serialise exactly those fields with
+the death from the log. Serialize exactly those fields with
 `encodeUi`/`decodeUi`; the midend restores them after the replay. A game whose
 `Ui` is fully derivable omits both hooks — that is every game but Mines today.
 
 ### Preferences
 
 **Per-game preferences are the declarative `Game.prefs` hook; the values live
-on the `Ui`.** Each item maps a labelled boolean/choices control to
+on the `Ui`.** Each item maps a labeled boolean/choices control to
 `get(ui)`/`set(ui, v)` accessors; `newUi` sets the defaults (the place to ship
 a deliberate divergence — Untangle's crossed-edge highlight defaults on). The
 midend builds the dialog, persists per-puzzle, and re-applies choices after
@@ -389,7 +389,7 @@ the predicate holds and prefixes the status bar engine-side; your
 `statusbarText` returns only the game text. Mines stops the clock before the
 first click, on death, on a win, and for ever once `ui.completed` was set.
 **Browser-verify a timed game** — watch the clock tick, freeze and resume; the
-timer path is real-frontend behaviour no unit tier exercises.
+timer path is real-frontend behavior no unit tier exercises.
 
 ## A board decided at first click
 
@@ -414,7 +414,7 @@ Make generation a deterministic function of state + move (the desc RNG rides
 in the state) or the move log will not replay. Keep it in **one controlled
 shared box**: Mines' layout is a mutable holder shared by reference across
 every cloned state, filled once, surviving undo — the sole deliberate
-`executeMove` impurity, commented at the mutation site as the memoisation it
+`executeMove` impurity, commented at the mutation site as the memoization it
 is. Exemplars: [`mines/index.ts`](../../src/games/mines/index.ts) +
 [`mines/state.ts`](../../src/games/mines/state.ts) (`MineLayout`);
 [`desc-supersede.test.ts`](../../src/engine/desc-supersede.test.ts) is the
@@ -519,12 +519,12 @@ Solve. The seam is generic (Dominosa implements it today):
   solution — zero leak; it is the paper accounting. `selectReference(ui, key)`
   spotlights by mutating `Ui` and reports whether anything changed (false
   skips the repaint). It is the first clean app→`Ui` push channel — shaped
-  like a `UI_UPDATE`, no move, no history, not serialised.
+  like a `UI_UPDATE`, no move, no history, not serialized.
 - **Presence flows the `canMarkAll` chain** (`hasReference` →
   `PuzzleStaticAttributes` → toolbar + menu). The panel is the generic
   [`components/reference-panel.ts`](../../src/components/reference-panel.ts):
   side-docked with room, a bottom sheet on narrow viewports *and* in the
-  short-landscape orientation (a side dock there shoves the board off-centre —
+  short-landscape orientation (a side dock there shoves the board off-center —
   the panel and the padding rule share the orientation media condition).
 - **The board highlight is a per-game `Ui` field + render bit** (Dominosa's
   `highlightPair` drives `COL_REFERENCE` boxes; the bit folds into the packed
@@ -563,7 +563,7 @@ draw (Bricks: a hexagon whose backing array is wider than the user size, the
 two triangular corners masked to a bound sentinel, each row drawn offset by
 half a tile per row). Three rules keep it cheap and correct:
 
-- **The mask + neighbour table are logic, not display.** They decide how many
+- **The mask + neighbor table are logic, not display.** They decide how many
   playable cells the desc encodes and drive validity — a bug there desyncs the
   codec and the solver. Everything visual (shear offset, bevels, origin) is
   display: match the look, keep it clean.
@@ -583,7 +583,7 @@ Exemplars: [`bricks/render.ts`](../../src/games/bricks/render.ts) +
 ### One function, both callers
 
 **Any rule the input and the display both need is one function, called by
-both.** Coordinates are only the obvious case. Crossing's clue list *colours*
+both.** Coordinates are only the obvious case. Crossing's clue list *colors*
 each clue by which run a click would send it to, and that rule was written
 twice — an inline loop in `redraw` and `runForNumber` for the click. They
 agreed until the rule gained a tie-break, at which point the list said "down"

@@ -33,7 +33,7 @@ const PRESETS: CubeParams[] = [
 function totalBlue(state: CubeState): number {
   let n = 0;
   for (const b of state.blue) n += b;
-  for (const f of state.faceColours) n += f;
+  for (const f of state.faceColors) n += f;
   return n;
 }
 
@@ -132,8 +132,8 @@ describe("cube rolling", () => {
         state = next;
         // Paint is swapped, never created or destroyed.
         expect(totalBlue(state)).toBe(solid.nfaces);
-        // Every face received a colour from the permutation (no -1 left).
-        for (const f of state.faceColours) expect(f).toBeGreaterThanOrEqual(0);
+        // Every face received a color from the permutation (no -1 left).
+        for (const f of state.faceColors) expect(f).toBeGreaterThanOrEqual(0);
         // Move counter advances.
         expect(state.movecount).toBe(step + 1);
       }
@@ -148,14 +148,14 @@ describe("cube rolling", () => {
     const before = {
       current: state.current,
       blue: Uint8Array.from(state.blue),
-      faceColours: Int32Array.from(state.faceColours),
+      faceColors: Int32Array.from(state.faceColors),
       movecount: state.movecount,
     };
     anyLegalRoll(state);
     expect(state.current).toBe(before.current);
     expect(state.movecount).toBe(before.movecount);
     expect(Array.from(state.blue)).toEqual(Array.from(before.blue));
-    expect(Array.from(state.faceColours)).toEqual(Array.from(before.faceColours));
+    expect(Array.from(state.faceColors)).toEqual(Array.from(before.faceColors));
   });
 
   it("rolling right then left returns the cube to its start, paint restored", () => {
@@ -175,7 +175,7 @@ describe("cube rolling", () => {
     const back = executeMove(rolledRight, { dir: "L" });
     expect(back.current).toBe(start.current);
     // Two paint swaps with the same square return the faces to start.
-    expect(Array.from(back.faceColours)).toEqual(Array.from(start.faceColours));
+    expect(Array.from(back.faceColors)).toEqual(Array.from(start.faceColors));
   });
 
   it("completes when every face is painted blue (BFS to a real win)", () => {
@@ -194,7 +194,7 @@ describe("cube rolling", () => {
 
     const key = (s: CubeState): string => {
       let fm = 0;
-      for (let i = 0; i < s.faceColours.length; i++) if (s.faceColours[i]) fm |= 1 << i;
+      for (let i = 0; i < s.faceColors.length; i++) if (s.faceColors[i]) fm |= 1 << i;
       let bm = 0;
       for (let i = 0; i < s.blue.length; i++) if (s.blue[i]) bm |= 1 << i;
       return `${s.current}|${fm}|${bm}`;
@@ -235,7 +235,7 @@ describe("cube rolling", () => {
     // faces, so leftover blue squares remain — upstream lets the solved
     // cube keep rolling).
     if (won) {
-      for (const f of won.faceColours) expect(f).toBe(1);
+      for (const f of won.faceColors) expect(f).toBe(1);
       expect(totalBlue(won)).toBe(totalBlue(start));
     }
   });
@@ -326,7 +326,7 @@ describe("cube input", () => {
 
   it("rolls toward a left-click's bearing from the square centre", () => {
     const { state, ui, ds } = interiorCube();
-    // Square 5 centre in pixels: x*gs+ox, y*gs+oy.
+    // Square 5 center in pixels: x*gs+ox, y*gs+oy.
     const sq = state.grid[5];
     const cx = Math.trunc(sq.x * ds.gridscale) + ds.ox;
     const cy = Math.trunc(sq.y * ds.gridscale) + ds.oy;
@@ -378,7 +378,7 @@ describe("cube rolling on triangular grids", () => {
     expect(back).not.toBeNull();
     if (!back) return;
     // Orientation and paint are exactly restored.
-    expect(Array.from(back.faceColours)).toEqual(Array.from(start.faceColours));
+    expect(Array.from(back.faceColors)).toEqual(Array.from(start.faceColors));
     expect(Array.from(back.blue)).toEqual(Array.from(start.blue));
   });
 

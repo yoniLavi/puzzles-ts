@@ -6,7 +6,7 @@
  * **Where the line falls.** *Which* loop comes out of a given seed is not this
  * file's guarantee and deliberately not asserted here: the module is
  * RNG-faithful to upstream `generate_loop`, and that is checked byte-for-byte,
- * transitively, by Pearl's differential — the loop colouring drives Pearl's
+ * transitively, by Pearl's differential — the loop coloring drives Pearl's
  * desc. So a change to the candidate scoring, the selection order or the
  * random-flip pass is invisible to this file *by design* and loud in
  * `pearl-differential.test.ts` — verified, not assumed: reversing `faceScore`'s
@@ -18,7 +18,7 @@ import { describe, expect, it } from "vitest";
 import { gridNewSquare } from "./grid/index.ts";
 import {
   FACE_BLACK,
-  FACE_GREY,
+  FACE_GRAY,
   FACE_WHITE,
   generateLoop,
   type LoopgenBias,
@@ -26,13 +26,13 @@ import {
 import { randomNew } from "./random/index.ts";
 
 /**
- * The boundary the colouring describes, measured independently of it: every
- * grid edge whose two sides differ in colour (the infinite exterior counts as
+ * The boundary the coloring describes, measured independently of it: every
+ * grid edge whose two sides differ in color (the infinite exterior counts as
  * black), grouped into connected components.
  *
  * Degree parity alone is *not* the guarantee. A board split into two separate
  * rings gives every dot degree 0 or 2 and passes a parity check while being
- * exactly the failure the topology test in `canColourFace` exists to prevent,
+ * exactly the failure the topology test in `canColorFace` exists to prevent,
  * so the components are counted too.
  */
 function loopStats(w: number, h: number, seed: string) {
@@ -40,12 +40,12 @@ function loopStats(w: number, h: number, seed: string) {
   const board = new Int8Array(g.numFaces);
   generateLoop(g, board, randomNew(seed));
 
-  // Every face is coloured (no grey left).
-  let anyGrey = false;
+  // Every face is colored (no gray left).
+  let anyGray = false;
   for (let i = 0; i < g.numFaces; i++)
-    if (board[i] !== FACE_WHITE && board[i] !== FACE_BLACK) anyGrey = true;
+    if (board[i] !== FACE_WHITE && board[i] !== FACE_BLACK) anyGray = true;
 
-  // Boundary edges: face colours differ (exterior counts as black).
+  // Boundary edges: face colors differ (exterior counts as black).
   const dotDegree = new Int32Array(g.numDots);
   const adjacency = new Map<number, number[]>();
   let loopEdges = 0;
@@ -86,20 +86,20 @@ function loopStats(w: number, h: number, seed: string) {
     }
   }
 
-  return { board, anyGrey, loopEdges, allEven, components };
+  return { board, anyGray, loopEdges, allEven, components };
 }
 
 describe("generateLoop", () => {
   it("colours every face and leaves one single closed loop", () => {
     for (const seed of ["loop-a", "loop-b", "loop-c"]) {
       const s = loopStats(8, 8, seed);
-      expect(s.anyGrey).toBe(false);
+      expect(s.anyGray).toBe(false);
       expect(s.loopEdges).toBeGreaterThan(0);
       // Every dot has even loop-degree (0 or 2): the boundary is a set of
       // *simple* loops…
       expect(s.allEven).toBe(true);
       // …and there is exactly one of them, which is the actual guarantee. A
-      // colouring that walls a region off inside the wrong colour satisfies the
+      // coloring that walls a region off inside the wrong color satisfies the
       // parity check above and fails here.
       expect(s.components).toBe(1);
     }
@@ -119,13 +119,13 @@ describe("generateLoop", () => {
 });
 
 describe("the bias protocol", () => {
-  /** Every call the generator makes to the bias, as `(face, colour-then)`. */
+  /** Every call the generator makes to the bias, as `(face, color-then)`. */
   function record(w: number, h: number, seed: string) {
     const g = gridNewSquare(w, h);
     const board = new Int8Array(g.numFaces);
-    const calls: Array<{ face: number; colour: number }> = [];
+    const calls: Array<{ face: number; color: number }> = [];
     const bias: LoopgenBias = (b, face) => {
-      calls.push({ face, colour: b[face] });
+      calls.push({ face, color: b[face] });
       return 0;
     };
     generateLoop(g, board, randomNew(seed), bias);
@@ -136,18 +136,18 @@ describe("the bias protocol", () => {
     // The contract is "tentative set → restore → notify-commit", which is what
     // lets a bias keep incremental state instead of rescanning the board. Two
     // ways to break it look identical from here and are equally fatal: leaving
-    // the trial colour on the board, or restoring it without saying so. Either
-    // shows the same face non-grey on two calls running.
+    // the trial color on the board, or restoring it without saying so. Either
+    // shows the same face non-gray on two calls running.
     const { calls } = record(6, 6, "bias-protocol");
     expect(calls.length).toBeGreaterThan(50);
 
-    const lastColour = new Map<number, number>();
+    const lastColor = new Map<number, number>();
     const doubled: number[] = [];
-    for (const { face, colour } of calls) {
-      if (colour !== FACE_GREY && lastColour.get(face) !== FACE_GREY) {
-        if (lastColour.has(face)) doubled.push(face);
+    for (const { face, color } of calls) {
+      if (color !== FACE_GRAY && lastColor.get(face) !== FACE_GRAY) {
+        if (lastColor.has(face)) doubled.push(face);
       }
-      lastColour.set(face, colour);
+      lastColor.set(face, color);
     }
     expect(doubled).toEqual([]);
   });
@@ -163,7 +163,7 @@ describe("the bias protocol", () => {
     // The score must depend on which face is being scored, and on faces other
     // than that one. A flat count would drift by the same amount for every
     // candidate in a round, leave the arg-max untouched, and let a whole class
-    // of missed notifications through unseen — a stale *neighbour* is what
+    // of missed notifications through unseen — a stale *neighbor* is what
     // actually changes a decision.
     function run(stateful: boolean) {
       const g = gridNewSquare(6, 6);
@@ -171,7 +171,7 @@ describe("the bias protocol", () => {
       const shadow = new Int8Array(g.numFaces);
       let started = false;
       const bias: LoopgenBias = (b, face) => {
-        // The seed face is coloured before any call, so a tracking bias reads
+        // The seed face is colored before any call, so a tracking bias reads
         // the board once and follows the notifications from there.
         if (!started) {
           shadow.set(b);
@@ -198,10 +198,10 @@ describe("the bias protocol", () => {
     const bias: LoopgenBias = (_b, face) => face;
     generateLoop(g, board, randomNew("bias-steers"), bias);
 
-    let anyGrey = false;
+    let anyGray = false;
     for (let i = 0; i < g.numFaces; i++)
-      if (board[i] !== FACE_WHITE && board[i] !== FACE_BLACK) anyGrey = true;
-    expect(anyGrey).toBe(false);
+      if (board[i] !== FACE_WHITE && board[i] !== FACE_BLACK) anyGray = true;
+    expect(anyGray).toBe(false);
 
     const dotDegree = new Int32Array(g.numDots);
     for (const e of g.edges) {

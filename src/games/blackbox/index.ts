@@ -25,11 +25,11 @@ import {
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
   animLength,
   type BlackboxDrawState,
-  colours as coloursImpl,
+  colors as colorsImpl,
   computeSize as computeSizeImpl,
   flashLength,
   newDrawState,
@@ -405,7 +405,7 @@ export const blackboxGame: Game<
 
   statusbarText,
 
-  colours: (defaultBackground: Colour): Colour[] => coloursImpl(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colorsImpl(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: BlackboxParams, ts: number): Size => computeSizeImpl(p, ts),
   setTileSize,

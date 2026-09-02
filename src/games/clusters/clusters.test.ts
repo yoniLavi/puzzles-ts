@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Clusters port (tier 1 logic + tier 2.5 render).
+ * Behavioral tests for the Clusters port (tier 1 logic + tier 2.5 render).
  * The byte-match generator/solver/codec check lives in
  * clusters-differential.test.ts; these cover the interactive paths a
  * differential never touches — the paint/keyboard input, executeMove's
@@ -111,7 +111,7 @@ describe("params", () => {
     // Every ID shared before the difficulty existed carries no `d` at all.
     expect(decodeParams("9x7")).toEqual({ w: 9, h: 7, diff: DIFF_EASY });
     expect(decodeParams("8")).toEqual({ w: 8, h: 8, diff: DIFF_EASY });
-    // An unrecognised letter must not silently play some other difficulty.
+    // An unrecognized letter must not silently play some other difficulty.
     expect(validateParams(decodeParams("9x7dq"), true)).toBe(
       "Unknown difficulty rating",
     );
@@ -132,7 +132,7 @@ describe("params", () => {
     expect(validateParams(easy(1, 2), true)).toBe(tooThin);
     expect(validateParams(easy(2, 1), true)).toBe(tooThin);
     expect(validateParams(easy(2, 2), true)).toBe(tooThin);
-    // Their immediate neighbours do have puzzles and must stay playable.
+    // Their immediate neighbors do have puzzles and must stay playable.
     expect(validateParams(easy(1, 3), true)).toBeNull();
     expect(validateParams(easy(2, 3), true)).toBeNull();
   });
@@ -143,7 +143,7 @@ describe("params", () => {
     expect(validateParams(tricky(2, 5), true)).toBe(refusal); // 10 squares
     expect(validateParams(tricky(3, 3), true)).toBe(refusal); // 9 squares
     // A one-wide strip never binds however long it is: a cell there has at most
-    // two neighbours, so there is no chain for the lookahead to follow.
+    // two neighbors, so there is no chain for the lookahead to follow.
     expect(validateParams(tricky(1, 20), true)).toBe(refusal);
     // A saved game or a game ID carrying its own description still loads.
     expect(validateParams(tricky(3, 3), false)).toBeNull();
@@ -259,9 +259,9 @@ describe("solver classification", () => {
   it("classifies empty / complete / invalid boards", () => {
     // all-empty → UNFINISHED
     expect(clustersStatus(new Uint8Array(4), 2, 2)).toBe(UNFINISHED);
-    // 2x2 all red: every cell touches 2 same-colour neighbours → COMPLETE
+    // 2x2 all red: every cell touches 2 same-color neighbors → COMPLETE
     expect(clustersStatus(Uint8Array.from([1, 1, 1, 1]), 2, 2)).toBe(COMPLETE);
-    // 1x2 red|blue: the red cell is wholly surrounded by the other colour
+    // 1x2 red|blue: the red cell is wholly surrounded by the other color
     expect(clustersStatus(Uint8Array.from([F_COLOR_0, F_COLOR_1]), 2, 1)).toBe(INVALID);
   });
 
@@ -415,9 +415,9 @@ describe("midend integration", () => {
     expect(m.newGameFromId(`7x7:${desc}`)).toBeUndefined();
     expect(m.findMistakes()).toBe(0);
 
-    // Find a non-given cell and box it into the opposite colour on all sides
+    // Find a non-given cell and box it into the opposite color on all sides
     // is overkill; simplest reliable violation: paint a lone cell whose every
-    // neighbour we also paint the other colour. Use the top-left non-given.
+    // neighbor we also paint the other color. Use the top-left non-given.
     const st = newState(params, desc);
     let target = -1;
     for (let i = 0; i < st.grid.length; i++) {
@@ -438,7 +438,7 @@ describe("midend integration", () => {
     m.playMoves(moves);
     expect(m.findMistakes()).toBeGreaterThan(0);
 
-    // Repaint the target to match its neighbours → the violation clears.
+    // Repaint the target to match its neighbors → the violation clears.
     m.playMoves([{ kind: "paint", cells: [{ index: target, fill: F_COLOR_1 }] }]);
     expect(m.findMistakes()).toBe(0);
   });

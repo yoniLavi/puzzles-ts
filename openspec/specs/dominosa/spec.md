@@ -134,10 +134,10 @@ the always-on red **clash** highlight (a domino value placed more than once).
 
 The renderer SHALL draw the rounded-corner domino ends (circles plus rectangles
 per upstream `draw_tile`), the clue numbers, the barrier edge lines, the two
-value-highlight colours, the red clash fill, the half-grid cursor corners, and
+value-highlight colors, the red clash fill, the half-grid cursor corners, and
 the completion flash, using the web build's `NARROW_BORDERS` geometry
-(`BORDER = −DOMINO_GUTTER`). The palette SHALL mirror the upstream colour enum
-index-for-index, with the fork mistake-overlay colour appended past it. Every
+(`BORDER = −DOMINO_GUTTER`). The palette SHALL mirror the upstream color enum
+index-for-index, with the fork mistake-overlay color appended past it. Every
 per-square overlay (domino type / clash / highlight / edge / cursor / flash /
 mistake) SHALL be part of the render diff key so it repaints and clears
 correctly.
@@ -145,8 +145,8 @@ correctly.
 #### Scenario: A clash renders red
 
 - **WHEN** the same domino value is placed in two locations
-- **THEN** both placements render with the clash colour rather than the normal
-  domino colour
+- **THEN** both placements render with the clash color rather than the normal
+  domino color
 
 ### Requirement: Dominosa provides an explained deductive hint
 
@@ -193,7 +193,7 @@ byte-match differential — is unchanged.
 The renderer SHALL draw the current hint step's forced cells (a placement's two
 squares, or a barrier's two squares and its edge) in `COL_HINT`, and the
 deduction's evidence squares in `COL_HINT_CELL`, with the hint-overlay palette
-entries appended past the upstream colour enum and every hint bit included in
+entries appended past the upstream color enum and every hint bit included in
 the render diff key so the overlay paints and clears correctly.
 
 #### Scenario: A placement hint highlights the target domino cells
@@ -222,7 +222,7 @@ whether it changed. `highlightPair` SHALL be reset to null when the board is com
 (together with the number-highlight slots) and **dismissed by any board tap** (see below); it
 is otherwise not cleared by `executeMove`, so a programmatic move / the panel closing keeps it
 (the mark→close→place flow). It SHALL coexist with the existing number-highlight aid as an
-independent visual channel, and is `Ui`-only state: never a move, never serialised.
+independent visual channel, and is `Ui`-only state: never a move, never serialized.
 
 Because Escape is undiscoverable and unavailable on touch, **any pointer tap on the board**
 (`interpretMove` for a left/right button within the grid) SHALL clear `highlightPair` — the
@@ -232,8 +232,8 @@ spotlight disappears.
 
 When `highlightPair` is set, `redraw` SHALL box **both** squares of every orthogonally
 adjacent square-pair whose two clue values are that domino — i.e. all candidate placements
-for it — in a dedicated `COL_REFERENCE` colour that is distinct from the mistake, hint, and
-number-highlight colours, and SHALL box no other squares. The highlight state SHALL be folded
+for it — in a dedicated `COL_REFERENCE` color that is distinct from the mistake, hint, and
+number-highlight colors, and SHALL box no other squares. The highlight state SHALL be folded
 into the render cache key so the box appears and clears on selection change.
 
 #### Scenario: A board tap dismisses the spotlight while doing its action

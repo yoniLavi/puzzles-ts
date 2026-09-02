@@ -14,7 +14,7 @@
  * *which covering test happened to run first*, not *which test files can catch
  * the defect*. Vitest orders files roughly alphabetically, so `grid.ts` scored
  * 1/40 because `grid-aperiodic-differential.test.ts`, `grid-desc.test.ts` and
- * `grid-incentre.test.ts` all sort ahead of `grid.test.ts`. Deleting the
+ * `grid-incenter.test.ts` all sort ahead of `grid.test.ts`. Deleting the
  * `case "cairo":` arm and running `grid.test.ts` **alone** fails nine tests in
  * 1.5 seconds. The module was never locally silent.
  *
@@ -31,7 +31,7 @@
  * committed report is slimmed (no columns, no end offsets) so its mutants
  * cannot be spliced back precisely, and — more importantly — a curated case
  * carries *why it matters*, which a `ConditionalExpression → false` cannot.
- * The corpus is the artefact; see `scripts/feedback-probe-cases.mjs`.
+ * The corpus is the artifact; see `scripts/feedback-probe-cases.mjs`.
  *
  * ## The safeguard that is not optional
  *
@@ -66,8 +66,8 @@
  * Exit status is 0 unless a case fails to apply. **A survivor is a finding, not
  * a failure** — this is a diagnostic, never a gate and never a ratchet, the
  * same standing as `npm run metrics` and `npm run mutation`, and for the same
- * reason: a number that invites maximising invites tests written against the
- * number rather than against the behaviour.
+ * reason: a number that invites maximizing invites tests written against the
+ * number rather than against the behavior.
  *
  * ## Importing this file does not run it
  *
@@ -104,7 +104,7 @@ const ENGINE = "src/engine";
  *
  * Deliberately below the true count (55 when written) so that deleting a test
  * file is not a chore; far enough above what a **non-recursive** walk would find
- * (34 once `grid/` and `colour/` are subdirectories) that the failure this
+ * (34 once `grid/` and `color/` are subdirectories) that the failure this
  * guards cannot slip under it.
  */
 const TEST_FILE_FLOOR = 50;
@@ -113,7 +113,7 @@ const TEST_FILE_FLOOR = 50;
  * Every `.ts` file under `src/engine/`, **recursively**.
  *
  * Recursive because the engine is no longer flat: `group-crowded-source-
- * directories` moved the grid and colour families into subdirectories, and
+ * directories` moved the grid and color families into subdirectories, and
  * `random/`, `combi/`, `tilings/` and `testing/` were already nested. A
  * one-level walk would still run — it would simply stop finding the tests that
  * live down there, and both things derived from this list (barrels, own tests)
@@ -172,12 +172,12 @@ function checkTestFileFloor(files) {
  * The unit matters, and getting it wrong is this project's most-repeated
  * measurement bug. `audit-test-suite-strength` §5a found that "has no file
  * named `<module>.test.ts`" is not "has no local test" — `grid-core.ts` is
- * tested by `grid-trim.test.ts`, `grid-geometry.ts` by `grid-incentre.test.ts`.
+ * tested by `grid-trim.test.ts`, `grid-geometry.ts` by `grid-incenter.test.ts`.
  * The mirror of that mistake is just as wrong: `midend.test.ts` **alone** is not
  * the midend's own tests either, because save/load lives in `save.test.ts`,
  * prefs in `midend-prefs.test.ts` and desc supersession in
  * `desc-supersede.test.ts` — eight files, all of them engine-local, all of them
- * named after the *behaviour* rather than the file. Naming one of them "the
+ * named after the *behavior* rather than the file. Naming one of them "the
  * module's test file" would report a feedback hole that is really a filing
  * convention.
  *
@@ -185,7 +185,7 @@ function checkTestFileFloor(files) {
  * coverage: a **game's** test file (that distant guarantee is the thing being
  * separated out) and any `*-differential.test.ts`, even an engine-local one. A
  * differential's guarantee is a frozen fixture noticing that the boards moved,
- * which is a real and deliberate division of labour — counting it here would
+ * which is a real and deliberate division of labor — counting it here would
  * let `grid.ts` score full marks on assertions it does not make. A case that
  * survives the local tests but is caught by a differential is exactly the split
  * the requirement says must be *stated in the test file and verified*.
@@ -217,7 +217,7 @@ export function ownTests(modulePath, files = engineFiles()) {
 }
 
 /**
- * How a module is labelled in the report.
+ * How a module is labeled in the report.
  *
  * The path relative to `src/engine/`, not `basename()`. The engine has
  * subdirectories now, and `basename("src/engine/grid/index.ts")` is `index.ts` —
@@ -368,7 +368,7 @@ function main() {
         const verdict = runTests(tests);
         restore();
         if (probe.equivalent) {
-          // Expected to survive: the case was argued behaviour-preserving. If
+          // Expected to survive: the case was argued behavior-preserving. If
           // it is now *caught*, the argument has expired — the code changed
           // under it — and the note needs re-reading, not the test deleting.
           if (verdict !== "survived") regressions.push({ mod: mod.module, probe });

@@ -10,21 +10,21 @@
  * clears through the same cache. The drag preview is drawn into a scratch copy
  * of the edges before the corner pass, so it too lives entirely in the word.
  *
- * Palette is index-for-index with the C colour enum, plus an appended
+ * Palette is index-for-index with the C color enum, plus an appended
  * `COL_MISTAKE`.
  */
 
 import {
-  correctRegionColour,
+  correctRegionColor,
   DRAG_ADD,
   DRAG_REMOVE,
   ERROR,
   GRID_MID,
   highlightWash,
   INK,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Rect, Size } from "../../engine/types.ts";
+import type { Color, Rect, Size } from "../../engine/types.ts";
 import { gridDrawRect } from "./moves.ts";
 import type {
   RectDrawState,
@@ -38,7 +38,7 @@ export const PREFERRED_TILE_SIZE = 24;
 export const BORDER = 1;
 export const FLASH_TIME = 0.13;
 
-// --- palette (mirrors the rect.c colour enum index-for-index) --------------
+// --- palette (mirrors the rect.c color enum index-for-index) --------------
 export const COL_BACKGROUND = 0;
 export const COL_CORRECT = 1;
 export const COL_LINE = 2;
@@ -49,14 +49,14 @@ export const COL_DRAGERASE = 6;
 export const COL_CURSOR = 7;
 export const COL_MISTAKE = 8; // appended past the C enum (design D4)
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const bg = defaultBackground;
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = GRID_MID;
   out[COL_DRAG] = DRAG_ADD;
   out[COL_DRAGERASE] = DRAG_REMOVE;
-  out[COL_CORRECT] = correctRegionColour(bg);
+  out[COL_CORRECT] = correctRegionColor(bg);
   out[COL_LINE] = INK;
   out[COL_TEXT] = INK;
   // A cell fill under the cell's clue: the "you are here" wash, not the green
@@ -75,7 +75,7 @@ const M_LEFT = 1 << 20;
 const M_RIGHT = 1 << 21;
 
 const coord = (n: number, tile: number) => n * tile + BORDER;
-const colourOf = (k: number) =>
+const colorOf = (k: number) =>
   k === 1 ? COL_LINE : k === 2 ? COL_DRAG : COL_DRAGERASE;
 
 const hrange = (w: number, h: number, x: number, y: number) =>
@@ -153,7 +153,7 @@ function drawTile(
       mistake & M_TOP
         ? COL_MISTAKE
         : hrange(w, h, x, y)
-          ? colourOf(hedge[y * w + x])
+          ? colorOf(hedge[y * w + x])
           : COL_LINE,
     );
   if (!hrange(w, h, x, y + 1) || hedge[(y + 1) * w + x])
@@ -165,7 +165,7 @@ function drawTile(
       mistake & M_BOTTOM
         ? COL_MISTAKE
         : hrange(w, h, x, y + 1)
-          ? colourOf(hedge[(y + 1) * w + x])
+          ? colorOf(hedge[(y + 1) * w + x])
           : COL_LINE,
     );
   if (!vrange(w, h, x, y) || vedge[y * w + x])
@@ -177,7 +177,7 @@ function drawTile(
       mistake & M_LEFT
         ? COL_MISTAKE
         : vrange(w, h, x, y)
-          ? colourOf(vedge[y * w + x])
+          ? colorOf(vedge[y * w + x])
           : COL_LINE,
     );
   if (!vrange(w, h, x + 1, y) || vedge[y * w + (x + 1)])
@@ -189,18 +189,18 @@ function drawTile(
       mistake & M_RIGHT
         ? COL_MISTAKE
         : vrange(w, h, x + 1, y)
-          ? colourOf(vedge[y * w + (x + 1)])
+          ? colorOf(vedge[y * w + (x + 1)])
           : COL_LINE,
     );
 
   // Corners.
-  if (corners[y * w + x]) rect(cx, cy, 2, 2, colourOf(corners[y * w + x]));
+  if (corners[y * w + x]) rect(cx, cy, 2, 2, colorOf(corners[y * w + x]));
   if (x + 1 < w && corners[y * w + (x + 1)])
-    rect(cx + tile - 1, cy, 2, 2, colourOf(corners[y * w + (x + 1)]));
+    rect(cx + tile - 1, cy, 2, 2, colorOf(corners[y * w + (x + 1)]));
   if (y + 1 < h && corners[(y + 1) * w + x])
-    rect(cx, cy + tile - 1, 2, 2, colourOf(corners[(y + 1) * w + x]));
+    rect(cx, cy + tile - 1, 2, 2, colorOf(corners[(y + 1) * w + x]));
   if (x + 1 < w && y + 1 < h && corners[(y + 1) * w + (x + 1)])
-    rect(cx + tile - 1, cy + tile - 1, 2, 2, colourOf(corners[(y + 1) * w + (x + 1)]));
+    rect(cx + tile - 1, cy + tile - 1, 2, 2, colorOf(corners[(y + 1) * w + (x + 1)]));
 
   dr.drawUpdate({ x: cx, y: cy, w: tile + 1, h: tile + 1 } satisfies Rect);
 }

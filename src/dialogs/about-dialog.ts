@@ -21,8 +21,8 @@ import "../components/command-link"; // may appear in embedded text (e.g., priva
 
 // Raw content
 import appLicenseText from "../../LICENSE.md?raw";
-import unreleasedLicenseText from "../../licences/puzzles-unreleased-LICENCE?raw";
-import puzzlesLicenseText from "../../licences/sgt-puzzles-LICENCE?raw";
+import unreleasedLicenseText from "../../licenses/puzzles-unreleased-LICENSE?raw";
+import puzzlesLicenseText from "../../licenses/sgt-puzzles-LICENSE?raw";
 import privacyHtml from "../assets/privacy.html?raw";
 
 // The name of this repo's project (which is covered by its LICENSE)
@@ -58,7 +58,7 @@ interface DependencyInfo {
  * ``[`path`](url)`` renders its code span too.
  *
  * Only *absolute* links become anchors. `LICENSE.md`'s links are repo-relative
- * (`./licences/sgt-puzzles-LICENCE`), which resolve on GitHub but to nothing in
+ * (`./licenses/sgt-puzzles-LICENSE`), which resolve on GitHub but to nothing in
  * the deployed app — rendering those as anchors would manufacture broken links,
  * so they render as plain text.
  */
@@ -97,7 +97,7 @@ function renderInlineMarkdown(text: string): (HTMLTemplateResult | string)[] {
  *
  * The level-1 heading is dropped: it is the document title, and the dialog
  * already supplies one (the `label` argument, plus the summary above it).
- * Deeper headings become bold lines — this is a licence panel, not a document
+ * Deeper headings become bold lines — this is a license panel, not a document
  * viewer, so it wants no heading hierarchy of its own.
  */
 function markdownBlockToHTML(
@@ -148,7 +148,7 @@ function markdownBlockToHTML(
  *
  * `markdown: true` additionally renders headings, `- ` lists and inline
  * markdown. It is **opt-in and belongs only to this project's own
- * `LICENSE.md`**: upstream's `LICENCE` notices and third-party dependency
+ * `LICENSE.md`**: upstream's `LICENSE` notices and third-party dependency
  * notices are plain text, and reinterpreting them would turn a stray bracket or
  * asterisk in someone's copyright line into a link or emphasis — silently
  * rewriting a legal notice.

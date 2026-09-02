@@ -3,7 +3,7 @@
 exports[`Unruly render scenarios > hint frame: drives a real Midend to a displayed hint and renders it 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 224,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -12,7 +12,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 197,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -28,7 +28,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -37,7 +37,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -46,7 +46,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -55,7 +55,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 21,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -64,7 +64,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 21,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -73,7 +73,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 41,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -92,7 +92,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -101,7 +101,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -120,7 +120,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -129,7 +129,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -148,7 +148,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -157,7 +157,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -176,7 +176,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -185,7 +185,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -204,7 +204,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -213,7 +213,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -232,7 +232,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -241,7 +241,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -250,7 +250,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -259,7 +259,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 53,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -268,7 +268,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 53,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -277,7 +277,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 73,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -286,7 +286,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 54,
   },
   {
-    "colour": 13,
+    "color": 13,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(232, 139, 33)",
@@ -295,7 +295,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 13,
+    "color": 13,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(232, 139, 33)",
@@ -304,7 +304,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 77,
   },
   {
-    "colour": 13,
+    "color": 13,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(232, 139, 33)",
@@ -313,7 +313,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 13,
+    "color": 13,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(232, 139, 33)",
@@ -332,7 +332,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -341,7 +341,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -350,7 +350,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -359,7 +359,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 53,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -368,7 +368,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 53,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -377,7 +377,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 73,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -386,7 +386,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 54,
   },
   {
-    "colour": 13,
+    "color": 13,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(232, 139, 33)",
@@ -395,7 +395,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 13,
+    "color": 13,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(232, 139, 33)",
@@ -404,7 +404,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 77,
   },
   {
-    "colour": 13,
+    "color": 13,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(232, 139, 33)",
@@ -413,7 +413,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 13,
+    "color": 13,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(232, 139, 33)",
@@ -432,7 +432,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -441,7 +441,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -450,7 +450,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(21, 113, 233)",
@@ -459,7 +459,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(21, 113, 233)",
@@ -468,7 +468,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 2,
     "op": "rect",
     "rgb": "rgb(21, 113, 233)",
@@ -477,7 +477,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 77,
   },
   {
-    "colour": 11,
+    "color": 11,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(21, 113, 233)",
@@ -496,7 +496,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -505,7 +505,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -524,7 +524,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -533,7 +533,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -552,7 +552,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -561,7 +561,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -580,7 +580,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -589,7 +589,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -608,7 +608,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -617,7 +617,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -626,7 +626,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -635,7 +635,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 85,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -644,7 +644,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 85,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -653,7 +653,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 105,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -672,7 +672,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -681,7 +681,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -690,7 +690,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -699,7 +699,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 85,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -708,7 +708,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 85,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -717,7 +717,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 105,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -736,7 +736,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -745,7 +745,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -764,7 +764,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -773,7 +773,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -792,7 +792,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -801,7 +801,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -810,7 +810,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 80,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -819,7 +819,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 85,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -828,7 +828,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 85,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -837,7 +837,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 105,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -856,7 +856,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -865,7 +865,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -884,7 +884,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -893,7 +893,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -912,7 +912,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -921,7 +921,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -940,7 +940,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -949,7 +949,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -968,7 +968,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -977,7 +977,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -986,7 +986,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -995,7 +995,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 117,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -1004,7 +1004,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 117,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -1013,7 +1013,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 137,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -1032,7 +1032,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1041,7 +1041,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 112,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1060,7 +1060,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1069,7 +1069,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -1078,7 +1078,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -1087,7 +1087,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 149,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -1096,7 +1096,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 149,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -1105,7 +1105,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 169,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -1124,7 +1124,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1133,7 +1133,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1152,7 +1152,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1161,7 +1161,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1180,7 +1180,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1189,7 +1189,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1208,7 +1208,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1217,7 +1217,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1236,7 +1236,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1245,7 +1245,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1264,7 +1264,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1273,7 +1273,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1282,7 +1282,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -1291,7 +1291,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 181,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -1300,7 +1300,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 181,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1309,7 +1309,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 201,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1328,7 +1328,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1337,7 +1337,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1356,7 +1356,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1365,7 +1365,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1384,7 +1384,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1393,7 +1393,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1412,7 +1412,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1421,7 +1421,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -1430,7 +1430,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -1439,7 +1439,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 181,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -1448,7 +1448,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 181,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -1457,7 +1457,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 201,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -1476,7 +1476,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1485,7 +1485,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 176,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1502,7 +1502,7 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
 exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed generated board 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 224,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1511,7 +1511,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 0,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 197,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1527,7 +1527,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1536,7 +1536,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1555,7 +1555,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1564,7 +1564,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1583,7 +1583,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1592,7 +1592,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -1601,7 +1601,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -1610,7 +1610,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 21,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -1619,7 +1619,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 21,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -1628,7 +1628,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 41,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -1647,7 +1647,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1656,7 +1656,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1675,7 +1675,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1684,7 +1684,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1703,7 +1703,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1712,7 +1712,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 16,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1731,7 +1731,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1740,7 +1740,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1749,7 +1749,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -1758,7 +1758,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 53,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -1767,7 +1767,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 53,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1776,7 +1776,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 73,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1795,7 +1795,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1804,7 +1804,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1823,7 +1823,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1832,7 +1832,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -1841,7 +1841,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -1850,7 +1850,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 53,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -1859,7 +1859,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 53,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1868,7 +1868,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 73,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -1887,7 +1887,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1896,7 +1896,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1915,7 +1915,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1924,7 +1924,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1943,7 +1943,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1952,7 +1952,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 48,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1971,7 +1971,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -1980,7 +1980,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -1999,7 +1999,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2008,7 +2008,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -2017,7 +2017,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2026,7 +2026,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 85,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2035,7 +2035,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 85,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2044,7 +2044,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 105,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2063,7 +2063,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2072,7 +2072,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2091,7 +2091,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2100,7 +2100,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2119,7 +2119,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2128,7 +2128,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2147,7 +2147,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2156,7 +2156,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -2165,7 +2165,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 80,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -2174,7 +2174,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 85,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -2183,7 +2183,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 85,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -2192,7 +2192,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 105,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -2211,7 +2211,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2220,7 +2220,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2239,7 +2239,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2248,7 +2248,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -2257,7 +2257,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2266,7 +2266,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 117,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2275,7 +2275,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 117,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2284,7 +2284,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 137,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2303,7 +2303,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2312,7 +2312,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2331,7 +2331,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2340,7 +2340,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2359,7 +2359,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2368,7 +2368,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2387,7 +2387,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2396,7 +2396,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -2405,7 +2405,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 112,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -2414,7 +2414,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 117,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -2423,7 +2423,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 117,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -2432,7 +2432,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 137,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -2451,7 +2451,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2460,7 +2460,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2479,7 +2479,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2488,7 +2488,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2507,7 +2507,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2516,7 +2516,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2535,7 +2535,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2544,7 +2544,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2563,7 +2563,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2572,7 +2572,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -2581,7 +2581,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2590,7 +2590,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 149,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2599,7 +2599,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 149,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2608,7 +2608,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 169,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2627,7 +2627,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2636,7 +2636,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 144,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2655,7 +2655,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2664,7 +2664,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2683,7 +2683,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2692,7 +2692,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -2701,7 +2701,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2710,7 +2710,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 181,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2719,7 +2719,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 181,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2728,7 +2728,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 201,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2747,7 +2747,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2756,7 +2756,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2775,7 +2775,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2784,7 +2784,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 3,
+    "color": 3,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(213, 213, 213)",
@@ -2793,7 +2793,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2802,7 +2802,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 181,
   },
   {
-    "colour": 5,
+    "color": 5,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(175, 175, 175)",
@@ -2811,7 +2811,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 181,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2820,7 +2820,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 201,
   },
   {
-    "colour": 4,
+    "color": 4,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(255, 255, 255)",
@@ -2839,7 +2839,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2848,7 +2848,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 2,
+    "color": 2,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(128, 128, 128)",
@@ -2867,7 +2867,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 1,
+    "color": 1,
     "h": 32,
     "op": "rect",
     "rgb": "rgb(77, 77, 77)",
@@ -2876,7 +2876,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 6,
+    "color": 6,
     "h": 31,
     "op": "rect",
     "rgb": "rgb(51, 51, 51)",
@@ -2885,7 +2885,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 176,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -2894,7 +2894,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 181,
   },
   {
-    "colour": 8,
+    "color": 8,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(9, 9, 9)",
@@ -2903,7 +2903,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 181,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 1,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",
@@ -2912,7 +2912,7 @@ exports[`Unruly render scenarios > matches the opener-frame snapshot of a fixed 
     "y": 201,
   },
   {
-    "colour": 7,
+    "color": 7,
     "h": 20,
     "op": "rect",
     "rgb": "rgb(94, 94, 94)",

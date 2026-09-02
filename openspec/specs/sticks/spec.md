@@ -72,7 +72,7 @@ SHALL connect to the stated number of lines.
 
 The generator SHALL place black squares under the chosen symmetry, fill and clue
 the board, and retain a candidate only while the deductive solver deduces it to a
-unique completion; it SHALL then remove clues in a randomised order, keeping each
+unique completion; it SHALL then remove clues in a randomized order, keeping each
 removal only while the board stays uniquely solvable. Generation from a given seed
 SHALL be reproducible.
 
@@ -172,9 +172,9 @@ one journey rather than several hints, each of its later legs saying that it
 continues the same argument while keeping its own square's specifics.
 
 The hint SHALL show where to act in the game's own vocabulary — the forced
-square carrying a line of the forced orientation, in the hint colour, since a
+square carrying a line of the forced orientation, in the hint color, since a
 uniform highlight could not say *which* orientation, and that is the whole of
-the move. It SHALL NOT draw the line in the colour of a placed line. It SHALL
+the move. It SHALL NOT draw the line in the color of a placed line. It SHALL
 also show the evidence its reasoning rests on, marked so that the evidence does
 not hide what makes it evidence. Where the explanation states a count — a run's
 length, the room a line has left, the lines or open sides a black clue has —
@@ -182,8 +182,8 @@ the marked squares SHALL number what the explanation says, so the player can
 count the picture against the words. Where the explanation names a run or a
 span, that run or span SHALL be the one the deduction actually walked.
 
-No two roles on the board SHALL share a colour: the hint takes the collection's
-hint colour, and the keyboard cursor — which upstream drew in that same colour —
+No two roles on the board SHALL share a color: the hint takes the collection's
+hint color, and the keyboard cursor — which upstream drew in that same color —
 SHALL take one the board has not otherwise spent.
 
 Requesting a hint on a board contradicting its own clues SHALL refuse and
@@ -215,7 +215,7 @@ be unchanged, and the frozen description fixtures SHALL NOT move.
 
 - **WHEN** a hint step is displayed
 - **THEN** the forced square shows a line of the forced orientation in the hint
-  colour, and no square shows a line in the placed-line colour that the player
+  color, and no square shows a line in the placed-line color that the player
   did not place
 
 #### Scenario: A hint never repeats a move already made

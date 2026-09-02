@@ -334,7 +334,7 @@ describe("gridNearestEdge", () => {
   });
 
   it("breaks an exact tie toward the lowest-index edge", () => {
-    // The cell centre is exactly equidistant (10 units) from all four of its
+    // The cell center is exactly equidistant (10 units) from all four of its
     // edges, and all four pass eligibility — `4*10² > 20²` is false, so none
     // is rejected. Upstream compares with a strict `<` and has no tiebreak, so
     // iteration order decides and the lowest index wins; relaxing to `<=`

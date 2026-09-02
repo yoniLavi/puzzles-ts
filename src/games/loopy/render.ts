@@ -13,18 +13,18 @@
  *
  * - **No incremental redraw.** Upstream carries ~200 lines of `edge_bbox` /
  *   `dot_bbox` / `face_text_bbox` / `boxes_intersect` / clip / `draw_update`
- *   machinery to repaint sub-rectangles. Its stated reason is an artefact of
+ *   machinery to repaint sub-rectangles. Its stated reason is an artifact of
  *   drawing *over* an existing frame — an antialiased diagonal drawn over
  *   itself gets steadily thicker — which cannot happen in a renderer that
  *   clears and repaints. What survives is the part that carries meaning: the
  *   per-edge draw key (`lineErrors[i] ? DS_LINE_ERROR : lines[i]`), the
- *   per-face error/satisfied key, and the five-phase colour z-order, which is
+ *   per-face error/satisfied key, and the five-phase color z-order, which is
  *   a real ordering — mistakes must paint over everything.
  * - **Whole-pixel coordinates** — see {@link border} and {@link toScreen}.
  *
  * The palette, by contrast, is upstream's exactly, *including* its known
- * misbehaviour on a dark background: adapting for that here would fight the
- * app's own dark-mode pipeline. See {@link colours}.
+ * misbehavior on a dark background: adapting for that here would fight the
+ * app's own dark-mode pipeline. See {@link colors}.
  *
  * `BORDER = DOT_RADIUS` rather than `tilesize / 2` is not a divergence at all:
  * it is the arm this fork's build selects (`NARROW_BORDERS`).
@@ -32,17 +32,17 @@
 
 import {
   CURSOR,
-  clueDoneColour,
+  clueDoneColor,
   ERROR,
   FLASH,
   INK,
-  lineMaybeColour,
-  lineNoColour,
-} from "../../engine/colour/palette.ts";
+  lineMaybeColor,
+  lineNoColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Grid, GridType } from "../../engine/grid/index.ts";
-import { gridComputeSize, gridFindIncentre } from "../../engine/grid/index.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import { gridComputeSize, gridFindIncenter } from "../../engine/grid/index.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { LoopyCursor } from "./cursor.ts";
 import { gridTypeOf, LOOPY_GRIDS, type LoopyParams } from "./params.ts";
 import {
@@ -56,7 +56,7 @@ import {
 export const PREFERRED_TILE_SIZE = 32;
 export const FLASH_TIME = 0.5;
 
-// --- palette (index-for-index with the loopy.c colour enum) ----------------
+// --- palette (index-for-index with the loopy.c color enum) ----------------
 export const COL_BACKGROUND = 0;
 export const COL_FOREGROUND = 1;
 export const COL_LINEUNKNOWN = 2;
@@ -87,7 +87,7 @@ const dotRadius = (tileSize: number): number => clamp(1, (tileSize * 2.5) / 32, 
 const lineThickness = (tileSize: number): number => clamp(1, (tileSize * 3) / 32, 3);
 const faintLineThickness = (tileSize: number): number => clamp(0.5, tileSize / 24, 1.5);
 /** The cursor's halo under its chosen edge: three line-widths, so the edge's own
- * colour reads on top of it with a clear margin either side. */
+ * color reads on top of it with a clear margin either side. */
 const cursorHaloThickness = (tileSize: number): number => 3 * lineThickness(tileSize);
 /** The disc under the cursor's dot: comfortably larger than the dot, and never
  * so large it reads as a face marking. */
@@ -105,7 +105,7 @@ const cursorDiscRadius = (tileSize: number): number =>
  * Rounded **up** to a whole pixel, which the C does not do: it uses the raw
  * float in `game_compute_size` but truncates it in `grid_to_screen`, so a
  * boundary dot of radius 2.5 sits in a 2 px gutter and loses half a pixel.
- * A whole-pixel border keeps every coordinate integral (the pixel-centre
+ * A whole-pixel border keeps every coordinate integral (the pixel-center
  * convention `Drawing` expects) and gives the dot exactly the room it needs.
  */
 export function border(tileSize: number): number {
@@ -124,7 +124,7 @@ export interface LoopyDrawState {
   texty: Int32Array;
   /** Per-edge draw key (a `LineState`, or {@link DS_LINE_ERROR}). */
   lines: Uint8Array;
-  /** Per-face clue colouring keys, as booleans in a byte array. */
+  /** Per-face clue coloring keys, as booleans in a byte array. */
   clueError: Uint8Array;
   clueSatisfied: Uint8Array;
 }
@@ -154,7 +154,7 @@ export function newDrawState(s: LoopyState): LoopyDrawState {
  * clue at its pre-resize position — the same class of stale-cache bug that
  * cost Flip three iterations (`fix-flip-canvas-reshape`).
  *
- * Only the *screen projection* is stale: the incentre itself is a property of
+ * Only the *screen projection* is stale: the incenter itself is a property of
  * the face's shape, is tile-size-independent, and stays cached on the face by
  * `grid.ts`.
  */
@@ -178,7 +178,7 @@ export function computeSize(p: LoopyParams, tileSize: number): Size {
 function canvasSize(type: GridType, w: number, h: number, tileSize: number): Size {
   const g = gridComputeSize(type, w, h);
   const b = border(tileSize);
-  // Multiply before dividing, to minimise rounding error on the integer
+  // Multiply before dividing, to minimize rounding error on the integer
   // division (upstream's note).
   return {
     w: Math.floor((g.xExtent * tileSize) / g.tileSize) + 2 * b + 1,
@@ -187,9 +187,9 @@ function canvasSize(type: GridType, w: number, h: number, tileSize: number): Siz
 }
 
 /**
- * The palette, index-for-index with the `loopy.c` colour enum. Every value is
- * a shared role: the undecided and ruled-out edges are `lineMaybeColour` and
- * `lineNoColour`, which Palisade and Separate draw with too, and the board
+ * The palette, index-for-index with the `loopy.c` color enum. Every value is
+ * a shared role: the undecided and ruled-out edges are `lineMaybeColor` and
+ * `lineNoColor`, which Palisade and Separate draw with too, and the board
  * itself is whatever `resolvePalette` hands every game — upstream's
  * `frontend_default_colour` taken raw, which is why Loopy's dark board once
  * differed from Palisade's, is no longer a choice a game makes.
@@ -198,27 +198,27 @@ function canvasSize(type: GridType, w: number, h: number, tileSize: number): Siz
  * *towards black*. Upstream flags that this fails on a dark host and declines
  * to fix it (`loopy.c:1046-1049`: *"Except if the background is pretty dark
  * already; then it ought to be a bit lighter. Oy vey."*). **Do not adapt for it
- * here**: `colours()` never sees a dark background — `puzzle-view.ts` hands the
+ * here**: `colors()` never sees a dark background — `puzzle-view.ts` hands the
  * engine pure white in dark mode and adapts the returned palette in OKLCH — and
  * the two roles carry their own authored dark values, so the "oy vey" case is
  * answered in the palette, once, for all three games
  * (docs/games/rendering.md § "Dark mode is the app's concern").
  *
  * (`COL_LINEUNKNOWN`'s blue component is zeroed rather than scaled, which is
- * what makes it a yellow rather than a grey.)
+ * what makes it a yellow rather than a gray.)
  */
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_FOREGROUND] = INK;
-  out[COL_LINEUNKNOWN] = lineMaybeColour(defaultBackground);
+  out[COL_LINEUNKNOWN] = lineMaybeColor(defaultBackground);
   out[COL_HIGHLIGHT] = FLASH;
   out[COL_MISTAKE] = ERROR;
   // A deliberate, player-visible aid: upstream drew a satisfied clue in the
   // same black as an open one, so the slot's distinction never reached the
-  // screen. Greying it back retires the clue the way Magnets and Towers do.
-  out[COL_SATISFIED] = clueDoneColour(defaultBackground);
-  out[COL_FAINT] = lineNoColour(defaultBackground);
+  // screen. Graying it back retires the clue the way Magnets and Towers do.
+  out[COL_SATISFIED] = clueDoneColor(defaultBackground);
+  out[COL_FAINT] = lineNoColor(defaultBackground);
   out[COL_CURSOR] = CURSOR;
   return out;
 }
@@ -232,7 +232,7 @@ export function colours(defaultBackground: Colour): Colour[] {
  * assignment of the fractional `BORDER`). Both that and {@link border}'s
  * ceiling are **deliberate display-side choices, not fidelity bugs** — they
  * keep every drawing coordinate integral, which is what `Drawing`'s
- * pixel-centre convention wants, and keep lines concentric with the dots they
+ * pixel-center convention wants, and keep lines concentric with the dots they
  * join. Please don't "restore" the truncation.
  */
 function toScreen(g: Grid, tileSize: number, gx: number, gy: number): [number, number] {
@@ -247,7 +247,7 @@ function toScreen(g: Grid, tileSize: number, gx: number, gy: number): [number, n
 function faceTextPos(ds: LoopyDrawState, g: Grid, faceIndex: number): [number, number] {
   if (ds.textx[faceIndex] < 0) {
     const f = g.faces[faceIndex];
-    gridFindIncentre(f);
+    gridFindIncenter(f);
     const [x, y] = toScreen(g, ds.tileSize, f.ix, f.iy);
     ds.textx[faceIndex] = x;
     ds.texty[faceIndex] = y;
@@ -255,7 +255,7 @@ function faceTextPos(ds: LoopyDrawState, g: Grid, faceIndex: number): [number, n
   return [ds.textx[faceIndex], ds.texty[faceIndex]];
 }
 
-/** The colour phases, in z-order: mistakes paint over everything. */
+/** The color phases, in z-order: mistakes paint over everything. */
 const PHASES = [
   COL_FAINT,
   COL_LINEUNKNOWN,
@@ -264,8 +264,8 @@ const PHASES = [
   COL_MISTAKE,
 ] as const;
 
-/** The colour an edge draws in, from its draw key. */
-function lineColour(key: number, flashing: boolean): number {
+/** The color an edge draws in, from its draw key. */
+function lineColor(key: number, flashing: boolean): number {
   if (key === DS_LINE_ERROR) return COL_MISTAKE;
   if (key === LINE_UNKNOWN) return COL_LINEUNKNOWN;
   if (key === LINE_NO) return COL_FAINT;
@@ -285,9 +285,9 @@ export function redraw(
   const g = s.grid;
   const ts = ds.tileSize;
 
-  // Clue colouring. `clueError` and `clueSatisfied` are what the C diffs to
+  // Clue coloring. `clueError` and `clueSatisfied` are what the C diffs to
   // decide whether a face needs repainting; here they are simply the key that
-  // selects the digit's colour, recomputed each frame.
+  // selects the digit's color, recomputed each frame.
   for (let i = 0; i < g.numFaces; i++) {
     const n = s.clues[i];
     if (n < 0) continue;
@@ -309,12 +309,12 @@ export function redraw(
   ds.flashing =
     flashTime > 0 && (flashTime <= FLASH_TIME / 3 || flashTime >= (FLASH_TIME * 2) / 3);
 
-  // Bucket the edges by colour once, rather than upstream's scan-per-phase.
+  // Bucket the edges by color once, rather than upstream's scan-per-phase.
   const buckets = new Map<number, number[]>(PHASES.map((c) => [c, []]));
   for (let i = 0; i < g.numEdges; i++) {
     const key = s.lineErrors[i] ? DS_LINE_ERROR : s.lines[i];
     ds.lines[i] = key;
-    buckets.get(lineColour(key, ds.flashing))?.push(i);
+    buckets.get(lineColor(key, ds.flashing))?.push(i);
   }
 
   // The whole canvas, from the nominal extent — not the built grid's, which a
@@ -329,10 +329,10 @@ export function redraw(
 
   // The keyboard cursor, drawn from grid geometry like everything else, so it
   // works on a Penrose patch as on squares. Two marks: a halo under the chosen
-  // edge, painted *before* the edges so the edge's own colour stays legible on
+  // edge, painted *before* the edges so the edge's own color stays legible on
   // top of it (the state is what the player is about to change, so it must be
   // readable), and a disc under the cursor's dot, painted before the dots for
-  // the same reason. Both take the collection-wide cursor colour.
+  // the same reason. Both take the collection-wide cursor color.
   const cursor = ui.cursor;
   if (cursor.visible && cursor.edge >= 0) {
     const e = g.edges[cursor.edge];
@@ -367,15 +367,15 @@ export function redraw(
     );
   }
 
-  for (const colour of PHASES) {
+  for (const color of PHASES) {
     // Faint lines are the NO marks, which some players prefer not to see.
-    if (colour === COL_FAINT && !ui.drawFaintLines) continue;
-    const thickness = colour === COL_FAINT ? faintLineThickness(ts) : lineThickness(ts);
-    for (const i of buckets.get(colour) ?? []) {
+    if (color === COL_FAINT && !ui.drawFaintLines) continue;
+    const thickness = color === COL_FAINT ? faintLineThickness(ts) : lineThickness(ts);
+    for (const i of buckets.get(color) ?? []) {
       const e = g.edges[i];
       const [x1, y1] = toScreen(g, ts, e.dot1.x, e.dot1.y);
       const [x2, y2] = toScreen(g, ts, e.dot2.x, e.dot2.y);
-      dr.drawLine({ x: x1, y: y1 }, { x: x2, y: y2 }, colour, thickness);
+      dr.drawLine({ x: x1, y: y1 }, { x: x2, y: y2 }, color, thickness);
     }
   }
 

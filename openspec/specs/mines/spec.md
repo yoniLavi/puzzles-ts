@@ -7,7 +7,7 @@ TBD - created by archiving change add-mines-ts-port. Update Purpose after archiv
 
 The engine SHALL provide a registered `mines` game implementing `Game<MinesParams,
 MinesState, MinesMove, MinesUi, MinesDrawState>`: a `w × h` grid concealing `n` mines, in
-which the player uncovers squares, deduces from the revealed neighbour-counts where the
+which the player uncovers squares, deduces from the revealed neighbor-counts where the
 mines are, and flags them.
 
 Params SHALL be `w`, `h`, `n` and `unique`, encoded `{w}x{h}n{n}[a]` (`a` = not unique),
@@ -26,7 +26,7 @@ and `isTimed = true`.
 ### Requirement: The first click is never a mine
 
 The mine layout SHALL NOT exist until the player's first click, and SHALL be generated
-around that click so that the clicked square and its eight neighbours are all free of mines.
+around that click so that the clicked square and its eight neighbors are all free of mines.
 The game SHALL then supersede its description (`Game.supersededDesc`) so that the shareable
 game ID, a restart and a save all name the board actually being played.
 
@@ -38,7 +38,7 @@ fresh one. A player SHALL NOT be able to obtain a new board by undoing.
 
 - **WHEN** the player makes their first click on a board whose description names no layout
 - **THEN** a layout is generated in which neither the clicked square nor any of its
-  neighbours holds a mine, and the game's description is superseded with the real board
+  neighbors holds a mine, and the game's description is superseded with the real board
 
 #### Scenario: Undo does not reroll the board
 
@@ -74,7 +74,7 @@ game, and SHALL survive a save.
 ### Requirement: Chording never reveals more than it must
 
 Clearing around a satisfied number whose flags are misplaced SHALL uncover only the mined
-squares among those it would have opened, rather than the whole neighbourhood — revealing as
+squares among those it would have opened, rather than the whole neighborhood — revealing as
 little additional information as possible.
 
 #### Scenario: A chord on wrongly-flagged squares

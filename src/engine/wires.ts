@@ -10,7 +10,7 @@
  *
  * Extracted from Netslide's `state.ts`/`generator.ts` when Net became the
  * second consumer (the promotion trigger the migration playbook names). It is a
- * behaviour-preserving lift: Netslide's byte-identical differential and its
+ * behavior-preserving lift: Netslide's byte-identical differential and its
  * render snapshots are the oracle, so nothing here changes what Netslide
  * produces.
  *
@@ -128,7 +128,7 @@ export function xydCmp(a: Xyd, b: Xyd): number {
  */
 
 /**
- * Build the solved grid: start at the centre and repeatedly pick, uniformly at
+ * Build the solved grid: start at the center and repeatedly pick, uniformly at
  * random, one of the available ways to extend a used tile into an unused one.
  *
  * Two constraints are maintained as the frontier is updated. **No full crosses**
@@ -155,7 +155,7 @@ export function growSpanningTree(
   const possibilities = new SortedMultiset<Xyd>(xydCmp);
 
   // Note these bounds checks ignore wrapping, exactly as upstream: the growth
-  // seeds only the in-grid neighbours of the centre.
+  // seeds only the in-grid neighbors of the center.
   if (cx + 1 < w) possibilities.add({ x: cx, y: cy, direction: R });
   if (cy - 1 >= 0) possibilities.add({ x: cx, y: cy, direction: U });
   if (cx - 1 >= 0) possibilities.add({ x: cx, y: cy, direction: L });
@@ -207,7 +207,7 @@ export function growSpanningTree(
 /**
  * The barrier candidates are the edges the *solved* grid leaves unwired, so a
  * barrier can never sit across a wire of the solution. Only the right/down side
- * of each tile is recorded (the other two are its neighbours'), and border
+ * of each tile is recorded (the other two are its neighbors'), and border
  * sides are skipped unless the game wraps.
  */
 export function collectBarrierCandidates(
@@ -273,7 +273,7 @@ export function placeBarriers(
  *
  * Each tile is a hex digit of its wire mask, optionally followed by `v` (a
  * barrier to its right) and/or `h` (a barrier below it). Only the right/down
- * side of each tile is recorded — the other two are its neighbours' — and the
+ * side of each tile is recorded — the other two are its neighbors' — and the
  * border sides are skipped entirely unless the game wraps.
  */
 

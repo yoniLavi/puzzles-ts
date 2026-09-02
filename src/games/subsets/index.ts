@@ -5,7 +5,7 @@
  *
  * Place every set over an `n`-letter universe into the grid exactly once. A
  * horseshoe arrow points from a superset to a subset it contains, and *all*
- * valid arrows are shown — so a missing arrow between two neighbours is
+ * valid arrows are shown — so a missing arrow between two neighbors is
  * itself a constraint (neither contains the other).
  *
  * Input targets one letter slot of a cell: left-click / Enter cycles it
@@ -34,7 +34,7 @@ import {
 } from "../../engine/game.ts";
 import {
   ALREADY_SOLVED,
-  CONTRADICTION_UNLOCALISED,
+  CONTRADICTION_UNLOCALIZED,
   FIX_MISTAKES_FIRST,
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
@@ -54,10 +54,10 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newSubsetsDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -340,7 +340,7 @@ function solve(orig: SubsetsState): SolveResult<SubsetsMove> {
  * render.ts). Every narration is *attention → deduction → action*, per slot:
  * - `target` — the cell being decided; its acted-on slot gets the bold
  *   `COL_HINT` frame (the *action* location);
- * - `cells` — a neighbour cell the narration calls "the highlighted cell"
+ * - `cells` — a neighbor cell the narration calls "the highlighted cell"
  *   (the cell across a horseshoe), framed `COL_HINT_CELL`;
  * - `sets` — set-values the narration calls "the highlighted set(s)", tinted
  *   in the tally band (a collapse's surviving candidates, or the placed set);
@@ -355,7 +355,7 @@ export interface SubsetsHintHighlights {
 }
 
 const LETTER = (bit: number): string => String.fromCharCode(65 + bit);
-const capitalise = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** Oxford-comma join: "A", "A and C", "A, C and D". */
 function joinAnd(parts: string[]): string {
@@ -417,12 +417,12 @@ function legNarration(d: SubsetsDeduction, k: number): string {
     // name the highlighted cell explicitly, so the referent is never a bare
     // pronoun (owner 2026-07-21).
     return first
-      ? `The highlighted cell's set lies inside this one, and its ${L} is marked — so ${L} must be here too. ${capitalise(act)}.`
+      ? `The highlighted cell's set lies inside this one, and its ${L} is marked — so ${L} must be here too. ${capitalize(act)}.`
       : `Still filling this cell — the highlighted cell's ${L} is marked too, so ${act} here.`;
   }
   if (r.kind === "arrowMask") {
     return first
-      ? `This cell's set lies inside the highlighted cell's, which has no ${L} — so ${L} can't be here either. ${capitalise(act)}.`
+      ? `This cell's set lies inside the highlighted cell's, which has no ${L} — so ${L} can't be here either. ${capitalize(act)}.`
       : `Still filling this cell — the highlighted cell has no ${L} either, so ${act} here.`;
   }
 
@@ -460,7 +460,7 @@ function legNarration(d: SubsetsDeduction, k: number): string {
           : "Only the highlighted set can still go in this cell."
         : // singlePosition (deep cube fallback)
           "The highlighted set's other cells are all taken or blocked, so it must go here.";
-  return `${attn} ${capitalise(hasClause)} — so ${act}.`;
+  return `${attn} ${capitalize(hasClause)} — so ${act}.`;
 }
 
 function buildHighlights(
@@ -474,7 +474,7 @@ function buildHighlights(
     y: Math.floor(i / w),
   });
   const r = d.reason;
-  // Arrows point at a neighbour *cell*; a placement points at the *set* in the
+  // Arrows point at a neighbor *cell*; a placement points at the *set* in the
   // tally; a hidden single also *spotlights* where the set can go (its one
   // home). A collapse highlights the excluded competitor's blocker cell (#2),
   // so "the highlighted cell" in the "why not …" clause has a referent.
@@ -482,7 +482,7 @@ function buildHighlights(
     ex.block.kind === "placed"
       ? ex.block.cell
       : ex.block.kind === "arrow" || ex.block.kind === "adjacent"
-        ? ex.block.neighbour
+        ? ex.block.neighbor
         : d.pos; // "marks" never occurs here (pickExclusion filters it)
   const cells: number[] =
     r.kind === "arrowKnown"
@@ -554,7 +554,7 @@ function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlight
         if (playerKnows !== solutionHas) {
           return {
             ok: false,
-            error: CONTRADICTION_UNLOCALISED,
+            error: CONTRADICTION_UNLOCALIZED,
           };
         }
       }
@@ -565,7 +565,7 @@ function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlight
   if (plan.status === "invalid") {
     return {
       ok: false,
-      error: CONTRADICTION_UNLOCALISED,
+      error: CONTRADICTION_UNLOCALIZED,
     };
   }
   if (plan.deductions.length === 0) {
@@ -676,7 +676,7 @@ export const subsetsGame: Game<
   findMistakes,
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SubsetsParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

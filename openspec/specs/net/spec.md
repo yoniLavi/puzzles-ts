@@ -42,7 +42,7 @@ Left-click SHALL rotate a tile anticlockwise, right-click clockwise, and `f` by 
 Middle-click (or `s`) SHALL toggle a tile's lock; a locked tile SHALL NOT rotate. Inputs that
 change nothing — a click outside the grid, a click in the gutter between tiles, or a rotate on
 a locked tile — SHALL be suppressed in `interpretMove` by returning no move, WITHOUT comparing
-serialised game states.
+serialized game states.
 
 #### Scenario: Rotating a locked tile does nothing
 

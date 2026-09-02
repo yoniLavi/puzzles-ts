@@ -253,7 +253,7 @@ describe("crossing hint — ruling a candidate out", () => {
   };
 
   it("strikes a note no still-fitting number supports, and only that note", () => {
-    // Position 0 of either number is 1 or 5; a pencilled 9 is refuted, the 1 is
+    // Position 0 of either number is 1 or 5; a penciled 9 is refuted, the 1 is
     // not. Deduction is otherwise exhausted here, which is what lets the tail
     // rung surface at all.
     const state = noted([
@@ -467,8 +467,8 @@ describe("crossing hint — the frame", () => {
     const res = scenario("hint-frame");
     expect(res.hint).toBeDefined();
     const rects = res.recording.ops.filter((o) => o.op === "rect");
-    expect(rects.some((o) => o.colour === COL_HINT)).toBe(true);
-    expect(rects.some((o) => o.colour === COL_HINT_CELL)).toBe(true);
+    expect(rects.some((o) => o.color === COL_HINT)).toBe(true);
+    expect(rects.some((o) => o.color === COL_HINT_CELL)).toBe(true);
   });
 
   it("names at least one listed number as evidence, and paints it in the panel", () => {
@@ -486,7 +486,7 @@ describe("crossing hint — the frame", () => {
     );
     expect(
       inPanel.some(
-        (o) => o.op === "rect" && (o.colour === COL_HINT || o.colour === COL_HINT_CELL),
+        (o) => o.op === "rect" && (o.color === COL_HINT || o.color === COL_HINT_CELL),
       ),
       "no hint patch in the clue list",
     ).toBe(true);
@@ -495,11 +495,11 @@ describe("crossing hint — the frame", () => {
   it("puts the dimension wash away while a hint is displayed", () => {
     // Crossing's pale blue "this is an across run" wash and the collection's
     // hint blue are near-identical, so the hint takes green and owns the
-    // board's colouring for as long as it is up.
+    // board's coloring for as long as it is up.
     const midend = new Midend(crossingGame);
     const id = `${crossingGame.encodeParams(crossingPresets[0], true)}#hint-wash`;
     expect(midend.newGameFromId(id)).toBeUndefined();
-    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
 
     midend.timer(60);
     midend.redraw(new RecordingDrawing(palette));
@@ -596,7 +596,7 @@ describe("crossing hint — the frame", () => {
     // selection's and both cues show at once — the ring saying which square the
     // deduction is about, the fill saying which square the keystroke goes to.
     const params = crossingPresets[0];
-    const palette = crossingGame.colours(DEFAULT_BACKGROUND);
+    const palette = crossingGame.colors(DEFAULT_BACKGROUND);
 
     /** Click `cell` on a board whose hint is (or is not) displayed, and report
      * the frame it produces. */
@@ -622,14 +622,14 @@ describe("crossing hint — the frame", () => {
 
     /** Is the selection fill drawn over the whole of cell `c`? */
     const selectionFill = (
-      ops: readonly { op: string; colour?: number; x?: number; y?: number }[],
+      ops: readonly { op: string; color?: number; x?: number; y?: number }[],
       c: { x: number; y: number },
       ts: number,
     ) =>
       ops.some(
         (o) =>
           o.op === "rect" &&
-          o.colour === COL_SELECTED &&
+          o.color === COL_SELECTED &&
           o.x === Math.round(c.x * ts + ts / 2) &&
           o.y === Math.round(c.y * ts + ts / 2),
       );
@@ -642,7 +642,7 @@ describe("crossing hint — the frame", () => {
     expect(selectionFill(plain.frame.ops, target, plain.ts)).toBe(true);
     // ...and only the hinted frame carries the ring. The count covers the clue
     // list too: a whole-run placement boxes the number it writes in, in the same
-    // colour and the same shape as the square it writes it into.
+    // color and the same shape as the square it writes it into.
     const boxes =
       (step.highlights?.targets.length ?? 0) +
       (step.highlights?.numberTarget == null ? 0 : 1);

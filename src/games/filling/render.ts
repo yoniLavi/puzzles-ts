@@ -6,25 +6,25 @@
  * frame from a fresh region DSF. Plus the fork's mistake overlay (Check &
  * Save), an inset error outline distinct from the live overfull shade.
  *
- * Palette mirrors the C colour enum index-for-index; `COL_BACKGROUND` is the
+ * Palette mirrors the C color enum index-for-index; `COL_BACKGROUND` is the
  * frontend default background, as in C (Filling has no near-white tiles, so
  * no `mkhighlightSpecific` is needed).
  */
 
-import { PURPLE } from "../../engine/colour/colours.ts";
+import { PURPLE } from "../../engine/color/colors.ts";
 import {
-  correctRegionColour,
+  correctRegionColor,
   ERROR_WASH,
   HINT_ACTION,
   HINT_EVIDENCE,
   highlightWash,
   INK,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { FillingHint } from "./index.ts";
 import {
   DX,
@@ -38,7 +38,7 @@ import {
 export const PREFERRED_TILE_SIZE = 32;
 export const FLASH_TIME = 0.4;
 
-// --- palette (mirrors the filling.c colour enum index-for-index) ---------
+// --- palette (mirrors the filling.c color enum index-for-index) ---------
 export const COL_BACKGROUND = 0;
 export const COL_GRID = 1; // grid lines and clue digits (COL_CLUE = COL_GRID)
 export const COL_HIGHLIGHT = 2; // selected-cell background
@@ -49,15 +49,15 @@ export const COL_CURSOR = 6;
 export const COL_HINT = 7; // the cell to fill — ringed on its own border
 export const COL_HINT_CELL = 8; // the deduction's evidence cells — outlined
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const bg = defaultBackground;
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = INK;
   out[COL_HIGHLIGHT] = highlightWash(bg);
-  out[COL_CORRECT] = correctRegionColour(bg);
+  out[COL_CORRECT] = correctRegionColor(bg);
   out[COL_ERROR] = ERROR_WASH;
-  out[COL_USER] = playerEntryColour(bg);
+  out[COL_USER] = playerEntryColor(bg);
   // Not `CURSOR`: green is the player's own digits.
   out[COL_CURSOR] = PURPLE;
   out[COL_HINT] = HINT_ACTION;
@@ -96,7 +96,7 @@ const CORRECT_BG = 0x2000;
 const ERROR_BG = 0x4000;
 const USER_COL = 0x8000;
 const CURSOR_SQ = 0x10000;
-const FF_MISTAKE = 0x20000; // fork's Check & Save overlay (no upstream analogue)
+const FF_MISTAKE = 0x20000; // fork's Check & Save overlay (no upstream analog)
 const HINT_TARGET = 0x40000; // the cell the displayed hint points at
 const HINT_AREA = 0x80000; // an evidence cell shaded light blue
 
@@ -141,7 +141,7 @@ export function newDrawState(state: FillingState): FillingDrawState {
  * Filling's cells tile exactly, so there is no gutter and the band lies wholly
  * inside the box (`outer` 0); a cell whose hint flags change repaints itself and
  * takes its mark with it, so there is nothing to erase. It has room because the
- * content is a single digit at half the tile size, centred — a quarter of a tile
+ * content is a single digit at half the tile size, centered — a quarter of a tile
  * clear on every side.
  *
  * A mark does cover the region border along the sides it draws. The border
@@ -338,9 +338,9 @@ export function redrawFilling(
     }
   }
 
-  // Per-region "has an empty neighbour" so a boxed-in incomplete region can
+  // Per-region "has an empty neighbor" so a boxed-in incomplete region can
   // be flagged as an error (it can never reach its size).
-  const hasEmptyNeighbour = new Set<number>();
+  const hasEmptyNeighbor = new Set<number>();
   for (let i = 0; i < sz; i++) {
     if (board[i] === 0) continue;
     const x = i % w;
@@ -350,7 +350,7 @@ export function redrawFilling(
       const ny = y + DY[j];
       if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
       if (board[ny * w + nx] === 0) {
-        hasEmptyNeighbour.add(dsf.canonify(i));
+        hasEmptyNeighbor.add(dsf.canonify(i));
         break;
       }
     }
@@ -370,7 +370,7 @@ export function redrawFilling(
         const size = dsf.size(i);
         if (size === v) flags |= CORRECT_BG;
         else if (size > v) flags |= ERROR_BG;
-        else if (!hasEmptyNeighbour.has(dsf.canonify(i))) flags |= ERROR_BG;
+        else if (!hasEmptyNeighbor.has(dsf.canonify(i))) flags |= ERROR_BG;
       }
 
       if (ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y)
@@ -429,7 +429,7 @@ export function redrawFilling(
 
 /**
  * The hint marks, after the cell loop and outside every clip, so a mark on a
- * shared region border is not half-covered by the neighbour drawing its own.
+ * shared region border is not half-covered by the neighbor drawing its own.
  */
 function paintHintMarks(
   dr: GameDrawing,
@@ -440,7 +440,7 @@ function paintHintMarks(
   const cellAt = (i: number): MarkCell => ({ x: i % ds.w, y: (i / ds.w) | 0 });
   ds.marks.paint(dr, [...(targets ?? [])].map(cellAt), [...(area ?? [])].map(cellAt), {
     band: (x, y) => markBand(ds, x, y),
-    targetColour: COL_HINT,
-    evidenceColour: COL_HINT_CELL,
+    targetColor: COL_HINT,
+    evidenceColor: COL_HINT_CELL,
   });
 }

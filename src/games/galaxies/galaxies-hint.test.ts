@@ -174,7 +174,7 @@ describe("each deduction is narrated in its own vocabulary", () => {
   // Each case is one sentence the hint can utter, asserted by *finding* it:
   // a scan that never reaches the exact string means either the rule stopped
   // firing or its wording drifted, and both are worth a red test. Only the
-  // dot's colour is normalised, since which dot a scan lands on is incidental.
+  // dot's color is normalized, since which dot a scan lands on is incidental.
   const cases: [string, string][] = [
     // A dot sitting *inside* a cell needs no arrow — the game refuses to draw
     // one there, so that firing is never shown and the singular wording is not
@@ -397,7 +397,7 @@ describe("the picture carries the argument", () => {
             `${step.explanation} — marks nothing to act on`,
           ).toBeGreaterThan(0);
           // Only the cell being acted on is kept out of its own evidence: it
-          // owns the action colour and the doubled ring. The *partner* stays in
+          // owns the action color and the doubled ring. The *partner* stays in
           // the evidence — it is inside the area the sentence describes, and
           // marking it there is what keeps it the quieter of the two.
           const f = hl.focus;

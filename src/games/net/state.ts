@@ -28,7 +28,7 @@ import {
  * Bit vocabulary.
  *
  * A tile's low four bits are its wires (`R U L D`); the same four bits name a
- * neighbour direction (all in `engine/wires.ts`). Net owns the two high bits:
+ * neighbor direction (all in `engine/wires.ts`). Net owns the two high bits:
  * `LOCKED` (the player has pinned this tile) and `ACTIVE` (computed by the
  * power flood, never stored in the desc).
  */
@@ -300,7 +300,7 @@ export interface NetUi {
   cursor: GridCursor;
   /** Highlight loops that involve unlocked squares (the one preference). */
   unlockedLoops: boolean;
-  /** The jumble RNG — seeded fresh from entropy, never serialised. The
+  /** The jumble RNG — seeded fresh from entropy, never serialized. The
    * *expanded* jumble move (an explicit op list) is what replay depends on, so
    * this producing different rotations each session is fine (design D4). */
   rs: RandomState;

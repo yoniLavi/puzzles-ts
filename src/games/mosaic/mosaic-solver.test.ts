@@ -1,7 +1,7 @@
 // Tier-1 solver + generator: populateCell clue/full/empty rules,
 // solveCell deductions and contradiction, solveGameActual, generator
 // validity + deduction-solvability across sizes/seeds, hideClues
-// minimisation, the solve-command bitmap, and findMistakes.
+// minimization, the solve-command bitmap, and findMistakes.
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
 import {
@@ -92,7 +92,7 @@ describe("solveCell / solveCheck / solveGameActual", () => {
       needed: new Uint8Array(9),
     };
     sol.cell[0] = STATE_MARKED;
-    // Clue 1 at the centre: one black already known → rest blank.
+    // Clue 1 at the center: one black already known → rest blank.
     expect(solveCell(3, 3, 1, false, false, sol, 1, 1)).toBe("progress");
     expect(sol.cell[0]).toBe(STATE_MARKED);
     for (let i = 1; i < 9; i++) expect(sol.cell[i]).toBe(STATE_BLANK);
@@ -163,7 +163,7 @@ describe("generator", () => {
       expect(validateDesc(p, desc), `desc for ${n}/${seed}`).toBeNull();
       const state = newState(p, desc);
       expect(solveGameActual(state.board), `solvable for ${n}/${seed}`).not.toBeNull();
-      // Some clue must survive minimisation.
+      // Some clue must survive minimization.
       expect(state.notCompletedClues).toBeGreaterThan(0);
     }
   });

@@ -10,7 +10,7 @@
  * reference; it is not a control-flow transliteration.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { winFlash } from "../../engine/flash.ts";
 import type { GamePref } from "../../engine/game.ts";
 import {
@@ -39,7 +39,7 @@ import {
   RIGHT_RELEASE,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
-import type { Colour, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
 import { newSignpostDesc } from "./generator.ts";
 import { dragReleaseMove, executeMove } from "./moves.ts";
 import { buildPalette, redrawSignpost } from "./render.ts";
@@ -135,7 +135,7 @@ function newState(p: SignpostParams, desc: string): SignpostState {
   const r = unpickDesc(p, desc);
   if ("error" in r) throw new Error(`signpost newState: ${r.error}`);
   const s = r.state;
-  // Upstream `new_game` finalisation: derive numbers and auto-link
+  // Upstream `new_game` finalization: derive numbers and auto-link
   // consecutive immutable numbers.
   updateNumbers(s);
   checkCompletion(s, true);
@@ -360,7 +360,7 @@ const prefs: GamePref<SignpostUi>[] = [
 
 // --- rendering plumbing ----------------------------------------------
 
-function colours(defaultBackground: Colour): Colour[] {
+function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
   return buildPalette(background, highlight, lowlight);
 }
@@ -449,7 +449,7 @@ export const signpostGame: Game<
 
   prefs,
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize,

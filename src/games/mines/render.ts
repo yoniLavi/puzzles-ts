@@ -38,7 +38,7 @@ export const COL_HIGHLIGHT = 16;
 export const COL_LOWLIGHT = 17;
 export const COL_WRONGNUMBER = 18;
 export const COL_CURSOR = 19;
-export const NCOLOURS = 20;
+export const NCOLORS = 20;
 
 export const PREFERRED_TILE_SIZE = 20;
 const FLASH_FRAME = 0.13;
@@ -62,7 +62,7 @@ export interface MinesDrawState {
   started: boolean;
   /** Per-tile cache of the last-drawn value `v` (-99 = never drawn). */
   grid: Int8Array;
-  /** Last-drawn flash background colour index (-1 = undecided). */
+  /** Last-drawn flash background color index (-1 = undecided). */
   bg: number;
   /** Last-drawn cursor cell (-1,-1 = none), for the cursor-moved repaint. */
   curX: number;

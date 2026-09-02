@@ -28,7 +28,7 @@
  * "Still fits" has two readings. The *shallow* one — right length, not written
  * in elsewhere, agrees with the digits already in the run — is the scan the
  * player does by eye down the clue list, and is literally what the number
- * panel's fit-highlight already colours. The *deep* one is the fixpoint of the
+ * panel's fit-highlight already colors. The *deep* one is the fixpoint of the
  * narrowing below, where a number can die three implications away because some
  * crossing run ruled a digit out of one of its squares. Both are sound (each
  * over-estimates which numbers fit, so a set either narrows to one is narrowed
@@ -100,7 +100,7 @@ interface Analysis {
   cand: Int32Array;
   /** The same as {@link fitting}, but judged **only** against the digits
    * already entered in the run — i.e. the scan a player does by eye down the
-   * clue list, which is exactly what the number panel already colours. A
+   * clue list, which is exactly what the number panel already colors. A
    * firing whose premise holds under this weaker reading is directly
    * checkable; one that needs the full lattice says so in its narration
    * (§5.6, "when the evidence is genuinely non-local — say so honestly"). */
@@ -173,7 +173,7 @@ function narrowPass(
 }
 
 /** Run the narrowing to a fixpoint from the player's board. */
-function analyse(puzzle: CrossingPuzzle, grid: Uint8Array): Analysis {
+function analyze(puzzle: CrossingPuzzle, grid: Uint8Array): Analysis {
   const { w, h, walls, runs } = puzzle;
   const cand = new Int32Array(w * h);
   for (let i = 0; i < w * h; i++) {
@@ -304,7 +304,7 @@ function posInRun(puzzle: CrossingPuzzle, r: number, i: number): number {
  * note strikes before the run they belong to would read as busywork.
  */
 export function nextCrossingFiring(board: CrossingHintBoard): CrossingFiring | null {
-  const a = analyse(board.puzzle, board.grid);
+  const a = analyze(board.puzzle, board.grid);
 
   // Checkable premises before non-local ones. Both readings are sound (each
   // over-estimates which numbers still fit, so a set it narrows to one is
@@ -498,7 +498,7 @@ export function deduceCrossingPlan(state: CrossingState): CrossingPlan {
 const lengthOf = (puzzle: CrossingPuzzle, r: number): number =>
   puzzle.runs[r].cells.length;
 
-/** "across"/"down", the two words the board's own colour wash already teaches. */
+/** "across"/"down", the two words the board's own color wash already teaches. */
 const wayOf = (puzzle: CrossingPuzzle, r: number): string =>
   puzzle.runs[r].horizontal ? "across" : "down";
 
@@ -515,7 +515,7 @@ function joinOr(ns: number[]): string {
  *
  * The two `deep` variants exist because the premise is *half off the board*.
  * "Only one number still fits" is directly checkable when it holds against the
- * digits already entered — the clue list is literally colouring that scan
+ * digits already entered — the clue list is literally coloring that scan
  * already. When it holds only after the crossing numbers have ruled the others
  * out, saying so plainly beats asserting something the player would check and
  * find false (§2.4).

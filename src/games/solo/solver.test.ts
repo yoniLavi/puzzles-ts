@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Solo solver (tier 1). These validate the core
+ * Behavioral tests for the Solo solver (tier 1). These validate the core
  * deduction engine on hand-built standard-variant boards; the jigsaw / X /
  * killer paths and exact C-difficulty agreement are covered by the generator
  * tests + the byte-match differential once those land.

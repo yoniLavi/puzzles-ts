@@ -20,7 +20,7 @@
 
 import type {
   ChangeNotification,
-  Colour,
+  Color,
   ConfigDescription,
   ConfigValues,
   FontInfo,
@@ -86,7 +86,7 @@ export interface PuzzleEngineSurface {
   getPreferences(): ConfigValues;
   setPreferences(values: ConfigValues): string | undefined;
   // There was a `savePreferences(): Uint8Array` / `loadPreferences(data)` pair
-  // here, mirroring upstream's `midend_serialise_prefs`. It went with
+  // here, mirroring upstream's `midend_serialize_prefs`. It went with
   // `retire-the-incentre-c-fixture`: the app persists `ConfigValues` per puzzle
   // through get/setPreferences, so the binary form had no caller, and the TS
   // adapter answered it with an empty buffer — a public method that silently
@@ -94,13 +94,13 @@ export interface PuzzleEngineSurface {
   // feature ever wants a wire format, it should choose one, not inherit the C's.
 
   redraw(): void;
-  getColourPalette(defaultBackground: Colour): Colour[];
+  getColorPalette(defaultBackground: Color): Color[];
   /**
    * Per-index dark-mode decisions carried by the palette itself, in the same
    * vocabulary as `augmentation.ts`'s `paletteOverrides` (`false` = "do not
    * adapt this index"). Empty when the palette states nothing of its own.
    */
-  darkPalette(defaultBackground: Colour): Record<number, Colour>;
+  darkPalette(defaultBackground: Color): Record<number, Color>;
   size(maxSize: Size): Size;
   preferredSize(): Size;
   formatAsText(): string | undefined;

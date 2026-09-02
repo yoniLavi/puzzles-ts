@@ -24,10 +24,10 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newSokobanDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   newDrawState,
   PREFERRED_TILE_SIZE,
@@ -39,7 +39,7 @@ import {
   DEEP_PIT,
   decodeParams,
   defaultParams,
-  detargetise,
+  detargetize,
   encodeParams,
   isBarrel,
   isOnTarget,
@@ -54,7 +54,7 @@ import {
   SPACE,
   status,
   TARGET,
-  targetise,
+  targetize,
   validateDesc,
   validateParams,
 } from "./state.ts";
@@ -151,18 +151,18 @@ export function executeMove(state: SokobanState, move: SokobanMove): SokobanStat
     let b = grid[ny * w + nx];
     if (isOnTarget(b)) {
       grid[ny * w + nx] = TARGET;
-      b = detargetise(b);
+      b = detargetize(b);
     } else {
       grid[ny * w + nx] = SPACE;
     }
-    // Deposit it beyond, honouring pits.
+    // Deposit it beyond, honoring pits.
     const beyond = grid[nby * w + nbx];
     if (beyond === PIT) {
       grid[nby * w + nbx] = SPACE; // the barrel fills the pit and is consumed
     } else if (beyond === DEEP_PIT) {
       /* the deep pit eats the barrel and remains */
     } else if (beyond === TARGET) {
-      grid[nby * w + nbx] = targetise(b);
+      grid[nby * w + nbx] = targetize(b);
     } else {
       grid[nby * w + nbx] = b;
     }
@@ -238,7 +238,7 @@ export const sokobanGame: Game<
   executeMove,
   status,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SokobanParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

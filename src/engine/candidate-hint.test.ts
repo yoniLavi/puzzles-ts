@@ -705,7 +705,7 @@ describe("emitObviousCleanStep", () => {
 });
 
 /**
- * A second move dialect, modelled on the games that do not speak the Latin
+ * A second move dialect, modeled on the games that do not speak the Latin
  * family's: a `kind` discriminator (Crossing, Salad) and candidate `n` at bit
  * `n - 1`. Renaming either is not an option — the save format replays the move
  * log — so the mechanics take the dialect as a parameter, and these cases are

@@ -65,7 +65,7 @@ de-obfuscating the desc. The shared codec SHALL live at
 The laser engine SHALL, for a beam entering at a range cell in a given
 direction, reproduce upstream's rules: an **instant hit** when a ball sits
 directly ahead of the entry cell; an **instant reflection** when a ball sits
-diagonally ahead-left or ahead-right of the entry cell (hit prioritised over
+diagonally ahead-left or ahead-right of the entry cell (hit prioritized over
 reflection); otherwise stepping forward, turning clockwise when a ball is
 ahead-left and anticlockwise when a ball is ahead-right, returning **hit** when a
 ball is directly ahead, **reflect** when the beam exits its own entry cell, and

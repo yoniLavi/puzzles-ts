@@ -75,8 +75,8 @@ export type PalisadeMove =
 
 export interface PalisadeUi {
   /** Half-grid cursor coordinates: (0,0) is the top-left grid corner,
-   * (1,1) the centre of the top-left cell; odd/even distinguishes
-   * centre/edge/corner. Range [1, 2w-1] × [1, 2h-1]. */
+   * (1,1) the center of the top-left cell; odd/even distinguishes
+   * center/edge/corner. Range [1, 2w-1] × [1, 2h-1]. */
   cursor: GridCursor;
 }
 

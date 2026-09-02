@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Bridges port (tier 1 logic + tier 2.5 render).
+ * Behavioral tests for the Bridges port (tier 1 logic + tier 2.5 render).
  * The byte-match generator/solver differential lives in
  * `bridges-differential.test.ts`; this file covers the codec, the drag→move
  * input model, executeMove/solve/findMistakes, and a render smoke frame.
@@ -90,7 +90,7 @@ describe("bridges input model (drag → move)", () => {
   const twoIslands = () => newStateFromDesc(p3, "1a1f");
   const ts = 24;
   const b = 4; // border(24)
-  const centre = (cell: number) => cell * ts + b + Math.trunc(ts / 2);
+  const center = (cell: number) => cell * ts + b + Math.trunc(ts / 2);
 
   it("left-drag between adjacent islands emits an L bridge move", () => {
     const s = twoIslands();
@@ -100,16 +100,16 @@ describe("bridges input model (drag → move)", () => {
 
     // Press on island (0,0), drag toward (2,0), release.
     expect(
-      bridgesGame.interpretMove(s, ui, ds, { x: centre(0), y: centre(0) }, LEFT_BUTTON),
+      bridgesGame.interpretMove(s, ui, ds, { x: center(0), y: center(0) }, LEFT_BUTTON),
     ).toBe(UI_UPDATE);
     expect(
-      bridgesGame.interpretMove(s, ui, ds, { x: centre(2), y: centre(0) }, LEFT_DRAG),
+      bridgesGame.interpretMove(s, ui, ds, { x: center(2), y: center(0) }, LEFT_DRAG),
     ).toBe(UI_UPDATE);
     const move = bridgesGame.interpretMove(
       s,
       ui,
       ds,
-      { x: centre(2), y: centre(0) },
+      { x: center(2), y: center(0) },
       LEFT_RELEASE,
     ) as BridgesMove;
     expect(move.ops).toEqual([{ op: "L", x1: 0, y1: 0, x2: 2, y2: 0, n: 1 }]);
@@ -124,13 +124,13 @@ describe("bridges input model (drag → move)", () => {
     const ds = newDrawState(s);
     setTileSize(ds, ts);
 
-    bridgesGame.interpretMove(s, ui, ds, { x: centre(0), y: centre(0) }, RIGHT_BUTTON);
-    bridgesGame.interpretMove(s, ui, ds, { x: centre(2), y: centre(0) }, RIGHT_DRAG);
+    bridgesGame.interpretMove(s, ui, ds, { x: center(0), y: center(0) }, RIGHT_BUTTON);
+    bridgesGame.interpretMove(s, ui, ds, { x: center(2), y: center(0) }, RIGHT_DRAG);
     const nmove = bridgesGame.interpretMove(
       s,
       ui,
       ds,
-      { x: centre(2), y: centre(0) },
+      { x: center(2), y: center(0) },
       RIGHT_RELEASE,
     ) as BridgesMove;
     expect(nmove.ops).toEqual([{ op: "N", x1: 0, y1: 0, x2: 2, y2: 0 }]);
@@ -139,12 +139,12 @@ describe("bridges input model (drag → move)", () => {
 
     // A left click on an island with no drag toggles its mark.
     const ui2 = bridgesGame.newUi(s);
-    bridgesGame.interpretMove(s, ui2, ds, { x: centre(0), y: centre(0) }, LEFT_BUTTON);
+    bridgesGame.interpretMove(s, ui2, ds, { x: center(0), y: center(0) }, LEFT_BUTTON);
     const mmove = bridgesGame.interpretMove(
       s,
       ui2,
       ds,
-      { x: centre(0), y: centre(0) },
+      { x: center(0), y: center(0) },
       LEFT_RELEASE,
     ) as BridgesMove;
     expect(mmove.ops).toEqual([{ op: "M", x: 0, y: 0 }]);
@@ -212,7 +212,7 @@ describe("bridges auto-mark aid", () => {
     const s1 = bridgesGame.executeMove(s0, {
       ops: [{ op: "L", x1: 0, y1: 0, x2: 2, y2: 0, n: 1 }],
     });
-    const palette = bridgesGame.colours([0.9, 0.9, 0.9]);
+    const palette = bridgesGame.colors([0.9, 0.9, 0.9]);
     const markCircles = (autoMark: boolean) => {
       const ds = newDrawState(s1);
       setTileSize(ds, 24);
@@ -222,8 +222,8 @@ describe("bridges auto-mark aid", () => {
       return rec.ops.filter((o) => o.op === "circle" && o.fill === COL_MARK).length;
     };
 
-    expect(markCircles(true)).toBeGreaterThan(0); // satisfied islands greyed
-    expect(markCircles(false)).toBe(0); // no auto-grey when the pref is off
+    expect(markCircles(true)).toBeGreaterThan(0); // satisfied islands grayed
+    expect(markCircles(false)).toBe(0); // no auto-gray when the pref is off
     // Purely visual: the island is NOT actually marked/locked in the state.
     expect(s1.gridAt(0, 0) & G_MARK).toBeFalsy();
   });
@@ -242,7 +242,7 @@ describe("bridges render smoke (tier 2.5)", () => {
   });
 });
 
-// A Midend-driven save round-trip (state survives serialise/parse).
+// A Midend-driven save round-trip (state survives serialize/parse).
 describe("bridges save round-trip", () => {
   it("saveGame -> loadGame restores an equivalent game", () => {
     const p = BRIDGES_PRESETS[0];

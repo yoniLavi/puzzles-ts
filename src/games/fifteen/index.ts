@@ -1,6 +1,6 @@
 import { assertNever } from "../../engine/assert-never.ts";
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { HINT_ACTION, INK } from "../../engine/colour/palette.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { HINT_ACTION, INK } from "../../engine/color/palette.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type {
   Game,
@@ -25,7 +25,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { computeHint } from "./solver.ts";
 import {
   decodeParams,
@@ -52,7 +52,7 @@ const ANIM_TIME = 0.13;
 const FLASH_FRAME = 0.13;
 const HIGHLIGHT_WIDTH_DIV = 20;
 
-// --- colour indices ---------------------------------------------------
+// --- color indices ---------------------------------------------------
 
 const COL_BACKGROUND = 0;
 const COL_TEXT = 1;
@@ -91,7 +91,7 @@ export function executeMove(state: FifteenState, move: FifteenMove): FifteenStat
     const tiles = new Int32Array(n);
     for (let i = 0; i < n; i++) tiles[i] = (i + 1) % n;
     // Upstream snaps movecount and completed to 1 (Solve resets to a
-    // clean solved board to practise from; "Moves since auto-solve: 0").
+    // clean solved board to practice from; "Moves since auto-solve: 0").
     return {
       ...state,
       tiles,
@@ -208,7 +208,7 @@ interface FifteenDrawState {
   started: boolean;
   w: number;
   h: number;
-  bgcolour: number;
+  bgcolor: number;
   /** Per-cell cache of the last-drawn tile value; `-1` forces a redraw
    * (unknown, or animating). */
   tiles: Int32Array;
@@ -222,7 +222,7 @@ function newDrawState(state: FifteenState): FifteenDrawState {
     started: false,
     w: state.w,
     h: state.h,
-    bgcolour: COL_BACKGROUND,
+    bgcolor: COL_BACKGROUND,
     tiles: new Int32Array(state.n).fill(-1),
     tilesize: 0,
     hintTile: null,
@@ -234,9 +234,9 @@ function computeSize(p: FifteenParams, ts: number): Size {
   return { w: ts * p.w + 2 * b, h: ts * p.h + 2 * b };
 }
 
-function colours(defaultBackground: Colour): Colour[] {
+function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_TEXT] = INK;
   out[COL_HIGHLIGHT] = highlight;
@@ -252,10 +252,10 @@ function drawTile(
   x: number,
   y: number,
   tile: number,
-  bgColour: number,
+  bgColor: number,
 ): void {
   if (tile === 0) {
-    dr.drawRect({ x, y, w: ts, h: ts }, bgColour);
+    dr.drawRect({ x, y, w: ts, h: ts }, bgColor);
   } else {
     // Lowlight triangle (bottom-right).
     dr.drawPolygon(
@@ -277,8 +277,8 @@ function drawTile(
       COL_HIGHLIGHT,
       COL_HIGHLIGHT,
     );
-    // Centre fill.
-    dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColour);
+    // Center fill.
+    dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColor);
     // Number.
     dr.drawText(
       { x: x + Math.floor(ts / 2), y: y + Math.floor(ts / 2) },
@@ -326,10 +326,10 @@ function redraw(
   const { w, h, n } = state;
   const hw = Math.max(1, Math.floor(ts / HIGHLIGHT_WIDTH_DIV));
 
-  let bgcolour = COL_BACKGROUND;
+  let bgcolor = COL_BACKGROUND;
   if (flashTime > 0) {
     const frame = Math.floor(flashTime / FLASH_FRAME);
-    bgcolour = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
+    bgcolor = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
   }
 
   if (!ds.started) {
@@ -354,7 +354,7 @@ function redraw(
       const t0 = t;
 
       if (
-        ds.bgcolour !== bgcolour ||
+        ds.bgcolor !== bgcolor ||
         ds.hintTile !== hintTile ||
         ds.tiles[i] !== t ||
         ds.tiles[i] === -1 ||
@@ -395,14 +395,14 @@ function redraw(
           y = coord(Math.floor(i / w), ts);
         }
 
-        const cellBg = t !== 0 && t === hintTile ? COL_HINT : bgcolour;
+        const cellBg = t !== 0 && t === hintTile ? COL_HINT : bgcolor;
         drawTile(dr, ts, hw, x, y, t, cellBg);
       }
       ds.tiles[i] = t0;
     }
   }
 
-  ds.bgcolour = bgcolour;
+  ds.bgcolor = bgcolor;
   ds.hintTile = hintTile;
 }
 
@@ -580,7 +580,7 @@ export const fifteenGame: Game<
   textFormat,
   statusbarText,
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {

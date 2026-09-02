@@ -52,7 +52,7 @@ function bestBlackCol(
   const x = i % w;
   const y = (i / w) | 0;
 
-  /* Randomise the list of numbers to try (o RNG draws, as in C). */
+  /* Randomize the list of numbers to try (o RNG draws, as in C). */
   const scratch: number[] = [];
   for (let k = 0; k < o; k++) scratch[k] = k;
   shuffle(scratch, rs);
@@ -81,7 +81,7 @@ function bestBlackCol(
 const MAXTRIES = 20;
 
 /** True iff the board is solvable at `diff` and (for diff > Easy) NOT
- * solvable at the level below with the sneaky generation-artefact step. */
+ * solvable at the level below with the sneaky generation-artifact step. */
 function newGameIsGood(
   diffLevel: number,
   state: SinglesState,

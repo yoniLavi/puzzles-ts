@@ -103,7 +103,7 @@ export type SaladReason =
   /** The square's notes have come down to the empty-square mark alone. */
   | { kind: "crossNaked" }
   /** No cheaper reason explains the marker — the honest weaker arm, the
-   * marker analogue of `forcedSingle`. */
+   * marker analog of `forcedSingle`. */
   | { kind: "forcedCross" }
   | { kind: "forcedCircle" }
   /** Tidy-up leg: squares just settled as holding a symbol keep no
@@ -121,7 +121,7 @@ export type SaladReason =
    * strikes (file header, point 1), so it is reached only if that changes. */
   | LatinRepeatReason;
 
-/** What a Salad hint step draws (docs/games/hints.md § "The element-type colour legend"'s element legend):
+/** What a Salad hint step draws (docs/games/hints.md § "The element-type color legend"'s element legend):
  * `area` is the deduction's evidence, `targets` the squares it acts on, `marks`
  * the notes it strikes, `clues` the border clues it reasons from, and `ghost`
  * the entry it is asking for, previewed in `COL_HINT` (§5.1a — Salad has three
@@ -465,7 +465,7 @@ export const saladCandidateMoves: CandidateMoveAdapter<SaladMove> = {
         pencil: m.type === "pencil",
       };
     }
-    // A pencilled X mark is a note strike on the collapsed hole candidate.
+    // A penciled X mark is a note strike on the collapsed hole candidate.
     if (m.type === "pencil" && m.value === "cross") {
       return { type: "set", x: m.x, y: m.y, n: -1, pencil: true };
     }
@@ -625,7 +625,7 @@ function buildSteps(
    * (the additive `pencilAll`, not upstream's resetting `markAll`).
    *
    * Owner-reported 2026-07-29: filling with `markAll` threw away notes the player
-   * had already narrowed, on any board with *some* pencilled squares and *some*
+   * had already narrowed, on any board with *some* penciled squares and *some*
    * blank ones. The working copy has to mirror the additive fill exactly, or the
    * plan would go on to teach strikes on candidates the player had already
    * crossed out — a step whose mark is invisible on their board. (The shared
@@ -795,7 +795,7 @@ export function hint(
   _aux?: string,
   _ui?: SaladUi,
 ): HintResult<SaladMove, SaladHint> {
-  // No `autoPencil` preference to honour: Salad has no auto-elimination on
+  // No `autoPencil` preference to honor: Salad has no auto-elimination on
   // placement, so the plan always teaches the row/column note cull explicitly.
   return candidateHint(state, undefined, saladFindMistakes, buildSteps);
 }

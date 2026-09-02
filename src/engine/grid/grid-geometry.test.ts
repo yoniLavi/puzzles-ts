@@ -3,12 +3,12 @@
  * boundary that makes it safe.
  *
  * **Both helpers are display/input only.** `gridNearestEdge` decides which edge
- * a click lands on; `gridFindIncentre` decides where a clue digit is drawn.
+ * a click lands on; `gridFindIncenter` decides where a clue digit is drawn.
  * Neither reaches a grid description, a generator or a solver, so neither is
  * byte-parity surface, and the exact comparisons at this module's branch points
  * (`det === 0`, `disc >= 0`, `Math.abs(eq[0]) < Math.abs(eq[1])`) are not
  * reproducible across compilers and do not need to be. What must hold is
- * behavioural: a click picks the edge a player meant, and a digit lands inside
+ * behavioral: a click picks the edge a player meant, and a digit lands inside
  * its face with room around it.
  *
  * Coverage of this module is deliberately spread over three files, and this one
@@ -16,7 +16,7 @@
  *
  * - `grid.test.ts` drives `gridNearestEdge` through the barrel — the eligibility
  *   rules, the vertex case and the lowest-index tie-break.
- * - `grid-incentre.test.ts` sweeps `gridFindIncentre` over every face of every
+ * - `grid-incenter.test.ts` sweeps `gridFindIncenter` over every face of every
  *   tiling against the best circle the integer lattice admits, plus caching,
  *   non-convex shapes and two known answers.
  * - here: the cases neither of those reaches — a click that is perpendicularly
@@ -35,7 +35,7 @@ import {
   inscribedRadius,
   type Ring,
 } from "../testing/polygon-yardstick.ts";
-import { gridFindIncentre, gridNearestEdge } from "./grid-geometry.ts";
+import { gridFindIncenter, gridNearestEdge } from "./grid-geometry.ts";
 import { GridDot, GridFace, gridNew, gridNewSquare, makeConsistent } from "./index.ts";
 
 /**
@@ -57,7 +57,7 @@ function singleFaceGrid(ring: Ring): GridFace {
  * A deterministic family of markedly non-convex polygons: vertices at equal
  * angles, radii varying wildly, so reflex corners and long thin arms both turn
  * up. Each is seeded from its own index, so a case can be read and re-run on its
- * own. The generalisation to arbitrary polygons is a stated property of the
+ * own. The generalization to arbitrary polygons is a stated property of the
  * routine — several tilings produce faces where a centroid sits outside the
  * face — so it is checked over arbitrary polygons.
  */
@@ -93,22 +93,22 @@ describe("gridNearestEdge", () => {
   });
 });
 
-describe("gridFindIncentre", () => {
+describe("gridFindIncenter", () => {
   it("rounds the stored point to the nearest integer rather than truncating", () => {
     // A right isosceles triangle with legs of 10: its inradius is
-    // (10 + 10 − √200) / 2 ≈ 2.929, and the incentre sits at (r, r). Truncating
+    // (10 + 10 − √200) / 2 ≈ 2.929, and the incenter sits at (r, r). Truncating
     // stores (2, 2); rounding stores (3, 3), which is the nearer point.
     const face = singleFaceGrid([
       [0, 0],
       [10, 0],
       [0, 10],
     ]);
-    gridFindIncentre(face);
+    gridFindIncenter(face);
     expect([face.ix, face.iy]).toEqual([3, 3]);
   });
 
   it("rounds to nearest on negative coordinates too, where C's `(int)(v + 0.5)` does not", () => {
-    // The same triangle reflected through the origin, so the incentre sits at
+    // The same triangle reflected through the origin, so the incenter sits at
     // ≈(−2.929, −2.929). The nearest integer point is (−3, −3).
     //
     // Upstream stores through a double->int assignment, i.e. `(int)(v + 0.5)`,
@@ -117,7 +117,7 @@ describe("gridFindIncentre", () => {
     // are negative over most of a board, so the C form misplaces nearly every
     // clue digit it stores. `retire-the-incentre-c-fixture` measured the cost at
     // up to 1.229 units of inscribed radius across the eighteen tilings, against
-    // 0.053 for rounding; `grid-incentre.test.ts` is what holds it there.
+    // 0.053 for rounding; `grid-incenter.test.ts` is what holds it there.
     //
     // The peer comparison this file's sibling used to run could not see it: the
     // C is wrong in exactly the same direction, so the two agreed perfectly.
@@ -126,7 +126,7 @@ describe("gridFindIncentre", () => {
       [0, -10],
       [-10, 0],
     ]);
-    gridFindIncentre(face);
+    gridFindIncenter(face);
     expect([face.ix, face.iy]).toEqual([-3, -3]);
   });
 
@@ -140,7 +140,7 @@ describe("gridFindIncentre", () => {
       [10, 0],
       [20, 0],
     ]);
-    expect(() => gridFindIncentre(face)).toThrow(/no interior point/);
+    expect(() => gridFindIncenter(face)).toThrow(/no interior point/);
   });
 
   it("beats a brute-force sweep on every shape of an awkward family", () => {
@@ -159,7 +159,7 @@ describe("gridFindIncentre", () => {
     for (let n = 0; n < 24; n++) {
       const ring = awkwardPolygon(n);
       const face = singleFaceGrid(ring);
-      gridFindIncentre(face);
+      gridFindIncenter(face);
 
       const best = bestByBruteForce(ring);
       const got = inscribedRadius(ring, face.ix, face.iy);
@@ -199,7 +199,7 @@ describe("gridFindIncentre", () => {
       [68, -68],
     ];
     const face = singleFaceGrid(ring);
-    gridFindIncentre(face);
+    gridFindIncenter(face);
 
     expect(
       inscribedRadius(ring, face.ix, face.iy) / bestByBruteForce(ring),

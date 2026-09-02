@@ -1,17 +1,17 @@
 /**
- * `gridFindIncentre` — the largest-inscribed-circle centre used to place
+ * `gridFindIncenter` — the largest-inscribed-circle center used to place
  * Loopy's clue digits — swept over **every face of every tiling** and measured
  * against the best circle the integer lattice actually admits.
  *
  * ## The yardstick is the truth, not a peer
  *
- * This file used to compare against `__fixtures__/grid-incentre-c-reference.json`,
+ * This file used to compare against `__fixtures__/grid-incenter-c-reference.json`,
  * a frozen capture of where the C put each digit, asserting only
  * `|r_TS − r_C| ≤ 1`. That bar is green whenever the two implementations agree
  * — *including when they are both wrong* — and it was not tightenable, because
  * its tolerance existed to absorb the peer's error rather than this code's.
  * `bestByBruteForce` replaces it with the quantity the routine exists to
- * maximise, computed from the vertex ring alone (`engine/testing/polygon-yardstick.ts`),
+ * maximize, computed from the vertex ring alone (`engine/testing/polygon-yardstick.ts`),
  * so it cannot share a bug with the thing it measures.
  *
  * That swap immediately found something the C comparison structurally could
@@ -21,8 +21,8 @@
  *
  * ## What the numbers below mean
  *
- * `bestByBruteForce` sweeps the same integer lattice the answer is quantised
- * onto, so it is by construction an upper bound on what any stored incentre can
+ * `bestByBruteForce` sweeps the same integer lattice the answer is quantized
+ * onto, so it is by construction an upper bound on what any stored incenter can
  * admit, and the shortfall measures the **search** with no rounding term in it.
  * Two complementary bounds are asserted per face, because they fail differently:
  * an absolute one catches a point nudged off the optimum (the rounding defect
@@ -46,7 +46,7 @@ import {
   insidePolygon,
   type Ring,
 } from "../testing/polygon-yardstick.ts";
-import { gridFindIncentre } from "./grid-geometry.ts";
+import { gridFindIncenter } from "./grid-geometry.ts";
 import {
   ALL_GRID_TYPES,
   APERIODIC_GRID_TYPES,
@@ -156,7 +156,7 @@ function gridFor(type: GridType, w: number, h: number): Grid {
 }
 
 /**
- * The most a stored incentre may fall short of the best the lattice admits.
+ * The most a stored incenter may fall short of the best the lattice admits.
  *
  * Not a fitted number: the search returns a point on the continuous optimum and
  * the store rounds each axis by at most 0.5, so the displacement is at most
@@ -173,7 +173,7 @@ const MAX_RADIUS_SHORTFALL = 0.71;
 /**
  * And the relative floor, which fails on a different shape of defect: a search
  * that settles on a *different* point rather than a nudged one. On a small face
- * a wrong point can be within a unit absolutely while being visibly off-centre.
+ * a wrong point can be within a unit absolutely while being visibly off-center.
  *
  * Verified against a real defect rather than guessed at: measuring the room to
  * an edge's *infinite line* instead of to the edge scores ≈0.64 here and fails
@@ -183,7 +183,7 @@ const MAX_RADIUS_SHORTFALL = 0.71;
  */
 const MIN_RADIUS_RATIO = 0.9;
 
-describe("gridFindIncentre", () => {
+describe("gridFindIncenter", () => {
   describe("against the best circle the lattice admits", () => {
     for (const [type, w, h] of CASES) {
       const label = `${type} ${w}x${h}`;
@@ -201,7 +201,7 @@ describe("gridFindIncentre", () => {
         let worstRatio = 1;
 
         for (const face of g.faces) {
-          gridFindIncentre(face);
+          gridFindIncenter(face);
           const poly = polygon(face);
           const got = inscribedRadius(poly, face.ix, face.iy);
           const best = bestByBruteForce(poly);
@@ -238,7 +238,7 @@ describe("gridFindIncentre", () => {
         // would be a float gate on display code.
         if (worstShortfall > 0.01) {
           console.log(
-            `[grid-incentre] ${label}: worst shortfall ${worstShortfall.toFixed(4)} ` +
+            `[grid-incenter] ${label}: worst shortfall ${worstShortfall.toFixed(4)} ` +
               `(${(worstRatio * 100).toFixed(2)}% of achievable) over ${g.faces.length} faces`,
           );
         }
@@ -258,18 +258,18 @@ describe("gridFindIncentre", () => {
     it("computes once and returns the same point on a second call", () => {
       const g = gridNew("square", 3, 3);
       const face = g.faces[4];
-      expect(face.hasIncentre).toBe(false);
+      expect(face.hasIncenter).toBe(false);
 
-      gridFindIncentre(face);
-      expect(face.hasIncentre).toBe(true);
+      gridFindIncenter(face);
+      expect(face.hasIncenter).toBe(true);
       const { ix, iy } = face;
 
       // The cache is observable only by its effect, so poison the stored value
       // and confirm the second call leaves it alone — a recompute would
-      // overwrite it back to the true incentre.
+      // overwrite it back to the true incenter.
       face.ix = ix + 1000;
       face.iy = iy + 1000;
-      gridFindIncentre(face);
+      gridFindIncenter(face);
       expect(face.ix).toBe(ix + 1000);
       expect(face.iy).toBe(iy + 1000);
     });
@@ -277,9 +277,9 @@ describe("gridFindIncentre", () => {
     it("is idempotent when the value is left alone", () => {
       const g = gridNew("square", 3, 3);
       const face = g.faces[0];
-      gridFindIncentre(face);
+      gridFindIncenter(face);
       const first: [number, number] = [face.ix, face.iy];
-      gridFindIncentre(face);
+      gridFindIncenter(face);
       expect([face.ix, face.iy]).toEqual(first);
     });
   });
@@ -320,7 +320,7 @@ describe("gridFindIncentre", () => {
         [0, 60],
       ];
       const face = singleFaceGrid(ring);
-      gridFindIncentre(face);
+      gridFindIncenter(face);
 
       // The centroid is the case that motivates porting the real algorithm:
       // it lands in the notch, outside the polygon entirely.
@@ -341,7 +341,7 @@ describe("gridFindIncentre", () => {
         [50, 100],
       ];
       const face = singleFaceGrid(ring);
-      gridFindIncentre(face);
+      gridFindIncenter(face);
 
       const [gx, gy] = centroid(ring);
       expect(insidePolygon(ring, gx, gy)).toBe(false);
@@ -368,7 +368,7 @@ describe("gridFindIncentre", () => {
         ] as Ring,
       ]) {
         const face = singleFaceGrid(ring);
-        gridFindIncentre(face);
+        gridFindIncenter(face);
         const [gx, gy] = centroid(ring);
         const centroidRadius = inscribedRadius(ring, gx, gy);
         expect(inscribedRadius(ring, face.ix, face.iy)).toBeGreaterThan(centroidRadius);
@@ -380,21 +380,21 @@ describe("gridFindIncentre", () => {
     it("finds the centre of a square cell", () => {
       const g = gridNew("square", 3, 3);
       // Square tiles are 20 units; face 4 is the middle cell, (20,20)-(40,40).
-      gridFindIncentre(g.faces[4]);
+      gridFindIncenter(g.faces[4]);
       expect([g.faces[4].ix, g.faces[4].iy]).toEqual([30, 30]);
     });
 
     it("finds the classical incentre of every face of a honeycomb", () => {
-      // A regular hexagon's incentre is its centre, so every face's incentre
+      // A regular hexagon's incenter is its center, so every face's incenter
       // must admit a circle of the hexagon's apothem.
       const g = gridNew("honeycomb", 3, 3);
       for (const face of g.faces) {
-        gridFindIncentre(face);
+        gridFindIncenter(face);
         const poly = polygon(face);
         const n = poly.length;
         const cx = poly.reduce((s, p) => s + p[0], 0) / n;
         const cy = poly.reduce((s, p) => s + p[1], 0) / n;
-        // The incentre of a regular hexagon coincides with its centroid.
+        // The incenter of a regular hexagon coincides with its centroid.
         expect(Math.hypot(face.ix - cx, face.iy - cy)).toBeLessThan(1);
       }
     });

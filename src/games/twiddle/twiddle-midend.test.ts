@@ -11,18 +11,18 @@ import { twiddleGame } from "./index.ts";
 const KEY_A = 0x41;
 
 function recordingDrawing() {
-  const ops: Array<{ op: string; colour?: number }> = [];
+  const ops: Array<{ op: string; color?: number }> = [];
   const dr: GameDrawing = {
     startDraw: () => ops.push({ op: "startDraw" }),
     endDraw: () => ops.push({ op: "endDraw" }),
     drawUpdate: () => ops.push({ op: "drawUpdate" }),
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
-    drawRect: (_r, colour) => ops.push({ op: "drawRect", colour }),
-    drawLine: (_a, _b, colour) => ops.push({ op: "drawLine", colour }),
-    drawPolygon: (_p, colour) => ops.push({ op: "drawPolygon", colour }),
-    drawCircle: (_p, _r, colour) => ops.push({ op: "drawCircle", colour }),
-    drawText: (_p, _o, colour) => ops.push({ op: "drawText", colour }),
+    drawRect: (_r, color) => ops.push({ op: "drawRect", color }),
+    drawLine: (_a, _b, color) => ops.push({ op: "drawLine", color }),
+    drawPolygon: (_p, color) => ops.push({ op: "drawPolygon", color }),
+    drawCircle: (_p, _r, color) => ops.push({ op: "drawCircle", color }),
+    drawText: (_p, _o, color) => ops.push({ op: "drawText", color }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},

@@ -1,6 +1,6 @@
 /**
  * Unruly generator — idiomatic TS port of `unruly_fill_game` /
- * `new_game_desc`. Build a random valid full grid (place a random colour
+ * `new_game_desc`. Build a random valid full grid (place a random color
  * in each cell in shuffled order, solving forward after each placement),
  * then winnow clues while the deductive solver at the target difficulty
  * can still finish, with a too-easy gate above Trivial.
@@ -70,7 +70,7 @@ export function newDesc(p: UnrulyParams, rng: RandomState): { desc: string } {
   while (true) {
     attempt();
 
-    // Build a valid full grid, retrying until one materialises.
+    // Build a valid full grid, retrying until one materializes.
     const view = blankView(p);
     let scratch = newScratch(view);
     const fill = retryLimit("unruly: fillGame");

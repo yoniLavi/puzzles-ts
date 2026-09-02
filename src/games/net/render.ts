@@ -5,18 +5,18 @@
  * from Netslide's fixed offset lines).
  *
  * The per-tile cache word packs every visible feature of a tile (barriers,
- * corners, cursor, the four wires at two bits each, the endpoint, neighbour
+ * corners, cursor, the four wires at two bits each, the endpoint, neighbor
  * wires reaching onto our edges, the rotating flag, the locked flag) so the
  * diff key is that single `Int32` (docs/games/rendering.md § "The tile cache and the diff key"). The frame is drawn over a
  * `(w+2)×(h+2)` grid — one ring wider than the board — so a barrier on the outer
  * edge has somewhere to draw its outline.
  */
 
-import { BLUE, RED, TEAL } from "../../engine/colour/colours.ts";
-import { CURSOR, ERROR, GRID_MID, INK } from "../../engine/colour/palette.ts";
-import { netLocked } from "../../engine/colour/palette-games.ts";
+import { BLUE, RED, TEAL } from "../../engine/color/colors.ts";
+import { CURSOR, ERROR, GRID_MID, INK } from "../../engine/color/palette.ts";
+import { netLocked } from "../../engine/color/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
   anticlockwise,
   clockwise,
@@ -38,7 +38,7 @@ const FLASH_FRAME = 0.07;
 
 export { FLASH_FRAME, ROTATE_TIME as ANIM_TIME };
 
-// Palette, index-for-index with net.c's colour enum.
+// Palette, index-for-index with net.c's color enum.
 export const COL_BACKGROUND = 0;
 export const COL_LOCKED = 1;
 export const COL_BORDER = 2;
@@ -53,8 +53,8 @@ export const COL_ERR = 7;
  * way, which is the one thing a cursor must not be. */
 export const COL_CURSOR = 8;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_WIRE] = INK;
   out[COL_POWERED] = TEAL;
@@ -135,7 +135,7 @@ function rotatedCoords(
 }
 
 /**
- * Draw the wires of one colour pass as a single filled polygon. `bitmap`
+ * Draw the wires of one color pass as a single filled polygon. `bitmap`
  * selects which wire types (by the 2-bit code) this pass paints, so the black
  * base, the cyan powered wires and the red error wires are three overlaid
  * polygons.
@@ -147,7 +147,7 @@ function drawWires(
   radius: number,
   tile: number,
   bitmap: number,
-  colour: number,
+  color: number,
   halfwidth: number,
   matrix: readonly number[],
 ): void {
@@ -178,7 +178,7 @@ function drawWires(
     points.push({ x: Math.floor(0.5 + c.x), y: Math.floor(0.5 + c.y) });
   }
 
-  dr.drawPolygon(points, colour, colour);
+  dr.drawPolygon(points, color, color);
 }
 
 function drawTile(
@@ -266,7 +266,7 @@ function drawTile(
   const cy = ty + radius;
   radius++;
 
-  // Protrusions of neighbouring cells' wires into our edges — only when our own
+  // Protrusions of neighboring cells' wires into our edges — only when our own
   // wire won't overdraw them (no wire here, or we're rotating).
   {
     let dsh = 0;
@@ -320,7 +320,7 @@ function drawTile(
     }
   }
 
-  // Rotation matrix for the centred cell contents.
+  // Rotation matrix for the centered cell contents.
   const matrix = [1, 0, 0, 1];
   if (tile & TILE_ROTATING) {
     matrix[0] = Math.cos((angle * Math.PI) / 180);
@@ -515,7 +515,7 @@ export function redraw(
       if (t & LOCKED) td[dsi(ds, dx, dy)] |= TILE_LOCKED;
 
       // Completion flash: a Chebyshev ripple from the source that toggles the
-      // locked-grey background frame by frame.
+      // locked-gray background frame by frame.
       {
         const rcx = (ui.cx + w - ui.orgX) % w;
         const rcy = (ui.cy + h - ui.orgY) % h;

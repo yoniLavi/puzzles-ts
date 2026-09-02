@@ -82,8 +82,8 @@ const FIRST_FOUND_AT: Partial<
   Record<BoatsFiring["technique"]["kind"], readonly [preset: number, seed: number]>
 > = {
   allWaterPlaced: [0, 0],
-  centreCount: [9, 3],
-  centreForced: [0, 1],
+  centerCount: [9, 3],
+  centerForced: [0, 1],
   givenClue: [0, 0],
   growTooLong: [1, 0],
   isolated: [7, 8],
@@ -264,10 +264,10 @@ describe("boats hint — narration", () => {
     ["lineSatisfied", /(already shows the \d+ ships? its number allows|number is 0)/],
     ["lineForced", /still needs .* and has (just|only) .* free square/],
     ["allWaterPlaced", /Every square of water .* is already marked/],
-    ["centreForced", /middle segment has water/],
+    ["centerForced", /middle segment has water/],
     ["isolated", /walled in by water on all four sides/],
     ["mustExtend", /can't stand alone/],
-    ["centreCount", /needs two — so it can't go that way/],
+    ["centerCount", /needs two — so it can't go that way/],
     ["growTooLong", /would make a boat of \d+/],
     ["runTooShort", /every \d+-boat is already placed/],
     ["onlyRunsLeft", /run[s]? can still hold the \d+-boat/],
@@ -513,12 +513,12 @@ describe("boats hint — keeping track", () => {
   });
 });
 
-/** Palette-index probe: a `rect`/`line`/`text` op carries `colour`, a
+/** Palette-index probe: a `rect`/`line`/`text` op carries `color`, a
  * `polygon`/`circle` op carries `fill`/`outline`. */
-function usesColour(ops: readonly DrawOp[], index: number): boolean {
+function usesColor(ops: readonly DrawOp[], index: number): boolean {
   return ops.some(
     (o) =>
-      ("colour" in o && o.colour === index) ||
+      ("color" in o && o.color === index) ||
       ("fill" in o && o.fill === index) ||
       ("outline" in o && o.outline === index),
   );
@@ -540,8 +540,8 @@ describe("boats hint — rendering", () => {
     const hl = result.hint?.highlights as BoatsHint | undefined;
     expect(hl?.targets.length).toBeGreaterThan(0);
     // The mark is drawn in the game's own vocabulary — a segment for a boat,
-    // the water tildes for water — recoloured `COL_HINT` (§5.1a).
-    expect(usesColour(result.recording.ops, COL_HINT)).toBe(true);
+    // the water tildes for water — recolored `COL_HINT` (§5.1a).
+    expect(usesColor(result.recording.ops, COL_HINT)).toBe(true);
   });
 
   it("shades or rings the evidence the deduction reasons over", () => {
@@ -551,7 +551,7 @@ describe("boats hint — rendering", () => {
       const result = frame(preset, true);
       const hl = result.hint?.highlights as BoatsHint | undefined;
       if (!hl || hl.evidence.length === 0) continue;
-      expect(usesColour(result.recording.ops, COL_HINT_CELL)).toBe(true);
+      expect(usesColor(result.recording.ops, COL_HINT_CELL)).toBe(true);
       return;
     }
     throw new Error("no tier's opening hint carried evidence");
@@ -559,8 +559,8 @@ describe("boats hint — rendering", () => {
 
   it("paints no hint colour at all when no hint is displayed", () => {
     const result = frame(0, false);
-    expect(usesColour(result.recording.ops, COL_HINT)).toBe(false);
-    expect(usesColour(result.recording.ops, COL_HINT_CELL)).toBe(false);
+    expect(usesColor(result.recording.ops, COL_HINT)).toBe(false);
+    expect(usesColor(result.recording.ops, COL_HINT_CELL)).toBe(false);
   });
 
   it("matches the recorded hint frame", () => {
@@ -568,7 +568,7 @@ describe("boats hint — rendering", () => {
   });
 });
 
-/** Guards the two placement marks stay distinct — a single colour standing for
+/** Guards the two placement marks stay distinct — a single color standing for
  * "place a boat" and "place water" would read as one action (§5.1a). */
 describe("boats hint — the two move shapes", () => {
   it("carries both placement shapes on the step that forces both", () => {

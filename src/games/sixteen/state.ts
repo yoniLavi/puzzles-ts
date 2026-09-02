@@ -149,7 +149,7 @@ export function status(state: SixteenState): "solved" | "ongoing" {
   return state.completed > 0 ? "solved" : "ongoing";
 }
 
-/* A `serialiseMove`/`deserialiseMove` pair lived here and was never wired into
+/* A `serializeMove`/`deserializeMove` pair lived here and was never wired into
  * `sixteenGame`, so the save codec has always used the default identity path —
  * `SixteenMove` is plain JSON, which is why nothing noticed. Its own test
  * round-tripped the pair against itself, and a round-trip test passes whether or

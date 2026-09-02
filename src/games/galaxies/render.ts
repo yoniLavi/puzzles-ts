@@ -32,7 +32,7 @@ import {
   tileOpposite,
 } from "./state.ts";
 
-// --- colour palette indices ----------------------------------------
+// --- color palette indices ----------------------------------------
 
 export const COL_BACKGROUND = 0;
 export const COL_WHITEBG = 1;
@@ -44,7 +44,7 @@ export const COL_EDGE = 6;
 export const COL_ARROW = 7;
 export const COL_CURSOR = 8;
 export const COL_MISTAKE = 9;
-/** The in-progress association drag's preview — its own colour, not the
+/** The in-progress association drag's preview — its own color, not the
  * cursor's. The two are different meanings ("where the keyboard is" vs "let go
  * and this is laid"), they are on screen together during a keyboard drag, and
  * the cursor's is a board-relative *tint*, which a transient affordance the
@@ -52,12 +52,12 @@ export const COL_MISTAKE = 9;
 export const COL_DRAG = 10;
 /** The displayed hint's *action*: the cells an association claims, the wall it
  * draws, and a ring on the dot it points at. Purple rather than the
- * collection's hint blue — see the assignment in `index.ts` `colours()`. */
+ * collection's hint blue — see the assignment in `index.ts` `colors()`. */
 export const COL_HINT = 11;
 /** The displayed hint's *evidence*: the cells, walls and dots the deduction
  * reasons over. */
 export const COL_HINT_CELL = 12;
-export const NCOLOURS = 13;
+export const NCOLORS = 13;
 
 // --- DrawState ------------------------------------------------------
 
@@ -85,7 +85,7 @@ export interface GalaxiesDrawState {
    * cache has nothing to erase it. The drag arrows shipped that way and
    * smeared across every tile they crossed; the half-grid cursor shipped that
    * way too and left a mark at every vertex and edge it visited, unnoticed
-   * only because its colour was a near-invisible tint of the board. */
+   * only because its color was a near-invisible tint of the board. */
   overlay: OverlaySidecar;
   /** Everything the displayed *hint* paints on a tile, in one sidecar word —
    * see {@link HINT_TARGET_CELL} and friends. A third sidecar rather than more
@@ -248,7 +248,7 @@ function packHint(
         if (dx0 < 0 || dx0 > 2 || dy0 < 0 || dy0 > 2) continue;
         if (tx < 0 || tx >= w || ty < 0 || ty >= h) continue;
         // Never ring a dot on a cell the hint has filled: the ring would be
-        // its own colour on its own colour — invisible, and saying nothing the
+        // its own color on its own color — invisible, and saying nothing the
         // fill does not already say. It is the "dot sits on these cells" rule
         // that hits this, and its narration names the dot by position rather
         // than by a ring for exactly the same reason.
@@ -260,7 +260,7 @@ function packHint(
   for (const a of hl.area) cell(a.x, a.y, HINT_AREA_CELL);
   // With a focus, only that cell fills; the rest of the move's cells are its
   // partners and are outlined. Without one, the cells are equivalent and all
-  // fill (quality-bar rule 3 — equivalent moves share a colour).
+  // fill (quality-bar rule 3 — equivalent moves share a color).
   const focus = hl.focus;
   for (const t of hl.targets) {
     const same = focus !== null && t.x === focus.x && t.y === focus.y;
@@ -302,7 +302,7 @@ function drawArrow(
   const xdy = ddy / vlen;
   const ydx = -xdy;
   const ydy = xdx;
-  // `ddx`/`ddy` are half-tile grid steps, so the dot's centre is `vlen / 2`
+  // `ddx`/`ddy` are half-tile grid steps, so the dot's center is `vlen / 2`
   // tiles away. Shorten only the point; the tail stays put, so an arrow near
   // its dot reads as a short arrow rather than a shrunken one.
   const reach = Math.min(
@@ -359,7 +359,7 @@ function drawSquare(
         : COL_BACKGROUND;
   dr.drawRect({ x: lx, y: ly, w: tileSize, h: tileSize }, bg);
 
-  // Grid lines (top-left only — neighbours will draw their own)
+  // Grid lines (top-left only — neighbors will draw their own)
   const gridCol = flags & DRAW_BLACK ? COL_BLACKDOT : COL_GRID;
   dr.drawRect({ x: lx, y: ly, w: 1, h: tileSize }, gridCol);
   dr.drawRect({ x: lx, y: ly, w: tileSize, h: 1 }, gridCol);
@@ -367,7 +367,7 @@ function drawSquare(
   // Arrow or cursor. A drag-preview arrow renders in COL_DRAG and
   // thicker than a committed one: a preview must not look like a
   // committed arrow (docs/games/rendering.md § "A press preview must
-  // not look like a commit"), and both preview tiles share one colour
+  // not look like a commit"), and both preview tiles share one color
   // because release commits them together — they share a fate.
   if (flags & DRAW_ARROW) {
     drawArrow(
@@ -388,14 +388,14 @@ function drawSquare(
     drawRectOutline(dr, cx, cy, sz, sz, COL_CURSOR);
   }
 
-  // Edges. Three overlays can recolour a wall, and one of them can conjure a
+  // Edges. Three overlays can recolor a wall, and one of them can conjure a
   // bar where the board has none: a wall the player set inside a single
   // solution galaxy is COL_MISTAKE; a wall the displayed hint reasons *from*
   // is COL_HINT_CELL; and the wall a hint asks the player to *draw* is a
   // COL_HINT bar drawn whether or not the wall exists yet — that is the whole
   // suggestion, and it is Palisade's forced-edge treatment in Galaxies'
   // vocabulary (docs/games/hints.md § "Echo the move's shape in the hint
-  // colour"). `null` means this side draws nothing.
+  // color"). `null` means this side draws nothing.
   const edgeCol = (side: number): number | null => {
     if (hint & (side << HINT_WALL_SHIFT)) return COL_HINT;
     if (!(flags & side)) return null;
@@ -497,15 +497,15 @@ function drawSquare(
         const v = candAt(overlay, dx0, dy0);
         if (!v) continue;
         // `drawCircle` strokes one pixel wide and takes no thickness, so the
-        // picked dot is emphasised with concentric rings rather than a
+        // picked dot is emphasized with concentric rings rather than a
         // heavier one.
         const rings = v === CAND_SNAPPED ? previewThickness : 1;
-        const centre = {
+        const center = {
           x: lx + ((dx0 * tileSize) >> 1),
           y: ly + ((dy0 * tileSize) >> 1),
         };
         for (let r = 0; r < rings; r++) {
-          dr.drawCircle(centre, dotSize + 2 + r, -1, COL_DRAG);
+          dr.drawCircle(center, dotSize + 2 + r, -1, COL_DRAG);
         }
       }
     }
@@ -514,7 +514,7 @@ function drawSquare(
   // The displayed hint's dot rings, in the drag's own ring vocabulary so the
   // player reads them without being taught a second shape: the dot an
   // association must point at, and any dot the argument merely cites. The
-  // colours differ from the drag's (see `colours()`), which is what keeps the
+  // colors differ from the drag's (see `colors()`), which is what keeps the
   // two readable when a player drags to follow the hint and the cell's legal
   // dots are ringed at the same time.
   if (hint >>> HINT_DOT_SHIFT) {
@@ -522,7 +522,7 @@ function drawSquare(
       for (let dx0 = 0; dx0 < 3; dx0++) {
         const v = hintDotAt(hint, dx0, dy0);
         if (!v) continue;
-        const centre = {
+        const center = {
           x: lx + ((dx0 * tileSize) >> 1),
           y: ly + ((dy0 * tileSize) >> 1),
         };
@@ -534,11 +534,11 @@ function drawSquare(
         // other option and would cost the narration its noun — a hint that
         // says "the white dot" must leave the dot visibly white.
         const halo = Math.max(2, tileSize >> 4);
-        dr.drawCircle(centre, dotSize + halo, col, col);
+        dr.drawCircle(center, dotSize + halo, col, col);
         const val = (dots >>> (DOT_SHIFT_C + DOT_SHIFT_M * (dy0 * 3 + dx0))) & 3;
         if (val) {
           dr.drawCircle(
-            centre,
+            center,
             dotSize,
             val === DOT_WHITE ? COL_WHITEDOT : COL_BLACKDOT,
             COL_BLACKDOT,
@@ -581,7 +581,7 @@ function drawSquare(
   // suggests a wall already draws a `COL_HINT` bar in exactly that place. The
   // inset borrows the drag preview's geometry deliberately — in both cases the
   // mark means "this cell is part of what is about to be committed" — and
-  // differs only in colour, which is the one thing that has to separate a hint
+  // differs only in color, which is the one thing that has to separate a hint
   // from a drag.
   //
   // **And none of them is a fill**, because a Galaxies cell's fill *is* its
@@ -768,7 +768,7 @@ export function redraw(
     ds.started = true;
   }
 
-  const cols = checkComplete(s, true).colours;
+  const cols = checkComplete(s, true).colors;
 
   // The in-progress drag's snapped preview: the drop target and its
   // 180° partner about the drag dot — exactly the pair a release
@@ -823,7 +823,7 @@ export function redraw(
       if (s.flags[idx(s, 2 * x + 1, 2 * y)] & F_EDGE_SET) flags |= DRAW_EDGE_U;
       if (s.flags[idx(s, 2 * x + 1, 2 * y + 2)] & F_EDGE_SET) flags |= DRAW_EDGE_D;
 
-      // Corner flags (from neighbouring edges).
+      // Corner flags (from neighboring edges).
       if (
         (x > 0 && s.flags[idx(s, 2 * x - 1, 2 * y)] & F_EDGE_SET) ||
         (y > 0 && s.flags[idx(s, 2 * x, 2 * y - 1)] & F_EDGE_SET)
@@ -849,7 +849,7 @@ export function redraw(
         flags |= DRAW_CORNER_DR;
       }
 
-      // Region colour.
+      // Region color.
       const ti = idx(s, 2 * x + 1, 2 * y + 1);
       const sFlags = s.flags[ti];
       if (cols?.[y * w + x] && !flashing) {
@@ -914,7 +914,7 @@ export function redraw(
       ds.overlay.add(cacheI, preview);
 
       // The half-grid keyboard cursor, if it is on one of this tile's nine
-      // subcell positions. A tile-centre cursor is DRAW_CURSOR in the key
+      // subcell positions. A tile-center cursor is DRAW_CURSOR in the key
       // above; a vertex or edge cursor rides the overlay sidecar so the tile
       // that painted it is the tile that erases it.
       if (halfGridCursor) {

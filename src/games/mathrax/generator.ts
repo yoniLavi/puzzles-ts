@@ -67,7 +67,7 @@ import {
 /**
  * The clue an intersection would carry, given the four solution digits around it
  * — `(a1, b1)` the main diagonal and `(a2, b2)` the anti-diagonal, each pair
- * normalised so the larger comes first (upstream `mathrax_candidate_clue`).
+ * normalized so the larger comes first (upstream `mathrax_candidate_clue`).
  *
  * The **precedence cascade is load-bearing**: several clue types can describe
  * the same four digits, and which one wins lands in the description verbatim.

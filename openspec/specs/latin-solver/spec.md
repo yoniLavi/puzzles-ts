@@ -47,7 +47,7 @@ Latin cube supports a symbol that may repeat in a line").
 ### Requirement: Shared Latin-square generator
 
 The engine SHALL provide, in `src/engine/latin.ts`, the RNG-faithful
-Latin-square generator promoted from the Singles port: `matching` (randomised
+Latin-square generator promoted from the Singles port: `matching` (randomized
 bipartite matching), `latinGenerate(o, rng)`, and `latinGenerateRect(w, h, rng)`.
 Their random draws SHALL remain bit-identical to upstream `matching.c` /
 `latin.c` so that a faithful game generator reproduces the C description exactly

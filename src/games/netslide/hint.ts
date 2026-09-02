@@ -660,8 +660,8 @@ function less(a: [number, number, number], b: [number, number, number]): boolean
  * Saying it every step made the commonest sentence 1.8× the length of the rest and
  * taught nothing the second time.
  *
- * Lines are named by **number** ("row 3 never slides"), never as "the centre":
- * `cx` is `⌊w/2⌋`, so on an even-sized board the source is visibly off-centre and
+ * Lines are named by **number** ("row 3 never slides"), never as "the center":
+ * `cx` is `⌊w/2⌋`, so on an even-sized board the source is visibly off-center and
  * the player can see the claim is false.
  *
  * The move itself is *not* forced by logic — Netslide is a movement game — so

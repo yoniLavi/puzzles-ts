@@ -1,5 +1,5 @@
 /**
- * Tier-1 behavioural + tier-2 render tests for the tents port.
+ * Tier-1 behavioral + tier-2 render tests for the tents port.
  * Byte-match generation/solver agreement lives in tents-differential.test.ts;
  * a render-scenario snapshot in tents-render-scenario.test.ts.
  */
@@ -242,7 +242,7 @@ describe("tents render (tier 2)", () => {
     const mistakes = tentsGame.findMistakes?.(wrong) ?? [];
     expect(mistakes.length).toBe(1);
 
-    const rec = new RecordingDrawing(tentsGame.colours([0.9, 0.9, 0.9]));
+    const rec = new RecordingDrawing(tentsGame.colors([0.9, 0.9, 0.9]));
     const ds = newDrawState(wrong);
     tentsGame.setTileSize?.(ds, 32);
     const ui = tentsGame.newUi(wrong);
@@ -253,7 +253,7 @@ describe("tents render (tier 2)", () => {
     rec.ops.length = 0;
     redraw(rec, ds, null, wrong, 1, ui, 0, 0, undefined, mistakes);
 
-    expect(rec.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(true);
+    expect(rec.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(true);
   });
 
   it("computeSize matches the NARROW_BORDERS geometry", () => {

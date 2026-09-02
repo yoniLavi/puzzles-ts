@@ -9,10 +9,10 @@ The top-level `LICENSE.md` file SHALL credit, in chronological order, the layers
 of contribution to this codebase under a single MIT license body:
 
 1. Simon Tatham and upstream Portable Puzzle Collection contributors (deferring
-   to `licences/sgt-puzzles-LICENCE` for the full contributor list).
+   to `licenses/sgt-puzzles-LICENSE` for the full contributor list).
 2. Lennard Sprong (x-sheep), for the `puzzles-unreleased` puzzles that thirteen
    of the games here are ported from (deferring to
-   `licences/puzzles-unreleased-LICENCE`).
+   `licenses/puzzles-unreleased-LICENSE`).
 3. Mike Edmunds, for the puzzles-web PWA shell this project forks from.
 4. Yoni Lavi, for the TypeScript port work in this project (year range `2025-`,
    open-ended).
@@ -20,7 +20,7 @@ of contribution to this codebase under a single MIT license body:
 The MIT permission grant, conditions, and warranty disclaimer SHALL appear once
 below the layered copyright lines and apply to every layer.
 
-Upstream notices SHALL live in `licences/`, one file per upstream project, each
+Upstream notices SHALL live in `licenses/`, one file per upstream project, each
 byte-identical to what that project ships, with a README recording what each one
 covers. They SHALL NOT live inside a subdirectory of the source tree they once
 accompanied: after the migration what they cover is the whole of `src/engine/` and `src/games/`
@@ -45,14 +45,14 @@ without repointing that import breaks the production build.
 #### Scenario: Upstream contributor list not duplicated
 
 - **WHEN** `LICENSE.md` references upstream contributors
-- **THEN** it directs the reader to `licences/sgt-puzzles-LICENCE` rather than
+- **THEN** it directs the reader to `licenses/sgt-puzzles-LICENSE` rather than
   enumerating contributors inline
 - **AND** that file is left byte-identical to upstream
 
 #### Scenario: The notices are shown in the app
 
 - **WHEN** a player opens the About dialog
-- **THEN** the upstream notices are rendered from the files in `licences/`
+- **THEN** the upstream notices are rendered from the files in `licenses/`
 
 ### Requirement: CREDITS.md file thanking lineage
 

@@ -125,7 +125,7 @@ export function decodeParams(s: string): SlideParams {
  *
  * Measured over 5–7 seeds per size, in a plain `node` process (docs/games/testing.md § "Seed-deterministic, never clock-gated" —
  * never judge a generator's cost from inside vitest), after the visited-set
- * optimisation in `solver.ts`:
+ * optimization in `solver.ts`:
  *
  * | cells | size  | min    | median | worst              |
  * | ----- | ----- | ------ | ------ | ------------------ |
@@ -221,7 +221,7 @@ export function status(s: SlideState): GameStatus {
   return s.completed >= 0 ? "solved" : "ongoing";
 }
 
-// --- UI (ephemeral; never serialised) ---------------------------------
+// --- UI (ephemeral; never serialized) ---------------------------------
 
 /**
  * Two independent things, kept apart on purpose.
@@ -233,7 +233,7 @@ export function status(s: SlideState): GameStatus {
  * and {@link cancelGrab} drops it whenever the board moves underneath it.
  *
  * **The cursor** is a keyboard player's position on the board. It survives a
- * grab being cancelled, because an undo changes the board but not the grid the
+ * grab being canceled, because an undo changes the board but not the grid the
  * cursor is clamped to — losing it there would read as a lost keypress.
  */
 export interface SlideUi {

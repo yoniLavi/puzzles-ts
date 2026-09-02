@@ -24,7 +24,7 @@ interface WorkerPuzzleFactory {
 }
 const workerPuzzleFactory: WorkerPuzzleFactory = {
   async create(puzzleId: string): Promise<PuzzleEngineSurface> {
-    // Every catalogued game is served by the native TypeScript engine. This
+    // Every cataloged game is served by the native TypeScript engine. This
     // used to be the per-game hybrid dispatch seam, choosing between the
     // midend-backed adapter and a C/WASM `WorkerPuzzle`; `retire-c-engine`
     // removed the C side, so there is nothing left to choose between.

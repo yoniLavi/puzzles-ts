@@ -2,27 +2,27 @@
  * Towers (Skyscrapers) rendering — port of `game_redraw` / `draw_tile` from
  * `towers.c`.
  *
- * The board is modelled as a `(w+2) × (w+2)` array of tiles: a ring of clue
+ * The board is modeled as a `(w+2) × (w+2)` array of tiles: a ring of clue
  * cells around a `w × w` play area. A filled play cell is drawn — under the 3D
  * appearance preference — as a tower whose drawn solid scales with its height
- * (the left and bottom faces protrude up-left), or, in 2D, as a plain centred
+ * (the left and bottom faces protrude up-left), or, in 2D, as a plain centered
  * digit. Empty cells show their pencil marks in an auto-sized grid. Because a
- * 3D tower paints up-left into its neighbours, a changed tile is diffed and
- * repainted along with the three neighbours whose towers can reach into it
+ * 3D tower paints up-left into its neighbors, a changed tile is diffed and
+ * repainted along with the three neighbors whose towers can reach into it
  * (the upstream four-corner cache key).
  */
 
 import {
-  clueDoneColour,
+  clueDoneColor,
   ERROR,
   HINT_ACTION,
   HINT_EVIDENCE,
   highlightWash,
   INK,
   PENCIL_BODY,
-  pencilColour,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
+  pencilColor,
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
@@ -34,7 +34,7 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   checkErrors,
   cluePos,
@@ -59,26 +59,26 @@ export const COL_DONE = 6;
 // #2 school pencil). Appended past the upstream enum; Towers has no dark-mode
 // paletteOverrides, so the extra indices are safe.
 export const COL_PENCIL_BODY = 7;
-// Fork additions: the explained-hint legend (see docs/games/hints.md § "The element-type colour legend").
+// Fork additions: the explained-hint legend (see docs/games/hints.md § "The element-type color legend").
 export const COL_HINT = 8; // the acted-on cell's ring (drawn once per frame in redraw)
 /** The driving clue's line of sight, outlined (same pass), **and** a forcing
  * chain's ordinal — one index, because the number indexes the evidence. */
 export const COL_HINT_CELL = 9;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const bg = defaultBackground;
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = INK;
-  out[COL_USER] = playerEntryColour(bg);
+  out[COL_USER] = playerEntryColor(bg);
   out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_ERROR] = ERROR;
-  out[COL_PENCIL] = pencilColour(bg);
-  out[COL_DONE] = clueDoneColour(bg);
+  out[COL_PENCIL] = pencilColor(bg);
+  out[COL_DONE] = clueDoneColor(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
   // Both hint marks are outlines on the cell's border, so both take a strong
-  // colour and differ in shape rather than in weight — a line of sight's contour
+  // color and differ in shape rather than in weight — a line of sight's contour
   // against one cell's ring. `HINT_EVIDENCE` covers the chain ordinal too; see
   // its doc comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
@@ -139,7 +139,7 @@ export interface TowersDrawState {
   hint: OverlaySidecar;
   /** `(w+2)²` mistake-overlay sidecar (fork addition). Neither overlay changes
    * a cell's tile value, so both must be in the diff key — this one is where
-   * that was learnt: a Check & Save on an already-drawn cell repainted nothing. */
+   * that was learned: a Check & Save on an already-drawn cell repainted nothing. */
   wrong: OverlaySidecar;
   /** The hint target's ring and the evidence area's outline (fork additions),
    * drawn once per frame after the tile loop. See {@link markBand}. */
@@ -286,12 +286,12 @@ function drawTile(
   }
 
   if (digit) {
-    let colour: number;
-    if (tile & DF_ERROR) colour = COL_ERROR;
-    else if (tile & DF_CLUE_DONE) colour = COL_DONE;
-    else if (x < 0 || y < 0 || x >= w || y >= w) colour = COL_GRID;
-    else if (tile & DF_IMMUTABLE) colour = COL_GRID;
-    else colour = COL_USER;
+    let color: number;
+    if (tile & DF_ERROR) color = COL_ERROR;
+    else if (tile & DF_CLUE_DONE) color = COL_DONE;
+    else if (x < 0 || y < 0 || x >= w || y >= w) color = COL_GRID;
+    else if (tile & DF_IMMUTABLE) color = COL_GRID;
+    else color = COL_USER;
 
     dr.drawText(
       { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
@@ -301,7 +301,7 @@ function drawTile(
         fontType: "variable",
         size: tile & DF_PLAYAREA ? Math.floor(ts / 2) : Math.floor((ts * 2) / 5),
       },
-      colour,
+      color,
       String(digit),
     );
   } else {
@@ -315,7 +315,7 @@ function drawTile(
       const pt = ty;
       const pb = ty + ts - (threeD ? y3d(w, w, ts) : 0);
 
-      // Choose a grid layout maximising the font size.
+      // Choose a grid layout maximizing the font size.
       let bestsize = 0;
       let pbest = 0;
       for (let pw = 3; pw < Math.max(npencil, 4); pw++) {
@@ -345,10 +345,10 @@ function drawTile(
           const cx = pl + Math.floor((fontsize * (2 * dx + 1)) / 2);
           const cy = pt2 + Math.floor((fontsize * (2 * dy + 1)) / 2);
           const isStruck = (struck & (1 << i)) !== 0;
-          // The struck candidate keeps its normal pencil colour (high contrast,
+          // The struck candidate keeps its normal pencil color (high contrast,
           // reads as a real note); the strikethrough line — drawn in the same
-          // COL_PENCIL colour as the digit — is the cue that the hint is ruling
-          // it out. Colouring either against the lighter hint background washed
+          // COL_PENCIL color as the digit — is the cue that the hint is ruling
+          // it out. Coloring either against the lighter hint background washed
           // them out.
           dr.drawText(
             { x: cx, y: cy },
@@ -417,7 +417,7 @@ function drawTile(
 
 /** Highlight payload a Towers hint step carries (built in `index.ts`). Defined
  * here so `redraw` can consume it without a circular import. See
- * docs/games/hints.md § "The element-type colour legend" for the element-type legend. */
+ * docs/games/hints.md § "The element-type color legend" for the element-type legend. */
 export interface TowersHint {
   /** The driving clue's line of sight, shaded `COL_HINT_CELL`. A forcing
    * chain's cells additionally carry their place in it, drawn as an ordinal. */
@@ -489,11 +489,11 @@ export function redraw(
 
   // Pencil-mode indicator in the top-right clue-ring corner (W-pos (w+1, 0)).
   // Towers protrude up-left, so nothing ever overlaps this corner; it is also
-  // no cell's up-left neighbour, so the diff cache repaints it cleanly on
+  // no cell's up-left neighbor, so the diff cache repaints it cleanly on
   // toggle. Driven straight off the persistent `hpencil` mode flag.
   if (ui.hpencil) ds.tiles[w + 1] |= DF_PENCIL_MODE;
 
-  // Diff and repaint, drawing each changed cell's tower-overlapping neighbours.
+  // Diff and repaint, drawing each changed cell's tower-overlapping neighbors.
   for (let y = 0; y < W; y++) {
     for (let x = 0; x < W; x++) {
       const i = y * W + x;
@@ -578,7 +578,7 @@ export function redraw(
   // The hint marks, **once per frame after the tile loop** and outside every
   // clip. Once, because Towers repaints each tile up to four times inside a
   // single clip (a 3D tower spills into the cells up and to the left of its
-  // own); after and unclipped, so a neighbour's tower cannot bury the mark.
+  // own); after and unclipped, so a neighbor's tower cannot bury the mark.
   const targets: MarkCell[] = [];
   const evidence: MarkCell[] = [];
   for (let i = 0; i < W * W; i++) {
@@ -588,8 +588,8 @@ export function redraw(
   }
   ds.marks.paint(dr, targets, evidence, {
     band: (x, y) => markBand(ds, x, y),
-    targetColour: COL_HINT,
-    evidenceColour: COL_HINT_CELL,
+    targetColor: COL_HINT,
+    evidenceColor: COL_HINT_CELL,
   });
 
   ds.started = true;

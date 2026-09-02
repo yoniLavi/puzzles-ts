@@ -23,10 +23,10 @@ import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
 import { newSeparateDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -175,7 +175,7 @@ export const separateGame: Game<
   textFormat,
   statusbarText: (s) => `${s.k} letters per region`,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SeparateParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

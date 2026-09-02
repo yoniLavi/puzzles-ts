@@ -1,6 +1,6 @@
 /**
  * Tier-2.5 render scenarios for Rectangles: drive a real Midend to a target
- * frame and capture `redraw`. Targeted op assertions (number text, the grey
+ * frame and capture `redraw`. Targeted op assertions (number text, the gray
  * correct-rectangle fill after solving, the red mistake overlay) plus a
  * snapshot so a render regression is a reviewable text diff (`vitest -u`
  * re-baselines; the targeted assertions survive a careless `-u`).
@@ -21,8 +21,8 @@ describe("rect render scenarios", () => {
   it("opener frame: number text drawn, no correct-fill yet", () => {
     const { recording } = renderScenario({ game: rectGame, id: ID });
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
-    // Nothing is complete on a blank board, so no grey correct fill.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_CORRECT)).toBe(
+    // Nothing is complete on a blank board, so no gray correct fill.
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_CORRECT)).toBe(
       false,
     );
     expect(recording.ops).toMatchSnapshot();
@@ -39,8 +39,8 @@ describe("rect render scenarios", () => {
       id: ID,
       moves: [solveMove.move as RectMove],
     });
-    // Every cell is correct → grey COL_CORRECT fill appears; flash is 0 here.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_CORRECT)).toBe(
+    // Every cell is correct → gray COL_CORRECT fill appears; flash is 0 here.
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_CORRECT)).toBe(
       true,
     );
   });
@@ -67,7 +67,7 @@ describe("rect render scenarios", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBeGreaterThan(0);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(
+    expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(
       true,
     );
   });

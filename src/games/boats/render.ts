@@ -33,21 +33,21 @@
  * (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 
-import { BLUE_WASH, GREEN, GREY_BOLD } from "../../engine/colour/colours.ts";
+import { BLUE_WASH, GRAY_BOLD, GREEN } from "../../engine/color/colors.ts";
 import {
-  clueDoneColour,
+  clueDoneColor,
   ERROR,
   ERROR_TEXT,
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
   PAPER,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { BoatsHint } from "./index.ts";
 import type { BoatsMistake } from "./solver.ts";
 import {
@@ -103,7 +103,7 @@ export const COL_COUNT_ERROR = 12;
 export const COL_COLLISION_ERROR = 13;
 export const COL_COLLISION_TEXT = 14;
 /**
- * The hint colours are appended **past** the upstream enum. Safe here
+ * The hint colors are appended **past** the upstream enum. Safe here
  * specifically because `augmentation.ts` darkens this game's palette by index
  * (`paletteOverrides: { 4: 0.6 }` for the water), so only indices at or below 14
  * are spoken for — a *reindexed* palette would mis-target that override
@@ -112,8 +112,8 @@ export const COL_COLLISION_TEXT = 14;
 export const COL_HINT = 15;
 export const COL_HINT_CELL = 16;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = INK;
   // Not `CURSOR`: green is the fleet panel's unplaced ships. The ring sits
@@ -122,11 +122,11 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_CURSOR_A] = INK;
   out[COL_CURSOR_B] = PAPER; // on a ship cell, whose fill is ink
   out[COL_WATER] = BLUE_WASH;
-  out[COL_SHIP_CLUE] = GREY_BOLD;
+  out[COL_SHIP_CLUE] = GRAY_BOLD;
   out[COL_SHIP_GUESS] = INK;
   out[COL_SHIP_ERROR] = ERROR;
   out[COL_SHIP_FLEET] = GREEN;
-  out[COL_SHIP_FLEET_DONE] = clueDoneColour(defaultBackground);
+  out[COL_SHIP_FLEET_DONE] = clueDoneColor(defaultBackground);
   out[COL_SHIP_FLEET_STRIPE] = INK;
   out[COL_COUNT] = INK;
   out[COL_COUNT_ERROR] = ERROR;
@@ -277,7 +277,7 @@ export function setTileSize(ds: BoatsDrawState, ts: number): void {
 /**
  * Upstream `boats_draw_ship`: one boat segment. Every shape is a circle, a
  * rectangle, or both — an end cap is a circle with a rectangle filling the half
- * that continues into the next segment, a centre is a plain rectangle, a single
+ * that continues into the next segment, a center is a plain rectangle, a single
  * is a bare circle, and an unresolved segment is a small square.
  */
 function drawSegment(
@@ -286,7 +286,7 @@ function drawSegment(
   ty: number,
   ts: number,
   ship: number,
-  colour: number,
+  color: number,
 ): void {
   const off = ts / 20;
   const cx = tx + ts / 2;
@@ -294,7 +294,7 @@ function drawSegment(
   let r = ts / 2 - off * 2;
 
   if (ship !== SHIP_CENTER && ship !== SHIP_VAGUE)
-    dr.drawCircle({ x: cx, y: cy }, r, colour, colour);
+    dr.drawCircle({ x: cx, y: cy }, r, color, color);
 
   if (ship === SHIP_VAGUE) r *= 0.7;
 
@@ -329,13 +329,13 @@ function drawSegment(
         { x: x1, y: y1 },
         { x: x0, y: y1 },
       ],
-      colour,
-      colour,
+      color,
+      color,
     );
 }
 
 /** Upstream `boats_draw_collision` (itself copied from `tents.c`): a warning
- * diamond with an exclamation mark, centred on the corner where two boats
+ * diamond with an exclamation mark, centered on the corner where two boats
  * touch. */
 function drawCollision(dr: GameDrawing, ts: number, x: number, y: number): void {
   const ext = (ts * 2) / 5;
@@ -364,7 +364,7 @@ function drawCollision(dr: GameDrawing, ts: number, x: number, y: number): void 
 
 /**
  * Upstream `boats_draw_fleet` in drawing mode: the inventory of boats under the
- * board, one drawn boat per boat to be found, greyed and struck through once
+ * board, one drawn boat per boat to be found, grayed and struck through once
  * that many have been located.
  */
 function drawFleet(
@@ -398,7 +398,7 @@ function drawFleet(
     dr.drawRect(rect, COL_BACKGROUND);
 
     const found = j < fleetCount[i];
-    const colour = found ? COL_SHIP_FLEET_DONE : COL_SHIP_FLEET;
+    const color = found ? COL_SHIP_FLEET_DONE : COL_SHIP_FLEET;
 
     let fx = startFx;
     for (let k = 0; k <= i; k++) {
@@ -410,7 +410,7 @@ function drawFleet(
             : k === i
               ? SHIP_RIGHT
               : SHIP_CENTER;
-      drawSegment(dr, fxCoord(fx), fyCoord(row), ts * FLEET_SIZE, ship, colour);
+      drawSegment(dr, fxCoord(fx), fyCoord(row), ts * FLEET_SIZE, ship, color);
       fx += FLEET_SIZE;
     }
 
@@ -467,14 +467,14 @@ function hintBits(
 }
 
 /** The two tildes Boats draws for a *given* water square — reused in the hint
- * colour so a "place water here" suggestion speaks the game's own vocabulary
+ * color so a "place water here" suggestion speaks the game's own vocabulary
  * rather than a shape the player would have to translate (§5.1a). */
 function drawWaves(
   dr: GameDrawing,
   tx: number,
   ty: number,
   ts: number,
-  colour: number,
+  color: number,
 ): void {
   for (const frac of [0.42, 0.58])
     dr.drawText(
@@ -485,7 +485,7 @@ function drawWaves(
         fontType: "variable",
         size: (ts / 2) | 0,
       },
-      colour,
+      color,
       "~",
     );
 }
@@ -539,7 +539,7 @@ export function redraw(
       if (!full && borderStatus[x] === ds.border[x]) continue;
 
       const tx = BORDER + x * ts + ((ts / 2) | 0);
-      const colour = borderStatus[x] === STATUS_INVALID ? COL_COUNT_ERROR : COL_COUNT;
+      const color = borderStatus[x] === STATUS_INVALID ? COL_COUNT_ERROR : COL_COUNT;
       const cell: Point = { x: tx - ((ts / 2) | 0), y: ty - ((ts / 2) | 0) };
       dr.drawRect({ x: cell.x, y: cell.y, w: ts, h: ts }, COL_BACKGROUND);
       dr.drawUpdate({ x: cell.x, y: cell.y, w: ts, h: ts });
@@ -551,7 +551,7 @@ export function redraw(
           fontType: "variable",
           size: (ts / 2) | 0,
         },
-        colour,
+        color,
         String(state.borderClues[x]),
       );
       ds.border[x] = borderStatus[x];
@@ -564,7 +564,7 @@ export function redraw(
       if (!full && borderStatus[y + w] === ds.border[y + w]) continue;
 
       const ty = BORDER + y * ts + ((ts / 2) | 0);
-      const colour =
+      const color =
         borderStatus[y + w] === STATUS_INVALID ? COL_COUNT_ERROR : COL_COUNT;
       const cell: Point = { x: tx - ((ts / 2) | 0), y: ty - ((ts / 2) | 0) };
       dr.drawRect({ x: cell.x, y: cell.y, w: ts, h: ts }, COL_BACKGROUND);
@@ -577,7 +577,7 @@ export function redraw(
           fontType: "variable",
           size: (ts / 2) | 0,
         },
-        colour,
+        color,
         String(state.borderClues[y + w]),
       );
       ds.border[y + w] = borderStatus[y + w];
@@ -648,13 +648,13 @@ export function redraw(
       drawRectOutline(dr, tx, ty, ts + 1, ts + 1, COL_GRID);
 
       if (!flash && isShip(ship)) {
-        const colour =
+        const color =
           cellFlags[i] & FE_MISMATCH || ds.wrong.at(i)
             ? COL_SHIP_ERROR
             : state.gridClues[i] === EMPTY
               ? COL_SHIP_GUESS
               : COL_SHIP_CLUE;
-        drawSegment(dr, tx, ty, ts + 1, ship, colour);
+        drawSegment(dr, tx, ty, ts + 1, ship, color);
       } else if (!flash && state.gridClues[i] === WATER) {
         // A *given* water square is marked with waves; player water is the
         // plain blue fill.
@@ -662,7 +662,7 @@ export function redraw(
       }
 
       // The hint marks *where and which action*, in the game's own vocabulary
-      // and the hint colour — it never performs the move (§5.1/§5.1a). A boat
+      // and the hint color — it never performs the move (§5.1/§5.1a). A boat
       // suggestion is the unresolved-segment square; a water suggestion is the
       // same waves a given water square carries.
       if (hintBit & (HINT_SHIP | HINT_WATER)) {
@@ -670,7 +670,7 @@ export function redraw(
         else drawWaves(dr, tx, ty, ts, COL_HINT);
       }
 
-      // Every evidence square keeps its own colour and gets an inset ring —
+      // Every evidence square keeps its own color and gets an inset ring —
       // undecided or not, one mark for one role. A fill over water or a segment
       // would paint over the very thing that makes the square evidence, and a
       // fill pale enough not to is too faint to read as a mark at all

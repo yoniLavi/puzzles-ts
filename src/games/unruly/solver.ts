@@ -33,9 +33,9 @@ export interface GridView {
 
 /** Why a cell is forced — the premise the hint narrates and highlights. */
 export type HintReason =
-  // Two of three consecutive cells are `colour`; a third would be three in
+  // Two of three consecutive cells are `color`; a third would be three in
   // a row, so the empty one is the opposite. `refs` are the two filled cells.
-  | { kind: "threes"; horizontal: boolean; refs: [number, number]; colour: number }
+  | { kind: "threes"; horizontal: boolean; refs: [number, number]; color: number }
   // A row/column already holds its full count of `full`, so every remaining
   // empty cell is `fill`. `line` is the row (horizontal) or column index.
   | { kind: "complete"; line: number; horizontal: boolean; fill: number; full: number }
@@ -72,7 +72,7 @@ export type Recorder = (
   continuesPrevious: boolean,
 ) => void;
 
-const otherColour = (c: number): number => (c === ONE ? ZERO : ONE);
+const otherColor = (c: number): number => (c === ONE ? ZERO : ONE);
 
 // --- error-overlay flags (set by validateRows, read by render.ts) -------
 export const FE_HOR_ROW_LEFT = 0x0001;
@@ -128,8 +128,8 @@ function updateRemaining(view: GridView, scratch: Scratch): void {
 
 // --- technique: impending threes (TRIVIAL) ------------------------------
 // Two of three consecutive cells filled `check` and the third EMPTY forces
-// the third to `block` (the opposite colour). `rowcount`/`colcount` are the
-// block colour's counts, bumped as cells are filled.
+// the third to `block` (the opposite color). `rowcount`/`colcount` are the
+// block color's counts, bumped as cells are filled.
 function checkThrees(
   view: GridView,
   rowcount: Int32Array,
@@ -157,14 +157,9 @@ function checkThrees(
       if (fillAt >= 0) {
         if (rec) {
           // The two cells of the window that aren't the one being filled are
-          // the same-colour pair that forces it.
+          // the same-color pair that forces it.
           const refs = [i1, i2, i3].filter((p) => p !== fillAt) as [number, number];
-          rec(
-            fillAt,
-            block,
-            { kind: "threes", horizontal, refs, colour: check },
-            false,
-          );
+          rec(fillAt, block, { kind: "threes", horizontal, refs, color: check }, false);
         }
         ret++;
         grid[fillAt] = block;
@@ -185,7 +180,7 @@ function checkAllThrees(view: GridView, s: Scratch, rec?: Recorder): number {
   return ret;
 }
 
-// --- fill an entire row/column with one colour --------------------------
+// --- fill an entire row/column with one color --------------------------
 function fillRow(
   view: GridView,
   i: number,
@@ -215,8 +210,8 @@ function fillRow(
 }
 
 // --- technique: single gap (TRIVIAL) ------------------------------------
-// A row/column with its full count of one colour and one short of the
-// other has exactly one empty cell, which must be the other colour.
+// A row/column with its full count of one color and one short of the
+// other has exactly one empty cell, which must be the other color.
 function checkSingleGap(
   view: GridView,
   complete: Int32Array,
@@ -238,7 +233,7 @@ function checkSingleGap(
         line: i,
         horizontal,
         fill,
-        full: otherColour(fill),
+        full: otherColor(fill),
       };
       ret += fillRow(view, i, horizontal, rowcount, colcount, fill, rec, reason);
     }
@@ -256,8 +251,8 @@ function checkAllSingleGap(view: GridView, s: Scratch, rec?: Recorder): number {
 }
 
 // --- technique: completed counts (EASY) ---------------------------------
-// A row/column already holding its full count of one colour fills the rest
-// with the other colour.
+// A row/column already holding its full count of one color fills the rest
+// with the other color.
 function checkCompleteNums(
   view: GridView,
   complete: Int32Array,
@@ -279,7 +274,7 @@ function checkCompleteNums(
         line: i,
         horizontal,
         fill,
-        full: otherColour(fill),
+        full: otherColor(fill),
       };
       ret += fillRow(view, i, horizontal, rowcount, colcount, fill, rec, reason);
     }
@@ -370,10 +365,10 @@ function checkAllUniques(view: GridView, s: Scratch, rec?: Recorder): number {
 }
 
 // --- technique: near-complete (NORMAL) ----------------------------------
-// A row/column with one cell of colour Y left and ≥2 of colour X left: in
+// A row/column with one cell of color Y left and ≥2 of color X left: in
 // any spot where placing the last Y would force three X's in a row, that Y
 // can't go there. We BOGUS-mark the cells that would complete such a run so
-// `fillRow` fills the *forced* remainder with the fill colour, then restore
+// `fillRow` fills the *forced* remainder with the fill color, then restore
 // the BOGUS cells. (See unruly.c's worked example.)
 function checkNearComplete(
   view: GridView,
@@ -403,7 +398,7 @@ function checkNearComplete(
       // The four cases (fill adjacent to empties, or three empties) that a
       // forced run could occupy. Mark the run's empties BOGUS, fill the
       // remainder, then restore. `anchor` is the abutting fill cell (or -1
-      // for the all-empty window) — the cell whose colour makes the threat.
+      // for the all-empty window) — the cell whose color makes the threat.
       let bogus: number[] | null = null;
       let anchor = -1;
       if (grid[i1] === fill && grid[i2] === EMPTY && grid[i3] === EMPTY) {
@@ -655,7 +650,7 @@ export function validateCounts(view: GridView, errors: Uint8Array | null): numbe
 
 /**
  * Mistake-check (Check & Save): re-solve from the **immutable clues alone**
- * to the unique solution, then flag every player-placed cell whose colour
+ * to the unique solution, then flag every player-placed cell whose color
  * contradicts it. Returns `[]` when the clues don't deduce a complete
  * solution (a foreign / non-unique board — undecided, so nothing to flag),
  * matching Range/Mosaic. Pure (no state mutation).

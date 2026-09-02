@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Light Up explained hint (`add-lightup-hint`).
+ * Behavioral tests for the Light Up explained hint (`add-lightup-hint`).
  *
  * The recorder-off byte-match guard is `lightup-differential.test.ts`
  * (unchanged by this change); these tests cover the recorder-on plan:
@@ -80,7 +80,7 @@ describe("bleed rule: a step's marks stay inside its narrated evidence", () => {
           }
           case "clueSatisfied":
           case "clueSaturated": {
-            // Every marked cell is a neighbour of the narrated clue.
+            // Every marked cell is a neighbor of the narrated clue.
             const around = getSurrounds(
               state.w,
               state.h,
@@ -119,7 +119,7 @@ describe("narration", () => {
         if (!hl) throw new Error("step without highlights");
         expect(hl.targets.length).toBeGreaterThan(0);
         // Visible evidence: an area, a ringed dark square, or a
-        // recoloured clue — except the self-lighting forcedLight corner
+        // recolored clue — except the self-lighting forcedLight corner
         // case, whose evidence is the board geometry itself.
         const selfLit =
           hl.kind === "light" && hl.area.length === 0 && !hl.dark && !hl.clue;
@@ -159,7 +159,7 @@ describe("narration — a second mark on the board is named", () => {
   /** Any bare pointer at the acted-on square. With two marks in view it picks
    * out neither, which is the defect `disambiguate-hint-deixis` sweeps. */
   const DEICTIC = /\b(this|that) (square|cell)\b|\bhere\b/;
-  /** What each branch ties it with — relational throughout, never a colour
+  /** What each branch ties it with — relational throughout, never a color
    * name (`docs/games/hints.md` § "Two marks on the board, one 'this cell'").
    * Lightup could not tie positionally: the driving clue is never adjacent to
    * or in line with the target, so the tie is the reach relation `discountSet`

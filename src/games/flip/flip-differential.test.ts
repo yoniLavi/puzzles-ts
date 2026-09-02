@@ -1,5 +1,5 @@
 /*
- * Frozen differential check (behavioural, gating): asserts the Flip TS
+ * Frozen differential check (behavioral, gating): asserts the Flip TS
  * port's generator against a committed snapshot of the C reference
  * (`__fixtures__/flip-c-reference.json`, produced by the deleted
  * `puzzles/flip-trace.c` before flip.c was removed). This is the

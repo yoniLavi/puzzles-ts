@@ -7,7 +7,7 @@
  *     components already contain a common letter can never be one region — mark
  *     the component pair disconnected.
  *  2. **Forced single extension.** A component below the target size `k` with
- *     exactly one legal neighbouring square to grow into must take it — merge.
+ *     exactly one legal neighboring square to grow into must take it — merge.
  *
  * Per-component bookkeeping (all indexed by the dsf canonical root):
  *  - `size[root]` — component size.

@@ -9,7 +9,7 @@ import {
   decodeParams,
   defaultParams,
   encodeParams,
-  FEEDBACK_CORRECTCOLOUR,
+  FEEDBACK_CORRECTCOLOR,
   FEEDBACK_CORRECTPLACE,
   isMarkable,
   markPegs,
@@ -23,7 +23,7 @@ import {
 describe("params", () => {
   it("round-trips encode/decode", () => {
     const p = {
-      ncolours: 8,
+      ncolors: 8,
       npegs: 5,
       nguesses: 12,
       allowBlank: false,
@@ -35,7 +35,7 @@ describe("params", () => {
 
   it("decodes blank/duplicate flags and ignores junk", () => {
     expect(decodeParams("c6p4g10bM")).toEqual({
-      ncolours: 6,
+      ncolors: 6,
       npegs: 4,
       nguesses: 10,
       allowBlank: true,
@@ -47,15 +47,15 @@ describe("params", () => {
 
   it("validates", () => {
     expect(validateParams(defaultParams(), true)).toBeNull();
-    expect(validateParams({ ...defaultParams(), ncolours: 1 }, true)).not.toBeNull();
+    expect(validateParams({ ...defaultParams(), ncolors: 1 }, true)).not.toBeNull();
     expect(validateParams({ ...defaultParams(), npegs: 1 }, true)).not.toBeNull();
-    expect(validateParams({ ...defaultParams(), ncolours: 11 }, true)).not.toBeNull();
+    expect(validateParams({ ...defaultParams(), ncolors: 11 }, true)).not.toBeNull();
     expect(validateParams({ ...defaultParams(), nguesses: 0 }, true)).not.toBeNull();
-    // no duplicates but fewer colours than pegs
+    // no duplicates but fewer colors than pegs
     expect(
       validateParams(
         {
-          ncolours: 3,
+          ncolors: 3,
           npegs: 4,
           nguesses: 10,
           allowBlank: false,
@@ -77,7 +77,7 @@ describe("desc", () => {
     expect(s.solution).toHaveLength(p.npegs);
     for (const c of s.solution) {
       expect(c).toBeGreaterThanOrEqual(1);
-      expect(c).toBeLessThanOrEqual(p.ncolours);
+      expect(c).toBeLessThanOrEqual(p.ncolors);
     }
     expect(s.nextGo).toBe(0);
     expect(s.solved).toBe(0);
@@ -86,7 +86,7 @@ describe("desc", () => {
 
   it("honours allowMultiple=false (no repeated colour in the solution)", () => {
     const p = {
-      ncolours: 6,
+      ncolors: 6,
       npegs: 4,
       nguesses: 10,
       allowBlank: false,
@@ -108,11 +108,11 @@ describe("desc", () => {
 });
 
 describe("markPegs (Knuth feedback)", () => {
-  const ncolours = 6;
+  const ncolors = 6;
 
   it("scores an all-correct guess as all correct-place", () => {
     const sol = [1, 2, 3, 4];
-    const { feedback, ncPlace } = markPegs([1, 2, 3, 4], sol, ncolours);
+    const { feedback, ncPlace } = markPegs([1, 2, 3, 4], sol, ncolors);
     expect(ncPlace).toBe(4);
     expect(feedback).toEqual([
       FEEDBACK_CORRECTPLACE,
@@ -125,35 +125,35 @@ describe("markPegs (Knuth feedback)", () => {
   it("packs black markers before white markers", () => {
     // solution 1 2 3 4; guess 1 2 4 3:
     //   two correct place (1,2), 4 and 3 present but misplaced → 2 white.
-    const { feedback, ncPlace } = markPegs([1, 2, 4, 3], [1, 2, 3, 4], ncolours);
+    const { feedback, ncPlace } = markPegs([1, 2, 4, 3], [1, 2, 3, 4], ncolors);
     expect(ncPlace).toBe(2);
     expect(feedback).toEqual([
       FEEDBACK_CORRECTPLACE,
       FEEDBACK_CORRECTPLACE,
-      FEEDBACK_CORRECTCOLOUR,
-      FEEDBACK_CORRECTCOLOUR,
+      FEEDBACK_CORRECTCOLOR,
+      FEEDBACK_CORRECTCOLOR,
     ]);
   });
 
   it("counts duplicates via min(#guess, #solution)", () => {
     // solution 1 1 2 3; guess 1 1 1 1: two exact (the first two), the
     // other two 1s have no solution peg left → 0 white.
-    const { feedback, ncPlace } = markPegs([1, 1, 1, 1], [1, 1, 2, 3], ncolours);
+    const { feedback, ncPlace } = markPegs([1, 1, 1, 1], [1, 1, 2, 3], ncolors);
     expect(ncPlace).toBe(2);
-    expect(feedback.filter((f) => f === FEEDBACK_CORRECTCOLOUR)).toHaveLength(0);
+    expect(feedback.filter((f) => f === FEEDBACK_CORRECTCOLOR)).toHaveLength(0);
   });
 
   it("scores a colour present but wholly misplaced as white only", () => {
-    // solution 1 2 3 4; guess 2 1 4 3 → 0 place, 4 colour.
-    const { feedback, ncPlace } = markPegs([2, 1, 4, 3], [1, 2, 3, 4], ncolours);
+    // solution 1 2 3 4; guess 2 1 4 3 → 0 place, 4 color.
+    const { feedback, ncPlace } = markPegs([2, 1, 4, 3], [1, 2, 3, 4], ncolors);
     expect(ncPlace).toBe(0);
-    expect(feedback.filter((f) => f === FEEDBACK_CORRECTCOLOUR)).toHaveLength(4);
+    expect(feedback.filter((f) => f === FEEDBACK_CORRECTCOLOR)).toHaveLength(4);
   });
 });
 
 describe("isMarkable", () => {
   const base = {
-    ncolours: 6,
+    ncolors: 6,
     npegs: 4,
     nguesses: 10,
     allowBlank: false,

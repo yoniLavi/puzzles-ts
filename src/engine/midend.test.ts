@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { mkhighlightBackground } from "./colour/colour-mkhighlight.ts";
-import { token } from "./colour/colour-token.ts";
+import { mkhighlightBackground } from "./color/color-mkhighlight.ts";
+import { token } from "./color/color-token.ts";
 import {
   type FakeDrawState,
   fakeGame,
@@ -10,14 +10,14 @@ import {
 import type { Game, GameDrawing } from "./game.ts";
 import { UI_UPDATE } from "./game.ts";
 import { Midend } from "./midend.ts";
-import type { ChangeNotification, Colour } from "./types.ts";
+import type { ChangeNotification, Color } from "./types.ts";
 
 /** Recording fake `GameDrawing` for engine-level redraw assertions —
  * mirrors `src/games/flip/flip.test.ts`'s helper. */
 function recordingDrawing() {
   const ops: Array<{
     op: string;
-    colour?: number;
+    color?: number;
     rect?: { x: number; y: number; w: number; h: number };
   }> = [];
   const dr: GameDrawing = {
@@ -26,11 +26,11 @@ function recordingDrawing() {
     drawUpdate: (rect) => ops.push({ op: "drawUpdate", rect }),
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
-    drawRect: (rect, colour) => ops.push({ op: "drawRect", rect, colour }),
-    drawLine: (_a, _b, colour) => ops.push({ op: "drawLine", colour }),
-    drawPolygon: (_p, colour) => ops.push({ op: "drawPolygon", colour }),
-    drawCircle: (_p, _r, colour) => ops.push({ op: "drawCircle", colour }),
-    drawText: (_p, _o, colour) => ops.push({ op: "drawText", colour }),
+    drawRect: (rect, color) => ops.push({ op: "drawRect", rect, color }),
+    drawLine: (_a, _b, color) => ops.push({ op: "drawLine", color }),
+    drawPolygon: (_p, color) => ops.push({ op: "drawPolygon", color }),
+    drawCircle: (_p, _r, color) => ops.push({ op: "drawCircle", color }),
+    drawText: (_p, _o, color) => ops.push({ op: "drawText", color }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},
@@ -407,19 +407,19 @@ describe("Midend params + presets", () => {
 describe("Midend palette + teardown (adapter-facing)", () => {
   const withPalette = {
     ...fakeGame,
-    colours: (bg: Colour) => [bg, token([0, 0, 0], [1, 1, 1]), [0.5, 0.5, 0.5]],
+    colors: (bg: Color) => [bg, token([0, 0, 0], [1, 1, 1]), [0.5, 0.5, 0.5]],
   } as unknown as typeof fakeGame;
 
   it("getColourPalette hands the game the frontend's background, shifted off the extremes", () => {
     // The background is an *input*: a game derives washes from it (the dark
     // scheme relies on that, passing pure white so `background × 0.9` still
-    // works), so swallowing it would silently flatten every derived colour. It
+    // works), so swallowing it would silently flatten every derived color. It
     // arrives shifted off pure white/black (`resolvePalette`), so every game
-    // paints one board tone; a mid-range colour passes through untouched.
+    // paints one board tone; a mid-range color passes through untouched.
     const m = new Midend(withPalette);
-    expect(m.getColourPalette([0.2, 0.4, 0.6])[0]).toEqual([0.2, 0.4, 0.6]);
-    expect(m.getColourPalette([1, 1, 1])[0]).toEqual(mkhighlightBackground([1, 1, 1]));
-    expect(m.getColourPalette([1, 1, 1])[0][0]).toBeLessThan(1);
+    expect(m.getColorPalette([0.2, 0.4, 0.6])[0]).toEqual([0.2, 0.4, 0.6]);
+    expect(m.getColorPalette([1, 1, 1])[0]).toEqual(mkhighlightBackground([1, 1, 1]));
+    expect(m.getColorPalette([1, 1, 1])[0][0]).toBeLessThan(1);
   });
 
   it("darkPalette reports only the indices whose token authored a dark value", () => {
@@ -599,7 +599,7 @@ describe("Midend.size is purely informational (regression: ResizeObserver flicke
     // First redraw: game's `!ds.started` branch paints its bg.
     const a = recordingDrawing();
     m.redraw(a.dr);
-    expect(a.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
+    expect(a.ops.some((o) => o.op === "drawRect" && o.color === 0)).toBe(true);
 
     // Subsequent `size()` calls do NOT cause the next redraw to
     // re-emit a bg fill — the drawstate is preserved, so the game's
@@ -608,7 +608,7 @@ describe("Midend.size is purely informational (regression: ResizeObserver flicke
     m.size({ w: 400, h: 400 });
     const b = recordingDrawing();
     m.redraw(b.dr);
-    expect(b.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(false);
+    expect(b.ops.some((o) => o.op === "drawRect" && o.color === 0)).toBe(false);
   });
 });
 
@@ -642,12 +642,12 @@ describe("Midend.canvasCleared invalidates the drawstate (the only real signal)"
     // Pre-clear: redraws are cache-suppressed for unchanged state.
     const pre = recordingDrawing();
     m.redraw(pre.dr);
-    expect(pre.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(false);
+    expect(pre.ops.some((o) => o.op === "drawRect" && o.color === 0)).toBe(false);
 
     m.canvasCleared();
     const post = recordingDrawing();
     m.redraw(post.dr);
-    expect(post.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
+    expect(post.ops.some((o) => o.op === "drawRect" && o.color === 0)).toBe(true);
   });
 
   it("is a no-op without a game (defensive guard)", () => {
@@ -678,7 +678,7 @@ describe("Midend.forceRedraw is canvasCleared + redraw (palette/font replacement
     const after = (m as unknown as { drawState: FakeDrawState }).drawState.instance;
     expect(after).not.toBe(before);
     // game's bg paint runs as part of the forced redraw.
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.color === 0)).toBe(true);
   });
 
   it("is a no-op without a game (defensive guard)", () => {
@@ -1001,7 +1001,7 @@ describe("Midend hint plan lifecycle", () => {
 // A displayed hint step is never stale (openspec `fix-stale-hint-step`). The
 // engine-level guarantee: before (re-)displaying a stored step, the midend asks
 // the game's `refreshHintStep` whether parts of it are already resolved and
-// drops/advances past them. Modelled here with the smallest game whose move has
+// drops/advances past them. Modeled here with the smallest game whose move has
 // a side effect that resolves a *later* plan step (Towers' auto-pencil shape):
 // striking candidate `i` also strikes `i+1`, so the plan [strike 0, strike 1,
 // strike 2] has step 1 resolved out from under it by step 0's side effect.
@@ -1225,7 +1225,7 @@ describe("Midend executeHint plays the stored plan", () => {
 
 describe("Midend mistake overlay (findMistakes lifecycle)", () => {
   // A game that flags exactly one mistake when count === 1, and whose
-  // redraw emits a sentinel op (drawCircle colour 999) iff the engine
+  // redraw emits a sentinel op (drawCircle color 999) iff the engine
   // handed it a non-empty mistakes overlay — so a test can observe the
   // overlay being shown and then cleared on the next transition.
   const MISTAKE_SENTINEL = 999;
@@ -1240,7 +1240,7 @@ describe("Midend mistake overlay (findMistakes lifecycle)", () => {
     },
   };
   const sawSentinel = (ops: ReturnType<typeof recordingDrawing>["ops"]) =>
-    ops.some((o) => o.op === "drawCircle" && o.colour === MISTAKE_SENTINEL);
+    ops.some((o) => o.op === "drawCircle" && o.color === MISTAKE_SENTINEL);
 
   it("reports the capability and count, and displays then clears the overlay", () => {
     const h = harness(mistakeGame);

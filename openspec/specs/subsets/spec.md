@@ -39,7 +39,7 @@ guards rather than under hand-written per-game ones.
 - **WHEN** parameters other than `4×4` with `n = 4` are validated
 - **THEN** they are rejected with the upstream "only 4x4 supported" message
 
-#### Scenario: An unrecognised difficulty character is rejected
+#### Scenario: An unrecognized difficulty character is rejected
 
 - **WHEN** a game ID carries a difficulty character naming no tier
 - **THEN** validation rejects it, rather than falling back to another tier
@@ -71,8 +71,8 @@ contradict each other.
 
 #### Scenario: Contradicting arrows on one edge are rejected
 
-- **WHEN** a description places an arrow from a cell to its neighbour and the
-  opposite arrow from that neighbour back
+- **WHEN** a description places an arrow from a cell to its neighbor and the
+  opposite arrow from that neighbor back
 - **THEN** the description is rejected as contradictory
 
 ### Requirement: Subsets ports the deductive solver and uniqueness-gated generator
@@ -80,7 +80,7 @@ contradict each other.
 Subsets SHALL provide a solver that reports whether a board is complete,
 unfinished or invalid, driven by a candidate-elimination fixpoint over the set of
 possible set-values per cell. The solver SHALL apply arrow propagation (a superset
-cell contains its subset neighbour's confirmed letters, and a subset cell cannot
+cell contains its subset neighbor's confirmed letters, and a subset cell cannot
 hold letters its superset lacks), missing-arrow disjointness, single-count and
 single-position placement, and the advanced arrow-subset elimination, in the
 upstream order.
@@ -152,7 +152,7 @@ left-click or select SHALL cycle a slot unknown → known → cleared → unknow
 right-click or secondary select SHALL cycle unknown → cleared → known → unknown,
 and a middle-click or backspace SHALL reset a slot to unknown; a given (immutable)
 slot SHALL NOT change. A keyboard cursor SHALL navigate slots, skipping the gaps
-between cell blocks. A move SHALL be modelled as a discriminated union, not a move
+between cell blocks. A move SHALL be modeled as a discriminated union, not a move
 string.
 
 The game SHALL flag mistakes for Check & Save: a set-value placed in more than one
@@ -237,12 +237,12 @@ re-plans easier boards.
 
 Subsets SHALL let the player explore where sets and cells can go, judged
 shallowly from the visible board (a cell's own marks and the horseshoe /
-missing-horseshoe relations to decided neighbours, plus the exactly-once rule),
+missing-horseshoe relations to decided neighbors, plus the exactly-once rule),
 never from a solver or the solution:
 
 - selecting a **set** from the tally band SHALL spotlight every cell it can
   still legally go in; if the set is already placed, its home cell SHALL be
-  shown in a distinct colour (where it *is*, versus where it could go);
+  shown in a distinct color (where it *is*, versus where it could go);
 - focusing a **cell** via its dedicated inspect icon — a touch-sized badge in
   the margin above the cell block, doing nothing but inspect (never editing) —
   or by moving the keyboard cursor onto it, SHALL highlight in the tally every
@@ -269,8 +269,8 @@ so the aid is shown, rather than the aid being silently suppressed.
 #### Scenario: A placed set shows where it sits
 
 - **WHEN** the player clicks a set that is already placed
-- **THEN** its home cell is highlighted in the distinct "placed" colour, not the
-  "could go here" spotlight colour
+- **THEN** its home cell is highlighted in the distinct "placed" color, not the
+  "could go here" spotlight color
 
 #### Scenario: A cell shows the sets it can still hold
 

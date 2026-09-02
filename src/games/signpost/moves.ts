@@ -9,7 +9,7 @@ import { assertNever } from "../../engine/assert-never.ts";
 import {
   checkCompletion,
   cloneState,
-  colourOf,
+  colorOf,
   inGrid,
   isValidMove,
   makeLink,
@@ -43,16 +43,16 @@ export function executeMove(s: SignpostState, move: SignpostMove): SignpostState
     }
     case "unlinkPrev": {
       // Upstream 'X': sever this cell if it is in a real-numbered region
-      // (colour 0), else sever every cell in its colour set.
+      // (color 0), else sever every cell in its color set.
       const si = move.y * w + move.x;
-      const sset = colourOf(s, s.nums[si]);
+      const sset = colorOf(s, s.nums[si]);
       ret = cloneState(s);
       if (sset === 0) {
         unlinkCell(ret, si);
       } else {
         for (let i = 0; i < s.n; i++) {
           if (s.nums[i] === 0) continue;
-          if (colourOf(s, s.nums[i]) !== sset) continue;
+          if (colorOf(s, s.nums[i]) !== sset) continue;
           unlinkCell(ret, i);
         }
       }

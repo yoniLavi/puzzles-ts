@@ -307,7 +307,7 @@ function seedGridClues(solver: LatinSolver, b: SaladBoard): void {
   }
 }
 
-/** Seed the cube from a board's *confirmed markers* — the hint path's analogue
+/** Seed the cube from a board's *confirmed markers* — the hint path's analog
  * of {@link seedGridClues}. A cross or ball is a real entry (Check & Save flags a
  * wrong one), so it is a fact the working cube may assume; the player's *pencil
  * notes* never are (docs/games/hints.md § "The recorder and the soundness boundary"'s soundness boundary). Symbols need no

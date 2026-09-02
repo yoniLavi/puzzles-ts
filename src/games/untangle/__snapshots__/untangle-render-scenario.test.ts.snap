@@ -3,7 +3,7 @@
 exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination marker are drawn 1`] = `
 [
   {
-    "colour": 1,
+    "color": 1,
     "h": 320,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -12,7 +12,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y": 0,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -22,7 +22,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 2,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -32,7 +32,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 317,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -42,7 +42,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 317,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -52,7 +52,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 2,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -62,7 +62,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -72,7 +72,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 297,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -82,7 +82,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 202,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -92,7 +92,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 118,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -102,7 +102,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -112,7 +112,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 202,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -122,7 +122,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -132,7 +132,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 49,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -142,7 +142,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -152,7 +152,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -162,7 +162,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 49,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -172,7 +172,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 297,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -182,7 +182,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -192,7 +192,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 49,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -202,7 +202,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 202,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -212,7 +212,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -222,7 +222,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "y2": 202,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -332,7 +332,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "r": 6,
   },
   {
-    "colour": 10,
+    "color": 10,
     "op": "line",
     "rgb": "rgb(232, 139, 33)",
     "thickness": 2,
@@ -357,7 +357,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
 exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders as COL_DRAGPOINT 1`] = `
 [
   {
-    "colour": 1,
+    "color": 1,
     "h": 320,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -366,7 +366,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y": 0,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -376,7 +376,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 2,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -386,7 +386,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 317,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -396,7 +396,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 317,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -406,7 +406,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 2,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -416,7 +416,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 202,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -426,7 +426,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 49,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -436,7 +436,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -446,7 +446,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -456,7 +456,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -466,7 +466,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 118,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -476,7 +476,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 202,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -486,7 +486,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -496,7 +496,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 297,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -506,7 +506,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 202,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -516,7 +516,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 49,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -526,7 +526,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 297,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -536,7 +536,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -546,7 +546,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 202,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -556,7 +556,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -671,7 +671,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
 exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and all vertices drawn 1`] = `
 [
   {
-    "colour": 1,
+    "color": 1,
     "h": 320,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -680,7 +680,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y": 0,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -690,7 +690,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 2,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -700,7 +700,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 317,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -710,7 +710,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 317,
   },
   {
-    "colour": 4,
+    "color": 4,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -720,7 +720,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 2,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
@@ -730,7 +730,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 49,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -740,7 +740,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -750,7 +750,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -760,7 +760,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 297,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -770,7 +770,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -780,7 +780,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 49,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -790,7 +790,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 297,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -800,7 +800,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 202,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -810,7 +810,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -820,7 +820,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 271,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -830,7 +830,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 202,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -840,7 +840,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -850,7 +850,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 118,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -860,7 +860,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 49,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
@@ -870,7 +870,7 @@ exports[`Untangle render scenarios > opener frame: edges, crossed-edge red, and 
     "y2": 49,
   },
   {
-    "colour": 3,
+    "color": 3,
     "op": "line",
     "rgb": "rgb(223, 34, 37)",
     "thickness": 1,

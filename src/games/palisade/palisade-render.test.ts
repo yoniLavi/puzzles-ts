@@ -1,5 +1,5 @@
 // Tier-2 render-ops: drive Palisade's `redraw` against a recording
-// `GameDrawing` double — first-draw grid dots, per-edge colours, the
+// `GameDrawing` double — first-draw grid dots, per-edge colors, the
 // live error reddening for an over-large region, the findMistakes
 // overlay edge, the clue text, and the cursor outline.
 import { describe, expect, it } from "vitest";
@@ -30,7 +30,7 @@ import {
 
 interface Op {
   op: string;
-  colour?: number;
+  color?: number;
   text?: string;
 }
 
@@ -42,13 +42,13 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     drawUpdate: () => {},
     clip: () => {},
     unclip: () => {},
-    drawRect: (_r: unknown, c: number) => ops.push({ op: "drawRect", colour: c }),
+    drawRect: (_r: unknown, c: number) => ops.push({ op: "drawRect", color: c }),
     drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", colour: c }),
+      ops.push({ op: "drawLine", color: c }),
     drawPolygon: () => {},
     drawCircle: () => {},
     drawText: (_p: unknown, _o: unknown, c: number, text: string) =>
-      ops.push({ op: "drawText", colour: c, text }),
+      ops.push({ op: "drawText", color: c, text }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},
@@ -84,12 +84,12 @@ describe("Palisade redraw", () => {
     expect(ops.some((o) => o.op === "drawText" && /^[0-4]$/.test(o.text ?? ""))).toBe(
       true,
     );
-    // Interior unknown edges are line-maybe coloured.
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_LINE_MAYBE)).toBe(
+    // Interior unknown edges are line-maybe colored.
+    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_LINE_MAYBE)).toBe(
       true,
     );
     // First-draw grid dots are COL_GRID.
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_GRID)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_GRID)).toBe(true);
   });
 
   it("reddens the walls of an over-large region", () => {
@@ -99,19 +99,19 @@ describe("Palisade redraw", () => {
     // region larger than k by enclosing the whole top-left 2x3 (=6 > 5)
     // is also fiddly. Simpler: take a fully-walled single cell — a
     // size-1 region is "too small", which also reddens. Assert the
-    // error colour appears once we create an obviously-wrong division.
+    // error color appears once we create an obviously-wrong division.
     const s = { ...state, borders: state.borders.slice() };
     // Enclose cell (1,1) entirely → a size-1 region (too small) ⇒ error.
     const i = 1 * P.w + 1;
     s.borders[i] |= BORDER(0) | BORDER(1) | BORDER(2) | BORDER(3);
-    s.borders[i - P.w] |= BORDER(2); // neighbour up shares the wall
+    s.borders[i - P.w] |= BORDER(2); // neighbor up shares the wall
     s.borders[i + 1] |= BORDER(3);
     s.borders[i + P.w] |= BORDER(0);
     s.borders[i - 1] |= BORDER(1);
 
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(s), null, s, 0, freshUi(), 0, 0);
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_ERROR)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_ERROR)).toBe(true);
   });
 
   it("shades completed correct regions, but not the untouched board", () => {
@@ -121,7 +121,7 @@ describe("Palisade redraw", () => {
     {
       const { dr, ops } = recordingDrawing();
       redraw(dr, freshDs(state), null, state, 0, freshUi(), 0, 0);
-      expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_CORRECT)).toBe(
+      expect(ops.some((o) => o.op === "drawRect" && o.color === COL_CORRECT)).toBe(
         false,
       );
     }
@@ -134,7 +134,7 @@ describe("Palisade redraw", () => {
     const solved = { ...state, borders: sol.slice() };
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(solved), null, solved, 0, freshUi(), 0, 0);
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_CORRECT)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_CORRECT)).toBe(true);
   });
 
   it("reddens a findMistakes overlay edge", () => {
@@ -143,7 +143,7 @@ describe("Palisade redraw", () => {
     redraw(dr, freshDs(state), null, state, 0, freshUi(), 0, 0, undefined, [
       { x: 1, y: 1, dir: 1 },
     ]);
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_ERROR)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_ERROR)).toBe(true);
   });
 
   it("paints every forced edge of the firing in COL_HINT, plus the shaded cells", () => {
@@ -166,18 +166,18 @@ describe("Palisade redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 0, freshUi(), 0, 0, hint);
     // The action edge AND its sibling both paint COL_HINT (they share a
-    // fate, so they share a colour); referenced cells get a COL_HINT_CELL
+    // fate, so they share a color); referenced cells get a COL_HINT_CELL
     // fill. The two distinct edges → at least two COL_HINT rects.
-    const hintRects = ops.filter((o) => o.op === "drawRect" && o.colour === COL_HINT);
+    const hintRects = ops.filter((o) => o.op === "drawRect" && o.color === COL_HINT);
     expect(hintRects.length).toBeGreaterThanOrEqual(2);
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_HINT_CELL)).toBe(
+    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_HINT_CELL)).toBe(
       true,
     );
 
-    // With no hint, none of the hint colours appear.
+    // With no hint, none of the hint colors appear.
     const { dr: dr2, ops: ops2 } = recordingDrawing();
     redraw(dr2, freshDs(state), null, state, 0, freshUi(), 0, 0);
-    expect(ops2.some((o) => o.colour === COL_HINT || o.colour === COL_HINT_CELL)).toBe(
+    expect(ops2.some((o) => o.color === COL_HINT || o.color === COL_HINT_CELL)).toBe(
       false,
     );
   });
@@ -190,6 +190,6 @@ describe("Palisade redraw", () => {
     ui.cursor.y = 2; // a left-border position
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 0, ui, 0, 0);
-    expect(ops.some((o) => o.op === "drawLine" && o.colour === COL_CURSOR)).toBe(true);
+    expect(ops.some((o) => o.op === "drawLine" && o.color === COL_CURSOR)).toBe(true);
   });
 });

@@ -5,12 +5,12 @@
  * unique-match bars) recomputed each frame from the validators; a
  * completion flash inverting filled tiles toward highlight/lowlight.
  *
- * The palette deliberately mirrors the C colour-enum index layout so the
+ * The palette deliberately mirrors the C color-enum index layout so the
  * app's dark-mode `paletteOverrides` (keyed by index) apply unchanged.
  */
 
-import { mkhighlightSpecific } from "../../engine/colour/colour-mkhighlight.ts";
-import { ORANGE } from "../../engine/colour/colours.ts";
+import { mkhighlightSpecific } from "../../engine/color/color-mkhighlight.ts";
+import { ORANGE } from "../../engine/color/colors.ts";
 import {
   CURSOR,
   ERROR,
@@ -18,11 +18,11 @@ import {
   HINT_ACTION,
   HINT_EVIDENCE_WASH,
   UNDECIDED,
-} from "../../engine/colour/palette.ts";
-import { UNRULY_BLACK, UNRULY_WHITE } from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/palette.ts";
+import { UNRULY_BLACK, UNRULY_WHITE } from "../../engine/color/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import { EMPTY, ONE, ZERO } from "./constants.ts";
 import type { UnrulyHint } from "./index.ts";
 import {
@@ -50,7 +50,7 @@ export const FLASH_TIME = FLASH_FRAME * 3;
  * stretches it to the uniform hint-step duration for auto-hint. */
 export const PLACE_ANIM_TIME = 0.13;
 
-// --- palette (mirrors the unruly.c colour enum index-for-index) ---------
+// --- palette (mirrors the unruly.c color enum index-for-index) ---------
 export const COL_BACKGROUND = 0;
 export const COL_GRID = 1;
 export const COL_EMPTY = 2;
@@ -62,7 +62,7 @@ export const COL_1_HIGHLIGHT = 7;
 export const COL_1_LOWLIGHT = 8;
 export const COL_CURSOR = 9;
 export const COL_ERROR = 10;
-// Hint colours — appended past the dark-mode override range (3–8), so dark
+// Hint colors — appended past the dark-mode override range (3–8), so dark
 // mode leaves them unchanged. The action cell is COL_HINT (blue); the
 // deduction's empty siblings shade COL_HINT_CELL (light blue); the cited
 // premise / pivotal cells ring COL_HINT_REF (orange), distinct from the move.
@@ -74,13 +74,13 @@ export const COL_HINT = 11;
 export const COL_HINT_CELL = 12;
 export const COL_HINT_REF = 13;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = GRID_DARK;
   out[COL_EMPTY] = UNDECIDED;
   // Highlight/lowlight (and a possibly-shifted base) derived from each tile
-  // colour exactly as game_mkhighlight_specific does.
+  // color exactly as game_mkhighlight_specific does.
   const one = mkhighlightSpecific(UNRULY_BLACK);
   out[COL_1] = one.base;
   out[COL_1_HIGHLIGHT] = one.highlight;
@@ -93,10 +93,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE_WASH;
-  // Cited premise / pivotal cells. A single ring colour (not the cross-game
+  // Cited premise / pivotal cells. A single ring color (not the cross-game
   // teal/violet black/white-ref pair): Unruly's ring set is mixed — filled
-  // black cells, a balanced reference row holding both colours, and empty
-  // reserved windows — so a state-derived colour is ill-defined. Orange keeps
+  // black cells, a balanced reference row holding both colors, and empty
+  // reserved windows — so a state-derived color is ill-defined. Orange keeps
   // it clear of the blue move and of the teal/violet "decided black/white"
   // meaning those hues carry in Singles/Range.
   out[COL_HINT_REF] = ORANGE;
@@ -111,9 +111,9 @@ const FF_CURSOR = 0x200;
 const FF_FLASH1 = 0x400;
 const FF_FLASH2 = 0x800;
 const FF_IMMUTABLE = 0x1000;
-// Our mistake-overlay bit (no upstream analogue), folded into the cache key.
+// Our mistake-overlay bit (no upstream analog), folded into the cache key.
 const FF_MISTAKE = 0x2000;
-// Hint-overlay bits (no upstream analogue), also folded into the cache key.
+// Hint-overlay bits (no upstream analog), also folded into the cache key.
 const FF_HINT_TARGET = 0x4000; // the forced cell (filled COL_HINT + preview)
 const FF_HINT_AREA = 0x10000; // a journey-sibling empty cell (light shade)
 const FF_HINT_RING = 0x20000; // a cited premise / pivotal cell (COL_HINT_REF outline)
@@ -178,9 +178,9 @@ function drawTile(
   py: number,
   ts: number,
   tile: number,
-  // Placement animation: the cell's previous colour index, or -1 if not
+  // Placement animation: the cell's previous color index, or -1 if not
   // animating; `animFrac` is the grow progress 0→1.
-  animPrevColour = -1,
+  animPrevColor = -1,
   animFrac = 1,
 ): void {
   dr.clip({ x: px, y: py, w: ts, h: ts });
@@ -196,10 +196,10 @@ function drawTile(
   }
 
   const inner = { x: px, y: py, w: ts - 1, h: ts - 1 };
-  if (animPrevColour >= 0 && animFrac < 1) {
-    // Placement grow: the previous colour beneath, the new colour growing
-    // from the cell centre (geometric, no colour tween).
-    dr.drawRect(inner, animPrevColour);
+  if (animPrevColor >= 0 && animFrac < 1) {
+    // Placement grow: the previous color beneath, the new color growing
+    // from the cell center (geometric, no color tween).
+    dr.drawRect(inner, animPrevColor);
     const sz = Math.max(0, Math.round((ts - 1) * animFrac));
     if (sz > 0) {
       const off = Math.floor((ts - 1 - sz) / 2);
@@ -223,7 +223,7 @@ function drawTile(
     dr.drawRect({ x: px + ts - o - 2, y: py + o + 1, w: 1, h: span }, val + 1);
   }
 
-  // 3-in-a-row error bars, extending a half-tile into the run's neighbours
+  // 3-in-a-row error bars, extending a half-tile into the run's neighbors
   // (clipped to this tile, so each tile draws its own portion).
   if (tile & (FE_HOR_ROW_LEFT | FE_HOR_ROW_RIGHT)) {
     let left = px;
@@ -279,7 +279,7 @@ function drawTile(
     );
   }
 
-  // Mistake overlay (Check & Save): an inset error-coloured outline, distinct
+  // Mistake overlay (Check & Save): an inset error-colored outline, distinct
   // from the live 3-in-a-row / count errors above.
   if (tile & FF_MISTAKE) {
     const t = Math.max(1, Math.floor(ts / 16));
@@ -294,7 +294,7 @@ function drawTile(
   }
 
   // Hint ring: a COL_HINT_REF outline around a cited premise / pivotal cell
-  // (its own colour stays visible — for a filled premise that colour *is* the
+  // (its own color stays visible — for a filled premise that color *is* the
   // evidence; for an empty reserved window the ring marks the spared cells).
   // Ringed in COL_HINT_REF, not the COL_HINT of the move, so premise and move
   // don't read as the same element type.
@@ -307,10 +307,10 @@ function drawTile(
   }
 
   // The forced cell is **ringed**, in the same shape and place a cited premise
-  // is: the hint marks where to act, it does not place the colour the player
+  // is: the hint marks where to act, it does not place the color the player
   // must enter themselves. A blue *fill* in a game whose entire move is "make
-  // this cell black or white" reads as a third colour already placed. The
-  // narration says which colour; auto-hint applies it for real in animation
+  // this cell black or white" reads as a third color already placed. The
+  // narration says which color; auto-hint applies it for real in animation
   // mode. (Owner-directed, 2026-06-20.)
   if (tile & FF_HINT_TARGET) {
     drawMarkSides(
@@ -366,7 +366,7 @@ export function redraw(
   // (animTime > 0) and we have a from-state to grow out of.
   const animating = animTime > 0 && prev != null;
   const animFrac = animTime / PLACE_ANIM_TIME;
-  const colourOf = (v: number): number =>
+  const colorOf = (v: number): number =>
     v === ONE ? COL_1 : v === ZERO ? COL_0 : COL_EMPTY;
 
   if (!ds.started) {
@@ -426,7 +426,7 @@ export function redraw(
 
       // An animating cell can't be captured by the packed key, so it is
       // redrawn every frame (cache forced stale, Flip's idiom) and grows the
-      // new colour out of its previous colour.
+      // new color out of its previous color.
       const animThis = animating && prev != null && prev.grid[i] !== grid[i];
       if (animThis) {
         ds.cache[i] = -1;
@@ -436,7 +436,7 @@ export function redraw(
           coord(y, ts),
           ts,
           tile,
-          colourOf(prev.grid[i]),
+          colorOf(prev.grid[i]),
           animFrac,
         );
       } else if (ds.cache[i] !== tile) {

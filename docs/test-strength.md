@@ -53,7 +53,7 @@ clock unchanged, the four shared-machinery modules below for **+33 tests and
 | `border-grid.ts` | 5/7 (71%) | 6/6 (100%) |
 | `params.ts` (90 importers) | 3/6 (50%) | 6/6 (100%) |
 | `grid-core.ts` | 2/4 (50%) | 4/4 (100%) |
-| `colour-mkhighlight.ts` (37) | 4/5 (80%) | 4/4 (100%) |
+| `color-mkhighlight.ts` (37) | 4/5 (80%) | 4/4 (100%) |
 | `findloop.ts` | 5/6 (83%) | 6/6 (100%) |
 | `grid.ts`, `save.ts`, `deduction-fixpoint.ts`, `divvy.ts`, `symmetric-blacks.ts` | 100% | 100% |
 
@@ -65,7 +65,7 @@ Neither shrink is a pass mark. What each one buys is a written argument, and the
 harness re-checks every equivalent on every run: one that starts being *caught*
 means the argument expired under a code change.
 
-> ### The number this table replaced was an artefact — read §7 first
+> ### The number this table replaced was an artifact — read §7 first
 >
 > The audit reported a **"killed by its own test file"** column from Stryker's
 > `killedBy`, and it ranked `grid.ts` at 3% and `latin.ts` at 2%. Both were
@@ -74,11 +74,11 @@ means the argument expired under a code change.
 > `killedBy`, so the column records which covering test happened to run **first**.
 > Vitest orders files roughly alphabetically, so `grid.ts` scored 1/40 because
 > `grid-aperiodic-differential.test.ts`, `grid-desc.test.ts` and
-> `grid-incentre.test.ts` all sort ahead of `grid.test.ts`.
+> `grid-incenter.test.ts` all sort ahead of `grid.test.ts`.
 >
 > Measured properly, `grid.ts` catches **6 of 6** — deleting its `case "cairo":`
 > arm fails nine of its own tests in 1.5 s — and the genuinely worst module was
-> `midend.ts`, which the artefact had rated *mid-table* at 39%. **The correction
+> `midend.ts`, which the artifact had rated *mid-table* at 39%. **The correction
 > reversed the work order the change was scoped around.**
 
 **So "well covered" is not the finish line. Ask where the failure would appear,
@@ -174,7 +174,7 @@ that the ad-hoc version does not:
 - **Walks `src/engine/` recursively, and refuses to run below a committed floor
   on the number of test files it finds.** The walk was one level deep while the
   engine was flat; `group-crowded-source-directories` grouped `grid/` and
-  `colour/` into subdirectories, and a walk that had not followed them would
+  `color/` into subdirectories, and a walk that had not followed them would
   simply have derived fewer own-tests — so more cases would report `SURVIVED` and
   **the rate would drop**, which reads as *"the tests got worse"* rather than
   *"the instrument stopped looking"*. The anchor check cannot cover it: anchors
@@ -226,10 +226,10 @@ found in this session's own new test files, each of which passed immediately:
 
 - `wires.test.ts` — "needs the connection from BOTH sides" passed with the
   both-sides check *deleted*, because the case it chose was one an unrelated
-  guard already caught. The discriminating case had to be a neighbour wired to
+  guard already caught. The discriminating case had to be a neighbor wired to
   *nothing*.
 - `symmetric-blacks.test.ts` — the degree-2 region's `+ hodd` could be deleted
-  with everything green (the mirror still mirrors; it just leaves the centre row
+  with everything green (the mirror still mirrors; it just leaves the center row
   permanently white), and `<=` could become `<` unnoticed because the two differ
   only on the draw that *equals* `blackpc`.
 
@@ -391,7 +391,7 @@ like. It is green whenever both implementations are wrong in the same way, and
 its tolerance is not tightenable, because the tolerance is there to absorb *the
 peer's* error rather than yours.
 
-`grid-incentre.test.ts` was the repo's one example and is now the worked one
+`grid-incenter.test.ts` was the repo's one example and is now the worked one
 (`retire-the-incentre-c-fixture`). It asserted `|r_TS − r_C| ≤ 1` over 1,864
 faces against a frozen C capture. Replacing that with the largest circle the
 integer lattice actually admits — computed from the vertex ring, sharing no line
@@ -432,14 +432,14 @@ the analysis wrong.
 
 **Chasing an equivalent mutant is worse than leaving it**, because the test you
 write to kill it asserts a mechanism rather than a claim. From the probe corpus,
-each argued rather than assumed, and in three distinct flavours:
+each argued rather than assumed, and in three distinct flavors:
 
 *Argued from the code.*
 
 - `latin.ts`'s `row`/`col` ledgers are read in exactly one place — a guard that
   *skips* an `elim` sweep over a line whose digit is already placed. Run anyway,
   that sweep finds one candidate, sees the cell already filled, and returns 0. The
-  ledger is a scan-skipping optimisation with no behaviour of its own.
+  ledger is a scan-skipping optimization with no behavior of its own.
 - `border-grid.ts`'s `if (dir === 4) return null` is unreachable: the three masks
   are not independent, so exactly one edge bit always survives.
 - `slide-planner.ts`'s default `isGoal` is consulted at two sites and both read
@@ -456,9 +456,9 @@ the crossings to the **left** and to the **right** have the same parity, and
 `grid-geometry.ts`'s choice of direction cannot change an answer.
 
 *Settled by measurement, because the argument would not close.* Two `loopgen.ts`
-cases — admitting a zero-transition colouring, and stopping when either candidate
+cases — admitting a zero-transition coloring, and stopping when either candidate
 list empties rather than both — survive 1,319 (tiling, size, seed) runs across
-all eleven periodic tilings with **byte-identical** colourings. The sweep's own
+all eleven periodic tilings with **byte-identical** colorings. The sweep's own
 sensitivity was checked first: perturbing the random-flip pass moves 1,310 of
 those 1,319 rows. Likewise `slide-planner.ts`'s "take the first meet in a level
 rather than the cheapest" survives 601 scrambles checked against an independent
@@ -468,7 +468,7 @@ exposed one would show up as an equivalent turning CAUGHT.
 
 **And working out *why* a mutant is equivalent is worth doing even when nothing
 changes** — `border-grid.ts`'s had a comment claiming it rejected corner and
-centre clicks, which the module's own tie-break-at-a-tile-centre test already
+center clicks, which the module's own tie-break-at-a-tile-center test already
 contradicted. The comment is now right.
 
 ---
@@ -478,8 +478,8 @@ contradicted. The comment is now right.
 `npm run mutation` (config: [`scripts/stryker.config.mjs`](../scripts/stryker.config.mjs),
 which documents its own settings). Reach for it to *close* a question the cheap
 probes have opened, not to open one. **It is an audit, never a gate, and its
-score is never ratcheted** — a number that invites maximising invites tests
-written against mutants rather than against behaviour.
+score is never ratcheted** — a number that invites maximizing invites tests
+written against mutants rather than against behavior.
 
 **Cost model, measured:**
 
@@ -506,7 +506,7 @@ from 19m11s to 7m34s.
 
 346 of the 2,168 mutants (16%) timed out, 227 of them in `latin.ts`. Stryker
 scores a timeout as *killed*, so the result is unaffected, but whether they are
-genuine infinite loops or artefacts of a loaded box decides whether a large share
+genuine infinite loops or artifacts of a loaded box decides whether a large share
 of 398 minutes was wasted. The report already answers it:
 
 | module | timeout rate | loops per 100 lines | covering set |

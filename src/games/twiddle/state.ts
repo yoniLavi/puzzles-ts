@@ -159,7 +159,7 @@ export function presets() {
  * `(n+1)/2 × n/2` and cycle each element with its 4-rotational coset
  * `p[0..3]`. When orientable, each moved tile's orientation advances by
  * `dir` (the upstream `v ^= ((v+dir) ^ v) & 3` packed-bit trick reduces
- * to `(orient + dir) & 3`), plus the lone centre tile when `n` is odd.
+ * to `(orient + dir) & 3`), plus the lone center tile when `n` is odd.
  */
 export function doRotate(
   numbers: Int32Array,
@@ -198,7 +198,7 @@ export function doRotate(
     }
   }
 
-  // Don't forget the orientation on the centre square, if n is odd.
+  // Don't forget the orientation on the center square, if n is odd.
   if (orientable && n & 1) {
     const c = base + (n >> 1) * w + (n >> 1);
     orient[c] = (orient[c] + d) & 3;
@@ -386,7 +386,7 @@ export function newDesc(p: TwiddleParams, rng: RandomState): { desc: string } {
     totalMoves = w * h * n * n * 2 + randomUpto(rng, 2);
   }
 
-  const rw = w - n + 1; // width of rotation-centre space
+  const rw = w - n + 1; // width of rotation-center space
   const rh = h - n + 1;
 
   do {

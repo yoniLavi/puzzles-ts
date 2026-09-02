@@ -67,7 +67,7 @@ interface BoardNode {
  * measured at **35% of total generation time** on the 8×6 preset, because a
  * board string is built for every candidate move and most candidates turn out
  * to be duplicates. Hashing costs no allocation, and the byte-for-byte desc
- * differential proves the substitution changed no behaviour.
+ * differential proves the substitution changed no behavior.
  */
 function hashOf(data: Uint8Array): number {
   let h = 0x811c9dc5;

@@ -1,32 +1,32 @@
 /**
  * Clusters rendering — port of `game_redraw` / `draw_tile` in
  * `puzzles/unreleased/clusters.c`. A per-tile diffed loop: each cell is a
- * `COL_GRID` rect under a slightly smaller colour rect (red `COL_0` / blue
+ * `COL_GRID` rect under a slightly smaller color rect (red `COL_0` / blue
  * `COL_1` / background), a dot circle for a given, a red four-sided outline
  * for a rule violation, and a green frame under the keyboard cursor. Rule
  * violations are recomputed every frame from the current grid and shown live
- * (upstream behaviour); the in-flight paint drag previews its cells in the
- * drag colour. On a fresh win the whole board flashes by swapping both
- * colours on alternate beats.
+ * (upstream behavior); the in-flight paint drag previews its cells in the
+ * drag color. On a fresh win the whole board flashes by swapping both
+ * colors on alternate beats.
  *
  * Clusters is compiled with `NARROW_BORDERS` (cmake/platforms/webapp.cmake),
  * so `BORDER = tilesize / 10` — a thin grid margin, not the desktop
  * `tilesize / 2` — and `computeSize` subtracts 1 to meet the outer grid line.
  */
 
-import { BLUE, ORANGE, PINK_WASH, PURPLE } from "../../engine/colour/colours.ts";
+import { BLUE, ORANGE, PINK_WASH, PURPLE } from "../../engine/color/colors.ts";
 import {
   CURSOR,
   ERROR,
   HINT_EVIDENCE,
   INK,
   PAPER,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { ClustersHintHighlights } from "./index.ts";
 import { findErrors } from "./solver.ts";
 import {
@@ -55,22 +55,22 @@ export const COL_1_DOT = 5; // dot on a blue tile (white)
 export const COL_ERROR = 6;
 export const COL_CURSOR = 7;
 // Hint legend (add-clusters-hint, §5.3/§5.4 of hint-authoring.md): the forced
-// cell fills COL_HINT; the tile the refuted colouring would break — the
+// cell fills COL_HINT; the tile the refuted coloring would break — the
 // one element the narration calls "ringed" — gets a double COL_HINT_DANGER
-// ring (an outline, because the tile's own colour *is* part of the premise;
+// ring (an outline, because the tile's own color *is* part of the premise;
 // doubled so it cannot be confused with the single red live-error frame); a
 // lookahead chain's what-if cells shade COL_HINT_CELL with a small mark of
-// the colour each would be forced to. No further premise role: every other
+// the color each would be forced to. No further premise role: every other
 // tile the narration cites is orthogonally adjacent to the target or the
 // danger tile, already in view.
 //
 // **COL_HINT is PURPLE here, not the collection's `HINT_ACTION`**, and this is
-// the one game where that role cannot have its usual colour. `HINT_ACTION` *is*
-// `BLUE`, and blue is one of the two colours a Clusters player paints — so
+// the one game where that role cannot have its usual color. `HINT_ACTION` *is*
+// `BLUE`, and blue is one of the two colors a Clusters player paints — so
 // filling the target with it painted the cell the whole deduction starts from
-// in the exact colour of a placed blue tile: invisible against its neighbours,
+// in the exact color of a placed blue tile: invisible against its neighbors,
 // and actively wrong on a firing that concludes *red*, where the board said
-// blue while the sentence said red. `colour-collide.test.ts` had been reporting
+// blue while the sentence said red. `color-collide.test.ts` had been reporting
 // `COL_1 = COL_HINT` all along; it is advisory, so nothing failed.
 //
 // The cross-game role normally wins a collision and the local one yields
@@ -84,8 +84,8 @@ export const COL_HINT = 8;
 export const COL_HINT_CELL = 9;
 export const COL_HINT_DANGER = 10;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = INK;
   out[COL_0] = PINK_WASH;
@@ -101,7 +101,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   // evidence role. `HINT_EVIDENCE` covers the chain ordinal too; see its doc
   // comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  // A third hint premise no shared role names — the tile the refuted colouring
+  // A third hint premise no shared role names — the tile the refuted coloring
   // would break — in the one strong accent the board and the two hint marks
   // leave free.
   out[COL_HINT_DANGER] = ORANGE;
@@ -119,7 +119,7 @@ export function computeSize(p: ClustersParams, ts: number): Size {
 
 // --- draw state ------------------------------------------------------------
 
-// Cache flags above the effective-tile byte (0..6: colour bits + F_SINGLE).
+// Cache flags above the effective-tile byte (0..6: color bits + F_SINGLE).
 const F_ERR = 1 << 8;
 const F_CUR = 1 << 9;
 
@@ -176,11 +176,11 @@ export function setTileSize(ds: ClustersDrawState, ts: number): void {
  * Where a hint mark sits around cell `(x, y)` — straddling the grid line, one
  * pixel of `COL_GRID` gutter and a couple of the cell's own edge.
  *
- * Each tile paints a `TILESIZE` square of `COL_GRID` and then its own colour one
+ * Each tile paints a `TILESIZE` square of `COL_GRID` and then its own color one
  * pixel smaller, so a single pixel between two cells is real gutter and is what
  * `HintMarks` paints back when a mark moves; the rest lies inside the cell,
  * where the cell's own repaint undoes it. There is room because a Clusters cell's
- * content is a centred dot or a `TILESIZE/3` what-if mark.
+ * content is a centered dot or a `TILESIZE/3` what-if mark.
  */
 function markBand(ds: ClustersDrawState, x: number, y: number): MarkBand {
   const ts = ds.tilesize;
@@ -195,7 +195,7 @@ function markBand(ds: ClustersDrawState, x: number, y: number): MarkBand {
 // --- cell drawing ----------------------------------------------------------
 
 /** A one-tile-inset square ring of thickness `t` (the premise/danger cue —
- * an outline, so the ringed tile's own colour stays visible under it). */
+ * an outline, so the ringed tile's own color stays visible under it). */
 function drawRing(
   dr: GameDrawing,
   px: number,
@@ -203,13 +203,13 @@ function drawRing(
   size: number,
   inset: number,
   t: number,
-  colour: number,
+  color: number,
 ): void {
   const o = size - 2 * inset;
-  dr.drawRect({ x: px + inset, y: py + inset, w: o, h: t }, colour);
-  dr.drawRect({ x: px + inset, y: py + inset, w: t, h: o }, colour);
-  dr.drawRect({ x: px + inset, y: py + inset + o - t, w: o, h: t }, colour);
-  dr.drawRect({ x: px + inset + o - t, y: py + inset, w: t, h: o }, colour);
+  dr.drawRect({ x: px + inset, y: py + inset, w: o, h: t }, color);
+  dr.drawRect({ x: px + inset, y: py + inset, w: t, h: o }, color);
+  dr.drawRect({ x: px + inset, y: py + inset + o - t, w: o, h: t }, color);
+  dr.drawRect({ x: px + inset + o - t, y: py + inset, w: t, h: o }, color);
 }
 
 function drawTile(
@@ -227,17 +227,17 @@ function drawTile(
   const px = x * ts + b;
   const py = y * ts + b;
 
-  // The cell keeps its own colour under a hint: the target is ringed and the
+  // The cell keeps its own color under a hint: the target is ringed and the
   // chain outlined, both on the cell's border in `redraw`. In a game whose move
-  // *is* "give this cell a colour", a solid fill is not merely a legibility
+  // *is* "give this cell a color", a solid fill is not merely a legibility
   // question — it says with the board what the narration is still proposing, and
-  // it buries the what-if mark's colour, which is the whole content of a chain
+  // it buries the what-if mark's color, which is the whole content of a chain
   // cell.
   const fill = tile & F_COLOR_1 ? COL_1 : tile & F_COLOR_0 ? COL_0 : COL_BACKGROUND;
   dr.drawRect({ x: px, y: py, w: ts, h: ts }, COL_GRID);
   dr.drawRect({ x: px, y: py, w: ts - 1, h: ts - 1 }, fill);
 
-  // The small mark of the colour a what-if cell would be forced to — a
+  // The small mark of the color a what-if cell would be forced to — a
   // deliberately tile-unlike size, so it reads as hypothetical, not placed.
   if (hintBits & (HB_CHAIN_0 | HB_CHAIN_1)) {
     const m = Math.floor(ts / 3);
@@ -369,12 +369,12 @@ export function redraw(
       const i = y * w + x;
       let tile = grid[i];
 
-      // In-flight paint drag previews non-given cells in the drag colour.
+      // In-flight paint drag previews non-given cells in the drag color.
       if (dragSet?.has(i) && !(tile & F_SINGLE)) tile = ui.dragType;
 
-      if (flash) tile ^= COLMASK; // swap both colours on the flash beat
+      if (flash) tile ^= COLMASK; // swap both colors on the flash beat
 
-      // A dragged (uncommitted) cell shows no error outline — its colour is a
+      // A dragged (uncommitted) cell shows no error outline — its color is a
       // preview, not the committed state the error check ran on.
       const error =
         !(dragSet?.has(i) && !(grid[i] & F_SINGLE)) && (errorSet?.has(i) ?? false);
@@ -410,8 +410,8 @@ export function redraw(
   }
   ds.marks.paint(dr, targets, chain, {
     band: (x, y) => markBand(ds, x, y),
-    targetColour: COL_HINT,
-    evidenceColour: COL_HINT_CELL,
-    gutterColour: COL_GRID,
+    targetColor: COL_HINT,
+    evidenceColor: COL_HINT_CELL,
+    gutterColor: COL_GRID,
   });
 }

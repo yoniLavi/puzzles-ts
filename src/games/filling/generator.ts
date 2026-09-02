@@ -62,7 +62,7 @@ function regionSize(board: number[], w: number, h: number, i: number): number {
   return size;
 }
 
-/** Absorb every size-1 region into a non-maxsize neighbour, renumbering the
+/** Absorb every size-1 region into a non-maxsize neighbor, renumbering the
  * merged region to its new size (upstream `merge_ones`). */
 function mergeOnes(board: number[], w: number, h: number): void {
   const sz = w * h;
@@ -95,7 +95,7 @@ function mergeOnes(board: number[], w: number, h: number): void {
       }
       // Mirror C's loop increment `board[i] = 1` after the final fall-through:
       // a 1-cell that failed to merge must be left as a 1 (else it stays part
-      // of the neighbour region, overflowing it by one).
+      // of the neighbor region, overflowing it by one).
       if (!matched) board[i] = 1;
       if (matched) change = true;
     }
@@ -103,7 +103,7 @@ function mergeOnes(board: number[], w: number, h: number): void {
 }
 
 /** Build a random valid board: a shuffled DSF region partition with
- * conflicting equal-size neighbours merged, then size-1 absorption. The
+ * conflicting equal-size neighbors merged, then size-1 absorption. The
  * returned `number[]` holds each cell's region size (the full solution). */
 function makeBoard(w: number, h: number, rng: RandomState): number[] {
   const sz = w * h;
@@ -133,15 +133,15 @@ function makeBoard(w: number, h: number, rng: RandomState): number[] {
           const x = (board[i] % w) + DX[directions[j]];
           const y = ((board[i] / w) | 0) + DY[directions[j]];
           if (x < 0 || x >= w || y < 0 || y >= h) continue;
-          const neighbour = dsf.canonify(w * y + x);
-          if (square === neighbour) continue;
-          const neighbourSize = dsf.size(neighbour);
-          if (size === neighbourSize) error = true;
+          const neighbor = dsf.canonify(w * y + x);
+          if (square === neighbor) continue;
+          const neighborSize = dsf.size(neighbor);
+          if (size === neighborSize) error = true;
           // The randomUpto(rng,10) draw is taken only when the size test
           // passes — short-circuit order preserved exactly as upstream.
-          if (neighbourSize < min && randomUpto(rng, 10)) {
-            min = neighbourSize;
-            merge = neighbour;
+          if (neighborSize < min && randomUpto(rng, 10)) {
+            min = neighborSize;
+            merge = neighbor;
           }
         }
         if (!error) continue;

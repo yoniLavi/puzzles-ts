@@ -21,10 +21,10 @@ import {
   HINT_EVIDENCE,
   highlightWash,
   INK,
-  pencilColour,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
-import { groupDiagonal } from "../../engine/colour/palette-games.ts";
+  pencilColor,
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
+import { groupDiagonal } from "../../engine/color/palette-games.ts";
 import { winFlash } from "../../engine/flash.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
@@ -36,7 +36,7 @@ import {
   type OrderedCell,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import type { Colour, DrawTextOptions, Size } from "../../engine/types.ts";
+import type { Color, DrawTextOptions, Size } from "../../engine/types.ts";
 import type { GroupMove } from "./state.ts";
 import {
   checkErrors,
@@ -70,20 +70,20 @@ export const COL_HINT = 8;
  * ordinal — one index, because the number indexes the evidence. */
 export const COL_HINT_CELL = 9;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const bg = defaultBackground;
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = INK;
-  out[COL_USER] = playerEntryColour(bg);
+  out[COL_USER] = playerEntryColor(bg);
   out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_ERROR] = ERROR;
-  out[COL_PENCIL] = pencilColour(bg);
+  out[COL_PENCIL] = pencilColor(bg);
   out[COL_DIAGONAL] = groupDiagonal(bg);
   out[COL_MISTAKE] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   // Both hint marks are outlines on the cell's border, so both take a strong
-  // colour and differ in shape rather than in weight — a premise set's rings
+  // color and differ in shape rather than in weight — a premise set's rings
   // against one cell's ring. `HINT_EVIDENCE` covers the chain ordinal too; see
   // its doc comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
@@ -234,7 +234,7 @@ function markBand(ds: GroupDrawState, x: number, y: number): MarkBand {
 
 // --- per-tile drawing (draw_tile) ------------------------------------------
 
-const CENTRE: DrawTextOptions = {
+const CENTER: DrawTextOptions = {
   align: "center",
   baseline: "mathematical",
   fontType: "variable",
@@ -242,7 +242,7 @@ const CENTRE: DrawTextOptions = {
 };
 
 function textOpts(size: number): DrawTextOptions {
-  return { ...CENTRE, size };
+  return { ...CENTER, size };
 }
 
 function drawTile(
@@ -262,7 +262,7 @@ function drawTile(
   const id = ds.id;
   let tile = tileIn;
 
-  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): both
+  // Hint overlay (docs/games/hints.md § "The element-type color legend"): both
   // cell-level marks are read in `redraw`, which rings the target and outlines
   // the evidence region on the cell's own border, so a hint never paints over
   // the elements it is talking about. What is left here is `struck` (bit
@@ -388,8 +388,8 @@ function drawTile(
           const px = pl + Math.trunc((fontsize * (2 * dx + 1)) / 2);
           const py = pt + Math.trunc((fontsize * (2 * dy + 1)) / 2);
           dr.drawText({ x: px, y: py }, textOpts(fontsize), COL_PENCIL, toChar(i, id));
-          // A hint-struck candidate keeps its normal pencil colour with a
-          // same-colour strikethrough as the "ruled out" cue (docs/games/hints.md § "The element-type colour legend").
+          // A hint-struck candidate keeps its normal pencil color with a
+          // same-color strikethrough as the "ruled out" cue (docs/games/hints.md § "The element-type color legend").
           if (struck & (1 << i)) {
             const r = Math.max(2, Math.trunc(fontsize / 3));
             dr.drawLine({ x: px - r, y: py }, { x: px + r, y: py }, COL_PENCIL, 2);
@@ -591,9 +591,9 @@ export function redraw(
   }
   ds.marks.paint(dr, targets, evidence, {
     band: (x, y) => markBand(ds, x, y),
-    targetColour: COL_HINT,
-    evidenceColour: COL_HINT_CELL,
-    gutterColour: COL_GRID,
+    targetColor: COL_HINT,
+    evidenceColor: COL_HINT_CELL,
+    gutterColor: COL_GRID,
   });
 }
 

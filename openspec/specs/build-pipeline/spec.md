@@ -51,7 +51,7 @@ hooks never installed could land breakage on `main` undetected).
 - **THEN** the only setup is `actions/setup-node` and `npm ci`
 - **AND** no `apt-get`, `brew` or other native-tool provisioning step is present
 
-### Requirement: The pre-commit gate minimises wall-clock without dropping checks
+### Requirement: The pre-commit gate minimizes wall-clock without dropping checks
 
 The pre-commit gate SHALL run all five checks (`tsc -b --noEmit`, biome,
 `npm run probe -- --verify`, `vitest run`, `vite build`) and block a commit on
@@ -77,7 +77,7 @@ That distinction is the whole of it, and it is load-bearing in both directions:
   full run is ~20 minutes and deliberately outside the gate, so nothing else
   would notice.
 - The probe's **rate** SHALL NOT be gated or ratcheted. A gated feedback number
-  invites tests written against the number rather than against behaviour, which
+  invites tests written against the number rather than against behavior, which
   the `repo-layout` requirement it serves explicitly forbids. A survivor is a
   finding to read; only a case that no longer applies is a failure.
 
@@ -117,7 +117,7 @@ prose throughout its sources. `help/` SHALL NOT be skippable: it is a
 `vite build` input and `help-coverage.test.ts`'s subject.
 
 Selecting *individual tests* by what a commit changed is a different question
-and is NOT authorised by this requirement. The cross-game guards here reach
+and is NOT authorized by this requirement. The cross-game guards here reach
 their subjects through `import.meta.glob(..., "?raw")` rather than through
 imports, so a graph-based selection may omit exactly the guards that exist to
 catch a change to one game. Such a scheme SHALL first demonstrate that its
@@ -136,7 +136,7 @@ stresses the shared-module-state that non-isolated pools expose) — or be
 reverted.
 
 The gate SHALL NOT make its concurrency conditional on machine load. It once
-probed the 1-minute load average and serialised on a busy box, because
+probed the 1-minute load average and serialized on a busy box, because
 oversubscription starved timeout-bound tests past their per-test deadlines. That
 rationale was retired with the per-test timeouts themselves (one 600s ceiling in
 `vitest.config.ts`, no per-test timeouts), so contention now makes a test
@@ -172,7 +172,7 @@ by an environment toggle the hook sets, not by a second copy of the gate.
 - **WHEN** an unformatted file reaches `main` via a `--no-verify` commit, or a
   biome upgrade restyles files no single commit touched
 - **THEN** the whole-tree `biome ci` in CI (and in a manual `npm run gate`) fails
-- **BECAUSE** the per-commit scope is a per-commit optimisation, not a relaxation
+- **BECAUSE** the per-commit scope is a per-commit optimization, not a relaxation
   of the guarantee that `main` stays formatted
 
 #### Scenario: A speed change never weakens the gate
@@ -224,7 +224,7 @@ output, committed to the repository.
 
 A **round's** dated snapshot SHALL be committed under the openspec change that
 produced it, and SHALL travel into the archive with that change. A snapshot is
-evidence for a piece of work, not a standing repository artefact: its value is
+evidence for a piece of work, not a standing repository artifact: its value is
 the diff between rounds, that diff is read once by the change that ordered the
 measurement, and it cannot be regenerated afterwards because it measures a tree
 that no longer exists. The same reasoning files an audit's findings under its
@@ -242,7 +242,7 @@ final.
 
 A top-level `metrics/` directory SHALL hold only **live instruments** — output
 that something still reads. Currently that is `metrics/mutation/report.json`,
-read by `docs/test-strength.md`, and `metrics/colour-inventory.md`, regenerated
+read by `docs/test-strength.md`, and `metrics/color-inventory.md`, regenerated
 by `npm run diff`. A finished round's output left at the root reads as current
 measurement of the current tree, which is precisely what it is not.
 
@@ -254,7 +254,7 @@ the following day — a reader can confirm the claim without trusting it.
 
 The harness SHALL NOT be part of the pre-commit gate or of CI's blocking checks.
 Its value is the **diff between rounds**, not per-commit freshness, and adding a
-slow whole-tree scan to a gate that is explicitly optimised for wall-clock would
+slow whole-tree scan to a gate that is explicitly optimized for wall-clock would
 buy nothing.
 
 Cognitive complexity SHALL be obtained from Biome's
@@ -297,7 +297,7 @@ of three things, and **the third is the common case in this repository**:
 1. a guard rendered redundant by a type that was tightened after it was written
    — delete it;
 2. **a check that was intended to fire and cannot** — a defect; fix it and report
-   the behaviour change; or
+   the behavior change; or
 3. **a correct runtime guard that the type system misrepresents** — keep it, and
    record why so the next audit does not re-raise it.
 
@@ -327,7 +327,7 @@ validation the declined flag existed to enforce.
   read as having no overlap
 - **THEN** the guard is kept, because the read can return `undefined` at runtime
   regardless of its declared type
-- **AND** the finding is recorded as an analysis artefact rather than re-triaged
+- **AND** the finding is recorded as an analysis artifact rather than re-triaged
   on every subsequent audit
 
 #### Scenario: A solver's second contradiction check is reported as always falsy
@@ -440,7 +440,7 @@ tool for *locating* cost, because a relative measure is all that needs to be.
 - **WHEN** a test's cost is reduced by any of the three treatments
 - **THEN** it is verified to still discriminate — by breaking the code it covers
   and confirming it fails
-- **BECAUSE** the failure this optimisation most easily causes is a test that
+- **BECAUSE** the failure this optimization most easily causes is a test that
   still passes, still reads as coverage, and no longer catches anything
 
 #### Scenario: A differential fixture is deferred
@@ -456,7 +456,7 @@ tool for *locating* cost, because a relative measure is all that needs to be.
 
 A clean checkout SHALL build the complete app — every game, every help page, the
 service worker and the PWA assets — with **`npm install` as the entire setup**.
-No native toolchain, no system package, and no generated artefact SHALL be
+No native toolchain, no system package, and no generated artifact SHALL be
 required, at config-load time or at build time.
 
 Nothing is generated any more. The game catalog is committed TypeScript source
@@ -470,11 +470,11 @@ This is the end of a sequence worth recording, because each step looked like a
 small cleanup and the property only arrived when the last one landed: the
 Emscripten toolchain went with `retire-c-engine`, the CMake tree and the icon
 pipeline before it, the generated `catalog.json` became committed source, and the
-manual was the last generated artefact standing. A build that needs a system
+manual was the last generated artifact standing. A build that needs a system
 package is a build that fails differently on every contributor's machine, and
 until now this repository needed one to be complete.
 
-The build configuration SHALL NOT depend on any generated, gitignored artefact at
+The build configuration SHALL NOT depend on any generated, gitignored artifact at
 config-load time.
 
 #### Scenario: A clean checkout builds with nothing installed but Node
@@ -486,7 +486,7 @@ config-load time.
 - **AND** nothing is missing or degraded relative to a machine that has those
   tools
 
-#### Scenario: No artefact is generated into the source tree
+#### Scenario: No artifact is generated into the source tree
 
 - **WHEN** the repository is inspected after a build
 - **THEN** `src/assets/` holds only committed files

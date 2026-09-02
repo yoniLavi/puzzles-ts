@@ -121,7 +121,7 @@ export class PuzzleViewInteractive extends PuzzleView {
     // Floor to whole pixels: the drawing API is defined on integer pixels, and
     // games do whole-pixel arithmetic with no slack for a sub-pixel shift.
     // Both terms are fractional in general -- pointers report sub-pixel
-    // positions, and a centred canvas routinely lands on a half-pixel edge.
+    // positions, and a centered canvas routinely lands on a half-pixel edge.
     // The C/WASM engine never saw that, because Embind truncates to `int` at
     // the boundary; the TS engine takes `number` and let it through. Symptom:
     // Map's drag blob, whose TILESIZE+3 blitter is exactly flush with the
@@ -307,7 +307,7 @@ export class PuzzleViewInteractive extends PuzzleView {
    * puzzle never sees `LEFT_RELEASE`/`RIGHT_RELEASE` and any state it shows only
    * while a press is held (a drag highlight, a lifted piece) stays on screen
    * until some later, unrelated input. The midend's contract is one release per
-   * press, and the declined-press path below already honours it; this is the
+   * press, and the declined-press path below already honors it; this is the
    * accepted-press path doing the same. `deferred` parks the release until
    * tracking exists, and it is then replayed exactly once.
    *
@@ -501,7 +501,7 @@ export class PuzzleViewInteractive extends PuzzleView {
     // response arrives too late for handlePointerDown to set up the
     // pointerTracking object before handleContextMenu is called.
     //
-    // Cancelling only for a puzzle that wants the right button would need a
+    // Canceling only for a puzzle that wants the right button would need a
     // flag saying so, and `Game.ignoresSecondaryButton` is not it: it marks the
     // games with no secondary meaning *at all*, and everything else — whether
     // the button is essential (Pattern) or merely available (Tracks) — wants

@@ -39,10 +39,10 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { SYMMETRY_CHOICES } from "../../engine/symmetric-blacks.ts";
-import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
 import { newLightupDesc, puzzleIsGood } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -261,7 +261,7 @@ function findMistakes(state: LightupState): readonly LightupMistake[] {
 // --- hint --------------------------------------------------------------------
 //
 // The hint plan is the deductive solver's own script, run from the
-// player's position (bulbs and impossible-marks honoured as constraints)
+// player's position (bulbs and impossible-marks honored as constraints)
 // with the recorder on. One firing = one (possibly multi-cell) step, and
 // an elimination step's move is the game's own impossible-mark, so
 // following the plan leaves on the board exactly the trail the solver
@@ -273,7 +273,7 @@ function findMistakes(state: LightupState): readonly LightupMistake[] {
  * place); `area` is the deduction's evidence, shaded light-blue when the
  * square is dark and ringed green when it is lit (the fill would hide the
  * "already lit" premise); `dark` is the unlit square the deduction is
- * about (violet ring); `clue` is the driving clue, whose digit recolours. */
+ * about (violet ring); `clue` is the driving clue, whose digit recolors. */
 export interface LightupHint {
   kind: "light" | "impossible";
   targets: HintCell[];
@@ -299,7 +299,7 @@ function buildHighlights(f: LightupFiring): LightupHint {
     }
     case "clueSatisfied":
       // The placed bulbs are the premise; they are lit, so the renderer
-      // rings them. The clue itself is cued by its recoloured digit.
+      // rings them. The clue itself is cued by its recolored digit.
       return {
         kind: f.kind,
         targets: f.cells,
@@ -307,8 +307,8 @@ function buildHighlights(f: LightupFiring): LightupHint {
         clue: f.reason.clue,
       };
     case "clueSaturated":
-      // The premise is just the clue's count against its free neighbours,
-      // and the free neighbours are all targets — no separate evidence.
+      // The premise is just the clue's count against its free neighbors,
+      // and the free neighbors are all targets — no separate evidence.
       return { kind: f.kind, targets: f.cells, area: [], clue: f.reason.clue };
     case "discountUnlit": {
       const dark = f.reason.dark;
@@ -603,7 +603,7 @@ export const lightupGame: Game<
     },
   ],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: LightupParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

@@ -22,7 +22,7 @@ const ID = "6dn:1_2_3_4_5_6_2e3d5_4e5a1c6_3d";
 function rects(ops: readonly { op: string }[]) {
   return ops.filter((o) => o.op === "rect") as {
     op: "rect";
-    colour: number;
+    color: number;
     w: number;
     h: number;
   }[];
@@ -38,7 +38,7 @@ describe("group render scenarios", () => {
     expect(textOps.length).toBeGreaterThan(0);
 
     // The w cells on the main display diagonal are shaded COL_DIAGONAL.
-    const diagonal = rects(ops).filter((r) => r.colour === COL_DIAGONAL);
+    const diagonal = rects(ops).filter((r) => r.color === COL_DIAGONAL);
     expect(diagonal.length).toBe(6);
 
     expect(recording.ops).toMatchSnapshot();
@@ -54,8 +54,7 @@ describe("group render scenarios", () => {
 
     // The divider paints extra 1px COL_GRID edges between the two elements.
     const thinGridEdges = (ops: readonly { op: string }[]) =>
-      rects(ops).filter((r) => r.colour === COL_GRID && (r.w === 1 || r.h === 1))
-        .length;
+      rects(ops).filter((r) => r.color === COL_GRID && (r.w === 1 || r.h === 1)).length;
 
     expect(thinGridEdges(withDivider.recording.ops)).toBeGreaterThan(
       thinGridEdges(opener.recording.ops),
@@ -87,7 +86,7 @@ describe("group render scenarios", () => {
     //
     // The side count is the assertion, because it is what distinguishes one
     // contour from a ring per cell. This frame's premises are (1,1), (2,1) and
-    // (4,1): an adjacent pair, which the neighbour rule joins into a 6-sided
+    // (4,1): an adjacent pair, which the neighbor rule joins into a 6-sided
     // contour, plus a separate cell at 4 — **10**, where a per-cell renderer
     // would give 12 and one that dropped a premise 6.
     expectRing(frame.recording.ops, COL_HINT);

@@ -165,8 +165,8 @@ export function decodeClues(clueDesc: string, numFaces: number): Int8Array {
  * Upstream builds an **entire grid** purely to learn `numFaces`, and flags the
  * inefficiency itself. For the four aperiodic tilings that is now a full
  * generation plus a vigorous trim — paid on every description validation,
- * including the assertion at the end of every `newDesc`. Memoising is
- * behaviour-identical and removes a cost upstream only tolerated because its
+ * including the assertion at the end of every `newDesc`. Memoizing is
+ * behavior-identical and removes a cost upstream only tolerated because its
  * aperiodic grids were built far less often than ours are.
  */
 const faceCountCache = new Map<string, number | null>();

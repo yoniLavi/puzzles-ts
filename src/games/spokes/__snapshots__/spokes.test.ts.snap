@@ -3,7 +3,7 @@
 exports[`spokes rendering > paints the opening frame 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 288,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -19,7 +19,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -28,7 +28,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -119,7 +119,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -139,7 +139,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -148,7 +148,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -279,7 +279,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -299,7 +299,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -308,7 +308,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -439,7 +439,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -459,7 +459,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -468,7 +468,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 0,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -559,7 +559,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -579,7 +579,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -588,7 +588,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -719,7 +719,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -739,7 +739,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -748,7 +748,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -939,7 +939,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -959,7 +959,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -968,7 +968,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1159,7 +1159,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1179,7 +1179,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1188,7 +1188,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 72,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1319,7 +1319,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1339,7 +1339,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1348,7 +1348,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1479,7 +1479,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1499,7 +1499,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1508,7 +1508,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1699,7 +1699,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1719,7 +1719,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1728,7 +1728,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1919,7 +1919,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -1939,7 +1939,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -1948,7 +1948,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 144,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2079,7 +2079,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2099,7 +2099,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2108,7 +2108,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2199,7 +2199,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2219,7 +2219,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2228,7 +2228,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2359,7 +2359,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2379,7 +2379,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2388,7 +2388,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2519,7 +2519,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2539,7 +2539,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 72,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2548,7 +2548,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 216,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 56,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2639,7 +2639,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 3,
+    "color": 3,
     "fontType": "fixed",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -2659,7 +2659,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2678,7 +2678,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2697,7 +2697,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 64,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2716,7 +2716,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 136,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2735,7 +2735,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 136,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2754,7 +2754,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 136,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2773,7 +2773,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 208,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2792,7 +2792,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 208,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -2811,7 +2811,7 @@ exports[`spokes rendering > paints the opening frame 1`] = `
     "y": 208,
   },
   {
-    "colour": 0,
+    "color": 0,
     "h": 16,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",

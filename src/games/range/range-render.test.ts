@@ -17,7 +17,7 @@ import {
   COL_HINT,
   COL_HINT_BLACKREF,
   COL_HINT_CELL,
-  colours,
+  colors,
   newDrawState,
   redraw,
   setTileSize,
@@ -31,7 +31,7 @@ import {
   WHITE,
 } from "./state.ts";
 
-const palette = colours([0.8, 0.8, 0.8]);
+const palette = colors([0.8, 0.8, 0.8]);
 
 function renderState(
   state: RangeState,
@@ -53,9 +53,9 @@ function makeState(w: number, h: number, grid: number[]): RangeState {
 
 describe("hint colour legend", () => {
   it("rings a cited black premise in COL_HINT_BLACKREF, distinct from the COL_HINT target", () => {
-    // The adjacency deduction shape: a black square (the premise) at the centre
-    // forces a neighbour white (the target). The element-type legend must draw
-    // the cited black square and the forced cell in *different* colours.
+    // The adjacency deduction shape: a black square (the premise) at the center
+    // forces a neighbor white (the target). The element-type legend must draw
+    // the cited black square and the forced cell in *different* colors.
     const grid = [EMPTY, EMPTY, EMPTY, EMPTY, BLACK, EMPTY, EMPTY, EMPTY, EMPTY];
     const state = makeState(3, 3, grid);
     const step: HintStep<RangeMove, RangeHint> = {
@@ -73,14 +73,14 @@ describe("hint colour legend", () => {
     redraw(rec, ds, null, state, 1, noCursor, 0, 0, step);
     // The cited black square rings COL_HINT_BLACKREF (an outline — `line` ops,
     // not a body fill).
-    expect(rec.ops.some((o) => o.op === "line" && o.colour === COL_HINT_BLACKREF)).toBe(
+    expect(rec.ops.some((o) => o.op === "line" && o.color === COL_HINT_BLACKREF)).toBe(
       true,
     );
-    // The forced cell fills COL_HINT (a `rect` body) — a different colour from
+    // The forced cell fills COL_HINT (a `rect` body) — a different color from
     // the premise ring.
-    expect(rec.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    expect(rec.ops.some((o) => o.op === "rect" && o.color === COL_HINT)).toBe(true);
     // The premise ring is NOT drawn in the target's COL_HINT.
-    expect(rec.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(false);
+    expect(rec.ops.some((o) => o.op === "line" && o.color === COL_HINT)).toBe(false);
   });
 });
 
@@ -88,7 +88,7 @@ describe("live error highlight", () => {
   it("reddens two orthogonally adjacent black cells", () => {
     // 3x1: two adjacent blacks violate the no-touching rule.
     const rec = renderState(makeState(3, 1, [BLACK, BLACK, EMPTY]), noCursor);
-    const hasErrorRect = rec.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR);
+    const hasErrorRect = rec.ops.some((o) => o.op === "rect" && o.color === COL_ERROR);
     expect(hasErrorRect).toBe(true);
   });
 
@@ -97,11 +97,9 @@ describe("live error highlight", () => {
     // overlay must still highlight it red.
     const state = makeState(3, 1, [BLACK, EMPTY, EMPTY]);
     const clean = renderState(state, noCursor);
-    expect(clean.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(
-      false,
-    );
+    expect(clean.ops.some((o) => o.op === "rect" && o.color === COL_ERROR)).toBe(false);
     const flagged = renderState(state, noCursor, [{ r: 0, c: 0 }]);
-    expect(flagged.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(
+    expect(flagged.ops.some((o) => o.op === "rect" && o.color === COL_ERROR)).toBe(
       true,
     );
   });
@@ -109,7 +107,7 @@ describe("live error highlight", () => {
   it("does not redden a legal black", () => {
     const rec = renderState(makeState(3, 1, [BLACK, WHITE, EMPTY]), noCursor);
     const hasError = rec.ops.some(
-      (o) => (o.op === "rect" || o.op === "line") && o.colour === COL_ERROR,
+      (o) => (o.op === "rect" || o.op === "line") && o.color === COL_ERROR,
     );
     expect(hasError).toBe(false);
   });
@@ -117,12 +115,12 @@ describe("live error highlight", () => {
 
 describe("white dot", () => {
   it("draws a small black dot for a white mark", () => {
-    // A white (dotted) cell draws a centred dot rect in COL_BLACK — pinned, like
+    // A white (dotted) cell draws a centered dot rect in COL_BLACK — pinned, like
     // the white cell it sits on.
     const recWhite = renderState(makeState(3, 1, [WHITE, EMPTY, EMPTY]), noCursor);
     const recEmpty = renderState(makeState(3, 1, [EMPTY, EMPTY, EMPTY]), noCursor);
     const dots = (rec: RecordingDrawing) =>
-      rec.ops.filter((o) => o.op === "rect" && o.colour === COL_BLACK && o.w < 32)
+      rec.ops.filter((o) => o.op === "rect" && o.color === COL_BLACK && o.w < 32)
         .length;
     expect(dots(recWhite)).toBeGreaterThan(dots(recEmpty));
   });
@@ -134,7 +132,7 @@ describe("render scenario snapshot", () => {
     const ops = result.recording.ops;
     // Background + grid lines + clue text are all present.
     expect(ops.some((o) => o.op === "rect")).toBe(true);
-    expect(ops.some((o) => o.op === "line" && o.colour === COL_GRID)).toBe(true);
+    expect(ops.some((o) => o.op === "line" && o.color === COL_GRID)).toBe(true);
     expect(ops.some((o) => o.op === "text")).toBe(true);
     expect(result.recording.ops).toMatchSnapshot();
   });
@@ -163,7 +161,7 @@ describe("render scenario snapshot", () => {
     // same value (seen live on 9x6 `range-a`), so the value alone is not a name.
     const hl = result.hint?.highlights as RangeHint | undefined;
     expect(hl?.clue).toBeDefined();
-    expect(ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(true);
+    expect(ops.some((o) => o.op === "text" && o.color === COL_HINT)).toBe(true);
     expect(result.recording.ops).toMatchSnapshot();
   });
 });

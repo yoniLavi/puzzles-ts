@@ -4,8 +4,8 @@
  *
  * The grid is drawn with the `A…` border letters in the top-left gutter, the
  * edge clues along the top and left borders (red when a clue is over- or
- * under-satisfiable), and a `w × h` block of bevelled cells: each holds either
- * an entered letter (red on an adjacency violation, else the guess colour) or,
+ * under-satisfiable), and a `w × h` block of beveled cells: each holds either
+ * an entered letter (red on an adjacency violation, else the guess color) or,
  * when empty, its pencil-mark grid. A selected cell is highlighted; under
  * diagonal mode each interior cell carries a small corner cross as the
  * no-diagonal-touch cue. A solved board runs a diagonal-stripe flash.
@@ -20,20 +20,20 @@
  * (docs/games/rendering.md § "The tile cache and the diff key").
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import {
   ERROR,
   GRID_MID,
   INK,
   PENCIL_BODY,
-  pencilColour,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
-import { abcdBorderLetter } from "../../engine/colour/palette-games.ts";
+  pencilColor,
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
+import { abcdBorderLetter } from "../../engine/color/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   type AbcdState,
   type AbcdUi,
@@ -65,18 +65,18 @@ export const COL_LOWLIGHT = 9;
 // pencil-mode indicator glyph.
 export const COL_PENCIL_BODY = 10;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const outer = defaultBackground;
   const { background: inner, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_OUTERBG] = outer;
   out[COL_INNERBG] = inner;
   out[COL_GRID] = GRID_MID;
   out[COL_BORDERLETTER] = abcdBorderLetter(outer);
   out[COL_TEXT] = INK;
-  out[COL_GUESS] = playerEntryColour(inner);
+  out[COL_GUESS] = playerEntryColor(inner);
   out[COL_ERROR] = ERROR;
-  out[COL_PENCIL] = pencilColour(inner);
+  out[COL_PENCIL] = pencilColor(inner);
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_PENCIL_BODY] = PENCIL_BODY;
@@ -172,7 +172,7 @@ function computeClueErrors(state: AbcdState): Uint8Array {
   return err;
 }
 
-/** Per-cell "shares its letter with an identical neighbour" flag
+/** Per-cell "shares its letter with an identical neighbor" flag
  * (upstream `abcd_set_errors_adjacent`, all directions OR-ed). */
 function computeAdjacencyErrors(state: AbcdState): Uint8Array {
   const { w, h, diag } = state.params;
@@ -211,7 +211,7 @@ function drawBorderLetters(
   dr: GameDrawing,
   ts: number,
   n: number,
-  colour: number,
+  color: number,
 ): void {
   for (let i = 0; i < n; i++) {
     const letter = String.fromCharCode(65 + i);
@@ -227,7 +227,7 @@ function drawBorderLetters(
         fontType: "variable",
         size: (ts / 2) | 0,
       },
-      colour,
+      color,
       letter,
     );
     if (i === n - 1) continue; // don't draw the corner letter twice
@@ -243,7 +243,7 @@ function drawBorderLetters(
         fontType: "variable",
         size: (ts / 2) | 0,
       },
-      colour,
+      color,
       letter,
     );
   }

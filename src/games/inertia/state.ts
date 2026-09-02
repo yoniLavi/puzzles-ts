@@ -364,26 +364,26 @@ export function textFormat(s: InertiaState): string {
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
       const cell = r * ch * gw + cw * c;
-      const centre = cell + (gw * ch) / 2 + cw / 2;
+      const center = cell + (gw * ch) / 2 + cw / 2;
       switch (s.board.at(c, r)) {
         case GEM:
-          board[centre] = "o";
+          board[center] = "o";
           break;
         case MINE:
-          board[centre] = "M";
+          board[center] = "M";
           break;
         case STOP:
-          board[centre - 1] = "(";
-          board[centre + 1] = ")";
+          board[center - 1] = "(";
+          board[center + 1] = ")";
           break;
         case WALL:
-          put(centre - 1, "XXX");
+          put(center - 1, "XXX");
           break;
       }
 
       if (r === s.py && c === s.px) {
-        if (!s.dead) board[centre] = "@";
-        else put(centre - 1, ":-(");
+        if (!s.dead) board[center] = "@";
+        else put(center - 1, ":-(");
       }
 
       board[cell] = "+";

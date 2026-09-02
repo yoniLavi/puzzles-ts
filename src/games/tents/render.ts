@@ -21,12 +21,12 @@ import {
   GREEN_WASH,
   ORANGE,
   RED_BOLD,
-} from "../../engine/colour/colours.ts";
-import { ERROR, ERROR_TEXT, INK } from "../../engine/colour/palette.ts";
+} from "../../engine/color/colors.ts";
+import { ERROR, ERROR_TEXT, INK } from "../../engine/color/palette.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   BLANK,
   NONTENT,
@@ -42,7 +42,7 @@ import {
 export const PREFERRED_TILE_SIZE = 32;
 export const FLASH_TIME = 0.3;
 
-// --- palette (mirrors the tents.c colour enum index-for-index) ------------
+// --- palette (mirrors the tents.c color enum index-for-index) ------------
 export const COL_BACKGROUND = 0;
 export const COL_GRID = 1;
 export const COL_GRASS = 2;
@@ -56,8 +56,8 @@ export const COL_ERRTRUNK = 8;
 // override (index 2, COL_GRASS) never touches it.
 export const COL_MISTAKE = 9;
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = INK;
   out[COL_GRASS] = GREEN_WASH;
@@ -300,7 +300,7 @@ function drawErrAdj(dr: GameDrawing, ts: number, x: number, y: number): void {
     COL_ERROR,
     COL_GRID,
   );
-  // An exclamation mark, drawn by hand (draw_text looked off-centre upstream).
+  // An exclamation mark, drawn by hand (draw_text looked off-center upstream).
   const xext = Math.floor(ts / 16);
   const yext = Math.floor((ts * 2) / 5) - (xext * 2 + 2);
   dr.drawRect(
@@ -415,7 +415,7 @@ function drawTile(
 
   if (cur) {
     const coff = Math.floor(ts / 8);
-    // A stroked outline via four thin rects (drawRectOutline analogue).
+    // A stroked outline via four thin rects (drawRectOutline analog).
     dr.drawRect({ x: tx + coff, y: ty + coff, w: ts - coff * 2 + 1, h: 1 }, COL_GRID);
     dr.drawRect(
       { x: tx + coff, y: ty + ts - coff, w: ts - coff * 2 + 1, h: 1 },

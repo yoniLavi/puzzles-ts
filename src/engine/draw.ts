@@ -14,7 +14,7 @@
  */
 import type { GameDrawing } from "./game.ts";
 
-/** Outer pixel bounds of a bevelled frame; edges are inclusive pixels. */
+/** Outer pixel bounds of a beveled frame; edges are inclusive pixels. */
 export interface BevelBounds {
   left: number;
   top: number;
@@ -75,20 +75,20 @@ export function drawRectOutline(
   y: number,
   w: number,
   h: number,
-  colour: number,
+  color: number,
   thickness = 1,
 ): void {
   const r = x + w - 1;
   const b = y + h - 1;
-  dr.drawLine({ x, y }, { x: r, y }, colour, thickness);
-  dr.drawLine({ x: r, y }, { x: r, y: b }, colour, thickness);
-  dr.drawLine({ x: r, y: b }, { x, y: b }, colour, thickness);
-  dr.drawLine({ x, y: b }, { x, y }, colour, thickness);
+  dr.drawLine({ x, y }, { x: r, y }, color, thickness);
+  dr.drawLine({ x: r, y }, { x: r, y: b }, color, thickness);
+  dr.drawLine({ x: r, y: b }, { x, y: b }, color, thickness);
+  dr.drawLine({ x, y: b }, { x, y }, color, thickness);
 }
 
 /**
  * Upstream `misc.c draw_rect_corners`: four L-shaped corner brackets on the
- * square of radius `r` centred at `(cx, cy)`, each arm reaching halfway along
+ * square of radius `r` centered at `(cx, cy)`, each arm reaching halfway along
  * its side — the collection's standard "keyboard cursor is here" mark.
  *
  * Promoted from seven byte-identical private copies (ascent, bricks, dominosa,
@@ -98,14 +98,14 @@ export function drawRectOutline(
  * `thickness` defaults to upstream's hairline. Raise it on a board whose
  * materials are mid-tone rather than ink-on-paper, where a one-pixel stroke has
  * nothing to carry it: Slide scales it with the tile, because its floor, blocks
- * and walls are four shades of the same grey.
+ * and walls are four shades of the same gray.
  */
 export function drawRectCorners(
   dr: GameDrawing,
   cx: number,
   cy: number,
   r: number,
-  colour: number,
+  color: number,
   thickness = 1,
 ): void {
   const hr = Math.floor(r / 2);
@@ -113,8 +113,8 @@ export function drawRectCorners(
     for (const sy of [-1, 1]) {
       const px = cx + sx * r;
       const py = cy + sy * r;
-      dr.drawLine({ x: px, y: py }, { x: px, y: cy + sy * hr }, colour, thickness);
-      dr.drawLine({ x: px, y: py }, { x: cx + sx * hr, y: py }, colour, thickness);
+      dr.drawLine({ x: px, y: py }, { x: px, y: cy + sy * hr }, color, thickness);
+      dr.drawLine({ x: px, y: py }, { x: cx + sx * hr, y: py }, color, thickness);
     }
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Tier-1/2 behavioural tests for the Rectangles port: params/desc codecs,
+ * Tier-1/2 behavioral tests for the Rectangles port: params/desc codecs,
  * input mapping (drag-draw / drag-erase / edge-toggle / no-op suppression),
  * completion, `findMistakes`, and the mistake render overlay.
  */
@@ -191,17 +191,17 @@ describe("rect input → moves", () => {
     const p = P();
     const st = newState(p, "zw");
     const ui = rectGame.newUi(st);
-    // Clicking a cell centre (no edge/corner) is not an edge toggle.
-    const centre = { x: px(3.5), y: px(3.5) };
-    rectGame.interpretMove(st, ui, sizedDrawState(rectGame, st), centre, LEFT_BUTTON);
+    // Clicking a cell center (no edge/corner) is not an edge toggle.
+    const center = { x: px(3.5), y: px(3.5) };
+    rectGame.interpretMove(st, ui, sizedDrawState(rectGame, st), center, LEFT_BUTTON);
     const move = rectGame.interpretMove(
       st,
       ui,
       sizedDrawState(rectGame, st),
-      centre,
+      center,
       LEFT_RELEASE,
     );
-    // A centre click maps to no H/V edge, so no move is produced.
+    // A center click maps to no H/V edge, so no move is produced.
     expect(move === null || (move as { type?: string }).type === undefined).toBe(true);
   });
 
@@ -290,7 +290,7 @@ describe("rect render", () => {
     const st = newState(p, desc);
     const ds = newDrawState(st);
     ds.tileSize = TILE;
-    const dr = new RecordingDrawing(rectGame.colours(DEFAULT_BACKGROUND));
+    const dr = new RecordingDrawing(rectGame.colors(DEFAULT_BACKGROUND));
     redraw(dr, ds, null, st, 1, rectGame.newUi(st), 0, 0);
     expect(dr.ops.some((o) => o.op === "rect")).toBe(true);
     expect(dr.ops.some((o) => o.op === "text")).toBe(true);
@@ -316,21 +316,19 @@ describe("rect render", () => {
     const ds = newDrawState(st);
     ds.tileSize = TILE;
     const ui = rectGame.newUi(st);
-    const palette = rectGame.colours(DEFAULT_BACKGROUND);
+    const palette = rectGame.colors(DEFAULT_BACKGROUND);
     // Warm the drawstate without the overlay, then repaint with it.
     redraw(new RecordingDrawing(palette), ds, null, st, 1, ui, 0, 0);
     const mistakes = rectGame.findMistakes?.(st) ?? [];
     expect(mistakes.length).toBeGreaterThan(0);
     const dr = new RecordingDrawing(palette);
     redraw(dr, ds, null, st, 1, ui, 0, 0, undefined, mistakes);
-    expect(dr.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(true);
+    expect(dr.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(true);
 
     // A third frame without the overlay clears the red.
     const dr2 = new RecordingDrawing(palette);
     redraw(dr2, ds, null, st, 1, ui, 0, 0);
-    expect(dr2.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(
-      false,
-    );
+    expect(dr2.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(false);
   });
 
   it("clone is independent of the source state", () => {

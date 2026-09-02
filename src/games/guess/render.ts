@@ -6,19 +6,13 @@
  * contract requires (the engine emits no pixels of its own).
  */
 
-import {
-  BLACK,
-  PINK_WASH,
-  TEAL_WASH,
-  TEN,
-  WHITE,
-} from "../../engine/colour/colours.ts";
-import { INK } from "../../engine/colour/palette.ts";
-import { guessBoard, guessEmptySlot } from "../../engine/colour/palette-games.ts";
+import { BLACK, PINK_WASH, TEAL_WASH, TEN, WHITE } from "../../engine/color/colors.ts";
+import { INK } from "../../engine/color/palette.ts";
+import { guessBoard, guessEmptySlot } from "../../engine/color/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
+import type { Color, Point, Rect, Size } from "../../engine/types.ts";
 import {
-  FEEDBACK_CORRECTCOLOUR,
+  FEEDBACK_CORRECTCOLOR,
   FEEDBACK_CORRECTPLACE,
   type GuessParams,
   type GuessState,
@@ -26,7 +20,7 @@ import {
   type PegRow,
 } from "./state.ts";
 
-// --- colour indices (upstream enum) -----------------------------------
+// --- color indices (upstream enum) -----------------------------------
 
 export const COL_BACKGROUND = 0;
 export const COL_FRAME = 1;
@@ -36,15 +30,15 @@ export const COL_HOLD = 4;
 export const COL_EMPTY = 5; // must be COL_1 - 1
 const COL_1 = 6; // COL_1..COL_10 = 6..15
 export const COL_CORRECTPLACE = 16;
-export const COL_CORRECTCOLOUR = 17;
-export const NCOLOURS = 18;
+export const COL_CORRECTCOLOR = 17;
+export const NCOLORS = 18;
 
 // --- peg overlay flags (upstream PEG_*) -------------------------------
 
 const PEG_CURSOR = 0x1000;
 const PEG_HOLD = 0x2000;
-const PEG_LABELLED = 0x4000;
-const PEG_FLAGS = PEG_CURSOR | PEG_HOLD | PEG_LABELLED;
+const PEG_LABELED = 0x4000;
+const PEG_FLAGS = PEG_CURSOR | PEG_HOLD | PEG_LABELED;
 
 // --- size constants ---------------------------------------------------
 
@@ -59,7 +53,7 @@ const idiv = (a: number, b: number): number => Math.trunc(a / b);
 // --- geometry ---------------------------------------------------------
 
 export interface Geom {
-  ncolours: number;
+  ncolors: number;
   npegs: number;
   nguesses: number;
   pegsz: number;
@@ -88,7 +82,7 @@ export function computeSize(p: GuessParams, tilesize: number): Size {
     PEG_GAP * p.npegs +
     PEG_HINT * hintw +
     PEG_GAP * (hintw - 1);
-  const vmulC = BORDER * 2.0 + 1.0 * p.ncolours + PEG_GAP * (p.ncolours - 1);
+  const vmulC = BORDER * 2.0 + 1.0 * p.ncolors + PEG_GAP * (p.ncolors - 1);
   const vmulG = BORDER * 2.0 + 1.0 * (p.nguesses + 1) + PEG_GAP * (p.nguesses + 1);
   const vmul = Math.max(vmulC, vmulG);
   return { w: Math.ceil(tilesize * hmul), h: Math.ceil(tilesize * vmul) };
@@ -102,7 +96,7 @@ export function computeGeometry(p: GuessParams, tilesize: number): Geom {
   const pegrad = idiv(pegsz - 1, 2);
   const hintrad = idiv(hintsz - 1, 2);
 
-  const colh = (pegsz + gapsz) * p.ncolours - gapsz;
+  const colh = (pegsz + gapsz) * p.ncolors - gapsz;
   const guessh = (pegsz + gapsz) * p.nguesses + gapsz + pegsz;
 
   const { w, h } = computeSize(p, tilesize);
@@ -115,7 +109,7 @@ export function computeGeometry(p: GuessParams, tilesize: number): Geom {
   const hintw = idiv(p.npegs + 1, 2);
 
   return {
-    ncolours: p.ncolours,
+    ncolors: p.ncolors,
     npegs: p.npegs,
     nguesses: p.nguesses,
     pegsz,
@@ -147,7 +141,7 @@ export const COL_OY = (g: Geom): number => g.coly;
 const colX = (g: Geom): number => g.colx;
 const colY = (g: Geom, c: number): number => g.coly + c * pegOff(g);
 export const COL_W = (g: Geom): number => pegOff(g);
-export const COL_H = (g: Geom): number => g.ncolours * pegOff(g);
+export const COL_H = (g: Geom): number => g.ncolors * pegOff(g);
 
 export const GUESS_OX = (g: Geom): number => g.guessx;
 export const GUESS_OY = (g: Geom): number => g.guessy;
@@ -177,7 +171,7 @@ export interface GuessDrawState extends Geom {
   /** Per-row caches of last-drawn pegs (with PEG_* flags) + feedback. */
   guessesCache: PegRow[];
   solutionCache: PegRow;
-  coloursCache: PegRow;
+  colorsCache: PegRow;
   /** Blitter drag sprite. */
   blitPeg: unknown | null;
   dragCol: number;
@@ -198,7 +192,7 @@ export function newDrawState(s: GuessState): GuessDrawState {
     nextGo: 0,
     guessesCache: Array.from({ length: p.nguesses }, () => invalidRow(p.npegs)),
     solutionCache: invalidRow(p.npegs),
-    coloursCache: invalidRow(p.ncolours),
+    colorsCache: invalidRow(p.ncolors),
     blitPeg: null,
     dragCol: 0,
     blitOx: 0,
@@ -211,7 +205,7 @@ export function setTileSize(ds: GuessDrawState, tilesize: number): void {
   Object.assign(
     ds,
     computeGeometry(
-      { ncolours: ds.ncolours, npegs: ds.npegs, nguesses: ds.nguesses } as GuessParams,
+      { ncolors: ds.ncolors, npegs: ds.npegs, nguesses: ds.nguesses } as GuessParams,
       tilesize,
     ),
   );
@@ -224,14 +218,14 @@ export function setTileSize(ds: GuessDrawState, tilesize: number): void {
   }
   ds.solutionCache.pegs.fill(-1);
   ds.solutionCache.feedback.fill(-1);
-  ds.coloursCache.pegs.fill(-1);
+  ds.colorsCache.pegs.fill(-1);
   ds.blitPeg = null;
 }
 
-// --- colours ----------------------------------------------------------
+// --- colors ----------------------------------------------------------
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const ret: Colour[] = new Array(NCOLOURS);
+export function colors(defaultBackground: Color): Color[] {
+  const ret: Color[] = new Array(NCOLORS);
 
   for (let i = 0; i < 10; i++) ret[COL_1 + i] = TEN[i];
 
@@ -245,7 +239,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   ret[COL_FLASH] = TEAL_WASH;
   ret[COL_HOLD] = PINK_WASH;
   ret[COL_CORRECTPLACE] = BLACK;
-  ret[COL_CORRECTCOLOUR] = WHITE;
+  ret[COL_CORRECTCOLOR] = WHITE;
   ret[COL_BACKGROUND] = guessBoard(defaultBackground);
   ret[COL_EMPTY] = guessEmptySlot(defaultBackground);
 
@@ -263,7 +257,7 @@ function drawPeg(
   cx: number,
   cy: number,
   moving: boolean,
-  labelled: boolean,
+  labeled: boolean,
   col: number,
 ): void {
   const ts = ds.pegsz;
@@ -281,7 +275,7 @@ function drawPeg(
   } else {
     dr.drawRect(rect(cx, cy, ts, ts), COL_EMPTY + col);
   }
-  if (labelled && col) {
+  if (labeled && col) {
     dr.drawText(
       pt(cx + ds.pegrad, cy + ds.pegrad),
       {
@@ -314,7 +308,7 @@ function guessRedraw(
   holds: readonly boolean[] | null,
   curCol: number,
   force: boolean,
-  labelled: boolean,
+  labeled: boolean,
 ): void {
   let dest: PegRow;
   let rowx: number;
@@ -333,9 +327,9 @@ function guessRedraw(
     let scol = src ? src.pegs[i] : 0;
     if (i === curCol) scol |= PEG_CURSOR;
     if (holds?.[i]) scol |= PEG_HOLD;
-    if (labelled) scol |= PEG_LABELLED;
+    if (labeled) scol |= PEG_LABELED;
     if (dest.pegs[i] !== scol || force) {
-      drawPeg(dr, ds, rowx + pegOff(ds) * i, rowy, false, labelled, scol & ~PEG_FLAGS);
+      drawPeg(dr, ds, rowx + pegOff(ds) * i, rowy, false, labeled, scol & ~PEG_FLAGS);
       if (scol & PEG_CURSOR) drawCursor(dr, ds, rowx + pegOff(ds) * i, rowy);
       if (scol & PEG_HOLD) {
         dr.drawRect(
@@ -400,8 +394,8 @@ function hintRedraw(
     const col =
       scol === FEEDBACK_CORRECTPLACE
         ? COL_CORRECTPLACE
-        : scol === FEEDBACK_CORRECTCOLOUR
-          ? COL_CORRECTCOLOUR
+        : scol === FEEDBACK_CORRECTCOLOR
+          ? COL_CORRECTCOLOR
           : emptycol;
     let rowx = hintX(ds);
     let rowy = hintY(ds, guess);
@@ -461,7 +455,7 @@ export function redraw(
   _animTime: number,
   _flashTime: number,
 ): void {
-  const ncolours = s.params.ncolours;
+  const ncolors = s.params.ncolors;
   const newMove = s.nextGo !== ds.nextGo || !ds.started;
 
   if (!ds.started) {
@@ -480,15 +474,15 @@ export function redraw(
     dr.drawUpdate(rect(ds.blitOx, ds.blitOy, ds.pegsz, ds.pegsz));
   }
 
-  // The colour bar.
-  for (let i = 0; i < ncolours; i++) {
+  // The color bar.
+  for (let i = 0; i < ncolors; i++) {
     let val = i + 1;
     if (ui.cursor.visible && ui.cursor.y === i) val |= PEG_CURSOR;
     if (ui.showLabels) val |= PEG_HOLD;
-    if (ds.coloursCache.pegs[i] !== val) {
+    if (ds.colorsCache.pegs[i] !== val) {
       drawPeg(dr, ds, colX(ds), colY(ds, i), false, ui.showLabels, i + 1);
       if (val & PEG_CURSOR) drawCursor(dr, ds, colX(ds), colY(ds, i));
-      ds.coloursCache.pegs[i] = val;
+      ds.colorsCache.pegs[i] = val;
     }
   }
 

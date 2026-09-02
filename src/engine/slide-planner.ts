@@ -426,7 +426,7 @@ export function planSlides(p: SlidePuzzle): SlidePlan {
   }
 
   // Bucket queue: `f` is a small integer, so a bucket per f-value gives O(1)
-  // insert and (amortised) O(1) pop-min.
+  // insert and (amortized) O(1) pop-min.
   const buckets: SearchNode[][] = [];
   let minF = startH;
   let queueSize = 0;

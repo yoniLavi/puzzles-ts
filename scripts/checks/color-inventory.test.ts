@@ -1,10 +1,10 @@
 /**
- * Regenerates the colour inventory — the reviewable artefact for
+ * Regenerates the color inventory — the reviewable artifact for
  * `colour-tokens-per-scheme` (its task 2.4), and the audit's before it.
  *
  * It resolves **every registered game's palette** and records, per index, the
  * resolved value and where that value came from. Two properties make it the
- * right artefact for a wide colour change:
+ * right artifact for a wide color change:
  *
  * - it reports *resolved* values, so a pure relocation (a literal becoming a
  *   token of the same value) shows as **no diff at all** — which is exactly the
@@ -14,28 +14,28 @@
  *
  * Not part of the gate (it writes a file). Run it with:
  *
- *     npx vitest run -c scripts/checks/diff.vitest.config.mts colour-inventory
+ *     npx vitest run -c scripts/checks/diff.vitest.config.mts color-inventory
  *
  * and diff the result against the committed copy.
  */
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "vitest";
-import { mkhighlight } from "../../src/engine/colour/colour-mkhighlight.ts";
-import * as colours from "../../src/engine/colour/colours.ts";
-import * as roles from "../../src/engine/colour/palette.ts";
-import * as gameTokens from "../../src/engine/colour/palette-games.ts";
+import { mkhighlight } from "../../src/engine/color/color-mkhighlight.ts";
+import * as colors from "../../src/engine/color/colors.ts";
+import * as roles from "../../src/engine/color/palette.ts";
+import * as gameTokens from "../../src/engine/color/palette-games.ts";
 import { getTsGame } from "../../src/engine/registry.ts";
-import type { Colour } from "../../src/engine/types.ts";
+import type { Color } from "../../src/engine/types.ts";
 import { puzzleIds } from "../../src/puzzle/catalog.ts";
 import "../../src/games/index.ts";
 
 /** The same light host background `palette.test.ts` uses. */
-const BG: Colour = [0.827, 0.827, 0.827];
+const BG: Color = [0.827, 0.827, 0.827];
 
-/** A second, deliberately non-grey background, so the report can say whether an
+/** A second, deliberately non-gray background, so the report can say whether an
  * entry tracks the board. */
-const BG2: Colour = [0.6, 0.7, 0.8];
+const BG2: Color = [0.6, 0.7, 0.8];
 
 /**
  * Where the report lands, and why it is not next to the change that asked for it.
@@ -46,49 +46,49 @@ const BG2: Colour = [0.6, 0.7, 0.8];
  * 2026-08-01 this test failed `ENOENT` on every `npm run diff`, and because the
  * run is advisory rather than gating, nothing said so for a day. A tool must not
  * write into a change directory — `metrics/` is where durable generated
- * artefacts live (`metrics/mutation/report.json` is the precedent), and the
- * committed copy there is the baseline to diff a colour change against.
+ * artifacts live (`metrics/mutation/report.json` is the precedent), and the
+ * committed copy there is the baseline to diff a color change against.
  */
-const OUT = "metrics/colour-inventory.md";
+const OUT = "metrics/color-inventory.md";
 
-const key = (c: Colour): string => c.map((v) => Math.round(v * 1000) / 1000).join(",");
+const key = (c: Color): string => c.map((v) => Math.round(v * 1000) / 1000).join(",");
 
 /**
- * Colour **object** → what to call it, over all three layers.
+ * Color **object** → what to call it, over all three layers.
  *
  * By identity rather than by value, because value is ambiguous exactly where it
  * matters: `INK` and `BLACK` are both pure black and behave oppositely under a
- * scheme flip. A palette entry that *is* the colour answers the question outright.
+ * scheme flip. A palette entry that *is* the color answers the question outright.
  *
  * Since `consolidate-colour-palette` the meanings are **references**, so several
  * of them resolve to one object (`CURSOR` and `HELD` are both `GREEN`) and
  * identity cannot say which one a game meant. The report therefore names the
- * colour — which is unambiguous and is what "what did this become" is asking —
+ * color — which is unambiguous and is what "what did this become" is asking —
  * and lists the meanings that resolve to it in brackets.
  */
-function tokenNames(): Map<Colour, string> {
-  const out = new Map<Colour, string>();
+function tokenNames(): Map<Color, string> {
+  const out = new Map<Color, string>();
   const add = (name: string, v: unknown): void => {
     if (Array.isArray(v) && v.length === 3 && typeof v[0] === "number") {
-      // First name wins: the sets (`TEN[0]`) come after the colours they are
+      // First name wins: the sets (`TEN[0]`) come after the colors they are
       // built from, and `RED` is the better answer than `TEN[0]`.
-      if (!out.has(v as Colour)) out.set(v as Colour, name);
+      if (!out.has(v as Color)) out.set(v as Color, name);
     } else if (Array.isArray(v)) {
       v.forEach((e, i) => {
         add(`${name}[${i}]`, e);
       });
     }
   };
-  for (const [name, value] of Object.entries({ ...colours, ...gameTokens }))
+  for (const [name, value] of Object.entries({ ...colors, ...gameTokens }))
     add(name, value);
 
-  const meanings = new Map<Colour, string[]>();
+  const meanings = new Map<Color, string[]>();
   for (const [name, value] of Object.entries(roles)) {
     if (typeof value === "function") continue;
     if (!Array.isArray(value) || value.length !== 3) continue;
-    const c = value as Colour;
+    const c = value as Color;
     meanings.set(c, [...(meanings.get(c) ?? []), name]);
-    if (!out.has(c)) out.set(c, name); // INK and PAPER own no named colour
+    if (!out.has(c)) out.set(c, name); // INK and PAPER own no named color
   }
   for (const [c, names] of meanings) {
     const base = out.get(c);
@@ -104,16 +104,16 @@ function sharedByValue(): Map<string, string> {
   out.set(key(background), "mkhighlight.background");
   out.set(key(highlight), "mkhighlight.highlight");
   out.set(key(lowlight), "mkhighlight.lowlight");
-  for (const [name, value] of Object.entries({ ...colours, ...roles })) {
+  for (const [name, value] of Object.entries({ ...colors, ...roles })) {
     if (typeof value === "function") {
       const derived =
         value.length === 2
-          ? (value as (b: Colour, h: Colour) => Colour)(background, highlight)
-          : (value as (b: Colour) => Colour)(background);
+          ? (value as (b: Color, h: Color) => Color)(background, highlight)
+          : (value as (b: Color) => Color)(background);
       if (!Array.isArray(derived) || derived.length !== 3) continue;
       if (!out.has(key(derived))) out.set(key(derived), `${name}()`);
     } else if (Array.isArray(value) && value.length === 3) {
-      if (!out.has(key(value as Colour))) out.set(key(value as Colour), name);
+      if (!out.has(key(value as Color))) out.set(key(value as Color), name);
     }
   }
   return out;
@@ -160,8 +160,8 @@ it("regenerates the colour inventory", () => {
   for (const id of ids) {
     const game = getTsGame(id);
     if (!game) throw new Error(`${id} is in the catalog but not registered`);
-    const palette = game.colours(BG);
-    const alt = game.colours(BG2);
+    const palette = game.colors(BG);
+    const alt = game.colors(BG2);
     const names = indexNames(id);
     perGame.push(`### ${id}\n`);
     perGame.push("| # | Local name | Value | Source |");
@@ -171,7 +171,7 @@ it("regenerates the colour inventory", () => {
       total += 1;
       // An entry is either a token outright, or *computed* — the bevel trio, a
       // wash of the board, a point on a ramp. A computed value has nothing to
-      // look up, which is why "does a game write a colour" is answered by
+      // look up, which is why "does a game write a color" is answered by
       // `palette-source.test.ts` reading the sources rather than here.
       const source = byToken.get(c) ?? shared.get(key(c));
       const tracksBoard = key(c) !== key(alt[i]);
@@ -190,8 +190,8 @@ it("regenerates the colour inventory", () => {
 
   lines.push("# Colour inventory\n");
   lines.push(
-    "<!-- Generated by scripts/checks/colour-inventory.test.ts. Regenerate with:",
-    "     npx vitest run -c scripts/checks/diff.vitest.config.mts colour-inventory -->\n",
+    "<!-- Generated by scripts/checks/color-inventory.test.ts. Regenerate with:",
+    "     npx vitest run -c scripts/checks/diff.vitest.config.mts color-inventory -->\n",
   );
   lines.push(
     `**Totals:** ${total} palette entries across ${ids.length} games. ` +

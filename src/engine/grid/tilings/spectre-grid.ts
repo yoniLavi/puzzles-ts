@@ -8,7 +8,7 @@
  * Three things here are easy to get subtly wrong and are called out at their
  * sites below: the patch is generated at **seven times** the requested size, the
  * rational and irrational parts of each coordinate are scaled **separately**
- * before being summed, and the recentring divides with `Math.trunc` because its
+ * before being summed, and the recentering divides with `Math.trunc` because its
  * numerator can be negative.
  */
 
@@ -27,7 +27,7 @@ import {
   type SpectrePatchParams,
   spectreParamsInvalid,
   spectreTilingGenerate,
-  spectreTilingRandomise,
+  spectreTilingRandomize,
   spectreValidHexLetter,
 } from "./spectre.ts";
 
@@ -80,7 +80,7 @@ export function spectresNewDesc(
   height: number,
   rng: RandomState,
 ): string {
-  const params = spectreTilingRandomise(
+  const params = spectreTilingRandomize(
     width * SPECTRE_SQUARELEN,
     height * SPECTRE_SQUARELEN,
     rng,
@@ -171,7 +171,7 @@ export function gridNewSpectres(width: number, height: number, desc: string): Gr
   makeConsistent(g);
 
   // The tiling has no rectangular period to sit on, so the surviving patch ends
-  // up off-centre by whatever the fringe happened to be. Recentre it within the
+  // up off-center by whatever the fringe happened to be. Recenter it within the
   // extent `gridComputeSize` promised.
   //
   // `Math.trunc`, not `Math.floor`: where the survivors are *wider* than the

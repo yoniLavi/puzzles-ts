@@ -11,10 +11,10 @@
 # empty __fixtures__/, a starter <gameId>.test.ts (a save round-trip + a
 # renderScenario render smoke, both `it.skip` so a fresh scaffold stays green),
 # and a commented <gameId>-differential.test.ts stub. It then PRINTS (does not
-# perform) the manual-edit checklist that needs judgement — the two
+# perform) the manual-edit checklist that needs judgment — the two
 # registration edits and the icon PNGs. (It used to name a C trace harness too;
 # there is no C to trace since `retire-c-engine`, and a new port's differential,
-# if it has one, is founded on its own behaviour.) Read the Galaxies port as the
+# if it has one, is founded on its own behavior.) Read the Galaxies port as the
 # exemplar.
 
 set -euo pipefail
@@ -119,9 +119,9 @@ cat > "${DIR}/index.ts" <<EOF
  * Read the docs/games/ guides (start at docs/games/README.md) and the Galaxies port first.
  */
 
-import type { Colour, GameStatus, Size } from "../../engine/types.ts";
+import type { Color, GameStatus, Size } from "../../engine/types.ts";
 import type { Game } from "../../engine/game.ts";
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -191,7 +191,7 @@ export const ${GAME}Game: Game<
     return "ongoing"; // TODO: return "solved" when the board is complete.
   },
 
-  colours(defaultBackground: Colour): Colour[] {
+  colors(defaultBackground: Color): Color[] {
     const { background } = mkhighlight(defaultBackground);
     return [background];
   },
@@ -260,7 +260,7 @@ EOF
 # NOTE: since `retire-c-engine` there is no C build, so a NEW game has no
 # upstream oracle to differ against — the frozen fixtures under
 # src/games/*/__fixtures__/ belong to games ported while the C existed.
-# A greenfield game's assurance is behavioural: "every generated board is
+# A greenfield game's assurance is behavioral: "every generated board is
 # uniquely solvable at exactly its stated difficulty" as a property test. This
 # scaffold therefore emits that, not a differential stub.
 cat > "${DIR}/${GAME}-generation.test.ts" <<EOF
@@ -288,7 +288,7 @@ echo "Scaffolded ${DIR}:"
 echo "  state.ts solver.ts generator.ts render.ts index.ts"
 echo "  ${GAME}.test.ts ${GAME}-generation.test.ts (stub) __fixtures__/"
 echo ""
-echo "Now do the parts that need judgement (the script will not):"
+echo "Now do the parts that need judgment (the script will not):"
 echo "  1. Fill the stubs. (There is no C reference to read: retire-c-engine"
 echo "     deleted the engine. If upstream ever had one, it is in git history.)"
 echo "  2. Register the game (do these two together — the gate checks they agree):"

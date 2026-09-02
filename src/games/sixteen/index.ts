@@ -1,6 +1,6 @@
 import { assertNever } from "../../engine/assert-never.ts";
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { HINT_ACTION, INK } from "../../engine/colour/palette.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import { HINT_ACTION, INK } from "../../engine/color/palette.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type {
   Game,
@@ -38,7 +38,7 @@ import {
   slidePieces,
   toroidalDist,
 } from "../../engine/slide-planner.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
   CursorMode,
   decodeParams,
@@ -63,7 +63,7 @@ const ANIM_TIME = 0.4;
 const FLASH_FRAME = 0.13;
 const HIGHLIGHT_WIDTH_DIV = 20;
 
-// --- colour indices ---------------------------------------------------
+// --- color indices ---------------------------------------------------
 
 const COL_BACKGROUND = 0;
 const COL_TEXT = 1;
@@ -431,7 +431,7 @@ interface SixteenDrawState {
   started: boolean;
   w: number;
   h: number;
-  bgcolour: number;
+  bgcolor: number;
   tiles: Int32Array;
   tilesize: number;
   curX: number;
@@ -457,7 +457,7 @@ function newDrawState(state: SixteenState): SixteenDrawState {
     started: false,
     w: state.w,
     h: state.h,
-    bgcolour: COL_BACKGROUND,
+    bgcolor: COL_BACKGROUND,
     tiles: new Int32Array(state.n).fill(-1),
     tilesize: 0,
     curX: -1,
@@ -478,9 +478,9 @@ function computeSize(p: SixteenParams, ts: number): Size {
   };
 }
 
-function colours(defaultBackground: Colour): Colour[] {
+function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_TEXT] = INK;
   out[COL_HIGHLIGHT] = highlight;
@@ -504,10 +504,10 @@ function redraw(
   const ts = ds.tilesize;
   const hw = Math.max(1, Math.floor(ts / HIGHLIGHT_WIDTH_DIV));
 
-  let bgcolour = COL_BACKGROUND;
+  let bgcolor = COL_BACKGROUND;
   if (flashTime > 0) {
     const frame = Math.floor(flashTime / FLASH_FRAME);
-    bgcolour = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
+    bgcolor = frame % 2 ? COL_LOWLIGHT : COL_HIGHLIGHT;
   }
 
   if (!ds.started) {
@@ -671,7 +671,7 @@ function redraw(
 
     if (
       mustRedraw ||
-      ds.bgcolour !== bgcolour ||
+      ds.bgcolor !== bgcolor ||
       ds.tiles[i] !== t ||
       ds.tiles[i] === -1 ||
       t === -1 ||
@@ -769,14 +769,14 @@ function redraw(
       }
 
       let tileBg =
-        drawX2 === -1 && tileCursor(i, state, curX, curY) ? COL_LOWLIGHT : bgcolour;
+        drawX2 === -1 && tileCursor(i, state, curX, curY) ? COL_LOWLIGHT : bgcolor;
       if (hintTile !== null && t === hintTile) {
         tileBg = COL_HINT;
       }
       drawTile(dr, ts, hw, drawX, drawY, t, tileBg);
 
       if (drawX2 !== -1 || drawY2 !== -1) {
-        let wrapBg = bgcolour;
+        let wrapBg = bgcolor;
         if (hintTile !== null && t === hintTile) {
           wrapBg = COL_HINT;
         }
@@ -801,7 +801,7 @@ function redraw(
     drawHintBorder(dr, ts, state, hintUltimate, COL_HINT, false);
   }
   dr.unclip();
-  ds.bgcolour = bgcolour;
+  ds.bgcolor = bgcolor;
 }
 
 function tileCursor(i: number, state: SixteenState, cx: number, cy: number): boolean {
@@ -816,10 +816,10 @@ function drawTile(
   x: number,
   y: number,
   tile: number,
-  bgColour: number,
+  bgColor: number,
 ): void {
   if (tile === 0) {
-    dr.drawRect({ x, y, w: ts, h: ts }, bgColour);
+    dr.drawRect({ x, y, w: ts, h: ts }, bgColor);
   } else {
     // Lowlight triangle (bottom-right).
     dr.drawPolygon(
@@ -841,8 +841,8 @@ function drawTile(
       COL_HIGHLIGHT,
       COL_HIGHLIGHT,
     );
-    // Centre fill.
-    dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColour);
+    // Center fill.
+    dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColor);
     // Number.
     dr.drawText(
       { x: x + ts / 2, y: y + ts / 2 },
@@ -861,7 +861,7 @@ function drawArrow(
   y: number,
   xdx: number,
   xdy: number,
-  fillColour: number,
+  fillColor: number,
 ): void {
   const ydy = -xdx;
   const ydx = xdy;
@@ -881,7 +881,7 @@ function drawArrow(
     point(ts / 4, ts / 2), // left corner
   ];
 
-  dr.drawPolygon(coords, fillColour, COL_TEXT);
+  dr.drawPolygon(coords, fillColor, COL_TEXT);
 }
 
 function drawArrowAt(
@@ -891,16 +891,16 @@ function drawArrowAt(
   h: number,
   ax: number,
   ay: number,
-  fillColour: number,
+  fillColor: number,
 ): void {
   if (ax === -1) {
-    drawArrow(dr, ts, coord(0, ts), coord(ay + 1, ts), 0, -1, fillColour);
+    drawArrow(dr, ts, coord(0, ts), coord(ay + 1, ts), 0, -1, fillColor);
   } else if (ax === w) {
-    drawArrow(dr, ts, coord(w, ts), coord(ay, ts), 0, 1, fillColour);
+    drawArrow(dr, ts, coord(w, ts), coord(ay, ts), 0, 1, fillColor);
   } else if (ay === -1) {
-    drawArrow(dr, ts, coord(ax, ts), coord(0, ts), 1, 0, fillColour);
+    drawArrow(dr, ts, coord(ax, ts), coord(0, ts), 1, 0, fillColor);
   } else if (ay === h) {
-    drawArrow(dr, ts, coord(ax + 1, ts), coord(h, ts), -1, 0, fillColour);
+    drawArrow(dr, ts, coord(ax + 1, ts), coord(h, ts), -1, 0, fillColor);
   } else return;
 
   dr.drawUpdate({ x: coord(ax, ts), y: coord(ay, ts), w: ts, h: ts });
@@ -913,7 +913,7 @@ function drawHintBorder(
   ts: number,
   state: SixteenState,
   pos: number,
-  colour: number,
+  color: number,
   dashed = false,
 ): void {
   const x = coord(pos % state.w, ts);
@@ -928,35 +928,35 @@ function drawHintBorder(
     // Draw top border (horizontal)
     for (let cx = x; cx < x + ts; cx += step) {
       const w = Math.min(dashLen, x + ts - cx);
-      dr.drawRect({ x: cx, y, w, h: b }, colour);
+      dr.drawRect({ x: cx, y, w, h: b }, color);
     }
     // Draw bottom border (horizontal)
     for (let cx = x; cx < x + ts; cx += step) {
       const w = Math.min(dashLen, x + ts - cx);
-      dr.drawRect({ x: cx, y: y + ts - b, w, h: b }, colour);
+      dr.drawRect({ x: cx, y: y + ts - b, w, h: b }, color);
     }
     // Draw left border (vertical)
     for (let cy = y + b; cy < y + ts - b; cy += step) {
       const h = Math.min(dashLen, y + ts - b - cy);
-      dr.drawRect({ x, y: cy, w: b, h }, colour);
+      dr.drawRect({ x, y: cy, w: b, h }, color);
     }
     // Draw right border (vertical)
     for (let cy = y + b; cy < y + ts - b; cy += step) {
       const h = Math.min(dashLen, y + ts - b - cy);
-      dr.drawRect({ x: x + ts - b, y: cy, w: b, h }, colour);
+      dr.drawRect({ x: x + ts - b, y: cy, w: b, h }, color);
     }
   } else {
     // Draw outline: top, bottom, left, right.
-    dr.drawRect({ x, y, w: ts, h: b }, colour);
-    dr.drawRect({ x, y: y + ts - b, w: ts, h: b }, colour);
-    dr.drawRect({ x, y: y + b, w: b, h: ts - 2 * b }, colour);
-    dr.drawRect({ x: x + ts - b, y: y + b, w: b, h: ts - 2 * b }, colour);
+    dr.drawRect({ x, y, w: ts, h: b }, color);
+    dr.drawRect({ x, y: y + ts - b, w: ts, h: b }, color);
+    dr.drawRect({ x, y: y + b, w: b, h: ts - 2 * b }, color);
+    dr.drawRect({ x: x + ts - b, y: y + b, w: b, h: ts - 2 * b }, color);
   }
   dr.drawUpdate({ x, y, w: ts, h: ts });
 }
 
 /** Draw or erase a hint highlight for a tile. Source tiles are highlighted
- * with a filled colour using drawTile (keeping the number visible), while
+ * with a filled color using drawTile (keeping the number visible), while
  * target positions are highlighted with a 3-pixel border. */
 function drawHintOverlay(
   dr: GameDrawing,
@@ -964,19 +964,19 @@ function drawHintOverlay(
   hw: number,
   state: SixteenState,
   pos: number,
-  colour: number,
+  color: number,
   isTarget: boolean,
 ): void {
   const x = coord(pos % state.w, ts);
   const y = coord(Math.floor(pos / state.w), ts);
   const tile = state.tiles[pos];
 
-  if (colour === COL_BACKGROUND) {
+  if (color === COL_BACKGROUND) {
     // Erase highlight: just redraw the tile with normal background.
     drawTile(dr, ts, hw, x, y, tile, COL_BACKGROUND);
   } else if (isTarget) {
     // Draw target border.
-    drawHintBorder(dr, ts, state, pos, colour);
+    drawHintBorder(dr, ts, state, pos, color);
   } else {
     // Draw source fill: draw the tile with COL_HINT as the background!
     drawTile(dr, ts, hw, x, y, tile, COL_HINT);
@@ -1424,7 +1424,7 @@ export const sixteenGame: Game<
   textFormat,
   statusbarText,
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {

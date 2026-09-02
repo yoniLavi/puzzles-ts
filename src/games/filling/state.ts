@@ -19,7 +19,7 @@ import type { GameStatus } from "../../engine/types.ts";
 
 export const EMPTY = 0;
 
-/** Orthogonal neighbour offsets (upstream `dx`/`dy`). */
+/** Orthogonal neighbor offsets (upstream `dx`/`dy`). */
 export const DX = [-1, 1, 0, 0] as const;
 export const DY = [0, 0, -1, 1] as const;
 

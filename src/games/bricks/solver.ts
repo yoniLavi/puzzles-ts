@@ -5,7 +5,7 @@
  *
  * `bricksValidate` is both the rule checker and the deduction oracle: it runs
  * three independent checks over a grid and returns COMPLETE / UNFINISHED /
- * INVALID, optionally localising each violation into a per-cell `FE_*` flag
+ * INVALID, optionally localizing each violation into a per-cell `FE_*` flag
  * array (upstream ORs those bits into the grid itself; kept separate here so
  * the solver never pollutes the board it is probing). The three checks:
  *
@@ -13,8 +13,8 @@
  *  - **gravity** — a shaded cell whose two supporters below are both
  *    walls/unshaded/numbers/out-of-bounds is INVALID; merely still-empty is
  *    UNFINISHED (rule 1: every shaded cell needs a shaded cell below it);
- *  - **counts** — a clue whose shaded-neighbour count exceeds it, or whose
- *    still-possible neighbours can no longer reach it, is INVALID; fewer so
+ *  - **counts** — a clue whose shaded-neighbor count exceeds it, or whose
+ *    still-possible neighbors can no longer reach it, is INVALID; fewer so
  *    far is UNFINISHED.
  *
  * The solver drives these to a fixpoint by single-cell contradiction
@@ -23,9 +23,9 @@
  * here guesses — but the two rungs ask very different things of a player, and
  * `audit-guessing-tier-names` (design D9 + D11) split them:
  *
- * - `solverTry` places one colour, calls `bricksValidate` **once**, and rolls
+ * - `solverTry` places one color, calls `bricksValidate` **once**, and rolls
  *   back. One glance; a *Check*, legal at any tier.
- * - `solverRecurse` places one colour and then **solves the rest of the board**
+ * - `solverRecurse` places one color and then **solves the rest of the board**
  *   from it at `maxdiff - 1`. That is a *Search*, and a search may only ship
  *   under a tier named `Unreasonable` — which is why upstream's `Normal` is
  *   called that here, and why {@link nextForcedMove} has no arm for it
@@ -54,9 +54,9 @@ import {
   BRICKS_STEPS,
   type BricksMistake,
   type BricksState,
-  type CellColour,
+  type CellColor,
   COL_MASK,
-  colourBits,
+  colorBits,
   F_BOUND,
   F_EMPTY,
   F_SHADE,
@@ -189,7 +189,7 @@ function validateCounts(
 /**
  * The full validity pass (upstream `bricks_validate`). Returns COMPLETE /
  * UNFINISHED / INVALID; when `errors` is given it is cleared and each
- * violation's localised `FE_*` flags are ORed in. `strict` additionally
+ * violation's localized `FE_*` flags are ORed in. `strict` additionally
  * downgrades a rule-clean board to UNFINISHED while any `F_EMPTY` cell
  * remains.
  */
@@ -218,7 +218,7 @@ export function bricksValidate(
 /**
  * One Easy pass (upstream `bricks_solver_try`): for each `F_EMPTY` cell, if
  * tentatively unshading (then shading) makes the board INVALID, commit the
- * opposite colour. Returns the number of cells forced this pass.
+ * opposite color. Returns the number of cells forced this pass.
  */
 function solverTry(grid: Uint16Array, w: number, h: number): number {
   const s = w * h;
@@ -240,8 +240,8 @@ function solverTry(grid: Uint16Array, w: number, h: number): number {
 
 /**
  * One recursive-lookahead pass (upstream `bricks_solver_recurse`): for each
- * `F_EMPTY` cell, if committing one colour and solving the rest at
- * `maxdiff - 1` reaches INVALID, the cell must be the opposite colour.
+ * `F_EMPTY` cell, if committing one color and solving the rest at
+ * `maxdiff - 1` reaches INVALID, the cell must be the opposite color.
  */
 function solverRecurse(
   grid: Uint16Array,
@@ -271,7 +271,7 @@ function solverRecurse(
 /**
  * Drive the deduction to a fixpoint (upstream `bricks_solve_game`). Mutates
  * `grid`; returns the final verdict — COMPLETE exactly when the deduction
- * alone solves the board. `clear` first blanks every coloured cell to
+ * alone solves the board. `clear` first blanks every colored cell to
  * `F_EMPTY`; `strict` is threaded to the validator. The loop is structurally
  * bounded: every non-breaking pass fills at least one empty cell.
  */
@@ -309,9 +309,9 @@ export function solveGame(
 // --- play-facing helpers ----------------------------------------------------
 
 /**
- * The cells currently violating a rule, with their localised flags (design
+ * The cells currently violating a rule, with their localized flags (design
  * D7). Bricks' violations are intrinsic to the current grid — the rule
- * validator localises every one — so findMistakes runs the same validity
+ * validator localizes every one — so findMistakes runs the same validity
  * pass rather than re-solving. Check & Save hard-blocks on a non-empty
  * result and the render overlay reuses the flags.
  */
@@ -329,10 +329,10 @@ export function findMistakes(state: BricksState): BricksMistake[] {
 // --- hint deduction (a recording projection of the same solver) -------------
 
 /**
- * Why the opposite colour is impossible at a forced cell. The first five are
+ * Why the opposite color is impossible at a forced cell. The first five are
  * single-cell (Easy-tier) contradictions read straight off the rejected
  * trial's `FE_*` flags; `chain` is the recursive-lookahead tier (assuming a
- * colour leads, through forced consequences, to a contradiction). All cell
+ * color leads, through forced consequences, to a contradiction). All cell
  * fields are padded-grid indices.
  */
 export type BricksReason =
@@ -345,7 +345,7 @@ export type BricksReason =
 
 export interface ForcedMove {
   index: number;
-  to: CellColour;
+  to: CellColor;
   reason: BricksReason;
 }
 
@@ -431,7 +431,7 @@ function classifyUnshadeTrial(
 
 /**
  * The next single-cell (Easy-tier) forced move with its reason — the recording
- * twin of {@link solverTry}. For the first empty cell where one colour makes
+ * twin of {@link solverTry}. For the first empty cell where one color makes
  * the board INVALID, the cell is forced the other way; the reason is read from
  * the rejected trial's error flags. Scans in cell order (recompute-stable).
  */
@@ -483,7 +483,7 @@ export function deduceBricksPlan(
     status: (grid) => bricksValidate(grid, w, h, true),
     incomplete: "unfinished",
     // **Single-cell refutations only** (`audit-guessing-tier-names`, design
-    // D4/D8). `nextForcedMoveRecurse` assumes a colour and *solves the rest of
+    // D4/D8). `nextForcedMoveRecurse` assumes a color and *solves the rest of
     // the board* from it — a multi-step search with backtracking, which the
     // collection classes as non-deductive and never lets a hint present as a
     // technique. Where it would have fired the plan ends and `hint` refuses.
@@ -495,7 +495,7 @@ export function deduceBricksPlan(
     // because `Tricky` sits declared-but-ungenerable above it.
     next: (grid) => nextForcedMove(grid, w, h),
     apply: (grid, move) => {
-      grid[move.index] = colourBits(move.to);
+      grid[move.index] = colorBits(move.to);
     },
     planCap: HINT_PLAN_MAX,
   }).plan;

@@ -25,7 +25,7 @@
  * ships with — after the four games' sentences were fixed — it still flags **230
  * sentence shapes across 20 games**, and reading all of them found **nothing
  * further to change**. The false positives are not noise to be tuned away; they
- * are four legitimate ways to tie a deictic that no lexical rule recognises:
+ * are four legitimate ways to tie a deictic that no lexical rule recognizes:
  *
  * - **by value** — Singles' *"This 3 shares a line with the ringed white 3"*;
  * - **by line or region context** — Group's *"In this row, c can go in only this
@@ -40,9 +40,9 @@
  *   four genuine cases (Clusters, Bricks, Range, Light Up) marked a cell against
  *   another cell.
  *
- * Counting *rendered* hint-role colours instead of declared roles was the
+ * Counting *rendered* hint-role colors instead of declared roles was the
  * originally-proposed instrument; it would not separate those cases either
- * (Spokes' spoke and hub are still two hint colours), and costs a full
+ * (Spokes' spoke and hub are still two hint colors), and costs a full
  * `renderScenario` per step. What rendering would add is the one thing this
  * cannot see: a role declared but never drawn, or drawn but never declared.
  *

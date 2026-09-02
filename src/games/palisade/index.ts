@@ -36,9 +36,9 @@ import {
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -363,7 +363,7 @@ export const palisadeGame: Game<
   textFormat,
   statusbarText: (s) => `Region size: ${s.k}`,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: PalisadeParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

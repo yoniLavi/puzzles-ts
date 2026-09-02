@@ -144,7 +144,7 @@ function decodeClueSlot(
 }
 
 /**
- * Gate difficulty and (for strip mode) minimise the clue set, mutating
+ * Gate difficulty and (for strip mode) minimize the clue set, mutating
  * `board.rowcount`/`board.colcount` in place. Returns 0 to accept, −1 to
  * regenerate. Faithful to upstream `check_difficulty`.
  */
@@ -177,7 +177,7 @@ function checkDifficulty(p: MagnetsParams, board: GenBoard, rs: RandomState): nu
     const targets = roworcol === COLUMN ? colcount : rowcount;
     const base = index * 3;
 
-    // Remove clue (its colour and the derived neutral), remembering both.
+    // Remove clue (its color and the derived neutral), remembering both.
     const target = targets[base + which];
     const targetn = targets[base + NEUTRAL];
     targets[base + which] = -1;

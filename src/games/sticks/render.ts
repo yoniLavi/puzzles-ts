@@ -3,7 +3,7 @@
  *
  * A per-tile diffed loop over a black grid backing: each cell is a full-tile
  * `COL_GRID` rect under a one-pixel-smaller fill (black for a wall,
- * background for a white cell), a green centre bar for a placed line, the
+ * background for a white cell), a green center bar for a placed line, the
  * clue number as text (white on black cells, dark on white cells, red when
  * its constraint is currently violated), and a blue frame under the keyboard
  * cursor. The in-flight drag previews its accreted cells; on a fresh win the
@@ -17,18 +17,18 @@
  * `computeSize` subtracts 1 to meet the outer grid line.
  */
 
-import { GREEN, PURPLE } from "../../engine/colour/colours.ts";
+import { GREEN, PURPLE } from "../../engine/color/colors.ts";
 import {
   ERROR,
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
   PAPER,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import { findLiveErrors } from "./solver.ts";
 import {
   F_BLOCK,
@@ -58,8 +58,8 @@ export const COL_CURSOR = 5;
 export const COL_HINT = 6; // the forced square's line, in the game's own bar shape
 export const COL_HINT_CELL = 7; // the deduction's evidence — an inset ring
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = INK;
   // A placed stick is a bar filling a fifth of its cell — a piece, not a glyph,
@@ -170,7 +170,7 @@ function drawTile(
     );
   }
 
-  // The forced line, in the game's own bar shape and the hint colour — a tint
+  // The forced line, in the game's own bar shape and the hint color — a tint
   // could not say *which* orientation, which is the whole of the move (§5.1a).
   // Drawn, never placed: the player still makes the move.
   if (hintLine & F_HOR) {
@@ -217,7 +217,7 @@ function drawTile(
   if (mistake) {
     // Inset red frame: this placed line contradicts the unique solution
     // (Check & Save's overlay — distinct from the red clue-number live
-    // errors, which recolour the text above).
+    // errors, which recolor the text above).
     const thick = Math.floor(ts / 7);
     const margin = Math.floor(ts / 20);
     const inner = ts - 1 - 2 * margin;

@@ -25,7 +25,7 @@
  * deduction techniques (the runs technique ignores diagonal adjacency). That is
  * a weaker-than-ideal solver — the difficulty curve upstream shipped — not a
  * defect to fix (playbook rule 3). It still generates valid diag puzzles
- * because {@link placeLetter} accounts for diagonal neighbours.
+ * because {@link placeLetter} accounts for diagonal neighbors.
  */
 
 import {
@@ -47,15 +47,15 @@ export interface AbcdMark {
 
 /**
  * The *obvious* pencil-mark eliminations, given the placed letters — the ABCD
- * analogue of the Latin family's row/column duplicate strikes (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"'s
- * adaptive mark-all). A pencilled candidate `c` in an empty cell is obviously
+ * analog of the Latin family's row/column duplicate strikes (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"'s
+ * adaptive mark-all). A penciled candidate `c` in an empty cell is obviously
  * impossible, and so struck, when either:
  *   - a cell orthogonally (or, under `diag`, diagonally) adjacent already holds
  *     `c` — the no-touch rule; or
  *   - `c`'s row or column already holds its full clue count of `c` — a
  *     satisfied clue.
  * Both are exactly the solver's cheapest deductions (technique 1 +
- * {@link placeLetter}'s neighbour rule-outs), so a struck mark is never one a
+ * {@link placeLetter}'s neighbor rule-outs), so a struck mark is never one a
  * legal solution could keep. Mirrors `obviousCandidateMarks`' guard: never
  * strike a cell's *last* remaining candidate (keep the lowest).
  */
@@ -130,7 +130,7 @@ export interface AbcdSolveResult {
 /**
  * Place letter `l` at `(x, y)`: set the grid cell, rule `l`'s rivals out of the
  * cell, rule `l` out of the cell's orthogonal (and, under `diag`, diagonal)
- * neighbours, and — when a `remaining` array is supplied — decrement this
+ * neighbors, and — when a `remaining` array is supplied — decrement this
  * letter's row and column counts. Shared with the generator (which passes no
  * `remaining`, using it purely to keep a partial fill no-touch-legal).
  * Mirrors `abcd_place_letter`.

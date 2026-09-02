@@ -35,7 +35,7 @@ export function computeLoops(
   barriers: Uint8Array | null,
   includeUnlocked: boolean,
 ): Int32Array {
-  const neighbours = (vertex: number): number[] => {
+  const neighbors = (vertex: number): number[] => {
     const x = vertex % w;
     const y = Math.floor(vertex / w);
     let tile = tiles[vertex];
@@ -52,7 +52,7 @@ export function computeLoops(
     return out;
   };
 
-  const fls = findLoops(w * h, neighbours);
+  const fls = findLoops(w * h, neighbors);
 
   const loops = new Int32Array(w * h);
   for (let y = 0; y < h; y++) {

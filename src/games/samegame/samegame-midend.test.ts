@@ -40,7 +40,7 @@ describe("Same Game midend lifecycle", () => {
     // row0: 1 1 2 / row1: 3 3 3 / row2: 1 2 2, scoring (n-1)².
     expect(h.m.newGameFromId("3x3c3s1:1,1,2,3,3,3,1,2,2")).toBeUndefined();
     expect(h.statusBar()).toBe("Score: 0");
-    // Select the colour-3 group (cell (0,1)); no history move, but the
+    // Select the color-3 group (cell (0,1)); no history move, but the
     // status bar must reflect the selection.
     expect(h.m.processInput(at(0, 1).x, at(0, 1).y, LEFT_BUTTON)).toBe(true);
     expect(h.statusBar()).toBe("Score: 0  Selected: 3 (4)"); // (3-1)² under s1

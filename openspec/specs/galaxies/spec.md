@@ -10,7 +10,7 @@ registered in the engine registry, so the worker serves `galaxies`
 via the TS midend and not via C/WASM. Its C source SHALL be deleted
 from `puzzles/` (per the `ts-migration` per-game C-deletion rule).
 Registration and C deletion SHALL be the last steps in the change,
-gated on owner acceptance of full behavioural parity with the C
+gated on owner acceptance of full behavioral parity with the C
 build per `ts-migration` "Per-game hybrid; C deleted per game". All
 other catalog games SHALL continue to load via the existing C/WASM
 path in the same session.
@@ -84,7 +84,7 @@ resolved by what follows it: a release close to the press toggles an
 edge, and travel beyond a small slop starts an association drag from
 the press point instead. A press that ends far from where it began
 SHALL commit nothing at all — that is the shape the frontend's
-pointer-cancellation synthesises, and it must not toggle an edge on
+pointer-cancellation synthesizes, and it must not toggle an edge on
 the far side of the board.
 
 #### Scenario: Solving and completion
@@ -163,16 +163,16 @@ the far side of the board.
 
 ### Requirement: Galaxies rendering, animation, and text format
 
-Galaxies SHALL render the subcell grid, region fills coloured by the
+Galaxies SHALL render the subcell grid, region fills colored by the
 completion check (a locally-valid region — symmetric about its single
-dot — is filled in its dot's colour; associations do not colour
+dot — is filled in its dot's color; associations do not color
 tiles), white and black dots, set edges, association arrows from each
 associated tile to its dot, and the keyboard cursor through
 `GameDrawing`. A dot move on the board SHALL animate the dot along
 the same path the C build animates (the `movedot_cb` shortest-path).
 Completion SHALL trigger a flash. The game SHALL provide a statusbar
 string reporting move count, completion state, and current-puzzle
-difficulty when known, and a plain-text format of the board. Colours
+difficulty when known, and a plain-text format of the board. Colors
 SHALL be derived from the supplied default background; the engine
 SHALL emit no pixels of its own — the Galaxies `redraw` owns its
 background fill in the `!ds.started` branch (per the
@@ -181,7 +181,7 @@ background fill in the `!ds.started` branch (per the
 An in-progress association drag SHALL preview **discretely**: the
 pointer's snapped drop-target tile and its 180° partner about the
 drag dot — exactly the pair a release would commit — each showing an
-arrow toward the dot in a transient colour distinct from committed
+arrow toward the dot in a transient color distinct from committed
 arrows, with the drop target itself additionally outlined. A target
 where a release would not commit SHALL show no preview. Every pixel
 any transient overlay paints — the drag preview and the keyboard
@@ -189,12 +189,12 @@ cursor alike — SHALL be clipped to a tile and erased by that tile's
 own repaint when it moves on: no paint outside the board, no stale
 frames, and no full-board update per pointer move.
 
-Both transient affordances SHALL use **authored** colours rather than
-colours derived from the board, because a colour derived from the
+Both transient affordances SHALL use **authored** colors rather than
+colors derived from the board, because a color derived from the
 board is by construction not prominent against it, in either scheme.
 
 While a cell→dot drag is in progress, every dot the cell could
-legally join SHALL be ringed and the picked one emphasised — subject
+legally join SHALL be ringed and the picked one emphasized — subject
 to a preference, because it is a solving aid. The **gesture** SHALL
 NOT be gated by that preference.
 
@@ -215,7 +215,7 @@ NOT be gated by that preference.
   releases
 - **THEN** at each snapped target the preview shows the target's
   arrow (outlined tile) and its 180° partner's arrow in the transient
-  colour, tiles the preview vacates repaint clean, and after the
+  color, tiles the preview vacates repaint clean, and after the
   release no preview paint remains anywhere — including outside the
   board, where nothing repaints
 
@@ -317,7 +317,7 @@ cleared on the next transition by the engine's mistake lifecycle.
 - **WHEN** the player draws an interior wall between two tiles that the
   unique solution places in the same region, and invokes mistake-checking
 - **THEN** Galaxies flags that wall and the renderer highlights it in the
-  mistake colour — even when the board has no association arrows at all
+  mistake color — even when the board has no association arrows at all
 
 #### Scenario: A wall on a true region boundary is clean
 
@@ -342,7 +342,7 @@ symmetric partner, the only dot whose symmetry can reach the tile —
 never merely *what* to do).
 
 A step's action SHALL be a move the game already has: the committed
-association, or the wall that a settled pair of neighbours forces. A
+association, or the wall that a settled pair of neighbors forces. A
 firing that claims a cell SHALL claim its 180° partner in the **same
 step** — the game commits the pair atomically, so a separate leg for the
 partner would be a move that changes nothing — and the narration SHALL
@@ -351,10 +351,10 @@ associations alone never complete a board (only walls do), the plan
 SHALL carry the deduction through to the walls it justifies, and SHALL
 reach a solved board from any position it is asked from.
 
-Evidence SHALL be highlighted as an area in the hint colour legend, dots
+Evidence SHALL be highlighted as an area in the hint color legend, dots
 SHALL be named by properties the player can see, rule-outs SHALL be
 shown as evidence highlights rather than demanded of the player, and
-equivalent moves SHALL share a colour. The hint's action colour SHALL be
+equivalent moves SHALL share a color. The hint's action color SHALL be
 distinct from the association drag's, which marks the same objects — a
 dot and a cell — while the player follows a hint.
 
@@ -364,7 +364,7 @@ mistakes instead. A stored plan SHALL survive the player working ahead:
 a step whose tile the player has meanwhile associated is refreshed away
 and the plan advances. Every step the hint offers SHALL be a deduction the player could make
 from the board in front of them. It SHALL NOT guess: where the remaining
-progress can only be found by hypothesising a cell's dot and propagating
+progress can only be found by hypothesizing a cell's dot and propagating
 until something breaks, the hint SHALL refuse, and the refusal SHALL say
 that deduction has run out and what the player can do instead. A Normal
 board SHALL be carried all the way to solved by deduction alone; only an
@@ -379,7 +379,7 @@ Galaxies SHALL be enrolled in the cross-game hint guards
 - **THEN** one step is shown whose narration states the forcing reason
   and whose single move associates both the tile and its 180° partner
 - **AND** the evidence area and the action are drawn in the hint legend's
-  two colours, neither of them the drag preview's
+  two colors, neither of them the drag preview's
 
 #### Scenario: The plan finishes the board, not just the notation
 

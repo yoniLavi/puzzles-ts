@@ -16,7 +16,7 @@ import { dimensionParamConfig } from "../../engine/params.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   Point,
@@ -26,7 +26,7 @@ import { newAscentDesc } from "./generator.ts";
 import { executeAscentMove } from "./moves.ts";
 import {
   type AscentDrawState,
-  ascentColours,
+  ascentColors,
   ascentComputeSize,
   newAscentDrawState,
   redrawAscent,
@@ -455,8 +455,8 @@ export const ascentGame: Game<
     return s.completed ? "solved" : "ongoing";
   },
 
-  colours(defaultBackground: Colour): Colour[] {
-    return ascentColours(defaultBackground);
+  colors(defaultBackground: Color): Color[] {
+    return ascentColors(defaultBackground);
   },
   computeSize(p: AscentParams, tileSize: number): Size {
     return ascentComputeSize(p.w, p.h, p.mode, tileSize);

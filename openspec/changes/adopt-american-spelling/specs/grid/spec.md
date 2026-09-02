@@ -32,14 +32,14 @@ another implementation's answer. A comparison to a peer is green whenever both
 implementations are wrong in the same way, which is exactly how the truncation
 above survived for as long as it existed.
 
-#### Scenario: The incentre lies inside its face
+#### Scenario: The incenter lies inside its face
 
 - **WHEN** `gridFindIncenter` is called on any face of any tiling, including
   concave and highly non-convex faces
 - **THEN** the returned point lies strictly inside that face, admitting a circle
   of non-zero radius
 
-#### Scenario: The incentre admits nearly the largest circle the face allows
+#### Scenario: The incenter admits nearly the largest circle the face allows
 
 - **WHEN** the inscribed radius at the returned point is compared with the best
   inscribed radius over the integer points of the face, derived independently of
@@ -49,7 +49,7 @@ above survived for as long as it existed.
 - **AND** the tilings swept are enumerated from `ALL_GRID_TYPES`, so a newly
   added tiling joins the sweep without anyone remembering to add it
 
-#### Scenario: The incentre is cached
+#### Scenario: The incenter is cached
 
 - **WHEN** `gridFindIncenter` is called twice on the same face
 - **THEN** the second call returns the cached result without recomputing

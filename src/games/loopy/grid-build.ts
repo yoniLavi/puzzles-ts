@@ -19,7 +19,7 @@
  *
  * Three properties worth being explicit about:
  *
- * - **It diverges from the C only where the C has no defined behaviour.** C
+ * - **It diverges from the C only where the C has no defined behavior.** C
  *   aborts on precisely the seeds we retry, so byte-agreement is preserved on
  *   every input where the C produces any output at all.
  * - **Determinism is preserved.** The retry draws from the same RNG stream, so

@@ -41,7 +41,7 @@
  *
  * Upstream's sign handling ends in `INT_MIN + (int)(-x - (unsigned)INT_MIN)`,
  * which exists purely to keep a C compiler from inferring signed-overflow UB. It
- * has no TS analogue and reduces to negation — the odd spelling is intentional
+ * has no TS analog and reduces to negation — the odd spelling is intentional
  * upstream, not a bug to preserve.
  *
  * @param n Multiplier; may be negative. Rounding is symmetric about zero

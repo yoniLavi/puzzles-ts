@@ -36,13 +36,13 @@ import {
 
 /**
  * What a step paints, in two roles (docs/games/hints.md § "The element-type
- * colour legend"):
+ * color legend"):
  *
  *  - the **action** — the cells the association claims, the walls it draws,
- *    and the dot it points at. One colour, because they are one move.
+ *    and the dot it points at. One color, because they are one move.
  *  - the **evidence** — the cells, walls and dots the argument reasons over.
  *
- * Cells are tile centres and walls are edge cells, both in the state's
+ * Cells are tile centers and walls are edge cells, both in the state's
  * half-grid coordinates, so the renderer can place them without arithmetic.
  */
 export interface GalaxiesHint {
@@ -58,7 +58,7 @@ export interface GalaxiesHint {
    * Painted identically they made "this cell" ambiguous (owner-reported), and
    * they are genuinely different roles: one is deduced, the other follows by a
    * symmetry the player already knows. So the deduced cell takes the solid
-   * action colour and the partner a bare outline of it — same hue, because
+   * action color and the partner a bare outline of it — same hue, because
    * they share a fate; different weight, because only one is the point.
    *
    * `null` where the cells really are equivalent (a dot's own cells, which are
@@ -67,14 +67,14 @@ export interface GalaxiesHint {
   focus: Pos | null;
   /** Walls the move draws. */
   targetWalls: Pos[];
-  /** The dot the association points at, ringed in the action colour. */
+  /** The dot the association points at, ringed in the action color. */
   targetDot: Pos | null;
   /** Cells the deduction reasons over. */
   area: Pos[];
   /** Walls the deduction reasons over. */
   walls: Pos[];
   /** Dots the argument cites (never the one it acts on — one ring role per
-   * colour, so "the ringed dot" is never ambiguous). */
+   * color, so "the ringed dot" is never ambiguous). */
   refDots: Pos[];
 }
 
@@ -128,7 +128,7 @@ const EMPTY: Omit<GalaxiesHint, "targets"> = {
  * is the shorter story.
  */
 function soleOwnerFiring(s: GalaxiesState): GalaxiesFiring | null {
-  const cols = checkComplete(s, true).colours;
+  const cols = checkComplete(s, true).colors;
   if (!cols) return null;
   // One flood per dot, not one per (cell, dot) pair — the whole rung is then
   // about as cheap as a single reach computation.
@@ -188,7 +188,7 @@ function nextPlanFiring(b: GalaxiesState): GalaxiesFiring | null {
     // fires only where it is genuinely the deduction that unsticks the board.
     RUNGS.mirrorWall.fire,
     // And nothing after it. Where every direct rule is spent, the board can
-    // still be settled by hypothesising a cell's dot and propagating until
+    // still be settled by hypothesizing a cell's dot and propagating until
     // something breaks — that rung existed and was removed on owner
     // acceptance: it is guessing, and "I tried them all and this one survived"
     // is not a technique anyone can learn. The hint refuses instead, and the
@@ -279,7 +279,7 @@ export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
       const cells =
         n === 1 ? "this cell" : n === 2 ? "both these cells" : `these ${n} cells`;
       // Named by where it is, not by a ring: the dot is *on* the cells being
-      // filled, so a ring would be the hint's colour on the hint's colour.
+      // filled, so a ring would be the hint's color on the hint's color.
       const where =
         n === 2 ? "between them" : n === 4 ? "at their shared corner" : "they touch";
       return `A galaxy always covers the cells its own dot sits on, so ${cells} must belong to the ${dotWord(s, firing.dot)} ${where}.`;
@@ -333,7 +333,7 @@ export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
 // --- highlights -------------------------------------------------------
 
 /** The cells an association claims: the tile and the partner the same move
- * commits. A tile that is its own partner (dead centre of its galaxy) lists
+ * commits. A tile that is its own partner (dead center of its galaxy) lists
  * once. */
 function pair(tile: Pos, opp: Pos | null): Pos[] {
   if (!opp || (opp.x === tile.x && opp.y === tile.y)) return [tile];

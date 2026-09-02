@@ -6,7 +6,7 @@
  * Input: left-click / `CURSOR_SELECT` cycles a domino cell empty→`+`→`−`→empty
  * (the magnet cycle); right-click / `CURSOR_SELECT2` cycles empty→neutral→
  * not-neutral(`?`)→empty over the domino; a left-click on a border clue toggles
- * its "done" grey; cursor keys move a keyboard cursor.
+ * its "done" gray; cursor keys move a keyboard cursor.
  */
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
@@ -26,10 +26,10 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import { newMagnetsDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   type MagnetsDrawState,
@@ -289,7 +289,7 @@ export const magnetsGame: Game<
 
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: MagnetsParams, ts: number): Size => computeSize(p, ts),
   setTileSize: (ds, ts) => {

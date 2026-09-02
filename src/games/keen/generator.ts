@@ -2,7 +2,7 @@
  * Keen generator — port of `new_game_desc` from `keen.c`.
  *
  * Generate a full Latin square as the solution, partition it into cages
- * (random dominoes, then fold the remaining singletons into neighbours), choose
+ * (random dominoes, then fold the remaining singletons into neighbors), choose
  * a balanced mix of cage operations + values avoiding low-quality clues, then
  * accept the board only when the graded solver solves it at *exactly* the target
  * difficulty (regenerate otherwise). RNG-faithful to upstream over the
@@ -74,7 +74,7 @@ export function newKeenDesc(
     dsf.reinit();
 
     // Place dominoes at random (prob 3/4), preferring the lowest-revorder
-    // available neighbour.
+    // available neighbor.
     for (let i = 0; i < a; i++) {
       if (!singletons[i]) continue;
       let best = -1;
@@ -110,7 +110,7 @@ export function newKeenDesc(
       }
     }
 
-    // Fold remaining singletons into a neighbouring block under MAXBLK.
+    // Fold remaining singletons into a neighboring block under MAXBLK.
     for (let i = 0; i < a; i++) {
       if (!singletons[i]) continue;
       let best = -1;

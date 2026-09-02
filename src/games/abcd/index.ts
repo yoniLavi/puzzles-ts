@@ -34,7 +34,7 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type {
-  Colour,
+  Color,
   ConfigValues,
   GameStatus,
   KeyLabel,
@@ -44,7 +44,7 @@ import type {
 import { newAbcdDesc } from "./generator.ts";
 import {
   type AbcdDrawState,
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   fromCoord,
@@ -86,8 +86,8 @@ const KEY_M = 77;
 const KEY_m = 109;
 
 function presetTitle(p: AbcdParams): string {
-  const flavour = p.diag ? "No diagonals" : p.removenums ? "Hard" : "Easy";
-  return `${p.w}x${p.h}, ${p.n} letters ${flavour}`;
+  const flavor = p.diag ? "No diagonals" : p.removenums ? "Hard" : "Easy";
+  return `${p.w}x${p.h}, ${p.n} letters ${flavor}`;
 }
 
 function presets(): PresetMenu<AbcdParams> {
@@ -228,7 +228,7 @@ function interpretMove(
     // Suppress an entry that would change nothing, so it costs no undo step
     // (upstream's own `/* TODO Prevent operations which do nothing */`, which
     // its `interpret_move` never got to). Locally decided, as the playbook
-    // requires — never by comparing serialised states.
+    // requires — never by comparing serialized states.
     if (!ui.hpencil && noOpEntry(state, ui.cursor.x, ui.cursor.y, letter)) return null;
 
     const move: AbcdMove =
@@ -243,7 +243,7 @@ function interpretMove(
     return move;
   }
 
-  // Adaptive mark-all (M), the collection-wide shared behaviour: fill on the
+  // Adaptive mark-all (M), the collection-wide shared behavior: fill on the
   // first press (any empty cell with *zero* notes), then subsequent presses only
   // *strike* the obvious eliminations — never re-fill/reset (docs/games/mechanics.md § "Pencil marks: the full note-taking UX").
   if (button === KEY_M || button === KEY_m) {
@@ -461,7 +461,7 @@ export const abcdGame: Game<
 
   prefs: [stickyPencilPref<AbcdUi>()],
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: AbcdParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

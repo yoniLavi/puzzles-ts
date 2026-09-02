@@ -3,7 +3,7 @@
  *
  * Each cell holds one hub: a filled circle carrying a small dot for every
  * spoke that could exist, the clue digit in the middle, and a thick line out
- * to each connected neighbour. A hub whose clue is satisfied greys out
+ * to each connected neighbor. A hub whose clue is satisfied grays out
  * ({@link COL_SATISFIED}); one whose group can draw no further line while the
  * board is still in pieces gets a red rim; the hub being dragged from (or to)
  * turns green.
@@ -11,7 +11,7 @@
  * **The corner protocol is the one subtle thing here.** A diagonal line runs
  * through the point where four cells meet, and each of those cells draws its
  * own half clipped to itself — so a cell repainting on its own would erase the
- * neighbour's half. Upstream's answer, kept verbatim: a cell repaint clears a
+ * neighbor's half. Upstream's answer, kept verbatim: a cell repaint clears a
  * plus-shape that leaves its four {@link CORNER}-sized corners untouched, and
  * a second pass redraws just the 2·`CORNER` box around each grid corner
  * whenever the diagonal through it changed (or a repainted cell invalidated
@@ -22,9 +22,9 @@
  * erased reliably.
  */
 
-import { BLUE, PURPLE } from "../../engine/colour/colours.ts";
+import { BLUE, PURPLE } from "../../engine/color/colors.ts";
 import {
-  correctRegionColour,
+  correctRegionColor,
   ERROR,
   FLASH,
   GRID_DARK,
@@ -32,11 +32,11 @@ import {
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
-} from "../../engine/colour/palette.ts";
+} from "../../engine/color/palette.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { SpokesHint } from "./index.ts";
 import { SpokesScratch, spokesFindIsolated, spokesSolverRecount } from "./solver.ts";
 import {
@@ -87,7 +87,7 @@ export const COL_ERROR = 6;
 export const COL_CURSOR = 7;
 /**
  * Fill for a hub that already has as many spokes as its clue asks for — the
- * "stop thinking about this one" cue, the same fork aid Bridges greys a
+ * "stop thinking about this one" cue, the same fork aid Bridges grays a
  * satisfied island with.
  *
  * Upstream nominally has this cue already (it fills such a hub with pure white)
@@ -95,16 +95,16 @@ export const COL_CURSOR = 7;
  * it is barely a shade, and in dark mode `puzzle-view.ts` hands the game *pure
  * white* as its background, so the "highlight" is exactly the background. The
  * shared completed-region shade is a clear step down from the background and
- * reads in both modes, since the dark-mode adaptation inverts grey lightness
+ * reads in both modes, since the dark-mode adaptation inverts gray lightness
  * about the real background.
  */
 export const COL_SATISFIED = 8;
 /** The forced spoke(s) of the displayed hint — drawn like a line, at hint
- * colour, so the player sees *which* spoke to act on without the move being
+ * color, so the player sees *which* spoke to act on without the move being
  * performed for them (docs/games/testing.md § "Render-op vocabulary"). Every leg of one firing shares it. */
 export const COL_HINT = 9;
 /** A ring around each evidence hub the hint reasons over (a light blue, the
- * cross-game "shade the evidence" colour — docs/games/testing.md § "Seed-deterministic, never clock-gated"). */
+ * cross-game "shade the evidence" color — docs/games/testing.md § "Seed-deterministic, never clock-gated"). */
 export const COL_HINT_CELL = 10;
 
 /**
@@ -116,8 +116,8 @@ export const COL_HINT_CELL = 10;
  * second adaptation here would fight the layer that owns the concern
  * (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
-export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = [];
+export function colors(defaultBackground: Color): Color[] {
+  const out: Color[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_BORDER] = GRID_DARK;
   out[COL_HOLDING] = HELD;
@@ -129,7 +129,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   // blue a ruled-out spoke.
   out[COL_CURSOR] = PURPLE;
   // "This hub is complete" is the same cue as a finished region elsewhere.
-  out[COL_SATISFIED] = correctRegionColour(defaultBackground);
+  out[COL_SATISFIED] = correctRegionColor(defaultBackground);
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
@@ -138,12 +138,12 @@ export function colours(defaultBackground: Colour): Colour[] {
 // --- geometry ---------------------------------------------------------------
 
 /** Spokes has no border at all: the board is exactly `w × h` tiles, and a hub
- * sits at the centre of its tile. */
+ * sits at the center of its tile. */
 export function computeSize(p: SpokesParams, ts: number): Size {
   return { w: p.w * ts, h: p.h * ts };
 }
 
-/** Centre pixel of cell coordinate `v` along one axis (upstream `TOCOORD`). */
+/** Center pixel of cell coordinate `v` along one axis (upstream `TOCOORD`). */
 export function toCoord(v: number, ts: number): number {
   return v * ts + ((ts / 2) | 0);
 }
@@ -155,12 +155,12 @@ export interface SpokesDrawState {
   tilesize: number;
   w: number;
   h: number;
-  /** Recount scratch, so the renderer can colour hubs by line/mark counts and
+  /** Recount scratch, so the renderer can color hubs by line/mark counts and
    * by whether their group is closed off. */
   scratch: SpokesScratch;
   /** Last-drawn packed hub per cell (−1 = never drawn). */
   spokes: Int32Array;
-  /** Last-drawn colour hash per cell (−1 = never drawn). */
+  /** Last-drawn color hash per cell (−1 = never drawn). */
   colors: Int32Array;
   /** Last-drawn diagonal through each grid corner (−1 = never drawn, 0 = no
    * diagonal, else the direction, plus {@link CORNER_WRONG} when flagged). */
@@ -389,10 +389,10 @@ export function redraw(
             ? COL_CURSOR
             : COL_LINE;
 
-      const colour = (fill << 10) | (border << 5) | txt;
+      const color = (fill << 10) | (border << 5) | txt;
       if (
         ds.spokes[i] === state.spokes[i] &&
-        ds.colors[i] === colour &&
+        ds.colors[i] === color &&
         !ds.wrong.stale(i) &&
         !ds.hint.stale(i)
       ) {
@@ -456,7 +456,7 @@ export function redraw(
 
       drawHub(dr, tx, ty, radius, thick, state.spokes[i], wrongBits, border, fill);
 
-      // Hint marks: recolour the rim dot of each still-empty spoke the hint
+      // Hint marks: recolor the rim dot of each still-empty spoke the hint
       // would *rule out* (drawn on top of the hub's own faint placeable dot),
       // so a "rule this out" reads as a mark, not as a line to draw.
       const edge = radius - thick;
@@ -496,7 +496,7 @@ export function redraw(
         ds.corners[i - (w + 1)] = -1;
 
       ds.spokes[i] = state.spokes[i];
-      ds.colors[i] = colour;
+      ds.colors[i] = color;
       ds.wrong.commit(i);
       ds.hint.commit(i);
       dr.unclip();

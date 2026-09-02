@@ -18,7 +18,7 @@ implements this change, and nothing else:
   (every expression it emits evaluates to the number it is filed under; the
   reachable-set counts are stable), not against a running binary.
 - **What it is genuinely good for** is the algorithm: the BFS over reachable
-  values, the rule-set parameterisation that makes Flippo a variant rather than
+  values, the rule-set parameterization that makes Flippo a variant rather than
   a separate program, and the deduplication that keeps the search finite. That
   is the whole reason to carry it rather than leave it in git history.
 
@@ -27,9 +27,9 @@ fundamentally flawed, or in other ways unready to be shipped". Here that meant
 something specific and still true: there is a solver but **no game** — no
 `struct game`, no UI. This change is a build, not a port.
 
-**Licence.** MIT, © Simon Tatham and the Puzzles contributors — the same notice
+**License.** MIT, © Simon Tatham and the Puzzles contributors — the same notice
 as the rest of the collection, preserved at
-[`puzzles/LICENCE`](../../../../puzzles/LICENCE). Copying it here does not change
+[`puzzles/LICENSE`](../../../../puzzles/LICENSE). Copying it here does not change
 its terms or its authorship.
 
 This directory travels with the change into `openspec/changes/archive/` when the

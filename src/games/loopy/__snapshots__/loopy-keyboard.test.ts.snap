@@ -3,7 +3,7 @@
 exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the first cursor key, then a halo on the edge and a disc on the dot 1`] = `
 [
   {
-    "colour": 0,
+    "color": 0,
     "h": 351,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
@@ -12,7 +12,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y": 0,
   },
   {
-    "colour": 7,
+    "color": 7,
     "op": "line",
     "rgb": "rgb(33, 167, 73)",
     "thickness": 9,
@@ -24,7 +24,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -36,7 +36,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -48,7 +48,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -60,7 +60,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -72,7 +72,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 1,
+    "color": 1,
     "fontType": "variable",
     "op": "text",
     "rgb": "rgb(0, 0, 0)",
@@ -82,7 +82,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y": 71,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -92,7 +92,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 205,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -102,7 +102,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 189,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -112,7 +112,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 173,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -122,7 +122,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 151,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -132,7 +132,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 157,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -142,7 +142,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 141,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -152,7 +152,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 157,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -162,7 +162,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 151,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -172,7 +172,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 173,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -182,7 +182,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 189,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -192,7 +192,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 205,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -202,7 +202,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 199,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -212,7 +212,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 221,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -222,7 +222,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 227,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -232,7 +232,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 145,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -242,7 +242,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 161,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -252,7 +252,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 145,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -262,7 +262,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 151,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -272,7 +272,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -282,7 +282,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 217,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -292,7 +292,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 201,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -302,7 +302,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 179,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -312,7 +312,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 173,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -322,7 +322,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 151,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -332,7 +332,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 129,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -342,7 +342,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 124,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -352,7 +352,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 102,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -362,7 +362,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 86,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -372,7 +372,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 102,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -382,7 +382,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 96,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -392,7 +392,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 118,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -402,7 +402,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 124,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -412,7 +412,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 145,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -422,7 +422,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 151,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -432,7 +432,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -442,7 +442,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 217,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -452,7 +452,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -462,7 +462,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 227,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -472,7 +472,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 205,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -482,7 +482,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 189,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -492,7 +492,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 161,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -502,7 +502,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 177,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -512,7 +512,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 199,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -522,7 +522,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 205,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -532,7 +532,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 227,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -542,7 +542,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 277,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -552,7 +552,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 255,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -562,7 +562,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 249,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -572,7 +572,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 227,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -582,7 +582,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 249,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -592,7 +592,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 255,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -602,7 +602,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 277,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -612,7 +612,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 293,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -622,7 +622,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 74,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -632,7 +632,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 96,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -642,7 +642,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 102,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -652,7 +652,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 124,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -662,7 +662,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 102,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -672,7 +672,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 96,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -682,7 +682,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 74,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -692,7 +692,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 58,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -702,7 +702,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 261,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -712,7 +712,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 255,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -722,7 +722,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 233,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -732,7 +732,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 217,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -742,7 +742,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 282,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -752,7 +752,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 288,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -762,7 +762,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 272,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -772,7 +772,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 288,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -782,7 +782,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 282,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -792,7 +792,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 173,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -802,7 +802,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 189,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -812,7 +812,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 173,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -822,7 +822,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 245,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -832,7 +832,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 229,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -842,7 +842,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 207,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -852,7 +852,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 201,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -862,7 +862,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 179,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -872,7 +872,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 68,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -882,7 +882,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 46,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -892,7 +892,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 30,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -902,7 +902,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 46,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -912,7 +912,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 40,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -922,7 +922,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 62,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -932,7 +932,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 68,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -942,7 +942,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 90,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -952,7 +952,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 96,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -962,7 +962,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 106,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -972,7 +972,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 90,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -982,7 +982,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 96,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -992,7 +992,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 118,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1002,7 +1002,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 134,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1012,7 +1012,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 150,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1022,7 +1022,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 172,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1032,7 +1032,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 177,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1042,7 +1042,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 304,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1052,7 +1052,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 282,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1062,7 +1062,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 277,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1072,7 +1072,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 255,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1082,7 +1082,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 277,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1092,7 +1092,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 282,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,
@@ -1102,7 +1102,7 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 304,
   },
   {
-    "colour": 2,
+    "color": 2,
     "op": "line",
     "rgb": "rgb(190, 190, 0)",
     "thickness": 3,

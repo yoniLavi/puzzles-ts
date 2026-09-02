@@ -20,7 +20,7 @@ export interface CubeParams {
 
 /** A roll in one of the four orthogonal directions. Diagonal inputs on
  * triangular grids are resolved to the equivalent orthogonal roll before
- * a move is produced, so a stored/serialised move is always one of these
+ * a move is produced, so a stored/serialized move is always one of these
  * four — JSON-safe, so the default move codec suffices. */
 export type CubeMove = { dir: "L" | "R" | "U" | "D" };
 
@@ -35,7 +35,7 @@ export interface CubeState {
    * (it never changes for a given params, like C's refcounted grid). */
   readonly grid: GridSquare[];
   /** Paint per polyhedron face: 1 = blue, 0 = blank. */
-  readonly faceColours: Int32Array;
+  readonly faceColors: Int32Array;
   /** Paint per grid square: 1 = blue, 0 = blank. */
   readonly blue: Uint8Array;
   readonly current: number;
@@ -180,7 +180,7 @@ export function newState(p: CubeParams, desc: string): CubeState {
   const grid = enumGridSquares(p.solid, p.d1, p.d2);
   const nsquares = grid.length;
 
-  const faceColours = new Int32Array(solid.nfaces);
+  const faceColors = new Int32Array(solid.nfaces);
   const blue = new Uint8Array(nsquares);
 
   // Parse the hex blue mask (4 squares per nibble, MSB first).
@@ -217,7 +217,7 @@ export function newState(p: CubeParams, desc: string): CubeState {
     params: p,
     solidIndex: p.solid,
     grid,
-    faceColours,
+    faceColors,
     blue,
     current,
     sgkey,

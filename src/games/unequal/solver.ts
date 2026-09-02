@@ -38,7 +38,7 @@ export { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE };
  * (`bound`, 1-based): for `greater` the smaller cell can be no *less* than
  * `bound`, so this cell must exceed it; for `lesser` the larger cell can be no
  * *more* than `bound`, so this cell must fall short of it. `adjacent`/
- * `adjacentSet` fire only in Adjacent mode and carry the constraining neighbour
+ * `adjacentSet` fire only in Adjacent mode and carry the constraining neighbor
  * (`ox`,`oy`) and whether a bar joins them (`bar`). */
 export type UnequalReason =
   | { kind: "greater"; ox: number; oy: number; bound: number }

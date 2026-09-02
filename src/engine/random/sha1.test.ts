@@ -8,7 +8,7 @@ const hex = (b: Uint8Array): string =>
 describe("shaCopy", () => {
   it("forks a partially-hashed state that finalises independently", () => {
     // The `final = base` pattern from misc.c's obfuscate_bitmap: hash a
-    // common prefix once, then finalise two independent continuations.
+    // common prefix once, then finalize two independent continuations.
     const base = shaInit();
     shaBytes(base, enc("prefix"));
 

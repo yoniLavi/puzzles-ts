@@ -10,7 +10,7 @@ import { newCursor } from "../../engine/pointer.ts";
  * differ by exactly 1 (and the absence of a bar means they do not). Each cell
  * holds an optional given number (`immutable`, shared by reference) and the
  * player's working number (`grid`) or pencil-mark bitmap (`pencil`). The
- * adjacency clues live in `clueFlags` (immutable); the player can grey out a clue
+ * adjacency clues live in `clueFlags` (immutable); the player can gray out a clue
  * they have used (the `spent` flags, mutable).
  */
 
@@ -81,8 +81,8 @@ export function adjToSpent(f: number): number {
 
 /**
  * The four orthogonal directions, in upstream `adjthan[]` order (up, right,
- * down, left). `f` is the clue flag toward the neighbour; `fo` the reciprocal
- * flag on the neighbour; `fe` the error flag; `dx`/`dy` the step; `c` the
+ * down, left). `f` is the clue flag toward the neighbor; `fo` the reciprocal
+ * flag on the neighbor; `fe` the error flag; `dx`/`dy` the step; `c` the
  * Unequal glyph, `ac` the Adjacent glyph (text format).
  */
 export const ADJTHAN: ReadonlyArray<{
@@ -436,7 +436,7 @@ export function checkComplete(state: UnequalState, errFlags?: Int32Array): numbe
         if (errFlags) errFlags[i] |= F_ERROR;
       }
 
-      // check_num_adj: clue violations toward filled neighbours.
+      // check_num_adj: clue violations toward filled neighbors.
       const f = state.clueFlags[i];
       for (let d = 0; d < 4; d++) {
         const nx = x + ADJTHAN[d].dx;

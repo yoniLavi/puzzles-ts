@@ -73,7 +73,7 @@ function fillGrid(grid: Uint16Array, w: number, h: number, rs: RandomState): voi
   }
 }
 
-/** Replace every non-shaded playable cell with its shaded-neighbour count
+/** Replace every non-shaded playable cell with its shaded-neighbor count
  * (upstream `bricks_build_numbers`); returns the total shaded count. */
 function buildNumbers(grid: Uint16Array, w: number, h: number): number {
   let total = 0;
@@ -96,7 +96,7 @@ function buildNumbers(grid: Uint16Array, w: number, h: number): number {
   return total;
 }
 
-/** Greedy clue minimisation (upstream `bricks_remove_numbers`): one shuffle
+/** Greedy clue minimization (upstream `bricks_remove_numbers`): one shuffle
  * of the padded cell indices, then blank each numbered cell in that order,
  * keeping the blank only while the board still solves uniquely at `maxdiff`. */
 function removeNumbers(

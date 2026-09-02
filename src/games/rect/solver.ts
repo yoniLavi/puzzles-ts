@@ -174,7 +174,7 @@ export function rectSolver(
   const workspace = new Int32Array(nrects);
 
   // Deduction loop. An inconsistency detected mid-loop just breaks out to the
-  // finalisation below, which (matching C's `cleanup:` label) recomputes the
+  // finalization below, which (matching C's `cleanup:` label) recomputes the
   // verdict purely from the surviving placement counts — the mid-loop `ret = 0`
   // in C is overwritten by `ret = 1` at the label, so we don't set it here.
   deduction: for (;;) {
@@ -318,7 +318,7 @@ export function rectSolver(
     if (!doneSomething) break;
   }
 
-  // Finalise (upstream's `cleanup:`): the verdict is recomputed purely from the
+  // Finalize (upstream's `cleanup:`): the verdict is recomputed purely from the
   // surviving placement counts, and the sole placement of a solved rectangle is
   // written into the edge grids when they were supplied.
   let ret = SOLVE_UNIQUE;

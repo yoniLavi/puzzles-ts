@@ -27,7 +27,7 @@ import {
 import type { DrawOp } from "../../engine/testing/recording-drawing.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
-import type { Colour } from "../../engine/types.ts";
+import type { Color } from "../../engine/types.ts";
 import { slideGame } from "./index.ts";
 import {
   COL_BACKGROUND,
@@ -131,7 +131,7 @@ const WIN: SlideMove = { kind: "move", from: idx(1, 1), to: idx(2, 1) };
 
 type SlideMidend = Midend<SlideParams, SlideState, SlideMove, SlideUi, unknown>;
 
-const PALETTE: Colour[] = slideGame.colours(DEFAULT_BACKGROUND);
+const PALETTE: Color[] = slideGame.colors(DEFAULT_BACKGROUND);
 
 function newBoard(): SlideMidend {
   const me: SlideMidend = new Midend(slideGame);
@@ -152,7 +152,7 @@ function capture(me: SlideMidend): readonly DrawOp[] {
  * own directory. The assertions below need an *ordering* and a floor on the gaps,
  * which this ranks the same way a perceptual measure would.
  */
-const lightness = (c: Colour): number => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+const lightness = (c: Color): number => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 
 /** The middle of cell `(gx, gy)` in pixels, at the preferred tile size. */
 const at = (gx: number, gy: number): [number, number] => [
@@ -173,12 +173,12 @@ function rectsInTile(ops: readonly DrawOp[], gx: number, gy: number): RectOp[] {
 }
 
 /**
- * The colour of a tile's *largest* rect — for a tile holding part of a block
+ * The color of a tile's *largest* rect — for a tile holding part of a block
  * that is the block's central fill, which is exactly the section `draw_tile`
- * recolours to signal "held" or "next in the Solve route". Ignores the
+ * recolors to signal "held" or "next in the Solve route". Ignores the
  * full-tile background rect so the piece's own fill is what we read.
  */
-function pieceFillColour(
+function pieceFillColor(
   ops: readonly DrawOp[],
   gx: number,
   gy: number,
@@ -186,7 +186,7 @@ function pieceFillColour(
   const inner = rectsInTile(ops, gx, gy).filter((o) => o.w < TS || o.h < TS);
   let best: RectOp | undefined;
   for (const o of inner) if (!best || o.w * o.h > best.w * best.h) best = o;
-  return best?.colour;
+  return best?.color;
 }
 
 // --- the opening frame -------------------------------------------------
@@ -203,7 +203,7 @@ describe("slide opening frame", () => {
       y: 0,
       w: W * TS,
       h: H * TS,
-      colour: COL_BACKGROUND,
+      color: COL_BACKGROUND,
     });
 
     // The target area — where the main block has to end up — is tinted, and it
@@ -215,22 +215,22 @@ describe("slide opening frame", () => {
       [3, 2],
     ] as const) {
       expect(
-        rectsInTile(ops, gx, gy).some((o) => o.colour === COL_TARGET),
+        rectsInTile(ops, gx, gy).some((o) => o.color === COL_TARGET),
         `target tint at (${gx},${gy})`,
       ).toBe(true);
     }
     // ...and a square outside it is not tinted.
-    expect(rectsInTile(ops, 1, 3).some((o) => o.colour === COL_TARGET)).toBe(false);
+    expect(rectsInTile(ops, 1, 3).some((o) => o.color === COL_TARGET)).toBe(false);
 
-    // The main block is blue; the ordinary block beside it is its own grey.
-    expect(pieceFillColour(ops, 1, 1)).toBe(COL_MAIN);
-    expect(pieceFillColour(ops, 2, 2)).toBe(COL_MAIN);
-    expect(pieceFillColour(ops, 3, 1)).toBe(COL_BLOCK);
+    // The main block is blue; the ordinary block beside it is its own gray.
+    expect(pieceFillColor(ops, 1, 1)).toBe(COL_MAIN);
+    expect(pieceFillColor(ops, 2, 2)).toBe(COL_MAIN);
+    expect(pieceFillColor(ops, 3, 1)).toBe(COL_BLOCK);
 
-    // Walls are bevelled, and their mitred corners are drawn as polygons.
+    // Walls are beveled, and their mitered corners are drawn as polygons.
     expect(
       rectsInTile(ops, 0, 0).some(
-        (o) => o.colour === COL_WALL_HIGHLIGHT || o.colour === COL_WALL_LOWLIGHT,
+        (o) => o.color === COL_WALL_HIGHLIGHT || o.color === COL_WALL_LOWLIGHT,
       ),
     ).toBe(true);
     expect(ops.some((o) => o.op === "polygon")).toBe(true);
@@ -242,22 +242,22 @@ describe("slide opening frame", () => {
     // `game_mkhighlight` trio, so a board could only be read off its bevels.
     const ops = capture(newBoard());
     const floor = ops[0]; // the opening background fill
-    expect(floor).toMatchObject({ op: "rect", colour: COL_BACKGROUND });
+    expect(floor).toMatchObject({ op: "rect", color: COL_BACKGROUND });
 
     // The *last* full-tile rect, not the first: `draw_tile` lays the floor down
     // under every square before the wall goes on top of it.
     const fullTile = rectsInTile(ops, 0, 0).filter((o) => o.w === TS && o.h === TS);
     const wall = fullTile.at(-1);
-    expect(fullTile[0]?.colour).toBe(COL_BACKGROUND);
-    expect(wall?.colour).toBe(COL_WALL);
-    const block = pieceFillColour(ops, 3, 1);
+    expect(fullTile[0]?.color).toBe(COL_BACKGROUND);
+    expect(wall?.color).toBe(COL_WALL);
+    const block = pieceFillColor(ops, 3, 1);
 
-    const distinct = new Set([COL_BACKGROUND, wall?.colour, block, COL_MAIN]);
+    const distinct = new Set([COL_BACKGROUND, wall?.color, block, COL_MAIN]);
     expect(distinct.size).toBe(4);
   });
 
   it("keeps the four fills apart by lightness, not merely by index", () => {
-    // An index check alone would pass on four names for one colour, which is
+    // An index check alone would pass on four names for one color, which is
     // the state this change found the game in. Assert the *ladder*: each
     // material is a visible step from the next, and the exit stays the palest
     // thing on the board. Thresholds are deliberately loose — this pins the
@@ -297,14 +297,14 @@ describe("slide drag frame", () => {
 
   it("draws the held block lit up, at the square it would land on", () => {
     const before = capture(newBoard());
-    expect(pieceFillColour(before, 1, 1)).toBe(COL_MAIN);
+    expect(pieceFillColor(before, 1, 1)).toBe(COL_MAIN);
 
     const ops = capture(midDrag());
-    // The block is drawn where it will come to rest, in its held colour...
-    expect(pieceFillColour(ops, 2, 1)).toBe(COL_MAIN_GRABBED);
-    expect(pieceFillColour(ops, 3, 2)).toBe(COL_MAIN_GRABBED);
+    // The block is drawn where it will come to rest, in its held color...
+    expect(pieceFillColor(ops, 2, 1)).toBe(COL_MAIN_GRABBED);
+    expect(pieceFillColor(ops, 3, 2)).toBe(COL_MAIN_GRABBED);
     // ...and the square it came from is now empty floor.
-    expect(pieceFillColour(ops, 1, 1)).toBeUndefined();
+    expect(pieceFillColor(ops, 1, 1)).toBeUndefined();
   });
 
   it("lights up an ordinary block in its own held colour", () => {
@@ -312,15 +312,15 @@ describe("slide drag frame", () => {
     capture(me);
     me.processInput(...at(3, 1), LEFT_BUTTON);
     me.processInput(...at(4, 3), LEFT_DRAG);
-    expect(pieceFillColour(capture(me), 4, 3)).toBe(COL_GRABBED);
+    expect(pieceFillColor(capture(me), 4, 3)).toBe(COL_GRABBED);
   });
 
   it("puts the block back to its committed colour on release", () => {
     const me = midDrag();
     me.processInput(...at(2, 1), LEFT_RELEASE);
     const ops = capture(me);
-    expect(pieceFillColour(ops, 2, 1)).toBe(COL_MAIN);
-    expect(pieceFillColour(ops, 1, 1)).toBeUndefined();
+    expect(pieceFillColor(ops, 2, 1)).toBe(COL_MAIN);
+    expect(pieceFillColor(ops, 1, 1)).toBeUndefined();
   });
 
   it("matches its snapshot", () => {
@@ -331,7 +331,7 @@ describe("slide drag frame", () => {
 // --- the keyboard cursor -----------------------------------------------
 
 describe("slide keyboard frame", () => {
-  /** Every line drawn in the cursor's colour inside cell `(gx, gy)`. The mark
+  /** Every line drawn in the cursor's color inside cell `(gx, gy)`. The mark
    * is `drawRectCorners`, i.e. eight short strokes — two per corner. */
   function cursorLines(ops: readonly DrawOp[], gx: number, gy: number) {
     const x0 = gx * TS;
@@ -339,7 +339,7 @@ describe("slide keyboard frame", () => {
     return ops.filter(
       (o) =>
         o.op === "line" &&
-        o.colour === COL_CURSOR &&
+        o.color === COL_CURSOR &&
         o.x1 >= x0 &&
         o.x1 < x0 + TS &&
         o.y1 >= y0 &&
@@ -360,7 +360,7 @@ describe("slide keyboard frame", () => {
 
   it("draws nothing until the first cursor key", () => {
     const ops = capture(newBoard());
-    expect(ops.filter((o) => o.op === "line" && o.colour === COL_CURSOR)).toHaveLength(
+    expect(ops.filter((o) => o.op === "line" && o.color === COL_CURSOR)).toHaveLength(
       0,
     );
   });
@@ -370,7 +370,7 @@ describe("slide keyboard frame", () => {
     expect(cursorLines(ops, 3, 1)).toHaveLength(8);
     // The vacuity guard this file's doctrine asks for: count what was looked
     // at, so "no cursor drawn anywhere" cannot pass as "drawn in one place".
-    expect(ops.filter((o) => o.op === "line" && o.colour === COL_CURSOR)).toHaveLength(
+    expect(ops.filter((o) => o.op === "line" && o.color === COL_CURSOR)).toHaveLength(
       8,
     );
   });
@@ -381,11 +381,11 @@ describe("slide keyboard frame", () => {
     me.processInput(0, 0, CURSOR_RIGHT);
     const ops = capture(me);
 
-    // The held block is drawn where it would land, in the same held colour the
+    // The held block is drawn where it would land, in the same held color the
     // pointer drag uses — there is one grab, not two.
-    expect(pieceFillColour(ops, 4, 1)).toBe(COL_GRABBED);
-    expect(pieceFillColour(ops, 3, 1)).toBeUndefined();
-    // ...with the cursor on it, having travelled with it.
+    expect(pieceFillColor(ops, 4, 1)).toBe(COL_GRABBED);
+    expect(pieceFillColor(ops, 3, 1)).toBeUndefined();
+    // ...with the cursor on it, having traveled with it.
     expect(cursorLines(ops, 4, 1)).toHaveLength(8);
     expect(cursorLines(ops, 3, 1)).toHaveLength(0);
   });
@@ -396,7 +396,7 @@ describe("slide keyboard frame", () => {
     me.processInput(...at(4, 3), LEFT_BUTTON);
     me.processInput(...at(4, 3), LEFT_RELEASE);
     expect(
-      capture(me).filter((o) => o.op === "line" && o.colour === COL_CURSOR),
+      capture(me).filter((o) => o.op === "line" && o.color === COL_CURSOR),
     ).toHaveLength(0);
   });
 
@@ -420,7 +420,7 @@ describe("slide exit gate", () => {
   it("outlines the gate region, and only where it faces out of it", () => {
     const ops = capture(gateBoard());
     const marks = (gx: number, gy: number) =>
-      rectsInTile(ops, gx, gy).filter((o) => o.colour === COL_WALL);
+      rectsInTile(ops, gx, gy).filter((o) => o.color === COL_WALL);
 
     // Both gate squares are marked...
     for (const [gx, gy] of GATE_CELLS) {
@@ -452,12 +452,12 @@ describe("slide exit gate", () => {
     // the marking is a small fraction of the square.
     const ops = capture(gateBoard());
     const gate = rectsInTile(ops, 3, 1);
-    expect(gate.some((o) => o.colour === COL_TARGET && o.w === TS && o.h === TS)).toBe(
+    expect(gate.some((o) => o.color === COL_TARGET && o.w === TS && o.h === TS)).toBe(
       true,
     );
 
     const marked = gate
-      .filter((o) => o.colour === COL_WALL)
+      .filter((o) => o.color === COL_WALL)
       .reduce((sum, o) => sum + o.w * o.h, 0);
     expect(marked).toBeLessThan(TS * TS * 0.25);
   });
@@ -494,22 +494,22 @@ describe("slide solve-route frame", () => {
     // accent where its bevel would be. Upstream replaced the fill with the
     // block's own highlight — pure white on a light host, which is what its
     // author called excessive.
-    expect(pieceFillColour(plain, fx, fy)).toBe(COL_BLOCK);
-    expect(pieceFillColour(ops, fx, fy)).toBe(COL_BLOCK);
-    expect(rectsInTile(ops, fx, fy).some((o) => o.colour === COL_ROUTE)).toBe(true);
+    expect(pieceFillColor(plain, fx, fy)).toBe(COL_BLOCK);
+    expect(pieceFillColor(ops, fx, fy)).toBe(COL_BLOCK);
+    expect(rectsInTile(ops, fx, fy).some((o) => o.color === COL_ROUTE)).toBe(true);
 
     // Its destination — bare floor before — now carries the piece's outline in
     // the same accent one step weaker, so the two read as one instruction.
     expect(rectsInTile(plain, tx, ty).length).toBeLessThan(
       rectsInTile(ops, tx, ty).length,
     );
-    expect(rectsInTile(ops, tx, ty).some((o) => o.colour === COL_ROUTE_SHADOW)).toBe(
+    expect(rectsInTile(ops, tx, ty).some((o) => o.color === COL_ROUTE_SHADOW)).toBe(
       true,
     );
   });
 
   it("marks the next piece without making it the brightest thing on the board", () => {
-    // The other half of the author's complaint, and the one a colour-index
+    // The other half of the author's complaint, and the one a color-index
     // assertion cannot state: the cue has to be an ordering cue, not a light
     // source. Nothing the route draws may out-light the exit, which is what
     // names the goal.
@@ -518,7 +518,7 @@ describe("slide solve-route frame", () => {
     const brightest = Math.max(
       ...ops
         .filter((o) => o.op === "rect" && o.w > 2 && o.h > 2)
-        .map((o) => lightness(PALETTE[(o as RectOp).colour])),
+        .map((o) => lightness(PALETTE[(o as RectOp).color])),
     );
     expect(brightest).toBeCloseTo(lightness(PALETTE[COL_TARGET]), 5);
     expect(lightness(PALETTE[COL_ROUTE])).toBeLessThan(lightness(PALETTE[COL_TARGET]));
@@ -526,7 +526,7 @@ describe("slide solve-route frame", () => {
 
   it("moves the highlight on as the route advances", () => {
     // On an untouched board the main block is drawn plain.
-    expect(pieceFillColour(capture(newBoard()), 1, 1)).toBe(COL_MAIN);
+    expect(pieceFillColor(capture(newBoard()), 1, 1)).toBe(COL_MAIN);
 
     const { me, from } = withRoute();
     expect(from).toBe(idx(3, 1)); // the route starts by moving the singleton
@@ -547,13 +547,13 @@ describe("slide solve-route frame", () => {
     // This frame is *warm*, so the main block's tiles appear in it only because
     // the accent band is part of the per-tile cache key.
     const ops = capture(me);
-    expect(pieceFillColour(ops, 1, 1)).toBe(COL_MAIN);
-    expect(rectsInTile(ops, 1, 1).some((o) => o.colour === COL_ROUTE)).toBe(true);
+    expect(pieceFillColor(ops, 1, 1)).toBe(COL_MAIN);
+    expect(rectsInTile(ops, 1, 1).some((o) => o.color === COL_ROUTE)).toBe(true);
     // ...and it has left the block that just moved, which is drawn ordinarily
     // at its new home.
     const [tox, toy] = [first.to % W, Math.floor(first.to / W)];
-    expect(pieceFillColour(ops, tox, toy)).toBe(COL_BLOCK);
-    expect(rectsInTile(ops, tox, toy).some((o) => o.colour === COL_ROUTE)).toBe(false);
+    expect(pieceFillColor(ops, tox, toy)).toBe(COL_BLOCK);
+    expect(rectsInTile(ops, tox, toy).some((o) => o.color === COL_ROUTE)).toBe(false);
   });
 
   it("matches its snapshot", () => {
@@ -580,15 +580,15 @@ describe("slide completion flash", () => {
     const early = flashAt(0.05);
     const late = flashAt(0.15);
 
-    // A plain floor square is painted with the flash colour, not the
+    // A plain floor square is painted with the flash color, not the
     // background, and with the opposite one half an interval later.
     const earlyFloor = rectsInTile(early, 1, 3).find((o) => o.w === TS);
     const lateFloor = rectsInTile(late, 1, 3).find((o) => o.w === TS);
-    expect(earlyFloor?.colour).not.toBe(COL_BACKGROUND);
-    expect(lateFloor?.colour).not.toBe(COL_BACKGROUND);
-    expect(earlyFloor?.colour).not.toBe(lateFloor?.colour);
-    expect([COL_HIGHLIGHT, COL_LOWLIGHT]).toContain(earlyFloor?.colour);
-    expect([COL_HIGHLIGHT, COL_LOWLIGHT]).toContain(lateFloor?.colour);
+    expect(earlyFloor?.color).not.toBe(COL_BACKGROUND);
+    expect(lateFloor?.color).not.toBe(COL_BACKGROUND);
+    expect(earlyFloor?.color).not.toBe(lateFloor?.color);
+    expect([COL_HIGHLIGHT, COL_LOWLIGHT]).toContain(earlyFloor?.color);
+    expect([COL_HIGHLIGHT, COL_LOWLIGHT]).toContain(lateFloor?.color);
   });
 
   it("returns to the ordinary palette once the flash has run out", () => {
@@ -596,7 +596,7 @@ describe("slide completion flash", () => {
     me.playMoves([NUDGE, WIN]);
     me.timer(60); // far past FLASH_TIME
     const ops = capture(me);
-    expect(rectsInTile(ops, 1, 3).find((o) => o.w === TS)?.colour).toBe(COL_BACKGROUND);
+    expect(rectsInTile(ops, 1, 3).find((o) => o.w === TS)?.color).toBe(COL_BACKGROUND);
   });
 
   it("matches its snapshot", () => {

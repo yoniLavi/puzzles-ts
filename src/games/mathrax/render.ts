@@ -5,7 +5,7 @@
  * rectangle. Each clue is drawn as a circle straddling an interior grid
  * *intersection*, so every clue is painted up to four times — once from each
  * cell it touches, clipped to that cell — which lets the per-tile cache repaint
- * a clue's quarter (and recolour it red) as that cell's error state changes.
+ * a clue's quarter (and recolor it red) as that cell's error state changes.
  *
  * A cell's pixels depend only on its own digit, pencil marks and flags, so one
  * packed `Int32Array` per-tile cache suffices; the (fork) Check-&-Save mistake
@@ -19,7 +19,7 @@
  * `computeSize`'s width are exactly upstream's.
  */
 
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import {
   ERROR,
   ERROR_WASH,
@@ -27,13 +27,13 @@ import {
   highlightWash,
   INK,
   PENCIL_BODY,
-  pencilColour,
-  playerEntryColour,
-} from "../../engine/colour/palette.ts";
+  pencilColor,
+  playerEntryColor,
+} from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Colour, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import {
   CLUE_ADD,
   CLUE_DIV,
@@ -76,13 +76,13 @@ export const COL_ERRORBG = 7;
 export const COL_PENCIL_BODY = 8;
 /** Fork additions, likewise appended: the solved flash's cell fill and the
  * keyboard cursor's cell fill. Upstream drew both with `COL_LOWLIGHT`, which
- * stays the pencil-corner and cell-outline colour. */
+ * stays the pencil-corner and cell-outline color. */
 export const COL_FLASH = 9;
 export const COL_CURSOR = 10;
 
-export function colours(defaultBackground: Colour): Colour[] {
+export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const out: Colour[] = [];
+  const out: Color[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
@@ -91,8 +91,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   // so the cursor is the Latin family's "you are here" wash (Solo, Keen, Towers).
   out[COL_CURSOR] = highlightWash(background);
   out[COL_BORDER] = INK;
-  out[COL_GUESS] = playerEntryColour(background);
-  out[COL_PENCIL] = pencilColour(background);
+  out[COL_GUESS] = playerEntryColor(background);
+  out[COL_PENCIL] = pencilColor(background);
   out[COL_ERROR] = ERROR;
   // Faithful to upstream: the red channel is saturated and the other two are
   // derived from the *background*, so the error wash tints rather than replaces.
@@ -279,7 +279,7 @@ function drawTile(
     drawPencilMarks(dr, ts, tx, ty, state.marks[i], o);
   }
 
-  // The (up to) four clues at this cell's corners, each coloured by *this*
+  // The (up to) four clues at this cell's corners, each colored by *this*
   // cell's error flag for that corner.
   if (y < o - 1 && x < o - 1)
     drawClue(dr, ts, state.clues[y * co + x], tx + ts, ty + ts, !!(fs & FE_BOTRIGHT));

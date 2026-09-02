@@ -42,9 +42,9 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -260,12 +260,12 @@ export interface RangeHint {
   target: { r: number; c: number; value: RangeCellValue };
   area: { r: number; c: number }[];
   blackRefs?: { r: number; c: number }[];
-  /** The clue driving a line-of-sight deduction, its digit recoloured
+  /** The clue driving a line-of-sight deduction, its digit recolored
    * `COL_HINT`. A clue sits *inside* its own shaded line of sight, and a
    * board can put two clues of the same value in one such run — seen live on
    * `9x6` seed `range-a`, where "Clue 5" named either of two shaded 5s. The
    * value is not a name when the value repeats, so the driving one is marked
-   * (Light Up's recoloured digit, the same element-type legend). */
+   * (Light Up's recolored digit, the same element-type legend). */
   clue?: { r: number; c: number };
 }
 
@@ -324,11 +324,11 @@ function reachLine(
   return cells;
 }
 
-/** The non-black orthogonal neighbours of a cell — the cells a cut at
+/** The non-black orthogonal neighbors of a cell — the cells a cut at
  * this cell would risk isolating from each other. The connectedness rule
  * treats every non-black cell as part of the one white group, so these
  * include undecided cells, not only cells already marked white. */
-function nonBlackNeighbours(
+function nonBlackNeighbors(
   grid: Int8Array,
   w: number,
   h: number,
@@ -351,7 +351,7 @@ function nonBlackNeighbours(
  * `adjacency`) a ringed black premise — so no branch may leave "this cell"
  * bare: with two marks in view a bare deictic points at neither
  * (`disambiguate-hint-deixis`). The tie is the relation the rule itself
- * guarantees, never a colour name:
+ * guarantees, never a color name:
  *
  * - `satisfied` / `overrun` place the target at `1 + rl[RUN_WHITE][j]` steps
  *   from the clue — that is, the **first cell past the shaded run** in one of
@@ -359,7 +359,7 @@ function nonBlackNeighbours(
  *   and the clue is shaded too).
  * - `reach` walks outward from the clue and `buildHighlights` shades the whole
  *   path behind the target, so the target is the run's **far end**.
- * - `connect` shades exactly the target's own non-black neighbours, so they are
+ * - `connect` shades exactly the target's own non-black neighbors, so they are
  *   the cells **around it**.
  *
  * The three clue rules say *"the highlighted N"* rather than *"clue N"* for the
@@ -434,7 +434,7 @@ function buildHighlightsInner(
       return { target, area: [...byKey.values()], clue: reason.clue };
     }
     case "connect":
-      return { target, area: nonBlackNeighbours(grid, w, h, target.r, target.c) };
+      return { target, area: nonBlackNeighbors(grid, w, h, target.r, target.c) };
   }
 }
 
@@ -523,7 +523,7 @@ export const rangeGame: Game<
 
   textFormat,
 
-  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: RangeParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

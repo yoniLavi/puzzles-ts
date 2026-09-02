@@ -23,7 +23,7 @@ import {
 } from "./state.ts";
 
 const TS = 32; // matches PREFERRED_TILE_SIZE; border = 16.
-/** Pixel near the centre of cell (cx,cy) for a null-drawstate click. */
+/** Pixel near the center of cell (cx,cy) for a null-drawstate click. */
 const at = (cx: number, cy: number) => ({ x: cx * TS + 16 + 10, y: cy * TS + 16 + 10 });
 
 function state3x3(desc: string, params?: Partial<SamegameParams>): SamegameState {
@@ -64,7 +64,7 @@ describe("Same Game params", () => {
     expect(
       validateParams({ w: 5, h: 5, ncols: 3, scoresub: 2, soluble: true }, true),
     ).toBeNull();
-    // soluble needs ≥ 3 colours.
+    // soluble needs ≥ 3 colors.
     expect(
       validateParams({ w: 5, h: 5, ncols: 2, scoresub: 2, soluble: true }, true),
     ).not.toBeNull();
@@ -94,7 +94,7 @@ describe("Same Game desc", () => {
     const p: SamegameParams = { w: 3, h: 1, ncols: 3, scoresub: 2, soluble: true };
     expect(validateDesc(p, "1,2,3")).toBeNull();
     expect(newState(p, "1,2,3").tiles).toEqual([1, 2, 3]);
-    // Wrong count / out-of-range colour are rejected.
+    // Wrong count / out-of-range color are rejected.
     expect(validateDesc(p, "1,2")).not.toBeNull();
     expect(validateDesc(p, "1,2,9")).not.toBeNull();
   });
@@ -117,12 +117,12 @@ describe("Same Game gravity + completion", () => {
 
   it("detects complete and impossible positions", () => {
     expect(check([0, 0, 0, 0], 2, 2)).toEqual({ complete: true, impossible: true });
-    // Checkerboard: no two adjacent share a colour ⇒ impossible (stuck).
+    // Checkerboard: no two adjacent share a color ⇒ impossible (stuck).
     expect(check([1, 2, 1, 2, 1, 2, 1, 2, 1], 3, 3)).toEqual({
       complete: false,
       impossible: true,
     });
-    // A same-colour pair ⇒ a move remains.
+    // A same-color pair ⇒ a move remains.
     expect(check([1, 1, 2, 3], 2, 2).impossible).toBe(false);
   });
 });
@@ -135,7 +135,7 @@ describe("Same Game selection + execution", () => {
   it("first click selects a connected group, second click removes it", () => {
     const s = state3x3(DESC, { scoresub: 1 });
     const ui = freshUi(s);
-    // Click the colour-3 group (cell (0,1) = index 3).
+    // Click the color-3 group (cell (0,1) = index 3).
     const first = samegameGame.interpretMove(
       s,
       ui,
@@ -165,14 +165,14 @@ describe("Same Game selection + execution", () => {
     const next = executeMove(s, move as { type: "remove"; tiles: number[] });
     expect(next.score).toBe(s.score + npoints(1, 3)); // (3-1)² = 4
     expect(s.tiles).toEqual([1, 1, 2, 3, 3, 3, 1, 2, 2]); // source unmutated
-    // The cleared row's neighbours fell down.
+    // The cleared row's neighbors fell down.
     expect(next.tiles).toEqual([0, 0, 0, 1, 1, 2, 1, 2, 2]);
   });
 
   it("a lone tile cannot be selected or removed", () => {
     const s = state3x3(DESC);
     const ui = freshUi(s);
-    // Cell (2,0) = index 2 (colour 2) has no same-colour orthogonal neighbour.
+    // Cell (2,0) = index 2 (color 2) has no same-color orthogonal neighbor.
     const res = samegameGame.interpretMove(
       s,
       ui,

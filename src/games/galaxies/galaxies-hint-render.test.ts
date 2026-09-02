@@ -4,7 +4,7 @@
  * scan, so these are the frames a player sees, not a hand-built drawstate.
  *
  * What is worth asserting here rather than on the highlight object: the hint's
- * *action* colour has to actually reach the canvas, a wall the board does not
+ * *action* color has to actually reach the canvas, a wall the board does not
  * have yet has to be drawn anyway (nothing else in this renderer paints an
  * unset edge), and the two ring roles have to stay one apiece.
  */
@@ -57,8 +57,8 @@ function hintFrame(want: (hl: GalaxiesHint) => boolean, boards = BOARDS) {
   throw new Error("no board in the scan reached the wanted step");
 }
 
-const rects = (ops: DrawOp[], colour: number) =>
-  ops.filter((o) => o.op === "rect" && o.colour === colour);
+const rects = (ops: DrawOp[], color: number) =>
+  ops.filter((o) => o.op === "rect" && o.color === color);
 const circles = (ops: DrawOp[], outline: number) =>
   ops.filter((o) => o.op === "circle" && o.outline === outline);
 
@@ -79,7 +79,7 @@ describe("a displayed hint reaches the canvas", () => {
     expect(hl.focus).toBeDefined();
     expect(hl.refDots).toHaveLength(0);
 
-    // No solid fill anywhere in the hint colour: a Galaxies cell's fill *is* its
+    // No solid fill anywhere in the hint color: a Galaxies cell's fill *is* its
     // association, so a hint that painted over it would take away the premise.
     expect(
       rects(recording.ops, COL_HINT).filter((o) => o.op === "rect" && !isThin(o)),
@@ -96,7 +96,7 @@ describe("a displayed hint reaches the canvas", () => {
   });
 
   it("never rings a dot standing on a cell it has filled", () => {
-    // The purple-on-purple case: the ring's own colour on its own colour. A
+    // The purple-on-purple case: the ring's own color on its own color. A
     // dot's-own-cells step is the one that hits it — no focus, because every
     // cell it claims is equally the point, and the dot is standing on them.
     const { recording, hl } = hintFrame(

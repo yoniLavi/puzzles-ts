@@ -47,7 +47,7 @@ polish.** Static hosts differ on exactly two things this app depends on:
 2. **Does the host serve `/pegs` from `pegs.html`?** The build emits **one real
    HTML file per route** (`vite-plugins/extra-pages.ts`, "clean URLs: `/foo` →
    `foo.html`") — 57 puzzle pages plus the help tree. Extensionless resolution is
-   host behaviour, and it is a config switch on at least one candidate
+   host behavior, and it is a config switch on at least one candidate
    (Vercel's `cleanUrls`, off by default). **Verify it on the host, do not assume
    it**; a wrong assumption here is a 404 on every puzzle.
 
@@ -92,7 +92,7 @@ the headers.
   `VITE_ANALYTICS_BLOCK` the way the Sentry origin is conditional on its DSN. A
   CSP granting a script origin nobody loads is a weaker CSP for no benefit, and
   it is *wrong* on any host but one.
-- **Verify the deployed artefact, not the local build.** At minimum: a puzzle
+- **Verify the deployed artifact, not the local build.** At minimum: a puzzle
   route loads by clean URL; the service worker registers and the app opens
   offline; the manifest installs; the CSP header actually arrives (or is
   recorded as absent by choice); `/sitemap.xml` and `/robots.txt` exist.

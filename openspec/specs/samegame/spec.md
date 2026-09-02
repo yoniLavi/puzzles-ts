@@ -7,13 +7,13 @@ TBD - created by archiving change add-samegame-ts-port. Update Purpose after arc
 
 The engine SHALL provide a registered `samegame` game implementing
 `Game<SamegameParams, SamegameState, SamegameMove, SamegameUi,
-SamegameDrawState>`: a block-clearing puzzle on a `w×h` grid of coloured tiles
-(colours `1..ncols`, `0` = empty) in which the player removes
-orthogonally-connected groups of one colour. Params SHALL be `w`, `h`, `ncols`,
+SamegameDrawState>`: a block-clearing puzzle on a `w×h` grid of colored tiles
+(colors `1..ncols`, `0` = empty) in which the player removes
+orthogonally-connected groups of one color. Params SHALL be `w`, `h`, `ncols`,
 `scoresub` (1 or 2), and `soluble`, encoded `{w}x{h}c{ncols}s{scoresub}[r]`
 (the trailing `r` present only when `full` and not `soluble`) with lenient
-decode. The five upstream presets — `5×5`, `10×5`, `15×10` (all 3 colours),
-`15×10` and `20×15` (4 colours), all `scoresub = 2`, soluble — SHALL be offered.
+decode. The five upstream presets — `5×5`, `10×5`, `15×10` (all 3 colors),
+`15×10` and `20×15` (4 colors), all `scoresub = 2`, soluble — SHALL be offered.
 `validateParams` SHALL require `w ≥ 1`, `h ≥ 1`, `ncols ≤ 9`, `scoresub ∈ {1,2}`,
 and — when soluble — `ncols ≥ 3` and `w·h > 1`, or — when not soluble —
 `ncols ≥ 2` and `w·h ≥ 2·ncols`. The game SHALL report `wantsStatusbar = true`,
@@ -38,12 +38,12 @@ NOT provide `solve`, `hint`, or `findMistakes`.
 
 ### Requirement: Same Game generates guaranteed-soluble and random boards
 
-`newDesc` SHALL produce the board as a comma-separated list of `w·h` colour
+`newDesc` SHALL produce the board as a comma-separated list of `w·h` color
 integers in row-major order. When `soluble` is true it SHALL use the
 inverse-move generator (repeatedly inserting a verified connected blob whose
 removal reproduces the prior grid, so the board is clearable); when `soluble` is
 false it SHALL use the legacy random generator (at least two tiles of every
-colour, the remainder filled at random). The generated desc SHALL be
+color, the remainder filled at random). The generated desc SHALL be
 byte-identical to the C build for the same random seed and params.
 `validateDesc` SHALL reject a desc without exactly `w·h` comma-separated
 integers, or any integer outside `0..ncols`. `newState` SHALL parse the desc into
@@ -58,7 +58,7 @@ the tile grid with score 0 and the complete/impossible flags clear.
 #### Scenario: A malformed description is rejected
 
 - **WHEN** `validateDesc` is given a desc with too few numbers, or one
-  containing a colour greater than `ncols`
+  containing a color greater than `ncols`
 - **THEN** it returns a non-null error string
 
 ### Requirement: Same Game removes connected groups, scores, and compacts
@@ -69,7 +69,7 @@ set those tiles empty, add `max(0, n − scoresub)²` to the score (where `n` is
 number of removed tiles), let remaining tiles fall to the bottom of their
 columns, shuffle non-empty columns to the left, and recompute `complete` (the
 grid is empty) and `impossible` (no two orthogonally-adjacent tiles share a
-colour). `status` SHALL return `"solved"` when `complete` and otherwise
+color). `status` SHALL return `"solved"` when `complete` and otherwise
 `"ongoing"` — a no-moves-left (`impossible`) position is NOT `"lost"` (it is
 rescuable by Undo).
 
@@ -88,7 +88,7 @@ rescuable by Undo).
 
 #### Scenario: A stuck board is impossible but not lost
 
-- **WHEN** a state has no two orthogonally-adjacent same-colour tiles and is not
+- **WHEN** a state has no two orthogonally-adjacent same-color tiles and is not
   empty
 - **THEN** that state's `impossible` flag is set and `status()` returns
   `"ongoing"`
@@ -97,7 +97,7 @@ rescuable by Undo).
 
 `interpretMove` SHALL implement the two-click select-then-remove gesture using a
 selection held in `SamegameUi` (not in the game state): clicking a removable tile
-(part of a same-colour group of size ≥ 2) SHALL flood-select the connected region
+(part of a same-color group of size ≥ 2) SHALL flood-select the connected region
 and return a UI update; clicking again on that selection (left button or
 `CURSOR_SELECT`) SHALL emit the `remove` move; right-clicking or `CURSOR_SELECT2`
 on the selection SHALL clear it (UI update); clicking an empty or lone tile SHALL
@@ -111,7 +111,7 @@ when impossible.
 #### Scenario: First click selects, second click removes
 
 - **WHEN** a removable tile is clicked
-- **THEN** `interpretMove` returns a UI update, the connected same-colour region
+- **THEN** `interpretMove` returns a UI update, the connected same-color region
   is selected in the Ui, and `statusbarText` reports the selected count and its
   potential points
 - **WHEN** a selected tile is then clicked again
@@ -119,7 +119,7 @@ when impossible.
 
 #### Scenario: A lone tile cannot be selected
 
-- **WHEN** a tile with no same-colour orthogonal neighbour is clicked
+- **WHEN** a tile with no same-color orthogonal neighbor is clicked
 - **THEN** no selection is made and no `remove` move is produced
 
 #### Scenario: The selection clears across a move

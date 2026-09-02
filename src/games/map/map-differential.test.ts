@@ -2,7 +2,7 @@
  * Gated C-vs-TS byte-match differential for Map (openspec add-map-ts-port).
  *
  * The generator is RNG-draw-order-critical (genmap's cumulative-frequency
- * draws, fourcolour's shuffle + random-most-constrained pick, the clue-reduction
+ * draws, fourcolor's shuffle + random-most-constrained pick, the clue-reduction
  * shuffle) and solver-gated (the desc depends on `map_solver`'s uniqueness
  * verdict on every intermediate board). So we assert two things per fixture:
  *   1. `newMapDesc(p, randomNew(seed))` reproduces the C desc AND aux exactly;
@@ -48,9 +48,9 @@ describe("map differential (frozen C reference)", () => {
     });
 
     it(`${label}: TS solver grades the board at the C difficulty`, () => {
-      const { map, colouring } = newMapData(p, f.desc);
+      const { map, coloring } = newMapData(p, f.desc);
       const clues = new Int32Array(f.n).fill(-1);
-      for (let i = 0; i < f.n; i++) if (map.immutable[i]) clues[i] = colouring[i];
+      for (let i = 0; i < f.n; i++) if (map.immutable[i]) clues[i] = coloring[i];
       expect(gradeMap(map.graph, f.n, map.ngraph, clues)).toBe(f.solverDiff);
     });
   }

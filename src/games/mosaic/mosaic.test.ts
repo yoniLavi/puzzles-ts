@@ -33,8 +33,8 @@ import {
   validateParams,
 } from "./state.ts";
 
-// 3×3 all-black image: every clue saturates its clipped neighbourhood
-// (4 corner / 6 edge / 9 centre), so marking everything black solves it.
+// 3×3 all-black image: every clue saturates its clipped neighborhood
+// (4 corner / 6 edge / 9 center), so marking everything black solves it.
 const ALL_BLACK_DESC = "464696464";
 const P3 = { width: 3, height: 3, aggressive: true };
 
@@ -194,7 +194,7 @@ describe("Mosaic moves", () => {
 
   it("flags an overcommitted clue ERROR", () => {
     // All-white board: every clue is 0; marking a cell black contradicts
-    // its neighbouring clues (clue < marked).
+    // its neighboring clues (clue < marked).
     let s = newState(P3, "000000000");
     s = executeMove(s, { type: "toggle", x: 1, y: 1, double: false });
     expect(s.cells[0] & STATE_ERROR).toBeTruthy();

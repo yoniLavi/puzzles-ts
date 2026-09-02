@@ -73,7 +73,7 @@ export interface UntangleState {
 
 /** A single move: reposition one or more vertices. A player drag carries
  * one entry; a Solve carries all `n`. Structured-clone/JSON-safe, so the
- * midend's default move serialisation handles it with no custom codec. */
+ * midend's default move serialization handles it with no custom codec. */
 export interface UntangleMove {
   kind: "place";
   points: { i: number; x: number; y: number; d: number }[];
@@ -103,7 +103,7 @@ export interface UntangleUi {
   // --- preferences (upstream get_prefs/set_prefs; live on the ui) ----
   /** Snap dragged points to a coarse `(n-1)×(n-1)` grid. Default off. */
   snapToGrid: boolean;
-  /** Colour edges involved in a crossing red. Default ON (our divergence
+  /** Color edges involved in a crossing red. Default ON (our divergence
    * — it doubles as the built-in mistake feedback). */
   showCrossedEdges: boolean;
   /** Render vertices as their index number instead of a blob. Default
@@ -114,7 +114,7 @@ export interface UntangleUi {
 export interface UntangleDrawState {
   started: boolean;
   tileSize: number;
-  /** Last background colour drawn (for the "did anything change?"
+  /** Last background color drawn (for the "did anything change?"
    * early-out). */
   bg: number;
   /** Last drag / cursor vertex drawn. */
@@ -145,11 +145,11 @@ export const CIRCLE_RADIUS = 6;
 /** Pointer must come within this of a vertex (px) to grab it. */
 export const DRAG_THRESHOLD = CIRCLE_RADIUS * 2;
 /** Inset (px) of the playable-area border from the canvas edge. The
- * drag clamp keeps a vertex's *blob* inside this border (centre ≥
+ * drag clamp keeps a vertex's *blob* inside this border (center ≥
  * `PLAY_BORDER_INSET + CIRCLE_RADIUS` from the edge), so the border and
  * the reachable region coincide. */
 export const PLAY_BORDER_INSET = 2;
-/** The clamp margin for a vertex centre: blob fully inside the border. */
+/** The clamp margin for a vertex center: blob fully inside the border. */
 export const PLAY_MARGIN = PLAY_BORDER_INSET + CIRCLE_RADIUS;
 
 /** Exact integer floor square root (upstream `squarert`). */
@@ -356,7 +356,7 @@ function dihedralMatrix(i: number): [number, number, number, number] {
 /** The aux solved layout transformed by whichever of the 8 dihedral
  * symmetries sits closest to the current positions (so the suggested
  * motion is minimal), returned in **model units** (`x/d` divided out,
- * centred on the board's `w/2`). Faithful to upstream `solve`'s symmetry
+ * centered on the board's `w/2`). Faithful to upstream `solve`'s symmetry
  * search; `solve` and the aux hint both build on it. */
 export function dihedralSolvedUnits(
   curr: UntangleState,

@@ -15,7 +15,7 @@
  * `Object.freeze` throws on a populated typed array, so `readonly` is the
  * whole guarantee).
  *
- * Two upstream behaviours are deliberately preserved rather than "improved";
+ * Two upstream behaviors are deliberately preserved rather than "improved";
  * both are flagged at their sites below: the desc decoder's hard-coded
  * `maxrow = 9`, and the `done[]` array in {@link validateBoard} that is sized
  * by number count but re-scanned by run count.
@@ -39,7 +39,7 @@ export interface CrossingParams {
  * make a small board quick work, so the ladder runs up to the largest board the
  * generator can produce ({@link MAX_AREA}).
  *
- * The symmetric entries are not just a flavour — they are what makes the big
+ * The symmetric entries are not just a flavor — they are what makes the big
  * sizes *practical*. Growing the walls in 180°-rotational pairs puts them down
  * twice as fast, so runs stay short and the duplicate-number rejection that
  * dominates large boards (see {@link MAX_AREA}) fires far less often. Measured
@@ -623,7 +623,7 @@ export function numberAvailableTo(
  * showed a nearly-finished word that only `421` completes; no player reads that
  * as an instruction to fill three empty squares instead.
  *
- * The renderer colours the clue list through this same function, so the colour
+ * The renderer colors the clue list through this same function, so the color
  * a clue is written in always names the run a click would actually send it to.
  */
 export function runForNumber(
@@ -685,7 +685,7 @@ export interface CrossingUi {
    * `puzzle.numbers`), or `null`. While one is held it is previewed in every
    * run that can still take it, and clicking such a run places it. */
   heldNumber: number | null;
-  /** Preference (default on): colour the clue list by where each clue could go
+  /** Preference (default on): color the clue list by where each clue could go
    * from the selected cell — its dimension's ink if it fits one of the two runs
    * through that cell, dimmed if it fits neither. Pure bookkeeping over the
    * player's own entries — see {@link numberFitsRun}. */

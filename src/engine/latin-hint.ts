@@ -105,7 +105,7 @@ export function rowColRegions(x: number, y: number, w: number): RowColRegion[] {
 /**
  * Classify the forced placement of digit `n` at `(x, y)` on the working board
  * (`grid`: 0 = empty; `pencil`: bit `1 << d` = candidate `d`) as a naked / hidden
- * (row or column) / forced single — the row/column specialisation of
+ * (row or column) / forced single — the row/column specialization of
  * {@link classifyPlacementInRegions}. A genuine naked or hidden single is the
  * common case; `forced` is the residue where the visible notes lag behind the
  * deduction that forced the cell, so a hint must narrate it honestly rather than
@@ -314,7 +314,7 @@ export function forcingChainArea(reason: {
  * - **if it is the other**, each link forces the next (every chain cell has just
  *   two candidates left, so losing one leaves one), until the last link is
  *   driven *to* the struck value — and it too lines up with the conclusion cell,
- *   because it is a row/column neighbour of it by construction.
+ *   because it is a row/column neighbor of it by construction.
  *
  * The links between are numbered on the board rather than recited here; reciting
  * them would put the chain back in the reader's head, which is the thing the
@@ -326,7 +326,7 @@ export function forcingChainArea(reason: {
  * {@link narrateLatinReason} for a reason that does not apply to this arm — they
  * need a value qualified in *some* arms and bare in others, and a different
  * region set per arm — and neither is at issue here: "two heights left" already
- * contextualises the bare numbers, and `region` is a parameter. A chain sentence
+ * contextualizes the bare numbers, and `region` is a parameter. A chain sentence
  * that drifted between six games would be six chances to say something the
  * board does not show.
  *
@@ -337,8 +337,8 @@ export function forcingChainArea(reason: {
  * make a bare "this cell" ambiguous (`disambiguate-hint-deixis`), and this frame
  * shows several — but every chain cell is *numbered* and the conclusion is not,
  * so "cell 1"/"cell 5" and "this cell" pick out different things by the presence
- * or absence of a label rather than by a colour. See `docs/games/hints.md` §
- * "The fix is never the colour".
+ * or absence of a label rather than by a color. See `docs/games/hints.md` §
+ * "The fix is never the color".
  */
 export function narrateForcingChain(
   reason: { chain: readonly ForcingLink[] },

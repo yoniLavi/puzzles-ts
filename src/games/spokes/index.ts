@@ -4,7 +4,7 @@
  * so that every hub carries exactly its number of lines, no two diagonals
  * cross, and all the hubs end up in one connected group.
  *
- * Controls: drag from a hub towards a neighbour to toggle the line between
+ * Controls: drag from a hub towards a neighbor to toggle the line between
  * them; drag with the right button to toggle a "ruled out" mark. The keyboard
  * cursor lives on a half-grid — arrow keys step between a hub and each of its
  * eight spoke positions, Enter draws a line and Space places a mark.
@@ -12,7 +12,7 @@
  * Fork addition: `findMistakes` re-solves from the clues and flags every line
  * the unique solution forbids (and every mark it needs a line at), so Check &
  * Save refuses to checkpoint a board that has already gone wrong. That is
- * distinct from the live error colouring the game has always had — a red rim
+ * distinct from the live error coloring the game has always had — a red rim
  * on a group that can no longer reach the rest, a red clue on an over-filled
  * hub — which is immediate local validation, not a comparison against the
  * answer.
@@ -57,7 +57,7 @@ import { registerGame } from "../../engine/registry.ts";
 import type { ConfigValues, GameStatus, Point, Size } from "../../engine/types.ts";
 import { newSpokesDesc } from "./generator.ts";
 import {
-  colours,
+  colors,
   computeSize,
   FLASH_TIME,
   newDrawState,
@@ -123,7 +123,7 @@ function presets(): PresetMenu<SpokesParams> {
 
 // --- input ------------------------------------------------------------------
 
-/** The eight-way direction a drag from a hub's centre points in: the pointer
+/** The eight-way direction a drag from a hub's center points in: the pointer
  * angle snapped to the nearest 45°, in `DIR_*` order. */
 function dragDirection(dx: number, dy: number): number {
   const angle = (Math.atan2(dy, dx) + Math.PI / 8) / (Math.PI / 4);
@@ -546,7 +546,7 @@ export const spokesGame: Game<
   newUi: () => newUi(),
   prefs: [
     {
-      // Fork aid: grey a hub once its clue is met (visual only, no lock) —
+      // Fork aid: gray a hub once its clue is met (visual only, no lock) —
       // the same cue Bridges offers on a satisfied island. Upstream nominally
       // filled such a hub white, which is invisible against either mode's
       // background; see `COL_SATISFIED`.
@@ -571,7 +571,7 @@ export const spokesGame: Game<
   findMistakes,
   textFormat,
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SpokesParams, ts: number): Size => computeSize(p, ts),
   setTileSize,

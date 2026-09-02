@@ -3,10 +3,10 @@
  * C-generated reference descriptions (`__fixtures__/guess-c-reference.json`).
  *
  * C-free: this test does not link the C build. Guess's secret is just a
- * random colour sequence run through the SHA-1 obfuscation codec, so the
+ * random color sequence run through the SHA-1 obfuscation codec, so the
  * strongest meaningful bar is that the TS generator reproduces the C
  * engine's **whole** game description for the same seed — proving both
- * that `random.ts` is bit-identical end-to-end (the colour picks, incl.
+ * that `random.ts` is bit-identical end-to-end (the color picks, incl.
  * the no-duplicates re-roll) and that the obfuscation matches C
  * byte-for-byte. An identical desc is the cleanest possible Guess
  * differential. Every C desc must also pass `validateDesc` and recover a
@@ -56,7 +56,7 @@ describeDescDifferential<Ref, GuessParams>({
     expect(state.solution).toHaveLength(params.npegs);
     for (const c of state.solution) {
       expect(c).toBeGreaterThanOrEqual(1);
-      expect(c).toBeLessThanOrEqual(params.ncolours);
+      expect(c).toBeLessThanOrEqual(params.ncolors);
     }
   },
 });

@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Singles (Hitori) port.
+ * Behavioral tests for the Singles (Hitori) port.
  *
  * Tier 1: params/desc codec round-trips, the generator produces uniquely
  * solvable boards at each difficulty, Solve completes a board, and
@@ -154,7 +154,7 @@ describe("singles render", () => {
       id: "5x5de#singles-render",
     });
     expect(recording.ops.length).toBeGreaterThan(0);
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_GRID)).toBe(
+    expect(recording.ops.some((o) => o.op === "line" && o.color === COL_GRID)).toBe(
       true,
     );
     expect(recording.ops).toMatchSnapshot();
@@ -176,8 +176,6 @@ describe("singles render", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBeGreaterThan(0);
-    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_ERROR)).toBe(
-      true,
-    );
+    expect(recording.ops.some((o) => "color" in o && o.color === COL_ERROR)).toBe(true);
   });
 });

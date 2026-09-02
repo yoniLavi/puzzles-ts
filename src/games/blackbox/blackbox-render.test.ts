@@ -27,7 +27,7 @@ import {
 
 interface Op {
   op: string;
-  colour?: number;
+  color?: number;
   x?: number;
   y?: number;
   w?: number;
@@ -44,15 +44,15 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     clip: () => ops.push({ op: "clip" }),
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
+      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
     drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", colour: c }),
+      ops.push({ op: "drawLine", color: c }),
     drawPolygon: (p: { x: number; y: number }[], f: number) =>
-      ops.push({ op: "drawPolygon", colour: f, x: p[0].x, y: p[0].y }),
+      ops.push({ op: "drawPolygon", color: f, x: p[0].x, y: p[0].y }),
     drawCircle: (p: { x: number; y: number }, _r: number, f: number) =>
-      ops.push({ op: "drawCircle", colour: f, x: p.x, y: p.y }),
+      ops.push({ op: "drawCircle", color: f, x: p.x, y: p.y }),
     drawText: (_p: unknown, _o: unknown, c: number, t: string) =>
-      ops.push({ op: "drawText", colour: c, text: t }),
+      ops.push({ op: "drawText", color: c, text: t }),
     blitterNew: () => ({}),
     blitterFree: () => {},
     blitterSave: () => {},
@@ -111,7 +111,7 @@ describe("Black Box redraw", () => {
       ops.some(
         (o) =>
           o.op === "drawRect" &&
-          o.colour === COL_BACKGROUND &&
+          o.color === COL_BACKGROUND &&
           o.x === 0 &&
           o.y === 0 &&
           o.w === fullW,
@@ -124,7 +124,7 @@ describe("Black Box redraw", () => {
     const ds = freshDs(s);
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, s, 1, freshUi(s), 0, 0);
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_COVER)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_COVER)).toBe(true);
   });
 
   it("draws a fired laser's number text", () => {
@@ -149,7 +149,7 @@ describe("Black Box redraw", () => {
     const ds0 = freshDs(s0);
     const r0 = recordingDrawing();
     redraw(r0.dr, ds0, null, s0, 1, freshUi(s0), 0, 0);
-    expect(r0.ops.some((o) => o.op === "drawCircle" && o.colour === COL_BUTTON)).toBe(
+    expect(r0.ops.some((o) => o.op === "drawCircle" && o.color === COL_BUTTON)).toBe(
       false,
     );
 
@@ -160,7 +160,7 @@ describe("Black Box redraw", () => {
     const ds1 = freshDs(s1);
     const r1 = recordingDrawing();
     redraw(r1.dr, ds1, null, s1, 1, freshUi(s1), 0, 0);
-    expect(r1.ops.some((o) => o.op === "drawCircle" && o.colour === COL_BUTTON)).toBe(
+    expect(r1.ops.some((o) => o.op === "drawCircle" && o.color === COL_BUTTON)).toBe(
       true,
     );
   });
@@ -179,8 +179,6 @@ describe("Black Box redraw", () => {
     const ds = freshDs(revealed);
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, s, revealed, 1, freshUi(revealed), 0, 0);
-    expect(ops.some((o) => o.op === "drawPolygon" && o.colour === COL_WRONG)).toBe(
-      true,
-    );
+    expect(ops.some((o) => o.op === "drawPolygon" && o.color === COL_WRONG)).toBe(true);
   });
 });

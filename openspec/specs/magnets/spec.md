@@ -62,13 +62,13 @@ at each difficulty, returning the impossible / ambiguous / solved
 (−1 / 0 / 1) verdict identical to the C solver on every board. The Easy tier
 SHALL perform: set-and-hold of initial givens, force-by-flags, the
 neither-can-be-a-magnet neutral deduction, the row/column count-full pass
-(colour complete ⇒ exclude the rest; remaining unset all needed ⇒ set them),
+(color complete ⇒ exclude the rest; remaining unset all needed ⇒ set them),
 and the odd-length-section deduction. The Tricky tier SHALL additionally
-perform: the advanced-full in-row domino-polarisation pass, the
+perform: the advanced-full in-row domino-polarization pass, the
 single-neutral-left exclusion, and the two count-dominoes passes
 (all-remaining-dominoes-magnet ⇒ no neutral; one placeable end ⇒ set it). The
 solver SHALL propagate a deduction across a domino to its partner (an
-excluded colour on one end excludes the opposite colour on the other).
+excluded color on one end excludes the opposite color on the other).
 
 #### Scenario: A generated board is uniquely solvable at its difficulty
 
@@ -83,7 +83,7 @@ empty → `+` → `−` → empty (setting the partner to the opposite polarity)
 refusing to start from a placed neutral. Right-click or `CURSOR_SELECT2` SHALL
 cycle empty → neutral → not-neutral(`?`) → empty over the whole domino,
 refusing to start from a magnet. A left-click on a border clue number SHALL
-toggle that clue's "done" grey highlight (a solver aid, tracked in state and
+toggle that clue's "done" gray highlight (a solver aid, tracked in state and
 never affecting the win condition). Cursor keys SHALL move a keyboard cursor.
 A click or cursor action on a singleton square SHALL do nothing.
 
@@ -96,7 +96,7 @@ A click or cursor action on a singleton square SHALL do nothing.
 #### Scenario: Clue-done toggle does not affect completion
 
 - **WHEN** the player clicks a border clue number
-- **THEN** that clue renders greyed and the board's solved status is unchanged
+- **THEN** that clue renders grayed and the board's solved status is unchanged
 
 ### Requirement: Magnets flags mistakes against the unique solution
 
@@ -123,8 +123,8 @@ not-neutral `?`, singleton black squares, and the `+`/`−` clue counts on all
 four borders (top = column `+`, bottom = column `−`, left = row `+`, right =
 row `−`) with the corner `+`/`−` symbols, using the web build's
 `NARROW_BORDERS` geometry (`BORDER = 0`, an `(w+2) × (h+2)`-tile canvas). The
-palette SHALL mirror the upstream colour enum index-for-index, with the fork
-mistake-overlay colour appended past it. Every per-cell and per-clue overlay
+palette SHALL mirror the upstream color enum index-for-index, with the fork
+mistake-overlay color appended past it. Every per-cell and per-clue overlay
 (set / error / cursor / not-neutral / flash / mistake / clue-done) SHALL be
 part of the render diff key so it repaints and clears correctly.
 

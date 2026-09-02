@@ -3,11 +3,11 @@
 // indices are resolved to stable rgb() labels (with a visible fallback
 // for an undefined index).
 import { describe, expect, it } from "vitest";
-import type { Colour } from "../types.ts";
+import type { Color } from "../types.ts";
 import { RecordingDrawing } from "./recording-drawing.ts";
 
 // index 0 black, 1 white, 2 a clear blue (0.13, 0.5, 0.85).
-const PALETTE: Colour[] = [
+const PALETTE: Color[] = [
   [0, 0, 0],
   [1, 1, 1],
   [0.13, 0.5, 0.85],
@@ -29,7 +29,7 @@ describe("RecordingDrawing", () => {
     dr.endDraw();
 
     expect(dr.ops).toEqual([
-      { op: "rect", x: 1, y: 3, w: 3, h: 5, colour: 2, rgb: "rgb(33, 128, 217)" },
+      { op: "rect", x: 1, y: 3, w: 3, h: 5, color: 2, rgb: "rgb(33, 128, 217)" },
       {
         op: "line",
         x1: 1,
@@ -37,7 +37,7 @@ describe("RecordingDrawing", () => {
         x2: 10,
         y2: 1,
         thickness: 3,
-        colour: 0,
+        color: 0,
         rgb: "rgb(0, 0, 0)",
       },
       {
@@ -49,7 +49,7 @@ describe("RecordingDrawing", () => {
         baseline: "alphabetic",
         fontType: "variable",
         size: 20,
-        colour: 1,
+        color: 1,
         rgb: "rgb(255, 255, 255)",
       },
     ]);
@@ -88,9 +88,9 @@ describe("RecordingDrawing", () => {
         r: 3,
         fill: 1,
         fillRgb: "rgb(255, 255, 255)",
-        // -1 ("no colour") has no palette entry; surfaces as a label.
+        // -1 ("no color") has no palette entry; surfaces as a label.
         outline: -1,
-        outlineRgb: "colour#-1",
+        outlineRgb: "color#-1",
       },
     ]);
   });
@@ -106,6 +106,6 @@ describe("RecordingDrawing", () => {
   it("labels an out-of-range palette index instead of throwing", () => {
     const dr = new RecordingDrawing(PALETTE);
     dr.drawRect({ x: 0, y: 0, w: 1, h: 1 }, 99);
-    expect(dr.ops[0]).toMatchObject({ colour: 99, rgb: "colour#99" });
+    expect(dr.ops[0]).toMatchObject({ color: 99, rgb: "color#99" });
   });
 });

@@ -24,16 +24,16 @@
  * `refine-slide-appearance` gave the floor, the wall, an ordinary block and the
  * key block **four different fills**, where upstream derived all of them from a
  * single `game_mkhighlight` trio and told them apart by their bevels alone. The
- * ladder and the reasoning behind it live with the colours, in
- * `engine/colour/palette-games.ts` under {@link slideWallBase}; what belongs
+ * ladder and the reasoning behind it live with the colors, in
+ * `engine/color/palette-games.ts` under {@link slideWallBase}; what belongs
  * here is the mechanical consequence, which is that `drawTile` now selects a
  * *base index per material* and derives the bevel from it exactly as before.
  *
  * The palette keeps the C enum's index order exactly, and appends past it,
  * because `src/puzzle/augmentation.ts` gives slide dark-mode `paletteSwaps`
- * keyed by **colour index** (each base colour's highlight/lowlight pair, which
+ * keyed by **color index** (each base color's highlight/lowlight pair, which
  * is why every material's trio is three *consecutive* indices and why a new
- * material adds a swap pair there as well as a colour here). Reindexing would
+ * material adds a swap pair there as well as a color here). Reindexing would
  * silently mis-target those (docs/games/rendering.md § "The palette: three layers, meaning first"). The order is also load-bearing
  * inside `drawTile`, which derives a highlight/lowlight from a base as
  * `cc+1`/`cc+2` — the C's comment "Do not break this, or draw_tile() will get
@@ -51,20 +51,20 @@
 import {
   mkhighlight,
   mkhighlightSpecific,
-} from "../../engine/colour/colour-mkhighlight.ts";
-import { ORANGE, RED } from "../../engine/colour/colours.ts";
+} from "../../engine/color/color-mkhighlight.ts";
+import { ORANGE, RED } from "../../engine/color/colors.ts";
 import {
   slideBlockBase,
   slideMainBlockBase,
   slideRouteShadow,
   slideTargetBase,
   slideWallBase,
-} from "../../engine/colour/palette-games.ts";
+} from "../../engine/color/palette-games.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as gridCoord } from "../../engine/geometry.ts";
-import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
+import type { Color, Point, Rect, Size } from "../../engine/types.ts";
 import { movePiece } from "./moves.ts";
 import {
   cursorPos,
@@ -107,10 +107,10 @@ export const COL_ROUTE_SHADOW = 22;
 /** The keyboard cursor. Flat, so it needs no bevel trio and no `paletteSwaps`
  * pair — the token carries its own dark value. */
 export const COL_CURSOR = 23;
-export const NCOLOURS = 24;
+export const NCOLORS = 24;
 
 /** Upstream `raise_colour`: two parts `src` to one part `limit`. */
-function raise(src: Colour, limit: Colour): Colour {
+function raise(src: Color, limit: Color): Color {
   return [
     (2 * src[0] + limit[0]) / 3,
     (2 * src[1] + limit[1]) / 3,
@@ -118,8 +118,8 @@ function raise(src: Colour, limit: Colour): Colour {
   ];
 }
 
-export function colours(defaultBackground: Colour): Colour[] {
-  const out = new Array<Colour>(NCOLOURS);
+export function colors(defaultBackground: Color): Color[] {
+  const out = new Array<Color>(NCOLORS);
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
 
   // The floor: the board itself. A surface earns no contrast, and empty floor
@@ -129,7 +129,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
 
   // An ordinary block: an object resting on that floor. Upstream drew it in the
-  // floor's own colour, which is why the board had to be read off its bevels.
+  // floor's own color, which is why the board had to be read off its bevels.
   const block = mkhighlightSpecific(slideBlockBase(background));
   out[COL_BLOCK] = block.base;
   out[COL_BLOCK_HIGHLIGHT] = block.highlight;
@@ -243,7 +243,7 @@ const FG_SHADOWSH = 19;
  * left over above the shadow's flags (27..30; bit 31 is the sign of the
  * `Int32Array` the diff key lives in). The gate is drawn as an outline around
  * the whole gate region rather than a per-square fill, so a square has to know
- * about its neighbours, and every overlay has to sit inside the one packed word
+ * about its neighbors, and every overlay has to sit inside the one packed word
  * or it silently fails to repaint (docs/games/rendering.md § "Overlay sidecars").
  */
 const GATE_LBORDER = 0x08000000;
@@ -300,26 +300,26 @@ const TYPE_TLCIRC = 0x4000;
 const TYPE_TRCIRC = 0x5000;
 const TYPE_BLCIRC = 0x6000;
 const TYPE_BRCIRC = 0x7000;
-/** Passed as a colour to mean "leave this section alone". */
+/** Passed as a color to mean "leave this section alone". */
 const SKIP = -1;
 
 /**
  * Fill one rectangular section of a tile (upstream `maybe_rect`). `coltype`
  * is a palette index optionally ORed with a `TYPE_*CIRC` code, which asks for
  * a rounded corner — a quadrant of a circle inscribed in the section, with the
- * centre at whichever corner the code names. `SKIP` draws nothing.
+ * center at whichever corner the code names. `SKIP` draws nothing.
  *
- * With two colours, the quadrant is split along its diagonal by walking
+ * With two colors, the quadrant is split along its diagonal by walking
  * Bresenham's circle directly and filling a horizontal and a vertical span per
  * step, because the drawing API has no draw-sector primitive.
  */
 function maybeRect(dr: GameDrawing, rect: Rect, coltype: number, col2: number): void {
   if (coltype === SKIP) return;
-  const colour = coltype & COL_MASK;
+  const color = coltype & COL_MASK;
   const type = coltype & TYPE_MASK;
 
   if (type === TYPE_RECT) {
-    dr.drawRect(rect, colour);
+    dr.drawRect(rect, color);
     return;
   }
 
@@ -330,7 +330,7 @@ function maybeRect(dr: GameDrawing, rect: Rect, coltype: number, col2: number): 
   const cy = rect.y + (type & 0x2000 ? r : 0);
 
   if (col2 === SKIP || col2 === coltype) {
-    dr.drawCircle({ x: cx, y: cy }, r, colour, colour);
+    dr.drawCircle({ x: cx, y: cy }, r, color, color);
   } else {
     const xm = type & 0x1000 ? -1 : 1;
     const ym = type & 0x2000 ? -1 : 1;
@@ -349,7 +349,7 @@ function maybeRect(dr: GameDrawing, rect: Rect, coltype: number, col2: number): 
           w: Math.abs(x1 - x2) + 1,
           h: Math.abs(y1 - y2) + 1,
         },
-        colour,
+        color,
       );
       x2 = x1;
       y2 = cy + ym * by;
@@ -379,7 +379,7 @@ function maybeRect(dr: GameDrawing, rect: Rect, coltype: number, col2: number): 
 /**
  * A wall square (upstream `draw_wallpart`). Walls fill their tile edge to edge
  * — no gap, so adjacent walls read as one continuous mass — with a bevel on
- * each side that faces something other than another wall, and a mitred
+ * each side that faces something other than another wall, and a mitered
  * diagonal where a highlight and a lowlight edge meet.
  */
 function drawWallpart(
@@ -568,7 +568,7 @@ function drawPiecepart(
  * **The exit gate** — the squares only the key block may cross (upstream's
  * "forcefield"; the help page calls it the exit gate, which is what it is).
  *
- * A dashed outline around the gate *region*, drawn in the wall's colour: a gate
+ * A dashed outline around the gate *region*, drawn in the wall's color: a gate
  * is a gap in the wall, and the one boundary on this board that is crossed
  * rather than obeyed. Dashes are the whole message — a solid line reads as a
  * wall, and this one is permeable.
@@ -641,8 +641,8 @@ function drawTile(
 
   // Midground: where the Solve route wants the next piece to end up, drawn as
   // the piece's own outline with **nothing inside it** — `SKIP` as the body
-  // colour leaves `drawPiecepart` painting only the bevel bands, which trace
-  // the shape exactly. A filled ghost reads as another piece, whatever colour
+  // color leaves `drawPiecepart` painting only the bevel bands, which trace
+  // the shape exactly. A filled ghost reads as another piece, whatever color
   // it is; an empty one reads as a space shaped like the piece, which is what a
   // destination is. Upstream filled it with the *lowlight*, and its own author
   // recorded the consequence: "the shadow blends in too well with the piece
@@ -700,7 +700,7 @@ function drawTile(
   // are still two distinct strokes per corner rather than a smudge — `r` is
   // floored to at least 2 for that reason. The stroke scales with the tile:
   // upstream's hairline is sized for ink on paper, and this board is four
-  // shades of one grey, so a one-pixel line has nothing carrying it.
+  // shades of one gray, so a one-pixel line has nothing carrying it.
   if (val & FG_CURSOR) {
     const r = Math.max(2, Math.floor(ts / 2) - highlightWidth(ts));
     drawRectCorners(
@@ -719,7 +719,7 @@ function drawTile(
 /**
  * Which of this square's four sides and four corners face something that is
  * not part of the same block (upstream `find_piecepart`). A corner flag means
- * "the diagonal neighbour is a different block even though both adjoining
+ * "the diagonal neighbor is a different block even though both adjoining
  * sides are ours", i.e. a concave notch.
  */
 function findPiecepart(w: number, h: number, dsf: Dsf, x: number, y: number): number {

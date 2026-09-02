@@ -37,7 +37,7 @@ player express one arithmetic operation at a time as a move that combines two
 available numbers into a new one, support undo, and report the puzzle solved
 when a derived number equals the target. Because no upstream user interface
 exists, this presentation and move model SHALL be specified by this change
-rather than matched against C, and SHALL be covered by behavioural and render
+rather than matched against C, and SHALL be covered by behavioral and render
 tests rather than a game-level differential.
 
 #### Scenario: Combining two numbers produces a new one

@@ -12,7 +12,7 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
-import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
@@ -28,14 +28,14 @@ import {
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point } from "../../engine/types.ts";
+import type { Color, Point } from "../../engine/types.ts";
 import {
   animLength,
-  buildColours,
+  buildColors,
   computeSize,
   FLASH_FRAME,
   fromCoord,
-  NCOLOURS,
+  NCOLORS,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
@@ -120,7 +120,7 @@ function interpretMove(
   }
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    // Offset by (n-1) half-tiles so the user clicks the *centre* of a
+    // Offset by (n-1) half-tiles so the user clicks the *center* of a
     // rotation region rather than its corner.
     const x = fromCoord(p.x - ((n - 1) * ts) / 2, ts);
     const y = fromCoord(p.y - ((n - 1) * ts) / 2, ts);
@@ -227,12 +227,12 @@ function statusbarText(state: TwiddleState, _ui: TwiddleUi): string {
   return s;
 }
 
-// --- colours ----------------------------------------------------------
+// --- colors ----------------------------------------------------------
 
-function colours(defaultBackground: Colour): Colour[] {
+function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const palette = buildColours(background, highlight, lowlight);
-  if (palette.length !== NCOLOURS) {
+  const palette = buildColors(background, highlight, lowlight);
+  if (palette.length !== NCOLORS) {
     throw new Error("twiddle palette size mismatch");
   }
   return palette;
@@ -314,7 +314,7 @@ export const twiddleGame: Game<
   textFormat,
   statusbarText,
 
-  colours,
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {

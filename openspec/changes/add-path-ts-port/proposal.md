@@ -27,7 +27,7 @@ on the *greenfield* builds (Path, Numgame) **on the TS-only system**.
 Two reasons this is the right order for Path specifically:
 
 1. **Nothing is lost by waiting.** Path has no `struct game` and no C solver, so
-   there is no byte-match oracle to preserve — its assurance is behavioural
+   there is no byte-match oracle to preserve — its assurance is behavioral
    regardless (see "not in this change" below). Retiring C costs Path nothing.
 2. **It becomes a deliberate ergonomics test.** Building Numberlink from scratch
    — new solver, new generator, invented frontend — with the C engine already
@@ -66,7 +66,7 @@ grids "are not of suitable quality to be used directly as puzzles". It is here
 for its strategy, not its output.
 
 Explicitly **not** in this change: any from-C byte-match differential — there is
-no C game and no C solver to match. Assurance is behavioural (the solver proves
+no C game and no C solver to match. Assurance is behavioral (the solver proves
 uniqueness; generated boards are uniquely solvable) rather than differential.
 
 ## Impact

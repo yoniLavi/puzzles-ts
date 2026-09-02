@@ -4,11 +4,11 @@
  * This is the byte-match surface (see sticks-differential.test.ts). The RNG
  * draw order is upstream's exactly: the symmetric black placement (shared
  * `placeSymmetricBlacks` — one `randomUpto` pair per rejection-sampling
- * attempt plus the `SYMM_ROT4` centre draw), then per fill attempt one
+ * attempt plus the `SYMM_ROT4` center draw), then per fill attempt one
  * `randomUpto(rs, 2)` per white cell and one `randomUpto(rs, n)` per
  * multi-cell segment's clue position, retried until the contradiction solver
  * deduces the fill back to completion (a unique, guess-free solution), then
- * one `shuffle` of the cell indices for the greedy clue minimisation. The
+ * one `shuffle` of the cell indices for the greedy clue minimization. The
  * solver is deterministic, so the desc is a pure function of the seed.
  */
 import { Dsf } from "../../engine/dsf.ts";
@@ -89,7 +89,7 @@ export function newSticksDesc(p: SticksParams, rng: RandomState): { desc: string
     }
   } while (sticksSolveGame(grid, numbers, w, h) !== "complete");
 
-  // Greedy clue minimisation: one shuffle, then keep each removal only
+  // Greedy clue minimization: one shuffle, then keep each removal only
   // while the board still solves to completion.
   const spaces = Array.from({ length: s }, (_, i) => i);
   shuffle(spaces, rng);

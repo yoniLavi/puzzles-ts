@@ -1,5 +1,5 @@
 /**
- * Tier-1 behavioural tests for the Pearl port: params/desc codec, solver
+ * Tier-1 behavioral tests for the Pearl port: params/desc codec, solver
  * verdicts, drag/click input → executeMove, completion detection, and the
  * edge-based `findMistakes` overlay.
  */
@@ -293,29 +293,25 @@ describe("pearl mistake overlay is in the diff key (paint-twice)", () => {
 
     const ui = pearlGame.newUi(wrong);
     const ds = newDrawState(wrong);
-    const palette = pearlGame.colours([0.9, 0.9, 0.9]);
+    const palette = pearlGame.colors([0.9, 0.9, 0.9]);
 
     // Frame 1: warm the cache with NO mistakes (draws the laid segment).
     const dr1 = new RecordingDrawing(palette);
     redraw(dr1, ds, null, wrong, 0, ui, 0, 0, undefined, []);
-    expect(dr1.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(
-      false,
-    );
+    expect(dr1.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(false);
 
     // Frame 2: same drawstate, WITH mistakes — the overlay must still paint
     // even though the cell's tile value is otherwise unchanged.
     const dr2 = new RecordingDrawing(palette);
     redraw(dr2, ds, null, wrong, 0, ui, 0, 0, undefined, mistakes);
-    expect(dr2.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(true);
+    expect(dr2.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(true);
 
     // Frame 3: clearing the overlay erases it (repaints without COL_MISTAKE).
     const dr3 = new RecordingDrawing(palette);
     redraw(dr3, ds, null, wrong, 0, ui, 0, 0, undefined, []);
     const cellRepainted = dr3.ops.some((o) => o.op === "rect");
     expect(cellRepainted).toBe(true);
-    expect(dr3.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(
-      false,
-    );
+    expect(dr3.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(false);
   });
 });
 

@@ -22,7 +22,7 @@ import {
  * `supported`, while the implementation still spreads it into what it hands the
  * transformer — it builds `supported: { ...defaultEsbuildSupported,
  * ...esbuildOptions.supported }` out of `config.esbuild`. So the option set
- * below is live, and the type is merely narrower than the behaviour.
+ * below is live, and the type is merely narrower than the behavior.
  *
  * Declared rather than cast: asserting the whole `esbuild` object would stop
  * checking every *other* key in it, and the gap is one property. If a future
@@ -413,7 +413,7 @@ export default defineConfig(async ({ command, mode }) => {
             ],
           },
           {
-            // The per-puzzle help pages, one per catalogued game, served at
+            // The per-puzzle help pages, one per cataloged game, served at
             // /help/<puzzleId>.html. All 57 are this project's own markdown:
             // `help-coverage.test.ts` holds the directory and the catalog to
             // each other in both directions.

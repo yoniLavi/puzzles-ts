@@ -57,11 +57,11 @@ Tricky difficulty or harder. The game SHALL report `wantsStatusbar = false`,
 The desc SHALL encode the grid in scan order as comma-separated fields, each a
 decimal number (`0` for a blank cell) followed by zero or more of the flag
 letters `U`, `R`, `D`, `L` marking an adjacency clue toward the up, right, down,
-or left neighbour. Runs of leading blank cells MAY be skipped with the letters
+or left neighbor. Runs of leading blank cells MAY be skipped with the letters
 `a`–`z` (1–26 cells). `validateDesc` SHALL reject the wrong number of cells, a
 number outside `0..order`, a flag pointing off the grid, and contradictory flags
-(in Adjacent mode a clue toward a neighbour requires the reciprocal clue back; in
-Unequal mode a `>` toward a neighbour forbids the reciprocal `>`). `newState`
+(in Adjacent mode a clue toward a neighbor requires the reciprocal clue back; in
+Unequal mode a `>` toward a neighbor forbids the reciprocal `>`). `newState`
 SHALL decode the numbers into both an immutable givens array and the working
 grid, and the flags into an immutable clue-flag array.
 
@@ -103,7 +103,7 @@ highlighted, a digit `1..order` (entered as a digit, or a letter for `11`+ at
 large orders) SHALL place that number (or toggle the pencil mark in pencil mode),
 and backspace/space/0 SHALL clear it; entering a value a cell already holds SHALL
 be a no-op. A click on a greater-than sign or adjacency bar in the gap between two
-cells, or a shift/ctrl-cursor toward a neighbouring clue, SHALL toggle that clue's
+cells, or a shift/ctrl-cursor toward a neighboring clue, SHALL toggle that clue's
 struck-through ("spent") state. Immutable (given) cells SHALL reject entry. The
 `M`/`m` key SHALL fill every empty cell with all candidate pencil marks.
 `executeMove` SHALL apply the move purely, returning a new state, and SHALL set
@@ -129,9 +129,9 @@ struck-through ("spent") state. Immutable (given) cells SHALL reject entry. The
 `redraw` SHALL render the `order × order` grid with a gap between cells, drawing —
 in Unequal mode — a greater-than sign in the gap pointing from the larger toward
 the smaller cell of each inequality clue, and — in Adjacent mode — a bar in the
-gap of each adjacency clue. Each clue SHALL be coloured to distinguish a normal
+gap of each adjacency clue. Each clue SHALL be colored to distinguish a normal
 clue, a currently-violated clue (red), and a struck-through ("spent") clue.
-Filled cells SHALL show their number (coloured to distinguish given, user-entered,
+Filled cells SHALL show their number (colored to distinguish given, user-entered,
 and error cells); empty cells SHALL show their pencil marks in an auto-sized grid
 layout. The renderer SHALL highlight the selected cell (full highlight for real
 entry, a corner wedge for pencil mode), draw a pencil-mode indicator while pencil
@@ -211,7 +211,7 @@ be N" for a placement) — phrased correctly at the degenerate value extremes (t
 differ-by-1 clue narrates "exactly one away from N", not "N−1 or N+1"). A single
 firing forcing several strikes SHALL be one journey (continuation legs flagged
 `continuesPrevious`), and equivalent strikes of one firing SHALL share the target
-hint colour.
+hint color.
 
 The trivial row/column eliminations a placement implies SHALL be governed by the
 auto-pencil preference (read from `ui`): with it on they are folded silently into
@@ -243,20 +243,20 @@ never mixes clues.
 
 #### Scenario: An inequality bound is taught as a note strike
 
-- **WHEN** the player asks for a hint on a fully-pencilled Unequal-mode board
+- **WHEN** the player asks for a hint on a fully-penciled Unequal-mode board
   where a greater-than clue rules a value out of one of its two cells
 - **THEN** the hint returns a step whose `pencilStrike` move clears exactly those
   candidates
 - **AND** the narration names the greater-than relationship and the bounding
   cell's smallest/largest possible value, concluding in the necessity voice
 - **AND** the clue's two cells are shaded and the struck candidates marked in the
-  hint colour
+  hint color
 
 #### Scenario: An adjacency clue is taught in Adjacent mode
 
-- **WHEN** the player asks for a hint on a fully-pencilled Adjacent-mode board
+- **WHEN** the player asks for a hint on a fully-penciled Adjacent-mode board
   where a bar (or its absence) beside a filled cell rules a value out of the
-  neighbour
+  neighbor
 - **THEN** the hint returns a `pencilStrike` step clearing those candidates, the
   narration stating that the two numbers must (or must not) differ by exactly one
 
@@ -280,7 +280,7 @@ never mixes clues.
 ### Requirement: Unequal provides on-screen key labels
 
 Unequal SHALL implement `requestKeys(params)` returning one button per grid value
-`1..order` followed by a clear key (button code `8`, labelled `"Clear"`),
+`1..order` followed by a clear key (button code `8`, labeled `"Clear"`),
 reproducing upstream `game_request_keys` so the keypad matches the C build, in both
 the inequality and adjacent (Adjacent) modes.
 

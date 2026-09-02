@@ -59,7 +59,7 @@ export function edgeKind(fromFile, toFile) {
   let verdict = "none";
 
   // Dynamic `import("…")` — a real dependency, but evaluated at call time rather
-  // than module-init time, so it CANNOT close an initialisation cycle. That is
+  // than module-init time, so it CANNOT close an initialization cycle. That is
   // the hazard this metric exists to find, so a dynamic edge breaks the loop.
   // (Recorded explicitly rather than ignored: the dependency is real, and a
   // reader comparing against madge's raw count needs to see where it went.)
