@@ -23,7 +23,11 @@
 - [ ] 2.2 Set the deploy environment. Each of these is currently unset and each
       changes an output:
       - [ ] `VITE_CANONICAL_BASE_URL` — without it **no `sitemap.xml` and no
-            `robots.txt` are emitted at all**; the plugin is skipped.
+            `robots.txt` are emitted at all**; the plugin is skipped. The
+            owner's chosen domain is **`hintful.click`** (2026-09-03; it was
+            unregistered on the day, checked against the registry's RDAP with
+            `nic.click` as the control), so this becomes
+            `https://hintful.click/` once bought and pointed at the host.
       - [ ] `VITE_APP_NAME` — optional: the default is the product name from
             `src/project-identity.ts` ("Hintful Puzzles"), so set it only to
             brand a deployment differently.
