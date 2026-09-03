@@ -6,11 +6,13 @@
  * cascade and each deduction mirror upstream so the difficulty grading —
  * and therefore the generator's published board — matches C exactly.
  */
+import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import {
   cloneState,
   DIFF_ANY,
+  DIFF_EASY,
   DIFF_TRICKY,
   F_BLACK,
   F_CIRCLE,
@@ -812,22 +814,55 @@ export function solveSpecific(
   // Guard the hint/recording path against a non-terminating fixpoint; the
   // generator (non-recording `ss`) runs unguarded and byte-for-byte unchanged.
   const budget = ss.records ? stepBudget("singles hint") : undefined;
-  while (true) {
-    budget?.tick();
-    if (ss.ops.length > 0) solverOpsDo(state, ss);
-    if (state.impossible) break;
 
-    if (solveAllblackbutone(state, ss) > 0) continue;
-    if (state.impossible) break;
+  // The shared ordered technique ladder (`engine/deduction-fixpoint.ts`). Two
+  // mappings are worth reading before editing this, because both were once
+  // recorded as reasons Singles could *not* use the runner
+  // (`re-derive-the-fixpoint-no-gos`):
+  //
+  //  - **The op-queue drain is a technique, in position 0, that never fires.**
+  //    The ladder restarts from the top the moment anything fires, so a
+  //    technique that always reports `0` is attempted exactly once per
+  //    iteration, before anything else — which is precisely "drain the queue at
+  //    the top of the loop", said in terms the runner already guarantees.
+  //  - **`state.impossible` is the `-1` arm**, consulted per technique, exactly
+  //    where upstream's loop consults it.
+  //
+  // The ordering below is load-bearing: upstream tests the return `> 0` *before*
+  // the flag, so a technique that makes progress **and** raises `impossible`
+  // takes the restart — which drains the queue once more before the flag stops
+  // the ladder. Each technique therefore returns its firing count when positive
+  // and only then consults the flag; reversing those two skips that final drain,
+  // which mutates `state.flags`, and the generator is gated on this solver.
+  const impossibleOr = (fired: number) =>
+    fired > 0 ? fired : state.impossible ? -1 : 0;
+  runDeductionFixpoint({
+    techniques: [
+      {
+        id: "drain-op-queue",
+        tier: DIFF_EASY,
+        run: () => {
+          if (ss.ops.length > 0) solverOpsDo(state, ss);
+          return state.impossible ? -1 : 0;
+        },
+      },
+      {
+        id: "all-black-but-one",
+        tier: DIFF_EASY,
+        run: () => impossibleOr(solveAllblackbutone(state, ss)),
+      },
+      {
+        id: "remove-splits",
+        tier: DIFF_TRICKY,
+        run: () => impossibleOr(solveRemovesplits(state, ss)),
+      },
+    ],
+    maxTier: diff,
+    budget,
+  });
 
-    if (diff >= DIFF_TRICKY) {
-      if (solveRemovesplits(state, ss) > 0) continue;
-      if (state.impossible) break;
-    }
-
-    break;
-  }
-
+  // The flag is Singles' own state and stays authoritative; the runner's
+  // `impossible` says the same thing and would be a second copy of it.
   if (state.impossible) return -1;
   return checkComplete(state, CC_MUST_FILL) ? 1 : 0;
 }

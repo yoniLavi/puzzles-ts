@@ -31,6 +31,7 @@
  * The pure play-side checks ({@link clustersStatus}, {@link findErrors}) do
  * NOT mutate, so persisted state and the renderer stay `F_ERROR`-free.
  */
+import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { deduceHintPlan as accumulateHintPlan } from "../../engine/hint-plan.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import {
@@ -194,23 +195,42 @@ function solverRecurse(grid: Uint8Array, w: number, h: number): number {
   return ret;
 }
 
-/** Run the solver to a fixpoint. `maxdiff` 0 uses `solverTry` only; ≥ 1 adds
+/**
+ * Run the solver to a fixpoint on the shared ordered technique ladder
+ * (`engine/deduction-fixpoint.ts`). `maxdiff` 0 uses `solverTry` only; ≥ 1 adds
  * `solverRecurse`. Returns the final verdict — COMPLETE if fully solved,
- * INVALID on a contradiction, UNFINISHED if it gets stuck. Mutates `grid`. */
+ * INVALID on a contradiction, UNFINISHED if it gets stuck. Mutates `grid`.
+ *
+ * The three-valued early-out was once recorded as the reason Clusters could not
+ * use the runner (`re-derive-the-fixpoint-no-gos`): `clustersValidate` both
+ * stops the loop *and* supplies the return value, and the runner's `settled`
+ * hook is a boolean. A local variable closes that gap — `settled` runs exactly
+ * where the validate call ran, once per iteration, and keeps its verdict. A
+ * `settled` generic over each caller's own verdict type would make the runner
+ * generic over something it never inspects, to save one local.
+ */
 export function solveGame(
   grid: Uint8Array,
   w: number,
   h: number,
   maxdiff: number,
 ): ClustersStatus {
-  for (;;) {
-    const st = clustersValidate(grid, w, h);
-    if (st !== UNFINISHED) return st;
-    if (solverTry(grid, w, h) > 0) continue;
-    if (maxdiff < 1) return UNFINISHED;
-    if (solverRecurse(grid, w, h) > 0) continue;
-    return UNFINISHED;
-  }
+  // Holds whatever the last early-out saw. When the ladder stops because nothing
+  // fired rather than because the board settled, that is UNFINISHED — which is
+  // what this function returns in that case anyway.
+  let status: ClustersStatus = UNFINISHED;
+  runDeductionFixpoint({
+    techniques: [
+      { id: "single-cell-refutation", tier: 0, run: () => solverTry(grid, w, h) },
+      { id: "lookahead-chain", tier: 1, run: () => solverRecurse(grid, w, h) },
+    ],
+    maxTier: maxdiff,
+    settled: () => {
+      status = clustersValidate(grid, w, h);
+      return status !== UNFINISHED;
+    },
+  });
+  return status;
 }
 
 // --- hint plan (add-clusters-hint) -----------------------------------------

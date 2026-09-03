@@ -1,0 +1,14 @@
+# No spec deltas: this change's deliverable is a measured census (`audit.md`)
+# plus one scaffolded change per game it finds, and an owner decision about the
+# "nothing ships hintless" bar. Nothing normative can honestly be written until
+# the list exists — the proposal's 19 candidates are an unverified grep, and
+# writing a requirement over them would be the "instrument before the finding"
+# error the census exists to avoid.
+#
+# Whichever per-game changes follow will carry the spec deltas.
+#
+# `schema` is required for this file to be valid change metadata at all — without
+# it the `skip_specs` marker parses but is *not honored*, and `validate` says so
+# rather than passing. It names the same workflow as `openspec/config.yaml`.
+schema: spec-driven
+skip_specs: true

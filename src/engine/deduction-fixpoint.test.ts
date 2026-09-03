@@ -148,7 +148,7 @@ describe("runDeductionFixpoint", () => {
     expect(before).toEqual(["rung-0", "rung-0", "rung-1"]);
   });
 
-  it("stops at the top of an iteration once solved() is true — no extra attempt", () => {
+  it("stops at the top of an iteration once settled() is true — no extra attempt", () => {
     let steps = 2;
     const tried: number[] = [];
     const techniques = [
@@ -161,12 +161,12 @@ describe("runDeductionFixpoint", () => {
         return 0;
       }),
     ];
-    runDeductionFixpoint({ techniques, solved: () => steps === 0 });
-    // steps: 2 → fires → 1 → fires → 0 → solved() true at top, not tried again.
+    runDeductionFixpoint({ techniques, settled: () => steps === 0 });
+    // steps: 2 → fires → 1 → fires → 0 → settled() true at top, not tried again.
     expect(tried).toEqual([0, 0]);
   });
 
-  it("does not run any technique when the board is already solved", () => {
+  it("does not run any technique when the ladder is already settled", () => {
     let called = false;
     runDeductionFixpoint({
       techniques: [
@@ -175,7 +175,7 @@ describe("runDeductionFixpoint", () => {
           return 1;
         }),
       ],
-      solved: () => true,
+      settled: () => true,
     });
     expect(called).toBe(false);
   });

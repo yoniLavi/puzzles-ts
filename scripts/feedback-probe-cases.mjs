@@ -508,9 +508,9 @@ export const MODULES = [
       },
       {
         within: "runDeductionFixpoint",
-        why: "the solved early-out never fires, so a rung runs on a finished board",
-        find: "    if (solved?.()) break;",
-        replace: "    void solved;",
+        why: "the settled early-out never fires, so a technique runs on a settled board",
+        find: "    if (settled?.()) break;",
+        replace: "    void settled;",
       },
       {
         within: "runDeductionFixpoint",

@@ -48,8 +48,8 @@ Consequences, each expanded below:
 (`runDeductionFixpoint`) rather than hand-rolling it.** The loop is an ordered
 ladder of techniques, easiest first, that restarts from the top the moment any
 technique fires ("return after first firing", which keeps one firing = one hint
-group), stops when nothing fires or the board is solved, and reports the highest
-*tier* that fired as the grade. The runner owns:
+group), stops when nothing fires or the ladder has settled, and reports the
+highest *tier* that fired as the grade. The runner owns:
 
 - the **technique contract** — a technique is a declaration,
   `{ id, tier, run }`: a stable greppable name, the difficulty tier it belongs
@@ -74,23 +74,35 @@ group), stops when nothing fires or the board is solved, and reports the highest
   most-fired first, so the runaway one is identified without bisecting the
   ladder. Counting happens only where a budget does, so the generator path
   allocates nothing;
-- the optional `solved` early-out and the `beforeTechnique` hook (used by
-  `latinSolverTop` to bump the firing-group id so one firing's records share a
-  `group`).
+- the optional **`settled` early-out** — *"stop, there is nothing left for the
+  ladder to do"*. Deliberately broader than "solved", which is what it was
+  called until it had five callers and meant solved for two of them: Undead
+  stops on a *contradiction*, Clusters on complete-or-invalid, Spokes also on
+  its own tier's action budget. Only Filling and Pattern mean solved;
+- the `beforeTechnique` hook (used by `latinSolverTop` to bump the firing-group
+  id so one firing's records share a `group`).
 
-Converged call sites to read as exemplars:
-[`unruly/solver.ts`](../../src/games/unruly/solver.ts) (`solveGame` — the
-clearest ladder in the tree: five techniques, three tiers, one `maxTier`),
-[`magnets/solver.ts`](../../src/games/magnets/solver.ts) (two tiers and a
-second, untiered ladder),
-[`engine/latin.ts`](../../src/engine/latin.ts) (`latinSolverTop`, and through
-it the Latin family — a ladder built per difficulty level, so `tier` is the
-level),
-[`filling/solver.ts`](../../src/games/filling/solver.ts) (`FillingSolver.run` —
-untiered, so every technique sits on tier 0 and the grade is unused),
-[`undead/solver.ts`](../../src/games/undead/solver.ts)
-(`recordUndeadDeductions`) and
-[`pattern/solver.ts`](../../src/games/pattern/solver.ts).
+**A conditionally-available technique guards itself in `run` and returns `0`.**
+Unruly set the precedent — its `unique` variant is a rule of the board, not a
+rung-ordering question — and Spokes needs it for a look-ahead that runs at
+*exactly* Tricky rather than Tricky-and-above. **The runner has no `when`
+predicate and will not grow one**: it would be indistinguishable from returning
+`0` and would exist only to document, which is how a runner becomes a
+configuration language.
+
+Converged call sites to read as exemplars, easiest first:
+
+| Read this for | Where |
+| --- | --- |
+| the clearest ladder in the tree — five techniques, three tiers, one `maxTier` | [`unruly/solver.ts`](../../src/games/unruly/solver.ts) (`solveGame`) |
+| two tiers, plus a second untiered ladder in the same file | [`magnets/solver.ts`](../../src/games/magnets/solver.ts) |
+| an untiered ladder — every technique on tier 0, the grade unused, so the ladder is an *order* not a grading | [`filling/solver.ts`](../../src/games/filling/solver.ts) (`FillingSolver.run`) |
+| a ladder built per difficulty level, so `tier` *is* the level | [`engine/latin.ts`](../../src/engine/latin.ts) (`latinSolverTop`, and through it the Latin family) |
+| `settled` used for a **contradiction** rather than a solve | [`undead/solver.ts`](../../src/games/undead/solver.ts) (`recordUndeadDeductions`) |
+| `settled` carrying a three-valued verdict out through a closure | [`clusters/solver.ts`](../../src/games/clusters/solver.ts) (`solveGame`) |
+| a non-firing technique in position 0 used as a per-iteration pre-pass, and a flag mapped onto the `-1` arm | [`singles/solver.ts`](../../src/games/singles/solver.ts) (`solveSpecific`) |
+| a ladder that is **not** a tier prefix, a clamped cap, and an accumulator threaded through `settled` | [`spokes/solver.ts`](../../src/games/spokes/solver.ts) (`spokesSolve`) |
+| a hint-only recording ladder | [`pattern/solver.ts`](../../src/games/pattern/solver.ts) |
 
 ### Where the fixpoint does not fit
 
@@ -102,31 +114,50 @@ one loop every logic game hand-rolled") and the claim did real damage: it
 turned "does this game fit?" into "why has this game not been adopted yet?"
 and produced two separate handoffs asserting Loopy fits when it does not.
 
-**A no-go is re-derived when the contract changes, never carried forward.** The
-list below is the one thing about this section that must not be maintained by
-copying: a reason a game did not fit an *earlier* runner is not evidence about
-the current one, and this table has already shed an entry that way. Unruly used
-to head it with *"grades by difficulty constant, not rung index"* — which stopped
-being true the moment a technique could declare its own `tier`
-(`declare-deduction-techniques`), and Unruly now uses the runner. Each survivor
-below is a **hook the runner refuses to grow**, because one hook per game turns
-it into a configuration language:
+**A no-go is re-derived when the contract changes, never carried forward** — and
+this rule has now paid for itself twice, both times against a list written here:
 
-| Game | Why it is not this runner | Hook it would need |
-| --- | --- | --- |
-| Loopy | each firing reports *the cheapest rung that could use the new information* and rungs below it are skipped — a skip protocol, not a cap, and load-bearing for which boards generate | a per-firing "restart from" return |
-| Singles | drains an op queue at the top of every iteration, runs four techniques once before the loop, and signals contradiction through a `state.impossible` flag rather than a `< 0` return | an `impossible?` predicate and a per-iteration pre-pass |
-| Spokes | its tier is an accumulated action **count**, so no per-technique `tier` can produce it | a cost accumulator |
-| Clusters | its early-out is the three-valued `clustersValidate` verdict, which is also the function's return value | a `settled?` returning the caller's own verdict type |
-| Lightup | its rungs are fused into one pass in upstream's scan order, load-bearing for generation — there is no ladder to declare | none would help |
+- `declare-deduction-techniques` gave a technique its own `tier`, and **Unruly**
+  stopped being a no-go (it had been listed as "grades by difficulty constant,
+  not rung index").
+- `re-derive-the-fixpoint-no-gos` then read the five remaining solvers instead
+  of their recorded reasons, and **three of them had never needed anything
+  added**. Singles, Clusters and Spokes all adopted with no new option on the
+  runner. The reasons had been written against a runner that graded by array
+  position, and were then read as facts about the games.
+
+**So the test for a reason is: does it name a promise this runner makes that the
+game must break?** A reason that describes a loop's *syntax* — "drains a queue",
+"three-valued early-out", "grades by a constant" — is a description of C-shaped
+code and is not evidence. Two survive that test:
+
+| Game | The promise it breaks |
+| --- | --- |
+| **Loopy** | *A pass attempts every technique at or below the cap* — the central promise, the one that makes one firing = one hint step and grading honest. Each Loopy firing reports the cheapest rung that could use the new information, and the next pass skips techniques below it. It **transcribes mechanically** (three closures over a mutable pair), and that is the argument against: today the protocol is four lines in one place labeled load-bearing for which boards generate; transcribed, it satisfies the interface while hiding inside it. |
+| **Lightup** | *Return after first firing.* There is no ladder: its two techniques are interleaved **per cell** inside one grid scan whose order is load-bearing, and the pass sweeps the whole grid before restarting. Wrapping the fused scan in a single technique buys indirection and no shared behavior — a one-rung ladder has no tier, no cap and nothing to restart. |
 
 Do not "adopt" one of these onto the runner to tidy the codebase: a
 refactor that changes any solver verdict changes which boards exist, and the
 frozen differentials will say so (see
-[Solver-gated generation](#solver-gated-generation)). **Tell** that a no-go has
-genuinely dissolved rather than merely looking dissolvable: the adoption needs
-*no new option on the runner*, and the game's byte-match differential passes
-untouched. That is the test Unruly met and the five above do not.
+[Solver-gated generation](#solver-gated-generation)).
+
+**Tell** that a no-go has genuinely dissolved rather than merely looking
+dissolvable: the adoption needs **no new option on the runner**, and the game's
+byte-match differential passes untouched. That is the test Unruly, Singles,
+Clusters and Spokes met, and the two above do not.
+
+#### What a bespoke loop still owes
+
+A bespoke loop is part of the design, not a failure of it
+([`docs/framework-rdd/deduction.md`](../framework-rdd/deduction.md) §
+"Escape hatches carry obligations" — design fiction, but this obligation set is
+live). Three things, stated per game rather than assumed:
+
+| Obligation | Loopy | Lightup |
+| --- | --- | --- |
+| **Narratability survives** — every accepted board is walkable to completion by a hint | **unmet, and honestly so: Loopy ships no `hint()`**, so there is no hint projection and the obligation is vacuous rather than satisfied. A gap against "nothing may ship hintless", tracked separately. | met — `deduceHintPlan` walks the same `dosolve` with a recorder, and Lightup is enrolled in every cross-game hint guard |
+| **Grading stays honest** — tiers bind to real technique differences | met — `dlineDeductions` unlocks at Normal, `linedsfDeductions` at Hard, and generation is capped at the requested tier | met via `flagsFromDifficulty` |
+| **Budgets apply** — non-termination fails loud | no recording path, so none is needed or installed | met — `solveSub` ticks a `stepBudget` on the recorder path only |
 
 ## Guess-free generation
 

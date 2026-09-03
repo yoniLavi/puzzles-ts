@@ -42,6 +42,7 @@
  * that can never reach the rest of the board.
  */
 
+import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { deduceHintPlan } from "../../engine/hint-plan.ts";
 import {
@@ -716,38 +717,75 @@ export function spokesSolve(
   diff: number,
 ): SpokesStatus {
   const s = scratch ?? new SpokesScratch(b.w * b.h);
+  // Deductions made so far, for `DIFF_LIMITED`'s bound only. Accumulated by the
+  // two techniques that accumulate it upstream — the look-aheads never did, and
+  // they never run at `DIFF_LIMITED` anyway, so this is faithful rather than
+  // merely equivalent.
   let total = 0;
 
-  spokesSolverOnes(b);
+  spokesSolverOnes(b); // one-shot pre-pass; never a ladder member
 
   const copy = diff >= DIFF_TRICKY ? cloneBoard(b) : null;
 
-  for (;;) {
-    if (spokesValidate(b, s) !== "incomplete") break;
-    if (diff === DIFF_LIMITED && total >= ACTION_LIMIT) break;
-
-    let action = spokesSolverFull(b, s);
-    if (action) {
-      total += action;
-      continue;
-    }
-
-    action = spokesSolverDiagonal(b);
-    if (action) {
-      total += action;
-      continue;
-    }
-
-    if (diff < DIFF_TRICKY) break;
-    // `copy` is non-null exactly when diff >= DIFF_TRICKY.
-    if (copy && diff === DIFF_TRICKY && spokesSolverAttempt(b, copy, s, DIFF_LIMITED))
-      continue;
-
-    if (diff < DIFF_HARD) break;
-    if (copy && spokesSolverAttempt(b, copy, s, DIFF_EASY)) continue;
-
-    break;
-  }
+  // The shared ordered technique ladder (`engine/deduction-fixpoint.ts`). Two
+  // subtleties, both of which were once recorded as reasons Spokes could not use
+  // the runner (`re-derive-the-fixpoint-no-gos`):
+  //
+  //  - **The cap is clamped to `DIFF_EASY`.** `DIFF_LIMITED` (= `DIFF_EASY - 1`)
+  //    is "an Easy pass capped at `ACTION_LIMIT`" — its technique *set* is
+  //    Easy's, and the bound is what makes it Limited. So the two cheap
+  //    techniques declare `tier: DIFF_EASY` and the cap floors at Easy; giving
+  //    them `tier: DIFF_LIMITED` would claim they belong to a tier that is only
+  //    an internal budget, which is the opposite of true.
+  //  - **The bounded look-ahead runs at *exactly* Tricky**, so the ladder is not
+  //    a tier prefix and the technique guards itself in `run` (the convention
+  //    Unruly's `unique` guard set). Turning it into a prefix would run the
+  //    bounded trial before the unbounded one at Hard; the trial mutates the
+  //    board, so a different contradiction would be committed first and every
+  //    Hard board would move.
+  //
+  // `total` is not a grade: this solver reports a *status*, and the runner's
+  // grade is unused here.
+  runDeductionFixpoint({
+    techniques: [
+      {
+        id: "saturation",
+        tier: DIFF_EASY,
+        run: () => {
+          const action = spokesSolverFull(b, s);
+          total += action;
+          return action;
+        },
+      },
+      {
+        id: "crossing-diagonal",
+        tier: DIFF_EASY,
+        run: () => {
+          const action = spokesSolverDiagonal(b);
+          total += action;
+          return action;
+        },
+      },
+      {
+        // `copy` is non-null exactly when diff >= DIFF_TRICKY.
+        id: "contradiction-bounded",
+        tier: DIFF_TRICKY,
+        run: () =>
+          copy && diff === DIFF_TRICKY && spokesSolverAttempt(b, copy, s, DIFF_LIMITED)
+            ? 1
+            : 0,
+      },
+      {
+        id: "contradiction-unbounded",
+        tier: DIFF_HARD,
+        run: () => (copy && spokesSolverAttempt(b, copy, s, DIFF_EASY) ? 1 : 0),
+      },
+    ],
+    maxTier: Math.max(diff, DIFF_EASY),
+    settled: () =>
+      spokesValidate(b, s) !== "incomplete" ||
+      (diff === DIFF_LIMITED && total >= ACTION_LIMIT),
+  });
 
   return spokesValidate(b, s);
 }

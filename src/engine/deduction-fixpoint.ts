@@ -13,25 +13,44 @@
  * puzzles exist. A solver whose loop *looks* like this one is not evidence that
  * it is this one; the differential is.
  *
- * Known no-gos, **re-derived against this contract** by
- * `declare-deduction-techniques` rather than carried forward (a reason a game
- * did not fit an earlier runner is not evidence about this one — and Unruly,
- * which used to head this list because it "grades by difficulty constant, not
- * rung index", now fits and has adopted). Each is a hook this runner refuses to
- * grow, because one hook per game turns it into a configuration language:
+ * **Two games do not fit, and the list is re-derived whenever this contract
+ * changes — never carried forward.** That rule has now earned itself twice:
+ * `declare-deduction-techniques` gave a technique its own `tier` and Unruly
+ * stopped being a no-go; `re-derive-the-fixpoint-no-gos` then read the remaining
+ * five solvers instead of their recorded reasons and found that **three of them
+ * had never needed anything added** — Singles, Clusters and Spokes all adopted
+ * with no new option on this runner. The reasons had been written against a
+ * runner that graded by array position, and then read as facts about the games.
+ * So: a reason that describes a loop's *syntax* is not evidence; only a reason
+ * that names a promise this runner makes, and that the game must break, is.
  *
  * - **Loopy** — each firing reports *the cheapest rung that could use the new
- *   information*, and rungs below that are skipped. A skip protocol, not a cap,
- *   and load-bearing for which boards generate.
- * - **Singles** — drains an op queue at the top of every iteration, runs four
- *   techniques once before the loop, and signals contradiction through a
- *   `state.impossible` flag rather than a `< 0` return.
- * - **Spokes** — its tier is an accumulated action *count*, so no per-technique
- *   `tier` can produce it.
- * - **Clusters** — its early-out is the three-valued `clustersValidate` verdict,
- *   which is also the function's return value.
- * - **Lightup** — its rungs are fused into one pass in upstream's scan order,
- *   load-bearing for generation. There is no ladder to declare.
+ *   information*, and the next pass then skips techniques below it. The promise
+ *   it breaks is the central one: *a pass attempts every technique at or below
+ *   the cap*, which is what makes one firing = one hint step and grading honest.
+ *   It transcribes mechanically (three closures over a mutable pair) — and that
+ *   is the argument against doing it: today the protocol is four lines in one
+ *   place, labeled load-bearing for which boards generate, and transcribing it
+ *   would satisfy the interface while hiding it inside it.
+ * - **Lightup** — there is no ladder. Its two techniques are interleaved *per
+ *   cell* inside a single grid scan whose order is load-bearing, and the pass
+ *   sweeps the whole grid before restarting; "return after first firing" is
+ *   precisely what it must not do. Wrapping the fused scan in one technique
+ *   would buy indirection and no shared behavior: a one-rung ladder has no
+ *   tier, no cap and nothing to restart.
+ *
+ * Both carry the bespoke-loop hatch's obligations (narratability, honest
+ * grading, budgets — `docs/games/solver-and-generator.md` § "Where the fixpoint
+ * does not fit"). One is honestly unmet: **Loopy ships no `hint()`**, so its
+ * narratability obligation is vacuous rather than satisfied.
+ *
+ * **A conditionally-available technique guards itself in `run` and returns `0`.**
+ * Unruly set the precedent (its `unique` variant is a rule of the board, not a
+ * rung-ordering question) and Spokes needs it for a look-ahead that runs at
+ * *exactly* Tricky rather than Tricky-and-above. This runner grows no `when`
+ * predicate, deliberately: it would be indistinguishable from returning `0` and
+ * would exist only to document, which is how a runner becomes a configuration
+ * language.
  *
  * A logic game's generator and its explained hint are two projections of **one
  * deduction engine** (`adopt-narratable-deduction-engine`): the generator runs
@@ -47,12 +66,15 @@
  *
  * The **techniques stay per-game** (a nonogram overlap is nothing like a sudoku
  * hidden single); only this loop, the tier cap, the recorder-gated budget, the
- * grade bookkeeping and the non-termination attribution live here. Call sites:
- * `engine/latin.ts` (`latinSolverTop`, and through it the eleven latin-family
- * games), `games/filling/solver.ts` (`FillingSolver.run`),
+ * grade bookkeeping and the non-termination attribution live here. Nine call
+ * sites: `engine/latin.ts` (`latinSolverTop`, and through it the eleven
+ * latin-family games), `games/filling/solver.ts` (`FillingSolver.run`),
  * `games/undead/solver.ts` (`recordUndeadDeductions`),
  * `games/pattern/solver.ts` (`deduceHintPlan`), `games/magnets/solver.ts`
- * (`solve`, `solveUnnumbered`) and `games/unruly/solver.ts` (`solveGame`).
+ * (`solve`, `solveUnnumbered`), `games/unruly/solver.ts` (`solveGame`),
+ * `games/singles/solver.ts` (`solveSpecific`),
+ * `games/clusters/solver.ts` (`solveGame`) and
+ * `games/spokes/solver.ts` (`spokesSolve`).
  */
 import { type StepBudget, StepBudgetExceeded } from "./step-budget.ts";
 
@@ -131,14 +153,21 @@ export interface DeductionFixpointOptions {
   beforeTechnique?: (technique: DeductionTechnique) => void;
   /**
    * Optional early-out, checked at the top of every iteration (after the budget
-   * tick, before any technique): return `true` when the board is fully solved
-   * (or a contradiction has surfaced) so the ladder stops without a wasted no-op
-   * pass — Filling checks `nempty === 0`, Undead `anyEmpty`, Pattern "no cell
-   * left unknown". Checking at the top (not after a firing) also means a
-   * technique is never run on an already-finished board, so it can't manufacture
-   * a spurious step.
+   * tick, before any technique): return `true` when **the ladder should stop
+   * because there is nothing left for it to do**.
+   *
+   * That is deliberately broader than "solved", which is what this was called
+   * until `re-derive-the-fixpoint-no-gos` and what it has never meant: Undead
+   * has always used it to stop on a *contradiction* (`anyEmpty`), Clusters stops
+   * on complete-or-invalid, and Spokes also stops when the action budget its own
+   * `DIFF_LIMITED` tier imposes is spent. Only Filling (`nempty === 0`) and
+   * Pattern ("no cell left unknown") mean solved. A hook whose name is wrong for
+   * most of its callers is one you have to read the doc comment to use at all.
+   *
+   * Checking at the top (not after a firing) also means a technique is never run
+   * on an already-settled board, so it can't manufacture a spurious step.
    */
-  solved?: () => boolean;
+  settled?: () => boolean;
 }
 
 export interface DeductionFixpointResult {
@@ -190,7 +219,7 @@ function attributingBudget(
 export function runDeductionFixpoint(
   opts: DeductionFixpointOptions,
 ): DeductionFixpointResult {
-  const { techniques, maxTier, baseGrade = 0, beforeTechnique, solved } = opts;
+  const { techniques, maxTier, baseGrade = 0, beforeTechnique, settled } = opts;
   let grade = baseGrade;
   // Firing attribution exists only where the budget does, so the generator path
   // allocates nothing and runs the loop it always ran.
@@ -200,7 +229,7 @@ export function runDeductionFixpoint(
 
   for (;;) {
     budget?.tick();
-    if (solved?.()) break;
+    if (settled?.()) break;
     let fired = false;
     for (const technique of techniques) {
       if (maxTier !== undefined && technique.tier > maxTier) continue;

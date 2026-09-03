@@ -271,15 +271,23 @@ generator shapes — lives in
 
 ### `deduction-fixpoint.ts` — the shared technique ladder
 
-`runDeductionFixpoint({ techniques, maxTier, budget })`: the ordered-technique
-fixpoint loop behind "a generator and an explained hint are two projections of
-one deduction engine". A technique is a **declaration** — `{ id, tier, run }`,
-both `id` and `tier` required — so the grade is the highest tier that fired and
-the cap excludes by tier, never by position in the array. **Its header's list of
-known no-gos is as important as its call sites** — the ladder *shape* is
-near-universal; the bookkeeping wrapped around it is per-game and often decides
-which puzzles exist — and that list is **re-derived when the contract changes,
-never copied forward** (Unruly left it when tiers became declarable). See
+`runDeductionFixpoint({ techniques, maxTier, budget, settled })`: the
+ordered-technique fixpoint loop behind "a generator and an explained hint are two
+projections of one deduction engine". A technique is a **declaration** —
+`{ id, tier, run }`, both `id` and `tier` required — so the grade is the highest
+tier that fired and the cap excludes by tier, never by position in the array.
+`settled` is the early-out, and it means "nothing left for the ladder to do", not
+"solved" (most of its callers stop on a contradiction or a budget). A
+conditionally-available technique guards itself in `run`; there is no `when`
+predicate and there will not be one.
+
+**Its header's list of known no-gos is as important as its call sites** — the
+ladder *shape* is near-universal; the bookkeeping wrapped around it is per-game
+and often decides which puzzles exist — and that list is **re-derived when the
+contract changes, never copied forward.** Nine call sites and two hatch cases
+(Loopy, Lightup) as of `re-derive-the-fixpoint-no-gos`, down from six no-gos:
+Unruly left when tiers became declarable, and Singles, Clusters and Spokes left
+when someone read their solvers instead of their recorded reasons. See
 [`solver-and-generator.md`](./solver-and-generator.md) before adopting or
 "fixing" a game that doesn't use it.
 

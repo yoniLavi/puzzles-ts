@@ -693,7 +693,7 @@ export function deduceHintPlan(state: PatternState): PatternHintMove[] {
       },
     ],
     budget: stepBudget("pattern hint"),
-    solved: () => !working.includes(GRID_UNKNOWN),
+    settled: () => !working.includes(GRID_UNKNOWN),
   });
   return plan;
 }

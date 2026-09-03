@@ -827,8 +827,9 @@ export function recordUndeadDeductions(
     ],
     budget: stepBudget("undead hint recorder"),
     // A contradiction (an emptied candidate cell) stops the ladder — the hint
-    // refuses on such a board anyway.
-    solved: () => anyEmpty(cand, numTotal),
+    // refuses on such a board anyway. This is why the hook is `settled` and not
+    // `solved`: Undead has never used it to mean solved.
+    settled: () => anyEmpty(cand, numTotal),
   });
   return ops;
 }

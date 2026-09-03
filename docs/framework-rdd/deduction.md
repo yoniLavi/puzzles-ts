@@ -173,18 +173,29 @@ What a framework would have to carry for this shape:
 
 ## Escape hatches carry obligations
 
-The shared fixpoint's recorded no-gos (Loopy's threshold bookkeeping, Singles'
-op-queue, Spokes' action-count tiers, Clusters' three-valued early-out,
-Lightup's fused scan order) are real, and the framework's answer is not "fit
-anyway" — it is a bespoke-loop hatch with three non-negotiable obligations,
-enforced by the conformance suite.
+The shared fixpoint's recorded no-gos are real, and the framework's answer is
+not "fit anyway" — it is a bespoke-loop hatch with three non-negotiable
+obligations, enforced by the conformance suite.
 
-*Unruly's "constant-based grading" was on this list until
-`declare-deduction-techniques` shipped `tier`, at which point it stopped being
-a no-go and adopted the runner — evidence for the vision's claim that some of
-these are artifacts of the contract rather than facts about the games, and a
-reminder that a no-go list is re-derived when the contract moves, never copied
-forward.* The three obligations below still bind:
+*But there were six of them and there are now two, and the shrinkage is
+evidence for this document's own claim that some are artifacts of the contract
+rather than facts about the games.* `declare-deduction-techniques` shipped
+`tier`, and **Unruly** stopped being a no-go. `re-derive-the-fixpoint-no-gos`
+then read the five remaining solvers instead of their recorded reasons, and
+**Singles, Clusters and Spokes adopted with no new option on the runner at all**
+— their reasons had described C-shaped loops ("drains a queue", "three-valued
+early-out", "an accumulated action count") rather than naming any promise the
+runner makes. What survives is **Loopy** (each firing narrows which techniques
+the next pass may attempt — it breaks *a pass attempts every technique at or
+below the cap*) and **Lightup** (two techniques interleaved per cell inside one
+load-bearing scan — it breaks *return after first firing*).
+
+The lesson for this design: **a hatch is earned by naming the promise the game
+breaks, never by describing how its loop looks.** The three obligations below
+still bind, and one of them is currently unmet rather than satisfied — Loopy
+ships no `hint()`, so its narratability obligation is *vacuous*, which is a live
+gap against "nothing may ship hintless" and exactly the kind the conformance
+suite is meant to make loud:
 
 1. **Narratability survives.** However bespoke the loop, every accepted board
    must be walkable to completion by the hint projection: the suite generates
@@ -197,10 +208,20 @@ forward.* The three obligations below still bind:
 3. **Budgets apply.** Step budgets and retry limits are framework-injected
    even into bespoke loops; non-termination fails loud.
 
-**Tell** that you need the hatch (and not a redesign): your loop's bookkeeping
-decides *which boards exist* — threshold protocols, scan-order-sensitive
-fusion, accumulated-cost tiers. **Tell** that you don't: your loop merely
-*looks* different but reads out only firings and a grade.
+**Tell** that you need the hatch (and not a redesign): you can name a promise
+the runner makes that your loop must break. Two qualify — *a pass attempts every
+technique at or below the cap* (threshold and skip protocols) and *return after
+first firing* (scan-order-sensitive fusion, where the pass must sweep everything
+before restarting).
+
+**Tell** that you don't: your loop merely *looks* different. This half of the
+Tell was written listing "accumulated-cost tiers" as a hatch case, and Spokes
+falsified it — its accumulator turned out to be an early-out, not a grade, and it
+adopted. A cost accumulated across firings, a flag standing in for a `-1`
+return, a pre-pass at the top of each iteration, a verdict richer than a boolean:
+all of these read as structural and all of them fit, because a technique can hold
+state and guard itself. **Read the loop, not the reason somebody recorded for
+it** — three of six no-gos were dissolved by exactly that.
 
 ## What this buys, measured against today
 

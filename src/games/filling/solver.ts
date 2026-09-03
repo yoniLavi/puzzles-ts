@@ -526,7 +526,7 @@ class FillingSolver {
         },
       ],
       budget,
-      solved: () => this.nempty === 0,
+      settled: () => this.nempty === 0,
     });
   }
 }
