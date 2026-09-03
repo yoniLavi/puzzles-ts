@@ -1624,6 +1624,20 @@ optional maximum *tier* that excludes every technique above it **wherever it sit
 in the ladder** — so a cheap technique placed after an expensive one is still
 run under a low cap. Grading a board SHALL NOT depend on a technique's index.
 
+**A conditionally-available technique SHALL guard itself inside `run` and return
+`0`.** The runner SHALL NOT provide an availability predicate: such a predicate
+would be indistinguishable in effect from returning `0`, so it would exist only
+to document, and one option per game is how this runner becomes a configuration
+language. A game whose technique applies only under a board rule (a variant
+mode) or only at one exact tier expresses that in its own `run`.
+
+**The runner SHALL accept an optional early-out meaning "the ladder should stop,
+because there is nothing left for it to do"**, checked at the top of every
+iteration so no technique is attempted on an already-settled board. This SHALL
+NOT be specified as "solved": most callers use it to stop on a contradiction, on
+a refuted board, or on an action budget the game itself imposes, and a name
+narrower than its meaning obliges every reader to consult the doc comment.
+
 The runner SHALL also accept an optional recorder that, when present, gates every
 reason allocation so the generation path stays byte-for-byte unchanged and, when
 absent, runs unguarded. The runner SHALL tick a step budget once per iteration
@@ -1636,10 +1650,21 @@ SHALL count nothing, so the generation path allocates nothing extra.
 The techniques themselves remain per-game (each game's deductions are its own);
 only the loop, cap, recorder-gating, budget and attribution are shared. Games
 that hand-roll this loop SHALL converge onto the shared runner without changing
-their techniques, order, or verdicts. A game that does **not** fit SHALL have its
-reason recorded against this contract, and that record SHALL be re-derived rather
-than carried forward when the contract changes — a reason that a game did not fit
-an earlier runner is not evidence about the current one.
+their techniques, order, or verdicts.
+
+**A game that does not fit SHALL have its reason recorded against this contract,
+and that record SHALL be re-derived rather than carried forward when the contract
+changes** — a reason that a game did not fit an earlier runner is not evidence
+about the current one. A recorded reason SHALL name **a promise this runner makes
+that the game must break**; a description of the game's loop shape is not such a
+reason. Adoption SHALL require no new option on the runner: a game that would
+need one stays bespoke.
+
+**A bespoke loop SHALL carry three obligations, recorded per game rather than
+assumed**: every board it accepts remains walkable to completion by a hint
+projection, its tiers bind to real technique differences, and a non-terminating
+recording path fails loud. An obligation that is **vacuous** rather than
+satisfied SHALL be recorded as unmet.
 
 #### Scenario: The generation path is unchanged by the shared runner
 
@@ -1674,6 +1699,20 @@ an earlier runner is not evidence about the current one.
   the board until the step budget trips
 - **THEN** the thrown error names the techniques by firing count, so the
   responsible one is identified without bisecting the ladder
+
+#### Scenario: The early-out stops a refuted board, not only a solved one
+
+- **WHEN** a game's early-out reports that the board is refuted, or that a budget
+  the game imposes on itself is spent
+- **THEN** the ladder stops without attempting a further technique, exactly as it
+  does for a completed board
+
+#### Scenario: A recorded no-go is re-derived, not copied, when the contract moves
+
+- **WHEN** the runner's contract changes such that a previously recorded reason
+  no longer names a promise the game must break
+- **THEN** that game is re-derived against the new contract, and adopts it if
+  adoption needs no new option on the runner
 
 ### Requirement: A hint step always names a technique — no un-narrated fallback
 
