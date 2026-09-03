@@ -49,7 +49,12 @@
 - [x] 5.2 Browser re-check: Unruly at 10×10 Normal survives a reload as
       **10×10 Normal**, with that preset checked in the type menu, across two
       reloads.
-- [ ] 5.3 Commit and archive.
+- [x] 5.3 Commit and archive. Archived without a checkpoint: the outcome has no
+      trade-off for the owner to judge — the app was discarding a setting the
+      player chose, and the fix is verified against the exact reproduction. The
+      stored-value format widens rather than breaks (an older short-form id
+      still loads; it just carries less), so this is not the
+      compatibility-with-existing-data case that must be raised beforehand.
 
 ## Findings
 
