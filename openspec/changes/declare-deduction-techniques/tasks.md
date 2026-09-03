@@ -68,7 +68,17 @@
       split is explicitly still fiction.
 - [x] 5.4 Full gate green (279 test files, 7829 passed, production build clean);
       commit.
-- [ ] 5.5 Browser check of Unruly, then archive.
+- [x] 5.5 Browser check of Unruly (Chrome, `playwright-cli`): 8×8 Trivial and
+      10×10 Normal both generate and render; **Hint** fires the `three-in-a-row`
+      technique and narrates it correctly ("Two of these three cells are already
+      black; a third black would make three in a row, which isn't allowed — so
+      this cell must be white") with two orange evidence cells and one blue
+      target; **Auto Hint** walks the plan, filling cells and narrating the
+      mirrored white-side technique. A clipped canvas in one screenshot was a
+      mid-relayout artifact — it renders whole after the layout settles
+      (`project_worker_repaint_withdrawn`: a browser tool's transient frame is
+      an artifact, not evidence). See Findings 5 for what the check *did* turn
+      up.
 
 ## Findings
 
@@ -109,3 +119,18 @@
    That is not noise to design away: the ladder is an *order* there, not a
    grading, and writing the tier out makes a reader ask which it is instead of
    assuming. A defaulted tier would have hidden the question.
+
+5. **The browser check found an unrelated player-visible defect, filed as its
+   own change.** Switching Unruly to *10×10 Normal* and reloading brings the
+   right board back with the type menu reading *"10×10 Trivial"* — a
+   combination the preset menu does not even offer. Traced, not guessed:
+   `puzzle-screen.ts` remembers the last dealt board as `puzzle.currentGameId`,
+   which is `encodeParams(params, /* full */ false) + ":" + desc` — upstream's
+   deliberate short form, difficulty omitted because the desc already fixes the
+   board. On load, `Midend.newGameFromId` does `this.params =
+   decodeParams(paramsStr)`, so the difficulty falls back to the game's default
+   and *overwrites* the correct params the load path had just restored from
+   settings. The board is right; the difficulty setting is silently reset, and
+   the next "New game" deals at the wrong tier. Not Unruly's and not this
+   change's — it reaches every tiered game. Continued in
+   `remember-the-difficulty-of-a-dealt-board`.
