@@ -110,10 +110,11 @@ produce reproducible boards across builds from the pivot onward.
 Every board a **logic** game generates for a non-`Unreasonable` tier SHALL be
 solvable by the *same* narratable techniques that game's explained hint teaches.
 The deductive solver and the hint SHALL be two projections of one deduction
-engine: the generator runs the technique rungs to a fixpoint with the recorder
-off (accepting a board only when the rungs fully solve it — deductive completion
-implies uniqueness, so no separate uniqueness pass is required, and the highest
-rung used is the difficulty grade), and the hint runs the same rungs with the
+engine: the generator runs the techniques to a fixpoint with the recorder
+off (accepting a board only when the techniques fully solve it — deductive
+completion implies uniqueness, so no separate uniqueness pass is required, and
+the highest **tier** reached is the difficulty grade, never a technique's
+position in the ladder), and the hint runs the same techniques with the
 recorder on. A hint SHALL NOT fall back to a generic, unexplained step for a
 deduction its techniques do not cover (the `ts-engine` Hint-System companion
 rule).
