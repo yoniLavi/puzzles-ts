@@ -472,9 +472,15 @@ export const MODULES = [
     cases: [
       {
         within: "runDeductionFixpoint",
-        why: "the grade regresses when a hard rung unlocks an easier one",
-        find: "        grade = Math.max(grade, r);",
-        replace: "        grade = r;",
+        why: "the grade regresses when a hard technique unlocks an easier one",
+        find: "        if (technique.tier > grade) grade = technique.tier;",
+        replace: "        grade = technique.tier;",
+      },
+      {
+        within: "runDeductionFixpoint",
+        why: "the grade is the technique's position in the ladder, not its declared tier",
+        find: "        if (technique.tier > grade) grade = technique.tier;",
+        replace: "        grade = techniques.indexOf(technique);",
       },
       {
         within: "runDeductionFixpoint",
@@ -490,9 +496,9 @@ export const MODULES = [
       },
       {
         within: "runDeductionFixpoint",
-        why: "the difficulty cap is ignored, so every board is graded at the top rung",
-        find: "  const cap = opts.maxRung ?? rungs.length - 1;",
-        replace: "  const cap = rungs.length - 1;",
+        why: "the difficulty cap is ignored, so every board is graded at the top tier",
+        find: "      if (maxTier !== undefined && technique.tier > maxTier) continue;",
+        replace: "      if (false) continue;",
       },
       {
         within: "runDeductionFixpoint",

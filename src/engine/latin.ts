@@ -40,7 +40,7 @@
  * proof that it does.
  */
 
-import { type DeductionRung, runDeductionFixpoint } from "./deduction-fixpoint.ts";
+import { type DeductionTechnique, runDeductionFixpoint } from "./deduction-fixpoint.ts";
 import type { DeductionRecorder } from "./deduction-record.ts";
 import type { DifficultyVerdict } from "./difficulty.ts";
 import { type RandomState, randomUpto } from "./random/index.ts";
@@ -875,15 +875,21 @@ function latinSolverTop<Ctx>(solver: LatinSolver, cfg: LatinSolverConfig<Ctx>): 
     if (ret === 0 && i === diffForcing) ret = solver.forcing();
     return ret;
   };
-  const rungs: DeductionRung[] = [];
-  for (let i = 0; i <= maxdiff; i++) rungs.push(() => applyRung(i));
+  // Rung `i` **is** difficulty level `i` here — `diffSimple`, `diffSet0`,
+  // `diffSet1` and `diffForcing` are level numbers the game hands in, and
+  // `applyRung` dispatches on them — so the technique's tier is its index, and
+  // the cap is the game's own `maxdiff` rather than a position derived from it.
+  const techniques: DeductionTechnique[] = [];
+  for (let i = 0; i <= maxdiff; i++) {
+    techniques.push({ id: `latin-level-${i}`, tier: i, run: () => applyRung(i) });
+  }
 
   const fp = runDeductionFixpoint({
-    rungs,
-    maxRung: maxdiff,
+    techniques,
+    maxTier: maxdiff,
     baseGrade: diffSimple,
     budget: solver.budget,
-    beforeRung: () => solver.group++,
+    beforeTechnique: () => solver.group++,
   });
   if (fp.impossible) return finish(solver, cfg, DIFF_IMPOSSIBLE);
   let diff = fp.grade;

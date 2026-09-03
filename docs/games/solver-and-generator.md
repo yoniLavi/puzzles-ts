@@ -46,32 +46,51 @@ Consequences, each expanded below:
 **New logic games build their solver/hint loop on
 [`engine/deduction-fixpoint.ts`](../../src/engine/deduction-fixpoint.ts)
 (`runDeductionFixpoint`) rather than hand-rolling it.** The loop is an ordered
-ladder of technique rungs, easiest first, that restarts from the top the
-moment any rung fires ("return after first firing", which keeps one firing =
-one hint group), stops when nothing fires or the board is solved, and reports
-the highest rung that fired as the grade. The runner owns:
+ladder of techniques, easiest first, that restarts from the top the moment any
+technique fires ("return after first firing", which keeps one firing = one hint
+group), stops when nothing fires or the board is solved, and reports the highest
+*tier* that fired as the grade. The runner owns:
 
-- the **rung contract** — each rung applies its technique once and returns
-  `> 0` (fired), `0` (nothing to do), `< 0` (contradiction proved);
-- the **`maxRung` grading cap** — while grading a tier, don't pay for rungs
-  the tier can't use (this alone cut Undead's 7×7 Normal generation ~6×);
+- the **technique contract** — a technique is a declaration,
+  `{ id, tier, run }`: a stable greppable name, the difficulty tier it belongs
+  to, and a `run` that applies it once and returns `> 0` (fired), `0` (nothing
+  to do), `< 0` (contradiction proved). **Both `id` and `tier` are required** —
+  a ladder states its tiers rather than encoding them in array positions, and
+  states its names rather than leaving a reader to count;
+- the **grade** — the highest `tier` that fired, never a position. Several
+  techniques may share a tier (Unruly's five sit on three), and grading is
+  blind to where in the array they sit;
+- the **`maxTier` grading cap** — while grading a tier, don't pay for techniques
+  the tier can't use (this alone cut Undead's 7×7 Normal generation ~6×). It
+  *excludes by tier, wherever the technique sits*, so a cheap technique placed
+  after an expensive one still runs under a low cap; a ladder whose tiers are
+  not monotonically increasing is therefore legal;
 - the **recording-path step budget** — pass a
   [`stepBudget`](../../src/engine/step-budget.ts) on the hint call and omit it
-  on the generator call, so a rung that reports progress without changing the
-  board fails loud on the hint path and the generator path stays byte-for-byte
-  unchanged (see hints.md on the budget guard);
-- the optional `solved` early-out and the `beforeRung` hook (used by
+  on the generator call, so a technique that reports progress without changing
+  the board fails loud on the hint path and the generator path stays
+  byte-for-byte unchanged (see hints.md on the budget guard). **The failure
+  names the culprit**: the thrown error appends the techniques by firing count,
+  most-fired first, so the runaway one is identified without bisecting the
+  ladder. Counting happens only where a budget does, so the generator path
+  allocates nothing;
+- the optional `solved` early-out and the `beforeTechnique` hook (used by
   `latinSolverTop` to bump the firing-group id so one firing's records share a
   `group`).
 
 Converged call sites to read as exemplars:
+[`unruly/solver.ts`](../../src/games/unruly/solver.ts) (`solveGame` — the
+clearest ladder in the tree: five techniques, three tiers, one `maxTier`),
+[`magnets/solver.ts`](../../src/games/magnets/solver.ts) (two tiers and a
+second, untiered ladder),
 [`engine/latin.ts`](../../src/engine/latin.ts) (`latinSolverTop`, and through
-it the Latin family),
-[`filling/solver.ts`](../../src/games/filling/solver.ts) (`FillingSolver.run`),
+it the Latin family — a ladder built per difficulty level, so `tier` is the
+level),
+[`filling/solver.ts`](../../src/games/filling/solver.ts) (`FillingSolver.run` —
+untiered, so every technique sits on tier 0 and the grade is unused),
 [`undead/solver.ts`](../../src/games/undead/solver.ts)
-(`recordUndeadDeductions`),
-[`pattern/solver.ts`](../../src/games/pattern/solver.ts) and
-[`magnets/solver.ts`](../../src/games/magnets/solver.ts).
+(`recordUndeadDeductions`) and
+[`pattern/solver.ts`](../../src/games/pattern/solver.ts).
 
 ### Where the fixpoint does not fit
 
@@ -82,22 +101,32 @@ one; the differential is.** This module's own header used to overclaim ("the
 one loop every logic game hand-rolled") and the claim did real damage: it
 turned "does this game fit?" into "why has this game not been adopted yet?"
 and produced two separate handoffs asserting Loopy fits when it does not.
-The audited no-gos (`adopt-shared-deduction-fixpoint`), each read rather than
-inferred:
 
-| Game | Why it is not this runner |
-| --- | --- |
-| Loopy | its `(thresholdDiff, thresholdIndex)` bookkeeping is not this runner's grade bookkeeping |
-| Unruly | grades by difficulty constant, not rung index |
-| Singles | drains an op queue once per iteration; signals contradiction by a flag, not a `< 0` return |
-| Spokes | its tier is an accumulated action count, not "which rung fired" |
-| Clusters | its early-out is three-valued, not boolean |
-| Lightup | its rungs are fused into one pass in upstream's scan order, load-bearing for generation |
+**A no-go is re-derived when the contract changes, never carried forward.** The
+list below is the one thing about this section that must not be maintained by
+copying: a reason a game did not fit an *earlier* runner is not evidence about
+the current one, and this table has already shed an entry that way. Unruly used
+to head it with *"grades by difficulty constant, not rung index"* — which stopped
+being true the moment a technique could declare its own `tier`
+(`declare-deduction-techniques`), and Unruly now uses the runner. Each survivor
+below is a **hook the runner refuses to grow**, because one hook per game turns
+it into a configuration language:
+
+| Game | Why it is not this runner | Hook it would need |
+| --- | --- | --- |
+| Loopy | each firing reports *the cheapest rung that could use the new information* and rungs below it are skipped — a skip protocol, not a cap, and load-bearing for which boards generate | a per-firing "restart from" return |
+| Singles | drains an op queue at the top of every iteration, runs four techniques once before the loop, and signals contradiction through a `state.impossible` flag rather than a `< 0` return | an `impossible?` predicate and a per-iteration pre-pass |
+| Spokes | its tier is an accumulated action **count**, so no per-technique `tier` can produce it | a cost accumulator |
+| Clusters | its early-out is the three-valued `clustersValidate` verdict, which is also the function's return value | a `settled?` returning the caller's own verdict type |
+| Lightup | its rungs are fused into one pass in upstream's scan order, load-bearing for generation — there is no ladder to declare | none would help |
 
 Do not "adopt" one of these onto the runner to tidy the codebase: a
 refactor that changes any solver verdict changes which boards exist, and the
 frozen differentials will say so (see
-[Solver-gated generation](#solver-gated-generation)).
+[Solver-gated generation](#solver-gated-generation)). **Tell** that a no-go has
+genuinely dissolved rather than merely looking dissolvable: the adoption needs
+*no new option on the runner*, and the game's byte-match differential passes
+untouched. That is the test Unruly met and the five above do not.
 
 ## Guess-free generation
 
@@ -274,8 +303,8 @@ Then re-grade by which rung is needed, and accept a board only when the
 deductive ladder solves it uniquely with zero recursion — verified
 independently against the brute-force oracle. Two lessons that transfer:
 
-- **Cap the ladder at the tier's rung while grading** (`maxRung`): forcing is
-  the expensive rung and a board the tier can't use is rejected anyway.
+- **Cap the ladder at the tier while grading** (`maxTier`): forcing is the
+  expensive technique and a board the tier can't use is rejected anyway.
 - **Measure the recursion-only residual before deciding to ship an
   Unreasonable tier.** Undead's came out exactly zero — every
   uniquely-solvable board is cracked by the ladder, and the boards the ladder

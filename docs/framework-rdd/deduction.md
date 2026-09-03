@@ -1,8 +1,9 @@
 # Techniques — one deduction engine, five projections
 
-> **⚠️ STATUS: design fiction** — describes a system that does not exist.
-> Authored by `rewrite-game-dev-docs` (2026-08-07). Current truth:
-> [`docs/games/`](../games/README.md). See the [vision README](./README.md).
+> **⚠️ STATUS: design fiction, minus the part marked shipped below** —
+> describes a system that does not exist. Authored by `rewrite-game-dev-docs`
+> (2026-08-07). Current truth: [`docs/games/`](../games/README.md). See the
+> [vision README](./README.md).
 
 The center of the framework. Everything a logic game "does" — solving,
 grading, generating, hinting, refusing — is a projection of one declared
@@ -17,13 +18,25 @@ framework needs to run it, grade it, and *teach* it:
 
 ```
 Technique<Board, Firing> {
-  id: string          // stable, greppable: "hidden-single", "wall-parity"
-  tier: number        // difficulty rung this technique defines/contributes to
+  id: string          // stable, greppable: "hidden-single", "wall-parity"   [SHIPPED]
+  tier: number        // difficulty rung this technique defines/contributes to [SHIPPED]
   find(board): Firing | null      // the single next firing, or null
   apply(board, firing): void      // idempotent; mutates the working board
   narrate(firing, board): Narration  // REQUIRED — see below
 }
 ```
+
+> **`id` and `tier` have shipped** (`declare-deduction-techniques`,
+> 2026-09-03). `runDeductionFixpoint` takes `{ id, tier, run }` declarations,
+> both fields required; the grade is the highest **tier** that fired and the
+> cap excludes by tier rather than by array position — which is what let Unruly
+> leave the no-go list. The live contract is
+> [`docs/games/solver-and-generator.md`](../games/solver-and-generator.md)
+> § "The deduction fixpoint"; read that, not this, for what exists.
+>
+> `run` is still a single closure that both detects and applies, so the
+> `find` / `apply` / `narrate` split below — the half that would make a
+> hintless technique inexpressible — remains fiction.
 
 (The one illustrative type block in these docs; everything else is stated as
 contract prose. `Narration` is `{ text, highlights, legs? }` — the text plus
@@ -160,11 +173,18 @@ What a framework would have to carry for this shape:
 
 ## Escape hatches carry obligations
 
-The shared fixpoint's recorded no-gos (Loopy's threshold bookkeeping, Unruly's
-constant-based grading, Singles' op-queue, Spokes' action-count tiers,
-Clusters' three-valued early-out, Lightup's fused scan order) are real, and
-the framework's answer is not "fit anyway" — it is a bespoke-loop hatch with
-three non-negotiable obligations, enforced by the conformance suite:
+The shared fixpoint's recorded no-gos (Loopy's threshold bookkeeping, Singles'
+op-queue, Spokes' action-count tiers, Clusters' three-valued early-out,
+Lightup's fused scan order) are real, and the framework's answer is not "fit
+anyway" — it is a bespoke-loop hatch with three non-negotiable obligations,
+enforced by the conformance suite.
+
+*Unruly's "constant-based grading" was on this list until
+`declare-deduction-techniques` shipped `tier`, at which point it stopped being
+a no-go and adopted the runner — evidence for the vision's claim that some of
+these are artifacts of the contract rather than facts about the games, and a
+reminder that a no-go list is re-derived when the contract moves, never copied
+forward.* The three obligations below still bind:
 
 1. **Narratability survives.** However bespoke the loop, every accepted board
    must be walkable to completion by the hint projection: the suite generates

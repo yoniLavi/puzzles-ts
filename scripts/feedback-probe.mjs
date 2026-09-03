@@ -78,6 +78,13 @@
  * importing is now inert, and the helpers are exported so reaching for one is
  * the obvious thing rather than the dangerous one.
  *
+ * The same reasoning governs the argument parsing: `--verify` is the only flag,
+ * and **anything else beginning with `-` is rejected**. It used to be silently
+ * dropped, which meant a mistyped or speculative flag left the module filter
+ * empty and started the *whole* 30-45 minute planting run — `--help`, of all
+ * things, did exactly that. An option parser that answers an unknown question
+ * by editing `src/` is the same footgun as the import one, wearing a flag.
+ *
  * If a run is killed anyway (`SIGTERM`, or a `SIGINT` mid-`spawnSync`, which the
  * handler cannot service because `main` is synchronous throughout), it leaves
  * **exactly one** module holding **exactly one** planted defect. The commit gate
@@ -302,8 +309,33 @@ function runTests(tests) {
   return r.status === 0 ? "survived" : "caught";
 }
 
+const USAGE = `feedback-probe — "would the file I am editing tell me I broke it?"
+
+  node scripts/feedback-probe.mjs [--verify] [module-filter ...]
+
+  --verify   check only that every anchor still applies (~0.2s). What the
+             commit gate runs; plants nothing and edits no file.
+  (no flag)  plant each case in turn and run only that module's own tests
+             (~30-45 min for the whole corpus). THIS EDITS FILES UNDER src/.
+  filter     substring(s) of a module path — e.g. \`deduction-fixpoint\`.
+`;
+
 function main() {
   const args = process.argv.slice(2);
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(USAGE);
+    return;
+  }
+  // **Reject an unrecognized flag rather than ignoring it.** `filters` drops
+  // every `--`-prefixed argument, so an unknown flag used to leave `filters`
+  // empty — which means "every module", i.e. a mistyped flag silently started
+  // the full 30-45 minute run and planted a real defect in the working tree.
+  // `--help` did exactly that once. A footgun this quiet is worth eight lines.
+  const unknown = args.filter((a) => a.startsWith("-") && a !== "--verify");
+  if (unknown.length) {
+    console.error(`unknown option ${unknown.join(", ")}\n\n${USAGE}`);
+    process.exit(2);
+  }
   const verifyOnly = args.includes("--verify");
   const filters = args.filter((a) => !a.startsWith("--"));
   const modules = filters.length

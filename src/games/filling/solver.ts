@@ -504,12 +504,26 @@ class FillingSolver {
     const budget = this.rec ? stepBudget("filling hint") : undefined;
     // Four techniques, easiest first, restart on the first that fires — stop
     // once every cell is filled. (Shared restart-on-first-firing ladder.)
+    // Filling has no difficulty tiers, so every technique sits on tier 0 and
+    // the reported grade is unused — the ladder is an *order*, not a grading.
     runDeductionFixpoint({
-      rungs: [
-        () => (this.learnBlockedExpansion() ? 1 : 0),
-        () => (this.learnExpandOrOne() ? 1 : 0),
-        () => (this.learnCriticalSquare() ? 1 : 0),
-        () => (this.learnBitmapDeductions() ? 1 : 0),
+      techniques: [
+        {
+          id: "blocked-expansion",
+          tier: 0,
+          run: () => (this.learnBlockedExpansion() ? 1 : 0),
+        },
+        { id: "expand-or-one", tier: 0, run: () => (this.learnExpandOrOne() ? 1 : 0) },
+        {
+          id: "critical-square",
+          tier: 0,
+          run: () => (this.learnCriticalSquare() ? 1 : 0),
+        },
+        {
+          id: "bitmap-elimination",
+          tier: 0,
+          run: () => (this.learnBitmapDeductions() ? 1 : 0),
+        },
       ],
       budget,
       solved: () => this.nempty === 0,

@@ -271,11 +271,15 @@ generator shapes — lives in
 
 ### `deduction-fixpoint.ts` — the shared technique ladder
 
-`runDeductionFixpoint({ rungs, maxRung, budget })`: the ordered-rung
+`runDeductionFixpoint({ techniques, maxTier, budget })`: the ordered-technique
 fixpoint loop behind "a generator and an explained hint are two projections of
-one deduction engine". **Its header's list of known no-gos is as important as
-its call sites** — the ladder *shape* is near-universal; the bookkeeping
-wrapped around it is per-game and often decides which puzzles exist. See
+one deduction engine". A technique is a **declaration** — `{ id, tier, run }`,
+both `id` and `tier` required — so the grade is the highest tier that fired and
+the cap excludes by tier, never by position in the array. **Its header's list of
+known no-gos is as important as its call sites** — the ladder *shape* is
+near-universal; the bookkeeping wrapped around it is per-game and often decides
+which puzzles exist — and that list is **re-derived when the contract changes,
+never copied forward** (Unruly left it when tiers became declarable). See
 [`solver-and-generator.md`](./solver-and-generator.md) before adopting or
 "fixing" a game that doesn't use it.
 
@@ -284,7 +288,10 @@ wrapped around it is per-game and often decides which puzzles exist. See
 A cooperative budget ticked once per fixpoint iteration on the
 hint/recording path only; converts a progress-without-change regression from
 an in-call hang into an immediate labeled failure. Generators run unguarded
-(and byte-for-byte unchanged).
+(and byte-for-byte unchanged). Ticked through `runDeductionFixpoint`, the
+failure also **names the techniques by firing count**, so the message's own
+question — *"a hint rule is reporting progress without changing the board?"* —
+answers itself.
 
 ### `difficulty.ts` — the cross-game difficulty contract
 

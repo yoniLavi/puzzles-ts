@@ -812,14 +812,19 @@ export function recordUndeadDeductions(
     return 1;
   };
   runDeductionFixpoint({
-    // **No forcing rung** (`audit-guessing-tier-names`, design D4/D8). Rung 3
-    // hypothesizes a candidate and runs the arc+counting *fixpoint* from it —
-    // a multi-step search with backtracking, which the collection classes as
-    // non-deductive and permits only on an `Unreasonable` board, never as
-    // something a hint presents as a technique. `deduceUndead` (which the
-    // generator grades on) keeps the rung, so no board changed; the hint simply
-    // stops where the search would have begun and refuses.
-    rungs: [() => record(recordCountingPass), () => record(recordSightlinePass)],
+    // **No forcing technique** (`audit-guessing-tier-names`, design D4/D8). The
+    // third rung of the *generator's* ladder hypothesizes a candidate and runs
+    // the arc+counting *fixpoint* from it — a multi-step search with
+    // backtracking, which the collection classes as non-deductive and permits
+    // only on an `Unreasonable` board, never as something a hint presents as a
+    // technique. `deduceUndead` (which the generator grades on) keeps the rung,
+    // so no board changed; the hint simply stops where the search would have
+    // begun and refuses. Both surviving techniques sit on tier 0: this ladder
+    // records, it does not grade.
+    techniques: [
+      { id: "counting", tier: 0, run: () => record(recordCountingPass) },
+      { id: "sightline", tier: 0, run: () => record(recordSightlinePass) },
+    ],
     budget: stepBudget("undead hint recorder"),
     // A contradiction (an emptied candidate cell) stops the ladder — the hint
     // refuses on such a board anyway.

@@ -9,6 +9,7 @@
  * `executeMove` stays pure; only the solver/generator mutate a private
  * working grid.
  */
+import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import { DIFF_EASY, DIFF_NORMAL, DIFF_TRIVIAL, EMPTY, ONE, ZERO } from "./constants.ts";
 import type { UnrulyMistake, UnrulyState } from "./state.ts";
@@ -451,51 +452,66 @@ function checkAllNearComplete(view: GridView, s: Scratch, rec?: Recorder): numbe
 
 // --- solve loop ----------------------------------------------------------
 
-/** Run the deductive techniques to a fixpoint, gated by `diff`. Mutates
- * `view.grid` and `scratch`. Returns the maximum difficulty whose
- * technique fired, or `-1` if no progress was made. */
+/**
+ * Run the deductive techniques to a fixpoint, gated by `diff`. Mutates
+ * `view.grid` and `scratch`. Returns the maximum difficulty whose technique
+ * fired, or `-1` if no progress was made.
+ *
+ * Five techniques across **three** tiers — two Trivial, two Easy, one Normal —
+ * which is why this loop was hand-rolled until `declare-deduction-techniques`:
+ * the shared runner graded by a technique's *index* in the ladder, and here the
+ * index is not the tier. Now that a technique declares its own tier, the whole
+ * of upstream's bookkeeping is the runner's: the `continue`s are
+ * restart-on-first-firing, the running `maxdiff` is the tier grade, and the two
+ * `if (diff < …) break;` statements that used to sit *inside* the ladder are
+ * one `maxTier`. No technique here can prove a contradiction, so `impossible`
+ * is never reported and the `-1 / 0 / >0` contract's negative arm is unused.
+ */
 export function solveGame(
   view: GridView,
   scratch: Scratch,
   diff: number,
   rec?: Recorder,
 ): number {
-  let maxdiff = -1;
-  const bump = (d: number) => {
-    if (maxdiff < d) maxdiff = d;
-  };
   // Guard the hint/recording path against a non-terminating fixpoint; the
   // generator (no `rec`) runs unguarded and byte-for-byte unchanged.
   const budget = rec ? stepBudget("unruly hint") : undefined;
-  while (true) {
-    budget?.tick();
-    if (checkAllThrees(view, scratch, rec)) {
-      bump(DIFF_TRIVIAL);
-      continue;
-    }
-    if (checkAllSingleGap(view, scratch, rec)) {
-      bump(DIFF_TRIVIAL);
-      continue;
-    }
-    if (diff < DIFF_EASY) break;
-
-    if (checkAllCompleteNums(view, scratch, rec)) {
-      bump(DIFF_EASY);
-      continue;
-    }
-    if (view.unique && checkAllUniques(view, scratch, rec)) {
-      bump(DIFF_EASY);
-      continue;
-    }
-    if (diff < DIFF_NORMAL) break;
-
-    if (checkAllNearComplete(view, scratch, rec)) {
-      bump(DIFF_NORMAL);
-      continue;
-    }
-    break;
-  }
-  return maxdiff;
+  const { grade } = runDeductionFixpoint({
+    techniques: [
+      {
+        id: "three-in-a-row",
+        tier: DIFF_TRIVIAL,
+        run: () => (checkAllThrees(view, scratch, rec) ? 1 : 0),
+      },
+      {
+        id: "single-gap",
+        tier: DIFF_TRIVIAL,
+        run: () => (checkAllSingleGap(view, scratch, rec) ? 1 : 0),
+      },
+      {
+        id: "complete-count",
+        tier: DIFF_EASY,
+        run: () => (checkAllCompleteNums(view, scratch, rec) ? 1 : 0),
+      },
+      {
+        // `unique` is the "no two identical rows" game variant, so the guard is
+        // a rule of the board, not a rung ordering question — it belongs inside
+        // the technique rather than as a runner predicate.
+        id: "unique-rows",
+        tier: DIFF_EASY,
+        run: () => (view.unique && checkAllUniques(view, scratch, rec) ? 1 : 0),
+      },
+      {
+        id: "near-complete",
+        tier: DIFF_NORMAL,
+        run: () => (checkAllNearComplete(view, scratch, rec) ? 1 : 0),
+      },
+    ],
+    maxTier: diff,
+    baseGrade: -1,
+    budget,
+  });
+  return grade;
 }
 
 /**

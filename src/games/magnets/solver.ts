@@ -13,6 +13,7 @@
 import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import {
   COLUMN,
+  DIFF_EASY,
   DIFF_TRICKY,
   GS_ERROR,
   GS_MARK,
@@ -514,7 +515,10 @@ export class MagnetsSolver {
    * clue counts exist. */
   solveUnnumbered(): number {
     const { impossible } = runDeductionFixpoint({
-      rungs: [() => this.force(), () => this.neither()],
+      techniques: [
+        { id: "force", tier: DIFF_EASY, run: () => this.force() },
+        { id: "neither", tier: DIFF_EASY, run: () => this.neither() },
+      ],
     });
     if (impossible) return -1;
     for (let i = 0; i < this.wh; i++) {
@@ -529,24 +533,40 @@ export class MagnetsSolver {
     this.clearflags();
     if (this.startflags() < 0) return -1;
 
-    // The shared ordered-rung ladder (`engine/deduction-fixpoint.ts`): try the
-    // techniques easiest-first and restart from the top the moment one fires.
-    // Upstream's `if (diff < DIFF_TRICKY) break;` sat in the MIDDLE of the
-    // ladder; it is exactly the runner's `maxRung`, so the difficulty cap is
-    // now expressed as a cap rather than as an early exit you have to read
-    // against the rung order to understand.
+    // The shared ordered technique ladder (`engine/deduction-fixpoint.ts`): try
+    // the techniques easiest-first and restart from the top the moment one
+    // fires. Upstream's `if (diff < DIFF_TRICKY) break;` sat in the MIDDLE of
+    // the ladder; each technique now declares the tier it belongs to, so the
+    // cap is simply the difficulty asked for — no index to re-derive by
+    // counting the ladder.
     const { impossible } = runDeductionFixpoint({
-      rungs: [
-        () => this.force(),
-        () => this.neither(),
-        () => this.rowcols(this.checkfull),
-        () => this.rowcols(this.oddlength),
-        () => this.rowcols(this.advancedfull),
-        () => this.rowcols(this.nonneutral),
-        () => this.rowcols(this.countdominoesNeutral),
-        () => this.rowcols(this.countdominoesNonneutral),
+      techniques: [
+        { id: "force", tier: DIFF_EASY, run: () => this.force() },
+        { id: "neither", tier: DIFF_EASY, run: () => this.neither() },
+        { id: "checkfull", tier: DIFF_EASY, run: () => this.rowcols(this.checkfull) },
+        { id: "oddlength", tier: DIFF_EASY, run: () => this.rowcols(this.oddlength) },
+        {
+          id: "advancedfull",
+          tier: DIFF_TRICKY,
+          run: () => this.rowcols(this.advancedfull),
+        },
+        {
+          id: "nonneutral",
+          tier: DIFF_TRICKY,
+          run: () => this.rowcols(this.nonneutral),
+        },
+        {
+          id: "count-dominoes-neutral",
+          tier: DIFF_TRICKY,
+          run: () => this.rowcols(this.countdominoesNeutral),
+        },
+        {
+          id: "count-dominoes-nonneutral",
+          tier: DIFF_TRICKY,
+          run: () => this.rowcols(this.countdominoesNonneutral),
+        },
       ],
-      maxRung: diff < DIFF_TRICKY ? 3 : 7,
+      maxTier: diff,
     });
     if (impossible) return -1;
     return this.checkCompletion();

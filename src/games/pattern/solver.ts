@@ -667,21 +667,30 @@ export function deduceHintPlan(state: PatternState): PatternHintMove[] {
     for (const c of firing.cells) working[c] = firing.value;
     return 1;
   };
-  // Restart-on-first-firing over two rungs: prefer an elegant named technique
-  // (the teaching path), then the general single-line intersection (also named
-  // and explained) for cells the elegant two don't group. Each firing decides
-  // ≥1 cell; the step budget is the non-termination backstop.
+  // Restart-on-first-firing over two techniques: prefer an elegant named
+  // technique (the teaching path), then the general single-line intersection
+  // (also named and explained) for cells the elegant two don't group. Each
+  // firing decides ≥1 cell; the step budget is the non-termination backstop.
+  // Pattern is untiered, so both sit on tier 0 and the grade is unused.
   runDeductionFixpoint({
-    rungs: [
-      () => {
-        let firing: PatternHintMove | null = null;
-        for (let line = 0; line < w + h && !firing; line++) {
-          const geom = lineGeom(line, w, h);
-          firing = analyzeLine(readLine(working, geom), clues[line], line, geom);
-        }
-        return apply(firing);
+    techniques: [
+      {
+        id: "line-analysis",
+        tier: 0,
+        run: () => {
+          let firing: PatternHintMove | null = null;
+          for (let line = 0; line < w + h && !firing; line++) {
+            const geom = lineGeom(line, w, h);
+            firing = analyzeLine(readLine(working, geom), clues[line], line, geom);
+          }
+          return apply(firing);
+        },
       },
-      () => apply(intersectionFiring(working, w, h, clues)),
+      {
+        id: "line-intersection",
+        tier: 0,
+        run: () => apply(intersectionFiring(working, w, h, clues)),
+      },
     ],
     budget: stepBudget("pattern hint"),
     solved: () => !working.includes(GRID_UNKNOWN),
