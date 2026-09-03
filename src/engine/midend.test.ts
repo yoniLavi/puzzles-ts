@@ -63,6 +63,41 @@ function refGame(): typeof fakeGame {
   return g as unknown as typeof fakeGame;
 }
 
+/**
+ * A fake game with a **difficulty**, whose `encodeParams` honors `full` the way
+ * every tiered game's does: the short form drops the tier (upstream
+ * `encode_params(..., FALSE)`), the full form keeps it. `fakeGame` itself
+ * ignores `full`, so it cannot tell the two game IDs apart — and a test that
+ * cannot tell them apart is no guard on which one gets recorded.
+ */
+function tieredGame(): typeof fakeGame {
+  type TieredParams = { target: number; diff: number };
+  const g = {
+    ...fakeGame,
+    defaultParams: (): TieredParams => ({ target: 3, diff: 0 }),
+    presets: () => ({
+      title: "root",
+      submenu: [
+        { title: "Easy", params: { target: 3, diff: 0 } },
+        { title: "Hard", params: { target: 3, diff: 1 } },
+      ],
+    }),
+    encodeParams: (p: TieredParams, full: boolean) =>
+      `t${p.target}${full ? `d${p.diff}` : ""}`,
+    decodeParams: (s: string): TieredParams => {
+      const m = /^t(\d+)(?:d(\d+))?$/.exec(s);
+      if (!m) throw new Error(`bad params "${s}"`);
+      // No `d` suffix ⇒ the game's default tier, exactly as a real game's
+      // decoder does. This is the lossiness the two ids exist to separate.
+      return { target: Number(m[1]), diff: m[2] === undefined ? 0 : Number(m[2]) };
+    },
+    validateParams: (p: TieredParams) =>
+      p.target > 0 ? null : "target must be positive",
+    newDesc: (p: TieredParams) => ({ desc: `g${p.target}-7` }),
+  };
+  return g as unknown as typeof fakeGame;
+}
+
 /** Drive a fresh midend and record every notification it emits. */
 function harness(game: typeof fakeGame = fakeGame) {
   const notes: ChangeNotification[] = [];
@@ -335,33 +370,55 @@ describe("Midend params + presets", () => {
     expect(h.m.getParams()).toBe(before);
   });
 
-  it("random-seed id carries FULL params (difficulty), game id does not", () => {
-    // Regression: `emitIdChange` encoded both the `params:desc` id and the
+  it("each of the three ids encodes params for the job it is for", () => {
+    // Regression 1: `emitIdChange` encoded both the `params:desc` id and the
     // `params#seed` seed with `full=false`, dropping a difficulty-style
     // suffix from the seed. The app's `currentParams` prefers the seed
     // form, so the type-menu label lost the difficulty (Extreme shown as
-    // the default). A game whose `encodeParams` appends a suffix only at
-    // `full=true` (like every difficulty game) exercises the split.
-    const suffixGame: typeof fakeGame = {
-      ...fakeGame,
-      encodeParams: (p, full) => `t${p.target}${full ? "X" : ""}`,
-      decodeParams: (s) => {
-        const m = /^t(\d+)X?$/.exec(s);
-        if (!m) throw new Error(`bad params "${s}"`);
-        return { target: Number(m[1]) };
-      },
-    };
-    const h = harness(suffixGame);
+    // the default).
+    //
+    // Regression 2 (`remember-the-difficulty-of-a-dealt-board`): there was no
+    // third id, so the app remembered a dealt board as `currentGameId` — whose
+    // params are lossy on purpose — and reopening a tiered puzzle silently
+    // dropped it to its default difficulty.
+    const h = harness(tieredGame());
+    expect(h.m.setParams("t3d1")).toBeUndefined();
     h.m.newGame();
     const id = h.last("game-id-change") as Extract<
       ChangeNotification,
       { type: "game-id-change" }
     >;
     // Seed form regenerates the puzzle ⇒ must include the full suffix.
-    expect(id.randomSeed).toMatch(/^t3X#[0-9a-f]+$/);
+    expect(id.randomSeed).toMatch(/^t3d1#[0-9a-f]+$/);
     // Descriptive form ⇒ desc specifies the puzzle, suffix omitted.
     expect(id.currentGameId).toMatch(/^t3:/);
-    expect(id.currentGameId).not.toContain("X");
+    expect(id.currentGameId).not.toContain("d1");
+    // Restore form ⇒ re-deals this game *here*, so it keeps the tier.
+    expect(id.restoreGameId).toMatch(/^t3d1:/);
+  });
+
+  it("restoring from the remembered id keeps the difficulty; the shared id does not", () => {
+    // The property the app depends on, asserted end to end rather than by
+    // eyeballing the two encodings: `newGameFromId` sets `params` from whatever
+    // prefix it is handed, so *which id you remembered* decides whether the
+    // player's chosen tier survives reopening the puzzle. The `currentGameId`
+    // arm is here deliberately — it pins the sharing id's documented lossiness
+    // so the two ids cannot quietly converge and make the distinction dead.
+    const h = harness(tieredGame());
+    expect(h.m.setParams("t3d1")).toBeUndefined();
+    h.m.newGame();
+    const id = h.last("game-id-change") as Extract<
+      ChangeNotification,
+      { type: "game-id-change" }
+    >;
+
+    const restored = harness(tieredGame());
+    expect(restored.m.newGameFromId(id.restoreGameId)).toBeUndefined();
+    expect(restored.m.getParams()).toBe("t3d1");
+
+    const shared = harness(tieredGame());
+    expect(shared.m.newGameFromId(id.currentGameId)).toBeUndefined();
+    expect(shared.m.getParams()).toBe("t3d0");
   });
 
   it("validates params with full=false when the id carries its own desc", () => {

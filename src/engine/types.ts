@@ -66,10 +66,19 @@ export type DrawTextOptions = {
   size: number;
 };
 
+/**
+ * Three ids for three jobs, and they are not interchangeable — see
+ * `Midend.emitIdChange`. `currentGameId` shares a *board* and deliberately omits
+ * difficulty; `randomSeed` shares a *seed*; `restoreGameId` re-deals *this exact
+ * game*. Recording the sharing id where the restoring one belonged is what reset
+ * every tiered puzzle to its default difficulty on reopen
+ * (`remember-the-difficulty-of-a-dealt-board`).
+ */
 export type NotifyGameIdChange = {
   type: "game-id-change";
   currentGameId: string;
   randomSeed?: string | undefined;
+  restoreGameId: string;
 };
 
 export type NotifyGameStateChange = {

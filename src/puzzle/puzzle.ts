@@ -168,6 +168,7 @@ export class Puzzle {
       case "game-id-change": {
         update(this._currentGameId, message.currentGameId);
         update(this._randomSeed, message.randomSeed);
+        update(this._restoreGameId, message.restoreGameId);
         break;
       }
       case "game-state-change":
@@ -235,14 +236,23 @@ export class Puzzle {
   private _canUndo = signal(false);
   private _canRedo = signal(false);
   private _params = signal<string>("");
-  private _currentParams = computed<string | undefined>(
-    () =>
-      // The encoded params are in randomSeed before '#' and currentGameId before ':'.
-      // The randomSeed version is more descriptive if available (e.g, includes difficulty).
-      this.randomSeed?.split("#", 1).at(0) ?? this.currentGameId?.split(":", 1).at(0),
+  private _currentParams = computed<string | undefined>(() =>
+    // The **full** params of the board on screen — difficulty included, which
+    // is what every consumer wants: the type-menu label, the share dialog's
+    // type description, and the keypad/view re-render keys.
+    //
+    // This used to read `randomSeed` before its '#' and fall back to
+    // `currentGameId` before its ':'. The preference existed precisely because
+    // the seed form carries the full params and the game-id form does not — so
+    // the fallback silently mislabeled the type on any board without a seed,
+    // which is every board restored from a descriptive id. `restoreGameId`
+    // carries the full params unconditionally, so there is nothing left to
+    // prefer between.
+    this.restoreGameId?.split(":", 1).at(0),
   );
   private _currentGameId = signal<string | undefined>(undefined);
   private _randomSeed = signal<string | undefined>(undefined);
+  private _restoreGameId = signal<string | undefined>(undefined);
   private _canFormatAsText = signal(false);
   private _statusbarText = signal<string>("");
   private _generatingGame = signal<boolean>(false);
@@ -331,6 +341,16 @@ export class Puzzle {
 
   public get currentGameId(): string | undefined {
     return this._currentGameId.get();
+  }
+
+  /**
+   * The current board addressed for **re-dealing it here** — `params:desc` with
+   * the full params, difficulty included. Use this to remember a board;
+   * {@link currentGameId} is the one to *show or share*, and its params are
+   * deliberately lossy (see `NotifyGameIdChange`).
+   */
+  public get restoreGameId(): string | undefined {
+    return this._restoreGameId.get();
   }
 
   public get randomSeed(): string | undefined {

@@ -71,6 +71,7 @@ vi.mock("../store/saved-games.ts", () => ({
 // only that this file's own fake was called — the shape of guard this repo keeps
 // catching (a check aimed at a neighbor of the thing it claims to check).
 import { settings } from "../store/settings.ts";
+import { sleep } from "../utils/timing.ts";
 import { PuzzleScreen } from "./puzzle-screen.ts";
 
 interface CommandHost {
@@ -299,21 +300,33 @@ describe("puzzle-screen: focus returns to the board after a command", () => {
  * dropped-stale-board test first passed for the wrong reason. */
 let dealt = 0;
 
+/** The sharing form of a restore id — the difficulty suffix dropped, exactly as
+ * `Midend.emitIdChange` drops it. The fake models both ids because the app
+ * records one and displays the other, and a fake where they are the same string
+ * cannot tell a test which one was recorded. */
+const shareFormOf = (id: string) => id.replace(/^([^:]*?)(?:d\d+)?:/, "$1:");
+
 function makeLoadPuzzle(opts: { rejectId?: (id: string) => string | undefined } = {}) {
   const puzzle = {
     puzzleId: "abcd",
-    params: "5x5n4",
+    params: "5x5n4d1",
+    // The two ids for one board: `currentGameId` is the one to share (lossy
+    // params, by design) and `restoreGameId` the one to re-deal from (full
+    // params, difficulty included).
     currentGameId: "",
+    restoreGameId: "",
     setPreferences: vi.fn(async () => undefined),
     setParams: vi.fn(async () => undefined),
     newGame: vi.fn(async () => {
       dealt += 1;
-      puzzle.currentGameId = `5x5n4:fresh-${dealt}`;
+      puzzle.restoreGameId = `5x5n4d1:fresh-${dealt}`;
+      puzzle.currentGameId = shareFormOf(puzzle.restoreGameId);
     }),
     newGameFromId: vi.fn(async (id: string) => {
       const error = opts.rejectId?.(id);
       if (error) return error;
-      puzzle.currentGameId = id;
+      puzzle.restoreGameId = id;
+      puzzle.currentGameId = shareFormOf(id);
       return undefined;
     }),
   };
@@ -341,8 +354,12 @@ async function load(
   await screen.handlePuzzleLoaded(event);
   // `handlePuzzleGameStateChange` is @debounced(250); awaiting the debounce
   // window would make every test sleep. Record through the same public API it
-  // uses instead.
-  await settings.setLastGameId(puzzle.puzzleId, puzzle.currentGameId);
+  // uses instead — **and record the same value it does**: this shortcut once
+  // stored `currentGameId` while production stored it too, and when production
+  // moved to `restoreGameId` the shortcut would have kept the tests green over
+  // a defect neither could see. `records the board it will re-deal from` below
+  // pays the debounce once so the real handler is exercised at least somewhere.
+  await settings.setLastGameId(puzzle.puzzleId, puzzle.restoreGameId);
 }
 
 describe("which board a puzzle page opens with", () => {
@@ -363,14 +380,43 @@ describe("which board a puzzle page opens with", () => {
     const first = makeLoadPuzzle();
     await load(first);
     const board = first.currentGameId;
+    const remembered = first.restoreGameId;
     expect(board).toMatch(/^5x5n4:fresh-\d+$/);
 
     const second = makeLoadPuzzle();
     await load(second);
 
     expect(second.currentGameId).toBe(board);
-    expect(second.newGameFromId).toHaveBeenCalledWith(board);
+    // Re-dealt from the *restore* id, so the difficulty the board was dealt at
+    // comes back with it — the sharing id would have dropped the `d1`.
+    expect(remembered).toMatch(/^5x5n4d1:fresh-\d+$/);
+    expect(second.newGameFromId).toHaveBeenCalledWith(remembered);
     expect(second.newGame).not.toHaveBeenCalled();
+  });
+
+  it("records the board it will re-deal from, difficulty included", async () => {
+    // THE ONE TEST THAT DRIVES THE REAL HANDLER. Every other test in this block
+    // goes through `load`'s shortcut, which writes the settings key directly to
+    // avoid a 250ms debounce per test — so none of them can see *which id
+    // production chose*. This one pays the debounce once and asserts the stored
+    // value, which is the whole of `remember-the-difficulty-of-a-dealt-board`:
+    // storing `currentGameId` here re-opened every tiered puzzle at its default
+    // difficulty, because loading a game ID sets the params from its prefix and
+    // the sharing form omits the tier on purpose.
+    const puzzle = makeLoadPuzzle();
+    await puzzle.newGame();
+    const screen = new PuzzleScreen() as unknown as {
+      handlePuzzleGameStateChange: (e: unknown) => void;
+    };
+    screen.handlePuzzleGameStateChange({ detail: { puzzle } });
+    await sleep(300);
+
+    expect(await settings.getLastGameId("abcd")).toBe(puzzle.restoreGameId);
+    expect(await settings.getLastGameId("abcd")).toMatch(/^5x5n4d1:/);
+    // Not the sharing id — which is a real, distinct string here, so this
+    // assertion has something to be wrong about.
+    expect(puzzle.currentGameId).not.toBe(puzzle.restoreGameId);
+    expect(await settings.getLastGameId("abcd")).not.toBe(puzzle.currentGameId);
   });
 
   it("writes no autosave for it, so the home-screen badge stays honest", async () => {
@@ -419,7 +465,7 @@ describe("which board a puzzle page opens with", () => {
   it("drops a remembered board this build cannot deal, quietly", async () => {
     const first = makeLoadPuzzle();
     await load(first);
-    const stale = first.currentGameId;
+    const stale = first.restoreGameId;
 
     const second = makeLoadPuzzle({
       rejectId: (id) => (id === stale ? "Board size no longer supported" : undefined),

@@ -1431,6 +1431,17 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       // puzzle, so the params need not carry the difficulty suffix
       // (upstream `midend_get_game_id` → `encode_params(..., FALSE)`).
       currentGameId: `${this.game.encodeParams(this.params, false)}:${this.desc}`,
+      // The same board, addressed for *re-dealing it here* rather than for
+      // handing to someone else — so the params are FULL. Loading any game ID
+      // sets the params from its prefix (see `newGameFromId`), which is right
+      // for a shared link (the recipient should not inherit the sender's
+      // difficulty for their next game) and wrong for restoring your own board:
+      // it silently dropped a tiered puzzle back to its default difficulty every
+      // time the app reopened it. Emitted here rather than spliced together by
+      // the caller from `params` + a desc, because those are two signals that
+      // could drift, and a mismatched pair yields a broken board rather than a
+      // wrong label.
+      restoreGameId: `${this.game.encodeParams(this.params, true)}:${this.desc}`,
       // Random seed (`params#seed`): regenerating the puzzle from the seed
       // needs the *full* params, difficulty included (upstream
       // `midend_get_random_seed` → `encode_params(..., TRUE)`). The app's
