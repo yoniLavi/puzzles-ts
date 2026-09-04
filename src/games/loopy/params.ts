@@ -174,7 +174,12 @@ export const paramConfig: ParamConfigItem<LoopyParams>[] = [
     },
   },
   {
-    kw: "diff",
+    // `difficulty`, as the other 28 tiered games spell it. It was `diff` until
+    // the type header started reading tier names off this item: the header
+    // looks the field up by the key `describeParams` emits, which was already
+    // `difficulty` here, so the two spellings disagreed and Loopy's header
+    // rendered a raw tier index.
+    kw: "difficulty",
     name: "Difficulty",
     type: "choices",
     choices: LOOPY_DIFFS.map((d) => d.title),

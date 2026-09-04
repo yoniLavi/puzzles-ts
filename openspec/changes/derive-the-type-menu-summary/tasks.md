@@ -1,47 +1,74 @@
 # derive-the-type-menu-summary — tasks
 
-Scaffolded 2026-09-05 from a defect found by running the app during
-`declare-params-and-presets`. **Not ready to implement — task 0 first.**
+## 0. Decide how the tier list crosses the worker boundary — done
 
-## 0. Decide how the tier list crosses the worker boundary
+- [x] 0.1 `/opsx:explore`. **It already crosses**: `getCustomParamsConfig()`
+      returns a `ConfigDescription` whose `choices` items carry `choicenames`,
+      built by the midend from the game's `paramConfig` — the same array
+      `difficultyTiers` reads, and the reason the Custom dialog was right all
+      along. No new message and no change to `ConfigValues`. See `design.md`,
+      including why sending the resolved name in `ConfigValues` was rejected.
+- [x] 0.2 Confirm the blast radius. **The proposal's premise was wrong** and the
+      measurement corrected it: six non-difficulty tokens also name `choices`
+      fields, and five spell the declared names *exactly* — the same copy
+      waiting to rot. Only Samegame's reshapes them (`, alt. scoring` for
+      `(n-1)²`), which is presentation. So the line is not "only difficulty" but
+      **"identical to the declared names ⇒ a copy"**.
 
-- [ ] 0.1 `/opsx:explore`. `augmentation.ts` is main-thread and must not import
-      the registry (`module-layering.test.ts` guards it); the worker has the
-      game. Choose between sending the resolved tier *name* in `ConfigValues`
-      and sending the tier list alongside, and record why in `design.md`.
-- [ ] 0.2 Confirm the blast radius is only the `{difficulty:…}` token. The other
-      spelled option lists (`{grid-type:…}`, `{strip-clues:…}`) have no second
-      source and are not part of this.
+## 1. Derive it — done
 
-## 1. Derive it
+- [x] 1.1 A bare `{field}` on a choices field resolves from `choicenames`;
+      `describeConfig` takes them as a second argument; `Puzzle.getChoiceNames`
+      reads them off the config the dialog already fetches.
+- [x] 1.2 Delete the hand-typed lists: 21 inline `{difficulty:…}` tokens, 3
+      `difficulty: [...]` entries in `customFormats` objects, 5 identical
+      non-difficulty lists, and 2 lists hidden **inside `describeConfig`
+      function bodies** (Solo, Mathrax). The last two were invisible to a scan
+      keyed on `difficulty: [` and were caught by the new guard, not the sweep —
+      AGENTS.md § "A scan that keys on a name", again.
+- [x] 1.3 Fix the two stale doc comments: the British-spelling instruction and
+      the "isn't currently possible in the C code" framing.
 
-- [ ] 1.1 Resolve the difficulty word from `difficultyTiers(game)` rather than
-      from a spelled list, for every game.
-- [ ] 1.2 Delete the 25 spelled tier lists in `augmentation.ts`.
-- [ ] 1.3 Fix the two stale doc comments in that file while rewriting it: the
-      British-spelling instruction (AGENTS.md makes American the rule) and the
-      "isn't currently possible in the C code" framing (there is no C).
+## 2. The guard that was missing — done
 
-## 2. The guard that was missing
+- [x] 2.1 Assert the rendered difficulty word equals the declared tier, for
+      every tier of every tiered game. Wrong word, wrong order and wrong count
+      all fail.
+- [x] 2.2 Prove it fails: re-spelled Tents as `{difficulty:Easy|Tricky}`, watched
+      it report *tier 1 should read "Normal" but rendered "8x8 Tricky"*, restored.
+- [x] 2.3 Vacuity guard on how many tiers were rendered (floor 40).
 
-- [ ] 2.1 Assert across the registry that no game's rendered difficulty word can
-      differ from `difficultyTiers(game)`, including the tier *count*. Bricks
-      renders three words for two tiers today, so the count is part of it.
-- [ ] 2.2 Prove the guard fails before trusting it: reintroduce one wrong word,
-      watch it go red, restore.
-- [ ] 2.3 Vacuity guard: assert how many games the check actually looked at. A
-      template-matching scan that finds nothing must fail, not pass.
+## 3. What the guard found that the sweep had not
 
-## 3. Acceptance
+- [x] 3.1 **Loopy** rendered a raw tier index: its `paramConfig` spelled the
+      field `diff` while `describeParams` emitted `difficulty`, so the lookup
+      missed. Renamed to `difficulty`, matching the other 28. Recorded as a
+      `ts-engine` requirement.
+- [x] 3.2 **Solo and Mathrax** kept tier lists inside `describeConfig` function
+      bodies (Solo: `Trivial|Basic|Intermediate|…`, Mathrax:
+      `Easy|Normal|Tricky|Recursive`). Both now read the declared names.
+- [x] 3.3 **Clusters and Salad** never named the tier at all — a custom board
+      gave the player no way to tell which tier they were on. Both now do.
 
-- [ ] 3.1 Run the app. For at least three of the 19, open "Custom type…", pick
-      a tier, and confirm the header names the tier that was picked.
-- [ ] 3.2 Player-visible ⇒ owner acceptance before archiving.
+## 4. Acceptance
 
-## Findings so far
+- [x] 4.1 Ran the app. Tents: dialog offers Easy/Normal, picking Normal now
+      gives **"12x9 Normal"** where it said "Tricky". Loopy: **"10x10 Squares -
+      Easy"** where it rendered `0`, and its Custom dialog still shows Width,
+      Height, Grid type and Difficulty after the `kw` rename. Solo: **"3x3
+      Easy"** where it said "Trivial".
+- [ ] 4.2 **Owner acceptance.** Player-visible: 24 games' custom-type headers
+      change wording. Committed and awaiting the owner's read.
 
-Measured 2026-09-05 by comparing each `{difficulty:…}` template in
-`src/puzzle/augmentation.ts` against `difficultyTiers(game)`: **21 games carry
-the token, 19 disagree with the game's real tiers.** The full list is in
-`proposal.md`. Reproduce by walking the registry and re-running the comparison —
-write the query, not its answer.
+## Findings
+
+**24 hand-typed option lists deleted**, of which 19 were provably wrong about
+the game they described.
+
+**The instrument lesson, twice in one change.** The pre-existing guard swept
+every game and asserted no `{field}` token survived unsubstituted — and stayed
+green through all 19, because substituting the wrong word is still substituting.
+Then my own sweep, keyed on the shapes `{difficulty:…}` and `difficulty: [`,
+missed two more lists sitting inside function bodies. **Both were caught by the
+same thing: a check that compares the rendered output against the declaring
+source.** Key on the output, not on the shape of the code that produces it.

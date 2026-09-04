@@ -1,18 +1,37 @@
 import type { ConfigValues, PuzzleId } from "../engine/types.ts";
 
 /**
- * Additional puzzle-specific metadata and functionality
- * that isn't (currently) possible in the C code
+ * The declared option names for a config's `choices` fields, keyed by field id —
+ * the `choicenames` of the `ConfigDescription` the midend builds from a game's
+ * `paramConfig`, which is the same array `difficultyTiers(game)` reads.
+ *
+ * Passing it in is what lets a bare `{difficulty}` token render the tier the
+ * game actually declares instead of a word typed out here. Optional so a caller
+ * with nothing to offer still renders everything else.
+ */
+export type ChoiceNames = Record<string, readonly string[] | undefined>;
+
+/**
+ * Per-puzzle presentation metadata: how a custom configuration reads in the
+ * type header, and how the palette behaves in dark mode.
  */
 export interface PuzzleAugmentations {
   /**
    * Construct a human-readable description of the given puzzle configuration.
    *
-   * The implementations here try to follow the style of the existing preset titles
-   * for the same puzzle. (Capitalization and punctuation seems to vary quite a bit
-   * between puzzles.) Use British spelling to match the existing presets.
+   * The implementations here try to follow the style of the existing preset
+   * titles for the same puzzle. (Capitalization and punctuation vary quite a
+   * bit between puzzles.) American spelling, per AGENTS.md § "Code
+   * conventions".
+   *
+   * **A tier list is never spelled out here.** Write a bare `{difficulty}` and
+   * pass `names`; a token that spells its own options is for presentation
+   * shaping (punctuation, leading spaces, an empty branch), which has no other
+   * source. Nineteen of the twenty-one games that spelled their tiers had them
+   * wrong, and the words a player saw in the dialog and in the header beside it
+   * disagreed.
    */
-  describeConfig?: (config: ConfigValues) => string;
+  describeConfig?: (config: ConfigValues, names?: ChoiceNames) => string;
 
   /**
    * Index of palette color used as background. (Default 0.)
@@ -54,7 +73,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width}x{height}{grid-type} {difficulty}{always-show-start-and-end-points}{symmetrical-clues}",
       {
-        difficulty: ["Easy", "Normal", "Tricky", "Hard"],
         "grid-type": [" (no diagonals)", "", " Hexagon", " Honeycomb", " Edges"],
         "always-show-start-and-end-points": [", hidden ends", ""], // boolean, on by default
         "symmetrical-clues": ["", ", symmetric"], // boolean, off by default
@@ -73,7 +91,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width}x{height}, size {fleet-size} {difficulty}{remove-numbers}{fleet-configuration}",
       {
-        difficulty: ["Easy", "Normal", "Tricky", "Hard"],
         "remove-numbers": ["", ", hidden clues"], // boolean, default off
         // fleet is a comma-separated list of numbers (boats.c removes spaces), default ""
         "fleet-configuration": (value) => (value ? `, fleet ${value}` : ""),
@@ -81,7 +98,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     ),
   },
   bricks: {
-    describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Normal|Tricky}"),
+    describeConfig: configFormatter("{width}x{height} {difficulty}"),
   },
   bridges: {
     describeConfig: configFormatter(
@@ -89,7 +106,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       {
         // Don't include default values in description
         "allow-loops": (value) => (value ? "" : ", no loops"),
-        difficulty: ["easy", "medium", "hard"],
         "max-bridges-per-direction": (value) =>
           value === 0
             ? ", max 1 bridge"
@@ -106,7 +122,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     ),
   },
   clusters: {
-    describeConfig: configFormatter("{width}x{height}"),
+    describeConfig: configFormatter("{width}x{height} {difficulty}"),
   },
   crossing: {
     describeConfig: configFormatter("{width}x{height}{symmetric-walls:|, symmetric}"),
@@ -115,13 +131,11 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       // This won't exactly replicate the preset titles, which don't show dimensions.
       // (We'd need to suppress default dimensions, which vary by type of solid.)
-      "{type-of-solid:Tetrahedron|Cube|Octahedron|Icosahedron}, {width-top}x{height-bottom}",
+      "{type-of-solid}, {width-top}x{height-bottom}",
     ),
   },
   dominosa: {
-    describeConfig: configFormatter(
-      "Order {maximum-number-on-dominoes}, {difficulty:Trivial|Basic|Hard|Extreme|Ambiguous}",
-    ),
+    describeConfig: configFormatter("Order {maximum-number-on-dominoes}, {difficulty}"),
   },
   fifteen: {
     describeConfig: configFormatter("{width}x{height}"),
@@ -133,7 +147,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter("{width}x{height}"),
   },
   flip: {
-    describeConfig: configFormatter("{width}x{height} {shape-type:Crosses|Random}"),
+    describeConfig: configFormatter("{width}x{height} {shape-type}"),
   },
   flood: {
     describeConfig: configFormatter(
@@ -150,13 +164,11 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     },
   },
   galaxies: {
-    describeConfig: configFormatter(
-      "{width}x{height} {difficulty:Normal|Unreasonable}",
-    ),
+    describeConfig: configFormatter("{width}x{height} {difficulty}"),
   },
   group: {
     describeConfig: configFormatter(
-      "{grid-size}x{grid-size} {difficulty:Trivial|Normal|Hard|Extreme|Unreasonable}{show-identity:, identity hidden|}",
+      "{grid-size}x{grid-size} {difficulty}{show-identity:, identity hidden|}",
     ),
   },
   guess: {
@@ -172,12 +184,12 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   keen: {
     describeConfig: configFormatter(
-      "{grid-size}x{grid-size} {difficulty:Easy|Normal|Hard|Extreme|Unreasonable}{multiplication-only:|, multiplication only}",
+      "{grid-size}x{grid-size} {difficulty}{multiplication-only:|, multiplication only}",
     ),
   },
   lightup: {
     describeConfig: configFormatter(
-      "{width}x{height} {difficulty:easy|tricky|unreasonable}{percentage-of-black-squares}{symmetry}",
+      "{width}x{height} {difficulty}{percentage-of-black-squares}{symmetry}",
       {
         // Default black squares is "20". Note value is 5-100, not 0.05-1.0.
         "percentage-of-black-squares": (value) =>
@@ -202,51 +214,46 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     ),
   },
   loopy: {
-    describeConfig: configFormatter(
-      "{width}x{height} {grid-type} - {difficulty:Easy|Normal|Tricky|Hard}",
-      {
-        "grid-type": [
-          "Squares",
-          "Triangular",
-          "Honeycomb",
-          "Snub-Square",
-          "Cairo",
-          "Great-Hexagonal",
-          "Octagonal",
-          "Kites",
-          "Floret",
-          "Dodecagonal",
-          "Great-Dodecagonal",
-          "Penrose (kite/dart)",
-          "Penrose (rhombs)",
-          "Great-Great-Dodecagonal",
-          "Kagome",
-          "Compass-Dodecagonal",
-          "Hats",
-          "Spectres",
-        ],
-      },
-    ),
+    describeConfig: configFormatter("{width}x{height} {grid-type} - {difficulty}", {
+      "grid-type": [
+        "Squares",
+        "Triangular",
+        "Honeycomb",
+        "Snub-Square",
+        "Cairo",
+        "Great-Hexagonal",
+        "Octagonal",
+        "Kites",
+        "Floret",
+        "Dodecagonal",
+        "Great-Dodecagonal",
+        "Penrose (kite/dart)",
+        "Penrose (rhombs)",
+        "Great-Great-Dodecagonal",
+        "Kagome",
+        "Compass-Dodecagonal",
+        "Hats",
+        "Spectres",
+      ],
+    }),
     // The undecided and ruled-out edges take their dark values from the shared
     // palette (`lineMaybeColor` / `lineNoColor`); the `{ 2: 0.6 }` multiplier
     // that lived here darkened an already-dark inversion into invisibility.
   },
   magnets: {
     describeConfig: configFormatter(
-      "{width}x{height} {difficulty:Easy|Tricky}{strip-clues:|, strip clues}",
+      "{width}x{height} {difficulty}{strip-clues:|, strip clues}",
     ),
   },
   map: {
     describeConfig: configFormatter(
-      "{width}x{height}, {regions} regions, {difficulty:Easy|Normal|Hard|Unreasonable}",
+      "{width}x{height}, {regions} regions, {difficulty}",
     ),
   },
   mathrax: {
-    describeConfig: (config) => {
+    describeConfig: (config, names) => {
       const { size } = config;
-      const difficulty = ["Easy", "Normal", "Tricky", "Recursive"][
-        Number(config["difficulty"])
-      ];
+      const difficulty = names?.["difficulty"]?.[Number(config["difficulty"])];
       const enabledClues: string[] = [];
       const disabledClues: string[] = [];
       for (const clueType of [
@@ -340,7 +347,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   pearl: {
     describeConfig: configFormatter(
-      "{width}x{height} {difficulty:Easy|Tricky}{allow-unsoluble:|, ambiguous}",
+      "{width}x{height} {difficulty}{allow-unsoluble:|, ambiguous}",
     ),
     darkMode: {
       paletteOverrides: { 0: 1.15 }, // lighten bg
@@ -349,9 +356,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   pegs: {
     // Note: Cross and Octagon currently allow only specific sizes, all covered
     // by presets. (So any params that don't match a preset will be board-type Random.)
-    describeConfig: configFormatter(
-      "{board-type:Cross|Octagon|Random} {width}x{height}",
-    ),
+    describeConfig: configFormatter("{board-type} {width}x{height}"),
   },
   range: {
     describeConfig: configFormatter("{width}x{height}"),
@@ -368,18 +373,18 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     ),
   },
   rome: {
-    describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Normal|Tricky}"),
+    describeConfig: configFormatter("{width}x{height} {difficulty}"),
   },
   salad: {
-    describeConfig: (config) => {
+    describeConfig: (config, names) => {
       const isNumbers = Number(config["game-mode"]) > 0;
       const size = Number(config["size"]);
       const symbols = Number(config["symbols"]);
-      const difficulty = Number(config["difficulty"]) === 0 ? "" : " Extreme";
+      const tier = names?.["difficulty"]?.[Number(config["difficulty"])];
       const range = isNumbers
         ? `1~${symbols}`
         : `A~${String.fromCharCode(65 + symbols - 1)}`;
-      return `${isNumbers ? "Numbers" : "Letters"}: ${size}x${size} ${range}${difficulty}`;
+      return `${isNumbers ? "Numbers" : "Letters"}: ${size}x${size} ${range}${tier ? ` ${tier}` : ""}`;
     },
   },
   samegame: {
@@ -391,9 +396,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     },
   },
   seismic: {
-    describeConfig: configFormatter(
-      "{game-mode:Seismic|Tectonic}: {width}x{height} {difficulty:Easy|Hard}",
-    ),
+    describeConfig: configFormatter("{game-mode}: {width}x{height} {difficulty}"),
   },
   separate: {
     describeConfig: configFormatter("{width}x{height}, {letters} letters"),
@@ -406,7 +409,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     ),
   },
   singles: {
-    describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Tricky}"),
+    describeConfig: configFormatter("{width}x{height} {difficulty}"),
   },
   sixteen: {
     describeConfig: configFormatter("{width}x{height}{number-of-shuffling-moves}", {
@@ -417,7 +420,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     },
   },
   slant: {
-    describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Hard}"),
+    describeConfig: configFormatter("{width}x{height} {difficulty}"),
   },
   slide: {
     describeConfig: configFormatter("{width}x{height}, {solution-length-limit}", {
@@ -442,20 +445,13 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     },
   },
   solo: {
-    describeConfig: (config) => {
+    describeConfig: (config, names) => {
       const width = Number(config["columns-of-sub-blocks"]);
       const height = Number(config["rows-of-sub-blocks"]);
       const isJigsaw = Boolean(config["jigsaw"]);
       const isKiller = Boolean(config["killer"]);
       const isX = Boolean(config["x"]);
-      const difficulty = [
-        "Trivial",
-        "Basic",
-        "Intermediate",
-        "Advanced",
-        "Extreme",
-        "Unreasonable",
-      ][Number(config["difficulty"])];
+      const difficulty = names?.["difficulty"]?.[Number(config["difficulty"])];
       const symmetry = [
         "no symmetry", // default for Killer
         "2-way rotation", // default for all but Killer
@@ -481,7 +477,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     },
   },
   spokes: {
-    describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Tricky|Hard}"),
+    describeConfig: configFormatter("{width}x{height} {difficulty}"),
   },
   sticks: {
     describeConfig: configFormatter(
@@ -504,16 +500,14 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     // doesn't currently support custom configuration
   },
   tents: {
-    describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Tricky}"),
+    describeConfig: configFormatter("{width}x{height} {difficulty}"),
   },
   towers: {
-    describeConfig: configFormatter(
-      "{grid-size}x{grid-size} {difficulty:Easy|Hard|Extreme|Unreasonable}",
-    ),
+    describeConfig: configFormatter("{grid-size}x{grid-size} {difficulty}"),
   },
   tracks: {
     describeConfig: configFormatter(
-      "{width}x{height} {difficulty:Easy|Tricky|Hard}{disallow-consecutive-1-clues:, allow adjacent 1’s|}",
+      "{width}x{height} {difficulty}{disallow-consecutive-1-clues:, allow adjacent 1’s|}",
     ),
   },
   twiddle: {
@@ -552,16 +546,14 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     },
   },
   undead: {
-    describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Normal|Tricky}"),
+    describeConfig: configFormatter("{width}x{height} {difficulty}"),
   },
   unequal: {
-    describeConfig: configFormatter(
-      "{mode:Unequal|Adjacent}: {size}x{size} {difficulty:Trivial|Easy|Tricky|Extreme|Recursive}",
-    ),
+    describeConfig: configFormatter("{mode}: {size}x{size} {difficulty}"),
   },
   unruly: {
     describeConfig: configFormatter(
-      "{width}x{height} {difficulty:Trivial|Easy|Normal}{unique-rows-and-columns:|, unique}",
+      "{width}x{height} {difficulty}{unique-rows-and-columns:|, unique}",
     ),
     // The two tile bases author their dark values and `mkhighlightSpecific`
     // hands that on to each bevel trio, so "black" and "white" and their 3D
@@ -600,7 +592,7 @@ function configFormatter(
     | ((val: string | boolean | number, field: string, config: ConfigValues) => string)
   >,
 ) {
-  return (config: ConfigValues): string =>
+  return (config: ConfigValues, names?: ChoiceNames): string =>
     template.replace(
       /\{(?<field>[a-z0-9-]+)(?::(?<options>[^}]*))?}/g,
       (orig, field: string, optionsList?: string): string => {
@@ -621,6 +613,14 @@ function configFormatter(
         if (optionsList !== undefined) {
           const options = optionsList.split("|");
           return options[Number(value)] ?? "";
+        }
+        // A bare `{field}` on a choices field renders the name the *game*
+        // declares, so a tier list has one source. `names` comes from the same
+        // `ConfigDescription` the Custom dialog is built from, which is why the
+        // dialog has always shown the right words.
+        const declared = names?.[field];
+        if (declared) {
+          return declared[Number(value)] ?? String(value);
         }
         return String(value);
       },

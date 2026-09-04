@@ -1,8 +1,2 @@
-# No deltas yet: task 0 is a design decision (how the tier list reaches a
-# main-thread formatter that may not import the registry), and the requirement
-# to write depends on which mechanism wins. The defect this change exists to fix
-# is measured, not speculative — see proposal.md — but writing the spec now would
-# put a requirement in front of the decision that shapes it.
 schema: spec-driven
 created: 2026-09-05
-skip_specs: true
