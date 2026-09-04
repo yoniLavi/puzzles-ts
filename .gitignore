@@ -47,3 +47,12 @@ node_modules/
 # Stryker's per-mutant sandbox copies of the tree (audit-test-suite-strength).
 # The audit's *findings* are committed under the change; its scratch is not.
 /.stryker-tmp/
+
+# Screenshots dropped at the repo root by a browser check. `.playwright-cli/`
+# above covers the skill's own snapshots, but `playwright-cli screenshot
+# --filename=x.png` resolves against the CWD and lands here — which has now
+# happened twice, once reaching a commit (`darkcheck.png`, removed 2026-09-04).
+# Root-level only: the real PNGs live under `public/` and `src/assets/icons/`,
+# and this must never hide one of those. Write browser output to the session
+# scratchpad instead.
+/*.png
