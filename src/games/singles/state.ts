@@ -1,4 +1,7 @@
 import { tierNames } from "../../engine/difficulty.ts";
+import type { ParamConfigItem } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Singles (Hitori) — port of the
@@ -101,29 +104,29 @@ export function defaultParams(): SinglesParams {
   return { w: 5, h: 5, diff: "easy" };
 }
 
-export function encodeParams(p: SinglesParams, full: boolean): string {
-  return full ? `${p.w}x${p.h}d${diffChar(p.diff)}` : `${p.w}x${p.h}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. The
+ * difficulty accessors convert to and from this game's string tier union, so
+ * the codec never has to know how a tier is represented. */
+export const paramConfig: ParamConfigItem<SinglesParams>[] = [
+  ...dimensionParamConfig<SinglesParams>(),
+  {
+    kw: "difficulty",
+    name: "Difficulty",
+    type: "choices",
+    choices: [...DIFF_NAMES],
+    get: (p) => diffToLevel(p.diff),
+    set: (p, v) => {
+      p.diff = diffFromLevel(v);
+    },
+  },
+];
 
-export function decodeParams(s: string): SinglesParams {
-  const p = defaultParams();
-  let i = 0;
-  let digits = "";
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
-  p.w = p.h = digits ? Number.parseInt(digits, 10) : p.w;
-  if (s[i] === "x") {
-    i++;
-    digits = "";
-    while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
-    if (digits) p.h = Number.parseInt(digits, 10);
-  }
-  if (s[i] === "d") {
-    i++;
-    const idx = DIFF_CHARS.indexOf(s[i] ?? "");
-    p.diff = idx >= 0 ? diffFromLevel(idx) : p.diff;
-  }
-  return p;
-}
+/** `WxH`, plus the generator-only difficulty letter. An unknown letter leaves
+ * the default tier. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, { full: true }),
+]);
 
 const MAX_DIM = 10 + 26 + 26;
 

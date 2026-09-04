@@ -24,7 +24,8 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { dims, flag, paramsCodec } from "../../engine/params-codec.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -89,18 +90,6 @@ function defaultParams(): SignpostParams {
   return { w: 4, h: 4, forceCornerStart: true };
 }
 
-function encodeParams(p: SignpostParams, full: boolean): string {
-  let s = `${p.w}x${p.h}`;
-  if (full && p.forceCornerStart) s += "c";
-  return s;
-}
-
-function decodeParams(s: string): SignpostParams {
-  const { w, h, next } = parseDimensions(s, 0);
-  const forceCornerStart = s[next] === "c";
-  return { w, h, forceCornerStart };
-}
-
 function validateParams(p: SignpostParams, full: boolean): string | null {
   if (p.w < 1) return "Width must be at least one";
   if (p.h < 1) return "Height must be at least one";
@@ -123,6 +112,13 @@ const paramConfig: ParamConfigItem<SignpostParams>[] = [
     },
   },
 ];
+
+/** `WxH`, plus a generator-only `c` when the path must start and end in
+ * corners. */
+const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  flag(paramConfig, "c", "start-and-end-in-corners", { full: true }),
+]);
 
 // --- desc / state ----------------------------------------------------
 

@@ -1,4 +1,7 @@
 import { tierNames } from "../../engine/difficulty.ts";
+import type { ParamConfigItem } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 /**
@@ -112,32 +115,29 @@ export function defaultParams(): UndeadParams {
   return { ...PRESETS[1] };
 }
 
-export function encodeParams(p: UndeadParams, full: boolean): string {
-  let s = `${p.w}x${p.h}`;
-  if (full) s += `d${diffChar(p.diff)}`;
-  return s;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<UndeadParams>[] = [
+  ...dimensionParamConfig<UndeadParams>(),
+  {
+    kw: "difficulty",
+    name: "Difficulty",
+    type: "choices",
+    // The one list, not a second spelling of it — a hand-copied tier list is
+    // how a rename ships a menu and a dialog that disagree.
+    choices: [...DIFF_NAMES],
+    get: (p) => diffToLevel(p.diff),
+    set: (p, v) => {
+      p.diff = diffFromLevel(v);
+    },
+  },
+];
 
-export function decodeParams(s: string): UndeadParams {
-  let i = 0;
-  let digits = "";
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
-  const w = digits ? Number.parseInt(digits, 10) : 0;
-  let h = w;
-  if (s[i] === "x") {
-    i++;
-    digits = "";
-    while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
-    h = digits ? Number.parseInt(digits, 10) : 0;
-  }
-  let diff: Difficulty = "normal";
-  if (s[i] === "d") {
-    i++;
-    const idx = DIFF_CHARS.indexOf(s[i] ?? "");
-    if (idx >= 0) diff = diffFromLevel(idx);
-  }
-  return { w, h, diff };
-}
+/** `WxH`, plus the generator-only difficulty letter. An unknown letter leaves
+ * the default tier. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, { full: true }),
+]);
 
 export function validateParams(p: UndeadParams, _full: boolean): string | null {
   if (p.w < 3) return "Width must be at least 3";

@@ -11,8 +11,9 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
-import type { PresetMenu } from "../../engine/game.ts";
-import { parseDimensions } from "../../engine/params.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -120,14 +121,14 @@ export function presets(): PresetMenu<PatternParams> {
   };
 }
 
-export function encodeParams(p: PatternParams, _full: boolean): string {
-  return `${p.w}x${p.h}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<PatternParams>[] =
+  dimensionParamConfig<PatternParams>();
 
-export function decodeParams(s: string): PatternParams {
-  const { w, h } = parseDimensions(s);
-  return { w, h };
-}
+/** `WxH`, with upstream's square fallback: a bare `W` is a W×W board. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+]);
 
 export function validateParams(p: PatternParams, _full: boolean): string | null {
   if (p.w <= 0 || p.h <= 0) return "Width and height must both be at least one";

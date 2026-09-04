@@ -20,7 +20,6 @@ import {
 } from "../../engine/border-grid.ts";
 import { winFlash } from "../../engine/flash.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
-import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
@@ -41,6 +40,7 @@ import {
   encodeParams,
   executeMove,
   newState,
+  paramConfig,
   presets,
   type SeparateMistake,
   type SeparateMove,
@@ -136,18 +136,7 @@ export const separateGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: [
-    ...dimensionParamConfig<SeparateParams>(),
-    {
-      kw: "letters",
-      name: "Letters",
-      type: "string",
-      get: (p) => String(p.k),
-      set: (p, v) => {
-        p.k = parseConfigInt(v);
-      },
-    },
-  ],
+  paramConfig,
   describeParams: (p): ConfigValues => ({
     width: String(p.w),
     height: String(p.h),

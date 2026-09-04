@@ -30,8 +30,9 @@
 
 import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
-import type { PresetMenu } from "../../engine/game.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig, parseLeadingInt } from "../../engine/params.ts";
+import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -200,32 +201,31 @@ export function presets(): PresetMenu<RomeParams> {
   };
 }
 
-export function encodeParams(p: RomeParams, full: boolean): string {
-  return full ? `${p.w}x${p.h}d${DIFF_CHARS[p.diff]}` : `${p.w}x${p.h}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<RomeParams>[] = [
+  ...dimensionParamConfig<RomeParams>(),
+  {
+    kw: "difficulty",
+    name: "Difficulty",
+    type: "choices",
+    choices: [...DIFF_NAMES],
+    get: (p) => p.diff,
+    set: (p, v) => {
+      p.diff = v;
+    },
+  },
+];
 
-export function decodeParams(s: string): RomeParams {
-  const p = defaultParams();
-  let r = parseLeadingInt(s, 0);
-  p.w = p.h = r.value;
-  let pos = r.next;
-  if (s[pos] === "x") {
-    r = parseLeadingInt(s, pos + 1);
-    p.h = r.value;
-    pos = r.next;
-  }
-  if (s[pos] === "d") {
-    pos++;
-    // Upstream: a `d` with an absent or unrecognized char leaves the
-    // difficulty out of range, so `validateParams` rejects it.
-    p.diff = DIFFCOUNT + 1;
-    if (pos < s.length) {
-      const idx = DIFF_CHARS.indexOf(s[pos]);
-      if (idx !== -1) p.diff = idx;
-    }
-  }
-  return p;
-}
+/** `WxH`, plus the generator-only difficulty letter. Upstream: a `d` with an
+ * absent or unrecognized char leaves the difficulty out of range, so
+ * `validateParams` rejects it. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, {
+    full: true,
+    invalid: DIFFCOUNT + 1,
+  }),
+]);
 
 export function validateParams(p: RomeParams, _full: boolean): string | null {
   if (p.w < 3) return "Width must be at least 3";

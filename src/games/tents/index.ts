@@ -14,7 +14,6 @@ import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -49,13 +48,13 @@ import { tentsSolve } from "./solver.ts";
 import {
   BLANK,
   DIFF_COUNT,
-  DIFF_NAMES,
   decodeParams,
   defaultParams,
   encodeParams,
   executeMove,
   NONTENT,
   newState,
+  paramConfig,
   presets,
   status,
   TENT,
@@ -301,19 +300,7 @@ export const tentsGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: [
-    ...dimensionParamConfig<TentsParams>(),
-    {
-      kw: "difficulty",
-      name: "Difficulty",
-      type: "choices",
-      choices: [...DIFF_NAMES],
-      get: (p) => p.diff,
-      set: (p, v) => {
-        p.diff = v;
-      },
-    },
-  ],
+  paramConfig,
   describeParams: (p) => ({
     width: String(p.w),
     height: String(p.h),

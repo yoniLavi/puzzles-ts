@@ -47,7 +47,6 @@ import {
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
-import { parseConfigInt } from "../../engine/params.ts";
 import {
   autoPencilPref,
   pencilKeepHighlightPref,
@@ -110,7 +109,6 @@ import {
   clueIndex,
   cluePos,
   DIFF_EXTREME,
-  DIFF_NAMES,
   DIFF_UNREASONABLE,
   decodeParams,
   defaultParams,
@@ -122,6 +120,7 @@ import {
   lineCells,
   newState,
   newUi,
+  paramConfig,
   status,
   type TowersMove,
   type TowersParams,
@@ -937,27 +936,7 @@ export const towersGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: [
-    {
-      kw: "grid-size",
-      name: "Grid size",
-      type: "string",
-      get: (p) => String(p.w),
-      set: (p, v) => {
-        p.w = parseConfigInt(v);
-      },
-    },
-    {
-      kw: "difficulty",
-      name: "Difficulty",
-      type: "choices",
-      choices: [...DIFF_NAMES],
-      get: (p) => diffToLevel(p.diff),
-      set: (p, v) => {
-        p.diff = diffFromLevel(v);
-      },
-    },
-  ],
+  paramConfig,
   // Keys/shape match the `towers` config template in augmentation.ts
   // ("{grid-size}x{grid-size} {difficulty:Easy|Hard|Extreme|Unreasonable}"):
   // `grid-size` is the value, `difficulty` the zero-based label index.

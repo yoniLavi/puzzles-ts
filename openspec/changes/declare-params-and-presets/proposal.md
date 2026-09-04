@@ -2,9 +2,19 @@
 
 Realizes: `docs/framework-rdd/game-definition.md` § "Params and presets".
 
-**Readiness: needs exploration first.** The strategy is settled (params before
-gestures before board model, owner 2026-09-04); the design is not. Task 0 is an
-`/opsx:explore`, not an implementation.
+**Readiness: explored, designed and implemented (2026-09-05).** The exploration
+that task 0 called for moved this change's premise — the shared parser it set
+out to build already existed and was already adopted, and the unshared half was
+the *encoder* and the encoder/decoder pairing. `tasks.md` § "Findings" is the
+measurement; the sections below are what the change was scoped as before it,
+kept because the reasoning still holds and the "shape of the win" test is what
+the result was judged against.
+
+**What shipped**: a byte-stability guard over all 57 games (612 derived cases),
+a declared codec grammar, and 19 games converted as the proving set. The
+remaining 34 convertible games are a sweep, and a sweep belongs to
+`re-express-the-collection` by this ladder's own ordering — *"a premature sweep
+multiplies every contract change by 57"*.
 
 ## Why
 

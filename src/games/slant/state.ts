@@ -14,8 +14,9 @@ import { assertNever } from "../../engine/assert-never.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
-import type { PresetMenu } from "../../engine/game.ts";
-import { parseDimensions } from "../../engine/params.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -103,29 +104,27 @@ export function presets(): PresetMenu<SlantParams> {
   };
 }
 
-export function encodeParams(p: SlantParams, full: boolean): string {
-  let s = `${p.w}x${p.h}`;
-  if (full) s += `d${DIFF_CHARS[p.diff] ?? "?"}`;
-  return s;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<SlantParams>[] = [
+  ...dimensionParamConfig<SlantParams>(),
+  {
+    kw: "difficulty",
+    name: "Difficulty",
+    type: "choices",
+    choices: [...DIFF_NAMES],
+    get: (p) => p.diff,
+    set: (p, v) => {
+      p.diff = v;
+    },
+  },
+];
 
-export function decodeParams(s: string): SlantParams {
-  const ret = defaultParams();
-  const dims = parseDimensions(s, 0);
-  ret.w = dims.w;
-  ret.h = dims.h;
-  let i = dims.next;
-  if (s[i] === "d") {
-    i++;
-    // Upstream leniency: an unknown difficulty char leaves the default.
-    if (i < s.length) {
-      const idx = DIFF_CHARS.indexOf(s[i]);
-      if (idx >= 0) ret.diff = idx;
-      i++;
-    }
-  }
-  return ret;
-}
+/** `WxH`, plus the generator-only difficulty letter. Upstream leniency: an
+ * unknown difficulty char leaves the default. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, { full: true }),
+]);
 
 export function validateParams(p: SlantParams, _full: boolean): string | null {
   // Grids of dimension 1 can't be made Hard, so upstream forbids them.

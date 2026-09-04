@@ -11,7 +11,9 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
-import type { PresetMenu } from "../../engine/game.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -87,18 +89,22 @@ export function presets(): PresetMenu<RangeParams> {
   };
 }
 
-export function encodeParams(p: RangeParams, _full: boolean): string {
-  return `${p.w}x${p.h}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<RangeParams>[] =
+  dimensionParamConfig<RangeParams>();
 
-export function decodeParams(s: string): RangeParams {
-  // Lenient, matching upstream `decode_params`: a leading integer is the
-  // width (and default height); an `x<int>` overrides the height.
-  const m = /^(\d+)(?:x(\d+))?/.exec(s);
-  const w = m ? Number.parseInt(m[1], 10) : PRESETS[0].w;
-  const h = m?.[2] !== undefined ? Number.parseInt(m[2], 10) : w;
-  return { w, h };
-}
+/**
+ * `WxH`, with upstream's square fallback: a bare `W` is a W×W board.
+ *
+ * A string with no leading digits at all now decodes to `0x0`, which
+ * `validateParams` rejects with a real message; the hand-written regex this
+ * replaced substituted the first preset's width instead, silently dealing a
+ * playable board for a corrupt game ID. Every other game in the collection
+ * already yielded 0 here.
+ */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+]);
 
 // signed char max — the upstream `puzzle_size` overflow guard for `w + h`.
 const SCHAR_MAX = 127;

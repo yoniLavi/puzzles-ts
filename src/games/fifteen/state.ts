@@ -1,4 +1,6 @@
-import { parseDimensions } from "../../engine/params.ts";
+import type { ParamConfigItem } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { dims, paramsCodec } from "../../engine/params-codec.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { permParity } from "../../engine/shuffle.ts";
 
@@ -48,16 +50,14 @@ export function defaultParams(): FifteenParams {
   return { w: 4, h: 4 };
 }
 
-export function encodeParams(p: FifteenParams, _full: boolean): string {
-  return `${p.w}x${p.h}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<FifteenParams>[] =
+  dimensionParamConfig<FifteenParams>();
 
-export function decodeParams(s: string): FifteenParams {
-  // Upstream: w = h = atoi(s); then if an 'x' follows the leading
-  // digits, h = atoi(after-x). A bare "W" yields a square W×W board.
-  const { w, h } = parseDimensions(s);
-  return { w, h };
-}
+/** `WxH`, with upstream's square fallback: a bare `W` is a W×W board. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+]);
 
 export function validateParams(p: FifteenParams, _full: boolean): string | null {
   if (p.w < 2 || p.h < 2) return "Width and height must both be at least two";

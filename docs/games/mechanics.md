@@ -94,10 +94,54 @@ downgrade to a plain `Array` to get one; just don't write to it. Exemplar:
 game-ID surface: `params:desc` and `params#seed` ids are built from them, so an
 encoding is **frozen into shared ids** — changing one changes which boards
 every existing link names. Decode leniently (garbage in a param string is user
-input), validate with a human-readable reason (`null` = valid). For a leading
-`WxH` prefix reach for `parseDimensions`
-([engine catalog](./engine-catalog.md) § "params.ts — param-string decoding + config helpers") rather than
-hand-slicing.
+input), validate with a human-readable reason (`null` = valid).
+
+**Declare the codec, don't write it twice.** Both halves are derived from one
+ordered segment list in
+[`engine/params-codec.ts`](../../src/engine/params-codec.ts), so a game states
+its encoding once instead of hand-maintaining an encoder and a decoder that
+must be exact inverses:
+
+```ts
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, { full: true }),
+  flag(paramConfig, "S", "strip-clues", { full: true }),
+]);
+```
+
+Six segment kinds cover the grammar the collection actually uses: `dims`
+(`WxH`, with upstream's square fallback), `size` (one untagged leading
+integer, for square-board games), `num` (`n12`), `choice` (`d` + a letter from
+a table), and `flag` (a bare boolean letter). `full: true` marks a
+generator-only field the brief encoding omits; `invalid` declares the
+out-of-range value an unrecognized difficulty letter should leave behind;
+`means: false` says the letter is written when the field is *off*; `omitWhen`
+and `whenAbsent` cover a field written only when non-zero and a default
+computed from other params.
+
+**Segments name a `paramConfig` field by its `kw` and reuse that item's
+accessors.** That is the point rather than a convenience: the Custom dialog and
+the codec stop being two hand-synced copies of one field list, so a field
+cannot appear in one and be dropped from the other. It also keeps a field's
+representation the game's own business — Singles and Undead store a tier as a
+string union and Spokes as its own type, and none of them changed to be
+encodable.
+
+**Not everything fits, and a bespoke codec stays first-class.** Float params
+(Rectangles, Net, Netslide), a leading letter before the dimensions (Cube), a
+`switch` over multi-character strings (Solo), a `while` loop over the tail
+(Dominosa) and a boolean encoded as an integer (Mosaic) are hand-written, and
+should stay that way — a grammar that grew an option per game would be two
+ways plus a seam rather than one obvious way.
+
+**Whatever you write, the encodings are asserted.**
+[`params-stability.test.ts`](../../src/engine/params-stability.test.ts) holds
+every game's encoded params against a recorded table and checks that encode and
+decode are mutual inverses over 612 derived cases. Re-baselining that snapshot
+is a **compatibility decision** — every line that moves is a shared game ID
+that stops resolving to the board it named — so it needs the owner's say-so,
+not a `vitest -u`.
 
 ### Float params round-trip through %g
 

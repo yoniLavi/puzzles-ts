@@ -21,7 +21,6 @@ import {
   FIX_MISTAKES_FIRST,
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -76,6 +75,7 @@ import {
   type PatternParams,
   type PatternState,
   type PatternUi,
+  paramConfig,
   presets,
   status,
   textFormat,
@@ -412,7 +412,7 @@ export const patternGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: dimensionParamConfig(),
+  paramConfig,
 
   newDesc: (p, rng) => newPatternDesc(p, rng),
   validateDesc,

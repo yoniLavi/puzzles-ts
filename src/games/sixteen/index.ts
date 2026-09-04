@@ -14,7 +14,6 @@ import { UI_UPDATE } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
 import { HINT_SETTING_UP, workingOn } from "../../engine/hint-vocab.ts";
-import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -46,6 +45,7 @@ import {
   encodeParams,
   newDesc,
   newState,
+  paramConfig,
   presets,
   type SixteenMove,
   type SixteenParams,
@@ -1353,18 +1353,7 @@ export const sixteenGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: [
-    ...dimensionParamConfig<SixteenParams>(),
-    {
-      kw: "number-of-shuffling-moves",
-      name: "Number of shuffling moves",
-      type: "string",
-      get: (p) => String(p.movetarget),
-      set: (p, v) => {
-        p.movetarget = parseConfigInt(v);
-      },
-    },
-  ],
+  paramConfig,
   describeParams: (p) => ({
     "number-of-shuffling-moves": String(p.movetarget),
   }),

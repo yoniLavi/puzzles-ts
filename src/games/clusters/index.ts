@@ -32,7 +32,6 @@ import {
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -81,7 +80,6 @@ import {
   type ClustersUi,
   COLMASK,
   cloneState,
-  DIFF_NAMES,
   decodeParams,
   defaultParams,
   encodeParams,
@@ -89,6 +87,7 @@ import {
   F_COLOR_1,
   F_SINGLE,
   newState,
+  paramConfig,
   presets,
   status,
   textFormat,
@@ -503,19 +502,7 @@ export const clustersGame: Game<
     height: String(p.h),
     difficulty: p.diff,
   }),
-  paramConfig: [
-    ...dimensionParamConfig<ClustersParams>(),
-    {
-      kw: "difficulty",
-      name: "Difficulty",
-      type: "choices",
-      choices: [...DIFF_NAMES],
-      get: (p) => p.diff,
-      set: (p, v) => {
-        p.diff = v;
-      },
-    },
-  ],
+  paramConfig,
 
   newDesc: (p: ClustersParams, rng: RandomState) => newClustersDesc(p, rng),
   validateDesc,

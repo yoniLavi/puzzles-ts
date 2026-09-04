@@ -27,7 +27,6 @@ import {
   FIX_MISTAKES_FIRST,
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -65,7 +64,6 @@ import {
   type CellValue,
   cloneState,
   DIFF_ANY,
-  DIFF_NAMES,
   decodeParams,
   defaultParams,
   diffFromLevel,
@@ -76,6 +74,7 @@ import {
   F_CIRCLE,
   makeState,
   newState,
+  paramConfig,
   type SinglesMove,
   type SinglesParams,
   type SinglesState,
@@ -563,19 +562,7 @@ export const singlesGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: [
-    ...dimensionParamConfig<SinglesParams>(),
-    {
-      kw: "difficulty",
-      name: "Difficulty",
-      type: "choices",
-      choices: [...DIFF_NAMES],
-      get: (p) => diffToLevel(p.diff),
-      set: (p, v) => {
-        p.diff = diffFromLevel(v);
-      },
-    },
-  ],
+  paramConfig,
   // Keys/shape match the `singles` config template in augmentation.ts
   // ("{width}x{height} {difficulty:Easy|Tricky}"): width/height come from the
   // worker adapter's w/h base, `difficulty` is the zero-based label index.

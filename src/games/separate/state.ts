@@ -16,8 +16,9 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
-import type { PresetMenu } from "../../engine/game.ts";
-import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
+import { dims, num, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -102,20 +103,30 @@ export function presets(): PresetMenu<SeparateParams> {
   };
 }
 
-export function encodeParams(p: SeparateParams, _full: boolean): string {
-  return `${p.w}x${p.h}n${p.k}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<SeparateParams>[] = [
+  ...dimensionParamConfig<SeparateParams>(),
+  {
+    kw: "letters",
+    name: "Letters",
+    type: "string",
+    get: (p) => String(p.k),
+    set: (p, v) => {
+      p.k = parseConfigInt(v);
+    },
+  },
+];
 
-export function decodeParams(s: string): SeparateParams {
-  // Upstream: w = h = k = atoi(s); then optional `x<h>` and `n<k>`. The square
-  // fallback (no `x`) also seeds k = w.
-  const { w, h, next } = parseDimensions(s);
-  const p: SeparateParams = { w, h, k: w };
-  if (s[next] === "n") {
-    p.k = parseLeadingInt(s, next + 1).value;
-  }
-  return p;
-}
+/** Upstream: `w = h = k = atoi(s)`, then optional `x<h>` and `n<k>` — so the
+ * square fallback (no `x`) also seeds the letter count from the width. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  num(paramConfig, "n", "letters", {
+    whenAbsent: (p) => {
+      p.k = p.w;
+    },
+  }),
+]);
 
 export function validateParams(p: SeparateParams, full: boolean): string | null {
   const { w, h, k } = p;

@@ -25,7 +25,6 @@ import {
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -63,6 +62,7 @@ import {
   type FillingState,
   type FillingUi,
   newState,
+  paramConfig,
   presets,
   status,
   textFormat,
@@ -334,7 +334,7 @@ export const fillingGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: dimensionParamConfig(),
+  paramConfig,
 
   newDesc: (p: FillingParams, rng: RandomState) => newFillingDesc(p, rng),
   validateDesc,

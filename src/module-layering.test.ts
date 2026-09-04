@@ -154,14 +154,25 @@ describe("module layering", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("the engine does not import games, except the one named test helper", () => {
-    // engine/testing/hint-games.ts is the enrollment file every hinting port
-    // adds itself to once. Named explicitly rather than exempting the whole
-    // engine/testing/ directory, so a second violation cannot hide behind it.
-    const ALLOWED = "src/engine/testing/hint-games.ts";
+  it("the engine does not import games, except the named test helpers", () => {
+    // Two dev-only files derive a cross-game sweep's population from the
+    // registry, so each has to import the module whose side effect populates it:
+    //
+    //   hint-games.ts     — every game that declares a `hint()`, the enrolled
+    //                       set for six cross-game hint guards.
+    //   params-corpus.ts  — every game's params cases, for the byte-stability
+    //                       and codec-inverse guards.
+    //
+    // Named one by one rather than exempting `engine/testing/`, so a third
+    // violation cannot hide behind them. Neither is reachable from production:
+    // nothing outside a `.test.ts` imports either.
+    const ALLOWED = new Set([
+      "src/engine/testing/hint-games.ts",
+      "src/engine/testing/params-corpus.ts",
+    ]);
     const offenders: string[] = [];
     for (const [path, text] of modules) {
-      if (!path.startsWith("src/engine/") || path === ALLOWED) continue;
+      if (!path.startsWith("src/engine/") || ALLOWED.has(path)) continue;
       for (const { spec } of imports(text)) {
         const target = resolve(path, spec);
         if (target?.startsWith("src/games/")) offenders.push(`${path} → ${target}`);

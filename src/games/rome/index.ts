@@ -22,7 +22,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -60,7 +59,6 @@ import { romeSolve, validateDesc, validateGame } from "./solver.ts";
 import {
   boardFromClues,
   cloneState,
-  DIFF_NAMES,
   DIFFCOUNT,
   decodeParams,
   defaultParams,
@@ -81,6 +79,7 @@ import {
   MOUSEMODE_OFF,
   MOUSEMODE_PENCIL,
   MOUSEMODE_PLACE,
+  paramConfig,
   presets,
   type RomeDir,
   type RomeMove,
@@ -439,19 +438,7 @@ export const romeGame: Game<
     height: String(p.h),
     difficulty: p.diff,
   }),
-  paramConfig: [
-    ...dimensionParamConfig<RomeParams>(),
-    {
-      kw: "difficulty",
-      name: "Difficulty",
-      type: "choices",
-      choices: [...DIFF_NAMES],
-      get: (p) => p.diff,
-      set: (p, v) => {
-        p.diff = v;
-      },
-    },
-  ],
+  paramConfig,
 
   newDesc: (p: RomeParams, rng: RandomState) => newRomeDesc(p, rng),
   validateDesc,

@@ -49,6 +49,28 @@ cap-monotonicity and tiers-bind guards. There is no hand-written
 cannot express (Blackbox's `w<W>h<H>m…M…`), with the obligation that encode
 and decode are property-tested inverses — a test the framework generates.
 
+> **The codec has shipped, and the escape hatch's named example was wrong**
+> (`declare-params-and-presets`, 2026-09-05). A game declares an ordered
+> segment list and gets both halves from `paramsCodec`; segments name a
+> `paramConfig` field by its `kw` and reuse that item's accessors, so the form
+> and the codec are one field list rather than two. The live contract is
+> [`docs/games/mechanics.md`](../games/mechanics.md) § "Codecs and validation";
+> read that, not this.
+>
+> **Blackbox is not an escaper.** Its `w<W>h<H>m…M…` is a tagged segment list
+> like every other — it just does not lead with `WxH` — and drawing the grammar
+> at segments rather than at "dimensions plus a suffix" takes it in. The shapes
+> that genuinely escape are five, named in the `ts-engine` spec: a float param,
+> a leading letter before the dimensions, a `switch` over multi-character
+> strings, a `while` loop over the tail, and a boolean encoded as an integer.
+>
+> **The inverse property is asserted, but not "a test the framework
+> generates".** It is one derived cross-game guard —
+> `params-stability.test.ts` over a registry-derived corpus — which reaches the
+> 38 games still writing bespoke codecs too. A per-game generated test would
+> have covered only the games that had already adopted, which is the enrollment
+> trap `derive-hint-enrollment` exists to avoid.
+
 ## The board model
 
 **You declare:** topology (square / hex / one of the eighteen `grid/` tilings

@@ -1,4 +1,7 @@
 import { tierNames } from "../../engine/difficulty.ts";
+import type { ParamConfigItem } from "../../engine/game.ts";
+import { parseConfigInt } from "../../engine/params.ts";
+import { choice, paramsCodec, size } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 /**
@@ -68,23 +71,36 @@ export function defaultParams(): TowersParams {
   return { w: 5, diff: "easy" };
 }
 
-export function encodeParams(p: TowersParams, full: boolean): string {
-  return full ? `${p.w}d${diffChar(p.diff)}` : `${p.w}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. A
+ * Towers board is square, so its size is one untagged leading integer. */
+export const paramConfig: ParamConfigItem<TowersParams>[] = [
+  {
+    kw: "grid-size",
+    name: "Grid size",
+    type: "string",
+    get: (p) => String(p.w),
+    set: (p, v) => {
+      p.w = parseConfigInt(v);
+    },
+  },
+  {
+    kw: "difficulty",
+    name: "Difficulty",
+    type: "choices",
+    choices: [...DIFF_NAMES],
+    get: (p) => diffToLevel(p.diff),
+    set: (p, v) => {
+      p.diff = diffFromLevel(v);
+    },
+  },
+];
 
-export function decodeParams(s: string): TowersParams {
-  const p = defaultParams();
-  let i = 0;
-  let digits = "";
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
-  if (digits) p.w = Number.parseInt(digits, 10);
-  if (s[i] === "d") {
-    i++;
-    const idx = DIFF_CHARS.indexOf(s[i] ?? "");
-    if (idx >= 0) p.diff = diffFromLevel(idx);
-  }
-  return p;
-}
+/** The order, plus the generator-only difficulty letter. An unknown letter
+ * leaves the default tier. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  size(paramConfig, "grid-size"),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, { full: true }),
+]);
 
 export function validateParams(p: TowersParams, _full: boolean): string | null {
   if (p.w < 3 || p.w > 9) return "Grid size must be between 3 and 9";

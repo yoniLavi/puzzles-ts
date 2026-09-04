@@ -11,7 +11,9 @@
  * Sokoban's reason to exist.
  */
 
-import { parseDimensions } from "../../engine/params.ts";
+import type { ParamConfigItem } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- the cell alphabet (char codes) -----------------------------------
@@ -79,15 +81,14 @@ export function defaultParams(): SokobanParams {
   return { w: 12, h: 10 };
 }
 
-export function encodeParams(p: SokobanParams, _full: boolean): string {
-  return `${p.w}x${p.h}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<SokobanParams>[] =
+  dimensionParamConfig<SokobanParams>();
 
-export function decodeParams(s: string): SokobanParams {
-  // Upstream `decode_params`: `W` or `WxH`, square fallback on a bare number.
-  const { w, h } = parseDimensions(s);
-  return { w, h };
-}
+/** Upstream `decode_params`: `W` or `WxH`, square fallback on a bare number. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+]);
 
 export function validateParams(p: SokobanParams, _full: boolean): string | null {
   if (p.w < 4 || p.h < 4) return "Width and height must both be at least 4";

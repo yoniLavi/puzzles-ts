@@ -1,4 +1,6 @@
-import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
+import type { ParamConfigItem } from "../../engine/game.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
+import { dims, num, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { permParity } from "../../engine/shuffle.ts";
@@ -59,22 +61,34 @@ export function defaultParams(): SixteenParams {
   return { w: 4, h: 4, movetarget: 0 };
 }
 
-export function encodeParams(p: SixteenParams, _full: boolean): string {
-  let s = `${p.w}x${p.h}`;
-  if (p.movetarget) s += `m${p.movetarget}`;
-  return s;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<SixteenParams>[] = [
+  ...dimensionParamConfig<SixteenParams>(),
+  {
+    kw: "number-of-shuffling-moves",
+    name: "Number of shuffling moves",
+    type: "string",
+    get: (p) => String(p.movetarget),
+    set: (p, v) => {
+      p.movetarget = parseConfigInt(v);
+    },
+  },
+];
 
-export function decodeParams(s: string): SixteenParams {
-  // Upstream: w = h = atoi(s); optional 'x'+h (square fallback when no
-  // 'x'); then an optional 'm'+movetarget suffix.
-  const { w, h, next } = parseDimensions(s);
-  let movetarget = 0;
-  if (s[next] === "m") {
-    movetarget = parseLeadingInt(s, next + 1).value;
-  }
-  return { w, h, movetarget };
-}
+/**
+ * Upstream: `w = h = atoi(s)`, optional `x<h>` (square fallback when no `x`),
+ * then an optional `m<movetarget>` suffix.
+ *
+ * The move target is written in **both** encodings rather than only the full
+ * one, because a shuffle limit is part of what a shared game ID has to carry:
+ * without it the board is not the same puzzle.
+ */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  num(paramConfig, "m", "number-of-shuffling-moves", {
+    omitWhen: (p) => !p.movetarget,
+  }),
+]);
 
 export function validateParams(p: SixteenParams, _full: boolean): string | null {
   if (p.w < 2 || p.h < 2) return "Width and height must both be at least two";

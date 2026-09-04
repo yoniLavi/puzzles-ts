@@ -11,8 +11,9 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import { tierNames } from "../../engine/difficulty.ts";
-import type { PresetMenu } from "../../engine/game.ts";
-import { parseDimensions } from "../../engine/params.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { choice, dims, flag, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -151,34 +152,37 @@ export function presets(): PresetMenu<MagnetsParams> {
   };
 }
 
-export function encodeParams(p: MagnetsParams, full: boolean): string {
-  let s = `${p.w}x${p.h}`;
-  if (full) s += `d${DIFF_CHARS[p.diff] ?? "?"}${p.stripclues ? "S" : ""}`;
-  return s;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<MagnetsParams>[] = [
+  ...dimensionParamConfig<MagnetsParams>(),
+  {
+    kw: "difficulty",
+    name: "Difficulty",
+    type: "choices",
+    choices: [...DIFF_NAMES],
+    get: (p) => p.diff,
+    set: (p, v) => {
+      p.diff = v;
+    },
+  },
+  {
+    kw: "strip-clues",
+    name: "Strip clues",
+    type: "boolean",
+    get: (p) => p.stripclues,
+    set: (p, v) => {
+      p.stripclues = v;
+    },
+  },
+];
 
-export function decodeParams(s: string): MagnetsParams {
-  const dims = parseDimensions(s, 0);
-  const ret: MagnetsParams = {
-    w: dims.w,
-    h: dims.h,
-    diff: DIFF_EASY,
-    stripclues: false,
-  };
-  let i = dims.next;
-  if (s[i] === "d") {
-    i++;
-    if (i < s.length) {
-      const idx = DIFF_CHARS.indexOf(s[i]);
-      if (idx >= 0) ret.diff = idx;
-      i++;
-    }
-  }
-  if (s[i] === "S") {
-    ret.stripclues = true;
-  }
-  return ret;
-}
+/** `WxH`, plus the generator-only difficulty letter and strip-clues flag. An
+ * unknown difficulty letter leaves the default. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, { full: true }),
+  flag(paramConfig, "S", "strip-clues", { full: true }),
+]);
 
 export function validateParams(p: MagnetsParams, _full: boolean): string | null {
   if (p.w < 2) return "Width must be at least two";

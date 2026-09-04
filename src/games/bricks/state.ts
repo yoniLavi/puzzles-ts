@@ -19,7 +19,9 @@
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
-import type { PresetMenu } from "../../engine/game.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -216,38 +218,37 @@ export function presets(): PresetMenu<BricksParams> {
   };
 }
 
-export function encodeParams(p: BricksParams, full: boolean): string {
-  return full ? `${p.w}x${p.h}d${DIFF_CHARS[p.diff]}` : `${p.w}x${p.h}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<BricksParams>[] = [
+  ...dimensionParamConfig<BricksParams>(),
+  {
+    kw: "difficulty",
+    name: "Difficulty",
+    type: "choices",
+    choices: [...DIFF_NAMES],
+    get: (p) => p.diff,
+    set: (p, v) => {
+      p.diff = v;
+    },
+  },
+];
+
+/** `WxH`, plus the generator-only difficulty letter. Upstream leaves the
+ * difficulty out of range when the letter is absent or unrecognized, so
+ * `validateParams` rejects the id rather than quietly playing another tier. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, {
+    full: true,
+    invalid: DIFFCOUNT + 1,
+  }),
+]);
 
 /** atoi at `s[pos]`: parse a leading run of digits, 0 when there are none. */
 function eatNum(s: string, pos: number): { value: number; next: number } {
   let next = pos;
   while (next < s.length && s[next] >= "0" && s[next] <= "9") next++;
   return { value: next > pos ? Number.parseInt(s.slice(pos, next), 10) : 0, next };
-}
-
-export function decodeParams(s: string): BricksParams {
-  const p = defaultParams();
-  let r = eatNum(s, 0);
-  p.w = p.h = r.value;
-  let pos = r.next;
-  if (s[pos] === "x") {
-    r = eatNum(s, pos + 1);
-    p.h = r.value;
-    pos = r.next;
-  }
-  if (s[pos] === "d") {
-    pos++;
-    // Upstream: an unknown/absent difficulty char leaves diff invalid so
-    // validateParams rejects it; a recognized char selects the tier.
-    p.diff = DIFFCOUNT + 1;
-    if (pos < s.length) {
-      const idx = DIFF_CHARS.indexOf(s[pos]);
-      if (idx !== -1) p.diff = idx;
-    }
-  }
-  return p;
 }
 
 export function validateParams(p: BricksParams, full: boolean): string | null {

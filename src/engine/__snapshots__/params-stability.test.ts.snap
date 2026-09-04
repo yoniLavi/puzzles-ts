@@ -1,0 +1,784 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`encoded params are byte-stable > abcd 1`] = `
+"default  full=5x5n4
+preset:ABCD/4x4, 4 letters Easy  full=4x4n4
+preset:ABCD/4x4, 4 letters Hard  full=4x4n4R  brief=4x4n4
+preset:ABCD/5x5, 4 letters Hard  full=5x5n4R  brief=5x5n4
+preset:ABCD/6x6, 4 letters Easy  full=6x6n4
+preset:ABCD/7x7, 3 letters Easy  full=7x7n3
+preset:ABCD/7x7, 4 letters Easy  full=7x7n4
+bump:w  full=6x5n4
+bump:h  full=5x6n4
+bump:n  full=5x5n5
+flip:diag  full=5x5n4D"
+`;
+
+exports[`encoded params are byte-stable > ascent 1`] = `
+"default  full=7x6mRde  brief=7x6mR
+preset:Ascent/7x6 Normal  full=7x6mRdn  brief=7x6mR
+preset:Ascent/7x6 Tricky  full=7x6mRdt  brief=7x6mR
+preset:Ascent/7x6 Hard  full=7x6mRdh  brief=7x6mR
+preset:Ascent/10x8 Easy  full=10x8mRde  brief=10x8mR
+preset:Ascent/10x8 Normal  full=10x8mRdn  brief=10x8mR
+preset:Ascent/10x8 Tricky  full=10x8mRdt  brief=10x8mR
+preset:Ascent/10x8 Hard  full=10x8mRdh  brief=10x8mR
+preset:Ascent/5x5 Edges Normal  full=5x5mEEdn  brief=5x5mE
+preset:Ascent/5x5 Edges Tricky  full=5x5mEEdt  brief=5x5mE
+preset:Ascent/5x5 Edges Hard  full=5x5mEEdh  brief=5x5mE
+preset:Ascent/Honeycomb/7x6 Honeycomb Normal  full=7x6mCdn  brief=7x6mC
+preset:Ascent/Honeycomb/7x6 Honeycomb Tricky  full=7x6mCdt  brief=7x6mC
+preset:Ascent/Honeycomb/7x6 Honeycomb Hard  full=7x6mCdh  brief=7x6mC
+preset:Ascent/Honeycomb/10x8 Honeycomb Normal  full=10x8mCdn  brief=10x8mC
+preset:Ascent/Honeycomb/10x8 Honeycomb Tricky  full=10x8mCdt  brief=10x8mC
+preset:Ascent/Honeycomb/10x8 Honeycomb Hard  full=10x8mCdh  brief=10x8mC
+preset:Ascent/Hexagon/Size 7 Hexagon Normal  full=7x7mHdn  brief=7x7mH
+preset:Ascent/Hexagon/Size 7 Hexagon Tricky  full=7x7mHdt  brief=7x7mH
+preset:Ascent/Hexagon/Size 7 Hexagon Hard  full=7x7mHdh  brief=7x7mH
+preset:Ascent/Hexagon/Size 9 Hexagon Normal  full=9x9mHdn  brief=9x9mH
+preset:Ascent/Hexagon/Size 9 Hexagon Tricky  full=9x9mHdt  brief=9x9mH
+preset:Ascent/Hexagon/Size 9 Hexagon Hard  full=9x9mHdh  brief=9x9mH
+bump:w  full=8x6mRde  brief=8x6mR
+bump:h  full=7x7mRde  brief=7x7mR
+bump:mode  full=7x6mHde  brief=7x6mH
+flip:removeends  full=7x6mREde  brief=7x6mR
+flip:symmetrical  full=7x6mRdeS  brief=7x6mR"
+`;
+
+exports[`encoded params are byte-stable > blackbox 1`] = `
+"default  full=w8h8m5M5
+preset:Black Box/5x5, 3 balls  full=w5h5m3M3
+preset:Black Box/8x8, 3-6 balls  full=w8h8m3M6
+preset:Black Box/10x10, 5 balls  full=w10h10m5M5
+preset:Black Box/10x10, 4-10 balls  full=w10h10m4M10
+bump:w  full=w9h8m5M5
+bump:h  full=w8h9m5M5
+bump:minballs  full=w8h8m6M5
+bump:maxballs  full=w8h8m5M6"
+`;
+
+exports[`encoded params are byte-stable > boats 1`] = `
+"default  full=10x10f4dn,4,3,2,1  brief=10x10f4,4,3,2,1
+preset:Boats/6x6, size 3 Easy  full=6x6f3de,3,2,1  brief=6x6f3,3,2,1
+preset:Boats/6x6, size 3 Normal  full=6x6f3dn,3,2,1  brief=6x6f3,3,2,1
+preset:Boats/6x6, size 3 Hard  full=6x6f3dh,3,2,1  brief=6x6f3,3,2,1
+preset:Boats/8x8, size 4 Easy  full=8x8f4de,4,3,2,1  brief=8x8f4,4,3,2,1
+preset:Boats/8x8, size 4 Normal  full=8x8f4dn,4,3,2,1  brief=8x8f4,4,3,2,1
+preset:Boats/8x8, size 4 Hard  full=8x8f4dh,4,3,2,1  brief=8x8f4,4,3,2,1
+preset:Boats/10x10, size 4 Easy  full=10x10f4de,4,3,2,1  brief=10x10f4,4,3,2,1
+preset:Boats/10x10, size 4 Tricky  full=10x10f4dt,4,3,2,1  brief=10x10f4,4,3,2,1
+preset:Boats/10x10, size 4 Hard  full=10x10f4dh,4,3,2,1  brief=10x10f4,4,3,2,1
+preset:Boats/10x12, size 5 Tricky  full=10x12f5dt,5,4,3,2,1  brief=10x12f5,5,4,3,2,1
+preset:Boats/10x12, size 5 Hard  full=10x12f5dh,5,4,3,2,1  brief=10x12f5,5,4,3,2,1
+bump:w  full=11x10f4dn,4,3,2,1  brief=11x10f4,4,3,2,1
+bump:h  full=10x11f4dn,4,3,2,1  brief=10x11f4,4,3,2,1
+flip:strip  full=10x10f4dnS,4,3,2,1  brief=10x10f4,4,3,2,1"
+`;
+
+exports[`encoded params are byte-stable > bricks 1`] = `
+"default  full=7x6de  brief=7x6
+preset:Bricks/7x6 Unreasonable  full=7x6dn  brief=7x6
+preset:Bricks/10x8 Easy  full=10x8de  brief=10x8
+preset:Bricks/10x8 Unreasonable  full=10x8dn  brief=10x8
+bump:w  full=8x6de  brief=8x6
+bump:h  full=7x7de  brief=7x7"
+`;
+
+exports[`encoded params are byte-stable > bridges 1`] = `
+"default  full=7x7i30e10m2d0  brief=7x7m2
+preset:Type/7x7 Normal  full=7x7i30e10m2d1  brief=7x7m2
+preset:Type/7x7 Tricky  full=7x7i30e10m2d2  brief=7x7m2
+preset:Type/10x10 Easy  full=10x10i30e10m2d0  brief=10x10m2
+preset:Type/10x10 Normal  full=10x10i30e10m2d1  brief=10x10m2
+preset:Type/10x10 Tricky  full=10x10i30e10m2d2  brief=10x10m2
+preset:Type/15x15 Easy  full=15x15i30e10m2d0  brief=15x15m2
+preset:Type/15x15 Normal  full=15x15i30e10m2d1  brief=15x15m2
+preset:Type/15x15 Tricky  full=15x15i30e10m2d2  brief=15x15m2
+bump:w  full=8x7i30e10m2d0  brief=8x7m2
+bump:h  full=7x8i30e10m2d0  brief=7x8m2
+bump:maxb  full=7x7i30e10m3d0  brief=7x7m3
+bump:islands  full=7x7i31e10m2d0  brief=7x7m2
+bump:expansion  full=7x7i30e11m2d0  brief=7x7m2
+flip:allowloops  full=7x7i30e10m2Ld0  brief=7x7m2L"
+`;
+
+exports[`encoded params are byte-stable > clusters 1`] = `
+"default  full=7x7de  brief=7x7
+preset:Clusters/7x7 Normal  full=7x7dt  brief=7x7
+preset:Clusters/8x8 Easy  full=8x8de  brief=8x8
+preset:Clusters/8x8 Normal  full=8x8dt  brief=8x8
+preset:Clusters/9x9 Easy  full=9x9de  brief=9x9
+preset:Clusters/9x9 Normal  full=9x9dt  brief=9x9
+preset:Clusters/10x10 Easy  full=10x10de  brief=10x10
+preset:Clusters/10x10 Normal  full=10x10dt  brief=10x10
+bump:w  full=8x7de  brief=8x7
+bump:h  full=7x8de  brief=7x8"
+`;
+
+exports[`encoded params are byte-stable > crossing 1`] = `
+"default  full=5x5
+preset:Crossing/7x7  full=7x7
+preset:Crossing/9x9  full=9x9
+preset:Crossing/11x11  full=11x11
+preset:Crossing/13x13  full=13x13
+preset:Crossing/9x9 symmetric  full=9x9S  brief=9x9
+preset:Crossing/13x13 symmetric  full=13x13S  brief=13x13
+preset:Crossing/15x15 symmetric  full=15x15S  brief=15x15
+bump:w  full=6x5
+bump:h  full=5x6
+flip:sym  full=5x5S  brief=5x5"
+`;
+
+exports[`encoded params are byte-stable > cube 1`] = `
+"default  full=c4x4
+preset:Type/Tetrahedron  full=t1x2
+preset:Type/Octahedron  full=o2x2
+preset:Type/Icosahedron  full=i3x3
+bump:solid  full=o4x4
+bump:d1  full=c5x4
+bump:d2  full=c4x5"
+`;
+
+exports[`encoded params are byte-stable > dominosa 1`] = `
+"default  full=6db  brief=6
+preset:Dominosa/Order 3, Easy  full=3dt  brief=3
+preset:Dominosa/Order 4, Easy  full=4dt  brief=4
+preset:Dominosa/Order 5, Easy  full=5dt  brief=5
+preset:Dominosa/Order 6, Easy  full=6dt  brief=6
+preset:Dominosa/Order 4, Normal  full=4db  brief=4
+preset:Dominosa/Order 5, Normal  full=5db  brief=5
+preset:Dominosa/Order 7, Normal  full=7db  brief=7
+preset:Dominosa/Order 8, Normal  full=8db  brief=8
+preset:Dominosa/Order 9, Normal  full=9db  brief=9
+preset:Dominosa/Order 6, Tricky  full=6dh  brief=6
+preset:Dominosa/Order 6, Unreasonable  full=6de  brief=6
+tier:4  full=6da  brief=6"
+`;
+
+exports[`encoded params are byte-stable > fifteen 1`] = `
+"default  full=4x4
+bump:w  full=5x4
+bump:h  full=4x5"
+`;
+
+exports[`encoded params are byte-stable > filling 1`] = `
+"default  full=13x9
+preset:Size/9x7  full=9x7
+preset:Size/17x13  full=17x13
+bump:w  full=14x9
+bump:h  full=13x10"
+`;
+
+exports[`encoded params are byte-stable > flip 1`] = `
+"default  full=5x5c  brief=5x5
+preset:Flip/3x3 Crosses  full=3x3c  brief=3x3
+preset:Flip/4x4 Crosses  full=4x4c  brief=4x4
+preset:Flip/3x3 Random  full=3x3r  brief=3x3
+preset:Flip/4x4 Random  full=4x4r  brief=4x4
+preset:Flip/5x5 Random  full=5x5r  brief=5x5
+bump:w  full=6x5c  brief=6x5
+bump:h  full=5x6c  brief=5x6"
+`;
+
+exports[`encoded params are byte-stable > flood 1`] = `
+"default  full=12x12c6m5  brief=12x12
+preset:Type/12x12 Medium  full=12x12c6m2  brief=12x12
+preset:Type/12x12 Hard  full=12x12c6m0  brief=12x12
+preset:Type/16x16 Medium  full=16x16c6m2  brief=16x16
+preset:Type/16x16 Hard  full=16x16c6m0  brief=16x16
+preset:Type/12x12, 3 colors  full=12x12c3m0  brief=12x12
+preset:Type/12x12, 4 colors  full=12x12c4m0  brief=12x12
+bump:w  full=13x12c6m5  brief=13x12
+bump:h  full=12x13c6m5  brief=12x13
+bump:colors  full=12x12c7m5  brief=12x12
+bump:leniency  full=12x12c6m6  brief=12x12"
+`;
+
+exports[`encoded params are byte-stable > galaxies 1`] = `
+"default  full=7x7dn  brief=7x7
+preset:Galaxies/7x7 Unreasonable  full=7x7du  brief=7x7
+preset:Galaxies/10x10 Easy  full=10x10dn  brief=10x10
+preset:Galaxies/10x10 Unreasonable  full=10x10du  brief=10x10
+preset:Galaxies/15x15 Easy  full=15x15dn  brief=15x15
+preset:Galaxies/15x15 Unreasonable  full=15x15du  brief=15x15
+bump:w  full=8x7dn  brief=8x7
+bump:h  full=7x8dn  brief=7x8"
+`;
+
+exports[`encoded params are byte-stable > group 1`] = `
+"default  full=6dn  brief=6
+preset:Group/6x6 Normal, identity hidden  full=6dni  brief=6i
+preset:Group/8x8 Normal  full=8dn  brief=8
+preset:Group/8x8 Normal, identity hidden  full=8dni  brief=8i
+preset:Group/8x8 Tricky  full=8dh  brief=8
+preset:Group/8x8 Tricky, identity hidden  full=8dhi  brief=8i
+preset:Group/12x12 Normal  full=12dn  brief=12
+tier:0  full=6dt  brief=6
+tier:2  full=6dh  brief=6
+tier:3  full=6dx  brief=6
+tier:4  full=6du  brief=6
+bump:w  full=7dn  brief=7"
+`;
+
+exports[`encoded params are byte-stable > guess 1`] = `
+"default  full=c6p4g10Bm
+preset:Type/Super  full=c8p5g12Bm
+bump:ncolors  full=c7p4g10Bm
+bump:npegs  full=c6p5g10Bm
+bump:nguesses  full=c6p4g11Bm
+flip:allowBlank  full=c6p4g10bm
+flip:allowMultiple  full=c6p4g10BM"
+`;
+
+exports[`encoded params are byte-stable > inertia 1`] = `
+"default  full=10x8
+preset:Inertia/15x12  full=15x12
+preset:Inertia/20x16  full=20x16
+bump:w  full=11x8
+bump:h  full=10x9"
+`;
+
+exports[`encoded params are byte-stable > keen 1`] = `
+"default  full=6dn  brief=6
+preset:Keen/4x4 Easy  full=4de  brief=4
+preset:Keen/5x5 Easy  full=5de  brief=5
+preset:Keen/5x5 Easy, multiplication only  full=5dem  brief=5
+preset:Keen/6x6 Easy  full=6de  brief=6
+preset:Keen/6x6 Normal, multiplication only  full=6dnm  brief=6
+preset:Keen/6x6 Tricky  full=6dh  brief=6
+preset:Keen/6x6 Hard  full=6dx  brief=6
+preset:Keen/6x6 Unreasonable  full=6du  brief=6
+preset:Keen/9x9 Normal  full=9dn  brief=9
+bump:w  full=7dn  brief=7"
+`;
+
+exports[`encoded params are byte-stable > lightup 1`] = `
+"default  full=7x7b20s4d0  brief=7x7
+preset:Light Up/7x7 Normal  full=7x7b20s4d1  brief=7x7
+preset:Light Up/7x7 Unreasonable  full=7x7b20s4d2  brief=7x7
+preset:Light Up/10x10 Easy  full=10x10b20s2d0  brief=10x10
+preset:Light Up/10x10 Normal  full=10x10b20s2d1  brief=10x10
+preset:Light Up/10x10 Unreasonable  full=10x10b20s2d2  brief=10x10
+preset:Light Up/14x14 Easy  full=14x14b20s2d0  brief=14x14
+preset:Light Up/14x14 Normal  full=14x14b20s2d1  brief=14x14
+preset:Light Up/14x14 Unreasonable  full=14x14b20s2d2  brief=14x14
+bump:w  full=8x7b20s4d0  brief=8x7
+bump:h  full=7x8b20s4d0  brief=7x8
+bump:blackpc  full=7x7b21s4d0  brief=7x7
+bump:symm  full=7x7b20s5d0  brief=7x7"
+`;
+
+exports[`encoded params are byte-stable > loopy 1`] = `
+"default  full=10x10t0de  brief=10x10t0
+preset:Loopy/7x7 Squares - Easy  full=7x7t0de  brief=7x7t0
+preset:Loopy/7x7 Squares - Normal  full=7x7t0dn  brief=7x7t0
+preset:Loopy/10x10 Squares - Normal  full=10x10t0dn  brief=10x10t0
+preset:Loopy/7x7 Squares - Hard  full=7x7t0dh  brief=7x7t0
+preset:Loopy/10x10 Squares - Hard  full=10x10t0dh  brief=10x10t0
+preset:Loopy/10x12 Triangular - Hard  full=12x10t1dh  brief=12x10t1
+preset:Loopy/7x7 Snub-Square - Hard  full=7x7t3dh  brief=7x7t3
+preset:Loopy/9x9 Cairo - Hard  full=9x9t4dh  brief=9x9t4
+preset:Loopy/5x5 Kites - Hard  full=5x5t7dh  brief=5x5t7
+preset:Loopy/10x10 Penrose (kite/dart) - Hard  full=10x10t11dh  brief=10x10t11
+preset:Loopy/10x10 Penrose (rhombs) - Hard  full=10x10t12dh  brief=10x10t12
+preset:Loopy/More.../10x10 Honeycomb - Hard  full=10x10t2dh  brief=10x10t2
+preset:Loopy/More.../4x5 Great-Hexagonal - Hard  full=5x4t5dh  brief=5x4t5
+preset:Loopy/More.../4x5 Kagome - Hard  full=5x4t14dh  brief=5x4t14
+preset:Loopy/More.../7x7 Octagonal - Hard  full=7x7t6dh  brief=7x7t6
+preset:Loopy/More.../5x5 Floret - Hard  full=5x5t8dh  brief=5x5t8
+preset:Loopy/More.../4x5 Dodecagonal - Hard  full=5x4t9dh  brief=5x4t9
+preset:Loopy/More.../4x5 Great-Dodecagonal - Hard  full=5x4t10dh  brief=5x4t10
+preset:Loopy/More.../3x5 Great-Great-Dodecagonal - Hard  full=5x3t13dh  brief=5x3t13
+preset:Loopy/More.../4x5 Compass-Dodecagonal - Hard  full=5x4t15dh  brief=5x4t15
+preset:Loopy/More.../10x10 Hats - Hard  full=10x10t16dh  brief=10x10t16
+preset:Loopy/More.../10x10 Spectres - Hard  full=10x10t17dh  brief=10x10t17
+tier:2  full=10x10t0dt  brief=10x10t0
+bump:w  full=11x10t0de  brief=11x10t0
+bump:h  full=10x11t0de  brief=10x11t0
+bump:type  full=10x10t1de  brief=10x10t1"
+`;
+
+exports[`encoded params are byte-stable > magnets 1`] = `
+"default  full=6x5dtS  brief=6x5
+preset:Size/6x5 Easy  full=6x5de  brief=6x5
+preset:Size/6x5 Normal  full=6x5dt  brief=6x5
+preset:Size/8x7 Easy  full=8x7de  brief=8x7
+preset:Size/8x7 Normal  full=8x7dt  brief=8x7
+preset:Size/8x7 Normal, strip clues  full=8x7dtS  brief=8x7
+preset:Size/10x9 Normal  full=10x9dt  brief=10x9
+preset:Size/10x9 Normal, strip clues  full=10x9dtS  brief=10x9
+tier:0  full=6x5deS  brief=6x5
+bump:w  full=7x5dtS  brief=7x5
+bump:h  full=6x6dtS  brief=6x6"
+`;
+
+exports[`encoded params are byte-stable > map 1`] = `
+"default  full=20x15n30dn  brief=20x15n30
+preset:Map/20x15, 30 regions, Easy  full=20x15n30de  brief=20x15n30
+preset:Map/20x15, 30 regions, Tricky  full=20x15n30dh  brief=20x15n30
+preset:Map/20x15, 30 regions, Unreasonable  full=20x15n30du  brief=20x15n30
+preset:Map/30x25, 75 regions, Normal  full=30x25n75dn  brief=30x25n75
+preset:Map/30x25, 75 regions, Tricky  full=30x25n75dh  brief=30x25n75
+bump:w  full=21x15n30dn  brief=21x15n30
+bump:h  full=20x16n30dn  brief=20x16n30
+bump:n  full=20x15n31dn  brief=20x15n31"
+`;
+
+exports[`encoded params are byte-stable > mathrax 1`] = `
+"default  full=5de  brief=5
+preset:Mathrax/5x5 Normal  full=5dn  brief=5
+preset:Mathrax/5x5 Tricky  full=5dt  brief=5
+preset:Mathrax/6x6 Easy  full=6de  brief=6
+preset:Mathrax/6x6 Normal  full=6dn  brief=6
+preset:Mathrax/6x6 Tricky  full=6dt  brief=6
+preset:Mathrax/7x7 Normal  full=7dn  brief=7
+preset:Mathrax/8x8 Normal  full=8dn  brief=8
+preset:Mathrax/9x9 Normal  full=9dn  brief=9
+tier:3  full=5dr  brief=5
+bump:options  full=5de  brief=5"
+`;
+
+exports[`encoded params are byte-stable > mines 1`] = `
+"default  full=9x9n10  brief=9x9
+preset:Mines/9x9, 35 mines  full=9x9n35  brief=9x9
+preset:Mines/16x16, 40 mines  full=16x16n40  brief=16x16
+preset:Mines/16x16, 99 mines  full=16x16n99  brief=16x16
+preset:Mines/30x16, 99 mines  full=30x16n99  brief=30x16
+preset:Mines/30x16, 170 mines  full=30x16n170  brief=30x16
+bump:w  full=10x9n10  brief=10x9
+bump:h  full=9x10n10  brief=9x10
+bump:n  full=9x9n11  brief=9x9
+flip:unique  full=9x9n10a  brief=9x9
+bump:firstClickX  full=9x9n10X0  brief=9x9
+bump:firstClickY  full=9x9n10Y0  brief=9x9"
+`;
+
+exports[`encoded params are byte-stable > mosaic 1`] = `
+"default  full=10x10
+preset:Size/Size: 3x3  full=3x3
+preset:Size/Size: 5x5  full=5x5
+preset:Size/Size: 15x15  full=15x15
+preset:Size/Size: 25x25  full=25x25
+preset:Size/Size: 50x50  full=50x50h0  brief=50x50
+bump:width  full=11x10
+bump:height  full=10x11
+flip:aggressive  full=10x10h0  brief=10x10"
+`;
+
+exports[`encoded params are byte-stable > net 1`] = `
+"default  full=5x5
+preset:Net/7x7  full=7x7
+preset:Net/9x9  full=9x9
+preset:Net/11x11  full=11x11
+preset:Net/13x11  full=13x11
+preset:Net/5x5 wrapping  full=5x5w
+preset:Net/7x7 wrapping  full=7x7w
+preset:Net/9x9 wrapping  full=9x9w
+preset:Net/11x11 wrapping  full=11x11w
+preset:Net/13x11 wrapping  full=13x11w
+bump:w  full=6x5
+bump:h  full=5x6
+flip:unique  full=5x5a  brief=5x5
+bump:barrierProbability  full=5x5b1  brief=5x5"
+`;
+
+exports[`encoded params are byte-stable > netslide 1`] = `
+"default  full=3x3b1  brief=3x3
+preset:Netslide/3x3 medium  full=3x3
+preset:Netslide/3x3 hard  full=3x3w
+preset:Netslide/4x4 easy  full=4x4b1  brief=4x4
+preset:Netslide/4x4 medium  full=4x4
+preset:Netslide/4x4 hard  full=4x4w
+preset:Netslide/5x5 easy  full=5x5b1  brief=5x5
+preset:Netslide/5x5 medium  full=5x5
+preset:Netslide/5x5 hard  full=5x5w
+bump:w  full=4x3b1  brief=4x3
+bump:h  full=3x4b1  brief=3x4
+flip:wrapping  full=3x3wb1  brief=3x3w
+bump:barrierProbability  full=3x3b2  brief=3x3
+bump:movetarget  full=3x3b1m1  brief=3x3m1"
+`;
+
+exports[`encoded params are byte-stable > palisade 1`] = `
+"default  full=5x5n5
+preset:Size/8 x 6, regions of size 6  full=8x6n6
+preset:Size/10 x 8, regions of size 8  full=10x8n8
+preset:Size/15 x 12, regions of size 10  full=15x12n10
+bump:w  full=6x5n5
+bump:h  full=5x6n5
+bump:k  full=5x5n6"
+`;
+
+exports[`encoded params are byte-stable > pattern 1`] = `
+"default  full=15x15
+preset:Pattern/10x10  full=10x10
+preset:Pattern/20x20  full=20x20
+preset:Pattern/25x25  full=25x25
+preset:Pattern/30x30  full=30x30
+bump:w  full=16x15
+bump:h  full=15x16"
+`;
+
+exports[`encoded params are byte-stable > pearl 1`] = `
+"default  full=8x8dt  brief=8x8
+preset:Pearl/6x6 Easy  full=6x6de  brief=6x6
+preset:Pearl/6x6 Normal  full=6x6dt  brief=6x6
+preset:Pearl/8x8 Easy  full=8x8de  brief=8x8
+preset:Pearl/10x10 Easy  full=10x10de  brief=10x10
+preset:Pearl/10x10 Normal  full=10x10dt  brief=10x10
+preset:Pearl/12x8 Easy  full=12x8de  brief=12x8
+preset:Pearl/12x8 Normal  full=12x8dt  brief=12x8
+bump:w  full=9x8dt  brief=9x8
+bump:h  full=8x9dt  brief=8x9
+flip:nosolve  full=8x8dtn  brief=8x8"
+`;
+
+exports[`encoded params are byte-stable > pegs 1`] = `
+"default  full=7x7cross  brief=7x7
+preset:Type/Cross 5×7  full=5x7cross  brief=5x7
+preset:Type/Cross 5×9  full=5x9cross  brief=5x9
+preset:Type/Cross 7×9  full=7x9cross  brief=7x9
+preset:Type/Cross 9×9  full=9x9cross  brief=9x9
+preset:Type/Octagon  full=7x7octagon  brief=7x7
+preset:Type/Random 5×5  full=5x5random  brief=5x5
+preset:Type/Random 7×7  full=7x7random  brief=7x7
+preset:Type/Random 9×9  full=9x9random  brief=9x9
+bump:w  full=8x7cross  brief=8x7
+bump:h  full=7x8cross  brief=7x8"
+`;
+
+exports[`encoded params are byte-stable > range 1`] = `
+"default  full=9x6
+preset:Range/12 x 8  full=12x8
+preset:Range/13 x 9  full=13x9
+preset:Range/16 x 11  full=16x11
+bump:w  full=10x6
+bump:h  full=9x7"
+`;
+
+exports[`encoded params are byte-stable > rect 1`] = `
+"default  full=7x7
+preset:Rectangles/9x9  full=9x9
+preset:Rectangles/11x11  full=11x11
+preset:Rectangles/13x13  full=13x13
+preset:Rectangles/15x15  full=15x15
+preset:Rectangles/17x17  full=17x17
+preset:Rectangles/19x19  full=19x19
+bump:w  full=8x7
+bump:h  full=7x8
+bump:expandfactor  full=7x7e1  brief=7x7
+flip:unique  full=7x7a  brief=7x7"
+`;
+
+exports[`encoded params are byte-stable > rome 1`] = `
+"default  full=6x6de  brief=6x6
+preset:Rome/4x4 Easy  full=4x4de  brief=4x4
+preset:Rome/4x4 Normal  full=4x4dn  brief=4x4
+preset:Rome/4x4 Tricky  full=4x4dt  brief=4x4
+preset:Rome/6x6 Normal  full=6x6dn  brief=6x6
+preset:Rome/6x6 Tricky  full=6x6dt  brief=6x6
+preset:Rome/8x8 Easy  full=8x8de  brief=8x8
+preset:Rome/8x8 Normal  full=8x8dn  brief=8x8
+preset:Rome/8x8 Tricky  full=8x8dt  brief=8x8
+preset:Rome/10x10 Easy  full=10x10de  brief=10x10
+preset:Rome/10x10 Normal  full=10x10dn  brief=10x10
+preset:Rome/10x10 Tricky  full=10x10dt  brief=10x10
+bump:w  full=7x6de  brief=7x6
+bump:h  full=6x7de  brief=6x7"
+`;
+
+exports[`encoded params are byte-stable > salad 1`] = `
+"default  full=4n3Lde  brief=4n3L
+preset:Salad/Letters: 5x5 A~C  full=5n3Lde  brief=5n3L
+preset:Salad/Numbers: 5x5 1~3  full=5n3Bde  brief=5n3B
+preset:Salad/Letters: 5x5 A~D  full=5n4Lde  brief=5n4L
+preset:Salad/Numbers: 6x6 1~3  full=6n3Bde  brief=6n3B
+preset:Salad/Letters: 6x6 A~D  full=6n4Lde  brief=6n4L
+preset:Salad/Numbers: 6x6 1~4  full=6n4Bde  brief=6n4B
+preset:Salad/Letters: 7x7 A~D  full=7n4Lde  brief=7n4L
+preset:Salad/Numbers: 7x7 1~4  full=7n4Bde  brief=7n4B
+preset:Salad/Letters: 8x8 A~E  full=8n5Lde  brief=8n5L
+preset:Salad/Numbers: 8x8 1~5  full=8n5Bde  brief=8n5B
+tier:1  full=4n3Ldx  brief=4n3L
+bump:nums  full=4n4Lde  brief=4n4L
+bump:mode  full=4n3Bde  brief=4n3B"
+`;
+
+exports[`encoded params are byte-stable > samegame 1`] = `
+"default  full=5x5c3s2
+preset:Type/10x5, 3 colors  full=10x5c3s2
+preset:Type/15x10, 3 colors  full=15x10c3s2
+preset:Type/15x10, 4 colors  full=15x10c4s2
+preset:Type/20x15, 4 colors  full=20x15c4s2
+bump:w  full=6x5c3s2
+bump:h  full=5x6c3s2
+bump:ncols  full=5x5c4s2
+bump:scoresub  full=5x5c3s3
+flip:soluble  full=5x5c3s2r  brief=5x5c3s2"
+`;
+
+exports[`encoded params are byte-stable > seismic 1`] = `
+"default  full=6x6de  brief=6x6
+preset:Seismic/Seismic: 4x4 Easy  full=4x4de  brief=4x4
+preset:Seismic/Tectonic: 4x4 Easy  full=4x4Tde  brief=4x4T
+preset:Seismic/Seismic: 4x4 Normal  full=4x4dh  brief=4x4
+preset:Seismic/Tectonic: 4x4 Normal  full=4x4Tdh  brief=4x4T
+preset:Seismic/Tectonic: 6x6 Easy  full=6x6Tde  brief=6x6T
+preset:Seismic/Seismic: 6x6 Normal  full=6x6dh  brief=6x6
+preset:Seismic/Tectonic: 6x6 Normal  full=6x6Tdh  brief=6x6T
+preset:Seismic/Seismic: 7x7 Easy  full=7x7de  brief=7x7
+preset:Seismic/Tectonic: 7x7 Easy  full=7x7Tde  brief=7x7T
+preset:Seismic/Seismic: 7x7 Normal  full=7x7dh  brief=7x7
+preset:Seismic/Tectonic: 7x7 Normal  full=7x7Tdh  brief=7x7T
+preset:Seismic/Seismic: 8x8 Easy  full=8x8de  brief=8x8
+preset:Seismic/Tectonic: 8x8 Easy  full=8x8Tde  brief=8x8T
+preset:Seismic/Seismic: 8x8 Normal  full=8x8dh  brief=8x8
+preset:Seismic/Tectonic: 8x8 Normal  full=8x8Tdh  brief=8x8T
+bump:w  full=7x6de  brief=7x6
+bump:h  full=6x7de  brief=6x7"
+`;
+
+exports[`encoded params are byte-stable > separate 1`] = `
+"default  full=5x5n5
+preset:Size/4 x 4, 4 letters  full=4x4n4
+preset:Size/6 x 6, 4 letters  full=6x6n4
+preset:Size/6 x 6, 6 letters  full=6x6n6
+bump:w  full=6x5n5
+bump:h  full=5x6n5
+bump:k  full=5x5n6"
+`;
+
+exports[`encoded params are byte-stable > signpost 1`] = `
+"default  full=4x4c  brief=4x4
+preset:Signpost/4x4, free ends  full=4x4
+preset:Signpost/5x5  full=5x5c  brief=5x5
+preset:Signpost/5x5, free ends  full=5x5
+preset:Signpost/6x6  full=6x6c  brief=6x6
+preset:Signpost/7x7  full=7x7c  brief=7x7
+bump:w  full=5x4c  brief=5x4
+bump:h  full=4x5c  brief=4x5"
+`;
+
+exports[`encoded params are byte-stable > singles 1`] = `
+"default  full=5x5de  brief=5x5
+preset:Singles/5x5 Normal  full=5x5dk  brief=5x5
+preset:Singles/6x6 Easy  full=6x6de  brief=6x6
+preset:Singles/6x6 Normal  full=6x6dk  brief=6x6
+preset:Singles/8x8 Easy  full=8x8de  brief=8x8
+preset:Singles/8x8 Normal  full=8x8dk  brief=8x8
+preset:Singles/10x10 Easy  full=10x10de  brief=10x10
+preset:Singles/10x10 Normal  full=10x10dk  brief=10x10
+preset:Singles/12x12 Easy  full=12x12de  brief=12x12
+preset:Singles/12x12 Normal  full=12x12dk  brief=12x12
+bump:w  full=6x5de  brief=6x5
+bump:h  full=5x6de  brief=5x6"
+`;
+
+exports[`encoded params are byte-stable > sixteen 1`] = `
+"default  full=4x4
+preset:Type/3×3  full=3x3
+preset:Type/4×3  full=4x3
+preset:Type/5×4  full=5x4
+preset:Type/5×5  full=5x5
+bump:h  full=4x5
+bump:movetarget  full=4x4m1"
+`;
+
+exports[`encoded params are byte-stable > slant 1`] = `
+"default  full=8x8de  brief=8x8
+preset:Size/5x5 Easy  full=5x5de  brief=5x5
+preset:Size/5x5 Normal  full=5x5dh  brief=5x5
+preset:Size/8x8 Normal  full=8x8dh  brief=8x8
+preset:Size/12x10 Easy  full=12x10de  brief=12x10
+preset:Size/12x10 Normal  full=12x10dh  brief=12x10
+bump:w  full=9x8de  brief=9x8
+bump:h  full=8x9de  brief=8x9"
+`;
+
+exports[`encoded params are byte-stable > slide 1`] = `
+"default  full=7x6m40
+preset:Slide/7x6, max 25 moves  full=7x6m25
+preset:Slide/7x6, no move limit  full=7x6u
+preset:Slide/8x6, no move limit  full=8x6u
+bump:w  full=8x6m40
+bump:h  full=7x7m40
+bump:maxmoves  full=7x6m41"
+`;
+
+exports[`encoded params are byte-stable > sokoban 1`] = `
+"default  full=12x10
+preset:Type/16x12  full=16x12
+preset:Type/20x16  full=20x16
+bump:w  full=13x10
+bump:h  full=12x11"
+`;
+
+exports[`encoded params are byte-stable > solo 1`] = `
+"default  full=3x3
+preset:Solo/2x2 Easy  full=2x2
+preset:Solo/2x3 Normal  full=2x3db  brief=2x3
+preset:Solo/3x3 Easy  full=3x3
+preset:Solo/3x3 Normal  full=3x3db  brief=3x3
+preset:Solo/3x3 Normal X  full=3x3xdb  brief=3x3x
+preset:Solo/3x3 Tricky  full=3x3di  brief=3x3
+preset:Solo/3x3 Hard  full=3x3da  brief=3x3
+preset:Solo/3x3 Hard X  full=3x3xda  brief=3x3x
+preset:Solo/3x3 Extreme  full=3x3de  brief=3x3
+preset:Solo/3x3 Unreasonable  full=3x3du  brief=3x3
+preset:Solo/3x3 Killer  full=3x3ka  brief=3x3k
+preset:Solo/9 Jigsaw Normal  full=9jdb  brief=9j
+preset:Solo/9 Jigsaw Normal X  full=9jxdb  brief=9jx
+preset:Solo/9 Jigsaw Hard  full=9jda  brief=9j
+preset:Solo/3x4 Normal  full=3x4db  brief=3x4
+preset:Solo/4x4 Normal  full=4x4db  brief=4x4
+tier:1  full=3x3db  brief=3x3
+tier:2  full=3x3di  brief=3x3
+tier:3  full=3x3da  brief=3x3
+tier:4  full=3x3de  brief=3x3
+tier:5  full=3x3du  brief=3x3
+bump:c  full=4x3
+bump:r  full=3x4
+bump:symm  full=3x3r4  brief=3x3
+bump:kdiff  full=3x3
+flip:xtype  full=3x3x
+flip:killer  full=3x3k"
+`;
+
+exports[`encoded params are byte-stable > spokes 1`] = `
+"default  full=6x6de  brief=6x6
+preset:Spokes/4x4 Easy  full=4x4de  brief=4x4
+preset:Spokes/4x4 Normal  full=4x4dt  brief=4x4
+preset:Spokes/4x4 Unreasonable  full=4x4dh  brief=4x4
+preset:Spokes/6x6 Normal  full=6x6dt  brief=6x6
+preset:Spokes/6x6 Unreasonable  full=6x6dh  brief=6x6
+bump:w  full=7x6de  brief=7x6
+bump:h  full=6x7de  brief=6x7"
+`;
+
+exports[`encoded params are byte-stable > sticks 1`] = `
+"default  full=7x7b20s2  brief=7x7
+preset:Sticks/10x10  full=10x10b20s2  brief=10x10
+bump:w  full=8x7b20s2  brief=8x7
+bump:h  full=7x8b20s2  brief=7x8
+bump:blackpc  full=7x7b21s2  brief=7x7
+bump:symm  full=7x7b20s3  brief=7x7"
+`;
+
+exports[`encoded params are byte-stable > subsets 1`] = `
+"default  full=4x4n4de  brief=4x4n4
+preset:Subsets/4x4 Size 4 Normal  full=4x4n4dt  brief=4x4n4
+bump:w  full=5x4n4de  brief=5x4n4
+bump:h  full=4x5n4de  brief=4x5n4
+bump:n  full=4x4n5de  brief=4x4n5"
+`;
+
+exports[`encoded params are byte-stable > tents 1`] = `
+"default  full=8x8de  brief=8x8
+preset:Size/8x8 Normal  full=8x8dt  brief=8x8
+preset:Size/10x10 Easy  full=10x10de  brief=10x10
+preset:Size/10x10 Normal  full=10x10dt  brief=10x10
+preset:Size/15x15 Easy  full=15x15de  brief=15x15
+preset:Size/15x15 Normal  full=15x15dt  brief=15x15
+bump:w  full=9x8de  brief=9x8
+bump:h  full=8x9de  brief=8x9"
+`;
+
+exports[`encoded params are byte-stable > towers 1`] = `
+"default  full=5de  brief=5
+preset:Towers/4x4 Easy  full=4de  brief=4
+preset:Towers/5x5 Normal  full=5dh  brief=5
+preset:Towers/6x6 Easy  full=6de  brief=6
+preset:Towers/6x6 Normal  full=6dh  brief=6
+preset:Towers/6x6 Tricky  full=6dx  brief=6
+preset:Towers/6x6 Unreasonable  full=6du  brief=6
+tier:2  full=5dx  brief=5
+tier:3  full=5du  brief=5"
+`;
+
+exports[`encoded params are byte-stable > tracks 1`] = `
+"default  full=8x8dt  brief=8x8
+preset:Size/8x8 Easy  full=8x8de  brief=8x8
+preset:Size/10x8 Easy  full=10x8de  brief=10x8
+preset:Size/10x8 Normal  full=10x8dt  brief=10x8
+preset:Size/10x10 Easy  full=10x10de  brief=10x10
+preset:Size/10x10 Normal  full=10x10dt  brief=10x10
+preset:Size/10x10 Tricky  full=10x10dh  brief=10x10
+preset:Size/15x10 Easy  full=15x10de  brief=15x10
+preset:Size/15x10 Normal  full=15x10dt  brief=15x10
+preset:Size/15x15 Easy  full=15x15de  brief=15x15
+preset:Size/15x15 Normal  full=15x15dt  brief=15x15
+preset:Size/15x15 Tricky  full=15x15dh  brief=15x15
+tier:2  full=8x8dh  brief=8x8
+bump:w  full=9x8dt  brief=9x8
+bump:h  full=8x9dt  brief=8x9
+flip:singleOnes  full=8x8dto  brief=8x8"
+`;
+
+exports[`encoded params are byte-stable > twiddle 1`] = `
+"default  full=3x3n2
+preset:Type/3×3 rows only  full=3x3n2r
+preset:Type/3×3 orientable  full=3x3n2o
+preset:Type/4×4 normal  full=4x4n2
+preset:Type/4×4 orientable  full=4x4n2o
+preset:Type/4×4, rotating 3×3 blocks  full=4x4n3
+preset:Type/5×5, rotating 3×3 blocks  full=5x5n3
+preset:Type/6×6, rotating 4×4 blocks  full=6x6n4
+bump:w  full=4x3n2
+bump:h  full=3x4n2
+bump:n  full=3x3n3
+bump:movetarget  full=3x3n2m1"
+`;
+
+exports[`encoded params are byte-stable > undead 1`] = `
+"default  full=4x4dn  brief=4x4
+preset:Undead/4x4 Easy  full=4x4de  brief=4x4
+preset:Undead/4x4 Unreasonable  full=4x4dt  brief=4x4
+preset:Undead/5x5 Easy  full=5x5de  brief=5x5
+preset:Undead/5x5 Normal  full=5x5dn  brief=5x5
+preset:Undead/5x5 Unreasonable  full=5x5dt  brief=5x5
+preset:Undead/7x7 Easy  full=7x7de  brief=7x7
+preset:Undead/7x7 Normal  full=7x7dn  brief=7x7
+bump:w  full=5x4dn  brief=5x4
+bump:h  full=4x5dn  brief=4x5"
+`;
+
+exports[`encoded params are byte-stable > unequal 1`] = `
+"default  full=4de  brief=4
+preset:Unequal/Unequal: 5x5 Normal  full=5de  brief=5
+preset:Unequal/Unequal: 5x5 Tricky  full=5dk  brief=5
+preset:Unequal/Adjacent: 5x5 Tricky  full=5adk  brief=5a
+preset:Unequal/Unequal: 5x5 Hard  full=5dx  brief=5
+preset:Unequal/Unequal: 6x6 Normal  full=6de  brief=6
+preset:Unequal/Unequal: 6x6 Tricky  full=6dk  brief=6
+preset:Unequal/Adjacent: 6x6 Tricky  full=6adk  brief=6a
+preset:Unequal/Unequal: 6x6 Hard  full=6dx  brief=6
+preset:Unequal/Unequal: 7x7 Tricky  full=7dk  brief=7
+preset:Unequal/Adjacent: 7x7 Tricky  full=7adk  brief=7a
+preset:Unequal/Unequal: 7x7 Hard  full=7dx  brief=7
+tier:0  full=4dt  brief=4
+tier:2  full=4dk  brief=4
+tier:3  full=4dx  brief=4
+tier:4  full=4dr  brief=4"
+`;
+
+exports[`encoded params are byte-stable > unruly 1`] = `
+"default  full=8x8dt  brief=8x8
+preset:Size/8x8 Normal  full=8x8de  brief=8x8
+preset:Size/8x8 Tricky  full=8x8dn  brief=8x8
+preset:Size/10x10 Normal  full=10x10de  brief=10x10
+preset:Size/10x10 Tricky  full=10x10dn  brief=10x10
+preset:Size/14x14 Normal  full=14x14de  brief=14x14
+preset:Size/14x14 Tricky  full=14x14dn  brief=14x14
+bump:w2  full=9x8dt  brief=9x8
+bump:h2  full=8x9dt  brief=8x9
+flip:unique  full=8x8udt  brief=8x8u"
+`;
+
+exports[`encoded params are byte-stable > untangle 1`] = `
+"default  full=10
+preset:Untangle/6 points  full=6
+preset:Untangle/15 points  full=15
+preset:Untangle/20 points  full=20
+preset:Untangle/25 points  full=25
+bump:n  full=11"
+`;

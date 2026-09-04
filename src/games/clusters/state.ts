@@ -12,8 +12,9 @@
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
-import type { PresetMenu } from "../../engine/game.ts";
-import { parseDimensions } from "../../engine/params.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -122,25 +123,37 @@ export function presets(): PresetMenu<ClustersParams> {
   };
 }
 
-export function encodeParams(p: ClustersParams, full: boolean): string {
-  return full ? `${p.w}x${p.h}d${DIFF_CHARS[p.diff] ?? "?"}` : `${p.w}x${p.h}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<ClustersParams>[] = [
+  ...dimensionParamConfig<ClustersParams>(),
+  {
+    kw: "difficulty",
+    name: "Difficulty",
+    type: "choices",
+    choices: [...DIFF_NAMES],
+    get: (p) => p.diff,
+    set: (p, v) => {
+      p.diff = v;
+    },
+  },
+];
 
-export function decodeParams(s: string): ClustersParams {
-  // Lenient, matching upstream `decode_params`: a leading integer is the
-  // width (and default height); an `x<int>` overrides the height; an optional
-  // `d<char>` selects the tier. A game ID from before the tiers existed has no
-  // `d`, so it lands on the default — see `defaultParams`.
-  const { w, h, next } = parseDimensions(s);
-  const p: ClustersParams = { w, h, diff: DIFF_EASY };
-  if (s[next] === "d" && next + 1 < s.length) {
-    // An unrecognized char leaves the tier out of range so `validateParams`
-    // rejects it, rather than silently playing some other difficulty.
-    const idx = DIFF_CHARS.indexOf(s[next + 1]);
-    p.diff = idx === -1 ? DIFFCOUNT : idx;
-  }
-  return p;
-}
+/**
+ * Lenient, matching upstream `decode_params`: a leading integer is the width
+ * (and default height); an `x<int>` overrides the height; an optional
+ * `d<char>` selects the tier. A game ID from before the tiers existed has no
+ * `d`, so it lands on the default — see `defaultParams`.
+ *
+ * An unrecognized char leaves the tier out of range so `validateParams`
+ * rejects it, rather than silently playing some other difficulty.
+ */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, {
+    full: true,
+    invalid: DIFFCOUNT,
+  }),
+]);
 
 /**
  * The smallest board on which a Tricky puzzle exists: **twelve squares, and at

@@ -31,7 +31,6 @@ import {
   NO_DEDUCTION_LEFT,
   PUZZLE_NOT_REASONABLE,
 } from "../../engine/hint-refusal.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -83,7 +82,6 @@ import {
   COL_MASK,
   cloneState,
   colorBits,
-  DIFF_NAMES,
   DIFF_TRICKY,
   decodeParams,
   defaultParams,
@@ -94,6 +92,7 @@ import {
   F_UNSHADE,
   NUM_MASK,
   newState,
+  paramConfig,
   presets,
   status,
   textFormat,
@@ -557,19 +556,7 @@ export const bricksGame: Game<
     height: String(p.h),
     difficulty: p.diff,
   }),
-  paramConfig: [
-    ...dimensionParamConfig<BricksParams>(),
-    {
-      kw: "difficulty",
-      name: "Difficulty",
-      type: "choices",
-      choices: [...DIFF_NAMES],
-      get: (p) => p.diff,
-      set: (p, v) => {
-        p.diff = v;
-      },
-    },
-  ],
+  paramConfig,
 
   newDesc: (p: BricksParams, rng: RandomState) => newBricksDesc(p, rng),
   validateDesc,

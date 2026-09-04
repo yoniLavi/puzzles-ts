@@ -1,5 +1,6 @@
-# No deltas yet: this change's first task is an exploration, and its scope is
-# decided by what that finds. Writing a requirement now would put a spec in
-# front of the work rather than behind it.
+# `skip_specs` was set while this change's first task was an exploration and its
+# scope was undecided. The exploration ran (see tasks.md § "Findings") and the
+# scope is settled, so the deltas under specs/ are now the record of what it
+# established: the declared codec in `ts-engine`, the byte-stability guarantee in
+# `ts-migration`.
 schema: spec-driven
-skip_specs: true

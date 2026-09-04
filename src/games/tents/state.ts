@@ -13,9 +13,10 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import { tierNames } from "../../engine/difficulty.ts";
-import type { PresetMenu } from "../../engine/game.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { matching } from "../../engine/latin.ts";
-import { parseDimensions } from "../../engine/params.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -119,29 +120,27 @@ export function presets(): PresetMenu<TentsParams> {
   };
 }
 
-export function encodeParams(p: TentsParams, full: boolean): string {
-  let s = `${p.w}x${p.h}`;
-  if (full) s += `d${DIFF_CHARS[p.diff] ?? "?"}`;
-  return s;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<TentsParams>[] = [
+  ...dimensionParamConfig<TentsParams>(),
+  {
+    kw: "difficulty",
+    name: "Difficulty",
+    type: "choices",
+    choices: [...DIFF_NAMES],
+    get: (p) => p.diff,
+    set: (p, v) => {
+      p.diff = v;
+    },
+  },
+];
 
-export function decodeParams(s: string): TentsParams {
-  const ret = defaultParams();
-  const dims = parseDimensions(s, 0);
-  ret.w = dims.w;
-  ret.h = dims.h;
-  let i = dims.next;
-  if (s[i] === "d") {
-    i++;
-    // Upstream leniency: an unknown difficulty char leaves the default.
-    if (i < s.length) {
-      const idx = DIFF_CHARS.indexOf(s[i]);
-      if (idx >= 0) ret.diff = idx;
-      i++;
-    }
-  }
-  return ret;
-}
+/** `WxH`, plus the generator-only difficulty letter. An unrecognized letter
+ * leaves the default, which is upstream's leniency. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+  choice(paramConfig, "d", "difficulty", DIFF_CHARS, { full: true }),
+]);
 
 export function validateParams(p: TentsParams, _full: boolean): string | null {
   // Generating anything under 4x4 runs into trouble of one kind or another.

@@ -12,8 +12,9 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import { Dsf } from "../../engine/dsf.ts";
-import type { PresetMenu } from "../../engine/game.ts";
-import { parseDimensions } from "../../engine/params.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -80,14 +81,14 @@ export function presets(): PresetMenu<FillingParams> {
   };
 }
 
-export function encodeParams(p: FillingParams, _full: boolean): string {
-  return `${p.w}x${p.h}`;
-}
+/** The "Custom type…" form, and the field list the codec below encodes. */
+export const paramConfig: ParamConfigItem<FillingParams>[] =
+  dimensionParamConfig<FillingParams>();
 
-export function decodeParams(s: string): FillingParams {
-  const { w, h } = parseDimensions(s, 0);
-  return { w, h };
-}
+/** `WxH`, with upstream's square fallback: a bare `W` is a W×W board. */
+export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
+  dims(paramConfig),
+]);
 
 export function validateParams(p: FillingParams, _full: boolean): string | null {
   if (p.w < 1) return "Width must be at least one";

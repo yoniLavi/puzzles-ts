@@ -31,7 +31,6 @@ import {
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import { clearKey } from "../../engine/key-labels.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   pencilKeepHighlightPref,
   stickyPencilPref,
@@ -89,7 +88,6 @@ import {
   cloneState,
   clueIndex,
   DIFF_EASY,
-  DIFF_NAMES,
   DIFF_NORMAL,
   decodeParams,
   defaultParams,
@@ -105,6 +103,7 @@ import {
   newState,
   newUi,
   PRESETS,
+  paramConfig,
   recomputeErrors,
   status,
   textFormat,
@@ -932,21 +931,7 @@ export const undeadGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: [
-    ...dimensionParamConfig<UndeadParams>(),
-    {
-      kw: "difficulty",
-      name: "Difficulty",
-      type: "choices",
-      // The one list, not a second spelling of it — a hand-copied tier list is
-      // how a rename ships a menu and a dialog that disagree.
-      choices: [...DIFF_NAMES],
-      get: (p) => diffToLevel(p.diff),
-      set: (p, v) => {
-        p.diff = diffFromLevel(v);
-      },
-    },
-  ],
+  paramConfig,
   // Keys match the `undead` config template in augmentation.ts
   // ("{width}x{height} {difficulty:Easy|Normal|Tricky}").
   describeParams: (p): ConfigValues => ({

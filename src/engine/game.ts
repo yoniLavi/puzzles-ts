@@ -494,9 +494,17 @@ export interface Game<
    * ordered list of field descriptors the midend turns into the app's
    * "Custom type…" dialog and parses back onto a copy of `Params`,
    * validated by this game's own `validateParams`. A plain width/height
-   * game declares `paramConfig: dimensionParamConfig()`. Absent ⇒ an
-   * empty custom dialog (correct for a preset-only game like Flip until
-   * it opts in). Independent of the type-summary `describeParams` hook,
+   * game declares `paramConfig: dimensionParamConfig()`. Absent ⇒ an empty
+   * custom dialog; every one of the 57 games declares one, and the trap
+   * that made this optional — a new port shipping a blank dialog because
+   * nobody remembered to wire it — is why it should stay that way.
+   *
+   * **It is the field list two other things are derived from**, so what it
+   * declares reaches further than the dialog: `difficultyTiers` reads a
+   * game's tier names off its difficulty item, and `params-codec.ts` builds
+   * `encodeParams`/`decodeParams` from segments that name these `kw`s and
+   * reuse these accessors. Adding a field here is therefore not only a
+   * dialog change. Independent of the type-summary `describeParams` hook,
    * which renders the menu label rather than the form. */
   paramConfig?: ParamConfigItem<Params>[];
 

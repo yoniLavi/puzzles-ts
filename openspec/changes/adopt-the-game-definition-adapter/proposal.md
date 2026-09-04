@@ -7,6 +7,35 @@ becomes" + § "Order of adoption".
 playable game; it needs at least params and gestures to exist first. Scaffolded
 now so the ordering is recorded, not so it is started next.
 
+> **Open question this change now has to answer first: does the definition
+> object need to exist at all?** (Raised 2026-09-05, after row 2 shipped.)
+>
+> Two rows have now landed, and **neither needed an adapter or a definition
+> object**. `derive-difficulty-from-the-technique-ladder` shipped as a function
+> games call. `declare-params-and-presets` shipped as a segment list a game
+> passes to a helper, adopted one game at a time, with the other 38 games
+> untouched and playing. Both removed per-game surface; neither required a
+> compiler, a big-bang migration, or anything to abort.
+>
+> That is evidence against this change's premise — *"the adapter is the whole
+> trick that makes this migration abortable"* — because a helper nobody calls
+> is already abortable, at zero cost. It is **not** proof: rows 1 and 2 were the
+> two easiest declarations, and the argument that survives is the
+> **capability-manifest diff**, which needs somewhere to read a game's declared
+> capability set from and is the named guard against `re-express-the-collection`'s
+> characteristic risk.
+>
+> **The criterion that settles it, to be applied when `declare-the-gesture-table`
+> lands:** did the gesture table need to know about any *other* declaration to
+> do its job? If each declaration keeps standing alone, this change is a
+> manifest reader and not an adapter, and `re-express-the-collection` is N small
+> per-concern adoptions rather than one sweep. If the gesture table cannot be
+> expressed without reaching for the board model, the definition object is real
+> and this change stays as written.
+>
+> Do not settle it from rows 1 and 2 alone — they are the rows least likely to
+> need each other.
+
 ## Why
 
 **The adapter is the whole trick that makes this migration abortable.**

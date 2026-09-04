@@ -13,7 +13,6 @@ import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -41,7 +40,6 @@ import { MagnetsSolver } from "./solver.ts";
 import {
   clueIndex,
   DIFF_COUNT,
-  DIFF_NAMES,
   decodeParams,
   defaultParams,
   EMPTY,
@@ -59,6 +57,7 @@ import {
   NEUTRAL,
   newState,
   POSITIVE,
+  paramConfig,
   presets,
   status,
   textFormat,
@@ -243,28 +242,7 @@ export const magnetsGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: [
-    ...dimensionParamConfig<MagnetsParams>(),
-    {
-      kw: "difficulty",
-      name: "Difficulty",
-      type: "choices",
-      choices: [...DIFF_NAMES],
-      get: (p) => p.diff,
-      set: (p, v) => {
-        p.diff = v;
-      },
-    },
-    {
-      kw: "strip-clues",
-      name: "Strip clues",
-      type: "boolean",
-      get: (p) => p.stripclues,
-      set: (p, v) => {
-        p.stripclues = v;
-      },
-    },
-  ],
+  paramConfig,
   describeParams: (p) => ({
     width: String(p.w),
     height: String(p.h),

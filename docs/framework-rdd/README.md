@@ -66,7 +66,7 @@ README's own argument for refactoring before building.
 | # | Change | Readiness |
 | --- | --- | --- |
 | 1 | `derive-difficulty-from-the-technique-ladder` | **SHIPPED** 2026-09-04 — but *not* as this table predicted; see below |
-| 2 | `declare-params-and-presets` | explore first — and its ground moved, see its proposal |
+| 2 | `declare-params-and-presets` | **SHIPPED** 2026-09-05 — again not as predicted; see below |
 | 3 | `declare-the-gesture-table` | explore first; Sixteen's drag-to-slide is its named falsifier |
 | 4 | `declare-the-board-model` | exemplar-gated; pick an edge or vertex game, chosen to break it |
 | 5 | `adopt-the-game-definition-adapter` | blocked on 2–4; co-developed with one re-expression, never built first |
@@ -88,6 +88,29 @@ README's own argument for refactoring before building.
 > declaration actually holds the information, at the time the consumer needs it.
 > And **the win to look for is per-game surface removed**, not framework surface
 > added; row 1 deleted 29 hand-written lists and shipped one function.
+
+> **What row 2 taught, and it is the same lesson twice.** Its readiness line
+> promised a shared `WxH` parser; the parser already existed and 47 of 57 games
+> already called it. The declaration that actually held the field list was
+> **`paramConfig`** — every field's key, type and accessors, already written —
+> so the codec was derived from the params *form* rather than from anything
+> new, and the encoder and decoder stopped being two hand-synced copies.
+>
+> Two further things to carry forward. **A declaration's escapers should be
+> measured, not assumed**: this document conceded a bespoke hatch for
+> Blackbox, and Blackbox turned out to be inside the grammar once the grammar
+> was drawn at *tagged segments* rather than at *dimensions plus a suffix* —
+> while five other shapes genuinely escape and keep hand-written codecs.
+> And **build the guard before the migration, not after**: params encodings
+> live in shared game IDs and nothing asserted them, so a byte-stability guard
+> over all 57 games was shipped first and every conversion after it was proved
+> safe by the snapshot not moving.
+>
+> It also raised a question about rows 5 and 6 that this document should not
+> answer for them: rows 1 and 2 both shipped as **helpers a game calls**, with
+> no adapter and no definition object. See
+> `openspec/changes/adopt-the-game-definition-adapter/proposal.md`, which
+> carries the criterion for settling it when row 3 lands.
 
 Presentation is **held**: the scene-graph postmortem's bar is real downstream
 pressure, and none exists yet. Hints for the deliberately held-back games

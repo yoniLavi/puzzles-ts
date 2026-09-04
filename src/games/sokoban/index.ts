@@ -13,7 +13,6 @@
 
 import { rejectMove } from "../../engine/assert-never.ts";
 import type { Game } from "../../engine/game.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -46,6 +45,7 @@ import {
   moveType,
   newState,
   PIT,
+  paramConfig,
   presets,
   type SokobanMove,
   type SokobanParams,
@@ -227,7 +227,7 @@ export const sokobanGame: Game<
   // the one game in the collection whose "Custom type…" dialog opened with no
   // fields in it — invisible because the menu entry is gated on a flag the
   // midend hard-coded to `true`.
-  paramConfig: dimensionParamConfig(),
+  paramConfig,
 
   newDesc: (p: SokobanParams, rng: RandomState) => newSokobanDesc(p, rng),
   validateDesc,

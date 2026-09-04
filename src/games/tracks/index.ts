@@ -14,7 +14,6 @@ import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -57,7 +56,6 @@ import { copyAndStrip, tracksSolve } from "./solver.ts";
 import {
   D,
   DIFF_COUNT,
-  DIFF_NAMES,
   decodeParams,
   defaultParams,
   E_NOTRACK,
@@ -66,6 +64,7 @@ import {
   inGrid,
   L,
   newState,
+  paramConfig,
   presets,
   R,
   S_NOTRACK,
@@ -349,28 +348,7 @@ export const tracksGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: [
-    ...dimensionParamConfig<TracksParams>(),
-    {
-      kw: "difficulty",
-      name: "Difficulty",
-      type: "choices",
-      choices: [...DIFF_NAMES],
-      get: (p) => p.diff,
-      set: (p, v) => {
-        p.diff = v;
-      },
-    },
-    {
-      kw: "disallow-consecutive-1-clues",
-      name: "Disallow consecutive 1 clues",
-      type: "boolean",
-      get: (p) => p.singleOnes,
-      set: (p, v) => {
-        p.singleOnes = v;
-      },
-    },
-  ],
+  paramConfig,
   describeParams: (p) => ({
     width: String(p.w),
     height: String(p.h),

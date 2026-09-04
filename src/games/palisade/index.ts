@@ -33,7 +33,6 @@ import {
   FIX_MISTAKES_FIRST,
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
-import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
@@ -64,6 +63,7 @@ import {
   type PalisadeParams,
   type PalisadeState,
   type PalisadeUi,
+  paramConfig,
   presets,
   status,
   textFormat,
@@ -322,18 +322,7 @@ export const palisadeGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: [
-    ...dimensionParamConfig<PalisadeParams>(),
-    {
-      kw: "region-size",
-      name: "Region size",
-      type: "string",
-      get: (p) => String(p.k),
-      set: (p, v) => {
-        p.k = parseConfigInt(v);
-      },
-    },
-  ],
+  paramConfig,
   describeParams: (p): ConfigValues => ({
     width: String(p.w),
     height: String(p.h),

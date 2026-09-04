@@ -13,7 +13,6 @@ import type {
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
 import { workingOn } from "../../engine/hint-vocab.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -38,6 +37,7 @@ import {
   isCompletedTiles,
   newDesc,
   newState,
+  paramConfig,
   presets,
   status,
   textFormat,
@@ -559,7 +559,7 @@ export const fifteenGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: dimensionParamConfig(),
+  paramConfig,
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,
