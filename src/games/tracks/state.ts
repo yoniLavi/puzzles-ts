@@ -15,6 +15,7 @@
  * onto the adjacent cell — so the two never disagree.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
 import type { PresetMenu } from "../../engine/game.ts";
@@ -27,7 +28,7 @@ export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFF_HARD = 2;
 export const DIFF_COUNT = 3;
-export const DIFF_NAMES = ["Easy", "Tricky", "Hard"] as const;
+export const DIFF_NAMES: readonly string[] = tierNames(3);
 export const DIFF_CHARS = "eth"; // ENCODE chars, indexed by difficulty
 
 // --- directions (upstream R/U/L/D bit flags) ------------------------------

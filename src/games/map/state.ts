@@ -12,6 +12,7 @@
  * and `pencil` arrays.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -27,7 +28,7 @@ export const DIFF_RECURSE = 3;
 export const DIFFCOUNT = 4;
 
 /** Upstream `map_diffnames`. */
-export const DIFF_NAMES = ["Easy", "Normal", "Hard", "Unreasonable"] as const;
+export const DIFF_NAMES: readonly string[] = tierNames(4, { search: true });
 /** Upstream `map_diffchars`. */
 export const DIFF_CHARS = "enhu";
 

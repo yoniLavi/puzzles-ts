@@ -1,3 +1,4 @@
+import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 /**
@@ -23,7 +24,7 @@ export const DIFF_UNREASONABLE = 3;
 export const DIFF_COUNT = 4;
 
 const DIFF_CHARS = "ehxu"; // towers_diffchars, indexed by level
-export const DIFF_NAMES = ["Easy", "Hard", "Extreme", "Unreasonable"];
+export const DIFF_NAMES = tierNames(4, { search: true });
 
 export function diffToLevel(d: Difficulty): number {
   switch (d) {

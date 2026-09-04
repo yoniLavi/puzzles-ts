@@ -194,14 +194,38 @@ guards automatically. The accessors exist because eight games type their
 difficulty as a string union or enum, so no cross-game caller can write
 `{ ...p, diff: cap }`.
 
-**You do not write the tier names.** They are read off the game's own difficulty
-`paramConfig` item — `difficultyTiers(game)` — which is the list a player picks
-from. That item's `kw` must start with `diff`, and its `get`/`set` must address
-the same field `tierOf`/`withTier` do; the guard checks exactly that, because a
-finder that latched onto a mode or symmetry menu would otherwise iterate the
-wrong list and pass. Never derive tier names from `DIFF_*` constants, which mix
-rungs with solver verdicts — and never from the technique ladder, which declares
-tier *numbers* and is built inside a solve
+**You do not write the tier names — you call `tierNames(n)`.** The collection has
+one scale, **Easy · Normal · Tricky · Hard · Extreme**, and a game takes the
+first `n` of it; `tierNames(n, { search: true })` replaces the last with
+`Unreasonable`, which the spec reserves for a tier whose boards can require
+Search and forbids anywhere else. So a game declares *how many* tiers it has and
+*whether its top rung searches*, and the words follow:
+
+```ts
+export const DIFF_NAMES = tierNames(3);                    // Easy · Normal · Tricky
+export const DIFF_NAMES = tierNames(3, { search: true });  // Easy · Normal · Unreasonable
+```
+
+That makes position and name a bijection across the collection — "Tricky" is the
+third rung in every game that has one — which is the whole point: before
+`adopt-conventional-tier-names` the 29 tiered games had picked twelve different
+words, and the six three-tier games used six different vocabularies. Override by
+writing the array, and say why in the change; `difficulty-contract.test.ts`
+fails a game that drifts back, naming the fix. A tier declared in
+`nonUniqueTiers` is exempt without listing it anywhere (Dominosa's "Ambiguous").
+
+**`DIFF_*` constant names are solver rung labels, not tier names.** They were
+never reliably the same — Solo declares eight and offers six — and since the
+convention they routinely differ: Unruly's `DIFF_TRIVIAL` is its first tier, so a
+player sees "Easy". Read `tierNames`, not the identifier.
+
+**Where the list comes from at runtime**: `difficultyTiers(game)` reads the
+game's difficulty `paramConfig` item, so the names still have exactly one
+definition per game. That item's `kw` must start with `diff`, and its `get`/`set`
+must address the same field `tierOf`/`withTier` do; the guard checks exactly
+that, because a finder that latched onto a mode or symmetry menu would otherwise
+iterate the wrong list and pass. Never derive tier names from the technique
+ladder, which declares tier *numbers* and is built inside a solve
 ([solver & generator](./solver-and-generator.md) § "The difficulty contract").
 What a tier *means*, and the grading that enforces it, is
 [solver & generator](./solver-and-generator.md) § "A tier means exactly its rung".

@@ -18,6 +18,7 @@
  * state here (recomputed on demand — see solver.ts / render.ts).
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -199,7 +200,7 @@ const PRESETS: BricksParams[] = [
  *   still spells it, so a game ID or saved game carrying `dt` still loads and
  *   is still refused *with its reason* by {@link validateParams}.
  */
-export const DIFF_NAMES = ["Easy", "Unreasonable"];
+export const DIFF_NAMES = tierNames(2, { search: true });
 
 export function defaultParams(): BricksParams {
   return { ...PRESETS[0] };

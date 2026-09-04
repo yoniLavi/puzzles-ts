@@ -13,6 +13,7 @@
  * remaining import from `state.ts` is types only, which `verbatimModuleSyntax`
  * erases, so no runtime edge closes the loop.
  */
+import { tierNames } from "../../engine/difficulty.ts";
 
 // --- cell values (upstream `enum { EMPTY, N_ONE, N_ZERO, BOGUS }`) -------
 // BOGUS is solver-internal only (a temporary fill that doesn't perturb the
@@ -27,5 +28,10 @@ export const DIFF_TRIVIAL = 0;
 export const DIFF_EASY = 1;
 export const DIFF_NORMAL = 2;
 export const DIFF_COUNT = 3;
-export const DIFF_NAMES = ["Trivial", "Easy", "Normal"] as const;
+// The `DIFF_*` identifiers above are upstream's **rung** labels and no longer
+// match what a player reads: since `adopt-conventional-tier-names` the menu is
+// positional (`DIFF_TRIVIAL` is the game's first tier, so it shows as "Easy").
+// The rung names are kept because the solver and the differential are written
+// in them; the tier names are the collection's, by position.
+export const DIFF_NAMES: readonly string[] = tierNames(DIFF_COUNT);
 export const DIFF_CHARS = "ten"; // ENCODE chars, indexed by difficulty

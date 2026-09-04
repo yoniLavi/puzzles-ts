@@ -1,3 +1,4 @@
+import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 /**
@@ -32,7 +33,7 @@ const DIFF_CHARS = "tekxr";
 // guessing, and the collection says one word for that. The difficulty
 // *character* is untouched (`r`), so game IDs, saved games and shared links
 // are unaffected — only the menu label moves.
-export const DIFF_NAMES = ["Trivial", "Easy", "Tricky", "Extreme", "Unreasonable"];
+export const DIFF_NAMES = tierNames(5, { search: true });
 const DIFFS: Difficulty[] = ["trivial", "easy", "tricky", "extreme", "recursive"];
 
 export function diffToLevel(d: Difficulty): number {

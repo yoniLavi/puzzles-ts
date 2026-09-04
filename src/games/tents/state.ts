@@ -12,6 +12,7 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
+import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { matching } from "../../engine/latin.ts";
 import { parseDimensions } from "../../engine/params.ts";
@@ -29,7 +30,7 @@ export const MAGIC = 4;
 export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFF_COUNT = 2;
-export const DIFF_NAMES = ["Easy", "Tricky"] as const;
+export const DIFF_NAMES: readonly string[] = tierNames(2);
 export const DIFF_CHARS = "et"; // ENCODE chars, indexed by difficulty
 
 // --- link directions (upstream N,U,L,R,D) ---------------------------------

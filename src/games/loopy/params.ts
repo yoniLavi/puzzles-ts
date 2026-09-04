@@ -9,6 +9,7 @@
  * names, the encode char and the min-size error messages all *derived* from it.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { type GridType, gridValidateParams } from "../../engine/grid/index.ts";
 import { dimensionParamConfig, parseLeadingInt } from "../../engine/params.ts";
@@ -64,12 +65,10 @@ export const LOOPY_GRIDS = [
 
 /** Difficulty levels, in encode order. `char` is the params encoding (`d<c>`);
  * the index is the internal `diff` value the solver caps its rungs by. */
-export const LOOPY_DIFFS = [
-  { title: "Easy", char: "e" },
-  { title: "Normal", char: "n" },
-  { title: "Tricky", char: "t" },
-  { title: "Hard", char: "h" },
-] as const;
+const LOOPY_DIFF_CHARS = "enth";
+export const LOOPY_DIFFS: readonly { title: string; char: string }[] = tierNames(
+  LOOPY_DIFF_CHARS.length,
+).map((title, i) => ({ title, char: LOOPY_DIFF_CHARS[i] }));
 
 export const DIFF_EASY = 0;
 export const DIFF_NORMAL = 1;

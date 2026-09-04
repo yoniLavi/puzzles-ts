@@ -36,6 +36,7 @@ import {
   COLMASK,
   cloneState,
   DIFF_EASY,
+  DIFF_NAMES,
   DIFF_TRICKY,
   decodeParams,
   encodeDesc,
@@ -188,7 +189,11 @@ describe("difficulty tiers", () => {
       const p = entry.params;
       if (!p) throw new Error("preset menu entry without params");
       expect(validateParams(p, true)).toBeNull();
-      expect(entry.title).toContain(p.diff === DIFF_EASY ? "Easy" : "Tricky");
+      // Read the game's own tier list rather than restating the words: the
+      // property is "the preset title carries the tier it generates at", and a
+      // literal here would just be a second copy of the tier names to rot
+      // (`adopt-conventional-tier-names`).
+      expect(entry.title).toContain(DIFF_NAMES[p.diff]);
     }
   });
 

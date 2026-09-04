@@ -11,6 +11,7 @@
  * so the given bytes stay byte-match-clean for the desc encoder.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -31,7 +32,7 @@ export const DIFFCOUNT = 2;
  * singles and tents all name exactly this pair Easy/Tricky, and in each the
  * harder tier is likewise "one hypothetical deep"), not upstream's, which has
  * none here. */
-export const DIFF_NAMES = ["Easy", "Tricky"] as const;
+export const DIFF_NAMES: readonly string[] = tierNames(2);
 
 /** Difficulty encode chars for the `d<char>` param suffix, index = tier — the
  * same `"et"` the other two-tier games use. */

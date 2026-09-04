@@ -1,3 +1,4 @@
+import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 /**
@@ -40,7 +41,7 @@ const DIFF_CHARS = "entr";
 // design D7): it is the tier that may require guessing, and the collection says
 // one word for that. The difficulty *character* is untouched (`r`), so game IDs,
 // saved games and shared links are unaffected — only the menu label moves.
-export const DIFF_NAMES = ["Easy", "Normal", "Tricky", "Unreasonable"];
+export const DIFF_NAMES = tierNames(4, { search: true });
 const DIFFS: MathraxDiff[] = ["easy", "normal", "tricky", "recursive"];
 
 export function diffToLevel(d: MathraxDiff): number {

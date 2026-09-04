@@ -50,6 +50,7 @@ import {
   cloneState,
   DIFF_EASY,
   DIFF_HARD,
+  DIFF_NAMES,
   DIFF_TRICKY,
   DIFFCOUNT,
   DIR_BOTLEFT,
@@ -171,14 +172,14 @@ describe("spokes params", () => {
   // written before the rename still names the same board.
   it("offers the six upstream presets, defaulting to 6x6 Easy", () => {
     const menu = spokesGame.presets();
-    expect(menu.submenu?.map((e) => e.title)).toEqual([
-      "4x4 Easy",
-      "4x4 Tricky",
-      "4x4 Unreasonable",
-      "6x6 Easy",
-      "6x6 Tricky",
-      "6x6 Unreasonable",
-    ]);
+    // Every size crossed with every tier, in that order — asserted as the
+    // *shape* rather than as six literal strings, because the tier words are the
+    // collection's and come from `DIFF_NAMES` by position
+    // (`adopt-conventional-tier-names`). A literal list here would be a second
+    // copy of the tier names, which is the thing that change removed.
+    expect(menu.submenu?.map((e) => e.title)).toEqual(
+      ["4x4", "6x6"].flatMap((size) => DIFF_NAMES.map((tier) => `${size} ${tier}`)),
+    );
     expect(spokesGame.defaultParams()).toEqual({ w: 6, h: 6, diff: "easy" });
   });
 

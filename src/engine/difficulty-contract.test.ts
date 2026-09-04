@@ -33,6 +33,7 @@ import {
   difficultyChoiceItem,
   difficultyTiers,
   lowestSolvingCap,
+  tierNames,
 } from "./difficulty.ts";
 import type { Game, PresetMenu } from "./game.ts";
 import { randomNew } from "./random/index.ts";
@@ -84,8 +85,13 @@ function firstLeaf<P>(menu: PresetMenu<P>): P {
 
 /** Every leaf preset's params, in menu order (smallest first by convention). */
 function allLeaves<P>(menu: PresetMenu<P>): P[] {
-  if (menu.params !== undefined) return [menu.params];
-  return (menu.submenu ?? []).flatMap(allLeaves);
+  return allLeafEntries(menu).map((e) => e.params);
+}
+
+/** Every leaf preset with the title the menu shows for it. */
+function allLeafEntries<P>(menu: PresetMenu<P>): { title: string; params: P }[] {
+  if (menu.params !== undefined) return [{ title: menu.title, params: menu.params }];
+  return (menu.submenu ?? []).flatMap(allLeafEntries);
 }
 
 /**
@@ -159,6 +165,74 @@ describe.each(tiered)("$id difficulty contract", ({ id, game, contract, tiers })
       tiers.every((t) => t.trim().length > 0),
       `${id}: a tier has no name`,
     ).toBe(true);
+  });
+
+  it("names its tiers from the collection's scale", () => {
+    // CONVENTION OVER CONFIGURATION (owner, 2026-09-04). Before
+    // `adopt-conventional-tier-names` these 29 games had picked twelve
+    // different words with nobody deciding: the six three-tier games used six
+    // different vocabularies, and "Tricky" was the 2nd rung in six games and
+    // the 3rd in three others, so the word told a player nothing that carried
+    // between games. Now the name follows the position, and this is what stops
+    // it drifting back one port at a time.
+    //
+    // **A tier a game declares non-unique is exempt, and needs no list.**
+    // Dominosa's "Ambiguous" is not a difficulty but a relaxation of what the
+    // puzzle promises, and it already says so through `nonUniqueTiers` — so the
+    // exemption is derived from a declaration the game makes for its own
+    // reasons, rather than from a roster this file would have to maintain.
+    // (`derive-hint-enrollment`'s lesson: a hand-kept list of exceptions goes
+    // stale exactly as quietly as a hand-kept list of members.)
+    // **What this deliberately does NOT check**, stated rather than implied:
+    // `search` is read off the game's own top name, so this cannot tell a game
+    // that has earned `Unreasonable` from one that merely claims it. That is
+    // the Search classification, and `docs/games/solver-and-generator.md`
+    // § "Check / Tactic / Search" records that nothing can check it
+    // mechanically — "this rung is a Search" is a judgment about the code. So
+    // the guard covers the shape of the list and not the promise its last word
+    // makes; do not read a pass here as the promise being kept.
+    const exempt = new Set(contract.nonUniqueTiers ?? []);
+    const conventional = tiers.filter((_t, i) => !exempt.has(i));
+    const search = conventional.at(-1) === "Unreasonable";
+    expect(
+      conventional,
+      `${id}: tier names are not the conventional ${conventional.length}-tier list. ` +
+        "Use tierNames(n) — or declare an override in the change that needs one.",
+    ).toEqual(tierNames(conventional.length, { search }));
+  });
+
+  it("never names a tier in a preset title that is not that preset's tier", () => {
+    // THE COPY NOBODY COUNTED. `derive-difficulty-from-the-technique-ladder`
+    // removed the tier list from the contract and `adopt-conventional-tier-names`
+    // removed the per-game literals — and the words were *still* written out by
+    // hand in two games' preset titles, where no test looked. Solo's menu said
+    // "3x3 Intermediate" while its Custom dialog offered "Tricky"; Galaxies' said
+    // "7x7 Normal" for a tier named Easy. Both were found by opening the app,
+    // which is the reminder that a green suite is not a rendered menu.
+    //
+    // **Stated as a prohibition, so it needs no exemption list.** "Every title
+    // carries its tier" would be the stronger rule and would need one: Salad's
+    // presets name a symbol range instead, and Solo's Killer preset is named for
+    // its mode. Both are correct, and a guard whose exceptions are a roster rots
+    // the way the roster does. So: a title may say nothing about difficulty, but
+    // if it uses one of the collection's difficulty words it must be its own.
+    //
+    // What this therefore cannot catch: a title naming a tier in words outside
+    // the scale ("3x3 Basic"), which is what both defects above actually were.
+    // Deriving the titles is what fixed those; this stops the next one that
+    // reaches for a real tier word.
+    const SCALE = new Set([...tierNames(5), "Unreasonable"]);
+    const offenders: string[] = [];
+    for (const { title, params } of allLeafEntries(game.presets())) {
+      const own = tiers[contract.tierOf(params)];
+      for (const word of SCALE) {
+        if (word === own) continue;
+        if (new RegExp(`\\b${word}\\b`).test(title)) {
+          offenders.push(`"${title}" is tier "${own}" but says "${word}"`);
+        }
+      }
+    }
+    expect(offenders, `${id}: preset titles disagree with their tiers`).toEqual([]);
   });
 
   it("reads its tiers off the same params field the contract writes", () => {

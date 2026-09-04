@@ -10,6 +10,7 @@
  * number of bulbs currently lighting it.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import {
@@ -110,10 +111,16 @@ const PRESETS: LightupParams[] = [
 ];
 
 // Difficulty 2 requires guess-and-backtrack by construction (the generator
-// rejects boards solvable at Tricky), so per the narratable-deduction
+// rejects boards solvable at the tier below), so per the narratable-deduction
 // generation policy it is *named* Unreasonable. The params encoding (`d2`)
 // and board generation are untouched — this is a label, not a re-grade.
-const DIFF_NAMES = ["easy", "tricky", "unreasonable"];
+//
+// **This is the game's only tier list**, and it was two until
+// `adopt-conventional-tier-names`: a lowercase copy here for the preset titles
+// ("7x7 easy") and a capitalized one in `index.ts`'s `paramConfig`. Every other
+// game titles its presets in the menu's own words, so the preset titles gained
+// a capital rather than the menu losing one.
+export const DIFF_NAMES: readonly string[] = tierNames(3, { search: true });
 
 export function defaultParams(): LightupParams {
   return { ...PRESETS[0] };

@@ -11,6 +11,7 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
+import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
 import type { PresetMenu } from "../../engine/game.ts";
@@ -22,7 +23,7 @@ import type { GameStatus } from "../../engine/types.ts";
 export const DIFF_EASY = 0;
 export const DIFF_HARD = 1;
 export const DIFF_COUNT = 2;
-export const DIFF_NAMES = ["Easy", "Hard"] as const;
+export const DIFF_NAMES: readonly string[] = tierNames(2);
 export const DIFF_CHARS = "eh"; // ENCODE chars, indexed by difficulty
 
 // --- types ---------------------------------------------------------------

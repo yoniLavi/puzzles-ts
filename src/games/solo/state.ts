@@ -20,6 +20,7 @@
  * Keen's TS port, whose convention differs).
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
@@ -38,14 +39,7 @@ export const DIFF_AMBIGUOUS = 6;
 export const DIFF_IMPOSSIBLE = 7;
 export const DIFFCOUNT = 6; // number of selectable difficulties
 
-export const DIFF_NAMES = [
-  "Trivial",
-  "Basic",
-  "Intermediate",
-  "Advanced",
-  "Extreme",
-  "Unreasonable",
-];
+export const DIFF_NAMES = tierNames(DIFFCOUNT, { search: true });
 
 export function diffName(level: number): string {
   return DIFF_NAMES[level] ?? "Basic";
@@ -60,10 +54,10 @@ export const DIFF_KSUMS = 2;
 export const DIFF_KINTERSECT = 3;
 export const DIFFCOUNT_KILLER = 4;
 
-const KDIFF_NAMES = ["Trivial", "Intermediate", "Advanced", "Unreasonable"];
-export function kdiffName(level: number): string {
-  return KDIFF_NAMES[level] ?? "Trivial";
-}
+// No `kdiffName`: the killer axis is fixed per preset and never shown, so the
+// name table it used to carry had no consumer anywhere in the tree — found and
+// removed by `adopt-conventional-tier-names` while surveying tier names. The
+// `DIFF_K*` constants above are live; only the display names were dead.
 
 // --- symmetry --------------------------------------------------------------
 

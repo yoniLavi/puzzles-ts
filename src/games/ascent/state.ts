@@ -7,6 +7,7 @@
  * substrate selected by a movement table (design D2); `state.ts` is
  * therefore geometry-free apart from that table.
  */
+import { tierNames } from "../../engine/difficulty.ts";
 
 // --- number sentinels (upstream `NUMBER_*`) ------------------------
 
@@ -65,7 +66,7 @@ export const DIFF_NORMAL = 1;
 export const DIFF_TRICKY = 2;
 export const DIFF_HARD = 3;
 export const DIFFCOUNT = 4;
-export const ASCENT_DIFFNAMES = ["Easy", "Normal", "Tricky", "Hard"];
+export const ASCENT_DIFFNAMES = tierNames(DIFFCOUNT);
 export const ASCENT_DIFFCHARS = "enth";
 
 export const MODE_ORTHOGONAL = 0;

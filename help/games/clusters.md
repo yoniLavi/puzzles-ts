@@ -24,9 +24,9 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>
 		<p>Controls how deeply you have to reason. Both settings always have exactly one solution, and neither ever needs a guess.</p>
 		<p><em>Easy</em> puzzles can be finished a square at a time: for each empty square, one of the two colors breaks a rule outright, so the other one is forced.</p>
-		<p><em>Tricky</em> puzzles need at least one step where that is not enough, and you must suppose a color, follow the squares it forces, and find the contradiction further along. Tricky boards are guaranteed to need this at least once — a board an Easy player could finish is not offered as Tricky.</p>
+		<p><em>Normal</em> puzzles need at least one step where that is not enough, and you must suppose a color, follow the squares it forces, and find the contradiction further along. Normal boards are guaranteed to need this at least once — a board an Easy player could finish is not offered as Normal.</p>
 	</dd>
 </dl>
 
-Tricky needs a board with room for the deeper reasoning, so it is not offered on very small grids.
+Normal needs a board with room for the deeper reasoning, so it is not offered on very small grids.
 

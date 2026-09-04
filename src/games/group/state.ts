@@ -20,6 +20,7 @@
  * in the solution `aux` string, never in the desc.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -37,7 +38,7 @@ export const DIFF_COUNT = 5;
 /** `group_diffchars` — the per-level encode character. */
 export const DIFF_CHARS = "tnhxu";
 /** `group_diffnames` — the per-level display title. */
-export const DIFF_NAMES = ["Trivial", "Normal", "Hard", "Extreme", "Unreasonable"];
+export const DIFF_NAMES = tierNames(5, { search: true });
 
 // --- element numbering / character mapping (E_TO_FRONT / E_FROM_FRONT) ------
 // In identity mode the elements read e,a,b,c,d,f,g,... (the identity pulled to

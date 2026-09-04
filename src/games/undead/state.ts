@@ -1,3 +1,4 @@
+import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 /**
@@ -44,7 +45,7 @@ export const DIFFCOUNT = 3;
 // undead_diffchars, indexed by level — **unchanged**, so game IDs, saved games
 // and shared links survive the rename; only the label moves.
 const DIFF_CHARS = "ent";
-export const DIFF_NAMES = ["Easy", "Normal", "Unreasonable"];
+export const DIFF_NAMES = tierNames(3, { search: true });
 const DIFFS: Difficulty[] = ["easy", "normal", "tricky"];
 
 export function diffToLevel(d: Difficulty): number {

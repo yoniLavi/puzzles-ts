@@ -12,6 +12,7 @@
  * are cloned per move.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 
@@ -55,7 +56,12 @@ export const DIFFCOUNT = 5;
 // the last real difficulty.
 //
 // The difficulty characters are untouched, so game IDs and saves are unaffected.
-export const DIFF_NAMES = ["Trivial", "Basic", "Hard", "Unreasonable", "Ambiguous"];
+/** Four conventional tiers plus **Ambiguous**, which is not a difficulty at all
+ * but a relaxation of what the puzzle promises — the generator skips the
+ * uniqueness search there. It is declared as such through the contract's
+ * `nonUniqueTiers`, which is also what exempts it from the tier-name guard, so
+ * this override needs no list of its own. */
+export const DIFF_NAMES = [...tierNames(4, { search: true }), "Ambiguous"];
 /** Encoding chars in enum order (upstream `dominosa_diffchars`). */
 export const DIFF_CHARS = "tbhea";
 

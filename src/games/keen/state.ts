@@ -12,6 +12,7 @@
  * starts blank.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
@@ -29,7 +30,7 @@ export const DIFF_COUNT = 5;
 
 // keen_diffchars / keen_diffnames, indexed by level.
 const DIFF_CHARS = "enhxu";
-export const DIFF_NAMES = ["Easy", "Normal", "Hard", "Extreme", "Unreasonable"];
+export const DIFF_NAMES = tierNames(5, { search: true });
 const DIFFS: Difficulty[] = ["easy", "normal", "hard", "extreme", "unreasonable"];
 
 export function diffToLevel(d: Difficulty): number {

@@ -49,6 +49,7 @@ import {
   cloneState,
   DIFF_EASY,
   DIFF_HARD,
+  DIFF_NAMES,
   decodeParams,
   encodeDesc,
   encodeParams,
@@ -204,9 +205,14 @@ describe("seismic params", () => {
     }
   });
 
-  it("names presets the way upstream's menu does", () => {
-    expect(presetName(PRESETS[4])).toBe("Seismic: 6x6 Easy");
-    expect(presetName(PRESETS[3])).toBe("Tectonic: 4x4 Hard");
+  it("names presets mode-first, with the game's own tier word", () => {
+    // The tier word comes from `DIFF_NAMES` rather than being restated here: it
+    // is the collection's, by position (`adopt-conventional-tier-names`), and a
+    // literal would be a second copy to rot. What this pins is the *shape* —
+    // mode, then size, then tier — which is what upstream's menu does and what
+    // the config-summary template below reads.
+    expect(presetName(PRESETS[4])).toBe(`Seismic: 6x6 ${DIFF_NAMES[0]}`);
+    expect(presetName(PRESETS[3])).toBe(`Tectonic: 4x4 ${DIFF_NAMES[1]}`);
   });
 
   it("round-trips the custom-params form", () => {

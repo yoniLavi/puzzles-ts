@@ -28,6 +28,7 @@
  * against cells carrying them, so keeping them is both faithful and simpler.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
@@ -78,7 +79,7 @@ export const DIFFCOUNT = 3;
 
 /** Difficulty encode chars (upstream `rome_diffchars`), index = tier. */
 export const DIFF_CHARS = "ent";
-export const DIFF_NAMES = ["Easy", "Normal", "Tricky"];
+export const DIFF_NAMES = tierNames(3);
 
 // --- validity verdicts ------------------------------------------------------
 

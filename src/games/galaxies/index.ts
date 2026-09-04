@@ -23,7 +23,7 @@ import {
   PAPER,
 } from "../../engine/color/palette.ts";
 import { galaxiesBlackRegion } from "../../engine/color/palette-games.ts";
-import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { type DifficultyContract, tierNames } from "../../engine/difficulty.ts";
 import { ALREADY_SOLVED, FIX_MISTAKES_FIRST } from "../../engine/hint-refusal.ts";
 import {
   type Game,
@@ -996,6 +996,12 @@ function textFormat(s: GalaxiesState): string {
   return out.join("");
 }
 
+/** The two tiers a player picks, in `GalaxiesDiff` order. Distinct from
+ * `DIFF_NAMES` below, which is the solver's *verdict* vocabulary — five members
+ * for two tiers, which is why the cross-game guard reads the params form and
+ * never counts `GalaxiesDiff`. */
+const GALAXIES_TIERS = tierNames(2, { search: true });
+
 const DIFF_NAMES = ["Normal", "Unreasonable", "Impossible", "Ambiguous", "Unfinished"];
 
 function statusbarText(s: GalaxiesState, _ui: GalaxiesUi): string {
@@ -1066,7 +1072,11 @@ export const galaxiesGame: Game<
 
   presets() {
     const mk = (w: number, h: number, diff: GalaxiesDiff) => ({
-      title: `${w}x${h} ${diff === GalaxiesDiff.Normal ? "Normal" : "Unreasonable"}`,
+      // The tier word comes from the collection's scale, not from the
+      // `GalaxiesDiff` member name: that enum is two tiers and three verdicts in
+      // one type, and its members are solver labels
+      // (`adopt-conventional-tier-names`).
+      title: `${w}x${h} ${GALAXIES_TIERS[diff === GalaxiesDiff.Normal ? 0 : 1]}`,
       params: { w, h, diff },
     });
     return {
@@ -1091,7 +1101,7 @@ export const galaxiesGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: ["Normal", "Unreasonable"],
+      choices: [...GALAXIES_TIERS],
       get: (p) => p.diff,
       set: (p, v) => {
         p.diff = v as GalaxiesDiff;

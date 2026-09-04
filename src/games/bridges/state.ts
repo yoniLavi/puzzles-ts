@@ -1,3 +1,4 @@
+import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Bridges (Hashiwokakero).
@@ -123,7 +124,7 @@ export const BRIDGES_PRESETS: BridgesParams[] = [
   },
 ];
 
-export const DIFFICULTY_NAMES = ["Easy", "Medium", "Hard"] as const;
+export const DIFFICULTY_NAMES: readonly string[] = tierNames(3);
 
 export function defaultParams(): BridgesParams {
   return { ...BRIDGES_PRESETS[0] };

@@ -14,6 +14,7 @@
  * Unknown (in `mask` only) or Cleared (in neither).
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -32,7 +33,7 @@ export const DIFFCOUNT = 2;
 /** The collection's two-tier convention (clusters, magnets, pearl, singles and
  * tents all name exactly this pair), not upstream's, which offers no
  * difficulty at all here. */
-export const DIFF_NAMES = ["Easy", "Tricky"] as const;
+export const DIFF_NAMES: readonly string[] = tierNames(2);
 
 /** Difficulty encode chars for the `d<char>` param suffix, index = tier. */
 const DIFF_CHARS = "et";

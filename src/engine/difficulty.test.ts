@@ -14,6 +14,7 @@ import {
   type DifficultyVerdict,
   lowestSolvingCap,
   solvableAtExactlyTier,
+  tierNames,
 } from "./difficulty.ts";
 import { type FakeParams, fakeGame } from "./fake-game.ts";
 
@@ -130,5 +131,53 @@ describe("the contract over the fake game", () => {
     expect(solve(1)).toBe("unsolved");
     expect(solve(2)).toBe("solved");
     expect(lowestSolvingCap(solve, 3)).toBe(2);
+  });
+});
+
+describe("the conventional tier names", () => {
+  // The whole table in one place, so a reader can see what the collection's
+  // menus say without running 29 games. `adopt-conventional-tier-names`.
+  it.each([
+    [2, false, ["Easy", "Normal"]],
+    [3, false, ["Easy", "Normal", "Tricky"]],
+    [4, false, ["Easy", "Normal", "Tricky", "Hard"]],
+    [5, false, ["Easy", "Normal", "Tricky", "Hard", "Extreme"]],
+    [2, true, ["Easy", "Unreasonable"]],
+    [3, true, ["Easy", "Normal", "Unreasonable"]],
+    [4, true, ["Easy", "Normal", "Tricky", "Unreasonable"]],
+    [5, true, ["Easy", "Normal", "Tricky", "Hard", "Unreasonable"]],
+    [6, true, ["Easy", "Normal", "Tricky", "Hard", "Extreme", "Unreasonable"]],
+  ])("%i tiers, search=%s", (count, search, expected) => {
+    expect(tierNames(count, { search })).toEqual(expected);
+  });
+
+  it("names the same rung the same word at every length", () => {
+    // The property the convention exists for: a name's position is fixed across
+    // the collection, so "Tricky" means the third rung in a four-tier game and
+    // in a five-tier one alike. Stated as an invariant rather than left implied
+    // by the table above, because the table would still pass if someone made
+    // the scale depend on the count.
+    for (let count = 3; count <= 5; count++) {
+      expect(tierNames(count).slice(0, count - 1)).toEqual(tierNames(count - 1));
+    }
+  });
+
+  it("refuses a count the scale cannot name, rather than returning a short list", () => {
+    // A truncated list would give a game fewer names than tiers, and every
+    // cross-game guard iterates the names — so the shortfall would show up as a
+    // guard quietly covering fewer tiers, not as an error.
+    expect(() => tierNames(6)).toThrow(RangeError);
+    expect(() => tierNames(7, { search: true })).toThrow(RangeError);
+    expect(() => tierNames(1)).toThrow(RangeError);
+    expect(() => tierNames(2.5)).toThrow(RangeError);
+  });
+
+  it("never hands out Unreasonable by position", () => {
+    // The word is a promise `features.md` makes to players, reserved by the
+    // `ts-engine` spec for a tier whose boards can require Search. A game that
+    // does not declare one must not be able to acquire the name by growing.
+    for (let count = 2; count <= 5; count++) {
+      expect(tierNames(count)).not.toContain("Unreasonable");
+    }
   });
 });

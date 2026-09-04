@@ -134,6 +134,14 @@ interface Preset {
 
 /** Faithful to `game_presets` (the non-SLOW_SYSTEM entries are always shown). */
 function soloPresets(): Preset[] {
+  // The title is **derived from the params**, not written beside them. It used
+  // to be a sixteenth-and-seventeenth copy of the tier names, and it went stale
+  // the moment `adopt-conventional-tier-names` moved them — the menu said
+  // "3x3 Intermediate" while the Custom dialog offered "Tricky", which is
+  // exactly the menu/dialog disagreement the tier-list rule exists to stop.
+  // The shape is upstream's: size (or jigsaw), then the tier, then the X-type
+  // marker; a Killer preset is named for its mode, which is what distinguishes
+  // it from the plain preset at the same tier.
   const P = (
     c: number,
     r: number,
@@ -142,26 +150,31 @@ function soloPresets(): Preset[] {
     kdiff: number,
     xtype: boolean,
     killer: boolean,
-    title: string,
-  ): Preset => ({ title, params: { c, r, symm, diff, kdiff, xtype, killer } });
+  ): Preset => {
+    const size = r === 1 ? `${c} Jigsaw` : `${c}x${r}`;
+    const title = killer
+      ? `${size} Killer`
+      : `${size} ${DIFF_NAMES[diff]}${xtype ? " X" : ""}`;
+    return { title, params: { c, r, symm, diff, kdiff, xtype, killer } };
+  };
   const K = DIFF_KMINMAX;
   return [
-    P(2, 2, SYMM_ROT2, DIFF_BLOCK, K, false, false, "2x2 Trivial"),
-    P(2, 3, SYMM_ROT2, DIFF_SIMPLE, K, false, false, "2x3 Basic"),
-    P(3, 3, SYMM_ROT2, DIFF_BLOCK, K, false, false, "3x3 Trivial"),
-    P(3, 3, SYMM_ROT2, DIFF_SIMPLE, K, false, false, "3x3 Basic"),
-    P(3, 3, SYMM_ROT2, DIFF_SIMPLE, K, true, false, "3x3 Basic X"),
-    P(3, 3, SYMM_ROT2, DIFF_INTERSECT, K, false, false, "3x3 Intermediate"),
-    P(3, 3, SYMM_ROT2, DIFF_SET, K, false, false, "3x3 Advanced"),
-    P(3, 3, SYMM_ROT2, DIFF_SET, K, true, false, "3x3 Advanced X"),
-    P(3, 3, SYMM_ROT2, DIFF_EXTREME, K, false, false, "3x3 Extreme"),
-    P(3, 3, SYMM_ROT2, DIFF_RECURSIVE, K, false, false, "3x3 Unreasonable"),
-    P(3, 3, SYMM_NONE, DIFF_BLOCK, DIFF_KINTERSECT, false, true, "3x3 Killer"),
-    P(9, 1, SYMM_ROT2, DIFF_SIMPLE, K, false, false, "9 Jigsaw Basic"),
-    P(9, 1, SYMM_ROT2, DIFF_SIMPLE, K, true, false, "9 Jigsaw Basic X"),
-    P(9, 1, SYMM_ROT2, DIFF_SET, K, false, false, "9 Jigsaw Advanced"),
-    P(3, 4, SYMM_ROT2, DIFF_SIMPLE, K, false, false, "3x4 Basic"),
-    P(4, 4, SYMM_ROT2, DIFF_SIMPLE, K, false, false, "4x4 Basic"),
+    P(2, 2, SYMM_ROT2, DIFF_BLOCK, K, false, false),
+    P(2, 3, SYMM_ROT2, DIFF_SIMPLE, K, false, false),
+    P(3, 3, SYMM_ROT2, DIFF_BLOCK, K, false, false),
+    P(3, 3, SYMM_ROT2, DIFF_SIMPLE, K, false, false),
+    P(3, 3, SYMM_ROT2, DIFF_SIMPLE, K, true, false),
+    P(3, 3, SYMM_ROT2, DIFF_INTERSECT, K, false, false),
+    P(3, 3, SYMM_ROT2, DIFF_SET, K, false, false),
+    P(3, 3, SYMM_ROT2, DIFF_SET, K, true, false),
+    P(3, 3, SYMM_ROT2, DIFF_EXTREME, K, false, false),
+    P(3, 3, SYMM_ROT2, DIFF_RECURSIVE, K, false, false),
+    P(3, 3, SYMM_NONE, DIFF_BLOCK, DIFF_KINTERSECT, false, true),
+    P(9, 1, SYMM_ROT2, DIFF_SIMPLE, K, false, false),
+    P(9, 1, SYMM_ROT2, DIFF_SIMPLE, K, true, false),
+    P(9, 1, SYMM_ROT2, DIFF_SET, K, false, false),
+    P(3, 4, SYMM_ROT2, DIFF_SIMPLE, K, false, false),
+    P(4, 4, SYMM_ROT2, DIFF_SIMPLE, K, false, false),
   ];
 }
 

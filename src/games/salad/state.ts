@@ -22,6 +22,7 @@
  */
 
 import type { NoteEncoding } from "../../engine/candidate-hint.ts";
+import { tierNames } from "../../engine/difficulty.ts";
 import { type RowColRegion, rowColRegions } from "../../engine/latin-hint.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -35,7 +36,7 @@ export const DIFF_EASY = 0;
 export const DIFF_HARD = 1;
 export const DIFFCOUNT = 2;
 
-export const DIFF_NAMES: readonly string[] = ["Normal", "Extreme"];
+export const DIFF_NAMES: readonly string[] = tierNames(2);
 /** The difficulty letters `encodeParams` writes and `decodeParams` reads. */
 const DIFF_CHARS = "ex";
 

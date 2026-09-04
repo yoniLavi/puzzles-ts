@@ -1,3 +1,4 @@
+import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 /**
@@ -95,7 +96,7 @@ export const DIFFS: readonly SpokesDiff[] = ["easy", "tricky", "hard"];
 // The internal key (`"hard"`) and the difficulty character (`h`) are untouched,
 // so game IDs, saved games and shared links survive the rename; only the menu
 // label moves. That is the D7 precedent, from Unequal and Mathrax.
-export const DIFF_NAMES: readonly string[] = ["Easy", "Tricky", "Unreasonable"];
+export const DIFF_NAMES: readonly string[] = tierNames(3, { search: true });
 const DIFF_CHARS = "eth";
 
 export function diffToLevel(d: SpokesDiff): number {

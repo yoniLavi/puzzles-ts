@@ -21,6 +21,7 @@
  * on a `BoatsState`.
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
@@ -33,7 +34,7 @@ export const DIFF_TRICKY = 2;
 export const DIFF_HARD = 3;
 export const DIFFCOUNT = 4;
 
-export const DIFF_NAMES: readonly string[] = ["Easy", "Normal", "Tricky", "Hard"];
+export const DIFF_NAMES: readonly string[] = tierNames(4);
 /** The difficulty letters `encodeParams` writes and `decodeParams` reads. */
 const DIFF_CHARS = "enth";
 

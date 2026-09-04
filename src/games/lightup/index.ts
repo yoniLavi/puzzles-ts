@@ -63,6 +63,7 @@ import {
 } from "./solver.ts";
 import {
   cloneState,
+  DIFF_NAMES,
   decodeParams,
   defaultParams,
   encodeParams,
@@ -562,7 +563,7 @@ export const lightupGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: ["Easy", "Tricky", "Unreasonable"],
+      choices: [...DIFF_NAMES],
       get: (p) => p.difficulty,
       set: (p, v) => {
         p.difficulty = v;

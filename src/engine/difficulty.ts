@@ -193,6 +193,70 @@ export function difficultyChoiceItem<Params>(game: {
   return item?.type === "choices" ? item : undefined;
 }
 
+/**
+ * The collection's difficulty scale, easiest first — the words a game's tiers
+ * are named from unless it declares an override.
+ *
+ * `Unreasonable` is deliberately **not** in it: it is not a rung of this scale
+ * but a promise about one, reserved by the `ts-engine` spec for a tier whose
+ * boards can require Search and forbidden elsewhere. {@link tierNames} appends
+ * it on request, which is why that request is a declared fact about the top
+ * rung rather than a position.
+ */
+const TIER_SCALE = ["Easy", "Normal", "Tricky", "Hard", "Extreme"] as const;
+
+/**
+ * The conventional names for a game with `count` tiers: the first `count` of
+ * {@link TIER_SCALE}, with the last replaced by `"Unreasonable"` when the
+ * game's top rung can require Search.
+ *
+ * ```
+ *   tierNames(2)                    Easy · Normal
+ *   tierNames(2, { search: true })  Easy · Unreasonable
+ *   tierNames(4)                    Easy · Normal · Tricky · Hard
+ *   tierNames(4, { search: true })  Easy · Normal · Tricky · Unreasonable
+ *   tierNames(6, { search: true })  Easy · Normal · Tricky · Hard · Extreme · Unreasonable
+ * ```
+ *
+ * **Why positional, and why that is the point** (owner, 2026-09-04:
+ * *"I want consistency and convention-over-configuration where it makes
+ * sense … I don't want every new game to come up with names for its difficulty
+ * levels"*). Before this, 29 independently-ported games had picked twelve
+ * different words: the six three-tier games used six different vocabularies,
+ * and "Tricky" was the second rung in six games and the third in three others,
+ * so the name told a player nothing that carried between games. Deriving the
+ * name from the position makes it a bijection — "Tricky" is the third rung
+ * everywhere it appears — which is the only property that makes a tier name
+ * worth reading across a collection.
+ *
+ * **`search` is about the rung, never the count.** A two-tier game whose harder
+ * rung backtracks is `Easy · Unreasonable`; a six-tier game whose top rung is a
+ * bounded tactic never earns the word. Getting this from the position instead
+ * would publish the promise `features.md` § "Difficulty" makes to players and
+ * break it.
+ *
+ * **Override by writing the array instead**, and say why in the change. Dominosa
+ * is the standing case: its fifth entry is "Ambiguous", a relaxation of what the
+ * puzzle promises rather than a difficulty, and it declares that already through
+ * {@link DifficultyContract.nonUniqueTiers} — so the guard checks its first four
+ * against the convention and leaves the fifth alone, with no list to maintain.
+ */
+export function tierNames(count: number, opts?: { search?: boolean }): string[] {
+  const room = TIER_SCALE.length + (opts?.search ? 1 : 0);
+  if (!Number.isInteger(count) || count < 2 || count > room) {
+    // Loud rather than short: a silently-truncated list would give the game
+    // fewer tier names than tiers, and every cross-game guard iterates the
+    // names. Widen TIER_SCALE deliberately if a game ever needs a seventh rung.
+    throw new RangeError(
+      `tierNames: ${count} tiers is outside the scale (2..${room}${
+        opts?.search ? " with search" : ""
+      })`,
+    );
+  }
+  const named = TIER_SCALE.slice(0, opts?.search ? count - 1 : count);
+  return opts?.search ? [...named, "Unreasonable"] : [...named];
+}
+
 /** Bind a contract to one board, for the closure-shaped helpers below. */
 export function cappedSolveFor<Params>(
   contract: DifficultyContract<Params>,
