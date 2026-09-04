@@ -1,7 +1,10 @@
 # declare-params-and-presets — tasks
 
 Scaffolded 2026-09-04. **Not ready to implement — task 0 first.**
-Depends on `derive-difficulty-from-the-technique-ladder` landing.
+Its dependency has landed (`derive-difficulty-from-the-technique-ladder` and
+`adopt-conventional-tier-names`, archived 2026-09-04); the proposal's block quote
+says what those changed about this change's ground, and it is not what the
+proposal originally expected.
 
 ## 0. Explore before proposing anything concrete
 

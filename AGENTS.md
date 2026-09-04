@@ -162,7 +162,12 @@ narrowing is the error. **And when the population is small enough to read,
 read it**: fourteen function bodies cost less than the two heuristics that
 lied about them. **The key can also be the syntax after the name**: a grep for
 `latinSolver(` returned one of six call sites, because the other five are
-written `latinSolver<Ctx>(`.
+written `latinSolver<Ctx>(`. **And a grep for a constant's *name* is blind to a
+copy that spells out its *value*** — sweeping `DIFF_NAMES` found all 25
+definitions and missed the two games that had typed the tier words into their
+preset titles, which is how a menu came to say "3x3 Intermediate" while the
+dialog beside it said "Tricky", with the whole suite green. When you change what
+a constant means, search for what it *said*, not only for what it is called.
 
 **A count written in prose is a census nobody re-runs.** Three in one sitting:
 `difficulty.ts` said twenty-eight tiered games where there were twenty-nine;

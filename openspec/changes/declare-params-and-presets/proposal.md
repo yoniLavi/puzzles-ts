@@ -17,9 +17,25 @@ half-exists.
 
 What the vision asks for beyond today: the params **codec** derived (the
 `WxH`-style prefix forms via a shared parser), the type-menu summary derived,
-and the difficulty contract projected from the ladder. The last of those is
-already split out as `derive-difficulty-from-the-technique-ladder`, which is
-ready and should land first — it is the piece with an existing lever.
+and the difficulty contract projected from the ladder.
+
+> **The difficulty half has landed, and it changed this change's ground**
+> (`derive-difficulty-from-the-technique-ladder` + `adopt-conventional-tier-names`,
+> both archived 2026-09-04). Two things to carry in rather than re-derive:
+>
+> 1. **It is not projected from the ladder.** That turned out to be impossible
+>    for three independent reasons, now a requirement in the `ts-engine` spec so
+>    the survey is not repeated. Do not re-open it.
+> 2. **`paramConfig` is now load-bearing in a way it was not when this was
+>    scaffolded.** The difficulty item is the *only* definition of a game's tier
+>    names — `difficultyTiers(game)` reads it, and the tier names, the preset
+>    menu and the Custom dialog all descend from it. So anything this change does
+>    to `paramConfig` has a consumer it did not have before, and task 0's
+>    exploration should establish that consumer's needs before proposing a shape.
+>
+> The pattern this change hoped to follow *did* hold: the difficulty piece
+> shipped first, on an existing lever, and removed per-game surface rather than
+> adding framework surface.
 
 **The friction this addresses is real and documented.** AGENTS.md carries the
 trap: *"A new port must wire `paramConfig` — or its Custom dialog ships blank."*
