@@ -370,12 +370,25 @@ stating the rules its doc comment claims rather than pinning values. Exemplar:
 **The cross-game guards derive their populations mechanically; a game enrolls
 by declaring, not by being remembered.**
 
-- **Hints**: a game that ships `hint()` adds one line to
-  [`hint-games.ts`](../../src/engine/testing/hint-games.ts) and is thereby
-  covered by *every* hint guard at once — `hint-resume.test.ts` (plans resume
-  from any position), `hint-overlay.test.ts` (the overlay reaches the render
-  cache), `hint-quality.test.ts` (narration form). Recipe and rationale:
-  [`hints.md`](./hints.md).
+- **Hints**: **declaring `hint()` *is* the enrollment.**
+  [`hint-games.ts`](../../src/engine/testing/hint-games.ts) filters the registry
+  for games that declare one, so a game is covered by all six guards at once —
+  `hint-resume.test.ts` (plans resume from any position),
+  `hint-overlay.test.ts` (the overlay reaches the render cache),
+  `hint-quality.test.ts` (narration form), `hint-mark.test.ts`,
+  `hint-ordinal.test.ts` and `scripts/checks/hint-deixis.test.ts` — with nothing
+  to remember and nothing to add. It was a hand-maintained thirty-game array
+  until `derive-hint-enrollment`; a game left off got **zero** of the six,
+  silently. Recipe and rationale: [`hints.md`](./hints.md).
+
+  *What guards a derived population is not the same as what guarded a list.*
+  [`hint-enrollment.test.ts`](../../src/engine/hint-enrollment.test.ts) puts
+  floors under both the registry it draws from and the set it produces, because
+  the six consumers build their `it()` blocks in a loop and an empty array leaves
+  them with nothing to run — and `npm run test:run` passes
+  `--passWithNoTests`, under which "nothing to run" is **green**. Asserting the
+  derivation against its own definition would have been a tautology; the floors
+  are the part that can actually fail.
 - **Difficulty tiers**: declaring `Game.difficulty`
   ([`difficulty.ts`](../../src/engine/difficulty.ts)) *is* the enrollment —
   [`difficulty-contract.test.ts`](../../src/engine/difficulty-contract.test.ts)

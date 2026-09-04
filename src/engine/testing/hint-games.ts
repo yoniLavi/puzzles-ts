@@ -1,84 +1,71 @@
 /**
- * The enrollment list for every cross-game hint guard.
+ * The enrolled set for every cross-game hint guard — **derived from the
+ * registry, never authored**.
  *
- * One list, many guards: `hint-resume.test.ts` (plan convergence, purity,
- * no-op-free plans), `hint-overlay.test.ts` (overlay reaches the render
- * cache), `hint-quality.test.ts` (narration form) and
- * `hint-ordinal.test.ts` (an ordered chain reaches the canvas with its
- * order on it) all iterate this list, so a newly ported game with a
- * `hint()` enrolls in *all* of them by adding one line here — and the
- * guards' coverage cannot silently drift apart.
+ * One set, many guards: `hint-resume.test.ts` (plan convergence, purity,
+ * no-op-free plans), `hint-overlay.test.ts` (overlay reaches the render cache),
+ * `hint-quality.test.ts` (narration form), `hint-mark.test.ts`,
+ * `hint-ordinal.test.ts` (an ordered chain reaches the canvas with its order on
+ * it) and `scripts/checks/hint-deixis.test.ts` all iterate it.
+ *
+ * **A game is enrolled iff it declares `hint`.** This was a hand-maintained
+ * array of thirty games until `derive-hint-enrollment`, and its own header
+ * advertised the coupling as a feature — *"a newly ported game with a `hint()`
+ * enrolls in all of them by adding one line here"*. That sentence was the
+ * defect: enrollment was a thing a session had to remember, nothing asserted the
+ * list was complete, and a game left off got **zero** of the six guards,
+ * silently. The repo had already solved exactly this once —
+ * `difficulty-contract.test.ts` derives its tiered set from the registry, and
+ * its reasoning transfers verbatim: *a guard blind to a game cannot fire on it.*
+ *
+ * The list happened to be complete on the day it was replaced, which is the
+ * state in which a missing guard is invisible rather than the state in which it
+ * is unnecessary. Four games mention `hint` in their `index.ts` without
+ * declaring one (`ascent`, `magnets` and `tents` name it as an unused `redraw`
+ * parameter; Guess has an unrelated `ui.hint`), so a naming-based scan would
+ * have over-counted where reading the declaration does not.
+ *
+ * **A game with no `hint()` is not a defect.** The collection deliberately keeps
+ * some logic games hintless for now, as the corpus for assessing the framework
+ * work: implementing those hints is how the target contract gets tested against
+ * real games (owner, 2026-09-04). The forward-looking bar — *a new game
+ * implementation ships with a hint* — is stated in AGENTS.md.
  *
  * Dev/test-only; never imported by production code.
  */
-import { boatsGame } from "../../games/boats/index.ts";
-import { bricksGame } from "../../games/bricks/index.ts";
-import { clustersGame } from "../../games/clusters/index.ts";
-import { crossingGame } from "../../games/crossing/index.ts";
-import { dominosaGame } from "../../games/dominosa/index.ts";
-import { fifteenGame } from "../../games/fifteen/index.ts";
-import { fillingGame } from "../../games/filling/index.ts";
-import { floodGame } from "../../games/flood/index.ts";
-import { galaxiesGame } from "../../games/galaxies/index.ts";
-import { groupGame } from "../../games/group/index.ts";
-import { inertiaGame } from "../../games/inertia/index.ts";
-import { keenGame } from "../../games/keen/index.ts";
-import { lightupGame } from "../../games/lightup/index.ts";
-import { netslideGame } from "../../games/netslide/index.ts";
-import { palisadeGame } from "../../games/palisade/index.ts";
-import { patternGame } from "../../games/pattern/index.ts";
-import { rangeGame } from "../../games/range/index.ts";
-import { saladGame } from "../../games/salad/index.ts";
-import { singlesGame } from "../../games/singles/index.ts";
-import { sixteenGame } from "../../games/sixteen/index.ts";
-import { slantGame } from "../../games/slant/index.ts";
-import { soloGame } from "../../games/solo/index.ts";
-import { spokesGame } from "../../games/spokes/index.ts";
-import { sticksGame } from "../../games/sticks/index.ts";
-import { subsetsGame } from "../../games/subsets/index.ts";
-import { towersGame } from "../../games/towers/index.ts";
-import { undeadGame } from "../../games/undead/index.ts";
-import { unequalGame } from "../../games/unequal/index.ts";
-import { unrulyGame } from "../../games/unruly/index.ts";
-import { untangleGame } from "../../games/untangle/index.ts";
+import "../../games/index.ts";
 import type { Game, PresetMenu } from "../game.ts";
+import { getTsGame, registeredGameIds } from "../registry.ts";
 
 // biome-ignore lint/suspicious/noExplicitAny: a deliberately game-agnostic probe.
 export type AnyGame = Game<any, any, any, any, any, any>;
 
-/** Every game that ships a `hint()`, by puzzle id. */
-export const HINT_GAMES: [string, AnyGame][] = [
-  ["boats", boatsGame],
-  ["bricks", bricksGame],
-  ["clusters", clustersGame],
-  ["crossing", crossingGame],
-  ["dominosa", dominosaGame],
-  ["filling", fillingGame],
-  ["fifteen", fifteenGame],
-  ["flood", floodGame],
-  ["galaxies", galaxiesGame],
-  ["group", groupGame],
-  ["inertia", inertiaGame],
-  ["keen", keenGame],
-  ["lightup", lightupGame],
-  ["netslide", netslideGame],
-  ["palisade", palisadeGame],
-  ["pattern", patternGame],
-  ["range", rangeGame],
-  ["salad", saladGame],
-  ["singles", singlesGame],
-  ["sixteen", sixteenGame],
-  ["slant", slantGame],
-  ["solo", soloGame],
-  ["spokes", spokesGame],
-  ["sticks", sticksGame],
-  ["subsets", subsetsGame],
-  ["towers", towersGame],
-  ["undead", undeadGame],
-  ["unequal", unequalGame],
-  ["unruly", unrulyGame],
-  ["untangle", untangleGame],
-];
+/**
+ * Every registered game that declares a `hint()`, by puzzle id, sorted so the
+ * guards iterate in a stable order.
+ *
+ * The side-effect import above is what populates the registry
+ * (`games/index.ts` calls `registerAllGames()` on evaluation) — the same way
+ * `difficulty-contract.test.ts` reaches it.
+ */
+export const HINT_GAMES: [string, AnyGame][] = registeredGameIds()
+  .sort()
+  .map((id): [string, AnyGame] => [id, getTsGame(id) as AnyGame])
+  .filter(([, game]) => typeof game.hint === "function");
+
+/**
+ * How many games the registry offered the filter above — the **vacuity guard**
+ * every derived sweep in this repo owes.
+ *
+ * Six guards iterate `HINT_GAMES`, and every one of them passes vacuously over
+ * an empty array. A derivation that silently found nothing — an import cycle
+ * leaving the registry unpopulated, a renamed accessor — would turn all six
+ * green while checking nothing, which is the shape this repo has now hit six
+ * times. Exported so `hint-enrollment.test.ts` can put a floor under the
+ * *population*, not only under the filtered result: the filtered count can look
+ * healthy while the set it was drawn from is short.
+ */
+export const REGISTERED_GAME_COUNT = registeredGameIds().length;
 
 /** True when a step declares no board marks at all — `highlights` absent, or an
  * object whose every field is empty. The candidate-elimination games' populate
