@@ -1,21 +1,61 @@
 # The puzzle framework — vision
 
-> **⚠️ STATUS: design fiction.** Nothing in `docs/framework-rdd/` exists.
+> **⚠️ STATUS: design fiction, except where a passage says otherwise.**
 > These documents describe a *target* architecture, written readme-first so the
 > design can be debugged before any code moves (authored by the
 > `rewrite-game-dev-docs` change, 2026-08-07). The current architecture is
 > documented in [`docs/games/`](../games/README.md); where the two disagree,
 > `docs/games/` is the truth. When part of this vision ships, the shipping
-> change moves the now-true material into the real guides and updates or
-> retires the fiction — no file here may claim unshipped behavior in the
-> present tense (see the repo-layout spec, "Design-fiction docs are labeled
-> and quarantined").
+> change moves the now-true material into the real guides and marks it here —
+> no file may claim unshipped behavior in the present tense, and none may leave
+> shipped behavior reading as future (see the repo-layout spec, "Design-fiction
+> docs are labeled and quarantined"). **Parts have now shipped**; see
+> [Where this stands](#where-this-stands).
 
 This collection stopped being a port in 2026-08. What it is now is a body of 57
 worked examples of the same five-part shape — mechanics, input, rendering,
 solving, hinting — plus an engine that grew, helper by extracted helper, most
 of the way toward a framework without ever being designed as one. This
 directory designs it as one.
+
+## Where this stands
+
+**This directory is the *argument*, not the backlog.** It says why the framework
+should look like this; it deliberately does not track how far along it is. Two
+questions, two answers, and neither is a status column maintained by hand — the
+`openspec/project.md` that once sat beside `AGENTS.md` drifted into describing
+deleted directories, and a progress table here would drift the same way.
+
+| Question | Where the answer lives |
+| --- | --- |
+| **What has shipped?** | `openspec/changes/archive/`. A change that realizes part of this vision carries a `Realizes:` line naming the doc and heading, so `grep -rl '^Realizes:' openspec/changes/archive/` is the precise list — and the shipped behavior itself is stated in `docs/games/` and the specs, never here. |
+| **What remains?** | `openspec list`. A piece of the vision that is scoped enough to build has a scaffolded change; one that is not, has nothing, and that is the honest signal that it needs an `/opsx:explore` before it needs a proposal. |
+| **Which passages are already true?** | Marked in place, inline, at the claim. Every marker cites the change that shipped it, which resolves to `openspec/changes/<id>` or `openspec/changes/archive/<date>-<id>`. |
+
+**Inline markers rather than an index, deliberately.** A status table can be
+accurate while the body beside it still reads as fiction; a marker cannot be
+missed by someone reading the claim it corrects. The cost is that no single page
+answers "how far along are we?" — and the answer to *that* is the two lookups
+above, which cannot go stale because nothing maintains them.
+
+*A guard on those citations was considered and declined (2026-09-04).* Measured
+first: of the 49 change-id-shaped tokens cited across `docs/` and `AGENTS.md`,
+**45 resolve to a real change and the other four are not change ids at all** —
+`prefers-color-scheme`, `pre-ts-pivot`, `color-dark-check`, `auto-mark-complete`.
+So there is no dead citation to catch today, and any guard keyed on "kebab-case
+token in backticks" would need an allowlist for CSS features, git tags and
+script names that grows with the docs. Worth revisiting if a dead citation ever
+does appear; not worth speculative machinery before one has.
+
+**Not everything here is ready to be a change, and that is fine.** The two
+pieces that have shipped were small, independently valuable, and provable
+against frozen fixtures. Several remaining ones (the tile renderer, the derived
+gesture table, the board-model declaration, the conformance suite) are none of
+those things yet, and scaffolding an empty proposal for each would manufacture a
+queue that looks like a plan. **The order is set by the owner's standing
+priority — tidy and make the collection ergonomic to work in before adding
+games** (2026-09-04) — which favors pieces that reduce per-game friction now over
+pieces that only pay off at the target architecture.
 
 ## What the framework is for
 

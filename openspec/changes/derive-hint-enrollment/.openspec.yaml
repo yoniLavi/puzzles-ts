@@ -1,0 +1,6 @@
+# Deltas will be written when the change is picked up: which capability owns the
+# derived-enrollment rule (`ts-engine`'s hint guards, or `repo-layout`'s
+# instrument discipline) is a question for the implementation, and guessing it
+# now would put a requirement in front of the work rather than behind it.
+schema: spec-driven
+skip_specs: true

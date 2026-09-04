@@ -1,5 +1,9 @@
 # re-derive-the-fixpoint-no-gos
 
+Realizes: `docs/framework-rdd/deduction.md` § "Escape hatches carry obligations"
+— the hatch is now an earned status with obligations recorded per game, rather
+than a list of games that happened not to fit.
+
 ## Why
 
 **`declare-deduction-techniques` wrote a rule and then broke it in the same

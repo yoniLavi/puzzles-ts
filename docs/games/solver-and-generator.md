@@ -148,10 +148,12 @@ Clusters and Spokes met, and the two above do not.
 
 #### What a bespoke loop still owes
 
-A bespoke loop is part of the design, not a failure of it
-([`docs/framework-rdd/deduction.md`](../framework-rdd/deduction.md) §
-"Escape hatches carry obligations" — design fiction, but this obligation set is
-live). Three things, stated per game rather than assumed:
+A bespoke loop is part of the design, not a failure of it. Three obligations,
+stated per game rather than assumed, and normative here — the `ts-engine`
+"shared deduction-fixpoint scaffold" requirement carries them. (The idea came
+from [`docs/framework-rdd/deduction.md`](../framework-rdd/deduction.md) §
+"Escape hatches carry obligations", which is design fiction and describes
+nothing on its own; this table is the shipped form.)
 
 | Obligation | Loopy | Lightup |
 | --- | --- | --- |

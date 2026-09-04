@@ -1,5 +1,8 @@
 # declare-deduction-techniques
 
+Realizes: `docs/framework-rdd/deduction.md` § "The Technique contract" — the
+`id` and `tier` half of it. The `find`/`apply`/`narrate` split remains fiction.
+
 ## Why
 
 **The shared deduction runner grades a board by an array index.**
