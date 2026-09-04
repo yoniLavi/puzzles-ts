@@ -29,6 +29,24 @@ nothing. `migration.md` proposes one exemplar per family — a Latin game, an ed
 game, a planner game, and Loopy as a bespoke-hatch proof — and the *first* should
 be whichever most nearly breaks it.
 
+## What this owes the dictum
+
+AGENTS.md § "Convention over configuration" asks of every framework piece which
+decision it takes off the porter's desk. **This one takes none** — it is the
+mechanism the others are delivered through, and its job is to make sure they can
+be delivered *one at a time*.
+
+That is the requirement to hold it to: **a game must be able to adopt one
+declaration without adopting the rest.** An adapter that only compiles a
+*complete* definition turns every declaration into a big-bang migration and makes
+"decline this declaration" (which `declare-the-board-model` may well conclude)
+impossible to act on. Partial adoption is what keeps each convention independently
+justifiable, and it is what makes the whole migration abortable — which is
+already this change's own stated argument.
+
+**The tell that it has gone wrong**: a game's definition has to state something
+it does not care about in order to state the thing it does.
+
 ## What Changes
 
 - **The adapter**: a definition compiles to the `Game` interface the midend

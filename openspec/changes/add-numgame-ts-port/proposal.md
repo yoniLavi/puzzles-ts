@@ -16,6 +16,23 @@ but whether it should — and whether an arithmetic game fits the "logic puzzle"
 character of the collection — is an open product call. Expect this to be done
 much later, or not at all.
 
+## Also: this is a baseline measurement
+
+Numgame and Path are the collection's **first two greenfield games** — built
+rather than ported — so whichever is written first is the best available answer
+to *"what does adding a new game cost today?"*, the baseline the framework work
+is judged against (AGENTS.md § "Convention over configuration").
+
+**Keep a note, while building, of every question you have to stop and answer that
+is not about this puzzle**; each is accidental complexity the framework exists to
+remove, and it goes in this change's findings. Numgame is the more informative of
+the two for this purpose, because it has **no `struct game` to follow at all** —
+nothing upstream tells the author how to shape params, moves, rendering or input,
+so every such question is asked in its purest form rather than answered by
+transcription.
+
+This costs nothing and does not change the scope or ordering below.
+
 ## Sequencing (owner decision, 2026-07-20)
 
 **This change is deliberately deferred until after `retire-c-engine`.** The

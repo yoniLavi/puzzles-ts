@@ -24,6 +24,31 @@ scale of 57 that is the failure that will actually happen, which is why the
 capability-manifest diff is built in `adopt-the-game-definition-adapter` — one
 change earlier, on purpose.
 
+## This is where the dictum is cashed
+
+AGENTS.md § "Convention over configuration" states the goal; **this change is
+the one that actually delivers it across the collection**, because the corpus is
+the documentation. A new game is written by reading the nearest existing one, so
+until the 57 agree, "one obvious way to do it" is a claim no reader can verify —
+they can see five ways and no marking of which is meant.
+
+**The acceptance test is therefore comparative, not per-game**: pick any two
+games that mean the same thing and ask what still differs between them. Every
+remaining difference must be one somebody can defend as belonging to the puzzle.
+A difference nobody can defend is a fork in the road for whoever reads them next,
+and a wrong turn that gets copied.
+
+**Two guards against this change eating itself.** It is a 57-game sweep, which is
+exactly the shape that hides a regression in a green suite — so the bulk-edit
+rule applies at full strength (assert every changed line is the one intended kind
+of change, then read the exceptions), and the acceptance bar applies per family:
+**run the games**. `adopt-conventional-tier-names` is the cautionary tale at 1/57
+scale — a 29-game rename whose full gate passed twice while two games' menus were
+visibly wrong, because the words had been retyped somewhere no test looked.
+
+**And the batches are families for a reason**: family-at-a-time is what lets the
+comparative test above be applied by eye, by one reader, in one sitting.
+
 ## What Changes
 
 - **Family batches**, not alphabetical: the Latin family, edge games, planner

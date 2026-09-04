@@ -29,6 +29,36 @@ ownership and the win condition reads walls. `deduction.md` records that last on
 as a substrate note. Any declaration that does not have an answer for all four
 shapes is a Latin-family abstraction wearing a framework's clothes.
 
+## The decision this removes
+
+Judged by AGENTS.md § "Convention over configuration": *which decision does this
+take off the porter's desk, and would two games ever legitimately answer it
+differently?*
+
+- **"How do I allocate and clone this state?"** — every game answers it, none
+  answers it interestingly, and getting it wrong is an immutability bug rather
+  than a puzzle bug.
+- **"How do I map a pixel to a cell?"** — the answer must be *the same function*
+  the painter uses, and today that is a discipline ("one function, both callers")
+  rather than a structure. A declared coordinate map makes the wrong answer
+  unavailable.
+- **"How does the cursor move here?"** — half-grid and edge-cursor variants are
+  re-derived per game and are pure topology.
+
+**What must stay free to differ**: bespoke geometry, and every existing game's
+desc codec — **byte-stable, permanently**, because a shared game ID is a promise
+to players. This change may derive codecs for new games; it does not touch old
+ones.
+
+**This is the piece most likely to fail the dictum rather than serve it**, and
+the vision says so. A board model that expresses squares and hexes cleanly while
+Palisade, Slant, Loopy's eighteen tilings and Untangle's free graph all escape it
+has not produced one obvious way — it has produced a majority idiom plus a
+second, less-traveled path, which is the state we are in now with extra
+machinery. **Hence exemplar-gated: pick the game chosen to break it, not the one
+chosen to fit.** Declining this declaration outright, with the measurement
+recorded, is a legitimate and valuable outcome.
+
 ## What to explore first
 
 - **Pick the exemplar to fail against, not the one to succeed with.** Palisade

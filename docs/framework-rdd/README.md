@@ -65,12 +65,29 @@ README's own argument for refactoring before building.
 
 | # | Change | Readiness |
 | --- | --- | --- |
-| 1 | `derive-difficulty-from-the-technique-ladder` | **ready** — the ladder now declares `tier`, and nothing reads it |
-| 2 | `declare-params-and-presets` | explore first |
+| 1 | `derive-difficulty-from-the-technique-ladder` | **SHIPPED** 2026-09-04 — but *not* as this table predicted; see below |
+| 2 | `declare-params-and-presets` | explore first — and its ground moved, see its proposal |
 | 3 | `declare-the-gesture-table` | explore first; Sixteen's drag-to-slide is its named falsifier |
 | 4 | `declare-the-board-model` | exemplar-gated; pick an edge or vertex game, chosen to break it |
 | 5 | `adopt-the-game-definition-adapter` | blocked on 2–4; co-developed with one re-expression, never built first |
 | 6 | `re-express-the-collection` | last, and splits into family batches before any code moves |
+
+> **What row 1 actually taught, since it is the first evidence this ordering has
+> produced.** Its readiness line was *"the ladder now declares `tier`, and
+> nothing reads it"* — and that lever turned out not to fit the lock. The tier
+> list could not be projected from the ladder for three independent reasons (now
+> a `ts-engine` requirement, so the survey is not repeated). What *could* be
+> derived, and was, is the tier list from the game's own params form — reaching
+> 29 games rather than the 12 the ladder route would have, and **removing** a
+> field from the `Game` contract rather than adding a derivation to it.
+> `adopt-conventional-tier-names` then followed it, on the owner's directive,
+> replacing twelve hand-chosen vocabularies with one scale.
+>
+> Two things to carry into rows 2–6. **The declaration a concern should be
+> derived from is not always the one the vision named** — check which
+> declaration actually holds the information, at the time the consumer needs it.
+> And **the win to look for is per-game surface removed**, not framework surface
+> added; row 1 deleted 29 hand-written lists and shipped one function.
 
 Presentation is **held**: the scene-graph postmortem's bar is real downstream
 pressure, and none exists yet. Hints for the deliberately held-back games
@@ -133,6 +150,28 @@ as little per-game machinery as the game's own logic permits — and no less.** 
 "no less" is load-bearing: the framework never contorts a game to fit a
 contract (that rule already cost one withdrawn architecture; see the
 scene-graph postmortem, `openspec/postmortems/2026-05-21-scene-graph-withdrawal.md`).
+
+### The dictum this all serves has a name now
+
+**Convention over configuration: for most of what implementing a new game
+involves, one obvious way to do it, and no unnecessary decisions.** The owner
+named it on 2026-09-04, and **the governing statement is
+[`AGENTS.md`](../../AGENTS.md) § "Convention over configuration" — read it there,
+not here**, because this directory is fiction and a live rule must not have its
+home in one.
+
+It renames nothing above; it says what the argument above is *for*. Every
+declaration in these documents is worth building exactly to the extent that it
+converts a decision a porter must currently make — and that is not about the
+puzzle — into one already made for them. The question to ask of any proposed
+declaration is therefore not "could this be derived?" but **"which decision does
+this take off the porter's desk, and would two games ever legitimately answer it
+differently?"** If the answer to the second half is no, that decision is
+accidental complexity being paid for N times.
+
+And every convention ships with a **first-class override**, because the "no
+less" above is the same rule seen from the other side: a game that genuinely
+needs the explicit form writes it and says why.
 Every derived layer has a bespoke escape hatch, and every escape hatch carries
 an explicit obligation in its place.
 

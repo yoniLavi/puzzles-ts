@@ -37,6 +37,28 @@ assessed only on deduction ladders learns nothing about planners. The point of
 characterizing is to be able to *choose* — pick the game that will press hardest
 on the part of the contract being tested, rather than the next one alphabetically.
 
+## This corpus is how the dictum gets measured
+
+AGENTS.md § "Convention over configuration" sets the goal — *one obvious way, no
+unnecessary decisions* — and the honest problem with such a goal is that it is
+easy to *believe* you have met it. A framework can move decisions around, dress
+them in new vocabulary, and read as a great simplification to the person who just
+built it.
+
+**Writing a real hint for a game that has never had one is the measurement.**
+The 27 hintless games are deliberately held for this. Every question the author
+has to stop and answer that is *not about the puzzle's deductions* is accidental
+complexity the framework still charges for — and the count of those questions,
+recorded per game, is the only number here that means anything. A game that was
+easy to hint because its neighbor had been hinted the same way is the dictum
+working; a game whose author had to invent a convention is the dictum failing,
+and the invention is the finding.
+
+**This is why the corpus is characterized before the declarations harden, and
+hinted after**: characterizing it now fixes the baseline, so the comparison is
+against a measurement rather than a memory. It is also why "close the gap" is the
+wrong framing — a hint written to tick a game off a list measures nothing.
+
 ## What Changes
 
 - **Establish the real list.** For each game with a solver and no `hint()`,

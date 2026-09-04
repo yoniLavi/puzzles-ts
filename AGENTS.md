@@ -73,6 +73,49 @@ explained hints and per-game gameplay aids are why this fork exists. Order work
 so that value lands early, and judge a game by whether it plays correctly, not by
 whether it reproduces a recorded corpus.
 
+### Convention over configuration: one obvious way, and no unnecessary decisions
+
+**A game's directory should contain what is essential to *that puzzle* — its
+rules, its deductions, its look — and as little as possible of "how this codebase
+does things".** Everything in the second category is **accidental complexity**,
+and reducing it is a standing goal of every change that touches the framework,
+not a separate project. Owner directive, 2026-09-04: *"I want consistency and
+convention-over-configuration where it makes sense … I don't want every new game
+to come up with names for its difficulty levels if we can avoid it, but to allow
+override if required."*
+
+**The bar for a new game: for most of what implementing one involves, there is
+one obvious way to do it, and the porter makes no decision that is not about the
+puzzle.** Naming its difficulty tiers was such a decision until
+`adopt-conventional-tier-names`; 29 games had answered it 29 times, producing
+twelve words and six different vocabularies among the six three-tier games, and
+not one of those answers was about the puzzle. That is the shape to hunt.
+
+**The test for whether a decision is real**: *can we say what a game would
+legitimately want to do differently?* If two games could reasonably answer
+differently — a nonogram's overlap deduction is nothing like a sudoku's hidden
+single — it is a genuine decision and stays with the game. If they could not, it
+is a convention somebody forgot to make, and N games are each paying to
+re-answer it. **N games sharing a defect means the layer below them is wrong.**
+
+**Every convention ships with an override**, and the override is first-class: a
+game writes the explicit form and says why in its change. What a convention must
+never become is a contortion — game-specific logic is never bent to fit a
+contract, and an exemplar hint never loses a word to an abstraction. Two
+conventions in the tree show the shape to copy: a tier a game declares
+`nonUniqueTiers` is exempt from the tier-name guard *automatically*, because the
+game already declared it for its own reasons; and `nonMonotone` **swaps** a
+guard rather than skipping it. **Derive the exception from a declaration the game
+already makes** — an exemption roster rots exactly as quietly as the membership
+roster it replaced.
+
+**How this is done, in practice, is the rest of this file**: derive rather than
+hand-maintain (`derive-hint-enrollment`, `difficultyTiers`), refactor as you go
+(the DO list below), break an inherited assumption when it costs more than it
+earns ("Nothing is sacred"), and remember that a framework-scale pivot still
+needs a real downstream game pressuring it (the scene-graph postmortem). **This
+section says what all of that is *for*.**
+
 ## Lineage
 
 - **Upstream**: [Simon Tatham's Portable Puzzle Collection][sgt-puzzles]. ~40 puzzles, MIT-licensed, actively maintained by Simon and a long list of contributors.

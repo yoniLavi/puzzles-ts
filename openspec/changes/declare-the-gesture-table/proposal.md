@@ -29,6 +29,36 @@ hold-as-right-button, bare-digit binding and focus return are documented in
 `docs/games/input.md` as things every game must get right; each is a place a new
 game can silently be wrong. A library handles them once.
 
+## The decision this removes
+
+Judged by AGENTS.md § "Convention over configuration": *which decision does this
+take off the porter's desk, and would two games ever legitimately answer it
+differently?*
+
+- **"What are the keyboard and touch equivalents of this gesture?"** — the
+  parity bar says they must exist, and today the porter answers it per game, from
+  scratch, and the collection finds out by *audit*. A gesture drawn from a named
+  library brings its own equivalents, so the answer arrives with the
+  declaration. **This is the piece with the highest ratio of decisions-removed
+  to framework added**, because the obligation is already collection-wide and
+  only its *satisfaction* is per-game.
+- **"Which of the four frontend traps applies here?"** — a trap is a decision
+  nobody wants to make and everybody must; each one a declaration absorbs is a
+  wrong turn that can no longer be taken. `escape-was-a-dead-key` and
+  `a-held-finger-throws-away-a-games-gestures` were both fixed a layer down
+  precisely because they were never per-game questions.
+
+**What must stay free to differ**: what a gesture *means* in this game. Cycling a
+cell, painting a region, picking a transformation — the mapping is the game's,
+and Sixteen's drag-to-slide is the named falsifier for any library that cannot
+express it.
+
+**Watch for the failure this change can produce**: a table that expresses the
+easy 80% and forces the rest through an escape hatch is not one obvious way, it
+is two ways plus a seam. Measure the escapers before committing to the shape —
+"a shared form escaped by more games than it serves is not a win" is the same
+test `declare-params-and-presets` sets itself.
+
 ## What to explore first
 
 - **Is the gesture library real, or is every game bespoke?** Read the

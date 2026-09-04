@@ -16,6 +16,23 @@ improving (or replacing) a generator upstream called inadequate. It is
 scaffolded now to capture the scope and the honest gap, not because it is close.
 Expect it done much later, or not at all.
 
+## Also: this is a baseline measurement
+
+Path and Numgame are the collection's **first two greenfield games** — built
+rather than ported — so whichever is written first is the best available answer
+to *"what does adding a new game cost today?"* That number is the baseline the
+framework work is judged against (AGENTS.md § "Convention over configuration";
+`docs/framework-rdd/README.md` § "What the framework is for").
+
+**So keep a note, while building, of every question you have to stop and answer
+that is not about this puzzle** — how to spell the params codec, which of the
+frontend traps applies, what the keyboard equivalent of a drag should be, how to
+wire the cursor. Each one is accidental complexity the framework exists to
+remove, and a list written *during* the build is worth more than a reconstruction
+afterward. It goes in this change's findings, not in a separate document.
+
+This costs nothing and does not change the port's scope or its ordering below.
+
 ## Sequencing (owner decision, 2026-07-20)
 
 **This change is deliberately deferred until after `retire-c-engine`.** The

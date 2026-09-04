@@ -13,6 +13,16 @@ something a guide didn't tell you, got wrong, or could say better, **update the
 guide in the same change** — that is part of "done", not a separate chore. The
 standing obligation is stated in [`AGENTS.md`](../../AGENTS.md).
 
+**Where a guide offers you a choice, ask whether it should.** The collection's
+goal is *convention over configuration: one obvious way to do it, and no
+unnecessary decisions* ([`AGENTS.md`](../../AGENTS.md) § "Convention over
+configuration"). So a guide passage that reads *"games do this in a few
+different ways"* is describing accidental complexity, not documenting a feature —
+and **the fix belongs in the same change that hit it**, either by unifying the
+concern or by writing down what a game would legitimately want to do differently.
+Decisions that are genuinely about the puzzle stay with the puzzle; the rest are
+a convention somebody has not made yet.
+
 **Cite sections by heading, never by position.** A citation reads
 `docs/games/<file>.md § "Heading"`. Cited headings are grep-stable: renaming
 one repoints every citation in the same change.

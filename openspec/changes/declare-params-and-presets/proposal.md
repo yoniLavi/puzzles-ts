@@ -44,6 +44,31 @@ the same way declaring `hint()` now enrolls a game in six guards
 (`derive-hint-enrollment`) and declaring `Game.difficulty` enrolls it in the
 difficulty guards.
 
+## The decision this removes
+
+Judged by AGENTS.md § "Convention over configuration": *which decision does this
+take off the porter's desk, and would two games ever legitimately answer it
+differently?*
+
+- **"Did I remember to wire `paramConfig`?"** — not a decision at all, a
+  *forgetting*, and the documented cost is a Custom dialog that ships blank. A
+  declaration that cannot be omitted removes it outright.
+- **"How do I spell this params codec?"** — the `WxH`-style prefix grammar is the
+  same in most games and hand-written in each. Two games differ here only when
+  the grammar genuinely differs (Blackbox's `w<W>h<H>m…M…`), which is what the
+  escape hatch is for.
+- **Already removed, by the difficulty work**: "what shall I call my tiers?"
+
+**What must stay free to differ**: the params *record* itself, the validation
+predicates, and any encoding an existing game already ships — a shared game ID is
+a promise to players (C1 below), so a derived codec is for new games and for
+games that opt in with the owner's say-so.
+
+**The shape of the win to look for is per-game surface removed**, not framework
+surface added. Row 1 of the vision's order deleted 29 hand-written tier lists and
+shipped one function; if this change's design adds more than it deletes, that is
+the signal to re-read it.
+
 ## What to explore first
 
 - **How much of the codec is genuinely shared?** Count it. A shared `WxH` parser
