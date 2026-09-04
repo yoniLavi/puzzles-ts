@@ -1,0 +1,5 @@
+# No deltas yet: this change's first task is an exploration, and its scope is
+# decided by what that finds. Writing a requirement now would put a spec in
+# front of the work rather than behind it.
+schema: spec-driven
+skip_specs: true

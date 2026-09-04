@@ -1,0 +1,6 @@
+# No deltas: this directory holds the sweep's *plan*, and its first task is to
+# split itself into one change per family batch. Each batch carries its own
+# deltas; a single 57-game requirement would be as unreviewable as a single
+# 57-game diff.
+schema: spec-driven
+skip_specs: true

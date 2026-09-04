@@ -29,7 +29,7 @@ deleted directories, and a progress table here would drift the same way.
 | Question | Where the answer lives |
 | --- | --- |
 | **What has shipped?** | `openspec/changes/archive/`. A change that realizes part of this vision carries a `Realizes:` line naming the doc and heading, so `grep -rl '^Realizes:' openspec/changes/archive/` is the precise list — and the shipped behavior itself is stated in `docs/games/` and the specs, never here. |
-| **What remains?** | `openspec list`. A piece of the vision that is scoped enough to build has a scaffolded change; one that is not, has nothing, and that is the honest signal that it needs an `/opsx:explore` before it needs a proposal. |
+| **What remains?** | `openspec list`. Every piece the owner has committed to has a change; each states its **readiness** at the top of its proposal, and one that is not ready carries an `/opsx:explore` as task 0 rather than a design. |
 | **Which passages are already true?** | Marked in place, inline, at the claim. Every marker cites the change that shipped it, which resolves to `openspec/changes/<id>` or `openspec/changes/archive/<date>-<id>`. |
 
 **Inline markers rather than an index, deliberately.** A status table can be
@@ -47,15 +47,35 @@ token in backticks" would need an allowlist for CSS features, git tags and
 script names that grows with the docs. Worth revisiting if a dead citation ever
 does appear; not worth speculative machinery before one has.
 
-**Not everything here is ready to be a change, and that is fine.** The two
-pieces that have shipped were small, independently valuable, and provable
-against frozen fixtures. Several remaining ones (the tile renderer, the derived
-gesture table, the board-model declaration, the conformance suite) are none of
-those things yet, and scaffolding an empty proposal for each would manufacture a
-queue that looks like a plan. **The order is set by the owner's standing
-priority — tidy and make the collection ergonomic to work in before adding
-games** (2026-09-04) — which favors pieces that reduce per-game friction now over
-pieces that only pay off at the target architecture.
+**A change may exist before it is ready, but it must say so.** The pieces that
+have shipped were small, independently valuable, and provable against frozen
+fixtures. Most of what remains is none of those things yet — so a not-yet-ready
+change holds the *ordering and the constraints* that this conversation settled,
+and defers the design to an exploration. It is not a plan pretending to be a
+design. Read the readiness line before reading anything else in a proposal.
+
+## The order, and why it is this one
+
+**The deduction end has had three rounds of real pressure; the game-definition
+end has had none** (owner, 2026-09-04). Marginal information is highest where
+nothing has been tested, and the definition end is what gates the framework's
+economic argument — "adding a game" only gets cheap if the declarations work.
+The corpus that pressures it is **the 57 games already here**, which is the
+README's own argument for refactoring before building.
+
+| # | Change | Readiness |
+| --- | --- | --- |
+| 1 | `derive-difficulty-from-the-technique-ladder` | **ready** — the ladder now declares `tier`, and nothing reads it |
+| 2 | `declare-params-and-presets` | explore first |
+| 3 | `declare-the-gesture-table` | explore first; Sixteen's drag-to-slide is its named falsifier |
+| 4 | `declare-the-board-model` | exemplar-gated; pick an edge or vertex game, chosen to break it |
+| 5 | `adopt-the-game-definition-adapter` | blocked on 2–4; co-developed with one re-expression, never built first |
+| 6 | `re-express-the-collection` | last, and splits into family batches before any code moves |
+
+Presentation is **held**: the scene-graph postmortem's bar is real downstream
+pressure, and none exists yet. Hints for the deliberately held-back games
+(`characterize-the-hint-assessment-corpus`) sit *after* the declarations, because
+they validate a framework and there needs to be more of one to validate.
 
 ## What the framework is for
 
