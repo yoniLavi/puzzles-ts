@@ -57,8 +57,10 @@
       Easy"** where it rendered `0`, and its Custom dialog still shows Width,
       Height, Grid type and Difficulty after the `kw` rename. Solo: **"3x3
       Easy"** where it said "Trivial".
-- [ ] 4.2 **Owner acceptance.** Player-visible: 24 games' custom-type headers
-      change wording. Committed and awaiting the owner's read.
+- [x] 4.2 **Owner acceptance, given 2026-09-05** on the before/after table (Tents
+      `12x9 Tricky` → `12x9 Normal`, Bricks' three words for two tiers, Solo
+      `Trivial` → `Easy`, Loopy's raw index → `Easy`, Lightup's lowercase, and
+      the tier appearing at all for Clusters and Salad).
 
 ## Findings
 

@@ -71,6 +71,22 @@ and decode are property-tested inverses — a test the framework generates.
 > have covered only the games that had already adopted, which is the enrollment
 > trap `derive-hint-enrollment` exists to avoid.
 
+> **"You get the type-menu summary" has shipped too**
+> (`derive-the-type-menu-summary`, 2026-09-05) — and it was the sentence in this
+> section that was furthest from true. The summary was hand-written per game,
+> with the tier words typed out 24 times, and **19 of the 21 games that named a
+> difficulty named one the game does not have.** The live contract is the
+> `app-shell` spec, "The type header names an option by the name the game
+> declares".
+>
+> Worth carrying into the rest of this document: the mechanism needed to derive
+> it **already existed and was already in flight** — `choicenames` on the
+> `ConfigDescription` the Custom dialog is built from — which is why the dialog
+> was right the whole time the header was wrong. Twice now (this and the codec
+> off `paramConfig`), the declaration a concern should derive from was already
+> there and already crossing the boundary. Before designing a new declaration,
+> check what the consumer is already being sent.
+
 ## The board model
 
 **You declare:** topology (square / hex / one of the eighteen `grid/` tilings
