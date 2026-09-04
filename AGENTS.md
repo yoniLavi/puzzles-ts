@@ -160,7 +160,21 @@ member, a rect that is thick in both directions), accept the superset that
 gives you, and *classify* what it catches instead of narrowing the scan — the
 narrowing is the error. **And when the population is small enough to read,
 read it**: fourteen function bodies cost less than the two heuristics that
-lied about them.
+lied about them. **The key can also be the syntax after the name**: a grep for
+`latinSolver(` returned one of six call sites, because the other five are
+written `latinSolver<Ctx>(`.
+
+**A count written in prose is a census nobody re-runs.** Three in one sitting:
+`difficulty.ts` said twenty-eight tiered games where there were twenty-nine;
+`deduction-fixpoint.ts` said "the eleven latin-family games" reach it through
+`latinSolverTop` where six do; and a guard's own comment listed "the eleven that
+write the names out twice", naming three games that had since stopped. The
+middle one had already misled two handoffs. So **write the query, not its
+answer** — "the games that call `latinSolver`" cannot go stale, "the eleven
+latin-family games" silently does — and where a number really is the point,
+assert it in a test so it fails when it drifts. A figure with a date and a
+change id attached is a *measurement* and stays; a bare count in the present
+tense is a claim, and it rots.
 
 **Don't repoint a dead recipe — retire it.** When an instruction has gone stale,
 fixing the one part you noticed is the worst available outcome: every *other*

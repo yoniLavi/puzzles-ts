@@ -201,6 +201,16 @@ glanceable steps** — *not* by whether a trial or a search was involved.
 | **Tactic** | a **bounded** chain of forced consequences to a named endpoint | Tricky / Hard / Extreme | narrate as a multi-leg walk |
 | **Search** | run the whole solver from a hypothesis, or branch and backtrack | **`Unreasonable`** | refuse |
 
+> **The `tier` column is a SHALL that nothing enforces — check it by hand.**
+> `hint-quality.test.ts` guards the *hint* column (a Search must never be
+> narrated) and its header states what that cannot see; nothing anywhere reads a
+> rung and asks whether the tier holding it is named `Unreasonable`, because
+> "this rung is a Search" is a judgment about the code, not a property a test can
+> read off it. For the 27 hintless games the rule is therefore unguarded end to
+> end. So when you add or move a rung, decide its class from this table
+> deliberately and say so in the change — that decision is the whole enforcement
+> mechanism.
+
 - **Check** — Sticks' `sticksTry` (one tentative orientation, one validator
   call, no fixpoint) is the exemplar; so is Galaxies' "only one dot could own
   this cell", and Bricks' and Clusters' single-cell rungs.
