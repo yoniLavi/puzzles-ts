@@ -208,7 +208,6 @@ function findMistakes(state: MagnetsState): readonly MagnetsMistake[] {
 /** Magnets' difficulty contract (`engine/difficulty.ts`). `MagnetsSolver.solve`
  * documents its returns as −1 impossible, 0 ambiguous/unfinished, 1 solved. */
 const difficulty: DifficultyContract<MagnetsParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

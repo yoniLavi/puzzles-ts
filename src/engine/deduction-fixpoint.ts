@@ -67,8 +67,12 @@
  * The **techniques stay per-game** (a nonogram overlap is nothing like a sudoku
  * hidden single); only this loop, the tier cap, the recorder-gated budget, the
  * grade bookkeeping and the non-termination attribution live here. Nine call
- * sites: `engine/latin.ts` (`latinSolverTop`, and through it the eleven
- * latin-family games), `games/filling/solver.ts` (`FillingSolver.run`),
+ * sites: `engine/latin.ts` (`latinSolverTop`, and through it the **six** games
+ * that call `latinSolver` — Group, Keen, Mathrax, Salad, Towers, Unequal; this
+ * said "eleven" until `derive-difficulty-from-the-technique-ladder` counted
+ * them, because ten more games import `engine/latin.ts` for `latinGenerate`,
+ * `matching`, `latinVerdict` or the repeat types, and Solo hand-rolls its own
+ * `mainloop`), `games/filling/solver.ts` (`FillingSolver.run`),
  * `games/undead/solver.ts` (`recordUndeadDeductions`),
  * `games/pattern/solver.ts` (`deduceHintPlan`), `games/magnets/solver.ts`
  * (`solve`, `solveUnnumbered`), `games/unruly/solver.ts` (`solveGame`),

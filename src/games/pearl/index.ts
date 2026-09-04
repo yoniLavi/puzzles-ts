@@ -355,7 +355,6 @@ const prefs: GamePref<PearlUi>[] = [
 /** Pearl's difficulty contract (`engine/difficulty.ts`). `pearlSolve` documents
  * its return as 0 inconsistent, 1 unique, 2 ambiguous. */
 const difficulty: DifficultyContract<PearlParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.difficulty,
   withTier: (p, tier) => ({ ...p, difficulty: tier }),
   solveAtCap: (p, desc, cap) => {

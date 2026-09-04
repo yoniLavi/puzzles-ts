@@ -405,7 +405,6 @@ function flashLength(
  * started from" helper, so the verdict is about the puzzle and not about what
  * the player has entered. */
 const difficulty: DifficultyContract<RomeParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

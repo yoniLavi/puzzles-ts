@@ -454,7 +454,6 @@ function hintKeepTrack(
  * `SolverScratch` per call — its dsf and equivalence classes carry state across
  * a solve. */
 const difficulty: DifficultyContract<SlantParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

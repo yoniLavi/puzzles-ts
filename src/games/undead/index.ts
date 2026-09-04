@@ -899,7 +899,6 @@ function flashLength(from: UndeadState, to: UndeadState): number {
  * and it belongs to the generator — `solvableAtExactlyTier` is the shared
  * expression of the same idea. */
 const difficulty: DifficultyContract<UndeadParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
   solveAtCap: (p, desc, cap) => {

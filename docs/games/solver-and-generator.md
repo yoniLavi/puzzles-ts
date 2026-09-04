@@ -350,15 +350,36 @@ independently against the brute-force oracle. Two lessons that transfer:
 
 **A game with tiers declares
 [`Game.difficulty`](../../src/engine/difficulty.ts) — a
-`DifficultyContract`: its tier names, `tierOf`/`withTier` accessors, and a
-`solveAtCap` that runs its solver from a fresh state with the ladder capped.**
-Declaring it enrolls the game in the cross-game guards
-(`difficulty-contract.test.ts`) the moment the field exists; an untiered game
-omits it, exactly as a game without a solver omits `solve`. Read the module
-header of `difficulty.ts` for why it is accessor-shaped (eight games don't
-hold a numeric tier field at all) and why the verdict is the discriminated
-`"solved" | "unsolved" | "impossible"` rather than the solvers' private
-integers.
+`DifficultyContract`: `tierOf`/`withTier` accessors and a `solveAtCap` that runs
+its solver from a fresh state with the ladder capped.** Declaring it enrolls the
+game in the cross-game guards (`difficulty-contract.test.ts`) the moment the
+field exists; an untiered game omits it, exactly as a game without a solver omits
+`solve`. Read the module header of `difficulty.ts` for why it is accessor-shaped
+(eight games don't hold a numeric tier field at all) and why the verdict is the
+discriminated `"solved" | "unsolved" | "impossible"` rather than the solvers'
+private integers.
+
+**The contract holds operations, not the tier list.** The names come from the
+game's difficulty `paramConfig` item (`difficultyTiers`) — see
+[mechanics](./mechanics.md) § "Difficulty is a declared contract".
+
+**Don't try to derive them from the technique ladder.** The framework fiction
+proposed it and `declare-deduction-techniques` looks like the lever, but three
+things independently defeat it, and the `ts-engine` spec records them so the
+survey is not repeated: `DeductionTechnique.tier` is a *number* while a tier list
+is *names*; `runDeductionFixpoint` **receives** `maxTier`, and every ladder in
+the collection is an array literal built inside a solve from board state, so
+there is nothing to ask at module load; and a tier is often not a rung at all —
+five latin games put their top tier on `latinSolverRecurse` outside the fixpoint,
+Dominosa's "Ambiguous" relaxes what the puzzle promises, and Undead's only
+shared-runner ladder is its hint recorder, two techniques on tier 0 against three
+offered tiers.
+
+**`solveAtCap` stays per-game, and that was measured.** Across all 29 adapters
+the only shared step is `newState(p, desc)`; the cap passes straight through to
+the game's own solver and the verdict mapping is the per-game knowledge the
+discriminated verdict exists to hold. The one genuinely shared mapping,
+`latinVerdict`, is already extracted.
 
 **Freshness of `solveAtCap` is load-bearing.** Reusing a live scratch is how
 `grade-difficulty-tiers-honestly`'s first Ascent gate under-rejected — a

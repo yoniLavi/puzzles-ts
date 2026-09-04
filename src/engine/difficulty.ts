@@ -1,8 +1,9 @@
 /**
- * The cross-game difficulty contract: what a tiered game's tiers are, how to
- * read and set one on a params object, and how to run its solver capped at one.
+ * The cross-game difficulty contract: how to read and set a tier on a params
+ * object, and how to run the game's solver capped at one. **What the tiers
+ * *are* is not part of it** — see {@link difficultyTiers}.
  *
- * **Why this exists.** Twenty-eight of the fifty-seven games have difficulty
+ * **Why this exists.** Twenty-nine of the fifty-seven games have difficulty
  * tiers, and before this contract no two of them could be asked about their
  * tiers the same way — so a property that is *about* tiers could only ever be
  * asserted one game at a time, by hand. The property in question is
@@ -29,13 +30,16 @@
  * uniform: Magnets' `0` is "ambiguous or unfinished", Boats' is "stuck",
  * Clusters returns a three-valued status enum, Tracks returns a record. Mapping
  * each to three named outcomes belongs in the per-game adapter, where the
- * knowledge is; propagating the raw integers would import twenty-eight
+ * knowledge is; propagating the raw integers would import twenty-nine
  * conventions into every cross-game consumer.
  *
  * **The contract describes; it never decides.** Adopting it changes no board a
  * game generates — a differential fixture that moves means an adapter
  * misreports its game's solver.
  */
+// Type-only, so the `game.ts` ⇄ `difficulty.ts` pair is erased at compile time
+// and no runtime cycle exists.
+import type { ParamConfigItem } from "./game.ts";
 
 /**
  * A capped solver's answer about one board.
@@ -59,26 +63,18 @@ export type DifficultyVerdict = "solved" | "unsolved" | "impossible";
 export type CappedSolve = (cap: number) => DifficultyVerdict;
 
 /**
- * What a tiered game declares about its tiers. Optional on `Game`, exactly like
- * `hint` / `findMistakes` / `supersededDesc` before it: a game without tiers
- * omits it, and the twenty-nine untiered games need no edit.
+ * How to *operate* on a tiered game's tiers — read one off a params record, set
+ * one, solve capped at one. Optional on `Game`, exactly like `hint` /
+ * `findMistakes` / `supersededDesc` before it: a game without tiers omits it,
+ * and the twenty-eight untiered games need no edit.
+ *
+ * **The tier list itself is not here** — it is {@link difficultyTiers}, read
+ * off the game's own custom-params form. The contract is operations; the
+ * declaration is the menu.
  */
 export interface DifficultyContract<Params> {
-  /**
-   * The tier names, easiest first, indexed by cap — the tiers a player can
-   * actually select.
-   *
-   * This SHALL match the game's own difficulty `paramConfig` choices, and is
-   * deliberately **not** derived from its `DIFF_*` constants, which cannot
-   * carry that weight: a `DIFF_*` constant is sometimes a deduction rung and
-   * sometimes a solver verdict. Solo declares eight and offers six
-   * (`DIFF_AMBIGUOUS` and `DIFF_IMPOSSIBLE` are outcomes); Galaxies' `DIFF_NAMES`
-   * has five entries and two tiers; Singles has a `DIFF_MAX` *and* a `DIFF_ANY`;
-   * Salad has a `DIFF_HOLESONLY` at −1.
-   */
-  readonly tiers: readonly string[];
-
-  /** Which tier these params request, as an index into {@link tiers}. */
+  /** Which tier these params request, as an index into
+   * {@link difficultyTiers}. */
   tierOf(p: Params): number;
 
   /** The same params at a different tier. Pure — returns a new object and
@@ -124,6 +120,77 @@ export interface DifficultyContract<Params> {
    * underlying defect becomes visible.
    */
   readonly nonMonotone?: true;
+}
+
+/**
+ * A tiered game's tier names, easiest first, indexed by cap — **read off the
+ * game's own custom-params form**, which is where a player picks one.
+ * `undefined` for a game that offers no difficulty choice.
+ *
+ * **One declaration, not two.** This was a `tiers` array on the contract until
+ * `derive-difficulty-from-the-technique-ladder`, held equal to the form's
+ * choices by an assertion — and eight games (Bridges, Galaxies, Keen, Lightup,
+ * Singles, Solo, Towers, Unruly) really did write the names out as two separate
+ * literals, with Loopy writing the same `.map` twice. Deriving is the
+ * `derive-hint-enrollment` move: stop asserting that two hand-maintained things
+ * match, and make one of them the only one. The form wins because it is the
+ * list a player actually sees, and because it is reachable at module load with
+ * no board in hand.
+ *
+ * **Why not from the technique ladder**, which is what the framework fiction
+ * proposed and what this change went looking for. Three independent reasons,
+ * each fatal on its own:
+ *
+ * 1. **The ladder declares tier *indices*; a tier list is *names*.**
+ *    `DeductionTechnique.tier` is a `number`. "Easy" and "Unreasonable" are
+ *    strings a player reads, and no projection invents them from integers.
+ * 2. **The projection runs the wrong way.** `runDeductionFixpoint` *receives*
+ *    `maxTier`, derived from a tier index — it is downstream of the tier list.
+ *    And every ladder in this repo is an array literal built *inside* a solve,
+ *    closing over board state, so there is nothing to interrogate at module
+ *    load, which is when `paramConfig` and the params codec need the list.
+ *    `engine/latin.ts` makes this vivid: it synthesizes its rungs as
+ *    `0..maxdiff`, so asking that ladder for its tiers returns the cap it was
+ *    handed.
+ * 3. **A tier is not always a rung.** Towers/Keen/Group/Unequal/Mathrax put
+ *    their top tier on `latinSolverRecurse`, outside the fixpoint entirely;
+ *    Dominosa's "Ambiguous" is a relaxation of what the puzzle promises
+ *    ({@link DifficultyContract.nonUniqueTiers}); Undead's only ladder on the
+ *    shared runner is its *hint recorder*, whose two techniques both sit on
+ *    tier 0 while the game offers three tiers. A ladder-derived list would be
+ *    short for all of them.
+ *
+ * The prefix match, rather than `kw === "difficulty"`: 28 of the 29 spell it
+ * `difficulty` and Loopy spells it `diff`, and matching the prefix keeps a
+ * future `diff-level` enrolled instead of silently unwatched — the failure mode
+ * this whole derivation exists to avoid.
+ */
+export function difficultyTiers<Params>(game: {
+  paramConfig?: readonly ParamConfigItem<Params>[];
+}): readonly string[] | undefined {
+  return difficultyChoiceItem(game)?.choices;
+}
+
+/**
+ * The custom-params item {@link difficultyTiers} reads, whole — its `get` /
+ * `set` included.
+ *
+ * Exported because the tier list alone cannot prove the finder found the
+ * *difficulty* item. The comparison it replaced could: a hand-written `tiers`
+ * disagreeing with the found item's choices failed loudly. With one list there
+ * is nothing to compare, so the coupling has to be asserted against the
+ * contract's own accessors instead — `item.set(p, i)` must be the same thing as
+ * `withTier(p, i)`, for every tier. That is a **stronger** statement than the
+ * old one, which two identical string arrays could satisfy while belonging to
+ * different params fields. `difficulty-contract.test.ts` makes it.
+ */
+export function difficultyChoiceItem<Params>(game: {
+  paramConfig?: readonly ParamConfigItem<Params>[];
+}): Extract<ParamConfigItem<Params>, { type: "choices" }> | undefined {
+  const item = game.paramConfig?.find(
+    (i) => i.type === "choices" && /^diff/.test(i.kw),
+  );
+  return item?.type === "choices" ? item : undefined;
 }
 
 /** Bind a contract to one board, for the closure-shaped helpers below. */

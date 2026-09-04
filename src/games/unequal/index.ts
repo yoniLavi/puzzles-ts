@@ -803,7 +803,6 @@ function unequalKeys(order: number): KeyLabel[] {
  * one of `latin.ts`'s sentinels — so `latinVerdict` reads it. Seeded from the
  * immutable givens; `mode` and the clue flags come from the desc. */
 const difficulty: DifficultyContract<UnequalParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
   solveAtCap: (p, desc, cap) => {

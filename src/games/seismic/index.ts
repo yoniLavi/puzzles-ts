@@ -348,7 +348,6 @@ function flashLength(
  * forced the whole way, so there is no separate ambiguity verdict to consult.
  * Non-fixed cells are cleared first so the player's entries never count. */
 const difficulty: DifficultyContract<SeismicParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

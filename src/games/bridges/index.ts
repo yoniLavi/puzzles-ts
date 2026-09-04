@@ -552,7 +552,6 @@ function findMistakes(state: BridgesState): readonly BridgesMistake[] {
  * returns 1 for fully solved, 0 otherwise, with no contradiction signal to
  * report. */
 const difficulty: DifficultyContract<BridgesParams> = {
-  tiers: DIFFICULTY_NAMES,
   tierOf: (p) => p.difficulty,
   withTier: (p, tier) => ({ ...p, difficulty: tier }),
   solveAtCap: (p, desc, cap) =>
@@ -604,7 +603,7 @@ export const bridgesGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: ["Easy", "Medium", "Hard"],
+      choices: [...DIFFICULTY_NAMES],
       get: (p) => p.difficulty,
       set: (p, v) => {
         p.difficulty = v;

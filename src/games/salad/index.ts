@@ -377,7 +377,6 @@ function solve(orig: SaladState): SolveResult<SaladMove> {
  * generator quality gate rather than a playable tier, which is one more reason
  * the tier list is declared and not counted off the `DIFF_*` family. */
 const difficulty: DifficultyContract<SaladParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) =>

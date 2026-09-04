@@ -534,7 +534,6 @@ function flashLength(
  * alone, so no player mark reaches the verdict. `sneaky` is off — that is a
  * generator-side pre-pass, not a tier. */
 const difficulty: DifficultyContract<SinglesParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
   solveAtCap: (p, desc, cap) => {
@@ -570,7 +569,7 @@ export const singlesGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: ["Easy", "Tricky"],
+      choices: [...DIFF_NAMES],
       get: (p) => diffToLevel(p.diff),
       set: (p, v) => {
         p.diff = diffFromLevel(v);

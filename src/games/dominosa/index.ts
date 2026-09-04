@@ -672,7 +672,6 @@ function selectReference(ui: DominosaUi, key: string | null): boolean {
  * `nonUniqueTiers` points the cross-game guard at what the tier actually
  * promises. */
 const difficulty: DifficultyContract<DominosaParams> = {
-  tiers: DIFF_NAMES,
   nonUniqueTiers: [DIFF_AMBIGUOUS],
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),

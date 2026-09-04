@@ -27,6 +27,24 @@ cap-monotonicity and tiers-bind guards. There is no hand-written
 `DifficultyContract`; it is a projection of the technique ladder
 ([`deduction.md`](./deduction.md)).
 
+> **The tier list has shipped as a projection — of the params form, not the
+> ladder** (`derive-difficulty-from-the-technique-ladder`, 2026-09-04). No game
+> writes a tier list any more: `difficultyTiers(game)` reads the difficulty
+> `paramConfig` item, so a tiered game declares its tiers exactly once, where a
+> player picks one. The live contract is
+> [`docs/games/mechanics.md`](../games/mechanics.md) § "Difficulty is a declared
+> contract"; read that, not this.
+>
+> **The paragraph above is refuted in its mechanism**, and the `ts-engine` spec
+> records why so it is not re-attempted. A ladder declares tier *numbers* while a
+> tier list is *names*; `runDeductionFixpoint` **receives** its cap, and every
+> ladder in the collection is built inside a solve from board state, so there is
+> nothing to project from at module load; and a tier is often not a rung — five
+> latin games' top tier is `latinSolverRecurse`, outside the fixpoint. What
+> remains fiction is the rest of the sentence: `tierOf`/`withTier` and
+> `solveAtCap` are still hand-written per game, and both were checked against the
+> corpus and found to be genuinely per-game rather than un-extracted.
+
 **Escape hatch:** a bespoke codec for params whose grammar the shared parser
 cannot express (Blackbox's `w<W>h<H>m…M…`), with the obligation that encode
 and decode are property-tested inverses — a test the framework generates.

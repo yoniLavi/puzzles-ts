@@ -55,6 +55,7 @@
  */
 import { writeFileSync } from "node:fs";
 import { expect, it } from "vitest";
+import { difficultyTiers } from "../../src/engine/difficulty.ts";
 import { randomNew } from "../../src/engine/random/index.ts";
 import {
   firstLeaf,
@@ -87,7 +88,7 @@ it("reports every hint step that points bare while a second mark is displayed", 
   for (const [name, game] of HINT_GAMES) {
     const contract = game.difficulty;
     const base = firstLeaf(game.presets());
-    const tiers = contract ? contract.tiers.length : 1;
+    const tiers = contract ? (difficultyTiers(game)?.length ?? 1) : 1;
     const shapes = new Set<string>();
     for (let tier = 0; tier < tiers; tier++) {
       const params = contract ? contract.withTier(base, tier) : base;

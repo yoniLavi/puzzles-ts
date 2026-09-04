@@ -354,7 +354,6 @@ function animLength(
  * out balanced. `solvableAt` is that predicate, shared with the generator rather
  * than re-derived here. */
 const difficulty: DifficultyContract<UnrulyParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {
@@ -391,7 +390,7 @@ export const unrulyGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: ["Trivial", "Easy", "Normal"],
+      choices: [...DIFF_NAMES],
       get: (p) => p.diff,
       set: (p, v) => {
         p.diff = v;

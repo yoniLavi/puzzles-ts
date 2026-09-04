@@ -35,6 +35,7 @@
  * this change's spec explicitly forbids.
  */
 import { describe, expect, it } from "vitest";
+import { difficultyTiers } from "./difficulty.ts";
 import { randomNew } from "./random/index.ts";
 import { declaresNoMarks, firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
 
@@ -181,11 +182,12 @@ describe("hint narration form, cross-game", () => {
 describe("no hint leaves a chain for the player to carry, at any tier", () => {
   for (const [name, game] of HINT_GAMES) {
     const contract = game.difficulty;
-    if (!contract) continue;
+    const tiers = difficultyTiers(game);
+    if (!contract || !tiers) continue;
     it(`${name}: every tier`, () => {
       const base = firstLeaf(game.presets());
       let checked = 0;
-      for (let tier = 0; tier < contract.tiers.length; tier++) {
+      for (let tier = 0; tier < tiers.length; tier++) {
         const params = contract.withTier(base, tier);
         if (game.validateParams(params, true)) continue; // tier refused at this size
         for (const seed of SEEDS) {
@@ -205,7 +207,7 @@ describe("no hint leaves a chain for the player to carry, at any tier", () => {
           for (const step of res.steps) {
             expect(
               SPECULATIVE.test(step.explanation),
-              `${name} tier ${tier} ("${contract.tiers[tier]}")/${seed}: "${step.explanation}" — asks the player to carry a chain it never lays out`,
+              `${name} tier ${tier} ("${tiers[tier]}")/${seed}: "${step.explanation}" — asks the player to carry a chain it never lays out`,
             ).toBe(false);
           }
         }

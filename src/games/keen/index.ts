@@ -675,7 +675,6 @@ function flashLength(
  * `latin.ts`'s sentinels — so `latinVerdict` reads it. Keen has no givens: the
  * solution comes from the cage clues alone. */
 const difficulty: DifficultyContract<KeenParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
   solveAtCap: (p, desc, cap) => {
@@ -721,7 +720,7 @@ export const keenGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: ["Easy", "Normal", "Hard", "Extreme", "Unreasonable"],
+      choices: [...DIFF_NAMES],
       get: (p) => diffToLevel(p.diff),
       set: (p, v) => {
         p.diff = diffFromLevel(v);

@@ -512,14 +512,12 @@ function flashLength(
  *
  * **Two tiers, three `DIFF_*` levels** (`audit-guessing-tier-names` D11, and the
  * case `difficulty.ts`'s own doc comment already anticipated: a `DIFF_*`
- * constant is not reliably a tier). `tiers` is *the tiers a player can pick*, so
- * upstream's ungenerable third one is not among them; `solveAtCap` takes a raw
- * cap and answers for it regardless, which is what a loaded `dt` game needs.
- * The list comes from `DIFF_NAMES` rather than repeating it — Unequal shipped a
- * menu and a custom-params dialog that disagreed for exactly that reason.
+ * constant is not reliably a tier). The tier list is *the tiers a player can
+ * pick* — read off `paramConfig`, which spreads `DIFF_NAMES` — so upstream's
+ * ungenerable third one is not among them; `solveAtCap` takes a raw cap and
+ * answers for it regardless, which is what a loaded `dt` game needs.
  */
 const difficulty: DifficultyContract<BricksParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

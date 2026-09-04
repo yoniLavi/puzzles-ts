@@ -322,7 +322,6 @@ function findMistakes(state: TracksState): readonly TracksMistake[] {
  * `{ ret, maxDiff }` with `ret` −1 impossible, 0 non-converged, 1 uniquely
  * solved; `stateToBoard` on the initial state gives the clue-only board. */
 const difficulty: DifficultyContract<TracksParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

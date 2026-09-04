@@ -101,16 +101,19 @@ describe("the contract over the fake game", () => {
   // contract can be laid over any params type, and these assertions are about
   // the contract's own rules (purity, index round-tripping) rather than about
   // any real game's tier semantics.
+  // The tier *names* are not the contract's to hold — they come off the game's
+  // custom-params form (`difficultyTiers`), which the fake game has none of.
+  // Only their count matters to the assertions below.
+  const TIERS = 3;
   const contract: DifficultyContract<FakeParams> = {
-    tiers: ["Easy", "Normal", "Hard"],
-    tierOf: (p) => Math.min(p.target, 2),
+    tierOf: (p) => Math.min(p.target, TIERS - 1),
     withTier: (p, tier) => ({ ...p, target: tier }),
     solveAtCap: (_p, desc, cap) => (cap >= desc.length ? "solved" : "unsolved"),
   };
 
   it("round-trips every declared tier through withTier/tierOf", () => {
     const p = fakeGame.defaultParams();
-    for (let tier = 0; tier < contract.tiers.length; tier++) {
+    for (let tier = 0; tier < TIERS; tier++) {
       expect(contract.tierOf(contract.withTier(p, tier))).toBe(tier);
     }
   });

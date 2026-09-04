@@ -18,15 +18,23 @@
  * already failed once — a `DIFF_*` grep surveying tiered games missed Bridges,
  * whose tiers are a plain `difficulty: number` against a `DIFFICULTY_NAMES`
  * array. A guard blind to a game cannot fire on it.
+ *
+ * **The tier list is derived from the same place** since
+ * `derive-difficulty-from-the-technique-ladder` (`difficultyTiers`): the form's
+ * difficulty choices decide both *whether* a game is tiered and *what its tiers
+ * are*, so the enrollment and the list can no longer disagree either. That is
+ * the last of three hand-maintained lists this file has absorbed.
  */
 import { describe, expect, it } from "vitest";
 import "../games/index.ts";
 import {
   cappedSolveFor,
   type DifficultyContract,
+  difficultyChoiceItem,
+  difficultyTiers,
   lowestSolvingCap,
 } from "./difficulty.ts";
-import type { Game, ParamConfigItem, PresetMenu } from "./game.ts";
+import type { Game, PresetMenu } from "./game.ts";
 import { randomNew } from "./random/index.ts";
 import { getTsGame, registeredGameIds } from "./registry.ts";
 import { seedBudget } from "./testing/slow.ts";
@@ -34,21 +42,16 @@ import { seedBudget } from "./testing/slow.ts";
 // biome-ignore lint/suspicious/noExplicitAny: a deliberately game-agnostic probe.
 type AnyGame = Game<any, any, any, any, any, any>;
 
-/** The custom-params item a tiered game exposes its difficulty through. 27 of
- * the 28 spell it `difficulty`; Loopy spells it `diff`. Matching the prefix
- * rather than an exact string keeps a future `diff-level` enrolled instead of
- * silently unwatched — the failure mode this whole derivation exists to avoid. */
-function difficultyChoiceItem(game: AnyGame): ParamConfigItem<unknown> | undefined {
-  return game.paramConfig?.find(
-    (item) => item.type === "choices" && /^diff/.test(item.kw),
-  );
-}
-
 interface TieredGame {
   id: string;
   game: AnyGame;
   contract: DifficultyContract<unknown>;
-  choices: readonly string[];
+  /** The game's tier names — `difficultyTiers(game)`, i.e. the custom-params
+   * form's own difficulty choices. Since
+   * `derive-difficulty-from-the-technique-ladder` there is no second copy on
+   * the contract to compare this against; the list *is* what the player picks
+   * from, so a stale one is not a thing a game can now have. */
+  tiers: readonly string[];
 }
 
 /** Every registered game offering a difficulty choice, with its contract. */
@@ -61,13 +64,11 @@ const missingContract: string[] = [];
 const contractWithoutChoice: string[] = [];
 
 for (const { id, game } of registered) {
-  const item = difficultyChoiceItem(game);
+  const tiers = difficultyTiers(game);
   const contract = game.difficulty as DifficultyContract<unknown> | undefined;
-  if (item && item.type === "choices" && !contract) missingContract.push(id);
-  if (contract && !item) contractWithoutChoice.push(id);
-  if (item && item.type === "choices" && contract) {
-    tiered.push({ id, game, contract, choices: item.choices });
-  }
+  if (tiers && !contract) missingContract.push(id);
+  if (contract && !tiers) contractWithoutChoice.push(id);
+  if (tiers && contract) tiered.push({ id, game, contract, tiers });
 }
 
 /** First leaf preset's params — a small, valid board (`hint-games.ts` uses the
@@ -126,26 +127,64 @@ describe("the tiered-game set is derived from the registry", () => {
   });
 
   it("every game declaring the contract offers a difficulty choice", () => {
-    // The other direction, and not redundant: a contract on a game a player
-    // cannot pick a tier for would be dead metadata, and the tier list would
-    // have nothing to be checked against.
+    // The other direction, and it went from useful to **load-bearing** when
+    // `derive-difficulty-from-the-technique-ladder` made the form the tier
+    // list's only definition. A contract on a game with no difficulty choice
+    // used to be dead metadata; now it is a contract with *no tiers at all*,
+    // and every per-game assertion below would loop zero times over it while
+    // reporting health. This is the guard that stops that.
     expect(contractWithoutChoice).toEqual([]);
   });
 });
 
-describe.each(tiered)("$id difficulty contract", ({ id, game, contract, choices }) => {
-  const tiers = contract.tiers;
-
-  it("declares the tiers its custom-params form offers", () => {
-    // NOTE ON STRENGTH, because a reader deserves it: for the seventeen games
-    // whose `paramConfig` spreads the same `DIFF_NAMES` this contract names,
-    // this comparison is trivially true — and that is the *better* outcome, not
-    // a hole. One source cannot drift from itself. The check earns its keep on
-    // the eleven that write the names out twice (Bricks, Bridges, Galaxies,
-    // Keen, Lightup, Singles, Solo, Towers, Undead, Unequal, Unruly), where the
-    // two really can diverge.
-    expect([...tiers]).toEqual([...choices]);
+describe.each(tiered)("$id difficulty contract", ({ id, game, contract, tiers }) => {
+  it("offers a readable menu of at least two distinct tiers", () => {
+    // What this replaces, and why it is not weaker. Until
+    // `derive-difficulty-from-the-technique-ladder` there was a second
+    // hand-written tier list on the contract, and this slot asserted the two
+    // agreed. That assertion is gone because the second list is gone — the
+    // strongest possible outcome, and the one the change existed to reach: two
+    // things cannot disagree when there is one of them. (Its own comment had
+    // meanwhile gone stale, naming Bricks, Undead and Unequal among games
+    // "writing the names out twice" when all three had moved to spreading their
+    // shared constant — a hand-maintained list rotting inside the guard against
+    // hand-maintained lists.)
+    //
+    // What is left is what a single list can still get wrong: a menu with one
+    // entry (nothing to choose), or two entries a player cannot tell apart.
+    // Neither was checked before.
     expect(tiers.length).toBeGreaterThan(1);
+    expect(new Set(tiers).size, `${id}: two tiers share a name`).toBe(tiers.length);
+    expect(
+      tiers.every((t) => t.trim().length > 0),
+      `${id}: a tier has no name`,
+    ).toBe(true);
+  });
+
+  it("reads its tiers off the same params field the contract writes", () => {
+    // The coupling the removed equality check used to carry, made explicit and
+    // made stronger. `difficultyTiers` finds the form item by a `kw` prefix; if
+    // it found some *other* `choices` item — a mode list, a symmetry list —
+    // every loop above would run over the wrong length and pass, having covered
+    // a different param. Two string arrays being equal never ruled that out.
+    // Asking the item to move the tier that `tierOf` reads does.
+    const item = difficultyChoiceItem(game);
+    expect(item, `${id}: no difficulty choice item`).toBeDefined();
+    if (!item) return;
+    expect(item.choices, `${id}: the tier list is that item's choices`).toBe(tiers);
+    const base = firstLeaf(game.presets());
+    for (let tier = 0; tier < tiers.length; tier++) {
+      expect(
+        item.get(contract.withTier(base, tier)),
+        `${id}: withTier(${tier}) is invisible to the "${item.kw}" form item`,
+      ).toBe(tier);
+      const p = structuredClone(base);
+      item.set(p, tier);
+      expect(
+        contract.tierOf(p),
+        `${id}: setting "${item.kw}" to ${tier} is invisible to tierOf`,
+      ).toBe(tier);
+    }
   });
 
   it("round-trips every declared tier through the params codec", () => {
@@ -187,7 +226,7 @@ describe.each(tiered)("$id difficulty contract", ({ id, game, contract, choices 
     // rung never decides anything its Normal rung has not). What is *not*
     // allowed is a tier that fails to generate and says nothing about why.
     for (let tier = 0; tier < tiers.length; tier++) {
-      const p = paramsForTier({ id, game, contract, choices }, tier);
+      const p = paramsForTier({ id, game, contract, tiers }, tier);
       if (p !== null) continue;
       const refusals = allLeaves(game.presets()).map((leaf) =>
         game.validateParams(contract.withTier(leaf, tier), true),
@@ -227,7 +266,7 @@ describe.each(tiered)("$id difficulty contract", ({ id, game, contract, choices 
       let checked = 0;
 
       for (let tier = 0; tier < tiers.length; tier++) {
-        const p = paramsForTier({ id, game, contract, choices }, tier);
+        const p = paramsForTier({ id, game, contract, tiers }, tier);
         if (p === null) continue; // an ungenerable tier; covered by the test above
 
         for (let seed = 0; seed < boards; seed++) {

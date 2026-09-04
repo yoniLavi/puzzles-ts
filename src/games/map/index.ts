@@ -336,7 +336,6 @@ function flashLength(
  * from is `clueColoring`, the givens alone, so the player's own colors never
  * enter the verdict. */
 const difficulty: DifficultyContract<MapParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

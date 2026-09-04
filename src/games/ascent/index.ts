@@ -284,7 +284,6 @@ const paramConfig: ParamConfigItem<AscentParams>[] = [
  * `foundEndpoints` deliberately persists and permanently weakens the solver, and
  * reusing one is the defect `grade-difficulty-tiers-honestly` hit here first. */
 const difficulty: DifficultyContract<AscentParams> = {
-  tiers: ASCENT_DIFFNAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

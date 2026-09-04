@@ -185,16 +185,25 @@ Exemplars: [`pattern/index.ts`](../../src/games/pattern/index.ts) (pure w/h),
 ### Difficulty is a declared contract
 
 **A tiered game declares `Game.difficulty`
-([`engine/difficulty.ts`](../../src/engine/difficulty.ts)): its tier names, a
-`tierOf`/`withTier` accessor pair, and a capped solve.** The point is that
-properties *about* tiers — above all cap-monotonicity, whose absence silently
-broke Check & Save on every Boats Easy board — are asserted for all tiered
-games at once by `difficulty-contract.test.ts`; declaring the contract enrolls
-the game in those guards automatically. The accessors exist because eight
-games type their difficulty as a string union or enum, so no cross-game caller
-can write `{ ...p, diff: cap }`. Tier names must match the game's own
-`paramConfig` choices (not its `DIFF_*` constants, which mix rungs with solver
-verdicts). What a tier *means*, and the grading that enforces it, is
+([`engine/difficulty.ts`](../../src/engine/difficulty.ts)): a `tierOf`/`withTier`
+accessor pair and a capped solve.** The point is that properties *about* tiers —
+above all cap-monotonicity, whose absence silently broke Check & Save on every
+Boats Easy board — are asserted for all tiered games at once by
+`difficulty-contract.test.ts`; declaring the contract enrolls the game in those
+guards automatically. The accessors exist because eight games type their
+difficulty as a string union or enum, so no cross-game caller can write
+`{ ...p, diff: cap }`.
+
+**You do not write the tier names.** They are read off the game's own difficulty
+`paramConfig` item — `difficultyTiers(game)` — which is the list a player picks
+from. That item's `kw` must start with `diff`, and its `get`/`set` must address
+the same field `tierOf`/`withTier` do; the guard checks exactly that, because a
+finder that latched onto a mode or symmetry menu would otherwise iterate the
+wrong list and pass. Never derive tier names from `DIFF_*` constants, which mix
+rungs with solver verdicts — and never from the technique ladder, which declares
+tier *numbers* and is built inside a solve
+([solver & generator](./solver-and-generator.md) § "The difficulty contract").
+What a tier *means*, and the grading that enforces it, is
 [solver & generator](./solver-and-generator.md) § "A tier means exactly its rung".
 
 ## Descriptions and state

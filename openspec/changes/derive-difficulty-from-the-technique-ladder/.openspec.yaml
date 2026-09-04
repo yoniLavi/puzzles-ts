@@ -1,7 +1,4 @@
-# Deltas are written when the change is picked up. It will almost certainly
-# MODIFY the `ts-engine` difficulty-contract requirement — but *what* it says
-# depends on task 3's decisions (whether `solveAtCap` is derived, and how the
-# derived and hand-written forms coexist), and writing the requirement before
-# those are answered would put a spec in front of the work rather than behind it.
+# Deltas were written once task 1's reading had settled what the change could
+# actually do — which turned out not to be what its title says. See the
+# proposal's "What the reading found".
 schema: spec-driven
-skip_specs: true

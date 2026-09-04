@@ -67,7 +67,6 @@ import {
   decodeParams,
   defaultParams,
   encodeParams,
-  LOOPY_DIFFS,
   type LoopyParams,
   paramConfig,
   presets,
@@ -436,7 +435,6 @@ function solve(orig: LoopyState, _curr: LoopyState): SolveResult<LoopyMove> {
  * only ever asks it about boards derived from a real loop — a probe has no such
  * guarantee, and a contradiction is a verdict here, not a porting bug. */
 const difficulty: DifficultyContract<LoopyParams> = {
-  tiers: LOOPY_DIFFS.map((d) => d.title),
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

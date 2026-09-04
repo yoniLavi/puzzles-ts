@@ -604,7 +604,6 @@ function flashLength(
  * guards. `solveAtCap` rebuilds the board from its desc — never from a live
  * state — because `subsetsSolveGame` resets and mutates what it is given. */
 const difficulty: DifficultyContract<SubsetsParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

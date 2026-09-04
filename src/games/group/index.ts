@@ -877,7 +877,6 @@ function describeParams(p: GroupParams): ConfigValues {
  * the shared latin-family return convention — the difficulty reached, or one of
  * `latin.ts`'s sentinels — so `latinVerdict` reads it. */
 const difficulty: DifficultyContract<GroupParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

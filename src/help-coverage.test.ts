@@ -18,6 +18,7 @@
 
 import ts from "typescript";
 import { beforeAll, describe, expect, it } from "vitest";
+import { difficultyTiers } from "./engine/difficulty.ts";
 import { getTsGame, registeredGameIds } from "./engine/registry.ts";
 // Registers every ported game; `beforeAll` re-runs it in case a sibling file
 // reset the shared registry under `isolate: false`.
@@ -366,9 +367,10 @@ describe("the populations the help asserts are derived, not trusted", () => {
    * a hint that had honestly run out indistinguishable from a broken one.
    */
   it("explains the tier name as long as any game ships it", () => {
-    const shipping = registeredGameIds().filter((id) =>
-      getTsGame(id)?.difficulty?.tiers.includes("Unreasonable"),
-    );
+    const shipping = registeredGameIds().filter((id) => {
+      const game = getTsGame(id);
+      return game && difficultyTiers(game)?.includes("Unreasonable");
+    });
     expect(
       shipping.length,
       "no game declares the tier — derivation is vacuous",

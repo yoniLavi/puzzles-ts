@@ -4,73 +4,89 @@ Realizes: `docs/framework-rdd/game-definition.md` § "Params and presets" —
 *"if your techniques carry tiers … there is no hand-written
 `DifficultyContract`; it is a projection of the technique ladder"*.
 
-**Readiness: ready to implement.** Scoped, and the lever it needs already
-exists.
+**Outcome: the ladder cannot supply it, and something better could.** The
+proposal's premise did not survive task 1's reading. What shipped is the
+projection that *does* exist — and it removes more per-game surface than the
+proposed one would have, across more than twice as many games.
 
 ## Why
 
-**This was fiction in August and is buildable now, because of what shipped in
-September.** `game-definition.md` says a game's difficulty contract should fall
-out of its techniques rather than being written by hand. That was impossible
-while a technique was an anonymous `() => number` whose difficulty was its array
-index. `declare-deduction-techniques` gave every technique a declared `tier`, and
-`re-derive-the-fixpoint-no-gos` put nine call sites on that runner. **The ladder
-now knows its own tiers, and nothing reads them.**
+**28 games hand-wrote a `DifficultyContract`** whose `tiers` array duplicated the
+tier names their own custom-params form already declared, held together only by
+`difficulty-contract.test.ts` asserting the two agreed. A projection removes the
+opportunity for them to disagree in the first place, which is the
+`derive-hint-enrollment` move: stop asserting that two hand-maintained things
+match, and derive one from the other.
 
-Meanwhile 28 games hand-write a `DifficultyContract` — `tiers`, `tierOf`,
-`withTier`, `solveAtCap` — and the two halves are held together only by
-`difficulty-contract.test.ts` asserting they agree. A projection removes the
-opportunity for them to disagree in the first place, which is the same move as
-`derive-hint-enrollment`: stop asserting that two hand-maintained things match,
-and derive one from the other.
+The proposal expected the technique ladder to be the source, because
+`declare-deduction-techniques` had just given every technique a declared `tier`
+and *"the ladder now knows its own tiers, and nothing reads them"*. It knows its
+tier **numbers**. That is the gap the reading found.
 
-**Start here rather than at the board model** (owner, 2026-09-04): the params
-end has the strongest existing evidence, this is the one piece where work
-already shipped creates the lever, and it *removes* per-game surface instead of
-adding framework surface.
+## What the reading found
+
+**Scope (task 1), by reading rather than grepping.** 14 games run a solver on the
+shared fixpoint runner — Group, Keen, Mathrax, Salad, Towers and Unequal through
+`engine/latin.ts`; Clusters, Filling, Magnets, Pattern, Singles, Spokes, Undead
+and Unruly directly. 29 games declare a difficulty contract (not 28 — the count
+in `difficulty.ts` and in two test headers had drifted). **The overlap is 12**:
+Filling and Pattern are on the runner and untiered. Boats and Loopy name
+`runDeductionFixpoint` only in doc comments explaining why they do *not* use it,
+exactly as the proposal warned; a third name-keyed scan failed here too, because
+`grep 'latinSolver('` misses the six real call sites, which are all written
+`latinSolver<Ctx>(`.
+
+**The projection is impossible, for three independent reasons.** Each is fatal
+alone, so the no-go does not depend on the scope figure:
+
+1. **A ladder declares tier *indices*; a tier list is *names*.**
+   `DeductionTechnique.tier` is a `number`; `tiers` is the strings a player reads.
+2. **The projection runs the wrong way.** `runDeductionFixpoint` *receives*
+   `maxTier`. Every ladder is an array literal built inside a solve, closing over
+   board state — there is nothing to interrogate at module load, which is when
+   `paramConfig` and the params codec need the list. `engine/latin.ts` is the
+   sharpest case: it synthesizes rungs `0..maxdiff`, so asking that ladder for
+   its tiers returns the cap it was handed.
+3. **A tier is not always a rung.** Five latin games put their top tier on
+   `latinSolverRecurse`, outside the fixpoint (and the latin ladder still
+   synthesizes a permanently-dead rung for it); Dominosa's "Ambiguous" is a
+   relaxation of what the puzzle promises; **Undead's** only ladder on the shared
+   runner is its *hint recorder*, two techniques both on tier 0, while the game
+   offers three tiers.
+
+Recorded as a spec requirement so it is answered by reading rather than by
+re-surveying the games.
 
 ## What Changes
 
-- **Derive `tiers` from the ladder** for games whose solver runs on the shared
-  runner: the distinct `tier` values a game declares, in order, are its tiers.
-- **Keep `tierOf` / `withTier` per-game.** They are about the game's *params
-  record* — where the tier is stored and what it is called — and eight games do
-  not hold a number there at all (`difficulty.ts` documents this). Nothing about
-  the ladder tells you that, and pretending otherwise is the contortion the
-  framework must not do.
-- **Consider deriving `solveAtCap`.** It is `maxTier` plus the game's own
-  verdict mapping; the mapping is per-game (`latinVerdict` and friends) but the
-  capping is not. Decide with evidence, in the change, not now.
-- **Both shapes must coexist.** Only some games are on the runner; the rest keep
-  declaring by hand and must stay first-class. A contract that only works for
-  runner games is not a framework contract — it is a second contract.
-- **The existing guards stay and become the proof.** `difficulty-contract.test.ts`
-  already asserts cap-monotonicity, tier round-tripping through the codec, and
-  tiers matching `paramConfig` choices. A derived `tiers` that changes any of
-  those answers is wrong, and those tests are how we would know.
+- **`tiers` is gone from `DifficultyContract`.** The tier list is
+  `difficultyTiers(game)` — the game's own difficulty `paramConfig` choices,
+  which is the list a player picks from and the only one reachable at module
+  load. 29 hand-written `tiers` declarations deleted.
+- **Eight games stop declaring their tier names twice.** Bridges, Keen, Singles,
+  Solo, Towers and Unruly wrote a second string literal into `paramConfig`; they
+  now spread their own constant. Loopy ran the same `.map` twice. Galaxies and
+  Lightup's single literal is now the only one.
+- **`tierOf` / `withTier` stay per-game**, as proposed — they are about the
+  params *record*, which no menu and no ladder knows anything about.
+- **`solveAtCap` stays per-game, decided on evidence.** Read across all 29: the
+  only shared step is `newState(p, desc)`, one line each; the cap passes straight
+  through and the verdict mapping is the per-game knowledge the discriminated
+  verdict exists to hold. The shared part was `latinVerdict`, already extracted.
+- **The lost assertion is replaced by a stronger one.** `tiers === choices` could
+  pass on two equal arrays belonging to different params fields. The new guard
+  asserts the form item's `get`/`set` and the contract's `tierOf`/`withTier` move
+  the same tier, at every tier — which is what actually fails if the derivation
+  finds the wrong `choices` item. Two further checks a single list can still
+  fail — no duplicate tier names, no blank ones — did not exist before.
 
 ## Impact
 
-- Affected specs: `ts-engine` (the difficulty contract), possibly `ts-migration`.
-- Affected code: `src/engine/difficulty.ts`, the shared runner (to expose a
-  ladder's declared tiers), and the per-game contracts that can drop their
-  `tiers` array.
-- **Behavior must not change.** A tier list that comes out different from the
-  hand-written one means either the derivation is wrong or the hand-written list
-  was — and distinguishing those is required before the change proceeds, never
-  resolved by adopting whichever is more convenient. The frozen differentials do
-  not cover this directly (tiers are not in a desc), so
-  `difficulty-contract.test.ts` is the net and its coverage should be checked
-  before it is relied on.
-
-## Open question this change must answer first
-
-**How many games are actually in scope is not greppable, and two attempts to
-count it disagreed** (2026-09-04). Runner membership resists a name-keyed scan
-because several solvers *mention* `runDeductionFixpoint` only in doc comments
-(Boats and Loopy both do, and neither uses it); contract declaration resists one
-because `difficulty:` is not written as a uniform literal across games. So
-establishing the overlap — tiered games whose ladder is on the shared runner — is
-**task 1**, by reading, and the figure belongs in the change rather than in this
-proposal. The precedent is `adopt-shared-deduction-fixpoint`, whose "~29
-candidates" did not survive verification.
+- Affected specs: `ts-engine` (the difficulty contract requirement; a new
+  requirement recording the ladder no-go).
+- Affected code: `src/engine/difficulty.ts`, 29 game `index.ts` files, and five
+  test files that read the tier list.
+- **Behavior unchanged, and it was already proven so before the edit.**
+  `difficulty-contract.test.ts` asserted `tiers === choices` for all 29 games and
+  was green in the gate, so the derived list is the hand-written list by an
+  existing proof rather than by inspection.

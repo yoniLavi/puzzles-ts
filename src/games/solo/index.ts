@@ -891,7 +891,6 @@ function flashLength(
  * for declaring the tier list rather than counting constants. The killer cap is
  * left at its default: the tier being varied is the ordinary deduction ladder. */
 const difficulty: DifficultyContract<SoloParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {
@@ -1000,14 +999,7 @@ export const soloGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: [
-        "Trivial",
-        "Basic",
-        "Intermediate",
-        "Advanced",
-        "Extreme",
-        "Unreasonable",
-      ],
+      choices: [...DIFF_NAMES],
       get: (p) => p.diff,
       set: (p, v) => {
         p.diff = v;

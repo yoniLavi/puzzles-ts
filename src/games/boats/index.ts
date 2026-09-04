@@ -635,7 +635,6 @@ function fleetConfigString(p: BoatsParams): string {
  * own marks never leak into the verdict.
  */
 const difficulty: DifficultyContract<BoatsParams> = {
-  tiers: DIFF_NAMES,
   nonMonotone: true,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),

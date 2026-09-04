@@ -1024,11 +1024,11 @@ function statusbarText(s: GalaxiesState, _ui: GalaxiesUi): string {
  * the *minimum* difficulty at which the board is uniquely solvable, or one of
  * the `Impossible` / `Ambiguous` / `Unfinished` outcomes — so its `GalaxiesDiff`
  * enum is two tiers and three verdicts in one type, which is precisely why the
- * cross-game guard reads `tiers` rather than counting `DIFF_*` members. The
+ * cross-game guard reads the `paramConfig` difficulty choices rather than
+ * counting `DIFF_*` members. The
  * board is cleared to its starting position first, so the player's own edges and
  * associations never enter the verdict. */
 const difficulty: DifficultyContract<GalaxiesParams> = {
-  tiers: ["Normal", "Unreasonable"],
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier as GalaxiesDiff }),
   solveAtCap: (p, desc, cap) => {

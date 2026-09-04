@@ -490,7 +490,6 @@ function canonicalEdge(
  * `"incomplete"` or `"invalid"`; the board is cleared of the player's marks
  * first, exactly as `solveFromClues` does. */
 const difficulty: DifficultyContract<SpokesParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: DIFFS[tier] }),
   solveAtCap: (p, desc, cap) => {

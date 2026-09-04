@@ -909,7 +909,6 @@ function flashLength(
  * `latin.ts`'s sentinels — so `latinVerdict` reads it. The solver is seeded from
  * the immutable givens, never the player's grid. */
 const difficulty: DifficultyContract<TowersParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
   solveAtCap: (p, desc, cap) => {
@@ -952,7 +951,7 @@ export const towersGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: ["Easy", "Hard", "Extreme", "Unreasonable"],
+      choices: [...DIFF_NAMES],
       get: (p) => diffToLevel(p.diff),
       set: (p, v) => {
         p.diff = diffFromLevel(v);

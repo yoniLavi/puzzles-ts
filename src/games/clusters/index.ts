@@ -468,7 +468,6 @@ function flashLength(
  * is why `solvableAtExactlyTier` asks the cheap rung first — the deeper solve
  * resumes from that same fixpoint (`add-clusters-difficulty-tiers` D3). */
 const difficulty: DifficultyContract<ClustersParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

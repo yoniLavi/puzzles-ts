@@ -504,7 +504,6 @@ function flashLength(
  * solver as a *flag set* (`flagsFromDifficulty`) rather than as a number, which
  * is the shape no cross-game caller could have guessed. */
 const difficulty: DifficultyContract<LightupParams> = {
-  tiers: ["Easy", "Tricky", "Unreasonable"],
   tierOf: (p) => p.difficulty,
   withTier: (p, tier) => ({ ...p, difficulty: tier }),
   solveAtCap: (p, desc, cap) =>

@@ -271,7 +271,6 @@ function findMistakes(state: TentsState): readonly TentsMistake[] {
  * inconsistency it can prove, and 2 when it simply runs dry. The puzzle grid is
  * rebuilt from the trees alone, exactly as `solve` does. */
 const difficulty: DifficultyContract<TentsParams> = {
-  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {

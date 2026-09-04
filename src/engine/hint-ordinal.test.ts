@@ -39,6 +39,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { HINT_EVIDENCE } from "./color/palette.ts";
+import { difficultyTiers } from "./difficulty.ts";
 import type { PresetMenu } from "./game.ts";
 import { randomNew } from "./random/index.ts";
 import { firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
@@ -149,9 +150,9 @@ describe("an ordered hint chain carries its order to the canvas", () => {
       // Every tier, not just the first preset: a chain deduction is the
       // *hardest* rung a game has, so the easiest preset is the one place it can
       // never fire.
-      const tiers = contract
-        ? contract.tiers.map((_t: string, i: number) => contract.withTier(base, i))
-        : [base];
+      const names = difficultyTiers(game);
+      const tiers =
+        contract && names ? names.map((_t, i) => contract.withTier(base, i)) : [base];
 
       for (const params of tiers) {
         if (game.validateParams(params, true)) continue; // refused at this size
