@@ -326,6 +326,8 @@ export interface SaladUi {
    * right-clicked again (mobile-style), instead of every left-click reverting
    * to real entry. Off ⇒ exactly upstream's per-click mode. */
   pencilSticky: boolean;
+  /** Preference (default on): keep the mouse highlight after a pencil change. */
+  pencilKeepHighlight: boolean;
 }
 
 export function newUi(_state: SaladState): SaladUi {
@@ -334,6 +336,7 @@ export function newUi(_state: SaladState): SaladUi {
     pencilMode: false,
     cursorFromKeyboard: false,
     pencilSticky: true,
+    pencilKeepHighlight: true,
   };
 }
 

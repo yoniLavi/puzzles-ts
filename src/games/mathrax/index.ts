@@ -31,7 +31,10 @@ import {
   releaseHighlightAfterEntry,
 } from "../../engine/note-taking-cell.ts";
 import { parseConfigInt } from "../../engine/params.ts";
-import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
+import {
+  pencilKeepHighlightPref,
+  stickyPencilPref,
+} from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -450,7 +453,7 @@ export const mathraxGame: Game<
   findMistakes,
   requestKeys: (p): KeyLabel[] => digitKeys(p.o),
 
-  prefs: [stickyPencilPref<MathraxUi>()],
+  prefs: [stickyPencilPref<MathraxUi>(), pencilKeepHighlightPref<MathraxUi>()],
 
   colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,

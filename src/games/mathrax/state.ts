@@ -636,6 +636,8 @@ export interface MathraxUi {
   /** Preference (default on, fork addition): right-click toggles a *sticky*
    * pencil mode rather than selecting one cell for one mark. */
   pencilSticky: boolean;
+  /** Preference (default on): keep the mouse highlight after a pencil change. */
+  pencilKeepHighlight: boolean;
 }
 
 export function newUi(_state: MathraxState): MathraxUi {
@@ -644,5 +646,6 @@ export function newUi(_state: MathraxState): MathraxUi {
     cursorFromKeyboard: false,
     pencilMode: false,
     pencilSticky: true,
+    pencilKeepHighlight: true,
   };
 }

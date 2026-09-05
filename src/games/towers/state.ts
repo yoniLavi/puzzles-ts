@@ -248,7 +248,7 @@ export function newUi(_state: TowersState): TowersUi {
     pencilMode: false,
     cursorFromKeyboard: false,
     threeD: true,
-    pencilKeepHighlight: false,
+    pencilKeepHighlight: true,
     pencilSticky: true,
     // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its
     // row/column notes. Notes clear only via the mark-all button or a hint; opt

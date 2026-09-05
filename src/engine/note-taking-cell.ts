@@ -201,18 +201,20 @@ export function noOpEntryResult(ui: NoteTakingUi): UiUpdate | null {
  * it, or this was a pencil change the player asked to keep the highlight
  * through.
  *
- * **A missing `pencilKeepHighlight` reads as `true`**, derived from the game's
- * own declaration rather than from a roster here: the five games that do not
- * offer the preference (Abcd, Crossing, Mathrax, Salad, Seismic) keep the
- * highlight through a pencil change unconditionally, and this reproduces them
- * exactly.
+ * **A missing `pencilKeepHighlight` reads as `true`**, which is the convention a
+ * game gets without declaring anything. All eleven do declare it today; the
+ * default is here so a twelfth inherits the right behavior rather than the
+ * absence of one.
  *
- * **That leaves a split standing, deliberately.** The six games that *do* offer
- * the preference default it **off**, so out of the box the same mouse-driven
- * pencil mark keeps the highlight in Mathrax and loses it in Solo. Which
- * default is right is a thing a player feels, so it is the owner's call and not
- * a refactor's — recorded here rather than quietly resolved, and the rule is in
- * one place now so resolving it is a one-line change when the answer comes.
+ * **The collection was split on this and no longer is.** Five games kept the
+ * highlight unconditionally, having no preference at all; the other six offered
+ * the preference and defaulted it **off**, so out of the box the same
+ * mouse-driven pencil mark kept the highlight in Mathrax and lost it in Solo.
+ * Keeping it is the better default — entering two or three candidates in a row
+ * is the ordinary case with a mouse, and re-clicking between each is the
+ * annoyance the preference was added to remove — so the six flipped and the
+ * five gained the preference. Every player can still choose; nobody has to
+ * choose twice for the same puzzle family.
  */
 export function releaseHighlightAfterEntry(ui: NoteTakingUi): void {
   if (ui.cursorFromKeyboard) return;

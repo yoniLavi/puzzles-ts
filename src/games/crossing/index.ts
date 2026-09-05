@@ -35,7 +35,10 @@ import {
   releaseHighlightAfterEntry,
 } from "../../engine/note-taking-cell.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
-import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
+import {
+  pencilKeepHighlightPref,
+  stickyPencilPref,
+} from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_DOWN,
   CURSOR_SELECT,
@@ -659,6 +662,7 @@ export const crossingGame: Game<
       },
     },
     stickyPencilPref<CrossingUi>(),
+    pencilKeepHighlightPref<CrossingUi>(),
   ],
 
   colors: (defaultBackground: Color): Color[] => colors(defaultBackground),

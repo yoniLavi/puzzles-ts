@@ -312,6 +312,8 @@ export interface SeismicUi {
   /** Fork divergence (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): right-click toggles a *persistent* pencil
    * mode rather than a one-shot pencil selection. */
   pencilSticky: boolean;
+  /** Preference (default on): keep the mouse highlight after a pencil change. */
+  pencilKeepHighlight: boolean;
 }
 
 export function newUi(_state: SeismicState): SeismicUi {
@@ -320,6 +322,7 @@ export function newUi(_state: SeismicState): SeismicUi {
     cursorFromKeyboard: false,
     pencilMode: false,
     pencilSticky: true,
+    pencilKeepHighlight: true,
   };
 }
 

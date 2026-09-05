@@ -25,7 +25,10 @@ import {
   releaseHighlightAfterEntry,
 } from "../../engine/note-taking-cell.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
-import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
+import {
+  pencilKeepHighlightPref,
+  stickyPencilPref,
+} from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -421,7 +424,7 @@ export const abcdGame: Game<
   requestKeys,
   textFormat,
 
-  prefs: [stickyPencilPref<AbcdUi>()],
+  prefs: [stickyPencilPref<AbcdUi>(), pencilKeepHighlightPref<AbcdUi>()],
 
   colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,

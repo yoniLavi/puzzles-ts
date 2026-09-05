@@ -54,6 +54,7 @@ import {
 } from "../../engine/note-taking-cell.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
+import { pencilKeepHighlightPref } from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -924,17 +925,7 @@ export const groupGame: Game<
   requestKeys,
   textFormat,
 
-  prefs: [
-    {
-      kw: "pencil-keep-highlight",
-      name: "Keep mouse highlight after changing a pencil mark",
-      type: "boolean",
-      get: (ui) => ui.pencilKeepHighlight,
-      set: (ui, v) => {
-        ui.pencilKeepHighlight = v;
-      },
-    },
-  ],
+  prefs: [pencilKeepHighlightPref<GroupUi>()],
 
   colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,

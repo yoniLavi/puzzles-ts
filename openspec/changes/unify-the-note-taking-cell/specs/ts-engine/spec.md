@@ -53,6 +53,15 @@ without the rest of the mechanic. Where a game does not offer one of the pencil
 preferences, its behavior SHALL be derived from that absent declaration rather
 than from a roster of exempt games.
 
+**Every game in the mechanic SHALL offer both pencil preferences, defaulted the
+same way**, so that one gesture does one thing across the family and the player
+who wants the other still has it. The collection previously answered
+"does a mouse-driven pencil mark keep the highlight" two ways — five games kept
+it with no preference at all, six offered the preference and defaulted it off —
+which a player met as the same gesture behaving oppositely in two games of the
+same shape. Both halves SHALL be guarded over the derived population: the
+default, and that the preference is offered at all.
+
 Enrollment SHALL be **derived**: a game is in the mechanic iff its `Ui` carries
 the fields, read off its own `newUi` output. The engine SHALL fail the build for
 a game that carries them and does not route its press through the shared arm —
@@ -76,6 +85,12 @@ hand-written twelfth copy does not exist.
 
 - **WHEN** a player has latched pencil mode and enters a mark with the pointer
 - **THEN** pencil mode is still latched
+
+#### Scenario: The family answers a preference question once
+
+- **WHEN** a player makes the same mouse-driven pencil mark in any two games of
+  the mechanic, having changed no preferences
+- **THEN** the highlight behaves the same way in both
 
 #### Scenario: A game carrying the fields must use the mechanic
 

@@ -260,7 +260,7 @@ export function newUi(_state: GroupState): GroupUi {
     dragnum: 0,
     dragpos: 0,
     edgepos: 0,
-    pencilKeepHighlight: false,
+    pencilKeepHighlight: true,
   };
 }
 

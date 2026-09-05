@@ -218,9 +218,8 @@ describe("what a symbol entry does to the highlight", () => {
   });
 
   it("a missing keep-highlight preference reads as 'keep'", () => {
-    // The five games that do not offer the preference keep the highlight
-    // through a mouse-driven pencil change unconditionally. Derived from the
-    // game's own declaration — the absent field — not from a roster.
+    // The convention a game gets without declaring anything. All eleven declare
+    // it today; this is what a twelfth inherits.
     const u = ui({
       cursor: newCursor(1, 1, true),
       cursorFromKeyboard: false,
@@ -231,11 +230,8 @@ describe("what a symbol entry does to the highlight", () => {
     expect(u.cursor.visible).toBe(true);
   });
 
-  it("and a game that offers it, with it off, loses the highlight", () => {
-    // This is the split the module deliberately leaves standing: the six games
-    // that offer the preference default it **off**, so out of the box the same
-    // mouse-driven pencil mark keeps the highlight in Mathrax and loses it in
-    // Solo. Asserted so that resolving it is a visible change, not a drift.
+  it("and a player who turns it off loses the highlight", () => {
+    // The preference still does what it says; only the default moved.
     const u = ui({
       cursor: newCursor(1, 1, true),
       cursorFromKeyboard: false,
@@ -303,6 +299,31 @@ describe("the enrolled population is derived, not listed", () => {
 
   it("looked at the whole registry (vacuity guard)", () => {
     expect(registeredGameIds().length).toBe(57);
+  });
+
+  // The family used to answer this two ways: five games kept the highlight
+  // through a mouse-driven pencil mark with no preference at all, six offered
+  // the preference and defaulted it off. A player moving between Mathrax and
+  // Solo met opposite behavior for the same gesture. One answer now, and the
+  // preference everywhere so the answer is still the player's.
+  it("every member offers keep-highlight, defaulted on", () => {
+    const off: string[] = [];
+    const unoffered: string[] = [];
+    for (const id of enrolled()) {
+      const game = getTsGame(id) as AnyGame;
+      const params = game.defaultParams();
+      const desc = game.newDesc(params, randomNew(`keep-highlight-${id}`)).desc;
+      const u = game.newUi(game.newState(params, desc)) as Record<string, unknown>;
+      if (u["pencilKeepHighlight"] !== true) off.push(id);
+      if (!game.prefs?.some((p) => p.kw === "pencil-keep-highlight"))
+        unoffered.push(id);
+    }
+    expect(off, `${off.join(", ")}: keep-highlight is not on by default`).toEqual([]);
+    expect(
+      unoffered,
+      `${unoffered.join(", ")}: no pencil-keep-highlight preference, so a player ` +
+        "cannot turn it off — use pencilKeepHighlightPref()",
+    ).toEqual([]);
   });
 
   // The reverse direction, and the one a behavioral test structurally cannot

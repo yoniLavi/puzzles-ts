@@ -486,7 +486,7 @@ export function newUi(_state: UndeadState): UndeadUi {
     pencilMode: false,
     cursorFromKeyboard: false,
     ascii: false,
-    pencilKeepHighlight: false,
+    pencilKeepHighlight: true,
     pencilSticky: true,
     countStyle: COUNT_STYLE_REMAINING_TOTAL,
   };

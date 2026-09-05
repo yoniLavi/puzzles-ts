@@ -101,8 +101,15 @@ reports `"moved"` / `"unmoved"` / `null`; `releaseHighlightAfterEntry` and
 `noOpEntryResult` are what a symbol entry does to the highlight, which is where
 the two pencil preferences meet the keyboard. Same test and same line as
 `border-grid.ts`: the game keeps its coordinates, its symbol vocabulary and its
-own `Move`. Its header records what was evaluated and declined, and the
-`pencilKeepHighlight` default split it deliberately leaves standing.
+own `Move`. Its header records what was evaluated and declined.
+
+**Both pencil preferences are on by default across the family, and every member
+offers both**, so a player who moves between two of these games meets the same
+gesture doing the same thing. That was not true until `unify-the-note-taking-cell`:
+five games kept the mouse highlight through a pencil mark with no preference at
+all, and six offered the preference defaulted *off*. Guarded in
+`note-taking-cell.test.ts` over the derived population, both halves — the
+default and the preference's existence.
 
 ### `grid/index.ts` — planar-grid geometry (upstream `grid.c`)
 

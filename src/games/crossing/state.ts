@@ -704,6 +704,8 @@ export interface CrossingUi {
    * CapsLock-style toggle with an on-screen indicator) rather than upstream's
    * per-cell pencil select. Matches Keen/Towers/Solo/ABCD/Mathrax/Unequal. */
   pencilSticky: boolean;
+  /** Preference (default on): keep the mouse highlight after a pencil change. */
+  pencilKeepHighlight: boolean;
 }
 
 export function newUi(_state: CrossingState): CrossingUi {
@@ -717,6 +719,7 @@ export function newUi(_state: CrossingState): CrossingUi {
     highlightRuns: true,
     autoAdvance: true,
     pencilSticky: true,
+    pencilKeepHighlight: true,
   };
 }
 

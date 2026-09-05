@@ -29,7 +29,10 @@ import {
   releaseHighlightAfterEntry,
 } from "../../engine/note-taking-cell.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
-import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
+import {
+  pencilKeepHighlightPref,
+  stickyPencilPref,
+} from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -387,7 +390,7 @@ export const seismicGame: Game<
   requestKeys: (p): KeyLabel[] => digitKeys(maxGeneratedRegionSize(p.mode)),
   textFormat,
 
-  prefs: [stickyPencilPref<SeismicUi>()],
+  prefs: [stickyPencilPref<SeismicUi>(), pencilKeepHighlightPref<SeismicUi>()],
 
   colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,

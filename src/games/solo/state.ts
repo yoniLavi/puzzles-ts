@@ -877,7 +877,7 @@ export function newUi(_state: SoloState): SoloUi {
     cursor: newCursor(),
     pencilMode: false,
     cursorFromKeyboard: false,
-    pencilKeepHighlight: false,
+    pencilKeepHighlight: true,
     pencilSticky: true,
     // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its
     // row/column/block notes. Notes clear only via the mark-all button or a hint;

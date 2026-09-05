@@ -425,6 +425,8 @@ export interface AbcdUi {
    * CapsLock-style toggle with an on-screen indicator), rather than upstream's
    * per-cell pencil select. Matches Keen/Towers/Solo/Mathrax/Unequal/Undead. */
   pencilSticky: boolean;
+  /** Preference (default on): keep the mouse highlight after a pencil change. */
+  pencilKeepHighlight: boolean;
 }
 
 export function newUi(_state: AbcdState): AbcdUi {
@@ -433,6 +435,7 @@ export function newUi(_state: AbcdState): AbcdUi {
     pencilMode: false,
     cursorFromKeyboard: false,
     pencilSticky: true,
+    pencilKeepHighlight: true,
   };
 }
 

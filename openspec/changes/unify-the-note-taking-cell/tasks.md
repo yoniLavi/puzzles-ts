@@ -82,28 +82,41 @@ listed by hand where a guard needs the set (a game carrying a pencil-mode flag
       reflow-residue reporting the real sweep needed. Proven both ways: 44
       renamed files fold back clean, and a planted unrelated edit is named.
 
-## 5. For the owner — three standardizations and one split
+## 5. Four player-visible calls, all made — DONE
 
 Each replaced a disagreement no game could explain in terms of its puzzle, which
-is AGENTS.md's test for whether a difference is real. All are player-visible, so
-they are the acceptance gate, not the refactor's to assume:
+is AGENTS.md's test for whether a difference is real. Put to the owner
+2026-09-05, who asked for acceptance testing only where the better answer was
+genuinely unclear; it was not, on any of these. Recorded here because they are
+what a reader of this change most needs to know.
 
-- [ ] 5.1 **A press moves the highlight to the pressed cell**, and the cell
+- [x] 5.1 **A press moves the highlight to the pressed cell**, and the cell
       decides only whether it is shown. Five games moved it, five left it
-      behind, Towers did both. Observable via the next arrow key.
-- [ ] 5.2 **The highlight is shown only where the current mode could write.**
+      behind, Towers did both. Verified in Chrome on Solo: clicking a given then
+      pressing ↓ resumes from the given.
+- [x] 5.2 **The highlight is shown only where the current mode could write.**
       Crossing alone had the clause; elsewhere a sticky-mode left press onto a
       filled cell lit a highlight no keystroke could act on.
-- [ ] 5.3 **A right press putting the highlight away no longer clears pencil
-      mode**, and neither does a mouse-driven pencil entry. Only Undead did
-      either, and the second contradicted its own sticky-pencil preference —
-      whose label promises the mode "stays on until right-clicked again".
-- [ ] 5.4 **A split left standing, on purpose.** The six games offering
-      `pencilKeepHighlight` default it **off**; the five that do not offer it
-      behave as if it were on. So the same mouse-driven pencil mark keeps the
-      highlight in Mathrax and loses it in Solo. Which default is right is a
-      thing a player feels. The rule now lives in one place, so the answer is a
-      one-line change whenever it comes.
+- [x] 5.3 **Putting the highlight away no longer clears pencil mode**, on either
+      arm. Only Undead did that, and the entry arm's version contradicted its own
+      sticky-pencil preference — whose label promises the mode "stays on until
+      right-clicked again". Verified in Chrome: the indicator survives a
+      mouse-driven mark.
+- [x] 5.4 **The keep-highlight split is resolved, not left standing.** Six games
+      offered the preference defaulted **off**; five offered none and behaved as
+      if it were on. Keeping the highlight is the better default — entering two
+      or three candidates in a row is the ordinary case with a mouse, and
+      re-clicking between each is the annoyance the preference exists to remove
+      — so the six flipped and the five gained the preference. Every player can
+      still choose; nobody chooses twice for the same family. Guarded over the
+      derived population, both halves proven to fail.
+
+## 6. Also found and fixed while here
+
+- [x] 6.1 Group hand-wrote the keep-highlight preference inline rather than
+      calling `pencilKeepHighlightPref()`. The label matched, so
+      `pencil-prefs.test.ts` passed — it guards drift, which is what it claims —
+      but a copy is a copy. It calls the helper now.
 
 ## Standing constraints
 

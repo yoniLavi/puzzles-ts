@@ -30,7 +30,10 @@ import {
   releaseHighlightAfterEntry,
 } from "../../engine/note-taking-cell.ts";
 import { parseConfigInt } from "../../engine/params.ts";
-import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
+import {
+  pencilKeepHighlightPref,
+  stickyPencilPref,
+} from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -454,7 +457,7 @@ export const saladGame: Game<
   statusbarText: (s) =>
     symbolRange({ order: s.order, nums: s.nums, mode: s.mode, diff: s.diff }),
 
-  prefs: [stickyPencilPref<SaladUi>()],
+  prefs: [stickyPencilPref<SaladUi>(), pencilKeepHighlightPref<SaladUi>()],
 
   colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,
