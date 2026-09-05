@@ -10,71 +10,92 @@ towers, undead, unequal.** Named rather than counted, and derived rather than
 listed by hand where a guard needs the set (a game carrying a pencil-mode flag
 *is* the membership test).
 
-## 1. Fold the vocabulary first, alone, and prove the diff is nothing else
+## 1. Fold the vocabulary first, alone, and prove the diff is nothing else — DONE
 
-Do this as its own commit, before any extraction: a rename mixed into a refactor
-is a diff nobody can review by shape.
+- [x] 1.1 `hpencil`/`cpencil` → `pencilMode`; `hcursor`/`ckey` →
+      `cursorFromKeyboard`. `pencilMode` was not a coinage: eight of the eleven
+      renderers already called the same concept `pencilModeShown`.
+- [x] 1.2 Verified by shape. No file mixes the camps, so the map is invertible
+      per file: 371 occurrences across 42 files fold back byte-identically. The
+      longer names then made biome reflow seven files, so each was folded back,
+      re-formatted and compared to HEAD — 40 byte-identical, 2 identical once
+      line breaks and biome's inserted trailing commas are ignored.
+- [x] 1.3 Re-checked: none of the eleven implements `encodeUi`, so `saveGame`
+      writes no `ui` at all; prefs persist under `GamePref.kw`.
+- [x] 1.4 Byte-clean, no snapshot re-baselined.
+- [x] 1.5 **Not planned, found on the way:** Ascent carries the same
+      cursor-provenance fact under a third spelling and the *opposite* polarity
+      (`cursorFromMouse`). Inverted in its own commit, with the test that pins
+      it — Ascent's suite never pressed an arrow, so the inversion would have
+      shipped green either way.
+- [x] 1.6 **Also found:** five doc comments describing fields
+      `unify-cross-game-vocabulary` had deleted, each silently documenting the
+      member below it. Cleared, and `asset-integrity.test.ts` gained a source
+      scan so the shape cannot come back.
 
-- [ ] 1.1 One name for the transient pencil flag (`hpencil` / `cpencil` → one)
-      and one for its keyboard-cursor companion (`hcursor` / `ckey` → one).
-      Pick the name from what it *means*, not from which camp is bigger.
-- [ ] 1.2 **Verify the bulk edit by shape, not by a green suite** (AGENTS.md §
-      "Method"): assert every changed line in the whole diff is the one intended
-      kind of change, then read the exceptions. The `spelling-fold.mjs` idiom —
-      fold stdin and diff — is the proof that a respelling diff is nothing else.
-- [ ] 1.3 Confirm no player data sees it: no game among the eleven implements
-      `encodeUi` (so `Midend.saveGame` writes no `ui`), and prefs persist under
-      `GamePref.kw`. **Re-run both checks**; do not cite the proposal.
-- [ ] 1.4 The eleven differentials and render snapshots pass **byte-clean**. A
-      re-baselined snapshot here means the rename changed behavior.
+## 2. Extract the mechanic into `src/engine/note-taking-cell.ts` — DONE
 
-## 2. Extract the mechanic into `src/engine/note-taking-cell.ts`
+- [x] 2.1 Module doc states what lives here and what does not, to
+      `border-grid.ts`'s test.
+- [x] 2.2 The press arm — `pressNoteTakingCell`, taking `CellEntry`'s two
+      predicates and reporting `"moved"` / `"unmoved"` / `null`. It returns no
+      move.
+- [x] 2.3 The entry arm, **narrower than planned and deliberately so.** Only
+      what happens to the *highlight* moved (`releaseHighlightAfterEntry`,
+      `noOpEntryResult`); the keystroke decoding and the no-op predicate stay
+      with the game, because they read its own grid and marks.
+- [x] 2.4 Group, which offers no `pencilSticky`, is handled by
+      `ui.pencilSticky ?? false` — the game's own declaration, no roster.
+- [x] 2.5 All eleven converted.
+- [x] 2.6 No-go recorded in the module header: the ~28-line clone that survives
+      between Keen, Solo, Towers and Unequal is the *move literal*, and lifting
+      it would mean a shared `Move` — which `border-grid.ts` already refused,
+      because it couples save formats that have no reason to be identical.
 
-- [ ] 2.1 Write the module doc comment first, stating **what lives here and what
-      does not**, to `border-grid.ts`'s test: *would a change here have to happen
-      in every copy at once?* Not "is this the same text".
-- [ ] 2.2 **The press arm.** Takes the two per-game predicates — *can this cell
-      take a real entry?* and *can this cell take a pencil mark?* — and reports
-      what happened to the highlight. It returns no move.
-- [ ] 2.3 **The entry arm.** Takes a symbol the game already decoded and reports
-      *set / pencil / clear at this cell, or nothing*, with the no-op
-      suppression and the hide-the-highlight-if-the-pointer-drove-it rule in one
-      place. It returns no move; each game builds its own.
-- [ ] 2.4 Sticky pencil must be correct for **Group**, which offers no
-      `pencilSticky` field at all — derived from the game's own declaration, not
-      from an exemption roster.
-- [ ] 2.5 Convert the games one at a time, in the order abcd → keen → solo →
-      towers → unequal → mathrax → seismic → salad → crossing → undead → group.
-      Abcd first because it asks neither predicate (nothing is immutable);
-      Crossing, Undead and Group last because each layers something real on top.
-- [ ] 2.6 **Record every no-go with its reason**, the way `unify-hint-framework`
-      did. An arm that will not fit without contortion stays with its game and
-      says why — game-specific logic is never bent to fit a contract.
+## 3. Guard it structurally, and prove the guard fails — DONE
 
-## 3. Guard it structurally, and prove the guard fails
-
-- [ ] 3.1 A guard finding the mechanic by **shape** rather than by name, as
-      `cursor-vocabulary.test.ts` finds a cursor off `newCursor()` — so a twelfth
-      spelling is caught as surely as the two that were there. **Key on the
-      shape; the narrowing is the error.**
-- [ ] 3.2 Carry a vacuity guard: assert how many games the sweep looked at.
-- [ ] 3.3 **Break it deliberately, watch it go red, restore.** A guard nobody has
-      seen fail is a guard nobody has seen work.
-- [ ] 3.4 Re-run the `jscpd` measurement over the eleven and record the new
-      figure in the change. `border-grid.ts`'s doc comment claims 466 lines is
-      the repository's largest cross-game duplication; correct that sentence to
-      whatever is true when this lands.
+- [x] 3.1 Enrollment is derived from the *shape* of each game's `newUi()`, plus
+      a source scan asserting every enrolled game actually calls the arm.
+- [x] 3.2 Vacuity guards on both: the registry count and the scanned file count.
+- [x] 3.3 Proven to fail three times — reverting standardization 1, renaming
+      Salad's call site, and flipping the missing-preference default.
+- [x] 3.4 Measured: the eleven `index.ts` files go 514 → 331 (press arm) → 317
+      (entry rules). Folding the retired spellings now moves the figure by zero
+      where it used to move it by 53. `border-grid.ts`'s "largest cross-game
+      duplication" claim is deleted rather than transferred, and its own figure
+      re-measured (466 → 213) and dated.
 
 ## 4. Documentation and specs
 
-- [ ] 4.1 `docs/games/mechanics.md` § "Pencil marks: the full note-taking UX" —
-      point at the module, keep the normative rule in the spec.
-- [ ] 4.2 `docs/games/engine-catalog.md` — the new helper, and when to reach for
-      it.
+- [x] 4.1 `docs/games/mechanics.md` § "Pencil marks: the full note-taking UX".
+- [x] 4.2 `docs/games/engine-catalog.md`.
 - [ ] 4.3 `ts-engine` spec delta: prefer `ADDED` (this adds a concern; it does
       not alter an existing rule). Before any `MODIFIED`, grep the live spec for
       the sentence you mean to change and confirm which requirement holds it.
 - [ ] 4.4 `repo-layout` spec: the module's place in the flat engine namespace.
+
+## 5. For the owner — three standardizations and one split
+
+Each replaced a disagreement no game could explain in terms of its puzzle, which
+is AGENTS.md's test for whether a difference is real. All are player-visible, so
+they are the acceptance gate, not the refactor's to assume:
+
+- [ ] 5.1 **A press moves the highlight to the pressed cell**, and the cell
+      decides only whether it is shown. Five games moved it, five left it
+      behind, Towers did both. Observable via the next arrow key.
+- [ ] 5.2 **The highlight is shown only where the current mode could write.**
+      Crossing alone had the clause; elsewhere a sticky-mode left press onto a
+      filled cell lit a highlight no keystroke could act on.
+- [ ] 5.3 **A right press putting the highlight away no longer clears pencil
+      mode**, and neither does a mouse-driven pencil entry. Only Undead did
+      either, and the second contradicted its own sticky-pencil preference —
+      whose label promises the mode "stays on until right-clicked again".
+- [ ] 5.4 **A split left standing, on purpose.** The six games offering
+      `pencilKeepHighlight` default it **off**; the five that do not offer it
+      behave as if it were on. So the same mouse-driven pencil mark keeps the
+      highlight in Mathrax and loses it in Solo. Which default is right is a
+      thing a player feels. The rule now lives in one place, so the answer is a
+      one-line change whenever it comes.
 
 ## Standing constraints
 

@@ -31,7 +31,11 @@ import {
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import { clearKey } from "../../engine/key-labels.ts";
-import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
+import {
+  noOpEntryResult,
+  pressNoteTakingCell,
+  releaseHighlightAfterEntry,
+} from "../../engine/note-taking-cell.ts";
 import {
   pencilKeepHighlightPref,
   stickyPencilPref,
@@ -204,9 +208,8 @@ function interpretMove(
       // sentinel value here, not as a button the frontend sent.
       if (ccLocal >= 0 && state.guess[xi] === 1 << ccLocal) ccLocal = DELETE;
       const place = (monster: number): UndeadMove | null | UiUpdate => {
-        if (!ui.cursorFromKeyboard) ui.cursor.visible = false;
-        if (state.guess[xi] === monster)
-          return ui.cursorFromKeyboard ? null : UI_UPDATE;
+        if (state.guess[xi] === monster) return noOpEntryResult(ui);
+        releaseHighlightAfterEntry(ui);
         return { type: "set", cell: xi, monster };
       };
       if (button === KEY_G || button === KEY_g || button === KEY_1 || ccLocal === 0)
@@ -223,9 +226,9 @@ function interpretMove(
         isEraseKey(button) ||
         ccLocal === DELETE
       ) {
-        if (!ui.cursorFromKeyboard) ui.cursor.visible = false;
         if (state.guess[xi] === MON_NONE && state.pencils[xi] === 0)
-          return ui.cursorFromKeyboard ? null : UI_UPDATE;
+          return noOpEntryResult(ui);
+        releaseHighlightAfterEntry(ui);
         return { type: "clear", cell: xi };
       }
     }
@@ -270,14 +273,16 @@ function interpretMove(
         button === KEY_0 ||
         isEraseKey(button)
       ) {
-        if (state.pencils[xi] === 0) return ui.cursorFromKeyboard ? null : UI_UPDATE;
+        if (state.pencils[xi] === 0) return noOpEntryResult(ui);
         move = { type: "clear", cell: xi };
       }
       if (move) {
-        if (!ui.cursorFromKeyboard && !(ui.pencilMode && ui.pencilKeepHighlight)) {
-          ui.pencilMode = false;
-          ui.cursor.visible = false;
-        }
+        // Undead used to clear `pencilMode` here as well as hiding the
+        // highlight, which contradicted its own sticky-pencil preference —
+        // whose label promises the mode "stays on until right-clicked again"
+        // and which is on by default. One mouse-driven pencil mark turned it
+        // off. The shared rule keeps the mode.
+        releaseHighlightAfterEntry(ui);
         return move;
       }
     }

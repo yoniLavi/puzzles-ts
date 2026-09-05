@@ -46,7 +46,11 @@ import {
   rowColRegions,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
-import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
+import {
+  noOpEntryResult,
+  pressNoteTakingCell,
+  releaseHighlightAfterEntry,
+} from "../../engine/note-taking-cell.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import {
   autoPencilPref,
@@ -265,17 +269,11 @@ function interpretMove(
     if (state.immutable[i]) return null;
 
     // No-op: setting a square to what it already holds (and no pencil marks).
-    if ((!ui.pencilMode || n === 0) && state.grid[i] === n && state.pencil[i] === 0) {
-      if (!ui.cursorFromKeyboard) {
-        ui.cursor.visible = false;
-        return UI_UPDATE;
-      }
-      return null;
-    }
+    if ((!ui.pencilMode || n === 0) && state.grid[i] === n && state.pencil[i] === 0)
+      return noOpEntryResult(ui);
 
     const pencil = ui.pencilMode && n > 0;
-    if (!ui.cursorFromKeyboard && !(ui.pencilMode && ui.pencilKeepHighlight))
-      ui.cursor.visible = false;
+    releaseHighlightAfterEntry(ui);
     // Auto-pencil applies only to a real placement, not a pencil toggle.
     return pencil
       ? { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil }

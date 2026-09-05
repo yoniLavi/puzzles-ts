@@ -29,7 +29,11 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
-import { highlightIsOn, pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
+import {
+  highlightIsOn,
+  pressNoteTakingCell,
+  releaseHighlightAfterEntry,
+} from "../../engine/note-taking-cell.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
@@ -273,10 +277,10 @@ function interpretMove(
       // Keep the selection up so the next digit lands where it is shown; a
       // mouse-driven entry would otherwise dismiss it (upstream, below).
       ui.cursor.visible = true;
-    } else if (!ui.cursorFromKeyboard && !ui.pencilMode) {
+    } else {
       // Upstream: a mouse-driven ink entry hides the selection again; the
       // keyboard cursor and pencil mode both persist.
-      ui.cursor.visible = false;
+      releaseHighlightAfterEntry(ui);
     }
     return move;
   }

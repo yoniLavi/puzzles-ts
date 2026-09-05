@@ -26,7 +26,10 @@ import {
 } from "../../engine/game.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import { rowColRegions } from "../../engine/latin-hint.ts";
-import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
+import {
+  pressNoteTakingCell,
+  releaseHighlightAfterEntry,
+} from "../../engine/note-taking-cell.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
@@ -197,7 +200,7 @@ function interpretMove(
     }
     if (state.flags[i] & F_IMMUTABLE) return null;
 
-    if (!ui.cursorFromKeyboard && !ui.pencilMode) ui.cursor.visible = false;
+    releaseHighlightAfterEntry(ui);
     return { type: "set", x: ui.cursor.x, y: ui.cursor.y, n: c, pencil: ui.pencilMode };
   }
 

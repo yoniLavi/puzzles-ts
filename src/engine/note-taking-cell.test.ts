@@ -35,11 +35,13 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import { registerAllGames } from "../games/index.ts";
-import type { Game } from "./game.ts";
+import { type Game, UI_UPDATE } from "./game.ts";
 import {
   type CellEntry,
   type NoteTakingUi,
+  noOpEntryResult,
   pressNoteTakingCell,
+  releaseHighlightAfterEntry,
 } from "./note-taking-cell.ts";
 import { LEFT_BUTTON, MIDDLE_BUTTON, newCursor, RIGHT_BUTTON } from "./pointer.ts";
 import { randomNew } from "./random/index.ts";
@@ -185,6 +187,77 @@ describe("the highlight is shown only where the current mode could write", () =>
     const u = ui({ cursor: newCursor(2, 3, true) });
     expect(pressNoteTakingCell(u, LEFT_BUTTON, 2, 3, OPEN)).toBe("unmoved");
     expect(pressNoteTakingCell(u, LEFT_BUTTON, 2, 3, OPEN)).toBe("moved");
+  });
+});
+
+describe("what a symbol entry does to the highlight", () => {
+  it("a no-op keystroke still puts a mouse-driven highlight away", () => {
+    // Not simply `null`: there is a frame to repaint even though the board did
+    // not move. Seismic returned a bare `null` here while the other ten hid it.
+    const u = ui({ cursor: newCursor(1, 1, true), cursorFromKeyboard: false });
+    expect(noOpEntryResult(u)).toBe(UI_UPDATE);
+    expect(u.cursor.visible).toBe(false);
+  });
+
+  it("a no-op keystroke leaves a keyboard-driven highlight alone", () => {
+    const u = ui({ cursor: newCursor(1, 1, true), cursorFromKeyboard: true });
+    expect(noOpEntryResult(u)).toBeNull();
+    expect(u.cursor.visible).toBe(true);
+  });
+
+  it("a real entry keeps the highlight when the keyboard is driving", () => {
+    const u = ui({ cursor: newCursor(1, 1, true), cursorFromKeyboard: true });
+    releaseHighlightAfterEntry(u);
+    expect(u.cursor.visible).toBe(true);
+  });
+
+  it("a mouse-driven ink entry puts the highlight away", () => {
+    const u = ui({ cursor: newCursor(1, 1, true), cursorFromKeyboard: false });
+    releaseHighlightAfterEntry(u);
+    expect(u.cursor.visible).toBe(false);
+  });
+
+  it("a missing keep-highlight preference reads as 'keep'", () => {
+    // The five games that do not offer the preference keep the highlight
+    // through a mouse-driven pencil change unconditionally. Derived from the
+    // game's own declaration — the absent field — not from a roster.
+    const u = ui({
+      cursor: newCursor(1, 1, true),
+      cursorFromKeyboard: false,
+      pencilMode: true,
+    });
+    expect(u.pencilKeepHighlight).toBeUndefined();
+    releaseHighlightAfterEntry(u);
+    expect(u.cursor.visible).toBe(true);
+  });
+
+  it("and a game that offers it, with it off, loses the highlight", () => {
+    // This is the split the module deliberately leaves standing: the six games
+    // that offer the preference default it **off**, so out of the box the same
+    // mouse-driven pencil mark keeps the highlight in Mathrax and loses it in
+    // Solo. Asserted so that resolving it is a visible change, not a drift.
+    const u = ui({
+      cursor: newCursor(1, 1, true),
+      cursorFromKeyboard: false,
+      pencilMode: true,
+      pencilKeepHighlight: false,
+    });
+    releaseHighlightAfterEntry(u);
+    expect(u.cursor.visible).toBe(false);
+  });
+
+  it("never clears pencil mode", () => {
+    // Undead used to, which contradicted its own sticky-pencil preference:
+    // the label promises the mode "stays on until right-clicked again", and it
+    // is on by default, yet one mouse-driven pencil mark turned it off.
+    const u = ui({
+      cursor: newCursor(1, 1, true),
+      cursorFromKeyboard: false,
+      pencilMode: true,
+      pencilKeepHighlight: false,
+    });
+    releaseHighlightAfterEntry(u);
+    expect(u.pencilMode).toBe(true);
   });
 });
 

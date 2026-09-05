@@ -20,7 +20,10 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { clearKey } from "../../engine/key-labels.ts";
-import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
+import {
+  pressNoteTakingCell,
+  releaseHighlightAfterEntry,
+} from "../../engine/note-taking-cell.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
@@ -198,7 +201,7 @@ function interpretMove(
           : { type: "enter", x: ui.cursor.x, y: ui.cursor.y, letter };
 
     // Hide the mouse cursor after an entry (keyboard/pencil cursors persist).
-    if (!ui.cursorFromKeyboard && !ui.pencilMode) ui.cursor.visible = false;
+    releaseHighlightAfterEntry(ui);
     return move;
   }
 

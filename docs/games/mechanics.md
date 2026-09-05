@@ -554,12 +554,25 @@ just keyboard. Exemplar: [`towers/index.ts`](../../src/games/towers/index.ts).
   only the keyword and plumbing is the honest amount to share — a copied
   player-visible label is a label that drifts, and `pencil-prefs.test.ts`
   fails on a divergent copy.
+- **Do not write the pointer arm by hand** — call
+  [`engine/note-taking-cell.ts`](../../src/engine/note-taking-cell.ts)'s
+  `pressNoteTakingCell`, which is the mechanic itself, shared by all eleven
+  games that carry it. You supply two predicates about the cell (`canEnter`,
+  `canMark`) and your own coordinates; it resolves the press and reports
+  `"moved"` / `"unmoved"` / `null` so a game layering something on the
+  selection (Crossing's across/down snap, Group's multifill anchors) can hang
+  it off the result. `releaseHighlightAfterEntry` and `noOpEntryResult` are the
+  matching rules for what a symbol *entry* does to the highlight — the
+  keystroke decoding and the no-op predicate stay yours, because they read your
+  grid. A game carrying `ui.pencilMode` and `ui.cursorFromKeyboard` without
+  calling `pressNoteTakingCell` fails `note-taking-cell.test.ts`; this used to
+  be eleven copies, and it is one now.
 - **Sticky pencil mode** — a `pencilSticky` `Ui` boolean (default true) via
   `prefs`: right-click toggles a persistent pencil mode; left-click only moves
   the highlight. The keyboard is already mode-persistent; this unifies the
   mouse with it. A right-click on a filled/given cell toggles the mode but
   must **not** select or restyle that cell — it can't take a mark, so
-  highlighting it only confuses.
+  highlighting it only confuses. All of that is the shared arm's, not yours.
 - **A CapsLock-style mode indicator** — a fixed pencil glyph whenever the mode
   is on. Placement is a rendering problem with three known answers (cache-safe
   cell bit, explicit end-of-redraw repaint, or grow the canvas below the board

@@ -24,7 +24,10 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
-import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
+import {
+  pressNoteTakingCell,
+  releaseHighlightAfterEntry,
+} from "../../engine/note-taking-cell.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
@@ -168,7 +171,7 @@ function interpretMove(
     if (flags[i] & FM_FIXED) return null;
 
     // A mouse-driven entry puts the highlight away; a keyboard one keeps it.
-    if (!ui.cursorFromKeyboard && !ui.pencilMode) ui.cursor.visible = false;
+    releaseHighlightAfterEntry(ui);
     return { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil: ui.pencilMode };
   }
 

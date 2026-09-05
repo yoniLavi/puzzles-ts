@@ -44,7 +44,11 @@ import {
   type LatinVocab,
   narrateForcingChain,
 } from "../../engine/latin-hint.ts";
-import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
+import {
+  noOpEntryResult,
+  pressNoteTakingCell,
+  releaseHighlightAfterEntry,
+} from "../../engine/note-taking-cell.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
@@ -241,17 +245,11 @@ function interpretMove(
 
     // No-op: re-entering the value the cell already holds (or clearing an empty
     // cell) with no pencil marks to wipe.
-    if ((!ui.pencilMode || n === 0) && state.grid[i] === n && state.pencil[i] === 0) {
-      if (!ui.cursorFromKeyboard) {
-        ui.cursor.visible = false;
-        return UI_UPDATE;
-      }
-      return null;
-    }
+    if ((!ui.pencilMode || n === 0) && state.grid[i] === n && state.pencil[i] === 0)
+      return noOpEntryResult(ui);
 
     const pencil = ui.pencilMode && n > 0;
-    if (!ui.cursorFromKeyboard && !(ui.pencilMode && ui.pencilKeepHighlight))
-      ui.cursor.visible = false;
+    releaseHighlightAfterEntry(ui);
     return pencil
       ? { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil }
       : {

@@ -30,8 +30,20 @@
  * games spelled those two predicates eleven ways — `immutable`, a flag bit,
  * `!walls[i]`, a clue ring, "is it still empty" — and that is a real difference
  * about the puzzle. Everything around them was not.
+ *
+ * WHAT WAS EVALUATED AND DECLINED, recorded so it is not re-proposed each time.
+ * After both arms moved here, `jscpd` still reports a ~28-line clone between
+ * Keen, Solo, Towers and Unequal's entry blocks. It is the *move literal* —
+ * `{ type: "set", x, y, n, pencil, autoElim }` — plus the two predicates around
+ * it that read each game's own `grid` and `pencil` arrays. Lifting it would mean
+ * a shared `Move`, and `border-grid.ts` already answered that: the shared code
+ * reports what the player did and never a move, because a shared move type
+ * couples save formats that have no reason to be identical. The remaining
+ * duplication is four games agreeing about their own data, which is where the
+ * line is.
  */
 
+import { UI_UPDATE, type UiUpdate } from "./game.ts";
 import type { GridCursor } from "./pointer.ts";
 import { LEFT_BUTTON, RIGHT_BUTTON } from "./pointer.ts";
 
@@ -53,6 +65,10 @@ export interface NoteTakingUi {
   cursorFromKeyboard: boolean;
   /** The fork's CapsLock-style pencil toggle, where the game offers it. */
   pencilSticky?: boolean;
+  /** Keep the mouse highlight through a pencil change, where the game offers
+   * the preference. See {@link releaseHighlightAfterEntry} for why its absence
+   * reads as `true`, and for the split that leaves standing. */
+  pencilKeepHighlight?: boolean;
 }
 
 /** What the game says about the cell under the press. */
@@ -155,4 +171,51 @@ export function pressNoteTakingCell(
   ui.cursor.y = y;
   ui.cursor.visible = ui.pencilMode ? cell.canMark : cell.canEnter;
   return "moved";
+}
+
+// --- what a symbol entry does to the highlight ------------------------------
+//
+// The *decoding* of a keystroke is each game's own — digits to `w`, letters
+// past nine, circles and crosses, ghosts and vampires — and so is the predicate
+// that decides whether a write is a no-op, because it reads that game's grid
+// and marks. What is shared is only what happens to the **highlight**, which is
+// where the fork's two pencil preferences meet the keyboard.
+
+/**
+ * What `interpretMove` should return for a keystroke that would write what is
+ * already there.
+ *
+ * Not simply `null`: a mouse-driven entry still puts the highlight away, so
+ * there is a frame to repaint even though the board did not move. Writing this
+ * by hand is how Seismic came to return a bare `null` while the other ten
+ * hid the highlight.
+ */
+export function noOpEntryResult(ui: NoteTakingUi): UiUpdate | null {
+  if (ui.cursorFromKeyboard) return null;
+  ui.cursor.visible = false;
+  return UI_UPDATE;
+}
+
+/**
+ * Put the highlight away after a real entry — unless the keyboard is driving
+ * it, or this was a pencil change the player asked to keep the highlight
+ * through.
+ *
+ * **A missing `pencilKeepHighlight` reads as `true`**, derived from the game's
+ * own declaration rather than from a roster here: the five games that do not
+ * offer the preference (Abcd, Crossing, Mathrax, Salad, Seismic) keep the
+ * highlight through a pencil change unconditionally, and this reproduces them
+ * exactly.
+ *
+ * **That leaves a split standing, deliberately.** The six games that *do* offer
+ * the preference default it **off**, so out of the box the same mouse-driven
+ * pencil mark keeps the highlight in Mathrax and loses it in Solo. Which
+ * default is right is a thing a player feels, so it is the owner's call and not
+ * a refactor's — recorded here rather than quietly resolved, and the rule is in
+ * one place now so resolving it is a one-line change when the answer comes.
+ */
+export function releaseHighlightAfterEntry(ui: NoteTakingUi): void {
+  if (ui.cursorFromKeyboard) return;
+  if (ui.pencilMode && (ui.pencilKeepHighlight ?? true)) return;
+  ui.cursor.visible = false;
 }

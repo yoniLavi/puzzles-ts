@@ -25,7 +25,10 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { clearKey } from "../../engine/key-labels.ts";
-import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
+import {
+  pressNoteTakingCell,
+  releaseHighlightAfterEntry,
+} from "../../engine/note-taking-cell.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
@@ -191,7 +194,7 @@ function interpretMove(
     const type = ui.pencilMode ? "pencil" : "set";
     /** Upstream: a mouse-driven real entry drops the highlight afterwards. */
     const commit = (value: SaladEntry): SaladMove => {
-      if (!ui.cursorFromKeyboard && !ui.pencilMode) ui.cursor.visible = false;
+      releaseHighlightAfterEntry(ui);
       return { type, x: ui.cursor.x, y: ui.cursor.y, value };
     };
 

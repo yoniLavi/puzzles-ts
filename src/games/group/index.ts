@@ -48,7 +48,10 @@ import {
   type SingleReason,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
-import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
+import {
+  pressNoteTakingCell,
+  releaseHighlightAfterEntry,
+} from "../../engine/note-taking-cell.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
@@ -291,8 +294,7 @@ function interpretMove(
     const type = ui.pencilMode && n > 0 ? "pencil" : "set";
     // Hide a mouse-generated highlight after a keypress, unless a pencil change
     // and the keep-highlight preference is set.
-    if (!ui.cursorFromKeyboard && !(ui.pencilMode && ui.pencilKeepHighlight))
-      ui.cursor.visible = false;
+    releaseHighlightAfterEntry(ui);
     return { type, cells, n };
   }
 

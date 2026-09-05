@@ -91,6 +91,19 @@ cycle*, never a move, so two save formats aren't coupled). Its header states
 the sharing test worth reusing anywhere: not "are these the same text" but
 *"would a change here have to happen in both games at once?"*
 
+### `note-taking-cell.ts` — the shared highlight-and-type mechanic
+
+The pointer half of *highlight a cell, type a value into it, pencil candidate
+marks in it*, shared by the eleven games that carry `ui.pencilMode` and
+`ui.cursorFromKeyboard`. `pressNoteTakingCell` resolves a left or right press
+against two predicates the game supplies — `canEnter` and `canMark` — and
+reports `"moved"` / `"unmoved"` / `null`; `releaseHighlightAfterEntry` and
+`noOpEntryResult` are what a symbol entry does to the highlight, which is where
+the two pencil preferences meet the keyboard. Same test and same line as
+`border-grid.ts`: the game keeps its coordinates, its symbol vocabulary and its
+own `Move`. Its header records what was evaluated and declined, and the
+`pencilKeepHighlight` default split it deliberately leaves standing.
+
 ### `grid/index.ts` — planar-grid geometry (upstream `grid.c`)
 
 `Grid`/`GridFace`/`GridEdge`/`GridDot` with full reference incidence (an edge
