@@ -1,0 +1,4 @@
+# The deltas were written after the extraction, on purpose: the requirement
+# should state what the module actually promises across its three layers, and
+# the second game is what decides that.
+schema: spec-driven
