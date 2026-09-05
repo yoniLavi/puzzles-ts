@@ -69,10 +69,18 @@ listed by hand where a guard needs the set (a game carrying a pencil-mode flag
 
 - [x] 4.1 `docs/games/mechanics.md` § "Pencil marks: the full note-taking UX".
 - [x] 4.2 `docs/games/engine-catalog.md`.
-- [ ] 4.3 `ts-engine` spec delta: prefer `ADDED` (this adds a concern; it does
-      not alter an existing rule). Before any `MODIFIED`, grep the live spec for
-      the sentence you mean to change and confirm which requirement holds it.
-- [ ] 4.4 `repo-layout` spec: the module's place in the flat engine namespace.
+- [x] 4.3 `ts-engine` delta, `ADDED`: the note-taking cell as one shared
+      mechanic, with the two standardized rules, the sticky carve-out, and
+      derived enrollment.
+- [x] 4.4 `repo-layout` delta, `MODIFIED` on "A bulk mechanical edit is checked
+      for shape and for scope" — **not** the flat-namespace requirement this
+      task originally guessed at. Grepping the live spec for the sentence found
+      that `scripts/check-rename-shape.mjs` already existed for file moves and
+      comment sweeps, and had no mode for an identifier rename, which is the
+      case where shape says almost nothing. The fold-back proof this change
+      hand-rolled twice is now `--fold old=new` in that tool, with the
+      reflow-residue reporting the real sweep needed. Proven both ways: 44
+      renamed files fold back clean, and a planted unrelated edit is named.
 
 ## 5. For the owner — three standardizations and one split
 
