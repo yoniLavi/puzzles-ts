@@ -672,7 +672,6 @@ export type CrossingMove =
 export interface CrossingUi {
   /** Selected cell. */
   cursor: GridCursor;
-  /** The selection is shown. */
   /** The selection takes pencil marks rather than ink. */
   cpencil: boolean;
   /** The selection came from the keyboard, so it survives an entry. */

@@ -304,7 +304,6 @@ export type SeismicMove =
 export interface SeismicUi {
   /** Highlighted cell. */
   cursor: GridCursor;
-  /** Whether the highlight is shown at all. */
   /** Whether the highlight was last moved by the keyboard (upstream keeps the
    * cursor visible after a keyboard entry, but hides it after a mouse one). */
   ckey: boolean;

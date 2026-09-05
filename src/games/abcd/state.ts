@@ -418,7 +418,6 @@ export interface AbcdUi {
   cursor: GridCursor;
   /** Cursor is in pencil-mark mode. */
   hpencil: boolean;
-  /** Cursor is currently shown. */
   /** Cursor came from the keyboard (so it survives an entry). */
   hcursor: boolean;
   /** Preference (default on, the fork's shared convention): right-click toggles

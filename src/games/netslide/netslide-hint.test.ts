@@ -619,7 +619,6 @@ describe("the hint marks while the hinted slide animates", () => {
   const TILE_BORDER = 1;
   const border = (ts: number) => Math.floor((3 * ts) / 4) + 1;
 
-  /** The tile-background rect `drawTile` lays down, by its distinctive size. */
   /** The top side of the hinted **tile's** double ring, by its distinctive size:
    * it spans the whole tile frame, where the destination's outline is inset past
    * the tile border. */

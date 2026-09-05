@@ -169,6 +169,45 @@ describe("no source file contains a control character git would call binary", ()
   });
 });
 
+describe("no doc comment describes a member that was deleted out from under it", () => {
+  // A field's doc comment does not disappear when the field does — it slides up
+  // against the *next* member and silently becomes that member's documentation.
+  // `unify-cross-game-vocabulary` folded "is the cursor shown" into
+  // `cursor.visible` and left four of these behind, each then reading as the
+  // doc for the flag below it: Abcd's "Cursor is currently shown" sat above
+  // `hcursor`, Crossing's above `cpencil`, Mathrax's and Seismic's above `ckey`.
+  // A fifth, unrelated, sat above a Netslide test helper.
+  //
+  // Invisible to every other instrument in the gate — a comment compiles,
+  // formats and passes — and worse than an absent comment, because it is read
+  // and believed. The shape is mechanical: a *complete* single-line `/** … */`
+  // immediately followed by another doc comment at the same indentation. A
+  // multi-line comment cannot leave this shape, and two deliberate consecutive
+  // doc comments are not a thing anyone writes.
+  //
+  // The following comment is matched by a *lookahead* so it is not consumed:
+  // three stale comments in a row must report as three, not as one.
+  const ORPHAN_RE = /^([ \t]*)\/\*\*.*\*\/[ \t]*\n(?=\1\/\*\*)/gm;
+
+  it("finds source to scan (sanity)", () => {
+    expect(Object.keys(sourceModules).length).toBeGreaterThan(100);
+  });
+
+  it("scans every .ts file under src/", () => {
+    const offenders: string[] = [];
+    for (const [path, text] of Object.entries(sourceModules)) {
+      for (const m of text.matchAll(ORPHAN_RE)) {
+        const line = text.slice(0, m.index).split("\n").length;
+        offenders.push(`src/${path.slice(2)}:${line}: ${m[0].trim()}`);
+      }
+    }
+    expect(
+      offenders,
+      `${offenders.join("\n")}\nDelete the stale comment, or merge the two into one.`,
+    ).toEqual([]);
+  });
+});
+
 describe("every cataloged puzzle has its generated icons", () => {
   it.each(puzzleIds)("%s", (puzzleId) => {
     for (const suffix of ["64d8", "128d8"] as const) {

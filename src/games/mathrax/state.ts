@@ -629,7 +629,6 @@ export type MathraxMove =
 export interface MathraxUi {
   /** Highlighted cell. */
   cursor: GridCursor;
-  /** The highlight is shown. */
   /** The highlight was last moved by the keyboard (so a digit entry keeps it). */
   ckey: boolean;
   /** The highlight is in pencil-mark mode. */
