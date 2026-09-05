@@ -317,11 +317,19 @@ the plain arrow beside it reveals and moves like everyone else's.
 
 **Two games keep something extra beside the cursor, and both are worth copying
 rather than re-deriving.** Ascent draws a mouse hover differently from a
-keyboard cursor, so it carries `cursorFromMouse` alongside `cursor.visible` and
-reads the pair back through two named predicates. Rome's `kmode` says what the
-cursor is *armed for* (move / place / pencil) and no longer doubles as whether
-it is shown. In both, the shared part is the noun and the game's part is the
-verb.
+keyboard cursor, so it carries `cursorFromKeyboard` alongside `cursor.visible`
+and reads the pair back through two named predicates (`keyboardCursor` /
+`mouseCursor` in `ascent/ui.ts`). Rome's `kmode` says what the cursor is *armed
+for* (move / place / pencil) and no longer doubles as whether it is shown. In
+both, the shared part is the noun and the game's part is the verb.
+
+**`cursorFromKeyboard` is the collection's name and the collection's polarity**,
+and there are twelve carriers of it: Ascent plus the eleven note-taking games,
+where it decides whether an entry keeps the highlight. It was `hcursor` in eight,
+`ckey` in three and `cursorFromMouse` — the same fact, inverted — in Ascent,
+until `unify-the-note-taking-cell`. Write the flag `true` when the keyboard
+revealed or moved the cursor and `false` when a pointer took it over; if you want
+the other reading, name a predicate for it rather than a second field.
 
 A cursor move that changes only `Ui` returns `UI_UPDATE` (the midend redraws,
 notifies, and records no history entry) — the contract is in

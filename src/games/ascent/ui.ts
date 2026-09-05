@@ -68,17 +68,21 @@ export const TARGET_CONNECTED = 0x2;
 /** Whether the cursor is shown lives on `ui.cursor`, like every other game's.
  * What Ascent keeps beyond that is *which device* revealed it: a mouse hover
  * and a keyboard cursor are drawn differently, and a player can see the
- * difference — so `cursorFromMouse` is the game's own verb over the shared
- * noun. These two read the pair back as the states the code reasons in. */
+ * difference — so `cursorFromKeyboard` is the game's own verb over the shared
+ * noun. These two read the pair back as the states the code reasons in.
+ *
+ * The name and the polarity are the collection's, not Ascent's: eleven
+ * note-taking games carry the same flag to decide whether an entry keeps the
+ * highlight. One concept, one spelling, one direction. */
 export const keyboardCursor = (ui: AscentUi): boolean =>
-  ui.cursor.visible && !ui.cursorFromMouse;
+  ui.cursor.visible && ui.cursorFromKeyboard;
 export const mouseCursor = (ui: AscentUi): boolean =>
-  ui.cursor.visible && ui.cursorFromMouse;
+  ui.cursor.visible && !ui.cursorFromKeyboard;
 
-/** Reveal the cursor as a keyboard cursor (`false`) or a mouse hover (`true`). */
-export function revealCursor(ui: AscentUi, fromMouse: boolean): void {
+/** Reveal the cursor as a keyboard cursor (`true`) or a mouse hover (`false`). */
+export function revealCursor(ui: AscentUi, fromKeyboard: boolean): void {
   ui.cursor.visible = true;
-  ui.cursorFromMouse = fromMouse;
+  ui.cursorFromKeyboard = fromKeyboard;
 }
 
 const DRAG_RADIUS = 0.6;
@@ -98,9 +102,11 @@ export interface AscentUi {
   s: number;
 
   cursor: GridCursor;
-  /** Whether the visible cursor is a mouse hover rather than a keyboard
-   * cursor — see {@link keyboardCursor} / {@link mouseCursor}. */
-  cursorFromMouse: boolean;
+  /** Whether the visible cursor is a keyboard cursor rather than a mouse
+   * hover — see {@link keyboardCursor} / {@link mouseCursor}. Only ever read
+   * alongside `cursor.visible`, and only ever written by
+   * {@link revealCursor}, which is the sole route to `visible = true`. */
+  cursorFromKeyboard: boolean;
   typingCell: number;
   typingNumber: number;
 
@@ -133,7 +139,10 @@ export function newAscentUi(state: AscentState): AscentUi {
     nexthints: new Int32Array(s),
     s,
     cursor: newCursor(),
-    cursorFromMouse: false,
+    // Inert while `cursor.visible` is false, which it is here; `false` matches
+    // the other eleven games' initial value rather than the exact inverse of
+    // the old one, and no reader can tell the difference.
+    cursorFromKeyboard: false,
     typingCell: CELL_NONE,
     typingNumber: 0,
     doubleclickCell: -1,
@@ -496,7 +505,7 @@ function mouseClick(
       uiClear(ui);
       ui.cursor.x = i % w;
       ui.cursor.y = Math.trunc(i / w);
-      revealCursor(ui, !keyboard);
+      revealCursor(ui, keyboard);
       ui.held = i;
       ui.select = NUMBER_EMPTY;
       ui.dir = 0;
@@ -727,7 +736,7 @@ export function interpretAscentMove(
   }
 
   if (dirx || diry) {
-    revealCursor(ui, false);
+    revealCursor(ui, true);
     ui.cursor.x += dirx;
     ui.cursor.y += diry;
     ui.cursor.x = Math.max(0, Math.min(ui.cursor.x, w - 1));

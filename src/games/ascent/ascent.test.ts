@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
-import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
+import { CURSOR_RIGHT, LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { newAscentDesc } from "./generator.ts";
@@ -30,6 +30,7 @@ import {
   newAscentState,
   validateAscentDesc,
 } from "./state.ts";
+import { keyboardCursor, mouseCursor } from "./ui.ts";
 
 function mk(
   w: number,
@@ -229,40 +230,41 @@ describe("ascent typed-number line preview", () => {
   });
 });
 
-describe("ascent auto-advance past a placed run", () => {
-  // A 5x5 rect scratch board: numbers 0, _, 2, 3 in a row (cell 1 is the gap,
-  // number 4 still open). Holding 0 and placing 1 should skip the placed 2-3
-  // run and land the focus on 3, recommending 4.
-  function scratch() {
-    const w = 5;
-    const h = 5;
-    const sTot = w * h;
-    const grid = new Int16Array(sTot).fill(NUMBER_EMPTY);
-    grid[0] = 0;
-    grid[2] = 2;
-    grid[3] = 3;
-    const state = {
-      w,
-      h,
-      mode: MODE_RECT,
-      last: sTot - 1,
-      grid,
-      immutable: new Uint8Array(sTot),
-      path: null,
-      completed: false,
-      cheated: false,
-    };
-    const ui = ascentGame.newUi(state);
-    const ds = ascentGame.newDrawState?.(state);
-    if (!ds) throw new Error("no drawstate");
-    ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
-    const center = (cell: number) => ({
-      x: ds.offsetX + (cell % w) * ds.tileSize + ds.tileSize / 2,
-      y: ds.offsetY + Math.trunc(cell / w) * ds.tileSize + ds.tileSize / 2,
-    });
-    return { state, ui, ds, center };
-  }
+// A 5x5 rect scratch board: numbers 0, _, 2, 3 in a row (cell 1 is the gap,
+// number 4 still open). Holding 0 and placing 1 should skip the placed 2-3 run
+// and land the focus on 3, recommending 4. Shared by the auto-advance and
+// cursor-provenance blocks below.
+function scratch() {
+  const w = 5;
+  const h = 5;
+  const sTot = w * h;
+  const grid = new Int16Array(sTot).fill(NUMBER_EMPTY);
+  grid[0] = 0;
+  grid[2] = 2;
+  grid[3] = 3;
+  const state = {
+    w,
+    h,
+    mode: MODE_RECT,
+    last: sTot - 1,
+    grid,
+    immutable: new Uint8Array(sTot),
+    path: null,
+    completed: false,
+    cheated: false,
+  };
+  const ui = ascentGame.newUi(state);
+  const ds = ascentGame.newDrawState?.(state);
+  if (!ds) throw new Error("no drawstate");
+  ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
+  const center = (cell: number) => ({
+    x: ds.offsetX + (cell % w) * ds.tileSize + ds.tileSize / 2,
+    y: ds.offsetY + Math.trunc(cell / w) * ds.tileSize + ds.tileSize / 2,
+  });
+  return { state, ui, ds, center };
+}
 
+describe("ascent auto-advance past a placed run", () => {
   it("jumps the focus to the run's leading edge and recommends the next open number", () => {
     const { state, ui, ds, center } = scratch();
     ascentGame.interpretMove(state, ui, ds, center(0), LEFT_BUTTON); // hold 0
@@ -279,6 +281,35 @@ describe("ascent auto-advance past a placed run", () => {
     ascentGame.interpretMove(state, ui, ds, center(0), LEFT_BUTTON);
     ascentGame.interpretMove(state, ui, ds, center(1), LEFT_BUTTON);
     expect(ui.held).toBe(1); // no jump — focus stays on the placed cell
+  });
+});
+
+describe("ascent cursor provenance", () => {
+  // Ascent draws a mouse hover differently from a keyboard cursor, and a player
+  // can see the difference. Nothing pinned which was which until
+  // `unify-the-note-taking-cell` renamed the flag and flipped its polarity to
+  // match the eleven note-taking games (`cursorFromKeyboard`) — an inversion no
+  // test would have caught, because Ascent's suite never pressed an arrow.
+  //
+  // Both directions are asserted, and both predicates each way: a one-sided
+  // check passes just as happily against a flag stuck true.
+  it("an arrow reveals a keyboard cursor; a click reveals a mouse hover", () => {
+    const { state, ui, ds, center } = scratch();
+    expect(keyboardCursor(ui)).toBe(false); // hidden: neither, whatever the flag
+    expect(mouseCursor(ui)).toBe(false);
+
+    ascentGame.interpretMove(state, ui, ds, { x: 0, y: 0 }, CURSOR_RIGHT);
+    expect(ui.cursor.visible).toBe(true);
+    expect(keyboardCursor(ui)).toBe(true);
+    expect(mouseCursor(ui)).toBe(false);
+
+    // Cell 1 is the scratch board's gap: a left click on an *empty* cell is
+    // the path that reveals a mouse hover. Clicking a placed number instead
+    // hides the cursor and picks the number up, which is a different arm.
+    ascentGame.interpretMove(state, ui, ds, center(1), LEFT_BUTTON);
+    expect(ui.cursor.visible).toBe(true);
+    expect(mouseCursor(ui)).toBe(true);
+    expect(keyboardCursor(ui)).toBe(false);
   });
 });
 
