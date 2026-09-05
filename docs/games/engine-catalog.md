@@ -85,11 +85,27 @@ Two lessons, both byte-match surface:
 
 The tri-state edge grid (wall / not-a-wall / undecided) Palisade and Separate
 share: edge bit vocabulary, tile-size geometry, and the input mechanic. Each
-game keeps its own clue semantics, solver, generator, completion test, clue
-rendering — and its own `Move` type (the shared code reports *which edge, which
-cycle*, never a move, so two save formats aren't coupled). Its header states
-the sharing test worth reusing anywhere: not "are these the same text" but
-*"would a change here have to happen in both games at once?"*
+game keeps its own clue semantics, solver, generator, completion test — and its
+own `Move` type (the shared code reports *which edge, which cycle*, never a
+move, so two save formats aren't coupled). Its header states the sharing test
+worth reusing anywhere: not "are these the same text" but *"would a change here
+have to happen in both games at once?"*
+
+### `border-grid-render.ts` — that mechanic's look
+
+The third layer: the error model over the two DSFs (a region over `k`, under
+`k`, or a wall separating nothing), the half-grid cursor `border-grid.ts`
+*moves*, the four edge rects, the tile skeleton (clip, body, content, edges,
+unclip, update) and the board geometry. A game supplies its palette indices as
+`BorderGridColors` and a `drawContent` callback for the middle of the tile, and
+keeps its clue layer entirely — Palisade's digit and hint marks, Separate's
+letter and region shading.
+
+Its header records **why a decline was reopened**, which is the part worth
+reading before reopening another: `border-grid.ts` declined sharing "a loop over
+`w*h` that reads a flag and draws a line", which is a true statement about
+*generic* resemblance and simply does not reach the rendering of the mechanic
+the module already owns. The decline was made when only the input had moved.
 
 ### `note-taking-cell.ts` — the shared highlight-and-type mechanic
 

@@ -26,10 +26,21 @@
  * should cycle*, never a move. A shared move type would couple two save formats
  * that have no reason to be identical.
  *
+ * The mechanic's **look** is the third layer, and it lives next door in
+ * [`border-grid-render.ts`](./border-grid-render.ts): the error model over the
+ * two DSFs, the half-grid cursor this file *moves*, the four edge rects and the
+ * geometry. It is a sibling rather than more of this file only because both
+ * would otherwise be long; the test that admitted it is the one below.
+ *
  * WHAT DOES NOT live here is code that merely looks alike. A loop over `w*h`
  * that reads a flag and draws a line resembles its counterpart in any grid game
  * in this collection; unifying that would couple two renderers with no reason to
- * move together. The test is not "are these the same text" but *"would a change
+ * move together. **That sentence used to be read as declining to share the two
+ * renderers at all, and it does not reach that far** — the error model and the
+ * cursor are the rendering *of this mechanic*, and each answers the test below
+ * with a yes. The generic claim stands; what changed in 2026-09 is that the
+ * question was asked again with the two renderers side by side rather than only
+ * their inputs. The test is not "are these the same text" but *"would a change
  * here have to happen in both games at once?"*
  */
 import { Dsf } from "./dsf.ts";

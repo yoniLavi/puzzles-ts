@@ -241,6 +241,37 @@ the gesture that usually won't commit. Exemplar:
 [`mines/render.ts`](../../src/games/mines/render.ts) (design D11 in the Mines
 change).
 
+## When two games share a mechanic, they share its look too
+
+**A renderer is shareable when the thing it draws is a shared *mechanic*, and
+not when it merely resembles another renderer.** Those read the same and are
+not: the second is true of almost any grid game here.
+
+The worked example is [`engine/border-grid-render.ts`](../../src/engine/border-grid-render.ts),
+which Palisade and Separate both draw through. What moved is the mechanic's own
+look — the error model over its two DSFs, the half-grid cursor whose *movement*
+`border-grid.ts` already owned, the four edge rects keyed off its border bits,
+and the tile skeleton around them. What stayed is each game's clue layer:
+Palisade's digit and hint marks, Separate's letter and region shading. The
+shared code takes each game's palette indices and a `drawContent` callback and
+never asks which game it is drawing.
+
+Three things that generalize:
+
+- **A callback is the honest shape when order is the point.** Content goes under
+  the edges, and the clip / unclip / `drawUpdate` bookkeeping wraps all of it.
+  Exporting three steps instead would put that bookkeeping back in both games,
+  which is exactly what drifts.
+- **The diff key is part of the shared contract.** Both games pack their tile
+  flags into one `Int32Array` cache; unifying the *bit layout* was free only
+  because those flags are draw state — rebuilt by `newDrawState`, never in a
+  desc or a save. Check that before unifying a cache key, and reserve the game's
+  own bits above a named floor so the two can grow apart without colliding.
+- **The proof is a byte-clean snapshot, not a green suite.** A pure extraction
+  must leave every draw call, argument and order identical, and tier 2.5 records
+  exactly that — 225 and 237 ops here, unchanged. If a snapshot needs `-u`,
+  pixels moved and the extraction is wrong.
+
 ## Bespoke board geometry, draw side
 
 Some games store an odd-shaped board in a padded rectangle and shear it on

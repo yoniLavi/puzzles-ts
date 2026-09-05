@@ -1,25 +1,42 @@
 /**
- * Palisade rendering — faithful port of `draw_tile` / `game_redraw`.
+ * Palisade rendering — the clue layer over the shared border-grid renderer.
  *
- * Per-tile diffed loop over an `Int32Array` flag cache (the no-BigInt
- * pattern). Each tile draws its four border edges (wall / no-wall /
- * unknown / error colored), the clue, and any cursor box. The live
- * error highlighting is recomputed every frame from two DSFs over the
- * current borders (black = wall-separated regions, yellow = no-wall
- * regions); the `findMistakes` overlay folds into the same error bits.
+ * The mechanic's own look — the three-valued border edges, the error model over
+ * the two DSFs, the half-grid cursor, the tile skeleton and the geometry — is
+ * [`engine/border-grid-render.ts`](../../engine/border-grid-render.ts), shared
+ * with Separate. What is Palisade's and stays here: a cell carries a **clue**
+ * counting its walls, a clue the board already contradicts reddens, a region
+ * counts as finished when it is size `k` with every clue in it satisfied, and
+ * the explained hint paints its forced edges and outlines its referenced cells.
  */
 
 import {
   BORDER,
-  BORDER_D,
   BORDER_MASK,
-  BORDER_R,
   buildDsf,
-  DISABLED,
   DX,
   DY,
   outOfBounds,
 } from "../../engine/border-grid.ts";
+import {
+  type BorderGridColors,
+  type BorderGridDrawState,
+  borderErrorBits,
+  borderGridSize,
+  center,
+  cursorBits,
+  drawBorderCursor,
+  drawBorderGridBackground,
+  drawBorderTile,
+  EDGE_HINT,
+  F_CLUE_ERROR,
+  F_CORRECT,
+  F_FLASH,
+  GAME_FLAG_SHIFT,
+  invalidateDanglingRegions,
+  mistakeEdgeBits,
+  newBorderGridDrawState,
+} from "../../engine/border-grid-render.ts";
 import {
   correctRegionColor,
   mkhighlight,
@@ -82,157 +99,41 @@ export function colors(defaultBackground: Color): Color[] {
   return out;
 }
 
+/** Palisade's palette indices, in the shared renderer's terms. */
+const PALETTE: BorderGridColors = {
+  background: COL_BACKGROUND,
+  flash: COL_FLASH,
+  correct: COL_CORRECT,
+  grid: COL_GRID,
+  lineNo: COL_LINE_NO,
+  lineMaybe: COL_LINE_MAYBE,
+  error: COL_ERROR,
+  hintEdge: COL_HINT,
+  cursor: COL_CURSOR,
+};
+
 // --- geometry -------------------------------------------------------------
 
-export const tileWidth = (ts: number): number => Math.max(Math.floor((3 * ts) / 32), 1);
-export const margin = (ts: number): number => Math.floor(ts / 2);
-const center = (ts: number): number =>
-  Math.floor(ts / 2) + Math.floor(tileWidth(ts) / 2);
+export { fromCoord, margin } from "../../engine/border-grid.ts";
+export { center, tileWidth } from "../../engine/border-grid-render.ts";
 
 export function computeSize(p: PalisadeParams, ts: number): Size {
-  return {
-    w: p.w * ts + tileWidth(ts) + 2 * margin(ts),
-    h: p.h * ts + tileWidth(ts) + 2 * margin(ts),
-  };
+  return borderGridSize(p.w, p.h, ts);
 }
 
-/** Tile column/row for a pixel coordinate (upstream FROMCOORD). */
-export function fromCoord(coord: number, ts: number): number {
-  return Math.floor((coord - margin(ts)) / ts);
-}
+// --- Palisade's own packed flag ---------------------------------------------
 
-// --- packed flag bits ------------------------------------------------------
-
-const BORDER_ERROR = (border: number): number => border << 8; // bits 8..11
-const F_ERROR_CLUE = 1 << 12;
-const F_FLASH = 1 << 13;
-const CONTAINS_CURSOR = (x: number): number => x << 14; // 9 bits, 14..22
-const HINT_EDGE = (border: number): number => border << 23; // bits 23..26
-const F_HINT_CELL = 1 << 27; // a hint-referenced cell (clue pair / region)
-const F_CORRECT = 1 << 28; // a cell in a completed, correct region
+/** A hint-referenced cell (a clue pair, or a region). The one bit Palisade adds
+ * to the shared layout, taken from the first index the module reserves for a
+ * game so the two cannot collide silently. */
+const F_HINT_CELL = 1 << GAME_FLAG_SHIFT;
 
 // --- draw state ------------------------------------------------------------
 
-export interface PalisadeDrawState {
-  started: boolean;
-  tilesize: number;
-  w: number;
-  h: number;
-  /** w·h cache of last-drawn packed tile flags; -1 forces a draw. */
-  cache: Int32Array;
-}
+export type PalisadeDrawState = BorderGridDrawState;
 
 export function newDrawState(state: PalisadeState): PalisadeDrawState {
-  return {
-    started: false,
-    tilesize: 0,
-    w: state.w,
-    h: state.h,
-    cache: new Int32Array(state.w * state.h).fill(-1),
-  };
-}
-
-// --- tile drawing ----------------------------------------------------------
-
-/** Color for edge `dir`, given the tile's packed flags. Every edge the
- * current hint forces this step (the action edge plus the firing's other
- * edges — they share a fate, so they share a color) is in `HINT_EDGE`
- * and wins over the normal edge states. */
-function edgeColor(flags: number, dir: number): number {
-  const b = BORDER(dir);
-  if (flags & HINT_EDGE(b)) return COL_HINT;
-  if (flags & BORDER_ERROR(b)) return COL_ERROR;
-  if (flags & b) return COL_GRID; // wall (COL_LINE_YES)
-  if (flags & DISABLED(b)) return COL_LINE_NO;
-  return COL_LINE_MAYBE;
-}
-
-function drawTile(
-  dr: GameDrawing,
-  ts: number,
-  r: number,
-  c: number,
-  flags: number,
-  clue: number,
-): void {
-  const w = tileWidth(ts);
-  const x = margin(ts) + ts * c;
-  const y = margin(ts) + ts * r;
-
-  dr.clip({ x, y, w: ts + w, h: ts + w });
-
-  const body = { x: x + w, y: y + w, w: ts - w, h: ts - w };
-  dr.drawRect(
-    body,
-    flags & F_FLASH ? COL_FLASH : flags & F_CORRECT ? COL_CORRECT : COL_BACKGROUND,
-  );
-
-  // The referenced cells are **outlined**, not washed. Two reasons, and the
-  // second is Palisade's own: a referenced cell carries the clue digit the
-  // deduction counts with, and the wash also took the cell's background from
-  // `F_CORRECT`, so a hint over a finished region hid the fact that it was
-  // finished. The outline is **inset inside the cell body** rather than on its
-  // border, because in Palisade that border is a *wall* — it is where the hint's
-  // own forced edges are drawn, in `COL_HINT`.
-  if (flags & F_HINT_CELL) {
-    drawMarkSides(
-      dr,
-      { box: body, outer: 0, inner: Math.max(2, ts >> 4) },
-      MARK_ALL,
-      COL_HINT_CELL,
-    );
-  }
-
-  if (clue !== EMPTY) {
-    dr.drawText(
-      { x: x + center(ts), y: y + center(ts) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor(ts / 2),
-      },
-      flags & F_ERROR_CLUE ? COL_ERROR : COL_GRID,
-      String(clue),
-    );
-  }
-
-  // Four border edges (U, R, D, L).
-  dr.drawRect({ x: x + w, y, w: ts - w, h: w }, edgeColor(flags, 0));
-  dr.drawRect({ x: x + ts, y: y + w, w, h: ts - w }, edgeColor(flags, 1));
-  dr.drawRect({ x: x + w, y: y + ts, w: ts - w, h: w }, edgeColor(flags, 2));
-  dr.drawRect({ x, y: y + w, w, h: ts - w }, edgeColor(flags, 3));
-
-  dr.unclip();
-  dr.drawUpdate({ x, y, w: ts + w, h: ts + w });
-}
-
-// --- cursor ----------------------------------------------------------------
-
-function drawCursor(dr: GameDrawing, ts: number, curX: number, curY: number): void {
-  const offX = curX % 2;
-  const offY = curY % 2;
-  const x = margin(ts) + ts * Math.floor(curX / 2);
-  const y = margin(ts) + ts * Math.floor(curY / 2);
-  const w = tileWidth(ts);
-
-  const centerX = x + (offX === 0 ? Math.floor(w / 2) : center(ts));
-  const centerY = y + (offY === 0 ? Math.floor(w / 2) : center(ts));
-
-  // cur_type = (offX<<1)+offY: 0 TL-corner, 1 left-border, 2 top-border, 3 center.
-  const third = Math.floor(ts / 3);
-  const twoThird = Math.floor((2 * ts) / 3);
-  const cw = offX === 0 ? third : twoThird;
-  const ch = offY === 0 ? third : twoThird;
-
-  const ox = centerX - Math.floor(cw / 2);
-  const oy = centerY - Math.floor(ch / 2);
-  // Outline (draw_rect_outline): four 1-px edges.
-  dr.drawLine({ x: ox, y: oy }, { x: ox + cw, y: oy }, COL_CURSOR, 1);
-  dr.drawLine({ x: ox + cw, y: oy }, { x: ox + cw, y: oy + ch }, COL_CURSOR, 1);
-  dr.drawLine({ x: ox + cw, y: oy + ch }, { x: ox, y: oy + ch }, COL_CURSOR, 1);
-  dr.drawLine({ x: ox, y: oy + ch }, { x: ox, y: oy }, COL_CURSOR, 1);
-  dr.drawUpdate({ x: ox, y: oy, w: cw + 1, h: ch + 1 });
+  return newBorderGridDrawState(state.w, state.h);
 }
 
 // --- redraw ----------------------------------------------------------------
@@ -277,18 +178,7 @@ export function redraw(
   }
 
   if (!ds.started) {
-    const size = computeSize({ w, h, k }, ts);
-    dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
-    const tw = tileWidth(ts);
-    for (let r = 0; r <= h; r++) {
-      for (let c = 0; c <= w; c++) {
-        dr.drawRect(
-          { x: margin(ts) + ts * c, y: margin(ts) + ts * r, w: tw, h: tw },
-          COL_GRID,
-        );
-      }
-    }
-    dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
+    drawBorderGridBackground(dr, ts, w, h, PALETTE);
     ds.started = true;
   }
 
@@ -310,69 +200,64 @@ export function redraw(
     if (clues[i] !== EMPTY && clues[i] !== bitcount(borders[i]))
       validRoot.set(blackDsf.canonify(i), false);
   }
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (x + 1 < w && borders[i] & BORDER_R && blackDsf.equivalent(i, i + 1))
-        validRoot.set(blackDsf.canonify(i), false);
-      if (y + 1 < h && borders[i] & BORDER_D && blackDsf.equivalent(i, i + w))
-        validRoot.set(blackDsf.canonify(i), false);
-    }
-  }
+  invalidateDanglingRegions(w, h, borders, blackDsf, validRoot);
 
-  // Fold the findMistakes overlay into per-edge error bits.
-  const mistakeMask = new Int32Array(wh);
-  if (mistakes) {
-    for (const m of mistakes) mistakeMask[m.y * w + m.x] |= BORDER_ERROR(BORDER(m.dir));
-  }
+  const mistakeMask = mistakeEdgeBits(w, h, mistakes);
 
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
       const i = r * w + c;
       const clue = clues[i];
       let flags =
-        borders[i] | mistakeMask[i] | HINT_EDGE(hintEdgeMask[i]) | hintCellMask[i];
+        borders[i] | mistakeMask[i] | EDGE_HINT(hintEdgeMask[i]) | hintCellMask[i];
 
       if (validRoot.get(blackDsf.canonify(i))) flags |= F_CORRECT;
       if (flash) flags |= F_FLASH;
 
       const on = bitcount(borders[i]);
       const off = bitcount((borders[i] >> 4) & BORDER_MASK);
-      if (clue !== EMPTY && (on > clue || clue > 4 - off)) flags |= F_ERROR_CLUE;
+      if (clue !== EMPTY && (on > clue || clue > 4 - off)) flags |= F_CLUE_ERROR;
 
-      if (ui.cursor.visible) {
-        for (let u = 0; u < 3; u++) {
-          for (let v = 0; v < 3; v++) {
-            if (ui.cursor.x === 2 * c + u && ui.cursor.y === 2 * r + v)
-              flags |= CONTAINS_CURSOR(1 << (3 * u + v));
-          }
-        }
-      }
-
-      for (let dir = 0; dir < 4; dir++) {
-        const cc = c + DX[dir];
-        const rr = r + DY[dir];
-        if (outOfBounds(cc, rr, w, h)) continue;
-        const ii = rr * w + cc;
-        const tooLarge =
-          (yellowDsf.size(i) > k || yellowDsf.size(ii) > k) &&
-          !yellowDsf.equivalent(i, ii);
-        const tooSmall =
-          (blackDsf.size(i) < k || blackDsf.size(ii) < k) &&
-          !blackDsf.equivalent(i, ii);
-        const dangling =
-          borders[i] & BORDER(dir) &&
-          (yellowDsf.equivalent(i, ii) ||
-            (blackDsf.size(i) <= k && blackDsf.equivalent(i, ii)));
-        if (tooLarge || tooSmall || dangling) flags |= BORDER_ERROR(BORDER(dir));
-      }
+      flags |= cursorBits(ui.cursor, c, r);
+      flags |= borderErrorBits(c, r, w, h, k, borders, blackDsf, yellowDsf);
 
       if (ds.cache[i] !== flags) {
         ds.cache[i] = flags;
-        drawTile(dr, ts, r, c, flags, clue);
+        drawBorderTile(dr, ts, r, c, flags, PALETTE, (body, o) => {
+          // The referenced cells are **outlined**, not washed. Two reasons, and
+          // the second is Palisade's own: a referenced cell carries the clue
+          // digit the deduction counts with, and the wash also took the cell's
+          // background from `F_CORRECT`, so a hint over a finished region hid
+          // the fact that it was finished. The outline is **inset inside the
+          // cell body** rather than on its border, because in Palisade that
+          // border is a *wall* — it is where the hint's own forced edges are
+          // drawn, in `COL_HINT`.
+          if (flags & F_HINT_CELL) {
+            drawMarkSides(
+              dr,
+              { box: body, outer: 0, inner: Math.max(2, ts >> 4) },
+              MARK_ALL,
+              COL_HINT_CELL,
+            );
+          }
+
+          if (clue !== EMPTY) {
+            dr.drawText(
+              { x: o.x + center(ts), y: o.y + center(ts) },
+              {
+                align: "center",
+                baseline: "mathematical",
+                fontType: "variable",
+                size: Math.floor(ts / 2),
+              },
+              flags & F_CLUE_ERROR ? COL_ERROR : COL_GRID,
+              String(clue),
+            );
+          }
+        });
       }
     }
   }
 
-  if (ui.cursor.visible) drawCursor(dr, ts, ui.cursor.x, ui.cursor.y);
+  if (ui.cursor.visible) drawBorderCursor(dr, ts, ui.cursor.x, ui.cursor.y, COL_CURSOR);
 }

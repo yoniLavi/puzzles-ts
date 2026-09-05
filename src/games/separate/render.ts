@@ -1,26 +1,32 @@
 /**
- * Separate rendering — adapted from Palisade's `game_redraw`.
+ * Separate rendering — the clue layer over the shared border-grid renderer.
  *
- * Per-tile diffed loop over an `Int32Array` flag cache (the no-BigInt pattern).
- * Each tile draws its four three-valued border edges (wall / no-wall / unknown /
- * error), its letter, and any cursor box. Live error highlighting is recomputed
- * every frame from two DSFs over the current borders (black = wall-separated
- * regions, yellow = no-wall regions): a region that is over-size, undersize, or
- * has a dangling wall reddens the offending edge, and a cell whose letter repeats
- * within its wall-bounded region reddens the letter. The `findMistakes` overlay
- * (edges contradicting the unique solution) folds into the same edge-error bits.
+ * The mechanic's own look — the three-valued border edges, the error model over
+ * the two DSFs, the half-grid cursor, the tile skeleton and the geometry — is
+ * [`engine/border-grid-render.ts`](../../engine/border-grid-render.ts), shared
+ * with Palisade. What is Separate's and stays here: a cell carries a **letter**,
+ * a letter that repeats inside a *completed* wall-bounded region reddens, and a
+ * region counts as finished when it is size `k` with no letter twice.
  */
 
+import { buildDsf } from "../../engine/border-grid.ts";
 import {
-  BORDER,
-  BORDER_D,
-  BORDER_R,
-  buildDsf,
-  DISABLED,
-  DX,
-  DY,
-  outOfBounds,
-} from "../../engine/border-grid.ts";
+  type BorderGridColors,
+  type BorderGridDrawState,
+  borderErrorBits,
+  borderGridSize,
+  center,
+  cursorBits,
+  drawBorderCursor,
+  drawBorderGridBackground,
+  drawBorderTile,
+  F_CLUE_ERROR,
+  F_CORRECT,
+  F_FLASH,
+  invalidateDanglingRegions,
+  mistakeEdgeBits,
+  newBorderGridDrawState,
+} from "../../engine/border-grid-render.ts";
 import {
   correctRegionColor,
   mkhighlight,
@@ -69,129 +75,34 @@ export function colors(defaultBackground: Color): Color[] {
   return out;
 }
 
+/** Separate's palette indices, in the shared renderer's terms. It has no hint,
+ * so no `hintEdge`, and its cursor is drawn in the grid's own ink. */
+const PALETTE: BorderGridColors = {
+  background: COL_BACKGROUND,
+  flash: COL_FLASH,
+  correct: COL_CORRECT,
+  grid: COL_GRID,
+  lineNo: COL_LINE_NO,
+  lineMaybe: COL_LINE_MAYBE,
+  error: COL_ERROR,
+  cursor: COL_GRID,
+};
+
 // --- geometry -------------------------------------------------------------
 
-export const tileWidth = (ts: number): number => Math.max(Math.floor((3 * ts) / 32), 1);
-export const margin = (ts: number): number => Math.floor(ts / 2);
-const center = (ts: number): number =>
-  Math.floor(ts / 2) + Math.floor(tileWidth(ts) / 2);
+export { fromCoord, margin } from "../../engine/border-grid.ts";
+export { center, tileWidth } from "../../engine/border-grid-render.ts";
 
 export function computeSize(p: SeparateParams, ts: number): Size {
-  return {
-    w: p.w * ts + tileWidth(ts) + 2 * margin(ts),
-    h: p.h * ts + tileWidth(ts) + 2 * margin(ts),
-  };
+  return borderGridSize(p.w, p.h, ts);
 }
-
-/** Tile column/row for a pixel coordinate (upstream FROMCOORD). */
-export function fromCoord(coord: number, ts: number): number {
-  return Math.floor((coord - margin(ts)) / ts);
-}
-
-// --- packed flag bits ------------------------------------------------------
-
-const BORDER_ERROR = (border: number): number => border << 8; // bits 8..11
-const F_ERROR_LETTER = 1 << 12;
-const F_FLASH = 1 << 13;
-const CONTAINS_CURSOR = (x: number): number => x << 14; // 9 bits, 14..22
-const F_CORRECT = 1 << 23; // a cell in a completed, correct region
 
 // --- draw state ------------------------------------------------------------
 
-export interface SeparateDrawState {
-  started: boolean;
-  tilesize: number;
-  w: number;
-  h: number;
-  /** w·h cache of last-drawn packed tile flags; -1 forces a draw. */
-  cache: Int32Array;
-}
+export type SeparateDrawState = BorderGridDrawState;
 
 export function newDrawState(state: SeparateState): SeparateDrawState {
-  return {
-    started: false,
-    tilesize: 0,
-    w: state.w,
-    h: state.h,
-    cache: new Int32Array(state.w * state.h).fill(-1),
-  };
-}
-
-// --- tile drawing ----------------------------------------------------------
-
-function edgeColor(flags: number, dir: number): number {
-  const b = BORDER(dir);
-  if (flags & BORDER_ERROR(b)) return COL_ERROR;
-  if (flags & b) return COL_GRID; // wall
-  if (flags & DISABLED(b)) return COL_LINE_NO;
-  return COL_LINE_MAYBE;
-}
-
-function drawTile(
-  dr: GameDrawing,
-  ts: number,
-  r: number,
-  c: number,
-  flags: number,
-  letter: number,
-): void {
-  const w = tileWidth(ts);
-  const x = margin(ts) + ts * c;
-  const y = margin(ts) + ts * r;
-
-  dr.clip({ x, y, w: ts + w, h: ts + w });
-
-  dr.drawRect(
-    { x: x + w, y: y + w, w: ts - w, h: ts - w },
-    flags & F_FLASH ? COL_FLASH : flags & F_CORRECT ? COL_CORRECT : COL_BACKGROUND,
-  );
-
-  dr.drawText(
-    { x: x + center(ts), y: y + center(ts) },
-    {
-      align: "center",
-      baseline: "mathematical",
-      fontType: "variable",
-      size: Math.floor(ts / 2),
-    },
-    flags & F_ERROR_LETTER ? COL_ERROR : COL_GRID,
-    String.fromCharCode(A + letter),
-  );
-
-  // Four border edges (U, R, D, L).
-  dr.drawRect({ x: x + w, y, w: ts - w, h: w }, edgeColor(flags, 0));
-  dr.drawRect({ x: x + ts, y: y + w, w, h: ts - w }, edgeColor(flags, 1));
-  dr.drawRect({ x: x + w, y: y + ts, w: ts - w, h: w }, edgeColor(flags, 2));
-  dr.drawRect({ x, y: y + w, w, h: ts - w }, edgeColor(flags, 3));
-
-  dr.unclip();
-  dr.drawUpdate({ x, y, w: ts + w, h: ts + w });
-}
-
-// --- cursor ----------------------------------------------------------------
-
-function drawCursor(dr: GameDrawing, ts: number, curX: number, curY: number): void {
-  const offX = curX % 2;
-  const offY = curY % 2;
-  const x = margin(ts) + ts * Math.floor(curX / 2);
-  const y = margin(ts) + ts * Math.floor(curY / 2);
-  const w = tileWidth(ts);
-
-  const centerX = x + (offX === 0 ? Math.floor(w / 2) : center(ts));
-  const centerY = y + (offY === 0 ? Math.floor(w / 2) : center(ts));
-
-  const third = Math.floor(ts / 3);
-  const twoThird = Math.floor((2 * ts) / 3);
-  const cw = offX === 0 ? third : twoThird;
-  const ch = offY === 0 ? third : twoThird;
-
-  const ox = centerX - Math.floor(cw / 2);
-  const oy = centerY - Math.floor(ch / 2);
-  dr.drawLine({ x: ox, y: oy }, { x: ox + cw, y: oy }, COL_GRID, 1);
-  dr.drawLine({ x: ox + cw, y: oy }, { x: ox + cw, y: oy + ch }, COL_GRID, 1);
-  dr.drawLine({ x: ox + cw, y: oy + ch }, { x: ox, y: oy + ch }, COL_GRID, 1);
-  dr.drawLine({ x: ox, y: oy + ch }, { x: ox, y: oy }, COL_GRID, 1);
-  dr.drawUpdate({ x: ox, y: oy, w: cw + 1, h: ch + 1 });
+  return newBorderGridDrawState(state.w, state.h);
 }
 
 // --- redraw ----------------------------------------------------------------
@@ -214,18 +125,7 @@ export function redraw(
   const flash = Math.floor((flashTime * 5) / FLASH_TIME) % 2;
 
   if (!ds.started) {
-    const size = computeSize({ w, h, k }, ts);
-    dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
-    const tw = tileWidth(ts);
-    for (let r = 0; r <= h; r++) {
-      for (let c = 0; c <= w; c++) {
-        dr.drawRect(
-          { x: margin(ts) + ts * c, y: margin(ts) + ts * r, w: tw, h: tw },
-          COL_GRID,
-        );
-      }
-    }
-    dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
+    drawBorderGridBackground(dr, ts, w, h, PALETTE);
     ds.started = true;
   }
 
@@ -264,21 +164,9 @@ export function redraw(
     if (ok && counts) for (let n = 0; n < k; n++) if (counts[n] > 1) ok = false;
     validRoot.set(r, ok);
   }
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (x + 1 < w && borders[i] & BORDER_R && blackDsf.equivalent(i, i + 1))
-        validRoot.set(blackDsf.canonify(i), false);
-      if (y + 1 < h && borders[i] & BORDER_D && blackDsf.equivalent(i, i + w))
-        validRoot.set(blackDsf.canonify(i), false);
-    }
-  }
+  invalidateDanglingRegions(w, h, borders, blackDsf, validRoot);
 
-  // Fold the findMistakes overlay into per-edge error bits.
-  const mistakeMask = new Int32Array(wh);
-  if (mistakes) {
-    for (const m of mistakes) mistakeMask[m.y * w + m.x] |= BORDER_ERROR(BORDER(m.dir));
-  }
+  const mistakeMask = mistakeEdgeBits(w, h, mistakes);
 
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
@@ -289,43 +177,31 @@ export function redraw(
 
       const counts = regionCounts.get(blackDsf.canonify(i));
       if (counts && blackDsf.size(i) === k && counts[letters[i]] > 1)
-        flags |= F_ERROR_LETTER;
+        flags |= F_CLUE_ERROR;
 
       if (validRoot.get(blackDsf.canonify(i))) flags |= F_CORRECT;
 
-      if (ui.cursor.visible) {
-        for (let u = 0; u < 3; u++) {
-          for (let v = 0; v < 3; v++) {
-            if (ui.cursor.x === 2 * c + u && ui.cursor.y === 2 * r + v)
-              flags |= CONTAINS_CURSOR(1 << (3 * u + v));
-          }
-        }
-      }
-
-      for (let dir = 0; dir < 4; dir++) {
-        const cc = c + DX[dir];
-        const rr = r + DY[dir];
-        if (outOfBounds(cc, rr, w, h)) continue;
-        const ii = rr * w + cc;
-        const tooLarge =
-          (yellowDsf.size(i) > k || yellowDsf.size(ii) > k) &&
-          !yellowDsf.equivalent(i, ii);
-        const tooSmall =
-          (blackDsf.size(i) < k || blackDsf.size(ii) < k) &&
-          !blackDsf.equivalent(i, ii);
-        const dangling =
-          borders[i] & BORDER(dir) &&
-          (yellowDsf.equivalent(i, ii) ||
-            (blackDsf.size(i) <= k && blackDsf.equivalent(i, ii)));
-        if (tooLarge || tooSmall || dangling) flags |= BORDER_ERROR(BORDER(dir));
-      }
+      flags |= cursorBits(ui.cursor, c, r);
+      flags |= borderErrorBits(c, r, w, h, k, borders, blackDsf, yellowDsf);
 
       if (ds.cache[i] !== flags) {
         ds.cache[i] = flags;
-        drawTile(dr, ts, r, c, flags, letters[i]);
+        drawBorderTile(dr, ts, r, c, flags, PALETTE, (_body, o) => {
+          dr.drawText(
+            { x: o.x + center(ts), y: o.y + center(ts) },
+            {
+              align: "center",
+              baseline: "mathematical",
+              fontType: "variable",
+              size: Math.floor(ts / 2),
+            },
+            flags & F_CLUE_ERROR ? COL_ERROR : COL_GRID,
+            String.fromCharCode(A + letters[i]),
+          );
+        });
       }
     }
   }
 
-  if (ui.cursor.visible) drawCursor(dr, ts, ui.cursor.x, ui.cursor.y);
+  if (ui.cursor.visible) drawBorderCursor(dr, ts, ui.cursor.x, ui.cursor.y, COL_GRID);
 }
