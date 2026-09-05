@@ -3,9 +3,31 @@
 Realizes: `docs/framework-rdd/game-definition.md` § "The board model".
 
 **Readiness: exemplar-gated.** The largest and least-proven declaration, and the
-one the vision itself names as most likely to fail. Do not start it before
-`declare-the-gesture-table` has produced evidence, and do not start it without a
+one the vision itself names as most likely to fail. Do not start it without a
 non-Latin game to build against.
+
+> **Its predecessor no longer exists, and that is evidence, not a gap.** This
+> change was sequenced behind `declare-the-gesture-table` to inherit its
+> evidence. That change was **withdrawn** on 2026-09-05 after its exploration
+> fired its own falsifier — `openspec/postmortems/2026-09-05-gesture-table-withdrawal.md`
+> — so the evidence to inherit is the withdrawal's, and it bears directly on
+> this change's premise:
+>
+> - **Check whether the benefit has already shipped, before designing the
+>   declaration that would deliver it.** Row 3's headline benefit had; row 3
+>   did not check. This change claims state cloning, the desc codec, coordinate
+>   maps and cursor movement fall out of a board model — *`cursor movement`
+>   already falls out of `pointer.ts`, for all 57 games, guarded structurally*.
+>   Subtract what is already shared before counting what a declaration buys
+>   (task 0.3 already asks for the count; this says what to subtract from it).
+> - **The axis a shared form is keyed on decides whether it cuts with the grain
+>   or across it.** A gesture-keyed table served 14 games and was escaped by 43;
+>   the mechanic-keyed `border-grid.ts` serves its two completely. Ask which
+>   this change's key is before building it — task 0.4's four-shapes test is
+>   that question, and it should be answered with a measurement.
+> - **A declaration is a step backward from a derivation.** Where the board
+>   model would have a game *declare* something the engine could *derive* from
+>   its behavior or its existing declarations, derive it.
 
 ## Why
 

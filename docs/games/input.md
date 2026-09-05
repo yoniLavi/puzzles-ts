@@ -327,6 +327,31 @@ A cursor move that changes only `Ui` returns `UI_UPDATE` (the midend redraws,
 notifies, and records no history entry) — the contract is in
 [`mechanics.md`](./mechanics.md).
 
+### The keyboard equivalent of a drag is a design, not a derivation
+
+**Budget for designing it, and expect a playtest.** This is the standing rule
+behind the two sections that follow, and it was established the expensive way:
+`declare-the-gesture-table` proposed deriving each game's keyboard bindings from
+a declared pointer-gesture table, and the exploration that killed it
+(`openspec/postmortems/2026-09-05-gesture-table-withdrawal.md`) found seven drag
+games whose keyboards are hand-designed and *not* what any derivation would
+produce:
+
+| Game | Pointer gesture | Keyboard, as designed |
+| --- | --- | --- |
+| Slide | drag a block | grab / step one cell / release — **not** slide-to-the-end, which cannot stop inside a corridor |
+| Loopy | click an edge on any of eighteen tilings | walk dot to dot along the best-continuing edge, Shift to aim; an earlier travel-modifier cut was playtested and rejected |
+| Galaxies | drag either end of a (tile, dot) pair | select starts a *reverse* drag, arrows pick the dot, a second select commits |
+| Bridges | drag island to island | a cone search outward for the next island, plus digit-jump to a clue |
+| Untangle | drag a vertex | nearest point in the arrow's ±45° cone, half-tile nudge, Tab to cycle |
+| Pegs | drag a peg | select arms "jumping mode"; the next arrow performs the jump |
+| Sixteen | drag a row | three cursor lock modes, in which the arrow *is* the slide |
+
+**What *is* derivable is already derived** — `moveCursor`, `gridCursorMove` and
+`cursorDelta` give every game the reveal-and-move-in-one-press cursor, and
+`cursor-vocabulary.test.ts` enforces it. So the work in front of you is the part
+no helper can do for you, and the two sections below are the two worked ways in.
+
 ### Giving a drag game a keyboard
 
 **Do not model the keyboard as a second way to move; model it as a second way to

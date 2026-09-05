@@ -67,7 +67,7 @@ README's own argument for refactoring before building.
 | --- | --- | --- |
 | 1 | `derive-difficulty-from-the-technique-ladder` | **SHIPPED** 2026-09-04 — but *not* as this table predicted; see below |
 | 2 | `declare-params-and-presets` | **SHIPPED** 2026-09-05 — again not as predicted; see below |
-| 3 | `declare-the-gesture-table` | explore first; Sixteen's drag-to-slide is its named falsifier |
+| 3 | ~~`declare-the-gesture-table`~~ | **WITHDRAWN** 2026-09-05 — the exploration ran and the falsifier fired; see below |
 | 4 | `declare-the-board-model` | exemplar-gated; pick an edge or vertex game, chosen to break it |
 | 5 | `adopt-the-game-definition-adapter` | blocked on 2–4; co-developed with one re-expression, never built first |
 | 6 | `re-express-the-collection` | last, and splits into family batches before any code moves |
@@ -110,7 +110,32 @@ README's own argument for refactoring before building.
 > answer for them: rows 1 and 2 both shipped as **helpers a game calls**, with
 > no adapter and no definition object. See
 > `openspec/changes/adopt-the-game-definition-adapter/proposal.md`, which
-> carries the criterion for settling it when row 3 lands.
+> carries the criterion for settling it.
+
+> **What row 3 taught, by being wrong.** It is the first row to be *withdrawn*
+> rather than to ship differently, and the exploration that killed it is the
+> most valuable thing this ordering has produced —
+> `openspec/postmortems/2026-09-05-gesture-table-withdrawal.md`.
+>
+> Three lessons, and each is the previous rows' lesson at a higher price.
+> **Check whether the benefit already shipped**: the parity bar this row
+> existed to make a resting state *was already one*, derived from behavior by
+> `audit-input-mode-parity` — the change row 3 cited as its evidence. Its two
+> exemption lists are empty and asserted empty. **A declaration is a step
+> backward from a derivation**: this project deleted eighteen hand-written
+> `needsRightButton` booleans a week earlier precisely because deriving the
+> property from each game's behavior was stronger, and a gesture table would
+> have re-declared it. And **the axis a shared form is keyed on decides whether
+> it cuts with the grain or across it**: the collection's input duplication is
+> real and large, but it clusters by *puzzle family*, not by gesture — so a
+> gesture-keyed table serves 14 games and is escaped by 43, while the
+> mechanic-keyed module `border-grid.ts` already serves its two completely.
+> `unify-the-note-taking-cell` is that finding, filed.
+>
+> **The falsifier working is the system working.** Row 3 named Sixteen up front
+> and Sixteen killed it, before a line of framework was written. That is what
+> the readiness lines and the named falsifiers are *for*, and it is why a
+> not-yet-ready row carries an exploration rather than a design.
 
 Presentation is **held**: the scene-graph postmortem's bar is real downstream
 pressure, and none exists yet. Hints for the deliberately held-back games
@@ -235,9 +260,13 @@ Three commitments shape everything here:
 
 You run the scaffolder and fill in five declarations: a **board model** (grid
 topology, cell domain, what an edge/vertex means — the desc codec, state
-cloning, coordinate maps and cursor movement fall out); a **gesture table**
+cloning, coordinate maps and cursor movement fall out); ~~a **gesture table**
 (click cycles a cell, drag paints, right-click marks — keyboard and touch
-equivalents are derived, which is what the input-parity bar demands); a
+equivalents are derived, which is what the input-parity bar demands)~~ — **that
+one is withdrawn**, and input stays a hand-written `interpretMove` over shared
+*mechanic* modules (`border-grid.ts`, and the note-taking cell after
+`unify-the-note-taking-cell`), because the keyboard equivalent of a drag is a
+design and not a derivation; a
 **presets/params declaration** (the custom-params dialog, the type summary and
 the difficulty contract fall out); a **technique list** (solve, grade,
 generate, hint, refuse all fall out); and a **tile painter** (the cache, diff

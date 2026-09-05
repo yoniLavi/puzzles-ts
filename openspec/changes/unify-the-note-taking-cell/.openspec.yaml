@@ -1,0 +1,6 @@
+# No deltas yet: the requirement states what the shared arm guarantees, and that
+# sentence should be written from the extracted module rather than before it —
+# a spec written first would describe the module we imagined, and the eleventh
+# game is the one that decides what the module actually promises.
+schema: spec-driven
+skip_specs: true

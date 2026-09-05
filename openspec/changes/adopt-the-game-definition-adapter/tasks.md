@@ -1,7 +1,9 @@
 # adopt-the-game-definition-adapter — tasks
 
-Scaffolded 2026-09-04. **Blocked**: needs `declare-params-and-presets` and
-`declare-the-gesture-table` to have produced something to adapt.
+Scaffolded 2026-09-04. **Blocked**: needs more than one declaration to have
+produced something to adapt. `declare-params-and-presets` shipped 2026-09-05;
+`declare-the-gesture-table` was withdrawn the same day, so the second
+declaration this waits on is now `declare-the-board-model`.
 
 ## 1. Co-develop, never build-then-point
 

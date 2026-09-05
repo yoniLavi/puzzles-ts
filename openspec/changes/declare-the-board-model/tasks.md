@@ -1,7 +1,9 @@
 # declare-the-board-model — tasks
 
-Scaffolded 2026-09-04. **Not ready — exemplar-gated.** Sequenced after
-`declare-the-gesture-table`.
+Scaffolded 2026-09-04. **Not ready — exemplar-gated.** It was sequenced after
+`declare-the-gesture-table`; that change was withdrawn on 2026-09-05, so this is
+now the next declaration to be tried. Read the withdrawal's three lessons in the
+proposal before task 0.
 
 ## 0. Explore, against a game chosen to break it
 

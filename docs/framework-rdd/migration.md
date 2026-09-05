@@ -19,7 +19,7 @@ the invariants that must not move.
 | `candidate-hint.ts` + `latin.ts` + `latin-hint.ts` | The CandidateBoard and LatinBoard substrates. |
 | `difficulty.ts` (`DifficultyContract`) | Derived from the ladder; the contract type survives as the introspection surface. |
 | `overlay-sidecar.ts` | Internal to the tile renderer; no game-visible API. |
-| `pointer.ts`, `params.ts`, `key-labels.ts` | The gesture library's and param layer's leaves. |
+| `pointer.ts`, `params.ts`, `key-labels.ts` | The param layer's leaves. (`pointer.ts` was to be the gesture library's; that direction is withdrawn — it stays what it is, the frontend-fact leaf, and the derivable half of a keyboard is already derived there.) |
 | `grid/`, `geometry.ts` | The board-model topology providers. |
 | `retry-limit.ts`, `step-budget.ts` | Framework-injected budgets. |
 | `testing/` harness + the per-capability guards | The conformance suite's execution layer. |
@@ -101,9 +101,14 @@ Named up front, because an RDD doc that cannot fail is decoration:
 - The adapter forces contortion on the first non-Latin exemplar (the
   Palisade re-expression is the test — edge games are where "cells with
   domains" assumptions die).
-- The derived gesture layer cannot express a real game's input without more
+- ~~The derived gesture layer cannot express a real game's input without more
   declaration than the `interpretMove` it replaces (Sixteen's drag-to-slide
-  is the test).
+  is the test).~~ **This one fired, 2026-09-05.** Sixteen's input decomposes
+  into six arms; two are library-shaped and the other four are ~155 of its 262
+  lines. The gesture layer is withdrawn —
+  `openspec/postmortems/2026-09-05-gesture-table-withdrawal.md`. **A falsifier
+  that fires is the doc working**, which is why it is struck through here
+  rather than deleted.
 - The conformance matrix's cost outgrows the gate's budget discipline
   (measure at exemplar three, against `docs/games/testing.md`'s
   right-sizing rules).

@@ -25,13 +25,25 @@ now so the ordering is recorded, not so it is started next.
 > capability set from and is the named guard against `re-express-the-collection`'s
 > characteristic risk.
 >
-> **The criterion that settles it, to be applied when `declare-the-gesture-table`
-> lands:** did the gesture table need to know about any *other* declaration to
-> do its job? If each declaration keeps standing alone, this change is a
-> manifest reader and not an adapter, and `re-express-the-collection` is N small
-> per-concern adoptions rather than one sweep. If the gesture table cannot be
-> expressed without reaching for the board model, the definition object is real
-> and this change stays as written.
+> **The criterion that settles it** — did a declaration need to know about any
+> *other* declaration to do its job? If each keeps standing alone, this change
+> is a manifest reader and not an adapter, and `re-express-the-collection` is N
+> small per-concern adoptions rather than one sweep. If one cannot be expressed
+> without reaching for another, the definition object is real and this change
+> stays as written.
+>
+> **It was to be applied when `declare-the-gesture-table` landed. That change
+> was withdrawn** on 2026-09-05 (`openspec/postmortems/2026-09-05-gesture-table-withdrawal.md`),
+> so the criterion moves to `declare-the-board-model`, which is now the next
+> declaration to be tried and is in any case the one most likely to be reached
+> *for* rather than to reach.
+>
+> The withdrawal is weak evidence on the "stands alone" side and should be
+> weighed as weak: input was the concern most plausibly needing the board
+> model's geometry, and it turned out not to want a declaration at all — the
+> sharing it wanted was a *mechanic* module (`border-grid.ts`-shaped), which
+> reaches for nothing. That is one concern declining to join, not four
+> declarations proving independent.
 >
 > Do not settle it from rows 1 and 2 alone — they are the rows least likely to
 > need each other.

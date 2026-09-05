@@ -109,6 +109,19 @@ promise to players ([`migration.md`](./migration.md)).
 
 ## Moves and gestures
 
+> **⛔ WITHDRAWN, 2026-09-05.** This section is the one piece of the vision that
+> has been *falsified* rather than left unbuilt, and it is kept here for the
+> argument only — nothing below is a direction the project is heading in. The
+> exploration read all 57 `interpretMove` bodies and fired three of the
+> proposal's own disqualifying conditions, including its named falsifier
+> (Sixteen). Two findings matter most: **the keyboard equivalent of a drag is a
+> design, not a derivation** — `docs/games/input.md` § "Giving a drag game a
+> keyboard" has the seven worked examples — and the parity benefit promised
+> below **had already shipped**, derived from behavior rather than declared, in
+> `audit-input-mode-parity`. The full record and the measurements are
+> `openspec/postmortems/2026-09-05-gesture-table-withdrawal.md`; what the
+> exploration did find is `unify-the-note-taking-cell`.
+
 **You declare:** the move union (typed, discriminated — as today) and a
 **gesture table**: pointer gesture → move constructor (click cycles, drag
 paints accretively, right-click marks, press-picks-transformation, …), drawn
@@ -134,9 +147,13 @@ gap is declared (and surfaces in the conformance report, not in silence).
 > what input logic could move to shared code *today*, against the criterion
 > [`engine/border-grid.ts`](../../src/engine/border-grid.ts) states — not "is
 > this the same text" but **"would a change here have to happen in every copy at
-> once?"** It is here rather than in `docs/games/` because it is the evidence
-> for the gesture table's economics, and because the "declined" half is the part
-> a future session most needs, so it is not re-proposed each time.
+> once?"** It was written as the evidence for the gesture table's economics; the
+> table is withdrawn and **the survey outlives it**, because what it measured is
+> what input logic can be shared, which is still the live question. It is here
+> rather than in `docs/games/` because the "declined" half is the part a future
+> session most needs, so it is not re-proposed each time — and because the 2026-09-05
+> exploration found one of those declines to have been half wrong, which is
+> recorded in place below.
 
 **Lifted, because each is one *frontend fact* with N restatements** — the class
 where a copy is not merely redundant but silently wrong the day the fact moves:
@@ -177,8 +194,9 @@ should be free to differ between games. For these, we do not:
   Splits cleanly rather than being declined: *"is this a digit key and which
   digit"* is one fact and belongs in `pointer.ts`; the **bound** (`<= w`,
   `< n`, `<= ncolors`) and whether `0` clears or means ten are real per-game
-  answers and stay. The gesture table's `digits(1..w) → move` is the end state;
-  the helper is the step that gets there without waiting for it.
+  answers and stay. ~~The gesture table's `digits(1..w) → move` is the end
+  state~~ — there is no such end state now; the helper *is* the answer, and the
+  bound stays the game's.
 - **The Latin-family highlight-then-type flow** (Solo, Keen, Towers, Mathrax,
   Unequal, Seismic, Group, Salad) — the one where the caution still applies, and
   for the right reason rather than the retired one: sticky pencil, mark-all
@@ -187,6 +205,17 @@ should be free to differ between games. For these, we do not:
   exactly as [`border-grid.ts`](../../src/engine/border-grid.ts) did it — extract
   what the player operates, leave every game its own move type and its own
   answers.
+
+  **Re-measured 2026-09-05, and the survey was wrong twice in the same
+  direction.** The population is **eleven**, not eight — Abcd, Crossing and
+  Undead run the same flow and the survey missed them, exactly as its own
+  cursor entry above records missing four by counting names. And the last
+  sentence prescribes the split without anyone having performed it: `jscpd`
+  over the eleven `index.ts` files measures **514 duplicated lines**, which
+  displaces Palisade/Separate's 466 as the repository's largest cross-game
+  duplication, 60% of it inside `interpretMove`. The caution was right about
+  the *semantics* and wrong to leave the *mechanic* where it was.
+  → `unify-the-note-taking-cell`.
 
 **And one found by re-reading the guides for the retired excuse**, which is
 worth noting as a method: grepping `docs/games/` for "stays per-game" and
