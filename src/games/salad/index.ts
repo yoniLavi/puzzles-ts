@@ -154,7 +154,7 @@ function interpretMove(
         // only moves the highlight. A filled square can show no pencil mark, so
         // the toggle never drags the highlight onto one.
         if (newpencil) {
-          ui.hpencil = !ui.hpencil;
+          ui.pencilMode = !ui.pencilMode;
           if (selectable && state.grid[i] === 0) {
             ui.cursor.x = gx;
             ui.cursor.y = gy;
@@ -173,18 +173,18 @@ function interpretMove(
       } else if (
         selectable &&
         (!ui.cursor.visible ||
-          (newpencil ? !ui.hpencil : ui.hpencil) ||
+          (newpencil ? !ui.pencilMode : ui.pencilMode) ||
           ui.cursor.x !== gx ||
           ui.cursor.y !== gy)
       ) {
         ui.cursor.x = gx;
         ui.cursor.y = gy;
-        ui.hpencil = newpencil;
+        ui.pencilMode = newpencil;
         ui.cursor.visible = true;
       } else {
         ui.cursor.visible = false;
       }
-      ui.hcursor = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
 
@@ -208,13 +208,13 @@ function interpretMove(
       ui.cursor.y = moved.y;
     }
     ui.cursor.visible = true;
-    ui.hcursor = true;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
   if (ui.cursor.visible && button === CURSOR_SELECT) {
-    ui.hpencil = !ui.hpencil;
-    ui.hcursor = true;
+    ui.pencilMode = !ui.pencilMode;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
@@ -222,10 +222,10 @@ function interpretMove(
     ui.cursor.visible &&
     (state.gridclues[pos] === 0 || state.gridclues[pos] === CIRCLE)
   ) {
-    const type = ui.hpencil ? "pencil" : "set";
+    const type = ui.pencilMode ? "pencil" : "set";
     /** Upstream: a mouse-driven real entry drops the highlight afterwards. */
     const commit = (value: SaladEntry): SaladMove => {
-      if (!ui.hcursor && !ui.hpencil) ui.cursor.visible = false;
+      if (!ui.cursorFromKeyboard && !ui.pencilMode) ui.cursor.visible = false;
       return { type, x: ui.cursor.x, y: ui.cursor.y, value };
     };
 
@@ -243,8 +243,8 @@ function interpretMove(
     }
     // 'O' / 'o' / '+' / '=': definitely not empty.
     if (button === 79 || button === 111 || button === 43 || button === 61) {
-      if (state.gridclues[pos] === CIRCLE && ui.hpencil) return null;
-      if (state.grid[pos] !== 0 && ui.hpencil) return null;
+      if (state.gridclues[pos] === CIRCLE && ui.pencilMode) return null;
+      if (state.grid[pos] !== 0 && ui.pencilMode) return null;
       return commit("circle");
     }
   }

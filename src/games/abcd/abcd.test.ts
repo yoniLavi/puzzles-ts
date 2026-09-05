@@ -255,7 +255,7 @@ describe("abcd moves through a Midend", () => {
     const at = (s: AbcdState, x: number, y: number): AbcdUi => {
       const ui = newUi(s);
       ui.cursor.visible = true;
-      ui.hcursor = true;
+      ui.cursorFromKeyboard = true;
       ui.cursor.x = x;
       ui.cursor.y = y;
       return ui;
@@ -405,22 +405,22 @@ describe("abcd input (interpretMove)", () => {
     // Left-click selects a cell for ink.
     abcdGame.interpretMove(st, ui, ds, center(p, 2, 3), LEFT_BUTTON);
     expect(ui.cursor.visible).toBe(true);
-    expect(ui.hpencil).toBe(false);
+    expect(ui.pencilMode).toBe(false);
     expect([ui.cursor.x, ui.cursor.y]).toEqual([2, 3]);
 
     // Right-click toggles pencil mode ON and moves the highlight onto the cell.
     abcdGame.interpretMove(st, ui, ds, center(p, 1, 1), RIGHT_BUTTON);
-    expect(ui.hpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     expect([ui.cursor.x, ui.cursor.y]).toEqual([1, 1]);
 
     // A left-click on a new cell keeps pencil mode ON (sticky).
     abcdGame.interpretMove(st, ui, ds, center(p, 0, 0), LEFT_BUTTON);
-    expect(ui.hpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     expect([ui.cursor.x, ui.cursor.y]).toEqual([0, 0]);
 
     // Right-click again toggles pencil mode OFF (stays on until right-clicked again).
     abcdGame.interpretMove(st, ui, ds, center(p, 0, 0), RIGHT_BUTTON);
-    expect(ui.hpencil).toBe(false);
+    expect(ui.pencilMode).toBe(false);
 
     // A left-click on the already-highlighted cell deselects it.
     abcdGame.interpretMove(st, ui, ds, center(p, 0, 0), LEFT_BUTTON);
@@ -562,10 +562,10 @@ describe("abcd render", () => {
   it("draws the pencil-mode indicator only while pencil mode is on", () => {
     const st = newState(P(5, 5, 4), newAbcdDesc(P(5, 5, 4), randomNew("r-ind")).desc);
     const palette = abcdGame.colors([0.9, 0.9, 0.9]);
-    const render = (hpencil: boolean): RecordingDrawing => {
+    const render = (pencilMode: boolean): RecordingDrawing => {
       const ui = newUi(st);
-      ui.hpencil = hpencil;
-      ui.cursor.visible = hpencil;
+      ui.pencilMode = pencilMode;
+      ui.cursor.visible = pencilMode;
       const ds = newDrawState(st);
       setTileSize(ds, abcdGame.preferredTileSize ?? 36);
       const dr = new RecordingDrawing(palette);

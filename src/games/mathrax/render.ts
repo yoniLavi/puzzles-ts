@@ -412,7 +412,7 @@ export function redraw(
         ui.cursor.x === x &&
         ui.cursor.y === y
       )
-        fs |= ui.cpencil ? FD_PENCIL : FD_CURSOR;
+        fs |= ui.pencilMode ? FD_PENCIL : FD_CURSOR;
 
       const tile = state.grid[i] | (state.marks[i] << 4) | (fs << 14);
       if (ds.tiles[i] !== tile || ds.wrong.stale(i)) {
@@ -423,8 +423,8 @@ export function redraw(
     }
   }
 
-  if (firstFrame || ds.pencilModeShown !== ui.cpencil) {
-    drawPencilIndicator(dr, o, ts, ui.cpencil);
-    ds.pencilModeShown = ui.cpencil;
+  if (firstFrame || ds.pencilModeShown !== ui.pencilMode) {
+    drawPencilIndicator(dr, o, ts, ui.pencilMode);
+    ds.pencilModeShown = ui.pencilMode;
   }
 }

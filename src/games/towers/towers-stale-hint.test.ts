@@ -56,7 +56,7 @@ function navTo(me: Me, x: number, y: number): void {
   for (let i = 0; i < y; i++) me.processInput(0, 0, CURSOR_DOWN);
 }
 function setPencilMode(me: Me, want: boolean): void {
-  if (peek(me).ui.hpencil !== want) me.processInput(0, 0, CURSOR_SELECT);
+  if (peek(me).ui.pencilMode !== want) me.processInput(0, 0, CURSOR_SELECT);
 }
 function placeKb(me: Me, x: number, y: number, n: number): void {
   navTo(me, x, y);

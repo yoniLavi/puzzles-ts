@@ -203,7 +203,7 @@ export interface SaladDrawState {
   colcount: Int32Array;
   /** Whether the pencil-mode indicator was drawn last frame (it lives in the
    * clue margin, outside the per-tile cache). */
-  pencilMode: boolean;
+  pencilModeShown: boolean;
 }
 
 export function newDrawState(s: SaladState): SaladDrawState {
@@ -222,7 +222,7 @@ export function newDrawState(s: SaladState): SaladDrawState {
     marks: new HintMarks(),
     rowcount: new Int32Array(o2),
     colcount: new Int32Array(o2),
-    pencilMode: false,
+    pencilModeShown: false,
   };
 }
 
@@ -284,7 +284,7 @@ function setDrawFlags(
       const i = y * o + x;
       let f = 0;
       if (cursorShown && ui.cursor.x === x && ui.cursor.y === y)
-        f |= ui.hpencil ? FD_PENCIL : FD_CURSOR;
+        f |= ui.pencilMode ? FD_PENCIL : FD_CURSOR;
 
       const d = s.grid[i];
       if (
@@ -786,10 +786,10 @@ export function redraw(
   // margin tile is a corner, so it never holds a border clue in either mode and
   // nothing else ever paints there — but it is outside the per-tile cache, so
   // the on/off state is tracked here and the tile repainted on a change.
-  if (!ds.started || ds.pencilMode !== ui.hpencil) {
-    ds.pencilMode = ui.hpencil;
+  if (!ds.started || ds.pencilModeShown !== ui.pencilMode) {
+    ds.pencilModeShown = ui.pencilMode;
     dr.drawRect({ x: 0, y: 0, w: ts, h: ts }, COL_BACKGROUND);
-    if (ui.hpencil) drawPencilGlyph(dr, 0, 0, ts, COL_PENCIL_BODY, COL_BORDER);
+    if (ui.pencilMode) drawPencilGlyph(dr, 0, 0, ts, COL_PENCIL_BODY, COL_BORDER);
     dr.drawUpdate({ x: 0, y: 0, w: ts, h: ts });
   }
 

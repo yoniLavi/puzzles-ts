@@ -148,7 +148,7 @@ function interpretMove(
     if (l >= 0) {
       // With a cell selected, clicking a number that fits its run writes it in
       // at once — the whole point of the aid.
-      if (ui.cursor.visible && !ui.cpencil) {
+      if (ui.cursor.visible && !ui.pencilMode) {
         const placed = placedRuns(state.puzzle, state.grid);
         const run = runForNumber(
           state.puzzle,
@@ -187,7 +187,7 @@ function interpretMove(
         // Leave the cell selected so typing carries on from where the clue
         // landed; without this the next keystroke is silently ignored.
         ui.cursor.visible = true;
-        ui.ckey = false;
+        ui.cursorFromKeyboard = false;
         return { kind: "place", run, number: held };
       }
       // Clicking anywhere it cannot go puts it back down and selects normally.
@@ -201,12 +201,12 @@ function interpretMove(
         ui.cursor.visible &&
         ui.cursor.x === gx &&
         ui.cursor.y === gy &&
-        (ui.pencilSticky || !ui.cpencil)
+        (ui.pencilSticky || !ui.pencilMode)
       ) {
         // Crossword convention (fork): clicking the selected cell again flips
         // between filling across and down — but only where there is something
         // to flip, so everywhere else it still deselects, exactly as upstream.
-        if (!ui.cpencil && editable && atCrossing(state.puzzle, gx, gy)) {
+        if (!ui.pencilMode && editable && atCrossing(state.puzzle, gx, gy)) {
           ui.dir = ui.dir === "across" ? "down" : "across";
         } else {
           ui.cursor.visible = false;
@@ -216,12 +216,12 @@ function interpretMove(
         ui.cursor.y = gy;
         ui.cursor.visible = true;
         ui.dir = snapDirection(state.puzzle, gx, gy, ui.dir);
-        if (!ui.pencilSticky) ui.cpencil = false;
+        if (!ui.pencilSticky) ui.pencilMode = false;
       }
       // A wall takes nothing, and (in pencil mode) neither does a filled cell —
       // highlighting one would just suggest an edit that can't happen.
-      if (!editable || (ui.cpencil && filled)) ui.cursor.visible = false;
-      ui.ckey = false;
+      if (!editable || (ui.pencilMode && filled)) ui.cursor.visible = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
 
@@ -229,7 +229,7 @@ function interpretMove(
       if (ui.pencilSticky) {
         // Toggle the persistent pencil mode (CapsLock-style), and only move the
         // highlight onto a cell that can actually take a mark.
-        ui.cpencil = !ui.cpencil;
+        ui.pencilMode = !ui.pencilMode;
         if (editable && !filled) {
           ui.cursor.x = gx;
           ui.cursor.y = gy;
@@ -240,20 +240,20 @@ function interpretMove(
         // Upstream: select this cell for pencil marks (or deselect a repeat).
         if (
           !ui.cursor.visible ||
-          !ui.cpencil ||
+          !ui.pencilMode ||
           ui.cursor.x !== gx ||
           ui.cursor.y !== gy
         ) {
           ui.cursor.x = gx;
           ui.cursor.y = gy;
-          ui.cpencil = true;
+          ui.pencilMode = true;
           ui.cursor.visible = true;
         } else {
           ui.cursor.visible = false;
         }
         if (filled || !editable) ui.cursor.visible = false;
       }
-      ui.ckey = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
   }
@@ -268,13 +268,13 @@ function interpretMove(
       ui.cursor.y = moved.y;
     }
     ui.dir = snapDirection(state.puzzle, ui.cursor.x, ui.cursor.y, axis);
-    ui.cursor.visible = ui.ckey = true;
+    ui.cursor.visible = ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
   if (ui.cursor.visible && button === CURSOR_SELECT) {
-    ui.cpencil = !ui.cpencil;
-    ui.ckey = true;
+    ui.pencilMode = !ui.pencilMode;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
@@ -284,11 +284,11 @@ function interpretMove(
     const i = ui.cursor.y * w + ui.cursor.x;
     // Suppress no-op moves locally rather than comparing states (docs/games/README.md § "Before you start").
     if (walls[i]) return null;
-    if (ui.cpencil && state.grid[i] !== 0) return null; // notes can't touch a filled cell
-    if (!ui.cpencil && state.grid[i] === (digit ?? 0)) return null;
-    if (ui.cpencil && digit === null && state.marks[i] === 0) return null;
+    if (ui.pencilMode && state.grid[i] !== 0) return null; // notes can't touch a filled cell
+    if (!ui.pencilMode && state.grid[i] === (digit ?? 0)) return null;
+    if (ui.pencilMode && digit === null && state.marks[i] === 0) return null;
 
-    const move: CrossingMove = ui.cpencil
+    const move: CrossingMove = ui.pencilMode
       ? { kind: "pencil", x: ui.cursor.x, y: ui.cursor.y, digit }
       : { kind: "set", x: ui.cursor.x, y: ui.cursor.y, digit };
 
@@ -298,7 +298,7 @@ function interpretMove(
     // "inputting a complete number requires selecting each cell and typing a
     // digit one by one … could be enhanced by automatic cursor movement".
     const advanced =
-      ui.autoAdvance && !ui.cpencil && digit !== null
+      ui.autoAdvance && !ui.pencilMode && digit !== null
         ? nextInRun(state.puzzle, ui.cursor.x, ui.cursor.y, ui.dir)
         : null;
     if (advanced) {
@@ -307,7 +307,7 @@ function interpretMove(
       // Keep the selection up so the next digit lands where it is shown; a
       // mouse-driven entry would otherwise dismiss it (upstream, below).
       ui.cursor.visible = true;
-    } else if (!ui.ckey && !ui.cpencil) {
+    } else if (!ui.cursorFromKeyboard && !ui.pencilMode) {
       // Upstream: a mouse-driven ink entry hides the selection again; the
       // keyboard cursor and pencil mode both persist.
       ui.cursor.visible = false;
@@ -386,7 +386,11 @@ function changedState(
   next: CrossingState,
 ): void {
   const w = next.puzzle.w;
-  if (ui.cursor.visible && ui.cpencil && next.grid[ui.cursor.y * w + ui.cursor.x] !== 0)
+  if (
+    ui.cursor.visible &&
+    ui.pencilMode &&
+    next.grid[ui.cursor.y * w + ui.cursor.x] !== 0
+  )
     ui.cursor.visible = false;
 }
 

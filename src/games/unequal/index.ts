@@ -202,31 +202,36 @@ function interpretMove(
         tx === ui.cursor.x &&
         ty === ui.cursor.y &&
         ui.cursor.visible &&
-        (ui.pencilSticky || !ui.hpencil)
+        (ui.pencilSticky || !ui.pencilMode)
       ) {
         ui.cursor.visible = false;
       } else {
         ui.cursor.x = tx;
         ui.cursor.y = ty;
         ui.cursor.visible = !state.immutable[ty * o + tx];
-        if (!ui.pencilSticky) ui.hpencil = false;
+        if (!ui.pencilSticky) ui.pencilMode = false;
       }
-      ui.hcursor = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
     // RIGHT_BUTTON
     if (ui.pencilSticky) {
-      ui.hpencil = !ui.hpencil;
+      ui.pencilMode = !ui.pencilMode;
       if (state.grid[ty * o + tx] === 0) {
         ui.cursor.x = tx;
         ui.cursor.y = ty;
         ui.cursor.visible = true;
       }
     } else if (state.grid[ty * o + tx] === 0) {
-      if (tx === ui.cursor.x && ty === ui.cursor.y && ui.cursor.visible && ui.hpencil)
+      if (
+        tx === ui.cursor.x &&
+        ty === ui.cursor.y &&
+        ui.cursor.visible &&
+        ui.pencilMode
+      )
         ui.cursor.visible = false;
       else {
-        ui.hpencil = true;
+        ui.pencilMode = true;
         ui.cursor.x = tx;
         ui.cursor.y = ty;
         ui.cursor.visible = true;
@@ -234,7 +239,7 @@ function interpretMove(
     } else {
       ui.cursor.visible = false;
     }
-    ui.hcursor = false;
+    ui.cursorFromKeyboard = false;
     return UI_UPDATE;
   }
 
@@ -249,7 +254,7 @@ function interpretMove(
       else if (button === CURSOR_UP) ny = Math.max(ny - 1, 0);
       else if (button === CURSOR_DOWN) ny = Math.min(ny + 1, o - 1);
       ui.cursor.visible = true;
-      ui.hcursor = true;
+      ui.cursorFromKeyboard = true;
 
       let i = 0;
       for (; i < 4; i++) {
@@ -275,13 +280,13 @@ function interpretMove(
           }
         : { type: "spent", x: nx, y: ny, flag: adjToSpent(ADJTHAN[i].fo) };
     }
-    ui.hcursor = true;
+    ui.cursorFromKeyboard = true;
     return moveCursor(ui.cursor, button, o, o) ? UI_UPDATE : null;
   }
 
   if (ui.cursor.visible && button === CURSOR_SELECT) {
-    ui.hpencil = !ui.hpencil;
-    ui.hcursor = true;
+    ui.pencilMode = !ui.pencilMode;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
@@ -296,19 +301,19 @@ function interpretMove(
   if (ui.cursor.visible && n >= 0 && n <= o) {
     const i = ui.cursor.y * o + ui.cursor.x;
     if (state.immutable[i]) return null; // can't edit a given
-    if (ui.hpencil && state.grid[i] > 0) return null; // can't pencil a filled cell
+    if (ui.pencilMode && state.grid[i] > 0) return null; // can't pencil a filled cell
 
     // No-op: setting a cell to what it already holds (and no pencil marks).
-    if ((!ui.hpencil || n === 0) && state.grid[i] === n && state.pencil[i] === 0) {
-      if (!ui.hcursor) {
+    if ((!ui.pencilMode || n === 0) && state.grid[i] === n && state.pencil[i] === 0) {
+      if (!ui.cursorFromKeyboard) {
         ui.cursor.visible = false;
         return UI_UPDATE;
       }
       return null;
     }
 
-    const pencil = ui.hpencil && n > 0;
-    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight))
+    const pencil = ui.pencilMode && n > 0;
+    if (!ui.cursorFromKeyboard && !(ui.pencilMode && ui.pencilKeepHighlight))
       ui.cursor.visible = false;
     return pencil
       ? { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil }
@@ -391,8 +396,8 @@ function changedState(
   const o = newSt.order;
   if (
     ui.cursor.visible &&
-    ui.hpencil &&
-    !ui.hcursor &&
+    ui.pencilMode &&
+    !ui.cursorFromKeyboard &&
     newSt.grid[ui.cursor.y * o + ui.cursor.x] !== 0
   ) {
     ui.cursor.visible = false;

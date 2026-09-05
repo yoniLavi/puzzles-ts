@@ -319,7 +319,7 @@ describe("salad Ui-driven frames", () => {
       false,
     );
 
-    const pencil = paint(s, { ...ui, hpencil: true });
+    const pencil = paint(s, { ...ui, pencilMode: true });
     // The pencil highlight is a half-tile corner triangle, not a full fill.
     expect(
       pencil.ops.some(

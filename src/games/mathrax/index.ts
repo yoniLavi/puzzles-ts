@@ -157,18 +157,18 @@ function interpretMove(
         ui.cursor.visible &&
         ui.cursor.x === gx &&
         ui.cursor.y === gy &&
-        (ui.pencilSticky || !ui.cpencil)
+        (ui.pencilSticky || !ui.pencilMode)
       ) {
         ui.cursor.visible = false;
       } else {
         ui.cursor.x = gx;
         ui.cursor.y = gy;
         ui.cursor.visible = true;
-        if (!ui.pencilSticky) ui.cpencil = false;
+        if (!ui.pencilSticky) ui.pencilMode = false;
       }
       // A given can't be edited, so never leave it highlighted.
       if (state.flags[gy * o + gx] & F_IMMUTABLE) ui.cursor.visible = false;
-      ui.ckey = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
 
@@ -176,7 +176,7 @@ function interpretMove(
       if (ui.pencilSticky) {
         // Toggle the persistent pencil mode (CapsLock-style), and only move the
         // highlight onto a cell that can actually take a mark.
-        ui.cpencil = !ui.cpencil;
+        ui.pencilMode = !ui.pencilMode;
         if (!filled) {
           ui.cursor.x = gx;
           ui.cursor.y = gy;
@@ -185,20 +185,20 @@ function interpretMove(
       } else {
         if (
           !ui.cursor.visible ||
-          !ui.cpencil ||
+          !ui.pencilMode ||
           ui.cursor.x !== gx ||
           ui.cursor.y !== gy
         ) {
           ui.cursor.x = gx;
           ui.cursor.y = gy;
-          ui.cpencil = true;
+          ui.pencilMode = true;
           ui.cursor.visible = true;
         } else {
           ui.cursor.visible = false;
         }
         if (filled) ui.cursor.visible = false;
       }
-      ui.ckey = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
   }
@@ -211,13 +211,13 @@ function interpretMove(
     ui.cursor.x = moved.x;
     ui.cursor.y = moved.y;
     ui.cursor.visible = true;
-    ui.ckey = true;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
   if (ui.cursor.visible && button === CURSOR_SELECT) {
-    ui.cpencil = !ui.cpencil;
-    ui.ckey = true;
+    ui.pencilMode = !ui.pencilMode;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
@@ -232,17 +232,17 @@ function interpretMove(
 
     if (c > o) return null;
     // A filled square can't take a pencil mark (reachable via the cursor).
-    if (ui.cpencil && state.grid[i] !== 0) return null;
+    if (ui.pencilMode && state.grid[i] !== 0) return null;
     // Re-entering the digit already there changes nothing.
-    if (!ui.cpencil && state.grid[i] === c) {
-      if (ui.ckey) return null;
+    if (!ui.pencilMode && state.grid[i] === c) {
+      if (ui.cursorFromKeyboard) return null;
       ui.cursor.visible = false;
       return UI_UPDATE;
     }
     if (state.flags[i] & F_IMMUTABLE) return null;
 
-    if (!ui.ckey && !ui.cpencil) ui.cursor.visible = false;
-    return { type: "set", x: ui.cursor.x, y: ui.cursor.y, n: c, pencil: ui.cpencil };
+    if (!ui.cursorFromKeyboard && !ui.pencilMode) ui.cursor.visible = false;
+    return { type: "set", x: ui.cursor.x, y: ui.cursor.y, n: c, pencil: ui.pencilMode };
   }
 
   // 'M' / 'm': fill every empty cell's notes, then — on an already-noted board —

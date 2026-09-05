@@ -226,16 +226,16 @@ function interpretMove(
         tx === ui.cursor.x &&
         ty === ui.cursor.y &&
         ui.cursor.visible &&
-        (ui.pencilSticky || !ui.hpencil)
+        (ui.pencilSticky || !ui.pencilMode)
       ) {
         ui.cursor.visible = false;
       } else {
         ui.cursor.x = tx;
         ui.cursor.y = ty;
         ui.cursor.visible = !state.immutable[ty * w + tx];
-        if (!ui.pencilSticky) ui.hpencil = false;
+        if (!ui.pencilSticky) ui.pencilMode = false;
       }
-      ui.hcursor = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
     if (button === RIGHT_BUTTON) {
@@ -243,7 +243,7 @@ function interpretMove(
         // Toggle the persistent pencil mode (CapsLock-style). Only move the
         // highlight onto an *empty* cell — a filled/given cell can't take a
         // pencil mark, so selecting it would just be confusing.
-        ui.hpencil = !ui.hpencil;
+        ui.pencilMode = !ui.pencilMode;
         if (state.grid[ty * w + tx] === 0) {
           ui.cursor.x = tx;
           ui.cursor.y = ty;
@@ -254,11 +254,11 @@ function interpretMove(
           tx === ui.cursor.x &&
           ty === ui.cursor.y &&
           ui.cursor.visible &&
-          ui.hpencil
+          ui.pencilMode
         ) {
           ui.cursor.visible = false;
         } else {
-          ui.hpencil = true;
+          ui.pencilMode = true;
           ui.cursor.x = tx;
           ui.cursor.y = ty;
           ui.cursor.visible = true;
@@ -266,7 +266,7 @@ function interpretMove(
       } else {
         ui.cursor.visible = false;
       }
-      ui.hcursor = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
   } else if (button === LEFT_BUTTON) {
@@ -287,13 +287,13 @@ function interpretMove(
         return { type: "clueDone", index: clueIndex(cx, cy, w) };
       return null;
     }
-    ui.hcursor = true;
+    ui.cursorFromKeyboard = true;
     return moveCursor(ui.cursor, button, w, w) ? UI_UPDATE : null;
   }
 
   if (ui.cursor.visible && button === CURSOR_SELECT) {
-    ui.hpencil = !ui.hpencil;
-    ui.hcursor = true;
+    ui.pencilMode = !ui.pencilMode;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
@@ -304,20 +304,20 @@ function interpretMove(
     const i = ui.cursor.y * w + ui.cursor.x;
 
     // Can't pencil-mark a filled square; can't touch an immutable one.
-    if (ui.hpencil && state.grid[i]) return null;
+    if (ui.pencilMode && state.grid[i]) return null;
     if (state.immutable[i]) return null;
 
     // No-op: setting a square to what it already holds (and no pencil marks).
-    if ((!ui.hpencil || n === 0) && state.grid[i] === n && state.pencil[i] === 0) {
-      if (!ui.hcursor) {
+    if ((!ui.pencilMode || n === 0) && state.grid[i] === n && state.pencil[i] === 0) {
+      if (!ui.cursorFromKeyboard) {
         ui.cursor.visible = false;
         return UI_UPDATE;
       }
       return null;
     }
 
-    const pencil = ui.hpencil && n > 0;
-    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight))
+    const pencil = ui.pencilMode && n > 0;
+    if (!ui.cursorFromKeyboard && !(ui.pencilMode && ui.pencilKeepHighlight))
       ui.cursor.visible = false;
     // Auto-pencil applies only to a real placement, not a pencil toggle.
     return pencil
@@ -412,8 +412,8 @@ function changedState(
   const w = newSt.w;
   if (
     ui.cursor.visible &&
-    ui.hpencil &&
-    !ui.hcursor &&
+    ui.pencilMode &&
+    !ui.cursorFromKeyboard &&
     newSt.grid[ui.cursor.y * w + ui.cursor.x] !== 0
   ) {
     ui.cursor.visible = false;

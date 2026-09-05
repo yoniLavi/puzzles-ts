@@ -386,7 +386,7 @@ describe("crossing input", () => {
     const ui = newUi();
     const c = cellCenter(ox, oy);
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
-    expect(ui).toMatchObject({ cursor: newCursor(ox, oy, true), cpencil: false });
+    expect(ui).toMatchObject({ cursor: newCursor(ox, oy, true), pencilMode: false });
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
     expect(ui.cursor.visible).toBe(false);
   });
@@ -408,17 +408,17 @@ describe("crossing input", () => {
     const c = cellCenter(open % 5, Math.floor(open / 5));
 
     expect(press(state, ui, RIGHT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
-    expect(ui).toMatchObject({ cpencil: true, cursor: { visible: true } });
+    expect(ui).toMatchObject({ pencilMode: true, cursor: { visible: true } });
     // A left-click elsewhere keeps pencil mode on.
     const other = cellCenter(
       state.puzzle.walls.lastIndexOf(0) % 5,
       Math.floor(state.puzzle.walls.lastIndexOf(0) / 5),
     );
     press(state, ui, LEFT_BUTTON, other.x, other.y);
-    expect(ui.cpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     // Right-click again turns it off.
     press(state, ui, RIGHT_BUTTON, c.x, c.y);
-    expect(ui.cpencil).toBe(false);
+    expect(ui.pencilMode).toBe(false);
   });
 
   it("right-click without the sticky pref is upstream's per-cell pencil select", () => {
@@ -428,7 +428,7 @@ describe("crossing input", () => {
     const open = state.puzzle.walls.indexOf(0);
     const c = cellCenter(open % 5, Math.floor(open / 5));
     press(state, ui, RIGHT_BUTTON, c.x, c.y);
-    expect(ui).toMatchObject({ cpencil: true, cursor: { visible: true } });
+    expect(ui).toMatchObject({ pencilMode: true, cursor: { visible: true } });
     press(state, ui, RIGHT_BUTTON, c.x, c.y);
     expect(ui.cursor.visible).toBe(false);
   });
@@ -437,9 +437,12 @@ describe("crossing input", () => {
     const state = newState(P5, FIX.desc);
     const ui = newUi();
     expect(press(state, ui, CURSOR_RIGHT, 0, 0)).toBe(UI_UPDATE);
-    expect(ui).toMatchObject({ cursor: newCursor(1, 0, true), ckey: true });
+    expect(ui).toMatchObject({
+      cursor: newCursor(1, 0, true),
+      cursorFromKeyboard: true,
+    });
     expect(press(state, ui, CURSOR_SELECT, 0, 0)).toBe(UI_UPDATE);
-    expect(ui.cpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
   });
 
   it("enters a digit, and suppresses the no-op moves locally", () => {
@@ -1228,7 +1231,7 @@ describe("crossing rendering", () => {
     ).toHaveLength(0);
 
     // The keyboard cursor draws corner brackets rather than a filled highlight.
-    const keyed = { ...selected, ckey: true };
+    const keyed = { ...selected, cursorFromKeyboard: true };
     const keyedOps = paint(keyed).ops;
     expect(
       keyedOps.filter((o) => o.op === "rect" && o.color === COL_HIGHLIGHT),

@@ -197,7 +197,7 @@ function interpretMove(
   const xinfo = common.xinfo;
 
   // Real-entry mode: highlight shown, not penciling.
-  if (ui.cursor.visible && !ui.hpencil) {
+  if (ui.cursor.visible && !ui.pencilMode) {
     const xi = xinfo[ui.cursor.x + ui.cursor.y * stride];
     if (xi >= 0 && !common.fixed[xi]) {
       let ccLocal = cc;
@@ -205,8 +205,9 @@ function interpretMove(
       // sentinel value here, not as a button the frontend sent.
       if (ccLocal >= 0 && state.guess[xi] === 1 << ccLocal) ccLocal = DELETE;
       const place = (monster: number): UndeadMove | null | UiUpdate => {
-        if (!ui.hcursor) ui.cursor.visible = false;
-        if (state.guess[xi] === monster) return ui.hcursor ? null : UI_UPDATE;
+        if (!ui.cursorFromKeyboard) ui.cursor.visible = false;
+        if (state.guess[xi] === monster)
+          return ui.cursorFromKeyboard ? null : UI_UPDATE;
         return { type: "set", cell: xi, monster };
       };
       if (button === KEY_G || button === KEY_g || button === KEY_1 || ccLocal === 0)
@@ -223,9 +224,9 @@ function interpretMove(
         isEraseKey(button) ||
         ccLocal === DELETE
       ) {
-        if (!ui.hcursor) ui.cursor.visible = false;
+        if (!ui.cursorFromKeyboard) ui.cursor.visible = false;
         if (state.guess[xi] === MON_NONE && state.pencils[xi] === 0)
-          return ui.hcursor ? null : UI_UPDATE;
+          return ui.cursorFromKeyboard ? null : UI_UPDATE;
         return { type: "clear", cell: xi };
       }
     }
@@ -241,19 +242,19 @@ function interpretMove(
     else if (button === CURSOR_RIGHT) ui.cursor.x += ui.cursor.x < w ? 1 : 0;
     else if (button === CURSOR_LEFT) ui.cursor.x -= ui.cursor.x > 1 ? 1 : 0;
     ui.cursor.visible = true;
-    ui.hcursor = true;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
   // Select toggles pencil mode.
   if (ui.cursor.visible && button === CURSOR_SELECT) {
-    ui.hpencil = !ui.hpencil;
-    ui.hcursor = true;
+    ui.pencilMode = !ui.pencilMode;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
   // Pencil-entry mode.
-  if (ui.cursor.visible && ui.hpencil) {
+  if (ui.cursor.visible && ui.pencilMode) {
     const xi = xinfo[ui.cursor.x + ui.cursor.y * stride];
     if (xi >= 0 && !common.fixed[xi]) {
       let move: UndeadMove | null = null;
@@ -270,12 +271,12 @@ function interpretMove(
         button === KEY_0 ||
         isEraseKey(button)
       ) {
-        if (state.pencils[xi] === 0) return ui.hcursor ? null : UI_UPDATE;
+        if (state.pencils[xi] === 0) return ui.cursorFromKeyboard ? null : UI_UPDATE;
         move = { type: "clear", cell: xi };
       }
       if (move) {
-        if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight)) {
-          ui.hpencil = false;
+        if (!ui.cursorFromKeyboard && !(ui.pencilMode && ui.pencilKeepHighlight)) {
+          ui.pencilMode = false;
           ui.cursor.visible = false;
         }
         return move;
@@ -293,48 +294,48 @@ function interpretMove(
           gx === ui.cursor.x &&
           gy === ui.cursor.y &&
           ui.cursor.visible &&
-          (ui.pencilSticky || !ui.hpencil)
+          (ui.pencilSticky || !ui.pencilMode)
         ) {
           ui.cursor.visible = false;
         } else {
           ui.cursor.x = gx;
           ui.cursor.y = gy;
           ui.cursor.visible = true;
-          if (!ui.pencilSticky) ui.hpencil = false;
+          if (!ui.pencilSticky) ui.pencilMode = false;
         }
-        ui.hcursor = false;
+        ui.cursorFromKeyboard = false;
         return UI_UPDATE;
       }
       if (button === RIGHT_BUTTON) {
         if (ui.pencilSticky) {
-          ui.hpencil = !ui.hpencil;
+          ui.pencilMode = !ui.pencilMode;
           if (g === MON_NONE) {
             ui.cursor.x = gx;
             ui.cursor.y = gy;
             ui.cursor.visible = true;
           }
-          ui.hcursor = false;
+          ui.cursorFromKeyboard = false;
           return UI_UPDATE;
         }
         // Non-sticky (upstream): right-click an empty cell enters pencil mode.
-        if (!ui.hpencil && g === MON_NONE) {
+        if (!ui.pencilMode && g === MON_NONE) {
           ui.cursor.visible = true;
-          ui.hpencil = true;
-          ui.hcursor = false;
+          ui.pencilMode = true;
+          ui.cursorFromKeyboard = false;
           ui.cursor.x = gx;
           ui.cursor.y = gy;
           return UI_UPDATE;
         }
         if (gx === ui.cursor.x && gy === ui.cursor.y && ui.cursor.visible) {
           ui.cursor.visible = false;
-          ui.hpencil = false;
-          ui.hcursor = false;
+          ui.pencilMode = false;
+          ui.cursorFromKeyboard = false;
           return UI_UPDATE;
         }
         if (g === MON_NONE) {
           ui.cursor.visible = true;
-          ui.hpencil = true;
-          ui.hcursor = false;
+          ui.pencilMode = true;
+          ui.cursorFromKeyboard = false;
           ui.cursor.x = gx;
           ui.cursor.y = gy;
           return UI_UPDATE;
@@ -406,7 +407,7 @@ function changedState(
   _old: UndeadState | null,
   newSt: UndeadState,
 ): void {
-  if (ui.cursor.visible && ui.hpencil && !ui.hcursor) {
+  if (ui.cursor.visible && ui.pencilMode && !ui.cursorFromKeyboard) {
     const stride = newSt.common.w + 2;
     const xi = newSt.common.xinfo[ui.cursor.x + ui.cursor.y * stride];
     if (xi >= 0) {

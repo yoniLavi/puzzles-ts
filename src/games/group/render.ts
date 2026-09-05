@@ -531,7 +531,7 @@ export function redraw(
         } else {
           highlight = ui.cursor.x === sx && ui.cursor.y === sy;
         }
-        if (highlight) tile |= ui.hpencil ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
+        if (highlight) tile |= ui.pencilMode ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
       }
 
       if (flashOn) tile |= DF_HIGHLIGHT; // completion flash

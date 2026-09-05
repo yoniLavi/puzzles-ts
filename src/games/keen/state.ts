@@ -516,8 +516,8 @@ export type KeenMove =
 
 export interface KeenUi {
   cursor: GridCursor;
-  hpencil: boolean;
-  hcursor: boolean;
+  pencilMode: boolean;
+  cursorFromKeyboard: boolean;
   /** Preference (default off, upstream `PREF_PENCIL_KEEP_HIGHLIGHT`): keep the
    * mouse highlight after a pencil-mark change. */
   pencilKeepHighlight: boolean;
@@ -531,8 +531,8 @@ export interface KeenUi {
 export function newUi(_state: KeenState): KeenUi {
   return {
     cursor: newCursor(),
-    hpencil: false,
-    hcursor: false,
+    pencilMode: false,
+    cursorFromKeyboard: false,
     pencilKeepHighlight: false,
     pencilSticky: true,
     // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its

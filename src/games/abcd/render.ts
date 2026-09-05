@@ -503,7 +503,7 @@ export function redraw(
       const i = y * w + x;
       let fs = 0;
       if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y)
-        fs |= ui.hpencil ? DF_PENCIL : DF_CURSOR;
+        fs |= ui.pencilMode ? DF_PENCIL : DF_CURSOR;
       if (adjErr[i]) fs |= DF_ERR;
 
       const letter = state.grid[i];
@@ -527,8 +527,8 @@ export function redraw(
   }
 
   // Pencil-mode indicator (fork addition): the sticky-pencil "mode on" glyph.
-  if (firstFrame || ds.pencilModeShown !== ui.hpencil) {
-    drawPencilIndicator(dr, ts, ui.hpencil);
-    ds.pencilModeShown = ui.hpencil;
+  if (firstFrame || ds.pencilModeShown !== ui.pencilMode) {
+    drawPencilIndicator(dr, ts, ui.pencilMode);
+    ds.pencilModeShown = ui.pencilMode;
   }
 }

@@ -512,7 +512,7 @@ export function redraw(
       const i = y * w + x;
       let tile = state.grid[i] ? state.grid[i] : state.pencil[i] << DF_PENCIL_SHIFT;
       if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y)
-        tile |= ui.hpencil ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
+        tile |= ui.pencilMode ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
       if (flash) tile |= DF_HIGHLIGHT;
       if (ds.errors[i] & ERR_LATIN) tile |= DF_ERR_LATIN;
       if (ds.errors[i] & ERR_CLUE) tile |= DF_ERR_CLUE;
@@ -556,8 +556,8 @@ export function redraw(
   });
 
   // Pencil-mode indicator (fork addition).
-  if (firstFrame || ds.pencilModeShown !== ui.hpencil) {
-    drawPencilIndicator(dr, w, ts, ui.hpencil);
-    ds.pencilModeShown = ui.hpencil;
+  if (firstFrame || ds.pencilModeShown !== ui.pencilMode) {
+    drawPencilIndicator(dr, w, ts, ui.pencilMode);
+    ds.pencilModeShown = ui.pencilMode;
   }
 }

@@ -173,10 +173,10 @@ describe("no doc comment describes a member that was deleted out from under it",
   // A field's doc comment does not disappear when the field does — it slides up
   // against the *next* member and silently becomes that member's documentation.
   // `unify-cross-game-vocabulary` folded "is the cursor shown" into
-  // `cursor.visible` and left four of these behind, each then reading as the
-  // doc for the flag below it: Abcd's "Cursor is currently shown" sat above
-  // `hcursor`, Crossing's above `cpencil`, Mathrax's and Seismic's above `ckey`.
-  // A fifth, unrelated, sat above a Netslide test helper.
+  // `cursor.visible` and left four of these behind — in Abcd, Crossing, Mathrax
+  // and Seismic — each then reading as the doc for the pencil-mode or
+  // cursor-provenance flag below it. A fifth, unrelated, sat above a Netslide
+  // test helper and described a different rect than the one it finds.
   //
   // Invisible to every other instrument in the gate — a comment compiles,
   // formats and passes — and worse than an absent comment, because it is read

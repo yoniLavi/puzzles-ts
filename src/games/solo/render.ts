@@ -694,7 +694,7 @@ export function redraw(
       let hl = 0;
       if (flash) hl = HL_SOLID;
       if (x === ui.cursor.x && y === ui.cursor.y && ui.cursor.visible)
-        hl = ui.hpencil ? HL_PENCIL : HL_SOLID;
+        hl = ui.pencilMode ? HL_PENCIL : HL_SOLID;
 
       if (d) {
         if (
@@ -760,8 +760,8 @@ export function redraw(
   });
 
   // Pencil-mode indicator (fork addition).
-  if (firstFrame || ds.pencilModeShown !== ui.hpencil) {
-    drawPencilIndicator(dr, cr, ts, ui.hpencil);
-    ds.pencilModeShown = ui.hpencil;
+  if (firstFrame || ds.pencilModeShown !== ui.pencilMode) {
+    drawPencilIndicator(dr, cr, ts, ui.pencilMode);
+    ds.pencilModeShown = ui.pencilMode;
   }
 }

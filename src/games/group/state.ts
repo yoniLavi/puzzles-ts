@@ -233,10 +233,10 @@ export interface GroupUi {
   ody: number;
   odn: number;
   /** The current highlight is a pencil-mark highlight (vs a real one). */
-  hpencil: boolean;
+  pencilMode: boolean;
   /** Whether the highlight is a keyboard cursor (survives keypresses, allowed
    * on immutable squares). */
-  hcursor: boolean;
+  cursorFromKeyboard: boolean;
   /** Header drag in progress: 0 none, 1 row, 2 column. */
   drag: number;
   dragnum: number;
@@ -254,8 +254,8 @@ export function newUi(_state: GroupState): GroupUi {
     odx: 0,
     ody: 0,
     odn: 0,
-    hpencil: false,
-    hcursor: false,
+    pencilMode: false,
+    cursorFromKeyboard: false,
     drag: 0,
     dragnum: 0,
     dragpos: 0,

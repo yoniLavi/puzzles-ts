@@ -673,9 +673,9 @@ export interface CrossingUi {
   /** Selected cell. */
   cursor: GridCursor;
   /** The selection takes pencil marks rather than ink. */
-  cpencil: boolean;
+  pencilMode: boolean;
   /** The selection came from the keyboard, so it survives an entry. */
-  ckey: boolean;
+  cursorFromKeyboard: boolean;
   /** Which way an entered digit advances the selection. Sticky: the arrow keys
    * set it, a repeat click at a crossing toggles it, and selecting a cell that
    * lies in only one run snaps it to that run. */
@@ -709,8 +709,8 @@ export interface CrossingUi {
 export function newUi(_state: CrossingState): CrossingUi {
   return {
     cursor: newCursor(),
-    cpencil: false,
-    ckey: false,
+    pencilMode: false,
+    cursorFromKeyboard: false,
     dir: "across",
     heldNumber: null,
     fitHighlight: true,

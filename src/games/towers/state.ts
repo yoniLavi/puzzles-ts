@@ -225,8 +225,8 @@ export type TowersMove =
 
 export interface TowersUi {
   cursor: GridCursor;
-  hpencil: boolean;
-  hcursor: boolean;
+  pencilMode: boolean;
+  cursorFromKeyboard: boolean;
   /** Preference: 3D tower rendering (vs flat 2D digits). Default on. */
   threeD: boolean;
   /** Preference: keep the mouse highlight after a pencil-mark change. */
@@ -245,8 +245,8 @@ export interface TowersUi {
 export function newUi(_state: TowersState): TowersUi {
   return {
     cursor: newCursor(),
-    hpencil: false,
-    hcursor: false,
+    pencilMode: false,
+    cursorFromKeyboard: false,
     threeD: true,
     pencilKeepHighlight: false,
     pencilSticky: true,

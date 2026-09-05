@@ -416,17 +416,17 @@ describe("towers sticky pencil mode", () => {
     const { st, ui, ds, a, b } = setup();
     // Right-click cell A → enter pencil mode.
     towersGame.interpretMove(st, ui, ds, center(a.x, a.y), RIGHT_BUTTON);
-    expect(ui.hpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     // Left-click a different cell → still in pencil mode (only the highlight moved).
     towersGame.interpretMove(st, ui, ds, center(b.x, b.y), LEFT_BUTTON);
-    expect(ui.hpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     expect([ui.cursor.x, ui.cursor.y]).toEqual([b.x, b.y]);
     // A digit now writes a pencil mark, not a real entry.
     const m = towersGame.interpretMove(st, ui, ds, center(b.x, b.y), 49 /* '1' */);
     expect(m).toEqual({ type: "set", x: b.x, y: b.y, n: 1, pencil: true });
     // Right-click again → toggle pencil mode back off.
     towersGame.interpretMove(st, ui, ds, center(a.x, a.y), RIGHT_BUTTON);
-    expect(ui.hpencil).toBe(false);
+    expect(ui.pencilMode).toBe(false);
   });
 
   it("right-click on a filled cell toggles the mode but does not select it", () => {
@@ -440,11 +440,11 @@ describe("towers sticky pencil mode", () => {
       pencil: false,
     });
     towersGame.interpretMove(filled, ui, ds, center(a.x, a.y), RIGHT_BUTTON);
-    expect(ui.hpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     // Right-click the filled cell B: the mode toggles off, but the highlight
     // stays on the empty cell A (the filled cell is not selected/restyled).
     towersGame.interpretMove(filled, ui, ds, center(b.x, b.y), RIGHT_BUTTON);
-    expect(ui.hpencil).toBe(false);
+    expect(ui.pencilMode).toBe(false);
     expect([ui.cursor.x, ui.cursor.y]).toEqual([a.x, a.y]);
     expect(ui.cursor.visible).toBe(true);
   });
@@ -453,9 +453,9 @@ describe("towers sticky pencil mode", () => {
     const { st, ui, ds, a, b } = setup();
     ui.pencilSticky = false;
     towersGame.interpretMove(st, ui, ds, center(a.x, a.y), RIGHT_BUTTON);
-    expect(ui.hpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     towersGame.interpretMove(st, ui, ds, center(b.x, b.y), LEFT_BUTTON);
-    expect(ui.hpencil).toBe(false);
+    expect(ui.pencilMode).toBe(false);
   });
 });
 
@@ -463,11 +463,11 @@ describe("towers render", () => {
   it("draws the pencil-mode indicator only while pencil mode is on", () => {
     const ts = towersGame.preferredTileSize ?? 48;
     const palette = towersGame.colors(DEFAULT_BACKGROUND);
-    const render = (hpencil: boolean): RecordingDrawing => {
+    const render = (pencilMode: boolean): RecordingDrawing => {
       const st = newState(RENDER.p, RENDER.desc);
       const ui = newUi(st);
-      ui.hpencil = hpencil;
-      ui.cursor.visible = hpencil;
+      ui.pencilMode = pencilMode;
+      ui.cursor.visible = pencilMode;
       const ds = newDrawState(st);
       setTileSize(ds, ts);
       const dr = new RecordingDrawing(palette);

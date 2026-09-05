@@ -142,7 +142,7 @@ export interface UndeadDrawState {
   countErrors: Uint8Array;
   countPlaced: Int32Array;
   cursor: GridCursor;
-  hpencil: boolean;
+  pencilMode: boolean;
   hflash: boolean;
   ascii: boolean;
   countStyle: number;
@@ -178,7 +178,7 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
     countErrors: new Uint8Array(3),
     countPlaced: new Int32Array(3),
     cursor: newCursor(),
-    hpencil: false,
+    pencilMode: false,
     hflash: false,
     ascii: false,
     countStyle: COUNT_STYLE_TOTAL,
@@ -503,12 +503,13 @@ function drawCellBackground(
   const { dx, dy } = cellCenter(ds, x, y);
   const hon = ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y;
   // A hint background overrides the cursor highlight (the hint is what to act on).
-  const bg = hintBg >= 0 ? hintBg : hon && !ui.hpencil ? COL_HIGHLIGHT : COL_BACKGROUND;
+  const bg =
+    hintBg >= 0 ? hintBg : hon && !ui.pencilMode ? COL_HIGHLIGHT : COL_BACKGROUND;
   dr.drawRect(
     { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 },
     bg,
   );
-  if (hintBg < 0 && hon && ui.hpencil) {
+  if (hintBg < 0 && hon && ui.pencilMode) {
     dr.drawPolygon(
       [
         { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1 },
@@ -856,7 +857,7 @@ export function redraw(
     ds.cursor.x !== ui.cursor.x ||
     ds.cursor.y !== ui.cursor.y ||
     ds.cursor.visible !== ui.cursor.visible ||
-    ds.hpencil !== ui.hpencil;
+    ds.pencilMode !== ui.pencilMode;
   const changedAscii = ds.ascii !== ui.ascii;
   if (changedAscii) ds.ascii = ui.ascii;
   const changedCountStyle = ds.countStyle !== ui.countStyle;
@@ -1016,15 +1017,15 @@ export function redraw(
   });
 
   // Pencil-mode indicator (fork addition).
-  if (!ds.started || ds.pencilModeShown !== ui.hpencil) {
-    drawPencilIndicator(dr, ds, ui.hpencil);
-    ds.pencilModeShown = ui.hpencil;
+  if (!ds.started || ds.pencilModeShown !== ui.pencilMode) {
+    drawPencilIndicator(dr, ds, ui.pencilMode);
+    ds.pencilModeShown = ui.pencilMode;
   }
 
   ds.cursor.x = ui.cursor.x;
   ds.cursor.y = ui.cursor.y;
   ds.cursor.visible = ui.cursor.visible;
-  ds.hpencil = ui.hpencil;
+  ds.pencilMode = ui.pencilMode;
   ds.hflash = hflash;
   ds.countStyle = ui.countStyle;
   ds.started = true;

@@ -171,7 +171,7 @@ export interface UnequalDrawState {
   /** `order²` scratch error flags, refilled each redraw by `checkComplete`. */
   errFlags: Int32Array;
   cursor: GridCursor;
-  hpencil: boolean;
+  pencilMode: boolean;
   hflash: boolean;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
   pencilModeShown: boolean;
@@ -194,7 +194,7 @@ export function newDrawState(state: UnequalState): UnequalDrawState {
     wrong: new OverlaySidecar(o * o),
     errFlags: new Int32Array(o * o),
     cursor: newCursor(),
-    hpencil: false,
+    pencilMode: false,
     hflash: false,
     pencilModeShown: false,
     marks: new HintMarks(),
@@ -431,13 +431,13 @@ function drawCell(
   // candidates this firing rules out, drawn crossed through among the marks.
   const struck = hint >> 2; // bit (2 + n) ⇒ candidate n struck
   let bg = hflash ? COL_FLASH : COL_BACKGROUND;
-  if (hon && !ui.hpencil) bg = COL_CURSOR;
+  if (hon && !ui.pencilMode) bg = COL_CURSOR;
 
   // Clear the square.
   dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, bg);
 
   // Pencil-mode cursor: a top-left triangle.
-  if (hon && ui.hpencil) {
+  if (hon && ui.pencilMode) {
     dr.drawPolygon(
       [
         { x: ox, y: oy },
@@ -601,7 +601,7 @@ export function redraw(
     ds.cursor.x !== ui.cursor.x ||
     ds.cursor.y !== ui.cursor.y ||
     ds.cursor.visible !== ui.cursor.visible ||
-    ds.hpencil !== ui.hpencil;
+    ds.pencilMode !== ui.pencilMode;
 
   for (let x = 0; x < o; x++) {
     for (let y = 0; y < o; y++) {
@@ -673,15 +673,15 @@ export function redraw(
   });
 
   // Pencil-mode indicator (fork addition).
-  if (!ds.started || ds.pencilModeShown !== ui.hpencil) {
-    drawPencilIndicator(dr, o, ts, ui.hpencil);
-    ds.pencilModeShown = ui.hpencil;
+  if (!ds.started || ds.pencilModeShown !== ui.pencilMode) {
+    drawPencilIndicator(dr, o, ts, ui.pencilMode);
+    ds.pencilModeShown = ui.pencilMode;
   }
 
   ds.cursor.x = ui.cursor.x;
   ds.cursor.y = ui.cursor.y;
   ds.cursor.visible = ui.cursor.visible;
-  ds.hpencil = ui.hpencil;
+  ds.pencilMode = ui.pencilMode;
   ds.hflash = hflash;
   ds.started = true;
 }

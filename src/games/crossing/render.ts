@@ -847,8 +847,8 @@ export function redraw(
     dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
     ds.started = true;
     ds.pencilModeShown = false;
-    drawPencilIndicator(dr, ts, ui.cpencil);
-    ds.pencilModeShown = ui.cpencil;
+    drawPencilIndicator(dr, ts, ui.pencilMode);
+    ds.pencilModeShown = ui.pencilMode;
   }
 
   const flash = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) % 3 : -1;
@@ -907,7 +907,7 @@ export function redraw(
   // The two runs through the selected cell: the one being filled, and the one
   // crossing it. The crossing run is washed so that the second color used for
   // its clues in the list below has something to point at.
-  const selCell = cshow && !ui.cpencil ? ui.cursor.y * w + ui.cursor.x : -1;
+  const selCell = cshow && !ui.pencilMode ? ui.cursor.y * w + ui.cursor.x : -1;
   const activeRun =
     selCell < 0
       ? -1
@@ -963,8 +963,8 @@ export function redraw(
       const i = y * w + x;
       const here = cshow && ui.cursor.x === x && ui.cursor.y === y;
       let flags = 0;
-      if (here && ui.cpencil) flags |= DF_PENCIL;
-      else if (here && ui.ckey) flags |= DF_KEYCUR;
+      if (here && ui.pencilMode) flags |= DF_PENCIL;
+      else if (here && ui.cursorFromKeyboard) flags |= DF_KEYCUR;
       else if (here) flags |= DF_SELECT;
       if (!walls[i] && !state.grid[i]) flags |= (state.marks[i] & 0x1ff) << K_MARKS;
       if (ghost[i]) flags |= ghost[i] << K_GHOST;
@@ -1095,8 +1095,8 @@ export function redraw(
     for (let l = 0; l < numbers.length; l++) ds.numberState[l] = panelState(l);
   }
 
-  if (ds.pencilModeShown !== ui.cpencil) {
-    drawPencilIndicator(dr, ts, ui.cpencil);
-    ds.pencilModeShown = ui.cpencil;
+  if (ds.pencilModeShown !== ui.pencilMode) {
+    drawPencilIndicator(dr, ts, ui.pencilMode);
+    ds.pencilModeShown = ui.pencilMode;
   }
 }

@@ -306,9 +306,9 @@ export interface SeismicUi {
   cursor: GridCursor;
   /** Whether the highlight was last moved by the keyboard (upstream keeps the
    * cursor visible after a keyboard entry, but hides it after a mouse one). */
-  ckey: boolean;
+  cursorFromKeyboard: boolean;
   /** Whether entry goes to pencil marks rather than the cell. */
-  cpencil: boolean;
+  pencilMode: boolean;
   /** Fork divergence (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): right-click toggles a *persistent* pencil
    * mode rather than a one-shot pencil selection. */
   pencilSticky: boolean;
@@ -317,8 +317,8 @@ export interface SeismicUi {
 export function newUi(_state: SeismicState): SeismicUi {
   return {
     cursor: newCursor(),
-    ckey: false,
-    cpencil: false,
+    cursorFromKeyboard: false,
+    pencilMode: false,
     pencilSticky: true,
   };
 }

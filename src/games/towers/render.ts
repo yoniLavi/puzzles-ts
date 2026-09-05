@@ -479,7 +479,7 @@ export function redraw(
       if (state.grid[y * w + x]) tile |= state.grid[y * w + x];
       else tile |= state.pencil[y * w + x] << DF_PENCIL_SHIFT;
       if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y)
-        tile |= ui.hpencil ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
+        tile |= ui.pencilMode ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
       if (state.immutable[y * w + x]) tile |= DF_IMMUTABLE;
       if (flash) tile |= DF_HIGHLIGHT;
       if (ds.errtmp[(y + 1) * W + (x + 1)]) tile |= DF_ERROR;
@@ -490,8 +490,8 @@ export function redraw(
   // Pencil-mode indicator in the top-right clue-ring corner (W-pos (w+1, 0)).
   // Towers protrude up-left, so nothing ever overlaps this corner; it is also
   // no cell's up-left neighbor, so the diff cache repaints it cleanly on
-  // toggle. Driven straight off the persistent `hpencil` mode flag.
-  if (ui.hpencil) ds.tiles[w + 1] |= DF_PENCIL_MODE;
+  // toggle. Driven straight off the persistent `pencilMode` mode flag.
+  if (ui.pencilMode) ds.tiles[w + 1] |= DF_PENCIL_MODE;
 
   // Diff and repaint, drawing each changed cell's tower-overlapping neighbors.
   for (let y = 0; y < W; y++) {

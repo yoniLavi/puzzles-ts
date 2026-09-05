@@ -361,10 +361,10 @@ describe("keen render", () => {
   it("shows the pencil-mode indicator glyph when sticky pencil is on", () => {
     const palette = keenGame.colors(DEFAULT_BACKGROUND);
     const ts = keenGame.preferredTileSize ?? 48;
-    const render = (hpencil: boolean): RecordingDrawing => {
+    const render = (pencilMode: boolean): RecordingDrawing => {
       const st = newState(P4, D4);
       const ui = newUi(st);
-      ui.hpencil = hpencil;
+      ui.pencilMode = pencilMode;
       const ds = newDrawState(st);
       setTileSize(ds, ts);
       const dr = new RecordingDrawing(palette);

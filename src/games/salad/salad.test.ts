@@ -547,7 +547,7 @@ describe("salad input", () => {
       at(0, 0),
       RIGHT_BUTTON,
     );
-    expect(ui.hpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     expect(
       saladGame.interpretMove(
         s,
@@ -564,7 +564,7 @@ describe("salad input", () => {
     });
     // ...and stays on for the next square, unlike upstream's per-click mode.
     saladGame.interpretMove(s, ui, sizedDrawState(saladGame, s), at(1, 0), LEFT_BUTTON);
-    expect(ui.hpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
   });
 
   it("middle-click cycles a blank square: ball, cross, blank", () => {
@@ -623,7 +623,7 @@ describe("salad input", () => {
       { x: 0, y: 0 },
       CURSOR_SELECT,
     );
-    expect(ui.hpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
   });
 
   it("'M' fills, then only ever removes — never resets the player's notes", () => {

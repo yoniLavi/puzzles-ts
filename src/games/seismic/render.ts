@@ -373,11 +373,11 @@ export function redraw(
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       const highlighted = cshow && ui.cursor.x === x && ui.cursor.y === y;
-      const pencilCursor = highlighted && ui.cpencil;
+      const pencilCursor = highlighted && ui.pencilMode;
 
       let color: number;
       if (flash === -1) {
-        color = highlighted && !ui.cpencil ? COL_HIGHLIGHT : COL_BACKGROUND;
+        color = highlighted && !ui.pencilMode ? COL_HIGHLIGHT : COL_BACKGROUND;
       } else {
         color =
           (x + y) % 3 === flash
@@ -402,8 +402,8 @@ export function redraw(
     }
   }
 
-  if (firstFrame || ds.pencilModeShown !== ui.cpencil) {
-    drawPencilIndicator(dr, state.params, ts, ui.cpencil);
-    ds.pencilModeShown = ui.cpencil;
+  if (firstFrame || ds.pencilModeShown !== ui.pencilMode) {
+    drawPencilIndicator(dr, state.params, ts, ui.pencilMode);
+    ds.pencilModeShown = ui.pencilMode;
   }
 }

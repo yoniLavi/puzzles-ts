@@ -180,7 +180,7 @@ function interpretMove(
           cx === ui.cursor.x &&
           cy === ui.cursor.y &&
           ui.cursor.visible &&
-          !ui.hpencil
+          !ui.pencilMode
         ) {
           ui.cursor.visible = false;
         } else {
@@ -192,9 +192,9 @@ function interpretMove(
           ui.ody = 0;
           ui.odn = 1;
           ui.cursor.visible = !state.immutable[cy * w + cx];
-          ui.hpencil = false;
+          ui.pencilMode = false;
         }
-        ui.hcursor = false;
+        ui.cursorFromKeyboard = false;
         return UI_UPDATE;
       }
       if (button === RIGHT_BUTTON) {
@@ -204,11 +204,11 @@ function interpretMove(
             cx === ui.cursor.x &&
             cy === ui.cursor.y &&
             ui.cursor.visible &&
-            ui.hpencil
+            ui.pencilMode
           ) {
             ui.cursor.visible = false;
           } else {
-            ui.hpencil = true;
+            ui.pencilMode = true;
             ui.cursor.x = cx;
             ui.cursor.y = cy;
             ui.ohx = otx;
@@ -221,7 +221,7 @@ function interpretMove(
         } else {
           ui.cursor.visible = false;
         }
-        ui.hcursor = false;
+        ui.cursorFromKeyboard = false;
         return UI_UPDATE;
       }
     } else if (tx >= 0 && tx < w && ty === -1) {
@@ -242,7 +242,7 @@ function interpretMove(
   } else if (isMouseDrag(button)) {
     // Diagonal multifill selection from the highlighted square.
     if (
-      !ui.hpencil &&
+      !ui.pencilMode &&
       tx >= 0 &&
       tx < w &&
       ty >= 0 &&
@@ -274,7 +274,7 @@ function interpretMove(
     ui.cursor.x = state.sequence[cx];
     ui.cursor.y = state.sequence[cy];
     ui.cursor.visible = true;
-    ui.hcursor = true;
+    ui.cursorFromKeyboard = true;
     ui.ohx = cx;
     ui.ohy = cy;
     ui.odx = 0;
@@ -284,8 +284,8 @@ function interpretMove(
   }
 
   if (ui.cursor.visible && button === CURSOR_SELECT) {
-    ui.hpencil = !ui.hpencil;
-    ui.hcursor = true;
+    ui.pencilMode = !ui.pencilMode;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
@@ -314,18 +314,18 @@ function interpretMove(
       const y = state.sequence[ui.ohy + i * ui.ody];
       const index = y * w + x;
       // Can't pencil-mark a filled square.
-      if (ui.hpencil && state.grid[index]) return null;
+      if (ui.pencilMode && state.grid[index]) return null;
       // Can't touch an immutable square — unless setting it to what it holds
       // (so a multifill can cross an already-correct immutable cell).
-      if (!(!ui.hpencil && state.grid[index] === n) && state.immutable[index])
+      if (!(!ui.pencilMode && state.grid[index] === n) && state.immutable[index])
         return null;
       cells.push({ x, y });
     }
 
-    const type = ui.hpencil && n > 0 ? "pencil" : "set";
+    const type = ui.pencilMode && n > 0 ? "pencil" : "set";
     // Hide a mouse-generated highlight after a keypress, unless a pencil change
     // and the keep-highlight preference is set.
-    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight))
+    if (!ui.cursorFromKeyboard && !(ui.pencilMode && ui.pencilKeepHighlight))
       ui.cursor.visible = false;
     return { type, cells, n };
   }
@@ -429,8 +429,8 @@ function changedState(
   // Cancel a pencil highlight on a square that just became filled.
   if (
     ui.cursor.visible &&
-    ui.hpencil &&
-    !ui.hcursor &&
+    ui.pencilMode &&
+    !ui.cursorFromKeyboard &&
     newState.grid[ui.cursor.y * w + ui.cursor.x] !== 0
   ) {
     ui.cursor.visible = false;

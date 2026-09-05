@@ -862,8 +862,8 @@ export type SoloMove =
 
 export interface SoloUi {
   cursor: GridCursor;
-  hpencil: boolean;
-  hcursor: boolean;
+  pencilMode: boolean;
+  cursorFromKeyboard: boolean;
   /** Pref (default off, upstream `PREF_PENCIL_KEEP_HIGHLIGHT`). */
   pencilKeepHighlight: boolean;
   /** Pref (default on): right-click toggles a sticky pencil mode. */
@@ -875,8 +875,8 @@ export interface SoloUi {
 export function newUi(_state: SoloState): SoloUi {
   return {
     cursor: newCursor(),
-    hpencil: false,
-    hcursor: false,
+    pencilMode: false,
+    cursorFromKeyboard: false,
     pencilKeepHighlight: false,
     pencilSticky: true,
     // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its

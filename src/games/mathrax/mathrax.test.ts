@@ -565,7 +565,7 @@ describe("mathrax input", () => {
     const y = (empty / o) | 0;
 
     expect(press(st, ui, RIGHT_BUTTON, center(x, y))).toBe(UI_UPDATE);
-    expect(ui.cpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     expect(press(st, ui, "4".charCodeAt(0))).toEqual({
       type: "set",
       x,
@@ -575,7 +575,7 @@ describe("mathrax input", () => {
     });
     // A second right-click turns the mode back off (CapsLock-style).
     press(st, ui, RIGHT_BUTTON, center(x, y));
-    expect(ui.cpencil).toBe(false);
+    expect(ui.pencilMode).toBe(false);
   });
 
   it("never pencil-marks a filled cell", () => {
@@ -584,7 +584,7 @@ describe("mathrax input", () => {
     const o = FIX_PARAMS.o;
     const given = [...st.flags].findIndex((f) => f & F_IMMUTABLE);
     ui.cursor.visible = true;
-    ui.cpencil = true;
+    ui.pencilMode = true;
     ui.cursor.x = given % o;
     ui.cursor.y = (given / o) | 0;
     expect(press(st, ui, "2".charCodeAt(0))).toBeNull();
@@ -594,11 +594,14 @@ describe("mathrax input", () => {
     const st = newState(FIX_PARAMS, FIX.desc);
     const ui = newUi(st);
     expect(press(st, ui, CURSOR_RIGHT)).toBe(UI_UPDATE);
-    expect(ui).toMatchObject({ cursor: newCursor(1, 0, true), ckey: true });
+    expect(ui).toMatchObject({
+      cursor: newCursor(1, 0, true),
+      cursorFromKeyboard: true,
+    });
     press(st, ui, CURSOR_DOWN);
     expect(ui.cursor).toMatchObject({ x: 1, y: 1 });
     expect(press(st, ui, CURSOR_SELECT)).toBe(UI_UPDATE);
-    expect(ui.cpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
   });
 
   it("fills all notes on the first M, then strikes the obvious ones on the next", () => {

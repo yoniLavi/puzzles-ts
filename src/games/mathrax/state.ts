@@ -630,9 +630,9 @@ export interface MathraxUi {
   /** Highlighted cell. */
   cursor: GridCursor;
   /** The highlight was last moved by the keyboard (so a digit entry keeps it). */
-  ckey: boolean;
+  cursorFromKeyboard: boolean;
   /** The highlight is in pencil-mark mode. */
-  cpencil: boolean;
+  pencilMode: boolean;
   /** Preference (default on, fork addition): right-click toggles a *sticky*
    * pencil mode rather than selecting one cell for one mark. */
   pencilSticky: boolean;
@@ -641,8 +641,8 @@ export interface MathraxUi {
 export function newUi(_state: MathraxState): MathraxUi {
   return {
     cursor: newCursor(),
-    ckey: false,
-    cpencil: false,
+    cursorFromKeyboard: false,
+    pencilMode: false,
     pencilSticky: true,
   };
 }

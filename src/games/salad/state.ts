@@ -319,8 +319,8 @@ export function needsPencilFill(b: {
 
 export interface SaladUi {
   cursor: GridCursor;
-  hpencil: boolean;
-  hcursor: boolean;
+  pencilMode: boolean;
+  cursorFromKeyboard: boolean;
   /** Preference (default on, fork divergence): right-click toggles a *sticky*
    * pencil mode — once on, left-clicks keep entering pencil marks until
    * right-clicked again (mobile-style), instead of every left-click reverting
@@ -331,8 +331,8 @@ export interface SaladUi {
 export function newUi(_state: SaladState): SaladUi {
   return {
     cursor: newCursor(),
-    hpencil: false,
-    hcursor: false,
+    pencilMode: false,
+    cursorFromKeyboard: false,
     pencilSticky: true,
   };
 }

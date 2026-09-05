@@ -465,8 +465,8 @@ export const N_COUNT_STYLE = 4;
 
 export interface UndeadUi {
   cursor: GridCursor;
-  hpencil: boolean;
-  hcursor: boolean;
+  pencilMode: boolean;
+  cursorFromKeyboard: boolean;
   /** Preference (`monsters`): false → pictures, true → letters. Also toggled by
    * the `a` key in play. */
   ascii: boolean;
@@ -483,8 +483,8 @@ export interface UndeadUi {
 export function newUi(_state: UndeadState): UndeadUi {
   return {
     cursor: newCursor(),
-    hpencil: false,
-    hcursor: false,
+    pencilMode: false,
+    cursorFromKeyboard: false,
     ascii: false,
     pencilKeepHighlight: false,
     pencilSticky: true,

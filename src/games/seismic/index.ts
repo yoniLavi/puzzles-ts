@@ -133,18 +133,18 @@ function interpretMove(
         ui.cursor.visible &&
         ui.cursor.x === gx &&
         ui.cursor.y === gy &&
-        (ui.pencilSticky || !ui.cpencil)
+        (ui.pencilSticky || !ui.pencilMode)
       ) {
         ui.cursor.visible = false;
       } else {
         ui.cursor.x = gx;
         ui.cursor.y = gy;
         ui.cursor.visible = true;
-        if (!ui.pencilSticky) ui.cpencil = false;
+        if (!ui.pencilSticky) ui.pencilMode = false;
       }
       // A given can't be edited, so never leave it highlighted.
       if (flags[i] & FM_FIXED) ui.cursor.visible = false;
-      ui.ckey = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
 
@@ -152,7 +152,7 @@ function interpretMove(
       if (ui.pencilSticky) {
         // Toggle the persistent pencil mode, and only move the highlight onto a
         // cell that can actually take a mark.
-        ui.cpencil = !ui.cpencil;
+        ui.pencilMode = !ui.pencilMode;
         if (grid[i] === 0) {
           ui.cursor.x = gx;
           ui.cursor.y = gy;
@@ -161,13 +161,13 @@ function interpretMove(
       } else {
         if (
           !ui.cursor.visible ||
-          !ui.cpencil ||
+          !ui.pencilMode ||
           ui.cursor.x !== gx ||
           ui.cursor.y !== gy
         ) {
           ui.cursor.x = gx;
           ui.cursor.y = gy;
-          ui.cpencil = true;
+          ui.pencilMode = true;
           ui.cursor.visible = true;
         } else {
           ui.cursor.visible = false;
@@ -175,7 +175,7 @@ function interpretMove(
         // A cell that already holds a number can't take a mark.
         if (grid[i] !== 0) ui.cursor.visible = false;
       }
-      ui.ckey = false;
+      ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
   }
@@ -188,13 +188,13 @@ function interpretMove(
     ui.cursor.x = moved.x;
     ui.cursor.y = moved.y;
     ui.cursor.visible = true;
-    ui.ckey = true;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
   if (ui.cursor.visible && button === CURSOR_SELECT) {
-    ui.cpencil = !ui.cpencil;
-    ui.ckey = true;
+    ui.pencilMode = !ui.pencilMode;
+    ui.cursorFromKeyboard = true;
     return UI_UPDATE;
   }
 
@@ -208,14 +208,14 @@ function interpretMove(
     // number the region could never hold (upstream's stated design choice).
     if (n > dsf.size(i)) return null;
     // A filled square can't take a pencil mark (reachable via the cursor).
-    if (ui.cpencil && grid[i] !== 0) return null;
+    if (ui.pencilMode && grid[i] !== 0) return null;
     // Re-entering the number already there changes nothing.
-    if (!ui.cpencil && grid[i] === n) return null;
+    if (!ui.pencilMode && grid[i] === n) return null;
     if (flags[i] & FM_FIXED) return null;
 
     // A mouse-driven entry puts the highlight away; a keyboard one keeps it.
-    if (!ui.ckey && !ui.cpencil) ui.cursor.visible = false;
-    return { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil: ui.cpencil };
+    if (!ui.cursorFromKeyboard && !ui.pencilMode) ui.cursor.visible = false;
+    return { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil: ui.pencilMode };
   }
 
   // 'M' / 'm': fill every empty cell's notes with its region's candidates.

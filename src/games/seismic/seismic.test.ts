@@ -709,7 +709,7 @@ describe("seismic input", () => {
     expect(size).toBeLessThan(9);
 
     ui.cursor.visible = true;
-    ui.ckey = true;
+    ui.cursorFromKeyboard = true;
     ui.cursor.x = cell.x;
     ui.cursor.y = cell.y;
     expect(
@@ -744,7 +744,7 @@ describe("seismic input", () => {
       pencil: false,
     });
     ui.cursor.visible = true;
-    ui.ckey = true;
+    ui.cursorFromKeyboard = true;
     ui.cursor.x = cell.x;
     ui.cursor.y = cell.y;
     expect(
@@ -787,7 +787,7 @@ describe("seismic input", () => {
       pixel(cell.x, cell.y),
       RIGHT_BUTTON,
     );
-    expect(ui.cpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     expect(ui.cursor.visible).toBe(true);
     seismicGame.interpretMove(
       state,
@@ -796,7 +796,7 @@ describe("seismic input", () => {
       pixel(cell.x, cell.y),
       RIGHT_BUTTON,
     );
-    expect(ui.cpencil).toBe(false);
+    expect(ui.pencilMode).toBe(false);
   });
 
   it("offers mark-all only while some cell's notes are incomplete", () => {
@@ -1163,8 +1163,8 @@ describe("seismic rendering", () => {
     const state = newState(p, desc);
     const ui = newUi(state);
     ui.cursor.visible = true;
-    ui.ckey = true;
-    ui.cpencil = true;
+    ui.cursorFromKeyboard = true;
+    ui.pencilMode = true;
     const move = seismicGame.interpretMove(
       state,
       ui,
@@ -1208,12 +1208,12 @@ describe("seismic rendering", () => {
     // A right click turns sticky pencil mode on; the next frame shows the glyph.
     const cell = firstFreeCell(state);
     seismicGame.interpretMove(state, ui, ds, pixel(cell.x, cell.y), RIGHT_BUTTON);
-    expect(ui.cpencil).toBe(true);
+    expect(ui.pencilMode).toBe(true);
     expect(glyph(paint())).toHaveLength(1);
 
     // …and it is erased when the mode goes off again.
     seismicGame.interpretMove(state, ui, ds, pixel(cell.x, cell.y), RIGHT_BUTTON);
-    expect(ui.cpencil).toBe(false);
+    expect(ui.pencilMode).toBe(false);
     expect(glyph(paint())).toHaveLength(0);
   });
 

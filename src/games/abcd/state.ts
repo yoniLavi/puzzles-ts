@@ -417,9 +417,9 @@ export interface AbcdUi {
   /** Cursor position. */
   cursor: GridCursor;
   /** Cursor is in pencil-mark mode. */
-  hpencil: boolean;
+  pencilMode: boolean;
   /** Cursor came from the keyboard (so it survives an entry). */
-  hcursor: boolean;
+  cursorFromKeyboard: boolean;
   /** Preference (default on, the fork's shared convention): right-click toggles
    * a *sticky* pencil mode that stays on until right-clicked again (a
    * CapsLock-style toggle with an on-screen indicator), rather than upstream's
@@ -430,8 +430,8 @@ export interface AbcdUi {
 export function newUi(_state: AbcdState): AbcdUi {
   return {
     cursor: newCursor(),
-    hpencil: false,
-    hcursor: false,
+    pencilMode: false,
+    cursorFromKeyboard: false,
     pencilSticky: true,
   };
 }

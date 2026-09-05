@@ -261,8 +261,8 @@ export type UnequalMove =
 
 export interface UnequalUi {
   cursor: GridCursor;
-  hpencil: boolean;
-  hcursor: boolean;
+  pencilMode: boolean;
+  cursorFromKeyboard: boolean;
   /** Preference (default off): keep the mouse highlight after a pencil change. */
   pencilKeepHighlight: boolean;
   /** Preference (default on): right-click toggles a *sticky* pencil mode. */
@@ -275,8 +275,8 @@ export interface UnequalUi {
 export function newUi(_state: UnequalState): UnequalUi {
   return {
     cursor: newCursor(),
-    hpencil: false,
-    hcursor: false,
+    pencilMode: false,
+    cursorFromKeyboard: false,
     pencilKeepHighlight: false,
     pencilSticky: true,
     // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its
