@@ -28,6 +28,29 @@ Galaxies-local until Mosaic; `obfuscate` was Guess-local until Black Box;
 `divvy` was Solo-local until Palisade. Keep a genuinely single-consumer helper
 local to its game — the rule is a trigger, not a mandate to pre-abstract.
 
+**Before proposing an extraction, measure — and read what the measurement is
+actually counting.** A duplication tool counts *text*, and three quite different
+things look identical to it. Measured across `src/games` on 2026-09-05: 982
+cross-game duplicated lines, of which only some are candidates at all.
+
+- **The `Game` object literal and the import blocks.** Every game implements one
+  interface and imports the same helpers, so `id`, `defaultParams`,
+  `interpretMove`, `executeMove` … in the same order in two files is the
+  *contract looking like itself*. It is never the finding, and it is what the
+  largest "clone" between two games usually turns out to be.
+- **Real duplication of a shared mechanic**, which is what
+  [`border-grid.ts`](../../src/engine/border-grid.ts) and
+  [`note-taking-cell.ts`](../../src/engine/note-taking-cell.ts) came from.
+- **Genuinely parallel but independent logic**, which stays put.
+
+*Measured and declined, so it is not re-proposed:* the **three-state paint
+games** (Clusters, Bricks, Sticks, Unruly, plus Tents and Pattern's
+modified-arrow paint) look like a family and are not one. All six together carry
+92 duplicated lines at a deliberately low threshold, and the two largest blocks
+are the `Game` literal. Sticks' drag machine differs materially and has been
+declined twice on its own merits (its `design.md` F7). There is no note-taking
+cell hiding here; that family was the outlier, not the rule.
+
 **Byte-match sensitivity is marked per entry.** Several helpers are
 RNG-faithful ports whose draw order is observable in generated game
 descriptions. The frozen differentials (see
