@@ -6,9 +6,17 @@
  * what constrains the regions (Palisade counts each cell's walls, Separate fixes
  * region sizes and keeps marked cells apart). The mechanic the player operates
  * is one design, and before this module it existed as two byte-identical copies:
- * jscpd measured **466 duplicated lines** between the two games, the largest
- * cross-game duplication in the repository, including a 111-line `interpretMove`
- * that differed only in its type names.
+ * jscpd measured **466 duplicated lines** between the two games, including a
+ * 111-line `interpretMove` that differed only in its type names. This module
+ * took that to 213 (re-measured 2026-09-05).
+ *
+ * That 466 was described here for a long time as the largest cross-game
+ * duplication in the repository, and it was not: the eleven note-taking games
+ * measured 514 the day somebody looked. **A superlative in a comment is a claim
+ * nobody re-runs** — the same failure as a bare count in prose — so the ranking
+ * is gone and only the measurements, each with its date, remain.
+ * [`note-taking-cell.ts`](./note-taking-cell.ts) is that family's module, built
+ * to the same test as this one.
  *
  * WHAT LIVES HERE is only what would have to change in both games at once to
  * keep them correct: the edge bit vocabulary, the geometry that turns a tile

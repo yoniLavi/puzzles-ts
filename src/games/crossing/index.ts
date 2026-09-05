@@ -29,6 +29,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
+import { highlightIsOn, pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
@@ -40,7 +41,6 @@ import {
   isCursorMove,
   isEraseKey,
   LEFT_BUTTON,
-  RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -194,66 +194,32 @@ function interpretMove(
       ui.heldNumber = null;
     }
 
-    if (button === LEFT_BUTTON) {
-      // Sticky pencil mode (fork): a left-click only moves the highlight and
-      // keeps the current mode; upstream (sticky off) reverts to a real entry.
-      if (
-        ui.cursor.visible &&
-        ui.cursor.x === gx &&
-        ui.cursor.y === gy &&
-        (ui.pencilSticky || !ui.pencilMode)
-      ) {
-        // Crossword convention (fork): clicking the selected cell again flips
-        // between filling across and down — but only where there is something
-        // to flip, so everywhere else it still deselects, exactly as upstream.
-        if (!ui.pencilMode && editable && atCrossing(state.puzzle, gx, gy)) {
-          ui.dir = ui.dir === "across" ? "down" : "across";
-        } else {
-          ui.cursor.visible = false;
-        }
-      } else {
-        ui.cursor.x = gx;
-        ui.cursor.y = gy;
-        ui.cursor.visible = true;
-        ui.dir = snapDirection(state.puzzle, gx, gy, ui.dir);
-        if (!ui.pencilSticky) ui.pencilMode = false;
-      }
-      // A wall takes nothing, and (in pencil mode) neither does a filled cell —
-      // highlighting one would just suggest an edit that can't happen.
-      if (!editable || (ui.pencilMode && filled)) ui.cursor.visible = false;
+    // Crossword convention (fork): clicking the selected cell again flips
+    // between filling across and down — but only where there is something to
+    // flip, so everywhere else the press falls through and deselects, exactly
+    // as upstream. It has to be decided *before* the shared arm rather than
+    // undone after, and `highlightIsOn` is that arm's own notion of "you
+    // pressed the cell you already had", so the two cannot drift apart.
+    if (
+      button === LEFT_BUTTON &&
+      highlightIsOn(ui, gx, gy) &&
+      !ui.pencilMode &&
+      editable &&
+      atCrossing(state.puzzle, gx, gy)
+    ) {
+      ui.dir = ui.dir === "across" ? "down" : "across";
       ui.cursorFromKeyboard = false;
       return UI_UPDATE;
     }
 
-    if (button === RIGHT_BUTTON) {
-      if (ui.pencilSticky) {
-        // Toggle the persistent pencil mode (CapsLock-style), and only move the
-        // highlight onto a cell that can actually take a mark.
-        ui.pencilMode = !ui.pencilMode;
-        if (editable && !filled) {
-          ui.cursor.x = gx;
-          ui.cursor.y = gy;
-          ui.cursor.visible = true;
-          ui.dir = snapDirection(state.puzzle, gx, gy, ui.dir);
-        }
-      } else {
-        // Upstream: select this cell for pencil marks (or deselect a repeat).
-        if (
-          !ui.cursor.visible ||
-          !ui.pencilMode ||
-          ui.cursor.x !== gx ||
-          ui.cursor.y !== gy
-        ) {
-          ui.cursor.x = gx;
-          ui.cursor.y = gy;
-          ui.pencilMode = true;
-          ui.cursor.visible = true;
-        } else {
-          ui.cursor.visible = false;
-        }
-        if (filled || !editable) ui.cursor.visible = false;
-      }
-      ui.cursorFromKeyboard = false;
+    const press = pressNoteTakingCell(ui, button, gx, gy, {
+      canEnter: editable,
+      canMark: editable && !filled,
+    });
+    if (press !== null) {
+      // The run being filled is a property of *where the selection is*, so it
+      // is re-snapped whenever the selection lands somewhere.
+      if (press === "moved") ui.dir = snapDirection(state.puzzle, gx, gy, ui.dir);
       return UI_UPDATE;
     }
   }

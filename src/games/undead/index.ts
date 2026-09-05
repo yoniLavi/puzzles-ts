@@ -31,6 +31,7 @@ import {
   NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import { clearKey } from "../../engine/key-labels.ts";
+import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
 import {
   pencilKeepHighlightPref,
   stickyPencilPref,
@@ -46,7 +47,6 @@ import {
   isCursorMove,
   isEraseKey,
   LEFT_BUTTON,
-  RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -154,7 +154,6 @@ function presets(): PresetMenu<UndeadParams> {
   };
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: input dispatch over button x cursor x pencil-mark mode x monster type.
 function interpretMove(
   state: UndeadState,
   ui: UndeadUi,
@@ -284,65 +283,17 @@ function interpretMove(
     }
   }
 
-  // Grid clicks (selection / mode), with the fork sticky-pencil behavior.
+  // Grid clicks (selection / mode). Undead's highlight is in the 1-based
+  // interior coordinates the clue border leaves, and `xinfo` maps those to a
+  // monster index — `-1` for a square that is not part of the puzzle at all.
   if (gx >= 1 && gx <= w && gy >= 1 && gy <= h) {
     const xi = xinfo[gx + gy * stride];
-    if (xi >= 0 && !common.fixed[xi]) {
-      const g = state.guess[xi];
-      if (button === LEFT_BUTTON) {
-        if (
-          gx === ui.cursor.x &&
-          gy === ui.cursor.y &&
-          ui.cursor.visible &&
-          (ui.pencilSticky || !ui.pencilMode)
-        ) {
-          ui.cursor.visible = false;
-        } else {
-          ui.cursor.x = gx;
-          ui.cursor.y = gy;
-          ui.cursor.visible = true;
-          if (!ui.pencilSticky) ui.pencilMode = false;
-        }
-        ui.cursorFromKeyboard = false;
-        return UI_UPDATE;
-      }
-      if (button === RIGHT_BUTTON) {
-        if (ui.pencilSticky) {
-          ui.pencilMode = !ui.pencilMode;
-          if (g === MON_NONE) {
-            ui.cursor.x = gx;
-            ui.cursor.y = gy;
-            ui.cursor.visible = true;
-          }
-          ui.cursorFromKeyboard = false;
-          return UI_UPDATE;
-        }
-        // Non-sticky (upstream): right-click an empty cell enters pencil mode.
-        if (!ui.pencilMode && g === MON_NONE) {
-          ui.cursor.visible = true;
-          ui.pencilMode = true;
-          ui.cursorFromKeyboard = false;
-          ui.cursor.x = gx;
-          ui.cursor.y = gy;
-          return UI_UPDATE;
-        }
-        if (gx === ui.cursor.x && gy === ui.cursor.y && ui.cursor.visible) {
-          ui.cursor.visible = false;
-          ui.pencilMode = false;
-          ui.cursorFromKeyboard = false;
-          return UI_UPDATE;
-        }
-        if (g === MON_NONE) {
-          ui.cursor.visible = true;
-          ui.pencilMode = true;
-          ui.cursorFromKeyboard = false;
-          ui.cursor.x = gx;
-          ui.cursor.y = gy;
-          return UI_UPDATE;
-        }
-      }
-    }
-    return null;
+    const playable = xi >= 0 && !common.fixed[xi];
+    const press = pressNoteTakingCell(ui, button, gx, gy, {
+      canEnter: playable,
+      canMark: playable && state.guess[xi] === MON_NONE,
+    });
+    return press !== null ? UI_UPDATE : null;
   }
 
   if (button === LEFT_BUTTON && isClue(w, h, gx, gy)) {

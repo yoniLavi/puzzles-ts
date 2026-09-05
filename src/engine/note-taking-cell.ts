@@ -5,8 +5,9 @@
  * value into it, pencil candidate marks in it* — and Abcd, Crossing, Group,
  * Keen, Mathrax, Salad, Seismic, Solo, Towers, Undead and Unequal each carried
  * their own copy of it. `jscpd` measured **514 duplicated lines** across their
- * `index.ts` files, 60% of the clone-sides inside `interpretMove`, which
- * displaced Palisade/Separate's 466 as the largest cross-game duplication here.
+ * `index.ts` files (2026-09-05, ≥10 lines / ≥70 tokens), 60% of the clone-sides
+ * inside `interpretMove`. Extracting the *press* arm here took that to **331**;
+ * the rest is the symbol-entry block, which is the next thing to move.
  *
  * WHAT LIVES HERE is only what would have to change in every copy at once to
  * keep them correct, by [`border-grid.ts`](./border-grid.ts)'s test — not "is

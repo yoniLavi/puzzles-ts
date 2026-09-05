@@ -12,8 +12,9 @@
  *    to extend. `cursor-vocabulary.test.ts` does the same thing for the cursor
  *    and for the same reason: a guard blind to a game cannot fire on it.
  *
- * ON THE TWO STANDARDIZATIONS this module made, because a test that merely
- * records today's behavior is worth much less than one that says why:
+ * ON THE STANDARDIZATIONS this module made, because a test that merely records
+ * today's behavior is worth much less than one that says why. Each is asserted
+ * by a case below that names it:
  *
  *  1. **A press moves the highlight to the pressed cell even when the cell
  *     cannot take what the press offers**, and the cell decides only whether
@@ -23,8 +24,11 @@
  *     resumes from wherever the hidden highlight sits.
  *  2. **A right press that puts the highlight away no longer clears pencil
  *     mode.** Only Undead did that, and only on one of its four arms.
+ *  3. **The highlight is shown only where the mode it is in could write.**
+ *     Crossing alone had the clause; everywhere else a sticky-mode left press
+ *     onto a filled cell lit a highlight no keystroke could act on.
  *
- * Neither was a decision about a puzzle, which is the test AGENTS.md sets for
+ * None was a decision about a puzzle, which is the test AGENTS.md sets for
  * whether a difference is real. The sticky arm is the one place the highlight
  * is deliberately left alone, and {@link pressNoteTakingCell} says why there.
  */
@@ -226,5 +230,35 @@ describe("the enrolled population is derived, not listed", () => {
 
   it("looked at the whole registry (vacuity guard)", () => {
     expect(registeredGameIds().length).toBe(57);
+  });
+
+  // The reverse direction, and the one a behavioral test structurally cannot
+  // see: a twelfth game could carry the three fields and hand-roll the press
+  // arm beside them, which is precisely how eleven copies came to exist. What
+  // is being asserted is that no such code exists, so it has to be a source
+  // scan — the same reasoning as `emittable-keys.test.ts`'s.
+  it("every enrolled game routes its pointer press through the shared arm", () => {
+    const sources = import.meta.glob<string>("../games/**/*.ts", {
+      query: "?raw",
+      import: "default",
+      eager: true,
+    });
+    expect(Object.keys(sources).length).toBeGreaterThan(100); // vacuity guard
+
+    const missing = enrolled().filter(
+      (id) =>
+        !Object.entries(sources).some(
+          ([path, text]) =>
+            path.startsWith(`../games/${id}/`) &&
+            !path.includes(".test.") &&
+            text.includes("pressNoteTakingCell("),
+        ),
+    );
+    expect(
+      missing,
+      `${missing.join(", ")} carry the note-taking Ui but never call ` +
+        "pressNoteTakingCell — either route the press through it, or drop the " +
+        "fields if the game is not really doing this mechanic.",
+    ).toEqual([]);
   });
 });

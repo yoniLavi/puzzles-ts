@@ -25,6 +25,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { clearKey } from "../../engine/key-labels.ts";
+import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
@@ -33,9 +34,7 @@ import {
   gridCursorMove,
   isCursorMove,
   isEraseKey,
-  LEFT_BUTTON,
   MIDDLE_BUTTON,
-  RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -146,45 +145,12 @@ function interpretMove(
     // Only a blank square or one carrying a bare ball is the player's to fill.
     const selectable = state.gridclues[i] === 0 || state.gridclues[i] === CIRCLE;
 
-    if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-      const newpencil = button === RIGHT_BUTTON;
-      if (ui.pencilSticky) {
-        // Fork divergence (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): right-click toggles a *persistent*
-        // pencil mode instead of pencil-selecting one square, and a left-click
-        // only moves the highlight. A filled square can show no pencil mark, so
-        // the toggle never drags the highlight onto one.
-        if (newpencil) {
-          ui.pencilMode = !ui.pencilMode;
-          if (selectable && state.grid[i] === 0) {
-            ui.cursor.x = gx;
-            ui.cursor.y = gy;
-            ui.cursor.visible = true;
-          }
-        } else if (
-          selectable &&
-          !(ui.cursor.visible && ui.cursor.x === gx && ui.cursor.y === gy)
-        ) {
-          ui.cursor.x = gx;
-          ui.cursor.y = gy;
-          ui.cursor.visible = true;
-        } else {
-          ui.cursor.visible = false;
-        }
-      } else if (
-        selectable &&
-        (!ui.cursor.visible ||
-          (newpencil ? !ui.pencilMode : ui.pencilMode) ||
-          ui.cursor.x !== gx ||
-          ui.cursor.y !== gy)
-      ) {
-        ui.cursor.x = gx;
-        ui.cursor.y = gy;
-        ui.pencilMode = newpencil;
-        ui.cursor.visible = true;
-      } else {
-        ui.cursor.visible = false;
-      }
-      ui.cursorFromKeyboard = false;
+    if (
+      pressNoteTakingCell(ui, button, gx, gy, {
+        canEnter: selectable,
+        canMark: selectable && state.grid[i] === 0,
+      }) !== null
+    ) {
       return UI_UPDATE;
     }
 

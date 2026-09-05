@@ -48,6 +48,7 @@ import {
   type SingleReason,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
+import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
@@ -59,8 +60,6 @@ import {
   isMouseDown,
   isMouseDrag,
   isMouseRelease,
-  LEFT_BUTTON,
-  RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -171,57 +170,24 @@ function interpretMove(
     }
   } else if (isMouseDown(button)) {
     if (tx >= 0 && tx < w && ty >= 0 && ty < w) {
-      const otx = tx;
-      const oty = ty;
+      // Group's highlight lives in *element* space — `ui.cursor` holds the
+      // element a row/column stands for, not its screen position — because the
+      // player can reorder the table under it. The multifill anchor is the
+      // display position, which is why the game keeps both.
       const cx = state.sequence[tx];
       const cy = state.sequence[ty];
-      if (button === LEFT_BUTTON) {
-        if (
-          cx === ui.cursor.x &&
-          cy === ui.cursor.y &&
-          ui.cursor.visible &&
-          !ui.pencilMode
-        ) {
-          ui.cursor.visible = false;
-        } else {
-          ui.cursor.x = cx;
-          ui.cursor.y = cy;
-          ui.ohx = otx;
-          ui.ohy = oty;
+      const press = pressNoteTakingCell(ui, button, cx, cy, {
+        canEnter: !state.immutable[cy * w + cx],
+        canMark: state.grid[cy * w + cx] === 0,
+      });
+      if (press !== null) {
+        if (press === "moved") {
+          ui.ohx = tx;
+          ui.ohy = ty;
           ui.odx = 0;
           ui.ody = 0;
           ui.odn = 1;
-          ui.cursor.visible = !state.immutable[cy * w + cx];
-          ui.pencilMode = false;
         }
-        ui.cursorFromKeyboard = false;
-        return UI_UPDATE;
-      }
-      if (button === RIGHT_BUTTON) {
-        // Pencil-mode highlighting for non-filled squares only.
-        if (state.grid[cy * w + cx] === 0) {
-          if (
-            cx === ui.cursor.x &&
-            cy === ui.cursor.y &&
-            ui.cursor.visible &&
-            ui.pencilMode
-          ) {
-            ui.cursor.visible = false;
-          } else {
-            ui.pencilMode = true;
-            ui.cursor.x = cx;
-            ui.cursor.y = cy;
-            ui.ohx = otx;
-            ui.ohy = oty;
-            ui.odx = 0;
-            ui.ody = 0;
-            ui.odn = 1;
-            ui.cursor.visible = true;
-          }
-        } else {
-          ui.cursor.visible = false;
-        }
-        ui.cursorFromKeyboard = false;
         return UI_UPDATE;
       }
     } else if (tx >= 0 && tx < w && ty === -1) {
