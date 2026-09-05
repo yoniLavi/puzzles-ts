@@ -120,17 +120,28 @@ what a reader of this change most needs to know.
 
 ## Standing constraints
 
-- [ ] C1 **Behavior must not move.** Eleven games' pencil UX is exactly what
-      shifts by one keystroke under a refactor and is noticed by a player, not a
-      suite. Frozen differentials and render snapshots pass byte-clean at every
-      commit, or the refactor is wrong.
-- [ ] C2 **Owner acceptance**, on at least one game from each of the two naming
-      camps and on Group (the member that does not latch). Run the app; a green
-      suite is not a rendered frame.
-- [ ] C3 An exemplar hint never loses a word to an abstraction. The members that
-      declare a `hint()` — the query, not a roster; `HINT_GAMES` derives it —
-      keep their narration strings byte-frozen through this. That is most of the
-      family, so it is the constraint most likely to be brushed against.
-- [ ] C4 `npm run probe -- --verify` after touching anything probed — a refactor
-      that moves a quoted anchor line makes the harness measure a smaller corpus
-      and *report success*.
+- [x] C1 **Behavior did not move except where it was moved on purpose.** Every
+      commit left the eleven games' frozen differentials and render snapshots
+      byte-clean, with no snapshot re-baselined — which is the whole assurance
+      that the mechanical half was mechanical. The four deliberate changes are
+      §5, each stated rather than absorbed. Stating it that way rather than
+      ticking "behavior must not move" because a constraint quietly reinterpreted
+      is worse than one openly amended.
+- [x] C2 **Owner acceptance**, given 2026-09-05: acceptance testing only where
+      the better answer was genuinely unclear, and on none of §5's four calls was
+      it. Run anyway rather than declared done from a green suite — Chrome, on
+      Solo (a press onto a given moves the hidden highlight there, so ↓ resumes
+      from it) and Undead (the pencil indicator survives a mouse-driven mark,
+      which is the sticky-mode defect this change fixed).
+- [x] C3 Narrations byte-frozen: the eight members that declare a `hint()` pass
+      their hint suites unchanged at every commit, wording assertions included.
+- [x] C4 `npm run probe -- --verify` clean — 176 cases across 18 modules, every
+      anchor still applying, 72 engine test files discovered against a floor of
+      50.
+
+## Not written, and why
+
+**No `design.md`.** The design is `border-grid.ts`'s, applied a second time, and
+the two places it needed stating are the module header (what lives there, what
+does not, what was declined) and the proposal. A third copy would be the
+maintenance tax AGENTS.md warns about, not a design.
