@@ -1,0 +1,230 @@
+/**
+ * The note-taking cell's contract, and the collection's membership in it.
+ *
+ * Two halves, and the split is deliberate:
+ *
+ *  - **The arms**, unit-tested against a bare `Ui`. Eleven games' pointer
+ *    presses now resolve here, so this is where "what does a right press do to
+ *    the highlight" is *stated* rather than inferred from eleven copies.
+ *  - **The population**, derived from the registry by the *shape* of each
+ *    game's `newUi()` — a game is a note-taking game iff it carries the three
+ *    fields, which is a fact about the game rather than a roster somebody has
+ *    to extend. `cursor-vocabulary.test.ts` does the same thing for the cursor
+ *    and for the same reason: a guard blind to a game cannot fire on it.
+ *
+ * ON THE TWO STANDARDIZATIONS this module made, because a test that merely
+ * records today's behavior is worth much less than one that says why:
+ *
+ *  1. **A press moves the highlight to the pressed cell even when the cell
+ *     cannot take what the press offers**, and the cell decides only whether
+ *     it is *shown*. Five games moved it, five left it behind, and Towers did
+ *     both — its left press moved the hidden highlight onto a given while its
+ *     right press left it where it was. It is observable: the next arrow key
+ *     resumes from wherever the hidden highlight sits.
+ *  2. **A right press that puts the highlight away no longer clears pencil
+ *     mode.** Only Undead did that, and only on one of its four arms.
+ *
+ * Neither was a decision about a puzzle, which is the test AGENTS.md sets for
+ * whether a difference is real. The sticky arm is the one place the highlight
+ * is deliberately left alone, and {@link pressNoteTakingCell} says why there.
+ */
+
+import { beforeAll, describe, expect, it } from "vitest";
+import { registerAllGames } from "../games/index.ts";
+import type { Game } from "./game.ts";
+import {
+  type CellEntry,
+  type NoteTakingUi,
+  pressNoteTakingCell,
+} from "./note-taking-cell.ts";
+import { LEFT_BUTTON, MIDDLE_BUTTON, newCursor, RIGHT_BUTTON } from "./pointer.ts";
+import { randomNew } from "./random/index.ts";
+import { getTsGame, registeredGameIds } from "./registry.ts";
+
+beforeAll(registerAllGames);
+
+const OPEN: CellEntry = { canEnter: true, canMark: true };
+const GIVEN: CellEntry = { canEnter: false, canMark: false };
+const FILLED: CellEntry = { canEnter: true, canMark: false };
+
+function ui(over: Partial<NoteTakingUi> = {}): NoteTakingUi {
+  return {
+    cursor: newCursor(),
+    pencilMode: false,
+    cursorFromKeyboard: true,
+    ...over,
+  };
+}
+
+describe("the left press selects, re-selects for ink, and deselects", () => {
+  it("selects an enterable cell and hands provenance back to the pointer", () => {
+    const u = ui();
+    expect(pressNoteTakingCell(u, LEFT_BUTTON, 2, 3, OPEN)).toBe("moved");
+    expect(u.cursor).toMatchObject({ x: 2, y: 3, visible: true });
+    expect(u.cursorFromKeyboard).toBe(false);
+  });
+
+  it("a second press on the highlighted cell puts the highlight away", () => {
+    const u = ui({ cursor: newCursor(2, 3, true) });
+    pressNoteTakingCell(u, LEFT_BUTTON, 2, 3, OPEN);
+    expect(u.cursor.visible).toBe(false);
+  });
+
+  it("without sticky, pressing a pencil-selected cell re-selects it for ink", () => {
+    // Not a deselect: the left button's other job is dropping back to real
+    // entry, and there is nothing else to press to get there.
+    const u = ui({ cursor: newCursor(2, 3, true), pencilMode: true });
+    pressNoteTakingCell(u, LEFT_BUTTON, 2, 3, OPEN);
+    expect(u).toMatchObject({ pencilMode: false });
+    expect(u.cursor.visible).toBe(true);
+  });
+
+  it("with sticky, the same press deselects and keeps the mode", () => {
+    const u = ui({
+      cursor: newCursor(2, 3, true),
+      pencilMode: true,
+      pencilSticky: true,
+    });
+    pressNoteTakingCell(u, LEFT_BUTTON, 2, 3, OPEN);
+    expect(u.cursor.visible).toBe(false);
+    expect(u.pencilMode).toBe(true);
+  });
+
+  it("moves the highlight onto a given and hides it there", () => {
+    // Standardization 1. The player pointed at (5, 1); the next arrow press
+    // resumes from there rather than from wherever the highlight used to be.
+    const u = ui({ cursor: newCursor(0, 0, true) });
+    pressNoteTakingCell(u, LEFT_BUTTON, 5, 1, GIVEN);
+    expect(u.cursor).toMatchObject({ x: 5, y: 1, visible: false });
+  });
+});
+
+describe("the right press is a pencil select, or the sticky mode toggle", () => {
+  it("selects a markable cell for pencil marks", () => {
+    const u = ui();
+    expect(pressNoteTakingCell(u, RIGHT_BUTTON, 4, 4, OPEN)).toBe("moved");
+    expect(u.cursor).toMatchObject({ x: 4, y: 4, visible: true });
+    expect(u.pencilMode).toBe(true);
+    expect(u.cursorFromKeyboard).toBe(false);
+  });
+
+  it("deselects a repeat press, and leaves pencil mode alone doing it", () => {
+    // Standardization 2: only Undead cleared the mode here, on one of its arms.
+    const u = ui({ cursor: newCursor(4, 4, true), pencilMode: true });
+    pressNoteTakingCell(u, RIGHT_BUTTON, 4, 4, OPEN);
+    expect(u.cursor.visible).toBe(false);
+    expect(u.pencilMode).toBe(true);
+  });
+
+  it("moves onto a filled cell and hides, since it can take no mark", () => {
+    const u = ui({ cursor: newCursor(0, 0, true) });
+    pressNoteTakingCell(u, RIGHT_BUTTON, 6, 2, FILLED);
+    expect(u.cursor).toMatchObject({ x: 6, y: 2, visible: false });
+  });
+
+  it("sticky: toggles the mode and follows onto a markable cell", () => {
+    const u = ui({ pencilSticky: true });
+    pressNoteTakingCell(u, RIGHT_BUTTON, 1, 1, OPEN);
+    expect(u.pencilMode).toBe(true);
+    expect(u.cursor).toMatchObject({ x: 1, y: 1, visible: true });
+    pressNoteTakingCell(u, RIGHT_BUTTON, 1, 1, OPEN);
+    expect(u.pencilMode).toBe(false);
+  });
+
+  it("sticky: a press on a filled cell toggles the mode and moves nothing", () => {
+    // The one arm that deliberately leaves the highlight alone: the sticky
+    // button is a mode switch, and making it double as a selection key is the
+    // confusion sticky mode exists to remove.
+    const u = ui({ cursor: newCursor(3, 3, true), pencilSticky: true });
+    pressNoteTakingCell(u, RIGHT_BUTTON, 6, 2, FILLED);
+    expect(u.pencilMode).toBe(true);
+    expect(u.cursor).toMatchObject({ x: 3, y: 3, visible: true });
+  });
+
+  it("a game that offers no sticky preference behaves as non-sticky", () => {
+    // Group carries no `pencilSticky` at all. Derived from the game's own
+    // declaration, never from an exemption list here.
+    const u = ui();
+    expect(u.pencilSticky).toBeUndefined();
+    pressNoteTakingCell(u, RIGHT_BUTTON, 2, 2, OPEN);
+    expect(u.pencilMode).toBe(true);
+    expect(u.cursor).toMatchObject({ x: 2, y: 2, visible: true });
+  });
+});
+
+describe("a button the mechanic does not own is left alone", () => {
+  it("returns null — falsy, so the common caller cannot misfire — and touches nothing", () => {
+    const u = ui({ cursor: newCursor(1, 2, true) });
+    expect(pressNoteTakingCell(u, MIDDLE_BUTTON, 9, 9, OPEN)).toBeNull();
+    expect(u).toEqual(ui({ cursor: newCursor(1, 2, true) }));
+  });
+});
+
+describe("the highlight is shown only where the current mode could write", () => {
+  it("hides on a filled cell when a sticky left press lands in pencil mode", () => {
+    // Standardization 3. Crossing was the one game with this clause; everywhere
+    // else the highlight lit up on a cell no keystroke could mark.
+    const u = ui({ pencilMode: true, pencilSticky: true });
+    expect(pressNoteTakingCell(u, LEFT_BUTTON, 4, 0, FILLED)).toBe("moved");
+    expect(u.cursor).toMatchObject({ x: 4, y: 0, visible: false });
+  });
+
+  it("shows on that same cell when the mode is ink", () => {
+    const u = ui({ pencilMode: false, pencilSticky: true });
+    pressNoteTakingCell(u, LEFT_BUTTON, 4, 0, FILLED);
+    expect(u.cursor).toMatchObject({ x: 4, y: 0, visible: true });
+  });
+
+  it("reports whether the highlight landed on the pressed cell", () => {
+    // The distinction Crossing and Group layer on: "moved" is the only outcome
+    // after which the highlight is on the cell the player pressed.
+    const u = ui({ cursor: newCursor(2, 3, true) });
+    expect(pressNoteTakingCell(u, LEFT_BUTTON, 2, 3, OPEN)).toBe("unmoved");
+    expect(pressNoteTakingCell(u, LEFT_BUTTON, 2, 3, OPEN)).toBe("moved");
+  });
+});
+
+describe("the enrolled population is derived, not listed", () => {
+  type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
+
+  /** Every registered game whose `Ui` carries the mechanic's three fields. */
+  function enrolled(): string[] {
+    const out: string[] = [];
+    for (const id of registeredGameIds()) {
+      const game = getTsGame(id) as AnyGame | undefined;
+      if (!game) throw new Error(`${id} is registered but has no game object`);
+      const params = game.defaultParams();
+      const desc = game.newDesc(params, randomNew(`note-cell-${id}`)).desc;
+      const u = game.newUi(game.newState(params, desc)) as Record<string, unknown>;
+      if (
+        typeof u["pencilMode"] === "boolean" &&
+        typeof u["cursorFromKeyboard"] === "boolean"
+      )
+        out.push(id);
+    }
+    return out.sort();
+  }
+
+  it("is the eleven note-taking games, by the shape of their Ui", () => {
+    // The count is asserted because it is the point: a twelfth game acquiring
+    // the fields should be a decision somebody makes, and a member losing them
+    // should fail here rather than silently leave the guards below.
+    expect(enrolled()).toEqual([
+      "abcd",
+      "crossing",
+      "group",
+      "keen",
+      "mathrax",
+      "salad",
+      "seismic",
+      "solo",
+      "towers",
+      "undead",
+      "unequal",
+    ]);
+  });
+
+  it("looked at the whole registry (vacuity guard)", () => {
+    expect(registeredGameIds().length).toBe(57);
+  });
+});

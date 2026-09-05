@@ -20,6 +20,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { clearKey } from "../../engine/key-labels.ts";
+import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
@@ -28,8 +29,6 @@ import {
   gridCursorMove,
   isCursorMove,
   isEraseKey,
-  LEFT_BUTTON,
-  RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -149,58 +148,16 @@ function interpretMove(
   const gx = fromCoord(point.x, ts, n);
   const gy = fromCoord(point.y, ts, n);
 
-  if (inGrid(p, gx, gy)) {
-    const filled = state.grid[gy * w + gx] !== EMPTY;
-
-    if (button === LEFT_BUTTON) {
-      // Sticky pencil mode (fork): a left-click only moves the highlight and
-      // keeps the current mode; upstream (sticky off) reverts to real entry.
-      if (
-        ui.cursor.visible &&
-        ui.cursor.x === gx &&
-        ui.cursor.y === gy &&
-        (ui.pencilSticky || !ui.pencilMode)
-      ) {
-        ui.cursor.visible = false;
-      } else {
-        ui.cursor.x = gx;
-        ui.cursor.y = gy;
-        ui.cursor.visible = true;
-        if (!ui.pencilSticky) ui.pencilMode = false;
-      }
-      ui.cursorFromKeyboard = false;
-      return UI_UPDATE;
-    }
-    if (button === RIGHT_BUTTON) {
-      if (ui.pencilSticky) {
-        // Toggle the persistent pencil mode (CapsLock-style), and only move the
-        // highlight onto a cell that can actually take a mark.
-        ui.pencilMode = !ui.pencilMode;
-        if (!filled) {
-          ui.cursor.x = gx;
-          ui.cursor.y = gy;
-          ui.cursor.visible = true;
-        }
-      } else {
-        // Upstream: select this cell for a pencil mark (or deselect a repeat).
-        if (
-          !ui.cursor.visible ||
-          !ui.pencilMode ||
-          ui.cursor.x !== gx ||
-          ui.cursor.y !== gy
-        ) {
-          ui.cursor.x = gx;
-          ui.cursor.y = gy;
-          ui.pencilMode = true;
-          ui.cursor.visible = true;
-        } else {
-          ui.cursor.visible = false;
-        }
-        if (filled) ui.cursor.visible = false;
-      }
-      ui.cursorFromKeyboard = false;
-      return UI_UPDATE;
-    }
+  if (
+    inGrid(p, gx, gy) &&
+    pressNoteTakingCell(ui, button, gx, gy, {
+      // Abcd has no givens inside the grid — its clues live on the margins —
+      // so every square takes ink, and a filled one can be typed over.
+      canEnter: true,
+      canMark: state.grid[gy * w + gx] === EMPTY,
+    })
+  ) {
+    return UI_UPDATE;
   }
 
   if (isCursorMove(button)) {

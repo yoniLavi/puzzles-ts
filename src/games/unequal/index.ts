@@ -46,6 +46,7 @@ import {
   rowColRegions,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
+import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
@@ -195,51 +196,10 @@ function interpretMove(
       return null;
     }
 
-    if (button === LEFT_BUTTON) {
-      // Sticky pencil: a left-click keeps the current mode (only moves the
-      // highlight); non-sticky reverts to real entry (upstream).
-      if (
-        tx === ui.cursor.x &&
-        ty === ui.cursor.y &&
-        ui.cursor.visible &&
-        (ui.pencilSticky || !ui.pencilMode)
-      ) {
-        ui.cursor.visible = false;
-      } else {
-        ui.cursor.x = tx;
-        ui.cursor.y = ty;
-        ui.cursor.visible = !state.immutable[ty * o + tx];
-        if (!ui.pencilSticky) ui.pencilMode = false;
-      }
-      ui.cursorFromKeyboard = false;
-      return UI_UPDATE;
-    }
-    // RIGHT_BUTTON
-    if (ui.pencilSticky) {
-      ui.pencilMode = !ui.pencilMode;
-      if (state.grid[ty * o + tx] === 0) {
-        ui.cursor.x = tx;
-        ui.cursor.y = ty;
-        ui.cursor.visible = true;
-      }
-    } else if (state.grid[ty * o + tx] === 0) {
-      if (
-        tx === ui.cursor.x &&
-        ty === ui.cursor.y &&
-        ui.cursor.visible &&
-        ui.pencilMode
-      )
-        ui.cursor.visible = false;
-      else {
-        ui.pencilMode = true;
-        ui.cursor.x = tx;
-        ui.cursor.y = ty;
-        ui.cursor.visible = true;
-      }
-    } else {
-      ui.cursor.visible = false;
-    }
-    ui.cursorFromKeyboard = false;
+    pressNoteTakingCell(ui, button, tx, ty, {
+      canEnter: !state.immutable[ty * o + tx],
+      canMark: state.grid[ty * o + tx] === 0,
+    });
     return UI_UPDATE;
   }
 

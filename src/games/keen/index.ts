@@ -46,6 +46,7 @@ import {
   rowColRegions,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
+import { pressNoteTakingCell } from "../../engine/note-taking-cell.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
@@ -58,9 +59,7 @@ import {
   CURSOR_SELECT2,
   isCursorMove,
   isEraseKey,
-  LEFT_BUTTON,
   moveCursor,
-  RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -174,56 +173,14 @@ function interpretMove(
   const tx = fromCoord(p.x, ts);
   const ty = fromCoord(p.y, ts);
 
-  if (inGrid(w, tx, ty)) {
-    if (button === LEFT_BUTTON) {
-      // Sticky pencil mode: a left-click keeps the current pencil/real mode (it
-      // only moves the highlight); non-sticky (upstream) reverts to real entry.
-      if (
-        tx === ui.cursor.x &&
-        ty === ui.cursor.y &&
-        ui.cursor.visible &&
-        (ui.pencilSticky || !ui.pencilMode)
-      ) {
-        ui.cursor.visible = false;
-      } else {
-        ui.cursor.x = tx;
-        ui.cursor.y = ty;
-        ui.cursor.visible = true; // Keen has no immutable givens
-        if (!ui.pencilSticky) ui.pencilMode = false;
-      }
-      ui.cursorFromKeyboard = false;
-      return UI_UPDATE;
-    }
-    if (button === RIGHT_BUTTON) {
-      if (ui.pencilSticky) {
-        // Toggle the persistent pencil mode (CapsLock-style). Only move the
-        // highlight onto an empty cell — a filled cell can't take a pencil mark.
-        ui.pencilMode = !ui.pencilMode;
-        if (state.grid[ty * w + tx] === 0) {
-          ui.cursor.x = tx;
-          ui.cursor.y = ty;
-          ui.cursor.visible = true;
-        }
-      } else if (state.grid[ty * w + tx] === 0) {
-        if (
-          tx === ui.cursor.x &&
-          ty === ui.cursor.y &&
-          ui.cursor.visible &&
-          ui.pencilMode
-        ) {
-          ui.cursor.visible = false;
-        } else {
-          ui.pencilMode = true;
-          ui.cursor.x = tx;
-          ui.cursor.y = ty;
-          ui.cursor.visible = true;
-        }
-      } else {
-        ui.cursor.visible = false;
-      }
-      ui.cursorFromKeyboard = false;
-      return UI_UPDATE;
-    }
+  if (
+    inGrid(w, tx, ty) &&
+    pressNoteTakingCell(ui, button, tx, ty, {
+      canEnter: true, // Keen has no immutable givens
+      canMark: state.grid[ty * w + tx] === 0,
+    })
+  ) {
+    return UI_UPDATE;
   }
 
   if (isCursorMove(button)) {
