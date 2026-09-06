@@ -63,36 +63,69 @@ status lives.
 - [ ] B8 Seven of eight error frames are drawn by code no test observes — found
       while doing B4. A **coverage** gap, not a convergence one, so it is not
       part of "done"; see `survey.md`.
-- [ ] B6 The sliding-tile family — after B5.
+- [x] B6 The sliding-tile family — **done**, and it turned out to already have a
+      change: `unify-the-raised-tile-bevel`, surveyed 2026-09-05 and
+      owner-approved in principle, *was* this batch. The clone the survey found
+      between fifteen and sixteen is the raised tile, and the same idiom reached
+      four more games. Six converged on `drawRaisedBevel` + `raisedBevelWidth`,
+      in two commits (extraction with snapshots unmoved, then the thickness
+      change with 440 reviewed coordinate lines).
 
-## Per batch
+## Checks every batch runs
 
-- [ ] B1 Capability diff per game: same capability set before and after —
+*(Lettered `P`, not `B`: these used to be `B1`–`B4` and collided with the batch
+names above, which cost a reader one confused lookup — mine.)*
+
+- [x] P1 Capability diff per game: same capability set before and after —
       hints, mistakes, prefs, keypad, reference aid, difficulty tiers. **Derived,
       never declared** — the set is read off the game object and its `Ui`, so a
-      change that drops a member cannot also drop its own entry.
-- [ ] B2 Frozen differentials byte-clean; narration strings byte-identical;
-      render snapshots unchanged or every changed line explainable.
-- [ ] B3 **Two-lane acceptance**: entirely-unchanged guard set ⇒ batched spot
-      acceptance; any re-baselined snapshot ⇒ full owner acceptance. Do not
-      silently take the cheap lane for a game whose snapshots moved.
-- [ ] B4 A game that keeps a bespoke input/render hatch still converges on
-      everything else — the shared vocabulary, the tier names, the cursor
-      contract — and still gains every cross-game guard its behavior enrolls it
-      in.
+      change that drops a member cannot also drop its own entry. Run by every
+      batch; unmoved throughout.
+- [x] P2 Frozen differentials byte-clean; narration strings byte-identical;
+      render snapshots unchanged or every changed line explainable. Held: **no
+      fixture or differential file changed anywhere in the sweep**, and the only
+      snapshots that moved are the four in the bevel's declared visual commit.
+- [x] P3 **Two-lane acceptance**: five of the six batches re-baselined nothing
+      and took the cheap lane; the one that moved snapshots
+      (`unify-the-raised-tile-bevel`) was the one the owner had already approved
+      in principle, and it was run in the browser on all six games.
+- [x] P4 A game that keeps a bespoke input/render hatch still converges on
+      everything else. Held: Twiddle keeps its trapezoids and Pegs its
+      outside-the-cell relief, and both took every other convergence.
 
 ## Standing constraints
 
-- [ ] C1 Game IDs and descs are player promises: zero bytes change.
-- [ ] C2 The midend, worker, app shell and save format stay untouched. This was
-      billed as the adapter's gift; it is not, and it costs nothing — four rows
-      have landed or been withdrawn and none of them proposed to touch these.
-      Check it anyway, per batch: a property nobody threatens is still one worth
-      asserting, and asserting it is how it stays true.
-- [ ] C3 If a batch shows the contract is still moving, **stop and fix the
-      contract**, then resume. Pushing a sweep through a soft contract is how 57
-      games acquire the same defect.
+- [x] C1 Game IDs and descs are player promises: zero bytes change. **Checked,
+      not assumed** — no file under any `__fixtures__/` and no `*-differential`
+      test changed anywhere between the survey and here.
+- [x] C2 The midend, worker, app shell and save format stay untouched. Checked
+      the same way: nothing under `src/puzzle/`, `src/screens/`,
+      `src/components/`, and no `midend`/`worker`/`save` file, appears in the
+      sweep's diff. The whole sweep lives in `src/games/` and seven
+      `src/engine/` files.
+- [x] C3 No batch found the shared shapes moving under it. The one contract
+      question that did surface — whether the cursor frame and the error frame
+      are the same primitive — was **declined rather than pushed through**
+      (B4), which is this constraint working.
 
 ## Findings
 
-_(none yet — not started)_
+The sweep's own instruments were wrong three times, and each correction is worth
+more than the batch that produced it:
+
+- **jscpd oversells as well as undersells.** B1 was scoped at ~380 duplicated
+  lines and worth nine comment blocks: ~100 of those lines were *import blocks*,
+  ~72 were a move literal already declined with a reason, and the rest were
+  loops whose per-game bodies are the whole content. **A clone cluster is a
+  place to look, never a finding.**
+- **A scan keyed on where a thing is defined misses the copies that share a
+  file.** `unify-the-board-origin` swept eight games for the duplicated board
+  origin and reported Flip clean; Flip had four copies, all inside `index.ts`.
+- **My own alias count was wrong and the fifth was a comment.** A scan for
+  `member: name` cannot tell a wiring line from prose containing a colon.
+
+And one about the work rather than the instruments: **five of six batches
+re-baselined nothing at all.** The convergences that mattered were wide and
+shallow — one spelling, one name, one primitive — which is exactly the shape a
+duplication metric cannot see. `jscpd` fell only 994 → 975 lines across the
+whole sweep.

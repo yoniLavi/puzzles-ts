@@ -205,6 +205,12 @@ manufactures a fork in the road for a reader nor belongs in a convergence sweep.
 
 ## What "done" means
 
+> **Status, 2026-09-06: B1 dissolved, B3–B6 archived, B2 outstanding.** B7 and
+> B8 were found *during* the sweep and are additions to the list rather than
+> part of the original definition of done — which is the behavior the full-sweep
+> route was chosen for: the end state is named first and a later discovery is an
+> addition to a named list, not a replacement for the method.
+
 **B1 is closed as dissolved** — its nine rationale copies are folded into the
 first executed batch. The sweep is done when B3–B6 are archived, B2 has reported
 (it may legitimately decline), and re-running the instruments above produces:
