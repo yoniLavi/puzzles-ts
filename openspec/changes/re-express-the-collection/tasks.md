@@ -45,8 +45,12 @@ status lives.
       blocks, which shipped in
       `converge-capability-names-and-the-additive-rule`. `survey.md` carries the
       decomposition and the instrument lesson.
-- [ ] B2 The desc codec — `share-the-run-length-desc-scanner` (scaffolded; may
-      legitimately decline after its task 0 sizing).
+- [ ] B2 The desc codec — **sized and adopted, three of ten done**
+      (`share-the-run-length-desc-scanner`, still open). Task 0's question is
+      answered: the shape works, it fits ten games and not the eleven with
+      sections or multi-digit values, and palisade/slant/mosaic are converted
+      with two frozen differentials byte-clean. Seven remain, two of them
+      measured as neutral rather than a win.
 - [x] B3 The coordinate pair — **done**
       (`one-spelling-of-the-pixel-to-cell-map`). Seventeen games converged onto
       `engine/geometry.ts`'s `fromCoord`, equivalence proven numerically; the six
@@ -58,8 +62,10 @@ status lives.
       `converge-capability-names-and-the-additive-rule`; the four renderers moved
       to `render.ts` in `move-renderers-into-render-ts`, which also collapsed
       Flip's four copies of the board origin.
-- [ ] B7 flip and pegs are still single-file for state, moves and generation —
-      found while doing B5, and a weaker case than B5 was. See `survey.md`.
+- [ ] B7 flip and pegs have no `state.ts` — **55–2, as settled as the renderer
+      was at 53–4.** Filed as "a weaker case than B5" on an assertion that the
+      split varies; measured, it does not (`generator.ts` and `solver.ts` vary,
+      at ~45 of 57, and those stay per-game). See `survey.md`.
 - [x] B8 **Ratcheted** (`ratchet-the-mistake-overlay-coverage`). The gap is
       wider than B4 saw — 19 of the 39 games offering `findMistakes` never paint
       the overlay in a test — and it cannot be closed by one guard, because both
@@ -127,6 +133,14 @@ more than the batch that produced it:
   origin and reported Flip clean; Flip had four copies, all inside `index.ts`.
 - **My own alias count was wrong and the fifth was a comment.** A scan for
   `member: name` cannot tell a wiring line from prose containing a colon.
+- **The `showMistakes` coverage key overstated its gap.** Crossing was listed as
+  uncovered while carrying the one test in the collection that caught a break in
+  the shared error frame — because it covers its *run-error* frame by a
+  different route than the Check-&-Save overlay.
+- **"This one varies" is a claim, and it rots like a count in prose.** B7 was
+  filed as weak on an unmeasured assertion that the state/generator split is
+  loose. Two minutes of `ls`: `state.ts` is 55 of 57, as settled as the renderer
+  was, and only `generator.ts`/`solver.ts` genuinely vary.
 
 And one about the work rather than the instruments: **five of six batches
 re-baselined nothing at all.** The convergences that mattered were wide and

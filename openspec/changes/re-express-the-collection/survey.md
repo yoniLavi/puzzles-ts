@@ -179,20 +179,36 @@ cheap per game, and worth doing for the games whose mistake mark is their only
 Check-&-Save feedback. The shared primitive itself is now tested at its own
 level in `draw.test.ts`, which is the part that could not wait.
 
-### B7 — flip and pegs are still single-file for everything else
+### B7 — flip and pegs have no `state.ts`, and that is 55–2
 
-**Found while doing B5, 2026-09-06.** With their renderers moved out, flip and
-pegs still keep params, state, moves, generation and (for pegs) the board
-generator in one `index.ts`, where most of the collection splits `state.ts`,
-`generator.ts` and `solver.ts`. Flip's `index.ts` is 742 lines and pegs' is 796
-after the render move.
+**Found while doing B5, 2026-09-06. Its first write-up was wrong, and the
+correction is the useful part.**
 
-This is a **different argument from B5's** and was deliberately not folded into
-it: a renderer's home is settled across 53 games, whereas the state/generator
-split is looser (blackbox, guess, samegame, twiddle and mosaic each vary), so
-"what does the majority do" is a weaker guide here. Do it only after reading
-what the majority actually is, and be ready to find that some of these games are
-small enough that one file is the honest answer.
+That write-up called this "a weaker case than B5" on the grounds that the
+state/generator split "is looser" across the collection. **That was asserted,
+not measured.** Measured:
+
+| File | Games that have it |
+| --- | --- |
+| `render.ts` | **57** (since `move-renderers-into-render-ts`) |
+| `state.ts` | **55** — every game except flip and pegs |
+| `solver.ts` | 46 |
+| `generator.ts` | 45 |
+
+So the collection holds *two* strong conventions, not one. `state.ts` at 55–2 is
+as settled as the renderer was at 53–4, and flip and pegs are the same two
+holdouts for the same reason — they were never split at all. What genuinely
+varies is `generator.ts` and `solver.ts`, at roughly 45 of 57, and those are a
+real per-game judgment (a game with no generated boards has nothing to put in
+one).
+
+**So B7 is: give flip and pegs a `state.ts`**, and leave their generator and
+solver where they are. Flip's `index.ts` is 742 lines and pegs' 796 after the
+render move, and both hold params, state, moves and generation in one file.
+
+The lesson, since it is the fourth of its kind this sweep: **"this one varies"
+is a claim, and it rots exactly like a count in prose.** Two minutes of `ls`
+turned a batch I had filed as weak into one of the two strongest in the survey.
 
 ### Not in scope: intra-game duplication
 
