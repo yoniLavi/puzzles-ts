@@ -1,3 +1,4 @@
+import { c2n, DESC_ALPHABET_SIZE, n2c } from "../../engine/desc-alphabet.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { ParamConfigItem } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -82,22 +83,6 @@ export interface SinglesUi {
   showBlackNums: boolean;
 }
 
-// --- number <-> character codec (upstream n2c / c2n) -----------------------
-
-export function n2c(num: number): string {
-  if (num < 10) return String.fromCharCode(48 + num); // '0'..'9'
-  if (num < 10 + 26) return String.fromCharCode(97 + num - 10); // 'a'..'z'
-  return String.fromCharCode(65 + num - 10 - 26); // 'A'..'Z'
-}
-
-export function c2n(c: string): number {
-  const code = c.charCodeAt(0);
-  if (code >= 48 && code <= 57) return code - 48;
-  if (code >= 97 && code <= 122) return code - 97 + 10;
-  if (code >= 65 && code <= 90) return code - 65 + 10 + 26;
-  return -1;
-}
-
 // --- params codec ----------------------------------------------------------
 
 export function defaultParams(): SinglesParams {
@@ -128,7 +113,17 @@ export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
   choice(paramConfig, "d", "difficulty", DIFF_CHARS, { full: true }),
 ]);
 
-const MAX_DIM = 10 + 26 + 26;
+/**
+ * The largest grid whose numbers the desc alphabet can write.
+ *
+ * A cell holds `1..max(w, h)` and the alphabet's 62 slots run `0..61`, so the
+ * largest number expressible is 61 — **one less than upstream's bound**, which
+ * is `10+26+26` written out. At exactly 62 the encoder walked off the end of
+ * `A`–`Z` into `[`, which `c2n` reads back as `-1` and `validateDesc` then
+ * rejects: a 62×62 board generated a description the game refused to load. The
+ * bound is derived from the alphabet now, so it cannot drift from it again.
+ */
+const MAX_DIM = DESC_ALPHABET_SIZE - 1;
 
 export function validateParams(p: SinglesParams, _full: boolean): string | null {
   if (p.w < 2 || p.h < 2) return "Width and height must be at least two";

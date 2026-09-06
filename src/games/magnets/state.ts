@@ -10,6 +10,11 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
+import {
+  c2n,
+  DESC_ALPHABET_SIZE,
+  n2c as descChar,
+} from "../../engine/desc-alphabet.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -108,21 +113,18 @@ export interface MagnetsMistake {
   y: number;
 }
 
-// --- char codec (cloned from singles.c n2c/c2n) --------------------------
+// --- char codec ----------------------------------------------------------
 
+/**
+ * A row or column count as its description character, or `"."` for *no clue*.
+ *
+ * The `"."` is the only part of this Magnets owns; the alphabet underneath is
+ * the shared one. Singles has no such sentinel, which is why it stays here
+ * rather than moving down — a shared codec that knows one game's "no clue"
+ * marker has taken on that game's meaning.
+ */
 export function n2c(num: number): string {
-  if (num === -1) return ".";
-  if (num < 10) return String.fromCharCode(48 + num);
-  if (num < 36) return String.fromCharCode(97 + num - 10);
-  return String.fromCharCode(65 + num - 36);
-}
-
-export function c2n(c: string): number {
-  const code = c.charCodeAt(0);
-  if (c >= "0" && c <= "9") return code - 48;
-  if (c >= "a" && c <= "z") return code - 97 + 10;
-  if (c >= "A" && c <= "Z") return code - 65 + 36;
-  return -1;
+  return num === -1 ? "." : descChar(num);
 }
 
 // --- params --------------------------------------------------------------
@@ -189,6 +191,14 @@ export function validateParams(p: MagnetsParams, _full: boolean): string | null 
   if (p.h < 2) return "Height must be at least two";
   if (p.w > Number.MAX_SAFE_INTEGER / p.h) {
     return "Width times height must not be unreasonably large";
+  }
+  // A row clue counts up to `w` magnets and a column clue up to `h`, and each
+  // is written as one character of the desc alphabet — which has 62 slots,
+  // `0..61`. Upstream bounds neither dimension, so a 62-wide board encoded a
+  // count as `[` and its own `validateDesc` then rejected the description it
+  // had just written. Derived from the alphabet so the two cannot drift.
+  if (p.w >= DESC_ALPHABET_SIZE || p.h >= DESC_ALPHABET_SIZE) {
+    return "Puzzle is too large";
   }
   if (p.diff >= DIFF_TRICKY) {
     if (p.w < 5 && p.h < 5)

@@ -514,6 +514,33 @@ asserts the invariant the two hand-written scans existed to uphold: **a desc
 file's doc comment before relying on it — its two halves are worth different
 amounts, and it says which.
 
+### `desc-alphabet.ts` — one character per small number
+
+`n2c(n)` writes `0`–`9`, then `a`–`z` for 10–35, then `A`–`Z` for 36–61;
+`c2n(c)` inverts it and returns `-1` for anything else. A **value** codec, not a
+run-length one: every character stands for exactly one cell. Singles and Magnets
+had a copy each, and Magnets' section header said *"cloned from singles.c"*.
+
+The order is frozen into every shipped game ID, so no caller may reorder it —
+which is also why no game could legitimately want a different one.
+
+**A game's sentinel stays with the game.** Magnets writes `.` for "no clue" and
+handles that itself before delegating; Singles has no such concept. Same line
+`run-length.ts` draws.
+
+**It owns the bound, and both games were over it.** `n2c` *throws* above 61
+rather than walking into `[` — which is what both games silently did, producing
+a desc their own `validateDesc` then rejected. Singles capped its dimensions at
+`10+26+26` = 62, one past the largest value the alphabet can write; Magnets
+(like upstream) capped nothing at all. Both now derive the cap from
+`DESC_ALPHABET_SIZE`, and `desc-alphabet.test.ts` finds the largest board each
+game admits and checks the largest number that board can need round-trips.
+
+**Unequal's `n2c`/`c2n` are not this.** Same names, different function: they take
+the puzzle's `order`, shift above order 9, map 0 to a space, and read
+space/backspace keypresses for `interpretMove`. Reading the bodies is what kept
+it out; a scan on the name would have folded it in.
+
 ### `params-codec.ts` — the declared params codec
 
 `paramsCodec` derives **both** halves of `encodeParams`/`decodeParams` from one
