@@ -66,6 +66,55 @@ export function drawRecessedBorder(
 }
 
 /**
+ * The raised block: a `lowlight` triangle over the bottom-right half and a
+ * `highlight` triangle over the top-left, which a caller then covers with its
+ * own inner rect so both show as a border. {@link drawRecessedBorder}'s
+ * sibling, in the opposite direction.
+ *
+ * Promoted from five hand-derived copies (fifteen, inertia, mines, sokoban,
+ * sixteen) by `unify-the-raised-tile-bevel`.
+ *
+ * **Takes bounds rather than a tile**, because each game's tile body differs
+ * for a real reason and a rect keeps that the caller's fact: Fifteen, Sixteen
+ * and Mines bevel `(x, y) … (x+ts−1, y+ts−1)`, while Inertia and Sokoban inset
+ * by one to leave a grid line and bevel `(x+1, y+1) … (x+ts, y+ts)`. Both are
+ * correct for their own tile, so a rect moves no pixels on that axis.
+ *
+ * **The inner fill stays with the caller**, which is why no highlight width is
+ * passed: the two triangles do not depend on it, and each game covers them with
+ * its own color and its own inset.
+ *
+ * Lowlight is drawn first, then highlight. The two share their diagonal, so the
+ * order decides a hairline — fixed here so it is one decision rather than six.
+ */
+export function drawRaisedBevel(
+  dr: GameDrawing,
+  bounds: BevelBounds,
+  highlight: number,
+  lowlight: number,
+): void {
+  const { left, top, right, bottom } = bounds;
+  dr.drawPolygon(
+    [
+      { x: right, y: bottom },
+      { x: right, y: top },
+      { x: left, y: bottom },
+    ],
+    lowlight,
+    lowlight,
+  );
+  dr.drawPolygon(
+    [
+      { x: left, y: top },
+      { x: right, y: top },
+      { x: left, y: bottom },
+    ],
+    highlight,
+    highlight,
+  );
+}
+
+/**
  * Upstream `draw_rect_outline`: a 1px-thick rectangle border, inclusive
  * corners from `(x, y)` to `(x + w - 1, y + h - 1)`.
  */

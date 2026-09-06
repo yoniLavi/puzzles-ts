@@ -23,6 +23,7 @@ import {
   INK,
   wallColor,
 } from "../../engine/color/palette.ts";
+import { drawRaisedBevel } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { coord as coordE } from "../../engine/geometry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
@@ -168,24 +169,13 @@ function drawTile(dr: GameDrawing, ts: number, x: number, y: number, v: number):
   dr.drawRect({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 }, bg);
 
   if (cell === WALL) {
-    // A beveled block: lit from the top left.
-    dr.drawPolygon(
-      [
-        { x: tx + ts, y: ty + ts },
-        { x: tx + ts, y: ty + 1 },
-        { x: tx + 1, y: ty + ts },
-      ],
-      COL_LOWLIGHT,
-      COL_LOWLIGHT,
-    );
-    dr.drawPolygon(
-      [
-        { x: tx + 1, y: ty + 1 },
-        { x: tx + ts, y: ty + 1 },
-        { x: tx + 1, y: ty + ts },
-      ],
+    // A beveled block: lit from the top left. The tile body is inset by one to
+    // leave the grid line showing, so the bevel follows that rect.
+    drawRaisedBevel(
+      dr,
+      { left: tx + 1, top: ty + 1, right: tx + ts, bottom: ty + ts },
       COL_HIGHLIGHT,
-      COL_HIGHLIGHT,
+      COL_LOWLIGHT,
     );
     dr.drawRect(
       { x: tx + 1 + hw, y: ty + 1 + hw, w: ts - 2 * hw, h: ts - 2 * hw },

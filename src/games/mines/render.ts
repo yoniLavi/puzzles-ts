@@ -12,7 +12,7 @@
  * `mines.test.ts` guards that.
  */
 
-import { drawRecessedBorder } from "../../engine/draw.ts";
+import { drawRaisedBevel, drawRecessedBorder } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord } from "../../engine/geometry.ts";
 import { FLAG, KILLED, type MinesState, type MinesUi } from "./state.ts";
@@ -134,16 +134,12 @@ function drawTile(
       dr.drawLine({ x, y }, { x, y: y + ts - 1 }, COL_LOWLIGHT, 1);
     } else {
       // Raised (covered) tile: two bevel triangles + inner bg rect.
-      coords[0] = x + ts - 1;
-      coords[1] = y + ts - 1;
-      coords[2] = x + ts - 1;
-      coords[3] = y;
-      coords[4] = x;
-      coords[5] = y + ts - 1;
-      dr.drawPolygon(poly(coords, 3), COL_LOWLIGHT, COL_LOWLIGHT);
-      coords[0] = x;
-      coords[1] = y;
-      dr.drawPolygon(poly(coords, 3), COL_HIGHLIGHT, COL_HIGHLIGHT);
+      drawRaisedBevel(
+        dr,
+        { left: x, top: y, right: x + ts - 1, bottom: y + ts - 1 },
+        COL_HIGHLIGHT,
+        COL_LOWLIGHT,
+      );
       dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bg);
     }
 
