@@ -175,7 +175,7 @@ export function findCrossingMistakes(state: CrossingState): CrossingMistake[] {
       const entered = state.grid[i];
       if (entered !== 0) {
         if (entered !== answer) out.push({ x, y, kind: "cell" });
-      } else if (state.marks[i] !== 0 && !(state.marks[i] & (1 << (answer - 1)))) {
+      } else if (state.pencil[i] !== 0 && !(state.pencil[i] & (1 << (answer - 1)))) {
         out.push({ x, y, kind: "note" });
       }
     }

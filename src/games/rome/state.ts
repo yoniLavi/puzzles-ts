@@ -120,7 +120,7 @@ export interface RomeBoard {
   readonly grid: Int32Array;
   /** Candidate direction set per square — the player's pencil marks, reused
    * by the solver as its working candidate set (upstream does the same). */
-  readonly marks: Int32Array;
+  readonly pencil: Int32Array;
 }
 
 export interface RomeState extends RomeBoard {
@@ -249,7 +249,7 @@ export function newBoard(w: number, h: number): RomeState {
     h,
     regions: new Dsf(s),
     grid: new Int32Array(s),
-    marks: new Int32Array(s),
+    pencil: new Int32Array(s),
     completed: false,
     cheated: false,
   };
@@ -262,7 +262,7 @@ export function cloneBoard(s: RomeState): RomeState {
     h: s.h,
     regions: s.regions.clone(),
     grid: s.grid.slice(),
-    marks: s.marks.slice(),
+    pencil: s.pencil.slice(),
     completed: s.completed,
     cheated: s.cheated,
   };
@@ -279,7 +279,7 @@ export function cloneState(s: RomeState): RomeState {
     h: s.h,
     regions: s.regions,
     grid: s.grid.slice(),
-    marks: s.marks.slice(),
+    pencil: s.pencil.slice(),
     completed: s.completed,
     cheated: s.cheated,
   };

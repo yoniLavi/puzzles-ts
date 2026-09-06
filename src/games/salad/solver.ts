@@ -527,7 +527,7 @@ export function saladFindMistakes(s: SaladState): SaladMistake[] {
     }
     // Notes: bit `n−1` is symbol `n`, bit `nums` the "might be empty" mark.
     const solnBit = soln === 0 ? 1 << nums : 1 << (soln - 1);
-    if (s.marks[i] !== 0 && !(s.marks[i] & solnBit)) out.push({ kind: "note", x, y });
+    if (s.pencil[i] !== 0 && !(s.pencil[i] & solnBit)) out.push({ kind: "note", x, y });
   }
   return out;
 }

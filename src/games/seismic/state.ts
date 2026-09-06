@@ -252,7 +252,7 @@ export interface SeismicBoard {
   readonly flags: Uint8Array;
   /** Candidate bitmask per cell — the player's pencil marks during play, the
    * solver's live candidate set while solving. */
-  readonly marks: Uint16Array;
+  readonly pencil: Uint16Array;
 }
 
 export interface SeismicState extends SeismicBoard {
@@ -269,7 +269,7 @@ export function blankBoard(w: number, h: number, mode: number): SeismicBoard {
     dsf: new Dsf(w * h),
     grid: new Uint8Array(w * h),
     flags: new Uint8Array(w * h),
-    marks: new Uint16Array(w * h),
+    pencil: new Uint16Array(w * h),
   };
 }
 
@@ -283,7 +283,7 @@ export function cloneState(s: SeismicState): SeismicState {
     dsf: s.dsf,
     grid: s.grid.slice(),
     flags: s.flags.slice(),
-    marks: s.marks.slice(),
+    pencil: s.pencil.slice(),
     params: s.params,
     completed: s.completed,
     cheated: s.cheated,

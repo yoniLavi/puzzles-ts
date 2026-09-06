@@ -107,11 +107,11 @@ const MAX_ATTEMPTS_UPSTREAM = 5_000_000;
  * there. Fails when a cell has no legal number left.
  */
 function genNumbers(board: SeismicBoard, rng: RandomState): boolean {
-  const { w, h, marks } = board;
+  const { w, h, pencil } = board;
   const s = w * h;
   const spaces: number[] = [];
   for (let i = 0; i < s; i++) {
-    marks[i] = ALL_MARKS;
+    pencil[i] = ALL_MARKS;
     spaces.push(i);
   }
 
@@ -121,7 +121,7 @@ function genNumbers(board: SeismicBoard, rng: RandomState): boolean {
     const i = spaces[j];
     let placed = false;
     for (let n = 1; n <= 9; n++) {
-      if (marks[i] & numBit(n)) {
+      if (pencil[i] & numBit(n)) {
         placeNumber(board, i % w, (i / w) | 0, n);
         placed = true;
         break;
@@ -147,19 +147,19 @@ function genNumbers(board: SeismicBoard, rng: RandomState): boolean {
  * byte-match surface, not a correctness one.
  */
 function tectonicGenNumbers(board: SeismicBoard, rng: RandomState): boolean {
-  const { w, h, grid, marks } = board;
+  const { w, h, grid, pencil } = board;
   const s = w * h;
   const spaces = [1, 2, 3, 4, 5];
   const counts = [0, 0, 0, 0, 0];
 
-  for (let i = 0; i < s; i++) marks[i] = areaBits(5);
+  for (let i = 0; i < s; i++) pencil[i] = areaBits(5);
 
   for (let i = 0; i < s; i++) {
     shuffle(spaces, rng);
     let placed = false;
     for (let j = 0; j < 5; j++) {
       const n = spaces[j];
-      if (marks[i] & numBit(n)) {
+      if (pencil[i] & numBit(n)) {
         placeNumber(board, i % w, (i / w) | 0, n);
         counts[n - 1]++;
         placed = true;
@@ -444,11 +444,11 @@ const FILL_NODE_BUDGET = 200_000;
  * board is impossible".
  */
 export function fillRegions(board: SeismicBoard, rng: RandomState): boolean {
-  const { w, h, grid, marks, dsf } = board;
+  const { w, h, grid, pencil, dsf } = board;
   const s = w * h;
 
   grid.fill(0);
-  for (let i = 0; i < s; i++) marks[i] = areaBits(dsf.size(i));
+  for (let i = 0; i < s; i++) pencil[i] = areaBits(dsf.size(i));
 
   let budget = FILL_NODE_BUDGET;
   const areas = new Int32Array(s);
@@ -467,7 +467,7 @@ export function fillRegions(board: SeismicBoard, rng: RandomState): boolean {
    */
   const regionsViable = (): boolean => {
     areas.fill(0);
-    for (let j = 0; j < s; j++) areas[dsf.canonify(j)] |= marks[j];
+    for (let j = 0; j < s; j++) areas[dsf.canonify(j)] |= pencil[j];
     for (let j = 0; j < s; j++) {
       if (j !== dsf.canonify(j)) continue;
       // Candidate sets only ever shrink from `areaBits(size)`, so anything
@@ -483,7 +483,7 @@ export function fillRegions(board: SeismicBoard, rng: RandomState): boolean {
     for (let i = 0; i < s; i++) {
       if (grid[i] !== 0) continue;
       let count = 0;
-      for (let n = 1; n <= 9; n++) if (marks[i] & numBit(n)) count++;
+      for (let n = 1; n <= 9; n++) if (pencil[i] & numBit(n)) count++;
       // A cell with nothing left: this branch is dead, backtrack immediately.
       if (count === 0) return false;
       if (count < bestCount) {
@@ -497,17 +497,17 @@ export function fillRegions(board: SeismicBoard, rng: RandomState): boolean {
     if (target < 0) return true;
 
     const candidates: number[] = [];
-    for (let n = 1; n <= 9; n++) if (marks[target] & numBit(n)) candidates.push(n);
+    for (let n = 1; n <= 9; n++) if (pencil[target] & numBit(n)) candidates.push(n);
     shuffle(candidates, rng);
 
     const gridSave = grid.slice();
-    const marksSave = marks.slice();
+    const marksSave = pencil.slice();
     for (const n of candidates) {
       if (budget-- <= 0) return false;
       placeNumber(board, target % w, (target / w) | 0, n);
       if (regionsViable() && step()) return true;
       grid.set(gridSave);
-      marks.set(marksSave);
+      pencil.set(marksSave);
     }
     return false;
   };
@@ -564,7 +564,7 @@ function scratchCopy(board: SeismicBoard): SeismicBoard {
     dsf: board.dsf,
     grid: board.grid.slice(),
     flags: board.flags.slice(),
-    marks: board.marks.slice(),
+    pencil: board.pencil.slice(),
   };
 }
 

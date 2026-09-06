@@ -231,7 +231,7 @@ function interpretMove(
     return adaptiveMarkAll<SaladMove, SaladMark>(needsPencilFill(state), () =>
       obviousCandidateMarks(
         state.grid,
-        state.marks,
+        state.pencil,
         o,
         saladRegions(o),
         saladNotes(nums),
@@ -274,8 +274,8 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
       const fillOnly = move.type === "pencilAll";
       for (let i = 0; i < o * o; i++) {
         if (!state.grid[i] && state.holes[i] !== CROSS) {
-          if (fillOnly && state.marks[i] !== 0) continue;
-          next.marks[i] = state.holes[i] === CIRCLE ? marks : allmarks;
+          if (fillOnly && state.pencil[i] !== 0) continue;
+          next.pencil[i] = state.holes[i] === CIRCLE ? marks : allmarks;
         }
       }
       return next;
@@ -285,7 +285,7 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
       // toggle) and a partly-followed hint strike stays safe to re-apply. Mark
       // `n = nums + 1` is the "might be empty" X, which `1 << (n − 1)` places at
       // bit `nums` — the same formula as a symbol's bit.
-      for (const { x, y, n } of move.marks) next.marks[y * o + x] &= ~(1 << (n - 1));
+      for (const { x, y, n } of move.marks) next.pencil[y * o + x] &= ~(1 << (n - 1));
       return next;
     }
     // Named rather than left as the `default`, which used to be this working
@@ -300,17 +300,17 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
       if (v === "clear") {
         // Clearing an already-empty square wipes its pencil marks instead.
         // (Upstream applies this arm to a pencil move too.)
-        if (!next.grid[i] && next.holes[i] !== CROSS) next.marks[i] = 0;
+        if (!next.grid[i] && next.holes[i] !== CROSS) next.pencil[i] = 0;
         next.grid[i] = 0;
         if (next.gridclues[i] !== CIRCLE) next.holes[i] = 0;
       } else if (typeof v === "number") {
-        if (pencil) next.marks[i] ^= 1 << (v - 1);
+        if (pencil) next.pencil[i] ^= 1 << (v - 1);
         else {
           next.grid[i] = v;
           next.holes[i] = CIRCLE;
         }
       } else if (v === "cross") {
-        if (pencil) next.marks[i] ^= 1 << nums;
+        if (pencil) next.pencil[i] ^= 1 << nums;
         else {
           next.grid[i] = 0;
           next.holes[i] = CROSS;

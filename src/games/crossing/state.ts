@@ -426,7 +426,7 @@ export interface CrossingState {
   /** `w·h` entered digits, `0` = empty; cloned per move. */
   grid: Uint8Array;
   /** `w·h` pencil-mark bitmasks (bit `n-1` = digit `n`); cloned per move. */
-  marks: Int32Array;
+  pencil: Int32Array;
   completed: boolean;
   cheated: boolean;
 }
@@ -437,7 +437,7 @@ export function newState(p: CrossingParams, desc: string): CrossingState {
     params: p,
     puzzle: makePuzzle(p.w, p.h, walls, numbers),
     grid: new Uint8Array(p.w * p.h),
-    marks: new Int32Array(p.w * p.h),
+    pencil: new Int32Array(p.w * p.h),
     completed: false,
     cheated: false,
   };
@@ -448,7 +448,7 @@ export function cloneState(s: CrossingState): CrossingState {
     params: s.params,
     puzzle: s.puzzle,
     grid: s.grid.slice(),
-    marks: s.marks.slice(),
+    pencil: s.pencil.slice(),
     completed: s.completed,
     cheated: s.cheated,
   };

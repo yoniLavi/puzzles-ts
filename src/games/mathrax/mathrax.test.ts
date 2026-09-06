@@ -650,9 +650,9 @@ describe("mathrax moves", () => {
 
     let s = mathraxGame.executeMove(st, { type: "set", x, y, n: 2, pencil: true });
     s = mathraxGame.executeMove(s, { type: "set", x, y, n: 5, pencil: true });
-    expect(s.marks[empty]).toBe((1 << 2) | (1 << 5));
+    expect(s.pencil[empty]).toBe((1 << 2) | (1 << 5));
     s = mathraxGame.executeMove(s, { type: "set", x, y, n: 0, pencil: true });
-    expect(s.marks[empty]).toBe(0);
+    expect(s.pencil[empty]).toBe(0);
   });
 
   it("rejects a move onto a given", () => {
@@ -737,8 +737,8 @@ describe("mathrax moves", () => {
     expect([...st2.grid]).toEqual([
       ...(m as unknown as { state: MathraxState }).state.grid,
     ]);
-    expect([...st2.marks]).toEqual([
-      ...(m as unknown as { state: MathraxState }).state.marks,
+    expect([...st2.pencil]).toEqual([
+      ...(m as unknown as { state: MathraxState }).state.pencil,
     ]);
   });
 });

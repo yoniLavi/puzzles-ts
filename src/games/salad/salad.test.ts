@@ -295,15 +295,15 @@ describe("salad moves", () => {
   it("toggles pencil marks, and clears them on an already-empty square", () => {
     const s = newState(LETTERS.p, LETTERS.desc);
     const a = saladGame.executeMove(s, { type: "pencil", x: 1, y: 1, value: 2 });
-    expect(a.marks[5]).toBe(1 << 1);
+    expect(a.pencil[5]).toBe(1 << 1);
     const b = saladGame.executeMove(a, { type: "pencil", x: 1, y: 1, value: "cross" });
-    expect(b.marks[5]).toBe((1 << 1) | (1 << 3)); // bit `nums` is the X mark
+    expect(b.pencil[5]).toBe((1 << 1) | (1 << 3)); // bit `nums` is the X mark
     const c = saladGame.executeMove(b, { type: "pencil", x: 1, y: 1, value: 2 });
-    expect(c.marks[5]).toBe(1 << 3);
+    expect(c.pencil[5]).toBe(1 << 3);
     // Clearing an empty square wipes its marks (upstream applies that arm to a
     // pencil move too).
     const d = saladGame.executeMove(c, { type: "pencil", x: 1, y: 1, value: "clear" });
-    expect(d.marks[5]).toBe(0);
+    expect(d.pencil[5]).toBe(0);
   });
 
   it("a penciled circle toggles the real marker without emptying the square", () => {
@@ -319,10 +319,10 @@ describe("salad moves", () => {
     const a = saladGame.executeMove(s, { type: "markAll" });
     const all = (1 << (NUMBERS.p.nums + 1)) - 1;
     const noX = (1 << NUMBERS.p.nums) - 1;
-    expect(a.marks[0]).toBe(all); // a plain empty square
-    expect(a.marks[8]).toBe(noX); // the bare ball: it cannot be empty
-    expect(a.marks[13]).toBe(0); // the cross: nothing to note
-    expect(a.marks[4]).toBe(0); // a given digit
+    expect(a.pencil[0]).toBe(all); // a plain empty square
+    expect(a.pencil[8]).toBe(noX); // the bare ball: it cannot be empty
+    expect(a.pencil[13]).toBe(0); // the cross: nothing to note
+    expect(a.pencil[4]).toBe(0); // a given digit
   });
 
   it("filling in the unique solution completes the board", () => {
@@ -379,7 +379,7 @@ describe("salad moves", () => {
     const me2 = play(NUMBERS_ID);
     expect(me2.loadGame(saved)).toBeUndefined();
     expect(me2.formatAsText()).toBe(me.formatAsText());
-    expect([...stateOf(me2).marks]).toEqual([...stateOf(me).marks]);
+    expect([...stateOf(me2).pencil]).toEqual([...stateOf(me).pencil]);
   });
 });
 
@@ -653,7 +653,7 @@ describe("salad input", () => {
     const cleaned = saladGame.executeMove(filled, second as SaladMove);
     for (let i = 0; i < s.order * s.order; i++) {
       // Only ever removes.
-      expect(cleaned.marks[i] & ~filled.marks[i]).toBe(0);
+      expect(cleaned.pencil[i] & ~filled.pencil[i]).toBe(0);
     }
 
     // 3. Converges: a third press has nothing left to remove.
@@ -666,12 +666,12 @@ describe("salad input", () => {
       y: 0,
       value: "clear",
     });
-    const kept = narrowed.marks.slice();
+    const kept = narrowed.pencil.slice();
     const refill = press(narrowed);
     expect(refill).toEqual({ type: "pencilAll" });
     const after = saladGame.executeMove(narrowed, refill as SaladMove);
     for (let i = 1; i < s.order * s.order; i++) {
-      expect(after.marks[i]).toBe(kept[i]);
+      expect(after.pencil[i]).toBe(kept[i]);
     }
   });
 

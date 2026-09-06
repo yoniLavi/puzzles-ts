@@ -265,11 +265,11 @@ function regionMembers(board: RomeBoard): Map<number, number[]> {
 
 /** EASY: a square with a single remaining candidate takes it. */
 function solverSingle(board: RomeBoard): number {
-  const { grid, marks } = board;
+  const { grid, pencil } = board;
   let ret = 0;
   for (let i = 0; i < grid.length; i++) {
     if (grid[i] !== EMPTY) continue;
-    const m = marks[i];
+    const m = pencil[i];
     if (m === FM_UP || m === FM_DOWN || m === FM_LEFT || m === FM_RIGHT) {
       grid[i] = m;
       ret++;
@@ -280,12 +280,12 @@ function solverSingle(board: RomeBoard): number {
 
 /** EASY: an arrow already placed in a region is ruled out everywhere in it. */
 function solverDoubles(board: RomeBoard, sets: Int32Array): number {
-  const { marks, regions } = board;
+  const { pencil, regions } = board;
   let ret = 0;
-  for (let i = 0; i < marks.length; i++) {
-    const prev = marks[i];
-    marks[i] &= ~sets[regions.canonify(i)];
-    if (prev !== marks[i]) ret++;
+  for (let i = 0; i < pencil.length; i++) {
+    const prev = pencil[i];
+    pencil[i] &= ~sets[regions.canonify(i)];
+    if (prev !== pencil[i]) ret++;
   }
   return ret;
 }
@@ -298,25 +298,25 @@ function solverDoubles(board: RomeBoard, sets: Int32Array): number {
  * neighbor is never reached — but upstream relies on that silently and reads
  * out of bounds if it ever stops holding. */
 function solverLoops(board: RomeBoard, dsf: Dsf): number {
-  const { w, h, marks } = board;
+  const { w, h, pencil } = board;
   let ret = 0;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
-      if (marks[i] & FM_UP && y > 0 && dsf.equivalent(i, i - w)) {
-        marks[i] &= ~FM_UP;
+      if (pencil[i] & FM_UP && y > 0 && dsf.equivalent(i, i - w)) {
+        pencil[i] &= ~FM_UP;
         ret++;
       }
-      if (marks[i] & FM_DOWN && y < h - 1 && dsf.equivalent(i, i + w)) {
-        marks[i] &= ~FM_DOWN;
+      if (pencil[i] & FM_DOWN && y < h - 1 && dsf.equivalent(i, i + w)) {
+        pencil[i] &= ~FM_DOWN;
         ret++;
       }
-      if (marks[i] & FM_LEFT && x > 0 && dsf.equivalent(i, i - 1)) {
-        marks[i] &= ~FM_LEFT;
+      if (pencil[i] & FM_LEFT && x > 0 && dsf.equivalent(i, i - 1)) {
+        pencil[i] &= ~FM_LEFT;
         ret++;
       }
-      if (marks[i] & FM_RIGHT && x < w - 1 && dsf.equivalent(i, i + 1)) {
-        marks[i] &= ~FM_RIGHT;
+      if (pencil[i] & FM_RIGHT && x < w - 1 && dsf.equivalent(i, i + 1)) {
+        pencil[i] &= ~FM_RIGHT;
         ret++;
       }
     }
@@ -331,8 +331,8 @@ function find4Position(
   singles: Int32Array,
   doubles: Int32Array,
 ): number {
-  const { marks, regions } = board;
-  const s = marks.length;
+  const { pencil, regions } = board;
+  const s = pencil.length;
   singles.fill(0);
   doubles.fill(0);
   let ret = 0;
@@ -340,16 +340,16 @@ function find4Position(
   for (let i = 0; i < s; i++) {
     if (regions.size(i) !== 4) continue;
     const c = regions.canonify(i);
-    doubles[c] |= marks[i] & singles[c];
-    singles[c] |= marks[i];
+    doubles[c] |= pencil[i] & singles[c];
+    singles[c] |= pencil[i];
   }
   for (let i = 0; i < s; i++) {
     if (regions.size(i) !== 4) continue;
     const c = regions.canonify(i);
     const unique = singles[c] ^ doubles[c];
-    const prev = marks[i];
-    if (marks[i] & unique) marks[i] &= unique;
-    if (prev !== marks[i]) ret++;
+    const prev = pencil[i];
+    if (pencil[i] & unique) pencil[i] &= unique;
+    if (prev !== pencil[i]) ret++;
   }
   return ret;
 }
@@ -357,13 +357,13 @@ function find4Position(
 /** NORMAL: two squares of a region sharing the same pair of candidates use
  * both of them up, so the pair is ruled out of the region's other squares. */
 function nakedPairs(board: RomeBoard, members: Map<number, number[]>): number {
-  const { marks, regions } = board;
-  const s = marks.length;
+  const { pencil, regions } = board;
+  const s = pencil.length;
   let ret = 0;
 
   for (let i = 0; i < s; i++) {
     if (regions.size(i) < 3) continue;
-    const m = marks[i];
+    const m = pencil[i];
     const poss =
       (m & FM_UP ? 1 : 0) +
       (m & FM_DOWN ? 1 : 0) +
@@ -376,15 +376,15 @@ function nakedPairs(board: RomeBoard, members: Map<number, number[]>): number {
     for (const j of list) {
       // Upstream scans `j` from `i + 1`, so the pair is found once, from its
       // lower member.
-      if (j <= i || marks[j] !== marks[i]) continue;
+      if (j <= i || pencil[j] !== pencil[i]) continue;
       // Upstream scans `k` from the region's canonical root — the union-by-size
       // root, NOT its minimum — so a member below that root is genuinely
       // skipped. Reproduced verbatim: it changes which puzzles exist.
       for (const k of list) {
         if (k < c || k === i || k === j) continue;
-        const prev = marks[k];
-        marks[k] &= ~marks[i];
-        if (marks[k] !== prev) ret++;
+        const prev = pencil[k];
+        pencil[k] &= ~pencil[i];
+        if (pencil[k] !== prev) ret++;
       }
     }
   }
@@ -401,7 +401,7 @@ function nakedPairs(board: RomeBoard, members: Map<number, number[]>): number {
  * this sees genuinely grows the component.)
  */
 function solverExpand(board: RomeBoard, dsf: Dsf): number {
-  const { w, h, grid, marks } = board;
+  const { w, h, grid, pencil } = board;
   let dir = EMPTY;
   let idx = -1;
 
@@ -414,22 +414,22 @@ function solverExpand(board: RomeBoard, dsf: Dsf): number {
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const i1 = y * w + x;
-        if (x < w - 1 && dsf.canonify(i1 + 1) === c && marks[i1] & FM_RIGHT) {
+        if (x < w - 1 && dsf.canonify(i1 + 1) === c && pencil[i1] & FM_RIGHT) {
           if (dir !== EMPTY) return 0; // more than one option: nothing forced
           dir = FM_RIGHT;
           idx = i1;
         }
-        if (x > 0 && dsf.canonify(i1 - 1) === c && marks[i1] & FM_LEFT) {
+        if (x > 0 && dsf.canonify(i1 - 1) === c && pencil[i1] & FM_LEFT) {
           if (dir !== EMPTY) return 0;
           dir = FM_LEFT;
           idx = i1;
         }
-        if (y < h - 1 && dsf.canonify(i1 + w) === c && marks[i1] & FM_DOWN) {
+        if (y < h - 1 && dsf.canonify(i1 + w) === c && pencil[i1] & FM_DOWN) {
           if (dir !== EMPTY) return 0;
           dir = FM_DOWN;
           idx = i1;
         }
-        if (y > 0 && dsf.canonify(i1 - w) === c && marks[i1] & FM_UP) {
+        if (y > 0 && dsf.canonify(i1 - w) === c && pencil[i1] & FM_UP) {
           if (dir !== EMPTY) return 0;
           dir = FM_UP;
           idx = i1;
@@ -439,7 +439,7 @@ function solverExpand(board: RomeBoard, dsf: Dsf): number {
   }
 
   if (dir !== EMPTY) {
-    marks[idx] = dir;
+    pencil[idx] = dir;
     return 1;
   }
   return 0;
@@ -454,37 +454,37 @@ function solverExpand(board: RomeBoard, dsf: Dsf): number {
  * cleared, so its candidate set can never equal exactly `FM_UP|FM_DOWN`, and
  * symmetrically on the other three edges. */
 function solverOpposites(board: RomeBoard): number {
-  const { w, h, marks, regions } = board;
+  const { w, h, pencil, regions } = board;
   let ret = 0;
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i1 = y * w + x;
 
-      if (marks[i1] === (FM_UP | FM_DOWN)) {
+      if (pencil[i1] === (FM_UP | FM_DOWN)) {
         const c = regions.canonify(i1);
         const above = (y - 1) * w + x;
-        if (marks[above] & FM_DOWN && regions.canonify(above) === c) {
-          marks[above] &= ~FM_DOWN;
+        if (pencil[above] & FM_DOWN && regions.canonify(above) === c) {
+          pencil[above] &= ~FM_DOWN;
           ret++;
         }
         const below = (y + 1) * w + x;
-        if (marks[below] & FM_UP && regions.canonify(below) === c) {
-          marks[below] &= ~FM_UP;
+        if (pencil[below] & FM_UP && regions.canonify(below) === c) {
+          pencil[below] &= ~FM_UP;
           ret++;
         }
       }
 
-      if (marks[i1] === (FM_LEFT | FM_RIGHT)) {
+      if (pencil[i1] === (FM_LEFT | FM_RIGHT)) {
         const c = regions.canonify(i1);
         const left = i1 - 1;
-        if (marks[left] & FM_RIGHT && regions.canonify(left) === c) {
-          marks[left] &= ~FM_RIGHT;
+        if (pencil[left] & FM_RIGHT && regions.canonify(left) === c) {
+          pencil[left] &= ~FM_RIGHT;
           ret++;
         }
         const right = i1 + 1;
-        if (marks[right] & FM_LEFT && regions.canonify(right) === c) {
-          marks[right] &= ~FM_LEFT;
+        if (pencil[right] & FM_LEFT && regions.canonify(right) === c) {
+          pencil[right] &= ~FM_LEFT;
           ret++;
         }
       }
@@ -505,22 +505,22 @@ function solverOpposites(board: RomeBoard): number {
  * divergence into a loud throw instead of a hung worker.
  */
 export function romeSolve(board: RomeBoard, maxdiff: number): number {
-  const { w, h, grid, marks } = board;
+  const { w, h, grid, pencil } = board;
   const s = w * h;
   const scratch = newValidateScratch(s);
   const { dsf, sets } = scratch;
 
   for (let i = 0; i < s; i++) {
-    marks[i] = grid[i] === EMPTY ? FM_ARROWMASK : grid[i] & FM_ARROWMASK;
+    pencil[i] = grid[i] === EMPTY ? FM_ARROWMASK : grid[i] & FM_ARROWMASK;
   }
   // Candidates that would point off the grid are impossible from the start.
   for (let x = 0; x < w; x++) {
-    marks[x] &= ~FM_UP;
-    marks[(h - 1) * w + x] &= ~FM_DOWN;
+    pencil[x] &= ~FM_UP;
+    pencil[(h - 1) * w + x] &= ~FM_DOWN;
   }
   for (let y = 0; y < h; y++) {
-    marks[y * w] &= ~FM_LEFT;
-    marks[y * w + (w - 1)] &= ~FM_RIGHT;
+    pencil[y * w] &= ~FM_LEFT;
+    pencil[y * w + (w - 1)] &= ~FM_RIGHT;
   }
 
   const members = regionMembers(board);

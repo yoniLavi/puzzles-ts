@@ -12,22 +12,15 @@
  * the mixed board. Owner-reported on Salad, twice (the hint's opener, then the
  * button), and then fixed across all ten games that offer the press.
  *
- * The properties pinned here are deliberately representation-agnostic — each game
- * only says *where* its notes live — so a new game with a Mark-all press joins by
- * adding one row.
+ * The properties pinned here are deliberately representation-agnostic, and a new
+ * game with a Mark-all press joins by **shipping the press** — the roster is
+ * derived from `canMarkAll` and the notes are read through the one field name
+ * every note-taking game uses. Each game used to write a row here saying where
+ * its notes lived, because the collection spelled that field three ways; that
+ * ended with `unify-the-note-taking-vocabulary`.
  */
 import { beforeAll, describe, expect, it } from "vitest";
-import { abcdGame } from "../games/abcd/index.ts";
-import { groupGame } from "../games/group/index.ts";
 import { registerAllGames } from "../games/index.ts";
-import { keenGame } from "../games/keen/index.ts";
-import { mathraxGame } from "../games/mathrax/index.ts";
-import { saladGame } from "../games/salad/index.ts";
-import { seismicGame } from "../games/seismic/index.ts";
-import { soloGame } from "../games/solo/index.ts";
-import { towersGame } from "../games/towers/index.ts";
-import { undeadGame } from "../games/undead/index.ts";
-import { unequalGame } from "../games/unequal/index.ts";
 import { UI_UPDATE } from "./game.ts";
 import { randomNew } from "./random/index.ts";
 import { getTsGame, registeredGameIds } from "./registry.ts";
@@ -38,51 +31,71 @@ import { sizedDrawState } from "./testing/sized-draw-state.ts";
 // reset the shared registry under `isolate: false`.
 beforeAll(registerAllGames);
 
-/** Where a game keeps its pencil marks, and how many array slots one cell owns
- * (ABCD's notes are a candidate *cube*: `n` contiguous slots per cell — see its
- * `cuboid(x, y, i, n, w) = i + x*n + y*n*w`). */
+/** How many array slots one cell's notes own, for the games where it is not
+ * one — the ledger, with the reason. ABCD's notes are a candidate *cube*: `n`
+ * contiguous slots per cell (see its `cuboid(x, y, i, n, w) = i + x*n + y*n*w`).
+ * Every other game packs a cell's candidates into one bitmask. */
+// biome-ignore lint/suspicious/noExplicitAny: params shape differs per game.
+const MULTI_SLOT_NOTES: Record<string, (params: any) => number> = {
+  abcd: (p) => p.n,
+};
+
 interface Row {
   name: string;
   game: AnyGame;
-  // biome-ignore lint/suspicious/noExplicitAny: a deliberately game-agnostic probe.
-  notes: (state: any) => Int32Array | Uint8Array | Uint16Array;
   // biome-ignore lint/suspicious/noExplicitAny: params shape differs per game.
-  slots?: (params: any) => number;
+  slots: (params: any) => number;
 }
 
-/** Every game answering `canMarkAll`. */
-const MARK_ALL_GAMES: Row[] = [
-  { name: "towers", game: towersGame, notes: (s) => s.pencil },
-  { name: "keen", game: keenGame, notes: (s) => s.pencil },
-  { name: "unequal", game: unequalGame, notes: (s) => s.pencil },
-  { name: "solo", game: soloGame, notes: (s) => s.pencil },
-  { name: "group", game: groupGame, notes: (s) => s.pencil },
-  { name: "mathrax", game: mathraxGame, notes: (s) => s.marks },
-  { name: "seismic", game: seismicGame, notes: (s) => s.marks },
-  { name: "salad", game: saladGame, notes: (s) => s.marks },
-  { name: "undead", game: undeadGame, notes: (s) => s.pencils },
-  { name: "abcd", game: abcdGame, notes: (s) => s.pencil, slots: (p) => p.n },
-];
+/**
+ * Every game answering `canMarkAll` — **derived, not written down**.
+ *
+ * This was ten hand-written rows, each naming the game *and* the field its notes
+ * lived in, because the collection spelled that field three ways (`pencil`,
+ * `marks`, `pencils`). `unify-the-note-taking-vocabulary` made it one word, and
+ * the roster went with it: a game shipping the press is guarded here the day it
+ * ships, and a row can no longer be forgotten. What survives as a list is the
+ * one thing a game genuinely answers differently — the slot arity above.
+ *
+ * The enrollment check this replaces compared the roster with the flag. Now that
+ * the roster *is* the flag, that comparison is a tautology and asserts nothing;
+ * the real question — does the flag match what the game *does* — is the
+ * behavioral check below, which is where it belonged all along.
+ */
+const MARK_ALL_GAMES: Row[] = registeredGameIds()
+  .sort()
+  .filter((id) => getTsGame(id)?.canMarkAll === true)
+  .map((id) => ({
+    name: id,
+    game: getTsGame(id) as AnyGame,
+    slots: MULTI_SLOT_NOTES[id] ?? (() => 1),
+  }));
 
-it("every game offering the press is enrolled here", () => {
-  /*
-   * **Both directions, and both derived from the registry.** The miss worth
-   * catching is a game that ships `canMarkAll` with no row here, because that
-   * game is silently unguarded by every property below — and it is precisely the
-   * game a loop over `MARK_ALL_GAMES` never visits. An enrollment check that
-   * reads only the enrollment list is a statement about the list, not about the
-   * collection.
-   */
-  const offering = registeredGameIds()
-    .filter((id) => getTsGame(id)?.canMarkAll === true)
-    .sort();
-  // Vacuity: an empty registry would make both comparisons below trivially true.
-  expect(offering.length).toBeGreaterThan(5);
+/** Every note-taking game keeps its candidates in `pencil`, so the probe reads
+ * one field rather than being told where to look, per game. */
+// biome-ignore lint/suspicious/noExplicitAny: a deliberately game-agnostic probe.
+const notesOf = (state: any): Int32Array | Uint8Array | Uint16Array => state.pencil;
 
-  const enrolled = MARK_ALL_GAMES.map((r) => r.name).sort();
-  expect(enrolled, "a game ships Mark-all with no row here — it is unguarded").toEqual(
-    offering,
-  );
+it("drew a populated roster, and the slot ledger is honest", () => {
+  // Vacuity: an empty registry yields an empty roster, and every `it()` built
+  // from it below simply never runs — which `--passWithNoTests` reports green.
+  expect(MARK_ALL_GAMES.length).toBeGreaterThan(5);
+  const ids = new Set(MARK_ALL_GAMES.map((r) => r.name));
+  for (const id of Object.keys(MULTI_SLOT_NOTES))
+    expect(
+      ids.has(id),
+      `${id} has a slot-arity entry but does not offer Mark-all`,
+    ).toBe(true);
+  // Every enrolled game really does keep its notes under the shared noun.
+  for (const row of MARK_ALL_GAMES) {
+    const params = firstLeaf(row.game.presets());
+    const { desc } = row.game.newDesc(params, randomNew(`slots-${row.name}`));
+    const notes = notesOf(row.game.newState(params, desc));
+    expect(
+      ArrayBuffer.isView(notes),
+      `${row.name} offers Mark-all but has no \`pencil\` notes array`,
+    ).toBe(true);
+  }
 });
 
 it("every game declaring the press answers it, and no other game does", () => {
@@ -234,8 +247,8 @@ describe("the Mark-all press never resets a note the player narrowed", () => {
       // bug hides (which it did in the first cut of this test — Towers has no
       // givens, so its clean press strikes nothing and every cell keeps its full
       // candidate set).
-      const slots = row.slots?.(params) ?? 1;
-      const notes = row.notes(cur);
+      const slots = row.slots(params);
+      const notes = notesOf(cur);
       let narrowed = -1;
       for (let i = 0; i + slots <= notes.length; i += slots) {
         if (narrowOne(notes, i, slots)) {
@@ -270,7 +283,7 @@ describe("the Mark-all press never resets a note the player narrowed", () => {
         after,
         `${row.name}: the press did not refill the blank cell`,
       ).not.toBeNull();
-      const filled = Array.from(row.notes(after));
+      const filled = Array.from(notesOf(after));
 
       // The blank cell is filled again…
       expect(

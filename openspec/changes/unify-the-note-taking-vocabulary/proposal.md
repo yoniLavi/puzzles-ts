@@ -13,6 +13,14 @@ games spell the same field three ways*.
 
 ## The measurement
 
+> **⚠️ The table below was wrong, and re-deriving it was task 1 for exactly that
+> reason.** The population is **thirteen**, not eleven: **Map** (`pencil`) and
+> **Rome** (`marks`) were missing. See `tasks.md` § 1.1 — the miss came not from
+> counting spellings but from borrowing the *note-taking-cell* enrolled set,
+> which answers a narrower question ("runs the highlight-and-type flow") than
+> the one this change asks ("has candidate marks"). Kept as written, because the
+> shape of the error is the useful part.
+
 The eleven note-taking games keep their pencil candidates in a typed array, and
 name it three different things:
 

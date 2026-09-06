@@ -474,7 +474,7 @@ export function deduceCrossingPlan(state: CrossingState): CrossingPlan {
   const board: CrossingHintBoard = {
     puzzle: state.puzzle,
     grid: state.grid.slice(),
-    marks: state.marks.slice(),
+    marks: state.pencil.slice(),
   };
   const { status, plan } = deduceHintPlan<
     CrossingHintBoard,

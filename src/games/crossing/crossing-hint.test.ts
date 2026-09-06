@@ -66,7 +66,7 @@ function afterFiring(state: CrossingState, f: CrossingFiring): CrossingState {
   const next = {
     ...state,
     grid: state.grid.slice(),
-    marks: state.marks.slice(),
+    marks: state.pencil.slice(),
   };
   applyCrossingFiring({ puzzle: next.puzzle, grid: next.grid, marks: next.marks }, f);
   return next;
@@ -285,8 +285,8 @@ describe("crossing hint — ruling a candidate out", () => {
     };
     const once = crossingGame.executeMove(state, move);
     const twice = crossingGame.executeMove(once, move);
-    expect([...twice.marks]).toEqual([...once.marks]);
-    expect(once.marks[0]).toBe(1); // the 1 survives, the 9 is gone
+    expect([...twice.pencil]).toEqual([...once.pencil]);
+    expect(once.pencil[0]).toBe(1); // the 1 survives, the 9 is gone
   });
 });
 

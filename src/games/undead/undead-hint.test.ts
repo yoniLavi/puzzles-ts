@@ -279,7 +279,7 @@ describe("undead hintKeepTrack", () => {
         const strikeMarks = strike.move.marks;
         const mark = strikeMarks[0];
         // The candidate is present (pre-move) → a toggle clears it → on plan.
-        expect(s.pencils[mark.cell] & mark.monster).toBeTruthy();
+        expect(s.pencil[mark.cell] & mark.monster).toBeTruthy();
         const v = undeadGame.hintKeepTrack?.(
           { type: "pencil", cell: mark.cell, monster: mark.monster },
           strike,

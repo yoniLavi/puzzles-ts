@@ -239,7 +239,7 @@ export function redraw(
   mistakes?: readonly RomeMistake[],
 ): void {
   const ts = ds.tilesize;
-  const { w, h, grid, marks, regions } = state;
+  const { w, h, grid, pencil, regions } = state;
 
   // The win animation hides the *displayed* cursor while leaving `ui.cursor`
   // alone, because the cursor still feeds the cell value and so the cache key.
@@ -280,7 +280,7 @@ export function redraw(
       const i1 = y * w + x;
       const onHighlight = ui.cursor.x === x && ui.cursor.y === y;
       let c = grid[i1];
-      let p = marks[i1];
+      let p = pencil[i1];
 
       // The in-flight mouse drag previews its direction in place.
       if (ui.mmode === MOUSEMODE_PLACE && onHighlight) {

@@ -825,7 +825,7 @@ describe("seismic input", () => {
     ).toBeNull();
     for (let i = 0; i < filled.w * filled.h; i++) {
       if (filled.grid[i] === 0) {
-        expect(filled.marks[i]).toBe(areaBits(filled.dsf.size(i)));
+        expect(filled.pencil[i]).toBe(areaBits(filled.dsf.size(i)));
       }
     }
   });
@@ -860,12 +860,12 @@ describe("seismic moves", () => {
         pencil: true,
       });
     const a = set(state, 3);
-    expect(a.marks[cell.i]).toBe(numBit(3));
+    expect(a.pencil[cell.i]).toBe(numBit(3));
     const b = set(a, 3);
-    expect(b.marks[cell.i]).toBe(0);
+    expect(b.pencil[cell.i]).toBe(0);
     const c = set(set(b, 1), 2);
-    expect(c.marks[cell.i]).toBe(numBit(1) | numBit(2));
-    expect(set(c, 0).marks[cell.i]).toBe(0);
+    expect(c.pencil[cell.i]).toBe(numBit(1) | numBit(2));
+    expect(set(c, 0).pencil[cell.i]).toBe(0);
   });
 
   it("leaves the original state untouched (executeMove is pure)", () => {
@@ -880,7 +880,7 @@ describe("seismic moves", () => {
       pencil: false,
     });
     expect(state.grid).toEqual(before.grid);
-    expect(state.marks).toEqual(before.marks);
+    expect(state.pencil).toEqual(before.pencil);
     expect(state.flags).toEqual(before.flags);
   });
 

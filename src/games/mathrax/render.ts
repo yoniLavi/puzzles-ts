@@ -275,8 +275,8 @@ function drawTile(
       fs & F_IMMUTABLE ? COL_BORDER : fs & FE_COUNT ? COL_ERROR : COL_GUESS,
       String(state.grid[i]),
     );
-  } else if (state.marks[i]) {
-    drawPencilMarks(dr, ts, tx, ty, state.marks[i], o);
+  } else if (state.pencil[i]) {
+    drawPencilMarks(dr, ts, tx, ty, state.pencil[i], o);
   }
 
   // The (up to) four clues at this cell's corners, each colored by *this*
@@ -414,7 +414,7 @@ export function redraw(
       )
         fs |= ui.pencilMode ? FD_PENCIL : FD_CURSOR;
 
-      const tile = state.grid[i] | (state.marks[i] << 4) | (fs << 14);
+      const tile = state.grid[i] | (state.pencil[i] << 4) | (fs << 14);
       if (ds.tiles[i] !== tile || ds.wrong.stale(i)) {
         drawTile(dr, ds, state, x, y, fs, ds.wrong.at(i));
         ds.tiles[i] = tile;

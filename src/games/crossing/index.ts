@@ -259,7 +259,7 @@ function interpretMove(
     if (walls[i]) return null;
     if (ui.pencilMode && state.grid[i] !== 0) return null; // notes can't touch a filled cell
     if (!ui.pencilMode && state.grid[i] === (digit ?? 0)) return null;
-    if (ui.pencilMode && digit === null && state.marks[i] === 0) return null;
+    if (ui.pencilMode && digit === null && state.pencil[i] === 0) return null;
 
     const move: CrossingMove = ui.pencilMode
       ? { kind: "pencil", x: ui.cursor.x, y: ui.cursor.y, digit }
@@ -322,7 +322,7 @@ function executeMove(state: CrossingState, move: CrossingMove): CrossingState {
     for (const { x, y, n } of move.marks) {
       const j = y * w + x;
       if (walls[j]) throw new Error("crossing: cannot edit a wall");
-      next.marks[j] &= ~(1 << (n - 1));
+      next.pencil[j] &= ~(1 << (n - 1));
     }
     return next;
   }
@@ -343,7 +343,7 @@ function executeMove(state: CrossingState, move: CrossingMove): CrossingState {
   if (move.kind === "set") {
     next.grid[i] = move.digit ?? 0;
   } else {
-    next.marks[i] = move.digit === null ? 0 : next.marks[i] ^ (1 << (move.digit - 1));
+    next.pencil[i] = move.digit === null ? 0 : next.pencil[i] ^ (1 << (move.digit - 1));
   }
 
   if (validateBoard(next.puzzle, next.grid).status === "valid") next.completed = true;
@@ -513,7 +513,7 @@ function hintKeepTrack(
   return keepCandidateHintTrack(
     m,
     step,
-    state.marks,
+    state.pencil,
     state.puzzle.w,
     crossingCandidateMoves,
   );
@@ -543,7 +543,7 @@ function refreshHintStep(
   return refreshCandidateHintStep(
     step,
     state.grid,
-    state.marks,
+    state.pencil,
     state.puzzle.w,
     crossingCandidateMoves,
   );

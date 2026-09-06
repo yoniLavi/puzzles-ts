@@ -465,13 +465,13 @@ describe("moves", () => {
   it("toggles a pencil mark on and off without touching the grid", () => {
     let st = board(3, 3, `${ALL_WALLS_3},i`);
     st = romeGame.executeMove(st, { kind: "pencil", x: 0, y: 0, dir: FM_UP });
-    expect(st.marks[0]).toBe(FM_UP);
+    expect(st.pencil[0]).toBe(FM_UP);
     st = romeGame.executeMove(st, { kind: "pencil", x: 0, y: 0, dir: FM_LEFT });
-    expect(st.marks[0]).toBe(FM_UP | FM_LEFT);
+    expect(st.pencil[0]).toBe(FM_UP | FM_LEFT);
     st = romeGame.executeMove(st, { kind: "pencil", x: 0, y: 0, dir: FM_UP });
-    expect(st.marks[0]).toBe(FM_LEFT);
+    expect(st.pencil[0]).toBe(FM_LEFT);
     st = romeGame.executeMove(st, { kind: "pencil", x: 0, y: 0, dir: null });
-    expect(st.marks[0]).toBe(EMPTY);
+    expect(st.pencil[0]).toBe(EMPTY);
     expect(st.grid[0]).toBe(EMPTY);
   });
 
@@ -650,7 +650,7 @@ describe("midend integration", () => {
     const m2 = new Midend(romeGame);
     expect(m2.loadGame(m.saveGame())).toBeUndefined();
     const restored = stateOf(m2);
-    expect(restored.marks[target]).toBe(FM_UP | FM_LEFT);
+    expect(restored.pencil[target]).toBe(FM_UP | FM_LEFT);
     expect(restored.grid[target] & FM_ARROWMASK).toBe(FM_DOWN);
   });
 

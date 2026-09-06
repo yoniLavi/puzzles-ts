@@ -287,7 +287,7 @@ function interpretMove(
 
 function executeMove(state: RomeState, move: RomeMove): RomeState {
   const next = cloneState(state);
-  const { w, h, grid, marks } = next;
+  const { w, h, grid, pencil } = next;
 
   if (move.kind === "solve") {
     for (let i = 0; i < grid.length; i++) {
@@ -312,7 +312,7 @@ function executeMove(state: RomeState, move: RomeMove): RomeState {
   if (grid[i] & FM_FIXED) throw new Error("rome: cannot change a fixed clue");
 
   if (move.kind === "place") grid[i] = move.dir ?? EMPTY;
-  else marks[i] = move.dir === null ? EMPTY : marks[i] ^ move.dir;
+  else pencil[i] = move.dir === null ? EMPTY : pencil[i] ^ move.dir;
 
   if (validateGame(next, true) === STATUS_COMPLETE) next.completed = true;
   return next;

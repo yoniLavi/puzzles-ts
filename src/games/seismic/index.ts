@@ -120,7 +120,7 @@ function interpretMove(
   p: Point,
   rawButton: number,
 ): SeismicMove | null | UiUpdate {
-  const { w, h, grid, flags, marks, dsf } = state;
+  const { w, h, grid, flags, pencil, dsf } = state;
   const ts = ds.tilesize;
   const button = stripModifiers(rawButton);
 
@@ -192,7 +192,7 @@ function interpretMove(
     // not "some cell differs from its region's full set", which would keep
     // emitting a move that changes nothing (an undo entry per press).
     for (let i = 0; i < w * h; i++) {
-      if (grid[i] === 0 && marks[i] === 0) return { type: "pencilAll" };
+      if (grid[i] === 0 && pencil[i] === 0) return { type: "pencilAll" };
     }
   }
 
@@ -210,8 +210,8 @@ function executeMove(state: SeismicState, move: SeismicMove): SeismicState {
       const i = move.y * w + move.x;
       if (state.flags[i] & FM_FIXED) throw new Error("seismic: cell is a given");
       if (move.pencil) {
-        if (move.n === 0) next.marks[i] = 0;
-        else next.marks[i] ^= numBit(move.n);
+        if (move.n === 0) next.pencil[i] = 0;
+        else next.pencil[i] ^= numBit(move.n);
       } else {
         next.grid[i] = move.n;
       }
@@ -226,8 +226,8 @@ function executeMove(state: SeismicState, move: SeismicMove): SeismicState {
       // threw away their own deductions). `adaptiveMarkAll`'s contract always said
       // "fill every *note-less* empty cell".
       for (let i = 0; i < w * h; i++) {
-        if (next.grid[i] === 0 && next.marks[i] === 0) {
-          next.marks[i] = areaBits(dsf.size(i));
+        if (next.grid[i] === 0 && next.pencil[i] === 0) {
+          next.pencil[i] = areaBits(dsf.size(i));
         }
       }
       return next;
@@ -284,7 +284,7 @@ function findMistakes(state: SeismicState): readonly SeismicMistake[] {
     const y = (i / state.w) | 0;
     if (state.grid[i]) {
       if (state.grid[i] !== soln[i]) out.push({ kind: "cell", x, y });
-    } else if (state.marks[i] !== 0 && !(state.marks[i] & numBit(soln[i]))) {
+    } else if (state.pencil[i] !== 0 && !(state.pencil[i] & numBit(soln[i]))) {
       out.push({ kind: "note", x, y });
     }
   }

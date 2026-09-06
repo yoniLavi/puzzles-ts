@@ -43,11 +43,11 @@ export const STATUS_INVALID = 2;
  * number of changes (zero or one) — the rungs sum these and treat a non-zero
  * total as "this rung fired". */
 function unset(board: SeismicBoard, x: number, y: number, n: number): number {
-  const { w, h, marks } = board;
+  const { w, h, pencil } = board;
   if (x < 0 || y < 0 || x >= w || y >= h) return 0;
   const i = y * w + x;
-  if (marks[i] & numBit(n)) {
-    marks[i] &= ~numBit(n);
+  if (pencil[i] & numBit(n)) {
+    pencil[i] &= ~numBit(n);
     return 1;
   }
   return 0;
@@ -68,7 +68,7 @@ export function placeNumber(
   y: number,
   n: number,
 ): number {
-  const { w, h, grid, marks, dsf } = board;
+  const { w, h, grid, pencil, dsf } = board;
   if (x < 0 || y < 0 || x >= w || y >= h) return 0;
 
   const i = y * w + x;
@@ -77,8 +77,8 @@ export function placeNumber(
     grid[i] = n;
     changes++;
   }
-  if (marks[i] !== numBit(n)) {
-    marks[i] = numBit(n);
+  if (pencil[i] !== numBit(n)) {
+    pencil[i] = numBit(n);
     changes++;
   }
 
@@ -110,9 +110,9 @@ export function placeNumber(
 /** Seed every cell's candidates to its region's full set, then apply the givens
  * already on the board. */
 export function solverInit(board: SeismicBoard): void {
-  const { w, h, grid, marks, dsf } = board;
+  const { w, h, grid, pencil, dsf } = board;
   const s = w * h;
-  for (let i = 0; i < s; i++) marks[i] = areaBits(dsf.size(i));
+  for (let i = 0; i < s; i++) pencil[i] = areaBits(dsf.size(i));
   for (let i = 0; i < s; i++) {
     if (grid[i] !== 0) placeNumber(board, i % w, (i / w) | 0, grid[i]);
   }
@@ -120,13 +120,13 @@ export function solverInit(board: SeismicBoard): void {
 
 /** **Easy rung, naked single**: a cell with exactly one candidate left takes it. */
 function solverMarks(board: SeismicBoard): number {
-  const { w, h, grid, marks } = board;
+  const { w, h, grid, pencil } = board;
   const s = w * h;
   let changes = 0;
   for (let i = 0; i < s; i++) {
     if (grid[i] !== 0) continue;
     for (let n = 1; n <= 9; n++) {
-      if (marks[i] === numBit(n)) changes += placeNumber(board, i % w, (i / w) | 0, n);
+      if (pencil[i] === numBit(n)) changes += placeNumber(board, i % w, (i / w) | 0, n);
     }
   }
   return changes;
@@ -141,7 +141,7 @@ function solverMarks(board: SeismicBoard): number {
  * applied, so the whole region is judged against one consistent snapshot.
  */
 function solverAreas(board: SeismicBoard): number {
-  const { w, h, marks, dsf } = board;
+  const { w, h, pencil, dsf } = board;
   const s = w * h;
   /** Candidates seen at least once in the region rooted here. */
   const singles = new Int32Array(s);
@@ -150,17 +150,17 @@ function solverAreas(board: SeismicBoard): number {
 
   for (let i = 0; i < s; i++) {
     const c = dsf.canonify(i);
-    doubles[c] |= marks[i] & singles[c];
-    singles[c] |= marks[i];
+    doubles[c] |= pencil[i] & singles[c];
+    singles[c] |= pencil[i];
   }
 
   let changes = 0;
   for (let i = 0; i < s; i++) {
     const c = dsf.canonify(i);
     const unique = singles[c] ^ doubles[c];
-    const prev = marks[i];
-    if (marks[i] & unique) marks[i] &= unique;
-    if (prev !== marks[i]) changes++;
+    const prev = pencil[i];
+    if (pencil[i] & unique) pencil[i] &= unique;
+    if (prev !== pencil[i]) changes++;
   }
 
   return changes;
@@ -175,7 +175,7 @@ function solverAreas(board: SeismicBoard): number {
  * effect is striking the refuted candidate.
  */
 function solverAttempt(board: SeismicBoard): number {
-  const { w, h, grid, marks, dsf } = board;
+  const { w, h, grid, pencil, dsf } = board;
   const s = w * h;
   const gridBackup = new Uint8Array(s);
   const marksBackup = new Uint16Array(s);
@@ -186,15 +186,15 @@ function solverAttempt(board: SeismicBoard): number {
     if (grid[i] !== 0) continue;
 
     for (let n = 1; n <= 9; n++) {
-      if (!(marks[i] & numBit(n))) continue;
+      if (!(pencil[i] & numBit(n))) continue;
 
       gridBackup.set(grid);
-      marksBackup.set(marks);
+      marksBackup.set(pencil);
       areas.fill(0);
 
       placeNumber(board, i % w, (i / w) | 0, n);
 
-      for (let j = 0; j < s; j++) areas[dsf.canonify(j)] |= marks[j];
+      for (let j = 0; j < s; j++) areas[dsf.canonify(j)] |= pencil[j];
 
       let valid = true;
       for (let j = 0; j < s && valid; j++) {
@@ -203,7 +203,7 @@ function solverAttempt(board: SeismicBoard): number {
       }
 
       grid.set(gridBackup);
-      marks.set(marksBackup);
+      pencil.set(marksBackup);
 
       if (!valid) changes += unset(board, i % w, (i / w) | 0, n);
     }

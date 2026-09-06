@@ -390,8 +390,8 @@ describe("salad hint — the opener never destroys the player's own notes", () =
       ...at(blank as number),
       value: "clear",
     });
-    const narrowed = s.marks[narrow as number];
-    expect(s.marks[blank as number]).toBe(0);
+    const narrowed = s.pencil[narrow as number];
+    expect(s.pencil[blank as number]).toBe(0);
 
     const res = saladGame.hint?.(s);
     expect(res?.ok).toBe(true);
@@ -407,16 +407,16 @@ describe("salad hint — the opener never destroys the player's own notes", () =
     if (!fill) return;
 
     const filled = saladGame.executeMove(s, fill.move);
-    expect(filled.marks[narrow as number]).toBe(narrowed);
-    expect(filled.marks[blank as number]).not.toBe(0);
+    expect(filled.pencil[narrow as number]).toBe(narrowed);
+    expect(filled.pencil[blank as number]).not.toBe(0);
   });
 
   it("the additive `pencilAll` is idempotent where `markAll` is destructive", () => {
     const state = board(NUMBERS, "fill-2");
     const o = state.order;
     const full = saladGame.executeMove(state, { type: "markAll" });
-    const i = [...full.marks.keys()].find(
-      (k) => full.marks[k] !== 0 && state.gridclues[k] === 0,
+    const i = [...full.pencil.keys()].find(
+      (k) => full.pencil[k] !== 0 && state.gridclues[k] === 0,
     );
     expect(i).toBeDefined();
     const cell = { x: (i as number) % o, y: ((i as number) / o) | 0 };
@@ -425,14 +425,14 @@ describe("salad hint — the opener never destroys the player's own notes", () =
       ...cell,
       value: 1,
     });
-    expect(narrowed.marks[i as number]).not.toBe(full.marks[i as number]);
+    expect(narrowed.pencil[i as number]).not.toBe(full.pencil[i as number]);
 
     // The additive fill changes nothing at all here (every square has a mark)…
     const refilled = saladGame.executeMove(narrowed, { type: "pencilAll" });
-    expect(Array.from(refilled.marks)).toEqual(Array.from(narrowed.marks));
+    expect(Array.from(refilled.pencil)).toEqual(Array.from(narrowed.pencil));
     // …where the player's own Mark-all deliberately resets it, as upstream does.
     const reset = saladGame.executeMove(narrowed, { type: "markAll" });
-    expect(reset.marks[i as number]).toBe(full.marks[i as number]);
+    expect(reset.pencil[i as number]).toBe(full.pencil[i as number]);
   });
 });
 
@@ -471,7 +471,7 @@ describe("salad hint — the strike move", () => {
     // Pick a square the fill actually noted.
     let cell = -1;
     for (let i = 0; i < state.order * state.order; i++) {
-      if (marked.marks[i] & 1) {
+      if (marked.pencil[i] & 1) {
         cell = i;
         break;
       }
@@ -481,14 +481,14 @@ describe("salad hint — the strike move", () => {
     mark.y = (cell / state.order) | 0;
     const once = saladGame.executeMove(marked, { type: "pencilStrike", marks: [mark] });
     const twice = saladGame.executeMove(once, { type: "pencilStrike", marks: [mark] });
-    expect(Array.from(twice.marks)).toEqual(Array.from(once.marks));
-    expect(once.marks[cell] & 1).toBe(0);
+    expect(Array.from(twice.pencil)).toEqual(Array.from(once.pencil));
+    expect(once.pencil[cell] & 1).toBe(0);
     // The X mark rides the same formula: `n = nums + 1` clears bit `nums`.
     const xstruck = saladGame.executeMove(marked, {
       type: "pencilStrike",
       marks: [{ x: mark.x, y: mark.y, n: state.nums + 1 }],
     });
-    expect(xstruck.marks[cell] & (1 << state.nums)).toBe(0);
+    expect(xstruck.pencil[cell] & (1 << state.nums)).toBe(0);
   });
 
   it("a marker step is judged followed once the square carries that marker", () => {

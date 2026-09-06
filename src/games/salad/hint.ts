@@ -305,17 +305,17 @@ function reasonEvidence(
 interface Working {
   grid: Uint8Array;
   holes: Uint8Array;
-  marks: Int32Array;
+  pencil: Int32Array;
 }
 
 function startWorking(s: SaladState): Working {
   const w: Working = {
     grid: Uint8Array.from(s.grid),
     holes: Uint8Array.from(s.holes),
-    marks: Int32Array.from(s.marks),
+    pencil: Int32Array.from(s.pencil),
   };
-  for (let i = 0; i < w.marks.length; i++) {
-    if (w.grid[i] !== 0 || w.holes[i] === CROSS) w.marks[i] = 0;
+  for (let i = 0; i < w.pencil.length; i++) {
+    if (w.grid[i] !== 0 || w.holes[i] === CROSS) w.pencil[i] = 0;
   }
   return w;
 }
@@ -342,7 +342,7 @@ function placedProbe(w: Working): Uint8Array {
 function nakedSymbol(w: Working, o: number, nums: number): Mark | null {
   for (let i = 0; i < o * o; i++) {
     if (w.grid[i] !== 0 || w.holes[i] === CROSS) continue;
-    const m = w.marks[i];
+    const m = w.pencil[i];
     if (m === 0 || (m & (m - 1)) !== 0) continue;
     for (let n = 1; n <= nums; n++) {
       if (m === 1 << (n - 1)) return { x: i % o, y: (i / o) | 0, n };
@@ -416,7 +416,7 @@ function nextCheapMarker(w: Working, o: number, nums: number): MarkerFiring | nu
   const xbit = 1 << nums;
   for (let i = 0; i < o * o; i++) {
     if (w.grid[i] !== 0 || w.holes[i] !== 0) continue;
-    if (w.marks[i] === xbit) {
+    if (w.pencil[i] === xbit) {
       return { mark: "cross", cells: [at(i)], reason: { kind: "crossNaked" } };
     }
   }
@@ -516,7 +516,7 @@ function pushStrike(
     },
     continuesPrevious: continues,
   });
-  for (const m of marks) b.w.marks[m.y * b.o + m.x] &= ~(1 << (m.n - 1));
+  for (const m of marks) b.w.pencil[m.y * b.o + m.x] &= ~(1 << (m.n - 1));
 }
 
 /** Emit a placement and apply it, then teach the row/column note cull it forces
@@ -541,11 +541,11 @@ function pushPlacement(
   });
   w.grid[y * o + x] = n;
   w.holes[y * o + x] = CIRCLE;
-  w.marks[y * o + x] = 0;
+  w.pencil[y * o + x] = 0;
 
   const dup = regionDuplicateMarks(
     w.grid,
-    w.marks,
+    w.pencil,
     x,
     y,
     n,
@@ -556,7 +556,7 @@ function pushPlacement(
   if (dup.length > 0 && !autoClean) {
     pushStrike(b, dup, { kind: "dup", n, px: x, py: y }, true);
   } else {
-    for (const m of dup) w.marks[m.y * o + m.x] &= ~(1 << (m.n - 1));
+    for (const m of dup) w.pencil[m.y * o + m.x] &= ~(1 << (m.n - 1));
   }
 }
 
@@ -577,8 +577,8 @@ function pushMarkers(b: Builder, f: MarkerFiring): void {
       continuesPrevious: j > 0,
     });
     w.holes[i] = f.mark === "cross" ? CROSS : CIRCLE;
-    if (f.mark === "cross") w.marks[i] = 0;
-    else if (w.marks[i] & xbit) tidy.push({ x: c.x, y: c.y, n: nums + 1 });
+    if (f.mark === "cross") w.pencil[i] = 0;
+    else if (w.pencil[i] & xbit) tidy.push({ x: c.x, y: c.y, n: nums + 1 });
   });
   if (tidy.length > 0) pushStrike(b, tidy, { kind: "circleXNote" }, true);
 }
@@ -614,7 +614,7 @@ function buildSteps(
 
   // The same predicate the Mark-all button's fill half uses, so the opener fires
   // exactly when a press of that button would fill something.
-  const working = { order: o, grid: w.grid, holes: w.holes, marks: w.marks };
+  const working = { order: o, grid: w.grid, holes: w.holes, pencil: w.pencil };
   let populated = !needsPencilFill(working);
   let cleaned = false;
 
@@ -634,8 +634,8 @@ function buildSteps(
    */
   const populate = (): void => {
     for (let i = 0; i < o * o; i++) {
-      if (w.grid[i] === 0 && w.holes[i] !== CROSS && w.marks[i] === 0) {
-        w.marks[i] = w.holes[i] === CIRCLE ? symbolMarks : allMarks;
+      if (w.grid[i] === 0 && w.holes[i] !== CROSS && w.pencil[i] === 0) {
+        w.pencil[i] = w.holes[i] === CIRCLE ? symbolMarks : allMarks;
       }
     }
     steps.push(
@@ -693,7 +693,7 @@ function buildSteps(
         emitObviousCleanStep<SaladMove, SaladHint>(
           steps,
           w.grid,
-          w.marks,
+          w.pencil,
           o,
           regionsOf,
           cleanObviousText(vocab.noun, "placed", "row or column", "square"),
@@ -717,7 +717,7 @@ function buildSteps(
     const probe = placedProbe(w);
     const ops = rec.ops as SaladOp[];
     const strikeOps = ops.filter((op) => op.kind === "place" || op.n <= nums);
-    const strike = nextStrike(strikeOps, w.grid, w.marks, o, { enc, placed: probe });
+    const strike = nextStrike(strikeOps, w.grid, w.pencil, o, { enc, placed: probe });
     if (strike) {
       const group = strike[0].group;
       let continues = group === lastStrikeGroup;
@@ -736,7 +736,7 @@ function buildSteps(
     if (place) {
       const reason: SaladReason =
         place.reason.kind === "single"
-          ? singlePlacementReason(w.grid, w.marks, place.x, place.y, place.n, o, enc)
+          ? singlePlacementReason(w.grid, w.pencil, place.x, place.y, place.n, o, enc)
           : place.reason;
       pushPlacement(b, place.x, place.y, place.n, reason, autoClean);
       rec = recordSaladDeductions(board(), state.diff);
@@ -815,7 +815,13 @@ export function hintKeepTrack(
       ? "completed"
       : "off";
   }
-  return keepCandidateHintTrack(m, step, state.marks, state.order, saladCandidateMoves);
+  return keepCandidateHintTrack(
+    m,
+    step,
+    state.pencil,
+    state.order,
+    saladCandidateMoves,
+  );
 }
 
 /** Re-validate a stored step before it is (re-)displayed. A marker step is
@@ -834,7 +840,7 @@ export function refreshHintStep(
   return refreshCandidateHintStep(
     step,
     state.grid,
-    state.marks,
+    state.pencil,
     state.order,
     saladCandidateMoves,
   );

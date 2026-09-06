@@ -1059,9 +1059,9 @@ describe("crossing moves and completion", () => {
     const [x, y] = [open % 5, Math.floor(open / 5)];
     let s = crossingGame.executeMove(state, { kind: "pencil", x, y, digit: 3 });
     s = crossingGame.executeMove(s, { kind: "pencil", x, y, digit: 8 });
-    expect(s.marks[open]).toBe((1 << 2) | (1 << 7));
+    expect(s.pencil[open]).toBe((1 << 2) | (1 << 7));
     s = crossingGame.executeMove(s, { kind: "pencil", x, y, digit: null });
-    expect(s.marks[open]).toBe(0);
+    expect(s.pencil[open]).toBe(0);
   });
 });
 
@@ -1097,12 +1097,12 @@ describe("crossing findMistakes", () => {
 
     // A note set that excludes the solution digit is a mistake…
     const bad = cloneState(state);
-    bad.marks[open] = 0x1ff & ~(1 << (answer[open] - 1));
+    bad.pencil[open] = 0x1ff & ~(1 << (answer[open] - 1));
     expect(findCrossingMistakes(bad)).toEqual([{ x, y, kind: "note" }]);
 
     // …while one that merely carries extra candidates is ordinary progress.
     const fine = cloneState(state);
-    fine.marks[open] = 0x1ff;
+    fine.pencil[open] = 0x1ff;
     expect(findCrossingMistakes(fine)).toEqual([]);
 
     // And no notes at all is never a mistake.

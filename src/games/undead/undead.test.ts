@@ -151,21 +151,21 @@ describe("undead executeMove", () => {
       cell: 0,
       monster: MON_GHOST,
     });
-    expect(s1.pencils[0]).toBe(MON_GHOST);
+    expect(s1.pencil[0]).toBe(MON_GHOST);
     const s2 = undeadGame.executeMove(s1, {
       type: "pencil",
       cell: 0,
       monster: MON_GHOST,
     });
-    expect(s2.pencils[0]).toBe(0);
+    expect(s2.pencil[0]).toBe(0);
   });
 
   it("fills all pencil marks on undecided cells", () => {
     const s0 = emptyState();
     const s1 = undeadGame.executeMove(s0, { type: "set", cell: 0, monster: MON_GHOST });
     const s2 = undeadGame.executeMove(s1, { type: "markAll" });
-    expect(s2.pencils[0]).toBe(0); // cell 0 is placed, not penciled
-    for (let i = 1; i < s2.common.numTotal; i++) expect(s2.pencils[i]).toBe(7);
+    expect(s2.pencil[0]).toBe(0); // cell 0 is placed, not penciled
+    for (let i = 1; i < s2.common.numTotal; i++) expect(s2.pencil[i]).toBe(7);
   });
 
   it("toggles an edge clue's done flag", () => {

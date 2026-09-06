@@ -199,7 +199,7 @@ export interface MathraxState {
    * upstream stores them on the state and `game_redraw` reads them back). */
   flags: Uint8Array;
   /** `o²` pencil-mark bitmaps, bit `n` = candidate `n` (see the module note). */
-  marks: Int32Array;
+  pencil: Int32Array;
   /** `(o−1)²` packed clues at the interior intersections. Immutable after load,
    * shared by reference across cloned states. */
   clues: Int32Array;
@@ -212,7 +212,7 @@ export function cloneState(s: MathraxState): MathraxState {
     params: s.params,
     grid: s.grid.slice(),
     flags: s.flags.slice(),
-    marks: s.marks.slice(),
+    pencil: s.pencil.slice(),
     clues: s.clues, // immutable, shared
     completed: s.completed,
     cheated: s.cheated,
@@ -399,7 +399,7 @@ export function newState(p: MathraxParams, desc: string): MathraxState {
     params: p,
     grid: r.value.grid,
     flags: r.value.flags,
-    marks: new Int32Array(p.o * p.o),
+    pencil: new Int32Array(p.o * p.o),
     clues: r.value.clues,
     completed: false,
     cheated: false,

@@ -232,7 +232,7 @@ function drawTile(
   wrong: boolean,
 ): void {
   const ts = ds.tilesize;
-  const { w, h, dsf, grid, marks, flags } = state;
+  const { w, h, dsf, grid, pencil, flags } = state;
   const i = y * w + x;
   const tx = BORDER + x * ts;
   const ty = BORDER + y * ts;
@@ -270,7 +270,7 @@ function drawTile(
     corner(tx + ts - 2 * GRIDEXTRA, ty + ts - 2 * GRIDEXTRA);
 
   if (grid[i] === 0) {
-    drawPencilMarks(dr, ts, cx, cy, marks[i]);
+    drawPencilMarks(dr, ts, cx, cy, pencil[i]);
   } else {
     const ink =
       flags[i] & FM_FIXED
@@ -389,7 +389,7 @@ export function redraw(
 
       const tile =
         state.grid[i] |
-        (state.marks[i] << 4) |
+        (state.pencil[i] << 4) |
         (state.flags[i] << 13) |
         (color << 16) |
         ((pencilCursor ? 1 : 0) << 18);

@@ -530,6 +530,21 @@ Any game with candidate pencil marks carries all of the following — deliberate
 default-on divergences that make note-taking usable with mouse and touch, not
 just keyboard. Exemplar: [`towers/index.ts`](../../src/games/towers/index.ts).
 
+**Put the marks in `pencil`.** A game's provisional per-cell candidates live in
+a typed array of that name on its state — the noun the engine already uses
+everywhere else it speaks about notes (`Ui.pencilMode`, the `pencilSticky` and
+`pencilKeepHighlight` prefs, `pencilAll` / `pencilStrike`). The element type and
+the slot arity stay yours: one bitmask per cell, or ABCD's candidate *cube* of
+`n` contiguous slots, are both fine. Two things are outside the convention and
+keep their own words — a field that is not a candidate set (Pearl's `marks` are
+no-line marks on a cell's four edges), and a **solver's** own working candidate
+scratch, which is a different object with a different lifetime. Guarded by
+[`note-vocabulary.test.ts`](../../src/engine/note-vocabulary.test.ts); the
+normative rule is the `ts-engine` spec, "One note-taking vocabulary across
+games". *What the disagreement cost while it lasted*: `mark-all.test.ts` carried
+a hand-written row per game whose whole job was to say where that game's notes
+were — the last per-game roster in the cross-game guards.
+
 - **Mark-all — `canMarkAll: true`.** The game handles `M`/`m` in
   `interpretMove`; the flag surfaces the toolbar button that injects it.
   A *candidate-elimination* game (one with a `regionsOf` — see

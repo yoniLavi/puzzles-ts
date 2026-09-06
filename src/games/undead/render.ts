@@ -133,7 +133,7 @@ export interface UndeadDrawState {
   /** `numTotal` last-drawn monster bitmasks. */
   monsters: Int8Array;
   /** `numTotal` last-drawn pencil bitmasks. */
-  pencils: Uint8Array;
+  pencil: Uint8Array;
   /** `wh` last-drawn cell-error flags (staleness only — see file note). */
   cellErrors: Uint8Array;
   /** `2·numPaths` last-drawn edge-clue error / done flags. */
@@ -171,7 +171,7 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
     w: common.w,
     h: common.h,
     monsters: new Int8Array(common.numTotal).fill(7),
-    pencils: new Uint8Array(common.numTotal),
+    pencil: new Uint8Array(common.numTotal),
     cellErrors: new Uint8Array(common.wh),
     hintErrors: new Uint8Array(2 * common.numPaths),
     hintsDone: new Uint8Array(2 * common.numPaths),
@@ -943,9 +943,9 @@ export function redraw(
         stale = true;
         ds.monsters[xi] = state.guess[xi];
       }
-      if (xi >= 0 && state.pencils[xi] !== ds.pencils[xi]) {
+      if (xi >= 0 && state.pencil[xi] !== ds.pencil[xi]) {
         stale = true;
-        ds.pencils[xi] = state.pencils[xi];
+        ds.pencil[xi] = state.pencil[xi];
       }
       if (state.cellErrors[xy] !== ds.cellErrors[xy]) {
         stale = true;
@@ -971,7 +971,7 @@ export function redraw(
         ) {
           drawBigMonster(dr, ds, x, y, hflash, state.guess[xi], ui.ascii);
         } else {
-          drawPencils(dr, ds, x, y, state.pencils[xi], ui.ascii, struck);
+          drawPencils(dr, ds, x, y, state.pencil[xi], ui.ascii, struck);
         }
         if (ds.wrong.at(xy)) {
           const { dx, dy } = cellCenter(ds, x, y);

@@ -212,7 +212,7 @@ function interpretMove(
   // (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"'s adaptive mark-all). Mathrax's uniqueness regions are
   // exactly the row and the column; a clue is *not* a uniqueness region.
   if (button === 77 || button === 109) {
-    return adaptiveMarkAllMove<MathraxMove>(state.grid, state.marks, o, (x, y) =>
+    return adaptiveMarkAllMove<MathraxMove>(state.grid, state.pencil, o, (x, y) =>
       rowColRegions(x, y, o),
     );
   }
@@ -231,8 +231,8 @@ function executeMove(state: MathraxState, move: MathraxMove): MathraxState {
       const i = move.y * o + move.x;
       if (state.flags[i] & F_IMMUTABLE) throw new Error("mathrax: cell is a given");
       if (move.pencil) {
-        if (move.n === 0) next.marks[i] = 0;
-        else next.marks[i] ^= 1 << move.n;
+        if (move.n === 0) next.pencil[i] = 0;
+        else next.pencil[i] ^= 1 << move.n;
       } else {
         next.grid[i] = move.n;
       }
@@ -251,19 +251,19 @@ function executeMove(state: MathraxState, move: MathraxMove): MathraxState {
       // Salad, 2026-07-29); `adaptiveMarkAll`'s contract always said "fill every
       // *note-less* empty cell" — this is the games catching up with it.
       for (let i = 0; i < o * o; i++) {
-        if (!next.grid[i] && next.marks[i] === 0) next.marks[i] = all;
+        if (!next.grid[i] && next.pencil[i] === 0) next.pencil[i] = all;
       }
       return next;
     }
     case "pencilStrike": {
-      for (const { x, y, n } of move.marks) next.marks[y * o + x] &= ~(1 << n);
+      for (const { x, y, n } of move.marks) next.pencil[y * o + x] &= ~(1 << n);
       return next;
     }
     case "solve": {
       for (let i = 0; i < o * o; i++) {
         if (!(next.flags[i] & F_IMMUTABLE)) {
           next.grid[i] = move.grid[i];
-          next.marks[i] = 0;
+          next.pencil[i] = 0;
         }
       }
       next.completed =
@@ -322,7 +322,7 @@ function findMistakes(state: MathraxState): readonly MathraxMistake[] {
     const y = (i / o) | 0;
     if (state.grid[i]) {
       if (state.grid[i] !== soln[i]) out.push({ kind: "cell", x, y });
-    } else if (state.marks[i] !== 0 && !(state.marks[i] & (1 << soln[i]))) {
+    } else if (state.pencil[i] !== 0 && !(state.pencil[i] & (1 << soln[i]))) {
       // Notes are first-class markings: crossing the solution digit out of a
       // cell is as wrong as writing the wrong digit in it.
       out.push({ kind: "note", x, y });

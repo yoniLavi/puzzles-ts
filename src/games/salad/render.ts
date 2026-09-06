@@ -411,7 +411,7 @@ function drawPencilMarks(
 ): void {
   const o = s.order;
   const mmx = s.nums + 1;
-  const marks = s.marks[y * o + x];
+  const marks = s.pencil[y * o + x];
 
   let nhints = 0;
   for (let i = 0; i < mmx; i++) if (marks & (1 << i)) nhints++;
@@ -591,7 +591,8 @@ export function redraw(
       // Packed key: flags (5) | symbol (4) | marks (nums+1 ≤ 10) | flash (2).
       // Every overlay is in here or in `ds.wrong` (docs/games/rendering.md § "Overlay sidecars"), so nothing
       // can change on screen without the cell missing the cache.
-      const key = flags[i] | (s.grid[i] << 5) | (s.marks[i] << 9) | ((flash + 1) << 19);
+      const key =
+        flags[i] | (s.grid[i] << 5) | (s.pencil[i] << 9) | ((flash + 1) << 19);
       if (ds.drawn[i] === key && !ds.wrong.stale(i) && !ds.hint.stale(i)) continue;
       ds.drawn[i] = key;
 

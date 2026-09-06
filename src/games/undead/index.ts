@@ -190,7 +190,7 @@ function interpretMove(
   // undo entry that changes nothing.
   if (button === KEY_M || button === KEY_m) {
     for (let i = 0; i < common.numTotal; i++) {
-      if (state.guess[i] === MON_NONE && state.pencils[i] === 0) {
+      if (state.guess[i] === MON_NONE && state.pencil[i] === 0) {
         return { type: "markAll" };
       }
     }
@@ -226,7 +226,7 @@ function interpretMove(
         isEraseKey(button) ||
         ccLocal === DELETE
       ) {
-        if (state.guess[xi] === MON_NONE && state.pencils[xi] === 0)
+        if (state.guess[xi] === MON_NONE && state.pencil[xi] === 0)
           return noOpEntryResult(ui);
         releaseHighlightAfterEntry(ui);
         return { type: "clear", cell: xi };
@@ -273,7 +273,7 @@ function interpretMove(
         button === KEY_0 ||
         isEraseKey(button)
       ) {
-        if (state.pencils[xi] === 0) return noOpEntryResult(ui);
+        if (state.pencil[xi] === 0) return noOpEntryResult(ui);
         move = { type: "clear", cell: xi };
       }
       if (move) {
@@ -319,15 +319,15 @@ function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
       break;
     case "clear":
       next.guess[move.cell] = MON_NONE;
-      next.pencils[move.cell] = 0;
+      next.pencil[move.cell] = 0;
       break;
     case "pencil":
-      next.pencils[move.cell] ^= move.monster;
+      next.pencil[move.cell] ^= move.monster;
       break;
     case "pencilStrike":
       // Idempotent clear (AND-NOT), so a replayed/kept hint plan never re-adds a
       // candidate. Notes are meaningful only while the cell is undecided.
-      for (const { cell, monster } of move.marks) next.pencils[cell] &= ~monster;
+      for (const { cell, monster } of move.marks) next.pencil[cell] &= ~monster;
       break;
     case "markAll":
       // **Additive**: fill only the cells that have no notes yet, never reset one
@@ -335,7 +335,7 @@ function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
       // threw away their own deductions on any board with some penciled cells
       // and some blank ones).
       for (let i = 0; i < common.numTotal; i++) {
-        if (next.guess[i] === MON_NONE && next.pencils[i] === 0) next.pencils[i] = 7;
+        if (next.guess[i] === MON_NONE && next.pencil[i] === 0) next.pencil[i] = 7;
       }
       break;
     case "hintDone":
@@ -416,7 +416,7 @@ function findMistakes(state: UndeadState): readonly UndeadMistake[] {
     const g = state.guess[i];
     if (g === MON_GHOST || g === MON_VAMPIRE || g === MON_ZOMBIE) {
       if (g !== sol.guess[i]) out.push({ kind: "cell", x: at.x, y: at.y });
-    } else if (state.pencils[i] !== 0 && !(state.pencils[i] & sol.guess[i])) {
+    } else if (state.pencil[i] !== 0 && !(state.pencil[i] & sol.guess[i])) {
       out.push({ kind: "note", x: at.x, y: at.y });
     }
   }
@@ -669,7 +669,7 @@ function buildSteps(state: UndeadState): HintStep<UndeadMove, UndeadHint>[] {
   const xyOf = monsterCellXY(common);
   const steps: HintStep<UndeadMove, UndeadHint>[] = [];
   const wGuess = state.guess.slice();
-  const wPen = state.pencils.slice();
+  const wPen = state.pencil.slice();
 
   let populated = !anyEmptyLacksNotes(wGuess, wPen, numTotal);
   const ensurePopulated = (): void => {
@@ -791,7 +791,7 @@ function hintKeepTrack(
     if (hit < 0) return "off"; // a non-target candidate
     // PRE-move: a toggle clears the candidate iff it is present now; an absent
     // candidate would be *re-added* — off-plan.
-    if (!(state.pencils[m.cell] & m.monster)) return "off";
+    if (!(state.pencil[m.cell] & m.monster)) return "off";
     const remaining = sm.marks.filter((_, j) => j !== hit);
     if (remaining.length === 0) return "completed";
     step.move = { type: "pencilStrike", marks: remaining };
@@ -815,7 +815,7 @@ function refreshHintStep(
   if (m.type === "pencilStrike") {
     const live = m.marks.filter(
       ({ cell, monster }) =>
-        state.guess[cell] === MON_NONE && (state.pencils[cell] & monster) !== 0,
+        state.guess[cell] === MON_NONE && (state.pencil[cell] & monster) !== 0,
     );
     if (live.length === 0) return null;
     if (live.length === m.marks.length) return step;
@@ -830,7 +830,7 @@ function refreshHintStep(
   }
   if (m.type === "markAll") {
     for (let i = 0; i < state.common.numTotal; i++) {
-      if (state.guess[i] === MON_NONE && state.pencils[i] === 0) return step;
+      if (state.guess[i] === MON_NONE && state.pencil[i] === 0) return step;
     }
     return null;
   }

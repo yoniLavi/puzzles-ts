@@ -1,5 +1,3 @@
-# No deltas yet: task 0 is a decision about whether the rename is worth doing,
-# and a requirement written before that would be a spec for a conclusion nobody
-# has reached.
+# The rename is done, so there is something to state normatively: the noun, the
+# two things outside the convention, and the guard's shape.
 schema: spec-driven
-skip_specs: true

@@ -100,7 +100,7 @@ function joinArrows(board: RomeState, arrdsf: Dsf, suggest: Int32Array): void {
 
 /** Stage 1: fill every square with an arrow (or a goal where none is legal). */
 function generateArrows(board: RomeState, rng: RandomState): boolean {
-  const { w, h, grid, marks } = board;
+  const { w, h, grid, pencil } = board;
   const s = w * h;
 
   const spaces = Array.from({ length: s }, (_, i) => i);
@@ -110,7 +110,7 @@ function generateArrows(board: RomeState, rng: RandomState): boolean {
   // once-allocated array.
   const arrows = [FM_UP, FM_DOWN, FM_LEFT, FM_RIGHT];
 
-  for (let i = 0; i < s; i++) marks[i] = FM_ARROWMASK;
+  for (let i = 0; i < s; i++) pencil[i] = FM_ARROWMASK;
 
   shuffle(spaces, rng);
 
@@ -119,7 +119,7 @@ function generateArrows(board: RomeState, rng: RandomState): boolean {
     if (grid[i] !== EMPTY) continue;
 
     // No arrow can legally go here, so this square becomes a goal.
-    if (marks[i] === EMPTY) {
+    if (pencil[i] === EMPTY) {
       grid[i] = FM_GOAL;
       continue;
     }
@@ -127,11 +127,11 @@ function generateArrows(board: RomeState, rng: RandomState): boolean {
     joinArrows(board, arrdsf, suggest);
 
     // Avoid growing a cluster, but only while some other option remains.
-    if (marks[i] & ~suggest[i]) marks[i] &= ~suggest[i];
+    if (pencil[i] & ~suggest[i]) pencil[i] &= ~suggest[i];
 
     shuffle(arrows, rng);
     for (let k = 0; k < 4; k++) {
-      if (marks[i] & arrows[k]) {
+      if (pencil[i] & arrows[k]) {
         grid[i] = arrows[k];
         break;
       }
@@ -250,7 +250,7 @@ export function newRomeDesc(p: RomeParams, rng: RandomState): { desc: string } {
     attempt();
     board.regions.reinit();
     board.grid.fill(EMPTY);
-    board.marks.fill(EMPTY);
+    board.pencil.fill(EMPTY);
   } while (!romeGenerate(board, rng, p.diff));
 
   return { desc: encodeDesc(p.w, p.h, board.regions, board.grid) };

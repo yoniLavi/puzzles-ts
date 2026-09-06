@@ -966,7 +966,7 @@ export function redraw(
       if (here && ui.pencilMode) flags |= DF_PENCIL;
       else if (here && ui.cursorFromKeyboard) flags |= DF_KEYCUR;
       else if (here) flags |= DF_SELECT;
-      if (!walls[i] && !state.grid[i]) flags |= (state.marks[i] & 0x1ff) << K_MARKS;
+      if (!walls[i] && !state.grid[i]) flags |= (state.pencil[i] & 0x1ff) << K_MARKS;
       if (ghost[i]) flags |= ghost[i] << K_GHOST;
       if (acrossWash[i]) flags |= DF_ACROSS;
       else if (downWash[i]) flags |= DF_DOWN;

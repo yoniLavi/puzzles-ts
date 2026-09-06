@@ -17,7 +17,7 @@ import { newCursor } from "../../engine/pointer.ts";
  * The immutable, generation-derived data (the grid, the cell→monster-index map
  * `xinfo`, the per-type totals, the fixed-cell flags, and the traced sightlines
  * `paths`) lives in a shared {@link UndeadCommon}; the mutable per-move data
- * (`guess`, `pencils`, the live error overlays, the struck-clue flags) lives in
+ * (`guess`, `pencil`, the live error overlays, the struck-clue flags) lives in
  * {@link UndeadState}, which references one `common` and clones cheaply.
  */
 
@@ -392,7 +392,7 @@ export interface UndeadState {
    * undecided. */
   guess: Uint8Array;
   /** `numTotal` pencil-mark bitmasks (only meaningful while `guess === 7`). */
-  pencils: Uint8Array;
+  pencil: Uint8Array;
   /** `wh` live cell-error flags. */
   cellErrors: Uint8Array;
   /** `2·numPaths` live edge-clue error flags (indexed by edge position). */
@@ -409,7 +409,7 @@ export function cloneState(s: UndeadState): UndeadState {
   return {
     common: s.common,
     guess: s.guess.slice(),
-    pencils: s.pencils.slice(),
+    pencil: s.pencil.slice(),
     cellErrors: s.cellErrors.slice(),
     hintErrors: s.hintErrors.slice(),
     countErrors: s.countErrors.slice(),
@@ -423,7 +423,7 @@ function blankState(common: UndeadCommon): UndeadState {
   return {
     common,
     guess: new Uint8Array(common.numTotal).fill(MON_NONE),
-    pencils: new Uint8Array(common.numTotal),
+    pencil: new Uint8Array(common.numTotal),
     cellErrors: new Uint8Array(common.wh),
     hintErrors: new Uint8Array(2 * common.numPaths),
     countErrors: new Uint8Array(3),
