@@ -330,10 +330,9 @@ function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
       for (const { cell, monster } of move.marks) next.pencil[cell] &= ~monster;
       break;
     case "markAll":
-      // **Additive**: fill only the cells that have no notes yet, never reset one
-      // the player has narrowed (owner-reported on Salad, 2026-07-29 — resetting
-      // threw away their own deductions on any board with some penciled cells
-      // and some blank ones).
+      // Additive — fill only note-less empty cells, never reset a narrowed one:
+      // `candidate-hint.ts`'s `adaptiveMarkAll` § "The additive rule, stated once".
+      // "Empty" is `guess[i] === MON_NONE` here, and the mask is the three monsters.
       for (let i = 0; i < common.numTotal; i++) {
         if (next.guess[i] === MON_NONE && next.pencil[i] === 0) next.pencil[i] = 7;
       }

@@ -78,7 +78,7 @@ import {
   redraw,
   setTileSize,
 } from "./render.ts";
-import { type CrossingMistake, findCrossingMistakes, solveCrossing } from "./solver.ts";
+import { type CrossingMistake, findMistakes, solveCrossing } from "./solver.ts";
 import {
   atCrossing,
   type CrossingDirection,
@@ -480,7 +480,7 @@ function buildSteps(state: CrossingState): HintStep<CrossingMove, CrossingHint>[
 }
 
 function hint(state: CrossingState): HintResult<CrossingMove, CrossingHint> {
-  return candidateHint(state, undefined, findCrossingMistakes, buildSteps);
+  return candidateHint(state, undefined, findMistakes, buildSteps);
 }
 
 /**
@@ -601,7 +601,7 @@ export const crossingGame: Game<
   status: (s): GameStatus => status(s),
 
   solve,
-  findMistakes: findCrossingMistakes,
+  findMistakes,
   hint,
   hintKeepTrack,
   refreshHintStep,

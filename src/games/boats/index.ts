@@ -87,12 +87,7 @@ import {
   redraw,
   setTileSize,
 } from "./render.ts";
-import {
-  type BoatsMistake,
-  findBoatsMistakes,
-  solveBoats,
-  solveToGrid,
-} from "./solver.ts";
+import { type BoatsMistake, findMistakes, solveBoats, solveToGrid } from "./solver.ts";
 import {
   type BoatsBoard,
   type BoatsFill,
@@ -534,7 +529,7 @@ function hint(state: BoatsState): HintResult<BoatsMove, BoatsHint> {
   // A re-solve, so this also catches the placement that breaks no rule *yet*
   // but appears in no solution — deducing onward from a doomed board would
   // produce confident nonsense (docs/games/hints.md § "Refusal couples to the mistake overlay").
-  if (findBoatsMistakes(state).length > 0)
+  if (findMistakes(state).length > 0)
     return {
       ok: false,
       error: FIX_MISTAKES_FIRST,
@@ -744,7 +739,7 @@ export const boatsGame: Game<
   status,
 
   solve,
-  findMistakes: findBoatsMistakes,
+  findMistakes,
   difficulty,
   hint,
   hintKeepTrack,

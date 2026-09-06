@@ -67,8 +67,8 @@ import {
   setTileSize,
 } from "./render.ts";
 import {
+  findMistakes,
   type SaladMistake,
-  saladFindMistakes,
   saladSolution,
   saladSolve,
 } from "./solver.ts";
@@ -440,7 +440,7 @@ export const saladGame: Game<
   hint,
   hintKeepTrack,
   refreshHintStep,
-  findMistakes: saladFindMistakes,
+  findMistakes,
   requestKeys: (p): KeyLabel[] => {
     // Upstream `game_request_keys`: the symbol keys, then X, O and clear.
     const base = p.mode === GAMEMODE_LETTERS ? 65 : 49;

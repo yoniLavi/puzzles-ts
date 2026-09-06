@@ -342,7 +342,7 @@ function arrowFor(
  * The plan.
  */
 
-export function netslideHint(
+export function hint(
   s: NetslideState,
   aux?: string,
 ): HintResult<NetslideMove, NetslideHint> {
@@ -768,7 +768,7 @@ function highlightsFor(
  * stay valid — or they have gone their own way and the plan is dropped and
  * recomputed.
  */
-export function netslideHintKeepTrack(
+export function hintKeepTrack(
   m: NetslideMove,
   step: HintStep<NetslideMove, NetslideHint>,
   _s: NetslideState,

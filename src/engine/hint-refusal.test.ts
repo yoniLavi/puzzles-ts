@@ -13,7 +13,8 @@
  * ON THE INSTRUMENT, twice over.
  *
  * The first cut collected refusals from functions **named** `hint`, and so it
- * never saw `netslideHint` — a whole game, absent from every count it reported,
+ * never saw Netslide's, which was then called `netslideHint` (it is `hint` now —
+ * `re-express-the-collection` B5) — a whole game, absent from every count it reported,
  * including the "seventeen phrasings" figure. That is this repo's recurring
  * instrument error (`emittable-keys.test.ts`'s first cut keyed on a name and
  * missed `const CLEAR = 8`), and the fix is the same: key on the **shape**.

@@ -40,28 +40,45 @@ across the two runs, which is the only reason the delta means anything.
 Ordered by what each teaches: the ones where the shared shape is still soft go
 first and harden it; the mechanical ones go last.
 
-### B1 — the Latin family's entry arm (~380 duplicated lines, the largest cluster)
+### B1 — the Latin family's entry arm — **DISSOLVED on inspection, 2026-09-06**
 
-**Games:** keen, towers, solo, unequal, undead, abcd, group, mathrax, seismic,
-salad, crossing. Keen is the hub — it pairs with towers (127 lines, 6 clones),
-solo (92, 3), abcd (28), undead (22), unequal (19) and group (15).
+> **This batch was scoped at ~380 duplicated lines and is worth about nine
+> comment blocks.** The correction is kept in place rather than deleted, because
+> *how* jscpd oversold it is the reusable part.
 
-**What is duplicated:** the *keyboard entry tail* that
-`unify-the-note-taking-cell` did not take. That change extracted the press block
-(`pressNoteTakingCell`) and two helpers (`releaseHighlightAfterEntry`,
-`noOpEntryResult`); what remains copied is the block after them — the no-op
-guard on "setting a square to what it already holds and no pencil marks", the
-pencil decision, and the move construction.
+**What it was scoped as:** the keyboard entry tail that
+`unify-the-note-taking-cell` left behind, across keen, towers, solo, unequal,
+undead, abcd, group, mathrax, seismic, salad and crossing.
 
-**What legitimately differs, and must survive:** each game's own `Move` type
-(a shared move type would couple save formats that have no reason to be
-identical — `border-grid.ts`'s rule), and its `autoElim` / mark-all policy,
-which is a puzzle fact: Keen's cages are arithmetic rather than uniqueness
-regions, so a legal cage duplicate is never struck.
+**What it actually is.** Re-measured at the note-taking module's own thresholds
+(≥10 lines / ≥70 tokens over the eleven `index.ts`): 18 clones, 354 lines —
+which agrees with the figure `note-taking-cell.ts`'s doc comment already
+records, so nothing had drifted. Read, the 354 decompose as:
 
-**Why first:** largest, and the receiving module (`note-taking-cell.ts`) already
-exists with the split already argued. If the shape is going to need adjusting,
-this is where it shows.
+| Portion | Lines | Verdict |
+| --- | --- | --- |
+| **Import lists** (keen~solo 34+30, keen~towers 22, group~keen 14) | ~100 | **Instrument artifact.** An import block is not duplication; there is nothing to extract. |
+| **The move literal and its two predicates** | ~72 | **Already declined**, with the reason, in `note-taking-cell.ts`'s own doc comment: lifting it means a shared `Move`, which couples save formats that have no reason to be identical. |
+| **`executeMove`'s `pencilAll` / `pencilStrike` arms** | ~78 | **Not extractable.** The loop only *looks* uniform. Six games write one scalar mask; Seismic's mask is per-cell (`areaBits(dsf.size(i))`); Salad's depends on the hole type and carries a legacy `markAll` variant; ABCD's notes are a candidate *cube*, `n` slots per cell; Undead's emptiness test is `guess[i] === MON_NONE`. A shared form needs three callbacks and a count, and is **longer at the call site than the loop it replaces** — the contortion the guardrails forbid. |
+| **Hint plumbing and `findMistakes`** (group~towers, group~keen, keen~towers) | ~70 | Candidate-hint plumbing over each game's own arrays; same verdict, less sharply. |
+| Cursor-move fallback, misc | ~34 | Per-game. |
+
+**What is genuinely shared and should not be:** the *rationale*, not the code.
+The paragraph explaining why mark-all is additive — *"fill only the cells that
+have no notes yet, never reset one the player has narrowed"*, three of the
+copies naming the owner report and its date — is written **nine times**. That is
+a correctness rule with nine statements of itself: change the rule and eight of
+them lie. It belongs once, beside `adaptiveMarkAll`, cited from the games. That
+is the whole of B1.
+
+**The lesson, which is the reusable part.** This file's own instrument caveat
+warned that jscpd *under*-reports. It does, and it also **over**-reports, in two
+ways that both look like real batches: it counts import blocks, and it counts
+loops that are textually identical while their per-game bodies are the entire
+content. **A clone cluster is a place to look, never a finding.** The check that
+settles it is `border-grid.ts`'s, and it has to be applied by reading: *would a
+change here have to happen in every copy at once?* For these loops the answer is
+no — a change to Seismic's mask has nothing to say to ABCD's cube.
 
 ### B2 — the desc codec (`share-the-run-length-desc-scanner`, already scaffolded)
 
@@ -118,13 +135,27 @@ reason.
   `render.ts`: flip (944 lines), pegs (1,114), fifteen (600), sixteen (1,438).
   Three of those are among the largest `index.ts` files in the collection, and
   no reason for the difference belongs to the puzzle.
-- **Five games alias a capability into the game object** rather than naming the
+- **Four games alias a capability into the game object** rather than naming the
   function for the member it implements: boats (`findBoatsMistakes`), crossing
-  (`findCrossingMistakes`), salad (`saladFindMistakes`), bridges (`flag`), and
-  netslide (`netslideHint`). Each alias is one more key a cross-game scan has to
-  know about, and `AGENTS.md` § "Method" already lists exactly these as the
-  reason its scans must key on shape rather than on a name. **The brief
-  documents the hazard; this batch removes it.**
+  (`findCrossingMistakes`), salad (`saladFindMistakes`) and netslide
+  (`netslideHint`), each defined in the game's `solver.ts` or `hint.ts`.
+  `AGENTS.md` § "Method" lists exactly these names as the reason its scans must
+  key on shape rather than on a name.
+
+  > **Corrected 2026-09-06: this said five, and the fifth was a comment.** The
+  > scan reported `bridges: flag` from the line
+  > `// --- findMistakes: flag player bridges the unique solution can't support ---`.
+  > Bridges' function is called `findMistakes`, like the other 37. A scan for
+  > `member: name` cannot tell a wiring line from a prose line that happens to
+  > contain a colon — **the same failure this file's B1 correction is about, in
+  > a second instrument**, caught before acting rather than after.
+
+  **Note what this batch is not for.** The fix for a scan that keys on a name is
+  to key on shape, and the repo already does that. These four are worth renaming
+  for the *reader*: Boats and Abcd both find mistakes, and a reader learning the
+  collection from its corpus meets two conventions for one thing. That is the
+  fork in the road the sweep exists to remove, and it is the whole of the
+  argument — the value is modest and should not be oversold.
 
 ### B6 — the sliding-tile family
 
@@ -145,8 +176,9 @@ manufactures a fork in the road for a reader nor belongs in a convergence sweep.
 
 ## What "done" means
 
-The sweep is done when B1 and B3–B6 are archived, B2 has reported (it may
-legitimately decline), and re-running the instruments above produces:
+**B1 is closed as dissolved** — its nine rationale copies are folded into the
+first executed batch. The sweep is done when B3–B6 are archived, B2 has reported
+(it may legitimately decline), and re-running the instruments above produces:
 
 - no clone cluster above ~20 lines that a reader cannot defend as belonging to
   its two puzzles;

@@ -26,7 +26,7 @@ import type { ChangeNotification } from "../../engine/types.ts";
 import { newSaladDesc } from "./generator.ts";
 import { saladGame } from "./index.ts";
 import { COL_MISTAKE, PREFERRED_TILE_SIZE } from "./render.ts";
-import { saladFindMistakes, saladSolution, saladSolve } from "./solver.ts";
+import { findMistakes, saladSolution, saladSolve } from "./solver.ts";
 import {
   CIRCLE,
   CROSS,
@@ -394,7 +394,7 @@ function solvedBoard(): { s: SaladState; sol: number[]; o: number } {
 
 describe("salad findMistakes", () => {
   it("reports nothing on an untouched board", () => {
-    expect(saladFindMistakes(newState(NUMBERS.p, NUMBERS.desc))).toEqual([]);
+    expect(findMistakes(newState(NUMBERS.p, NUMBERS.desc))).toEqual([]);
   });
 
   it("flags a symbol that contradicts the unique solution", () => {
@@ -406,7 +406,7 @@ describe("salad findMistakes", () => {
       y: (i / o) | 0,
       value: (sol[i] % NUMBERS.p.nums) + 1,
     });
-    expect(saladFindMistakes(next)).toContainEqual({
+    expect(findMistakes(next)).toContainEqual({
       kind: "cell",
       x: i % o,
       y: (i / o) | 0,
@@ -424,7 +424,7 @@ describe("salad findMistakes", () => {
       y: (filled / o) | 0,
       value: "cross",
     });
-    expect(saladFindMistakes(a)).toContainEqual({
+    expect(findMistakes(a)).toContainEqual({
       kind: "cross",
       x: filled % o,
       y: (filled / o) | 0,
@@ -436,7 +436,7 @@ describe("salad findMistakes", () => {
       y: (hole / o) | 0,
       value: "circle",
     });
-    expect(saladFindMistakes(b)).toContainEqual({
+    expect(findMistakes(b)).toContainEqual({
       kind: "circle",
       x: hole % o,
       y: (hole / o) | 0,
@@ -453,7 +453,7 @@ describe("salad findMistakes", () => {
       y: (i / o) | 0,
       value: (sol[i] % NUMBERS.p.nums) + 1,
     });
-    expect(saladFindMistakes(noted)).toContainEqual({
+    expect(findMistakes(noted)).toContainEqual({
       kind: "note",
       x: i % o,
       y: (i / o) | 0,
@@ -467,7 +467,7 @@ describe("salad findMistakes", () => {
       y: (i / o) | 0,
       value: sol[i],
     });
-    expect(saladFindMistakes(alsoRight)).toEqual([]);
+    expect(findMistakes(alsoRight)).toEqual([]);
   });
 });
 

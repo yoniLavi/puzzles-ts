@@ -491,7 +491,7 @@ export interface SaladMistake {
  * crossed out its solution value. Returns `[]` when the board is not uniquely
  * deducible, so Check & Save neither blesses nor blocks what it cannot judge.
  */
-export function saladFindMistakes(s: SaladState): SaladMistake[] {
+export function findMistakes(s: SaladState): SaladMistake[] {
   const o = s.order;
   const nums = s.nums;
   const board = scratchBoard(s);

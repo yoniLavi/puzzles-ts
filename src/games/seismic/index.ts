@@ -221,10 +221,9 @@ function executeMove(state: SeismicState, move: SeismicMove): SeismicState {
       return next;
     }
     case "pencilAll": {
-      // **Additive**: fill only the cells that have no notes yet, never reset one
-      // the player has narrowed (owner-reported on Salad, 2026-07-29 — resetting
-      // threw away their own deductions). `adaptiveMarkAll`'s contract always said
-      // "fill every *note-less* empty cell".
+      // Additive — fill only note-less empty cells, never reset a narrowed one:
+      // `candidate-hint.ts`'s `adaptiveMarkAll` § "The additive rule, stated once".
+      // The mask is per-cell here: a region's size decides its candidates.
       for (let i = 0; i < w * h; i++) {
         if (next.grid[i] === 0 && next.pencil[i] === 0) {
           next.pencil[i] = areaBits(dsf.size(i));

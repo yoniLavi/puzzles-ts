@@ -41,14 +41,19 @@ Each is its own change, scaffolded when started. `survey.md` holds the
 measurement; this is the tracking list, and it is the only place a batch's
 status lives.
 
-- [ ] B1 The Latin family's keyboard entry arm — 11 games, ~380 duplicated lines.
+- [x] B1 **Dissolved.** Scoped at ~380 duplicated lines; worth nine comment
+      blocks, which shipped in
+      `converge-capability-names-and-the-additive-rule`. `survey.md` carries the
+      decomposition and the instrument lesson.
 - [ ] B2 The desc codec — `share-the-run-length-desc-scanner` (scaffolded; may
       legitimately decline after its task 0 sizing).
 - [ ] B3 The coordinate pair — one spelling of the pixel↔cell conversion.
 - [ ] B4 The render layer's residue — expected to decline more pairs than it
       takes; every decline recorded with its reason.
-- [ ] B5 Structure — the renderer lives in `render.ts` (4 games escape); no
-      aliased capability wiring (5 games).
+- [ ] B5 Structure — **half done**. The four aliased capability wirings are
+      converged (`converge-capability-names-and-the-additive-rule`); what remains
+      is the renderer living in `render.ts` for the four games that keep it in
+      `index.ts` (flip, pegs, fifteen, sixteen).
 - [ ] B6 The sliding-tile family — after B5.
 
 ## Per batch

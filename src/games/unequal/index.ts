@@ -318,11 +318,8 @@ function executeMove(state: UnequalState, move: UnequalMove): UnequalState {
     }
     case "pencilAll": {
       const all = (1 << (o + 1)) - (1 << 1); // bits 1..o set
-      // **Additive**: fill only the cells that have no notes yet, never reset one
-      // the player has narrowed. Resetting threw away their own deductions on any
-      // board with some penciled cells and some blank ones (owner-reported on
-      // Salad, 2026-07-29); `adaptiveMarkAll`'s contract always said "fill every
-      // *note-less* empty cell" — this is the games catching up with it.
+      // Additive — fill only note-less empty cells, never reset a narrowed one:
+      // `candidate-hint.ts`'s `adaptiveMarkAll` § "The additive rule, stated once".
       for (let i = 0; i < o * o; i++) {
         if (!next.grid[i] && next.pencil[i] === 0) next.pencil[i] = all;
       }

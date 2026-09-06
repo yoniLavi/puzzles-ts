@@ -42,7 +42,7 @@ import {
   fleetRows,
   PREFERRED_TILE_SIZE,
 } from "./render.ts";
-import { findBoatsMistakes, solveBoats, solveToGrid } from "./solver.ts";
+import { findMistakes, solveBoats, solveToGrid } from "./solver.ts";
 import {
   type BoatsMove,
   type BoatsParams,
@@ -618,19 +618,19 @@ describe("boats findMistakes", () => {
       to: "B",
     });
 
-    const mistakes = findBoatsMistakes(wrong);
+    const mistakes = findMistakes(wrong);
     expect(mistakes).toContainEqual({ x, y });
   });
 
   it("reports nothing on an untouched board", () => {
     const p = params({ w: 8, h: 8, fleet: 4, fleetData: defaultFleet(4) });
-    expect(findBoatsMistakes(generated(p, "boats-mistake-2"))).toEqual([]);
+    expect(findMistakes(generated(p, "boats-mistake-2"))).toEqual([]);
   });
 
   it("reports nothing when the board is not uniquely deducible", () => {
     const p = params();
     const state = newState(p, "0,0,0,0,0,0,0,0,0,0,0,0,");
-    expect(findBoatsMistakes(state)).toEqual([]);
+    expect(findMistakes(state)).toEqual([]);
   });
 });
 

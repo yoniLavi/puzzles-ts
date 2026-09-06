@@ -48,7 +48,7 @@ import {
   redraw,
   setTileSize,
 } from "./render.ts";
-import { findCrossingMistakes, solveCrossing } from "./solver.ts";
+import { findMistakes, solveCrossing } from "./solver.ts";
 import {
   type CrossingMove,
   type CrossingParams,
@@ -1078,7 +1078,7 @@ describe("crossing findMistakes", () => {
       y,
       digit: answer[open],
     });
-    expect(findCrossingMistakes(right)).toEqual([]);
+    expect(findMistakes(right)).toEqual([]);
 
     const wrong = crossingGame.executeMove(state, {
       kind: "set",
@@ -1086,7 +1086,7 @@ describe("crossing findMistakes", () => {
       y,
       digit: (answer[open] % 9) + 1,
     });
-    expect(findCrossingMistakes(wrong)).toEqual([{ x, y, kind: "cell" }]);
+    expect(findMistakes(wrong)).toEqual([{ x, y, kind: "cell" }]);
   });
 
   it("flags notes that have ruled out the answer, but not extra candidates", () => {
@@ -1098,15 +1098,15 @@ describe("crossing findMistakes", () => {
     // A note set that excludes the solution digit is a mistake…
     const bad = cloneState(state);
     bad.pencil[open] = 0x1ff & ~(1 << (answer[open] - 1));
-    expect(findCrossingMistakes(bad)).toEqual([{ x, y, kind: "note" }]);
+    expect(findMistakes(bad)).toEqual([{ x, y, kind: "note" }]);
 
     // …while one that merely carries extra candidates is ordinary progress.
     const fine = cloneState(state);
     fine.pencil[open] = 0x1ff;
-    expect(findCrossingMistakes(fine)).toEqual([]);
+    expect(findMistakes(fine)).toEqual([]);
 
     // And no notes at all is never a mistake.
-    expect(findCrossingMistakes(state)).toEqual([]);
+    expect(findMistakes(state)).toEqual([]);
   });
 });
 
@@ -1172,7 +1172,7 @@ describe("crossing rendering", () => {
       y: Math.floor(open / 5),
       digit: (answer[open] % 9) + 1,
     });
-    const mistakes = findCrossingMistakes(dirty);
+    const mistakes = findMistakes(dirty);
     expect(mistakes).toHaveLength(1);
 
     const palette = crossingGame.colors([0.827, 0.827, 0.827]);

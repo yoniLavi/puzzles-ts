@@ -1076,7 +1076,7 @@ export interface BoatsMistake {
  * the solution has as water without yet exceeding a number or touching another
  * boat, and a live-only check would let Check & Save bless that board.
  */
-export function findBoatsMistakes(state: BoatsState): readonly BoatsMistake[] {
+export function findMistakes(state: BoatsState): readonly BoatsMistake[] {
   const { w, h } = state.params;
   const solved = solveToGrid(state.params, state.gridClues, state.borderClues);
   if (!solved.ok) return [];

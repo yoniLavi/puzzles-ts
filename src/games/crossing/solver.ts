@@ -161,7 +161,7 @@ export interface CrossingMistake {
  * Returns `[]` when the board is not uniquely determined by its clues, so the
  * check never judges a position it cannot prove.
  */
-export function findCrossingMistakes(state: CrossingState): CrossingMistake[] {
+export function findMistakes(state: CrossingState): CrossingMistake[] {
   const { w, h, walls } = state.puzzle;
   const solved = solveCrossing(state.puzzle);
   if (solved.status !== "valid") return [];

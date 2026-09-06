@@ -1,0 +1,5 @@
+# No deltas: renames and comments only. No behavior, format or contract changes,
+# and the rule the change consolidates is already stated normatively — what was
+# wrong was that it was stated nine more times in the games.
+schema: spec-driven
+skip_specs: true

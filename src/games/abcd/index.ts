@@ -259,10 +259,9 @@ function executeMove(state: AbcdState, move: AbcdMove): AbcdState {
     case "pencilAll": {
       // Fill every *note-less* empty cell's whole candidate cube (the first
       // mark-all press).
-      // **Additive**: fill only the cells that have no notes yet, never reset one
-      // the player has narrowed (owner-reported on Salad, 2026-07-29 — resetting
-      // threw away their own deductions). `adaptiveMarkAll`'s contract always said
-      // "fill every *note-less* empty cell".
+      // Additive — fill only note-less empty cells, never reset a narrowed one:
+      // `candidate-hint.ts`'s `adaptiveMarkAll` § "The additive rule, stated once".
+      // "Has notes" is a cube scan here: `n` contiguous slots per cell.
       for (let y = 0; y < p.h; y++) {
         for (let x = 0; x < w; x++) {
           if (next.grid[y * w + x] !== EMPTY) continue;

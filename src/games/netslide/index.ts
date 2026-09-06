@@ -26,7 +26,7 @@ import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { ConfigValues, GameStatus, Point } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
-import { netslideHint, netslideHintKeepTrack, parseAux } from "./hint.ts";
+import { hint, hintKeepTrack, parseAux } from "./hint.ts";
 import { reconstructSolution } from "./reconstruct.ts";
 import {
   ANIM_TIME,
@@ -307,8 +307,8 @@ export const netslideGame: Game<
     return { ok: true, move: { type: "solve", tiles: Array.from(tiles) } };
   },
 
-  hint: netslideHint,
-  hintKeepTrack: netslideHintKeepTrack,
+  hint,
+  hintKeepTrack,
 
   statusbarText: (s) => {
     const active = computeActive(s, -1, -1).reduce<number>(
