@@ -83,6 +83,36 @@ status lives.
       in two commits (extraction with snapshots unmoved, then the thickness
       change with 440 reviewed coordinate lines).
 
+## Done — the instruments re-run, 2026-09-06
+
+The definition of done in `survey.md` is a measurement, so it was re-measured
+rather than declared. Every criterion, with what it actually returned:
+
+| Criterion | Then | Now |
+| --- | --- | --- |
+| 57 games whose renderer lives in `render.ts` | 53 | **57 / 57** |
+| One spelling of the pixel↔cell conversion | 36 local / 10 importing | 21 local / 28 importing |
+| No aliased capability wiring | 4 | **0** |
+| No indefensible clone cluster above ~20 lines | — | **26 clusters, all defended** |
+| `jscpd --min-lines 12 --min-tokens 90` | 994 lines / 284 files | **941 / 292** |
+
+The 21 remaining local coordinate maps are the six `Math.trunc` overrides plus
+the games whose geometry is genuinely their own (hex, triangular, isometric);
+B3 converted every game that could take the shared one, which is why the
+importing count rose by 18 while the local count fell by 15 rather than by 18.
+
+**The clone clusters above 20 lines were read, not counted.** Every one is an
+import block (jscpd's known over-report, and the top *two* are exactly that), a
+`paramConfig` / `paramsCodec` declaration — an input a mechanism consumes, which
+`AGENTS.md` calls healthy — or a per-game keypad or move arm already standing on
+shared helpers, which is what B1 dissolved into comments. None is a defect
+hiding behind a number.
+
+**Ran the app.** All eight games this sweep's last batch touched load and render
+correctly in Chrome with zero console errors: singles, magnets, bridges, pearl,
+map, loopy, filling, bricks. Map is the one worth naming — its colored regions
+*are* the decoded clue list, so a correct board is the end-to-end evidence.
+
 ## Checks every batch runs
 
 *(Lettered `P`, not `B`: these used to be `B1`–`B4` and collided with the batch
@@ -151,8 +181,23 @@ more than the batch that produced it:
   loose. Two minutes of `ls`: `state.ts` is 55 of 57, as settled as the renderer
   was, and only `generator.ts`/`solver.ts` genuinely vary.
 
-And one about the work rather than the instruments: **five of six batches
-re-baselined nothing at all.** The convergences that mattered were wide and
-shallow — one spelling, one name, one primitive — which is exactly the shape a
-duplication metric cannot see. `jscpd` fell only 994 → 975 lines across the
-whole sweep.
+And two about the work rather than the instruments.
+
+**Seven of eight batches re-baselined nothing at all.** The convergences that
+mattered were wide and shallow — one spelling, one name, one primitive, one
+grammar — which is exactly the shape a duplication metric cannot see. `jscpd`
+fell 994 → 941 lines across the whole sweep, about 5%, while the collection
+gained 57 `render.ts` files, 57 `state.ts` files, five shared engine modules and
+four cross-game guards. **A sweep that halves a duplication number is measuring
+copy-paste; this one was measuring how many times a game had to answer a
+question that had only one answer**, and those two quantities barely overlap.
+
+**Three batches found a defect the convergence was not looking for**, which is
+the strongest argument for doing this at all. B5's renderer move exposed an
+import cycle and a stale ledger. B2 found Bricks' `validateDesc` and `newState`
+disagreeing about `A`–`Z`. And the codec extraction it filed as a follow-up
+found Singles capped one past the alphabet it writes and Magnets not capped at
+all — both able to generate a description the game then refuses to load, both
+inherited from upstream and invisible until someone had to state the shared
+contract. **Extracting a duplicate makes you say what the contract is, and
+saying it is where the defect surfaces.**

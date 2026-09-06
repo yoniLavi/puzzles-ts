@@ -233,7 +233,9 @@ manufactures a fork in the road for a reader nor belongs in a convergence sweep.
 
 ## What "done" means
 
-> **Status, 2026-09-06: B1 dissolved, B2–B8 reported.** B7 and
+> **Status, 2026-09-06: done.** B1 dissolved, B2–B8 all reported and archived,
+> and the criteria below were **re-measured rather than declared** — the table
+> is in `tasks.md` § "Done — the instruments re-run". B7 and
 > B8 were found *during* the sweep and are additions to the list rather than
 > part of the original definition of done — which is the behavior the full-sweep
 > route was chosen for: the end state is named first and a later discovery is an
