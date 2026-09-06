@@ -1,0 +1,5 @@
+# No deltas yet: task 0 is a decision about whether the rename is worth doing,
+# and a requirement written before that would be a spec for a conclusion nobody
+# has reached.
+schema: spec-driven
+skip_specs: true
