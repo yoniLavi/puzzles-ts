@@ -85,6 +85,57 @@ it("every game offering the press is enrolled here", () => {
   );
 });
 
+it("every game declaring the press answers it, and no other game does", () => {
+  /*
+   * **The declaration held to the behavior**, which the check above does not do:
+   * it compares the roster with the flag, so a flag that lies agrees with a
+   * roster that repeats the lie. `canMarkAll` decides whether the toolbar shows
+   * a Mark-all button (`components/history.ts`), so a game declaring it without
+   * answering `M` ships a dead button, and a game answering `M` without
+   * declaring it hides a press it handles.
+   *
+   * This is `Game.ignoresSecondaryButton`'s pattern — derive the fact, hold the
+   * declaration to it (`input-parity.test.ts`) — applied to the last of the
+   * contract's three boolean declarations.
+   *
+   * Probed through `interpretMove` rather than the midend, and that distinction
+   * is load-bearing: `Midend.processInput` reports a bare `UI_UPDATE` as
+   * consumed, and Ascent returns one for *any* button landing inside its grid,
+   * so the midend route names eleven games where ten offer the press.
+   */
+  const ids = registeredGameIds().sort();
+  expect(ids.length, "an empty registry would agree with anything").toBeGreaterThan(50);
+
+  const declared: string[] = [];
+  const answers: string[] = [];
+  for (const id of ids) {
+    const game = getTsGame(id) as AnyGame | undefined;
+    if (!game) continue;
+    if (game.canMarkAll === true) declared.push(id);
+    const params = firstLeaf(game.presets());
+    const { desc } = game.newDesc(params, randomNew(`mark-all-${id}`));
+    const state = game.newState(params, desc);
+    const move = game.interpretMove(
+      state,
+      game.newUi(state),
+      sizedDrawState(game, state),
+      { x: 0, y: 0 },
+      77, // 'M', exactly what the toolbar button injects.
+    );
+    if (move !== null && move !== UI_UPDATE) answers.push(id);
+  }
+  expect(
+    answers.length,
+    "no game answered M — the probe found nothing",
+  ).toBeGreaterThan(5);
+  expect(
+    answers,
+    "canMarkAll disagrees with what the game does with an 'M' press — a " +
+      "declared game with no answer ships a dead toolbar button, and an " +
+      "undeclared one hides a press it handles",
+  ).toEqual(declared);
+});
+
 /** Press `M` — ASCII **77**, exactly what the toolbar button injects
  * (`puzzle-history.ts` `handleMarkAll`) — and apply whatever it asks for. Returns
  * the new state, or `null` when the press is a true no-op.

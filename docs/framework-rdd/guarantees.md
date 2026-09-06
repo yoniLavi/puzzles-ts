@@ -13,38 +13,71 @@ shape institutionalized).
 
 ## The standing principle
 
-**Declaring a capability enrolls its guards.** This generalizes what
-`difficulty-contract.test.ts` and `touch-input.test.ts` already do, and
-retires the hand-lists (`testing/hint-games.ts`). The suite iterates the
-registry — asserting first that the registry's own count matches the catalog,
-in both directions, so an empty registry can never vacuously pass (the
-lesson is now a design input: **every sweep opens by asserting the size of
-the population it sweeps**).
+**~~Declaring~~ *Having* a capability enrolls its guards.** This generalizes
+what `difficulty-contract.test.ts` and `touch-input.test.ts` already do. The
+suite iterates the registry — asserting first that the registry's own count
+matches the catalog, in both directions, so an empty registry can never
+vacuously pass (the lesson is now a design input: **every sweep opens by
+asserting the size of the population it sweeps**).
 
-> **⚠️ The word "declaring" is under review** —
-> `audit-declared-versus-derived-capabilities`, opened 2026-09-06.
+> **✅ SETTLED, and the word is "having"** —
+> `audit-declared-versus-derived-capabilities`, 2026-09-06. The live rule is
+> [`docs/games/testing.md`](../games/testing.md) § "How a cross-game guard finds
+> its population" and the `ts-engine` spec, "A shared mechanic is joined by
+> having it"; read those, not this.
 >
-> The sentence above names `testing/hint-games.ts` as a hand-list that
-> declaration will retire. **It was retired in the meantime, by
+> The sentence above used to name `testing/hint-games.ts` as a hand-list that
+> declaration would retire. **It had already been retired, by
 > `derive-hint-enrollment`, and not by a declaration**: it filters the registry
-> on `typeof game.hint === "function"`. Four pieces of shared machinery have now
-> shipped and none of them is joined by declaring anything — a game joins by
-> *having* the capability, and guards find it by reading what the game is
-> (`pencil-prefs.ts`, `border-grid.ts`, `border-grid-render.ts`,
-> `note-taking-cell.ts`). The one declarative attempt over this ground,
-> `declare-the-gesture-table`, was withdrawn.
+> on `typeof game.hint === "function"`. The survey then read the whole
+> population rather than that one example, and found the repo had converged
+> without saying so: of the **29 optional members** of the `Game` contract,
+> **26 declare themselves by existing** — a `hint()` is the hint declaration —
+> and only three are boolean flags. There is no manifest anywhere, and the one
+> attempt to build one over this ground, `declare-the-gesture-table`, was
+> withdrawn.
 >
-> **Nothing in this document's promise depends on which it is.** The benefit is
-> enrollment-free guards the moment a capability exists; derivation keeps that
-> and only changes what "exists" means. The open question is whether some
-> guarantees need declared *intent* that behavior cannot show — the live example
-> being "this game deliberately has no keyboard", where `input-parity.test.ts`
-> already derives the fact, declares the intent, and asserts the two agree.
-> Read the change before writing a fifth capability either way.
+> **What the survey found that this document did not distinguish**, and which is
+> the reason it read as wrong rather than merely imprecise: *declaration-as-input*
+> and *declaration-as-manifest* are different things. A technique's `tier`, a
+> `paramConfig` item, a `presets()` menu are **inputs a mechanism consumes** —
+> those are healthy, they shipped, and the deduction end runs on them, so the
+> "you declare" frame is right there. A statement *about* a game that only a
+> guard reads is a **manifest**, and every one this repo has tried has been
+> reversed: eighteen `needsRightButton` declarations deleted by
+> `audit-input-mode-parity`, the gesture table withdrawn, the hint list derived.
+>
+> **Intent that behavior cannot show does exist — and it never carries
+> enrollment.** Every case in the tree is a *reason attached to a derived
+> member*: `NO_KEYBOARD`, `NO_FLAG`, `EVIDENCE_WASH_GAMES`, `NO_CONSUMER`,
+> `NARRATES_MOVES`, `nonUniqueTiers`, `nonMonotone`. The derivation says who;
+> the ledger says why, and the derivation checks the ledger. Three of those are
+> **empty and meant to stay so**, including `NO_KEYBOARD` — the very example
+> this note used to cite as proof that declaration was needed.
+>
+> **The capability-manifest diff [`migration.md`](./migration.md) asks for needs
+> no manifest.** A derived set snapshotted in the guard is the same diff and
+> cannot be forgotten by a new game; it already ships five times over
+> (`NO_KEYBOARD` equality, `mark-all`'s enrolled ≡ offering, the note-taking
+> eleven, the border-grid two, `ignoresSecondaryButton` iff).
 
-## What every game gets asserted, per declaration
+## What every game gets asserted, per capability
 
-| Declaration | Generated guarantees |
+> **The column used to be headed "Declaration", and every row was classified
+> against that word** by `audit-declared-versus-derived-capabilities`. The
+> result: **not one of the eight needs a manifest.** Six are *had* — the board
+> model, the planner, invariants/mistakes, presentation and the two affordances
+> are all read off an object, a method or a `Ui` field the game already carries.
+> Two are **declaration-as-input**, a mechanism's parameters rather than a
+> statement about the game, and both have shipped in that form: the technique
+> ladder's `{ id, tier, run }` (`declare-deduction-techniques`) and params
+> (`paramConfig` + `paramsCodec`). One — the gesture table — is withdrawn.
+>
+> Which tier a technique belongs to is the survey's one genuine "intent behavior
+> cannot show", and note where it lives: on the *technique*, consumed by
+> `runDeductionFixpoint` at run time, not on the game for a guard to read.
+
+| Capability | Generated guarantees |
 | --- | --- |
 | Board model | State clone independence; desc codec round-trip (property-fuzzed); coordinate maps agree from both callers; cursor stays in bounds on every topology. |
 | Gesture table | Every move constructor reachable by pointer, keyboard AND touch (or a declared, reported gap); the four frontend traps exercised; no raw-button comparison can go deaf to touch. |

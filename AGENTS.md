@@ -109,6 +109,36 @@ guard rather than skipping it. **Derive the exception from a declaration the gam
 already makes** — an exemption roster rots exactly as quietly as the membership
 roster it replaced.
 
+**A game joins a shared mechanic by *having* it, never by declaring that it
+has it.** Carrying the `Ui` fields, calling the arm, declaring the method — that
+*is* the enrollment, and a cross-game guard finds its population by reading what
+the game is (the registered object, the `Ui` its `newUi` returns, its own
+comment-stripped source; `src/engine/testing/enrollment.ts` asks all three).
+Nothing in the tree enrolls from a manifest, and three attempts to build one have
+been reversed — eighteen `needsRightButton` declarations deleted, the gesture
+table withdrawn, the hint list derived. The reason is not taste: a manifest can
+be forgotten by a new game, left behind by a changed one, or simply wrong, and
+*nothing notices*.
+
+**Two things wear the word "declaration" and only one of them is that.** A value
+a mechanism **consumes** — a technique's tier, a `paramConfig` field list, a
+presets menu — is an input, it is healthy, and the deduction end runs on it. A
+statement **about** a game that only a guard reads is a manifest, and that is the
+one to refuse. Before designing a declaration, ask which it is; then ask what the
+consumer is already being sent, because twice now the declaration a concern
+should have derived from was already crossing the boundary.
+
+**Where intent genuinely cannot be observed, attach it to the derived member, not
+to the enrollment.** The guard derives *who*, and carries a ledger saying *why* a
+member is excused — one entry per member, with the derivation asserting the
+ledger is exactly right. That is why `NO_KEYBOARD`, `INERT_PANEL_KEYS` and
+`NO_CONSUMER` can be **empty and still assert something**. And where production
+needs a boolean synchronously and cannot run the probe, the flag stays — held
+equal to a derivation, so it cannot lie (`canMarkAll`, `ignoresSecondaryButton`,
+`wantsStylusModifier` are the collection's only three, and each is now checked).
+The followable form is [`docs/games/testing.md`](docs/games/testing.md) § "How a
+cross-game guard finds its population".
+
 **How this is done, in practice, is the rest of this file**: derive rather than
 hand-maintain (`derive-hint-enrollment`, `difficultyTiers`), refactor as you go
 (the DO list below), break an inherited assumption when it costs more than it

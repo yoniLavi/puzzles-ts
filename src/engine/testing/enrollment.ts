@@ -24,6 +24,7 @@
  * Dev/test-only; never imported by production code.
  */
 
+import ts from "typescript";
 import "../../games/index.ts";
 import type { Game } from "../game.ts";
 import { randomNew } from "../random/index.ts";
@@ -127,7 +128,46 @@ export const SCANNED_SOURCE_FILES = [...sourceText.values()].reduce(
 );
 
 /**
- * Which of `ids` never mention `marker` anywhere in their own sources.
+ * A game's own sources with every comment removed, computed on first ask and
+ * kept — **because a comment is not a use**.
+ *
+ * The raw text is the wrong thing to scan, and the repo has now hit that twice.
+ * `contract-surface.test.ts` records the first: `REQUIRE_RBUTTON`'s only textual
+ * hit outside the games was a *commented-out* line proposing to read it, and a
+ * grep would have scored the flag consumed. The second was this function, whose
+ * first stylus check convicted Net for the comment *"No stylus branch: the
+ * midend strips MOD_STYLUS for us"* — a game punished for documenting the
+ * absence of the very thing it was accused of.
+ *
+ * Stripping is the fix rather than a narrower marker, because narrowing the key
+ * is the error: `& MOD_STYLUS` would have missed a game that wrote the test
+ * across two lines, and the collection has already produced a scan that found
+ * one of six call sites for spelling the paren wrong. Key on the name, take the
+ * superset, and remove the one context in which a name is not a use.
+ *
+ * `transpileModule` is used for the strip because it is the only cheap way to
+ * drop comments without also mangling a string that contains `//`. It costs
+ * ~5 ms per file, so a scan touching the whole collection pays ~1.5 s once per
+ * worker — worth it for a check that is otherwise wrong, and paid by nobody who
+ * does not scan.
+ */
+const codeText = new Map<string, string[]>();
+
+function gameCode(id: string): string[] {
+  const cached = codeText.get(id);
+  if (cached) return cached;
+  const stripped = (sourceText.get(id) ?? []).map(
+    (text) =>
+      ts.transpileModule(text, {
+        compilerOptions: { removeComments: true, target: ts.ScriptTarget.ESNext },
+      }).outputText,
+  );
+  codeText.set(id, stripped);
+  return stripped;
+}
+
+/**
+ * Which of `ids` never mention `marker` in their own **code**.
  *
  * **The reverse direction, and the one no behavioral test can see**: what is
  * being asserted is that a hand-rolled copy of the shared mechanic does *not*
@@ -135,11 +175,9 @@ export const SCANNED_SOURCE_FILES = [...sourceText.values()].reduce(
  * It is a source scan for that reason, not for convenience.
  *
  * `marker` should be the thing a caller would have to write — a function name
- * with its opening paren, or a module path — so that importing the module and
- * never calling it does not count as using it.
+ * with its opening paren, a module path, or an imported constant — so that
+ * importing the module and never calling it does not count as using it.
  */
 export function membersNotMentioning(ids: string[], marker: string): string[] {
-  return ids.filter(
-    (id) => !(sourceText.get(id) ?? []).some((t) => t.includes(marker)),
-  );
+  return ids.filter((id) => !gameCode(id).some((t) => t.includes(marker)));
 }

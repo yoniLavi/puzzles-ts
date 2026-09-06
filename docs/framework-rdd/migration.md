@@ -69,11 +69,20 @@ incremental and abortable.
      snapshot takes the full owner-acceptance gate. The scarce resource is
      owner time, not AI labor, and this spends it only where behavior
      could have moved.
-   - **A capability-manifest diff per game.** The characteristic sweep risk
-     is silent capability loss (the repo's known silent-shrink shape at
-     scale): each re-expression asserts the game declares the same
-     capability set before and after — hints, mistakes, prefs, keypad,
-     reference aid, difficulty tiers — checked by the suite, not by eye.
+   - **A capability diff per game.** The characteristic sweep risk is silent
+     capability loss (the repo's known silent-shrink shape at scale): each
+     re-expression asserts the game has the same capability set before and
+     after — hints, mistakes, prefs, keypad, reference aid, difficulty
+     tiers — checked by the suite, not by eye.
+
+     > **This needs no manifest, and asking for one would make it weaker**
+     > (`audit-declared-versus-derived-capabilities`). The set is *derived* —
+     > the optional `Game` members the object has, the `Ui` fields its `newUi`
+     > returns — and a derived set snapshotted in the guard is the same diff
+     > that cannot be forgotten by a re-expression that drops a member. The
+     > shape already ships five times over; `contract-surface.test.ts` reads
+     > the whole optional surface off the interface's own AST, which is the
+     > closest thing to a manifest this repo needs and is not written per game.
 
 ## Invariants that must not move
 

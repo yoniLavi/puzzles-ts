@@ -402,9 +402,10 @@ export const patternGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  // Pattern is the one game that wants the raw MOD_STYLUS bit: with no right
-  // button to hand, a touch press cycles the cell through its three states
-  // instead of just filling it. Every other game lets the midend strip it.
+  // Pattern wants the raw MOD_STYLUS bit: with no right button to hand, a touch
+  // press cycles the cell through its three states instead of just filling it.
+  // (Loopy asks for the same bit for the same reason, one rung down — it cycles
+  // an edge. `touch-input.test.ts` holds this declaration to an actual read.)
   wantsStylusModifier: true,
 
   defaultParams,

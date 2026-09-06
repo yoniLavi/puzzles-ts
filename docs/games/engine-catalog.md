@@ -419,6 +419,33 @@ plans, over "the board as the player sees it" (one integer per cell — two
 boards showing the same picture are the same position, which matters when
 tiles are interchangeable). Consumers: Sixteen, Netslide.
 
+### `hint-mark.ts` — the ring and the outline
+
+The two board marks a hint draws: a **ring** around the cell the deduction acts
+on, an **outline** around the region it reasons from. Both replace the cell's
+*border*, never its background — a fill behind content cannot be rescued by
+choosing a different color, and a joint search over both roles, every hue and
+both schemes found no feasible arrangement. `MarkBand` is how a game says where
+its border lives (outside the content box for the `COL_GRID`-backed games,
+inside it for the ones drawing their own per-cell outline).
+
+### `hint-ordinal.ts` — where a cell falls in a forced chain
+
+The small corner number that turns a Tactic's shaded set back into something
+walkable. **Not an arrow**: an arrow claims *this cell forces that one*, which
+is false in a third of Clusters' links; an ordinal claims only the order, which
+is true in every game that draws one, and it stays inside one tile so it rides
+the existing `OverlaySidecar` diff.
+
+### `hint-refusal.ts` — what a hint says when it will not give one
+
+The approved refusal messages, so the same situation says the same thing in
+every game — `help/features.md` teaches "there is a mistake on the board" and
+"deduction has run out" as a pair calling for opposite responses, which only
+works if the wording is shared. Three differences are real and named there
+(`CONTRADICTION_UNLOCALIZED`, `NO_MOVE_WORTH_MAKING`, a game-shaped dead end);
+everything else is spelling, and `hint-refusal.test.ts` holds it to the list.
+
 ## Input
 
 ### `pointer.ts` — button codes and cursor helpers
@@ -442,6 +469,18 @@ field, finding it structurally rather than by name. A non-trivial *traversal*
 (half-grid, lock modes, corner-skipping) still keeps its own logic, and so does
 whatever a game does *while* the cursor moves; only the noun is shared.
 Discipline: [`input.md`](./input.md).
+
+### `params-codec.ts` — the declared params codec
+
+`paramsCodec` derives **both** halves of `encodeParams`/`decodeParams` from one
+ordered segment list, so the two cannot drift apart. A segment names a
+`paramConfig` field by its `kw` and reuses that item's accessors, which makes
+the Custom dialog and the codec one field list rather than two. Five grammars
+genuinely escape it (a float param, a leading letter before the dimensions, a
+`switch` over multi-character strings, a `while` loop over the tail, a boolean
+encoded as an integer) — those are named in the `ts-engine` spec, and a game
+taking one still owes the inverse property, which
+`params-stability.test.ts` asserts over a registry-derived corpus.
 
 ### `params.ts` — param-string decoding + config helpers
 
@@ -547,6 +586,17 @@ Frozen replay corpus in `__fixtures__/`. **Any generator that must reproduce
 a seed treats every draw as an observable side effect** (see the grid rules
 above).
 
+### `assert-never.ts` — refusing a move the dispatch has no arm for
+
+`assertNever` is the form to reach for at the end of a discriminated
+`interpretMove`/`executeMove` chain: binding the value to `never` keeps the
+compile-time exhaustiveness (add a move type, forget an arm, and it stops
+type-checking) *and* adds a legible runtime refusal for the untrusted case — a
+save written by another build, whose moves are cast rather than parsed. A bare
+`default: throw` trades the first away for the second, because any `default`
+makes the function total for the type checker. `rejectMove` is for a move type
+with no union to narrow.
+
 ### Engine internals a game never imports
 
 One line each, for orientation: `game.ts` (the `Game` contract —
@@ -565,8 +615,11 @@ test suite's minimal game).
 `recording-drawing.ts` + `render-scenario.ts` + `svg-drawing.ts` (tier 2.5),
 `differential.ts` (`describeDescDifferential`, the byte-for-byte desc shape +
 the one statement that fixtures are frozen and unregenerable),
-`hint-games.ts` (**the enrollment list**: one line here enrolls a new hinting
-game in every cross-game hint guard at once), `slow.ts` (the
+`enrollment.ts` + `hint-games.ts` (**how a cross-game guard finds its
+population**: both derive it — from the registry, a game's `Ui`, or its own
+comment-stripped source — so a game joins a guard by *having* the capability
+and never by being listed; see [`testing.md`](./testing.md) § "How a cross-game
+guard finds its population"), `slow.ts` (the
 once-per-refactoring-round expensive tier), and two deliberately-independent
 yardsticks (`oklch.ts`, `polygon-yardstick.ts` — each exists so a test cannot
 vacuously agree with the implementation it measures; never import the

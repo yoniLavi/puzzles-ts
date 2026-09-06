@@ -1,9 +1,31 @@
 # audit-declared-versus-derived-capabilities
 
-**Readiness: investigation.** The question is open, the evidence is one-sided so
-far but thin (four data points, all at the input/render end), and the deliverable
-is a recorded decision plus doc amendments — not a code pivot. Task 0 is a
-survey, and the survey has a named way to come out the other way.
+**Readiness: survey run, decision recorded, implemented.** The sections below are
+kept as written, because the value of this change is partly in what it *asked*;
+what it found is in `tasks.md` and, normatively, in the `ts-engine` delta.
+
+## The answer, in one paragraph
+
+**The hypothesis holds, and it needed sharpening rather than confirming.** A game
+joins a shared mechanic by *having* it, and no guard in the tree enrolls from a
+manifest: of the `Game` contract's 29 optional members, 26 declare themselves by
+existing. But "declaration" was hiding two different things, and only one of them
+was ever the problem. **Declaration-as-input** — a technique's tier, a
+`paramConfig` field list, a presets menu — is a value a mechanism *consumes*, it
+is healthy, and it is what shipped at the deduction end; the RDD's "You declare /
+You get" frame is right for exactly those sections. **Declaration-as-manifest** —
+a statement *about* a game that only a guard reads — is what this repo has tried
+three times and reversed three times. Intent that behavior cannot show is real,
+and it is always recorded as a *reason attached to a derived member*, never as
+the enrollment key: the derivation says who, the ledger says why, and the
+derivation checks the ledger. Which is why `NO_KEYBOARD`, the example this
+proposal cited as the case *for* declaration, can be empty and still assert
+something.
+
+**It also found a defect, which is what an audit is for.**
+`hint-quality.test.ts`'s `DEDUCTIVE` was an eighteen-name opt-in roster that had
+silently missed six hinting games — `testing/hint-games.ts`'s own defect one
+level down, in the file directly downstream of it.
 
 Owner-requested 2026-09-06, after the same question came up while extracting the
 note-taking cell: *"is there any sense perhaps in moving any such idioms into

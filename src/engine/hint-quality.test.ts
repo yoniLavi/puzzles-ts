@@ -44,37 +44,51 @@ const SEEDS = ["hq-a", "hq-b", "hq-c"];
 /** Hard ceiling on one step's narration. Longest shipped today: 281. */
 const MAX_NARRATION_CHARS = 300;
 
-/** The shared necessity vocabulary a deductive conclusion draws from. */
+/** The shared necessity vocabulary a deductive conclusion draws from.
+ *
+ * `nowhere` is in it because *"can go nowhere but this cell"* is the same claim
+ * as *"can only go in this cell"*, written in ordinary English rather than a
+ * game's private idiom — there is no game that would want it read as anything
+ * weaker, which is the test for whether a word belongs to the shared vocabulary
+ * or to {@link IDIOMS}. */
 const NECESSITY =
-  /\bmust\b|\bcan(?:no|')t\b|\bcannot\b|\bcan only\b|\bcan never\b|\bhas to\b|\bhave to\b|\bneeds?\b|\brul(?:e|es|ed|ing)\b.{0,40}\bout\b|\bno other\b|\bonly\b|\bnever\b|\bforce[sd]?\b|\bimpossible\b|\bneither\b/i;
+  /\bmust\b|\bcan(?:no|')t\b|\bcannot\b|\bcan only\b|\bcan never\b|\bhas to\b|\bhave to\b|\bneeds?\b|\brul(?:e|es|ed|ing)\b.{0,40}\bout\b|\bno other\b|\bnowhere\b|\bonly\b|\bnever\b|\bforce[sd]?\b|\bimpossible\b|\bneither\b/i;
 
 /** The candidate-elimination games' mechanical openers — procedure the
  * player is walked through, not a deduction, so no necessity modal. */
 const MECHANICAL = /^Start by penciling|^Now clear the easy ones/;
 
-/** Games whose hints narrate deductions (the necessity-voice rule).
- * Movement/objective games (fifteen, sixteen, netslide, flood, inertia,
- * untangle) narrate moves imperatively and are exempt from that check. */
-const DEDUCTIVE = new Set([
-  "clusters",
-  "crossing",
-  "dominosa",
-  "filling",
-  "galaxies",
-  "keen",
-  "lightup",
-  "palisade",
-  "pattern",
-  "range",
-  "singles",
-  "slant",
-  "solo",
-  "spokes",
-  "towers",
-  "undead",
-  "unequal",
-  "unruly",
-]);
+/**
+ * Games whose hints narrate **moves** rather than deductions, with the reason
+ * each is exempt from the necessity-voice rule — the ledger, not the roster.
+ *
+ * **The population is derived and the exceptions are declared**, which is the
+ * way round this repo settled on (`audit-declared-versus-derived-capabilities`;
+ * `docs/games/testing.md` § "How a cross-game guard finds its population").
+ * It was the other way round until then: an opt-in set of eighteen names, which
+ * had silently missed **six** hinting games — Boats, Bricks, Group, Salad,
+ * Sticks and Subsets — every one of them deductive, and five of them passing
+ * this check across 72–153 steps the whole time nothing ran it. That is
+ * `testing/hint-games.ts`'s own defect one level down, and it has the same fix:
+ * a guard blind to a game cannot fire on it, so a game must have to be
+ * *removed* rather than added.
+ */
+const NARRATES_MOVES: Record<string, string> = {
+  fifteen: "sliding-tile: a step names the tile to slide, not a forced fact",
+  sixteen: "sliding-tile: a step names the row or column to rotate",
+  netslide: "sliding-tile: a step names the row or column to rotate",
+  flood: "objective: a step names the color to flood with",
+  inertia:
+    "movement: the one thing it can prove is a gem's unreachability, and its " +
+    "steps narrate the consequence a slide has (`add-inertia-hint`)",
+  untangle: "non-deductive: it has genuinely nothing to say and ships no words",
+};
+
+/** The games the necessity-voice rule applies to — every hinting game the
+ * ledger above does not exempt. */
+const DEDUCTIVE = new Set(
+  HINT_GAMES.map(([id]) => id).filter((id) => !(id in NARRATES_MOVES)),
+);
 
 /**
  * The vocabulary of a conclusion the player is asked to take on trust because
@@ -116,15 +130,64 @@ const DEDUCTIVE = new Set([
 const SPECULATIVE =
   /\btr(?:y|ied|ies)\b|\bbreak the board\b|following (?:a|the) chain\b|following the forced\b|\bin turn\b|\bfurther along\b|\beventually\b/i;
 
-/** Owner-endorsed per-game idioms that carry necessity in their own
- * words rather than a modal. Adding here is a deliberate, reviewable
- * act — the list is the legend of endorsed exceptions, not a loophole. */
-const IDIOMS: Record<string, RegExp> = {
+/** As much of a step as an idiom is allowed to look at. */
+interface NarratedStep {
+  readonly explanation: string;
+  readonly continuesPrevious?: boolean;
+}
+
+/**
+ * Owner-endorsed per-game idioms that carry necessity in their own words rather
+ * than a modal. Adding here is a deliberate, reviewable act — the list is the
+ * legend of endorsed exceptions, not a loophole.
+ *
+ * A predicate over the **step** rather than a regex over its text, so an idiom
+ * that belongs to one *leg* of a journey can say so and be held to it. Subsets
+ * is why: exempting its continuation legs by their wording alone would have
+ * exempted a lead leg that happened to open the same way.
+ */
+const IDIOMS: Record<string, (step: NarratedStep) => boolean> = {
   // Filling's grouped region step: "The shaded region of N fits exactly
   // into these squares." — the exactness *is* the forcing claim
   // (docs/games/hints.md § "Group one firing into one step"; owner-endorsed with the Filling hint).
-  filling: /fits exactly into/,
+  filling: (s) => /fits exactly into/.test(s.explanation),
+
+  // Subsets' continuation legs, and only those: the firing's necessity is
+  // stated once in the lead ("The highlighted set can go nowhere but this
+  // cell"), and each leg then reports one consequence of it — "Still filling
+  // this cell — the highlighted set has no A either, so clear A here." Making
+  // every leg restate the modal is the flattening this file's header forbids.
+  // Scoped to `continuesPrevious` because a lead leg gets no such inheritance
+  // (owner-endorsed, `audit-declared-versus-derived-capabilities`).
+  subsets: (s) =>
+    s.continuesPrevious === true && /^Still filling this cell —/.test(s.explanation),
 };
+
+describe("the necessity rule reaches every hinting game it should", () => {
+  it("drew from a populated registry, and exempts a minority of it", () => {
+    // Vacuity: an empty `HINT_GAMES` would exempt nothing and check nothing,
+    // and every narration assertion below would pass over no games at all.
+    expect(HINT_GAMES.length).toBeGreaterThan(25);
+    expect(DEDUCTIVE.size).toBeGreaterThan(20);
+    expect(Object.keys(NARRATES_MOVES).length).toBeLessThan(HINT_GAMES.length / 3);
+  });
+
+  it("ledgers only games that ship a hint, each with its reason", () => {
+    const hinting = new Set(HINT_GAMES.map(([id]) => id));
+    for (const [id, why] of Object.entries(NARRATES_MOVES)) {
+      expect(hinting.has(id), `${id} is exempted here but ships no hint()`).toBe(true);
+      expect(why.length, `${id}'s exemption states no reason`).toBeGreaterThan(40);
+    }
+  });
+
+  it("endorses an idiom only for a game the rule applies to", () => {
+    for (const id of Object.keys(IDIOMS))
+      expect(
+        DEDUCTIVE.has(id),
+        `${id} has an endorsed idiom but is not necessity-checked — the entry does nothing`,
+      ).toBe(true);
+  });
+});
 
 describe("hint narration form, cross-game", () => {
   for (const [name, game] of HINT_GAMES) {
@@ -153,8 +216,7 @@ describe("hint narration form, cross-game", () => {
           // §2.1 — a deduction concludes in the necessity voice.
           if (DEDUCTIVE.has(name) && !MECHANICAL.test(step.explanation)) {
             expect(
-              NECESSITY.test(step.explanation) ||
-                (IDIOMS[name]?.test(step.explanation) ?? false),
+              NECESSITY.test(step.explanation) || (IDIOMS[name]?.(step) ?? false),
               `${at} — no necessity modal (and no declared idiom)`,
             ).toBe(true);
           }

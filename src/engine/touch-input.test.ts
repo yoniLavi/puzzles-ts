@@ -26,6 +26,7 @@ import { Midend } from "./midend.ts";
 import { LEFT_BUTTON, MOD_STYLUS, RIGHT_BUTTON } from "./pointer.ts";
 import { randomNew } from "./random/index.ts";
 import { getTsGame, registeredGameIds } from "./registry.ts";
+import { membersNotMentioning, SCANNED_SOURCE_FILES } from "./testing/enrollment.ts";
 
 type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
 
@@ -106,5 +107,51 @@ describe("touch input reaches every ported game", () => {
 
   it("the registry is populated, so the sweep above is not vacuous", () => {
     expect(REGISTERED.length).toBeGreaterThan(25);
+  });
+});
+
+describe("a game declares wantsStylusModifier iff it reads the bit", () => {
+  /*
+   * The flag **turns the sweep above off**, so a game that sets it by mistake
+   * quietly loses the entire touch-parity guarantee — the one that shipped nine
+   * games deaf to touch. An opt-out nothing cross-checks is the exemption roster
+   * this repo keeps rediscovering, so the declaration is asserted equal to the
+   * fact rather than trusted: `Game.ignoresSecondaryButton` is held to its
+   * behavior the same way (`input-parity.test.ts`), and this is that pattern
+   * applied to the second of the contract's three boolean declarations.
+   *
+   * Read off the source and not off behavior, because the bit's *effect* is
+   * per-game by definition — Pattern cycles a cell, Loopy cycles an edge — so
+   * there is no shared observation to make. What is common is that reading the
+   * bit at all requires naming `MOD_STYLUS`: the constant, or a magic number
+   * that `emittable-keys.test.ts` separately forbids.
+   */
+  const declared = REGISTERED.filter((id) => getTsGame(id)?.wantsStylusModifier);
+  const rest = REGISTERED.filter((id) => !getTsGame(id)?.wantsStylusModifier);
+
+  it("scanned every game's sources, and found the declarers", () => {
+    // Vacuity on both halves: an unmatched glob scans nothing and every
+    // assertion below passes over it, and an empty `declared` proves nothing.
+    expect(SCANNED_SOURCE_FILES).toBeGreaterThan(100);
+    expect(declared.length).toBeGreaterThan(0);
+    expect(rest.length).toBeGreaterThan(25);
+  });
+
+  it("every declarer actually reads MOD_STYLUS", () => {
+    expect(
+      membersNotMentioning(declared, "MOD_STYLUS"),
+      "declares wantsStylusModifier without reading the bit — the game is " +
+        "exempt from the touch-parity sweep for nothing",
+    ).toEqual([]);
+  });
+
+  it("no game reads MOD_STYLUS without declaring it", () => {
+    // The midend strips the bit for an undeclared game, so such a read is dead
+    // code that reads as a touch affordance.
+    expect(
+      rest.filter((id) => !membersNotMentioning([id], "MOD_STYLUS").length),
+      "reads MOD_STYLUS but does not declare wantsStylusModifier — the midend " +
+        "strips the bit first, so the branch can never be taken",
+    ).toEqual([]);
   });
 });

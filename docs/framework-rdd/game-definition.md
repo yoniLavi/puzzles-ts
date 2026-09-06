@@ -9,6 +9,25 @@ declarations, each of which buys a set of derived behavior. This document
 walks the declarations in the order the scaffolder presents them, and states
 for each: what you write, what falls out, and where the escape hatch is.
 
+> **⚠️ Read "You declare" carefully: it means two different things, and only one
+> of them survived** (`audit-declared-versus-derived-capabilities`, 2026-09-06).
+>
+> Where a section's declaration is an **input a mechanism consumes** — the
+> params field list, the presets, a technique's tier — the frame is right and
+> has shipped. Where it is a **statement about the game that only a guard
+> reads**, the frame is wrong: this repo has tried that three times and reversed
+> it every time (eighteen `needsRightButton` declarations deleted, the gesture
+> table withdrawn, the hint list derived). A game joins a shared mechanic by
+> *having* it — carrying the `Ui` fields, calling the arm, declaring the
+> method — and guards find it by reading what the game is.
+>
+> The rule with its evidence is [`guarantees.md`](./guarantees.md) § "The
+> standing principle"; the followable form is
+> [`docs/games/testing.md`](../games/testing.md) § "How a cross-game guard finds
+> its population". **Before designing a new declaration, ask which of the two it
+> is** — and check what the consumer is already being sent, which is the lesson
+> the type-menu note below records twice over.
+
 The running example is **Towers re-expressed** (chosen because it exercises
 the Latin substrate, candidate hints, difficulty tiers and pencil UX at once).
 Today: ~2,600 lines across seven files. Re-expressed: ~1,100, of which the
@@ -258,6 +277,17 @@ every overlay in it by construction, sidecars, flash, sprite scheduling — see
 [`presentation.md`](./presentation.md).
 
 ## Affordances
+
+> **Two of these shipped, and neither is declared** — they are modules a game
+> *calls*, with enrollment read off what the call leaves behind
+> (`audit-declared-versus-derived-capabilities`). `note-taking-cell.ts` is
+> joined by carrying the `Ui` fields and calling the arm, and
+> `note-taking-cell.test.ts` finds its eleven games by the shape of their `Ui`;
+> `pencil-prefs.ts` is joined by calling the pref factories, and its guard finds
+> the members by the pref keyword they declare. The live contracts are
+> [`docs/games/mechanics.md`](../games/mechanics.md) and
+> [`docs/games/input.md`](../games/input.md); the catalog entries are
+> [`engine-catalog.md`](../games/engine-catalog.md). Read those, not this.
 
 Declared capabilities, each buying its whole UX:
 

@@ -116,6 +116,19 @@ node scripts/feedback-probe.mjs --verify
 # creep back in unchecked.
 node scripts/checks/spelling.mjs
 
+# --- 1b-ii. The engine catalog names every shared helper there is. ~0s. ---
+#
+# `docs/games/engine-catalog.md` is the menu that stops a game author
+# re-rolling something the engine already has, and its value is entirely in
+# being complete: the entry most likely to be missing is the newest one, which
+# is the one an author is least likely to know about. Five modules had gone
+# uncataloged before this ran.
+#
+# Here for the same reason as the spelling guard directly above — this reads
+# `docs/`, and deleting a catalog entry is a documentation-only commit, so it
+# has to be ahead of the shortcut and cannot be a vitest file.
+node scripts/checks/engine-catalog.mjs
+
 # --- 1c. The specs and every open change parse and validate. ~1s. ---
 #
 # This is the tool's own check, deliberately, and it replaces a hand-written one.

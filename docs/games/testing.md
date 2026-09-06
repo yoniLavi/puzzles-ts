@@ -417,6 +417,48 @@ by declaring, not by being remembered.**
   highlight on the second paint, and ideally that a third frame without the
   overlay erases it.
 
+### How a cross-game guard finds its population
+
+The bullets above are instances of one rule, and writing a new guard means
+following it rather than re-deriving it. Surveyed across every cross-game guard
+in the tree by `audit-declared-versus-derived-capabilities`; the normative form
+is the `ts-engine` spec, "A shared mechanic is joined by having it".
+
+1. **Derive the population from what the game *is*** — the object it registers,
+   a method's presence, the `Ui` its `newUi` returns, its own comment-stripped
+   source. [`testing/enrollment.ts`](../../src/engine/testing/enrollment.ts) is
+   the shared way to ask (`builtGames`, `enrolledIn`, `membersNotMentioning`),
+   and it memoizes the 57 boards that used to be regenerated per guard. **Never
+   a roster of opted-in names**: a game left off a roster gets none of the
+   guard, silently, and nothing says so.
+2. **Put a floor under the population you drew from**, not only under the set
+   you filtered out of it (`Enrollment.population`). A filtered count can look
+   healthy while the registry behind it is empty, and `--passWithNoTests` makes
+   "nothing to run" green.
+3. **State the exceptions as a ledger, never as the enrollment key.** Where the
+   derived set legitimately has members the rule must not apply to, record them
+   in the *guard* — one entry per member, each with its reason — and assert the
+   ledger equals what the derivation found. The declaration then says *why*, and
+   the derivation says *who*; the ledger cannot rot, because the derivation
+   checks it. Exemplars: `input-parity.test.ts`'s `NO_KEYBOARD`,
+   `completion-vocabulary.test.ts`'s `NO_FLAG`, `hint-quality.test.ts`'s
+   `NARRATES_MOVES`, `contract-surface.test.ts`'s `NO_CONSUMER`. Several are
+   **empty and meant to stay so**, which is a real assertion and not a stub.
+4. **Where the game must declare a flag because production needs the answer
+   synchronously, hold the flag to the behavior.** The `Game` contract carries
+   exactly three boolean declarations, and each is now asserted equal to a
+   derivation rather than trusted: `ignoresSecondaryButton` iff the game
+   consumes `RIGHT_BUTTON` (`input-parity.test.ts`), `canMarkAll` iff its
+   `interpretMove` answers `M` (`mark-all.test.ts`), `wantsStylusModifier` iff
+   its code reads `MOD_STYLUS` (`touch-input.test.ts`). A flag that only turns a
+   guard *off* is the one that most needs this — nothing else notices when it
+   lies.
+5. **Scan code, not text.** `membersNotMentioning` strips comments first,
+   because a mention in prose is not a use: the check's first cut convicted Net
+   for a comment explaining that it deliberately has no stylus branch. Key on
+   the name and take the superset; narrowing the key is the error this repo
+   makes most (AGENTS.md, "A scan that keys on a name").
+
 ## Metrics and instruments
 
 **`npm run metrics` records duplication (jscpd), runtime import cycles (madge,
