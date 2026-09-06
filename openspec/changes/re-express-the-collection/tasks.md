@@ -45,12 +45,14 @@ status lives.
       blocks, which shipped in
       `converge-capability-names-and-the-additive-rule`. `survey.md` carries the
       decomposition and the instrument lesson.
-- [ ] B2 The desc codec — **sized and adopted, three of ten done**
-      (`share-the-run-length-desc-scanner`, still open). Task 0's question is
-      answered: the shape works, it fits ten games and not the eleven with
-      sections or multi-digit values, and palisade/slant/mosaic are converted
-      with two frozen differentials byte-clean. Seven remain, two of them
-      measured as neutral rather than a win.
+- [x] B2 The desc codec — **done**
+      (`share-the-run-length-desc-scanner`). Eight games converged on
+      `engine/run-length.ts`, not the ten the survey counted: **bricks and
+      crossing never had this grammar**, and the scan that said they did keyed
+      on the half the two families share. Seven of the eight carry a frozen
+      differential and all seven are byte-clean. It also closed the invariant
+      the batch was really about (`run-length-desc.test.ts`) and fixed a live
+      validate/parse disagreement in Bricks — a game that is *not* an adopter.
 - [x] B3 The coordinate pair — **done**
       (`one-spelling-of-the-pixel-to-cell-map`). Seventeen games converged onto
       `engine/geometry.ts`'s `fromCoord`, equivalence proven numerically; the six
@@ -137,6 +139,13 @@ more than the batch that produced it:
   uncovered while carrying the one test in the collection that caught a break in
   the shared error frame — because it covers its *run-error* frame by a
   different route than the Check-&-Save overlay.
+- **A scan can key on the half two grammars share.** B2's roster said ten games
+  had the run-length desc; eight do. Bricks and Crossing were caught by the
+  letter-run arithmetic, which they genuinely have — but Bricks' other token is
+  a multi-digit clue with `_` separators over a padded grid, and Crossing has no
+  value character at all: its decimals are a *second kind of run*. This is the
+  same instrument failure as the four before it, in its sharpest form — the key
+  matched a real shared feature that was not the distinguishing one.
 - **"This one varies" is a claim, and it rots like a count in prose.** B7 was
   filed as weak on an unmeasured assertion that the state/generator split is
   loose. Two minutes of `ls`: `state.ts` is 55 of 57, as settled as the renderer

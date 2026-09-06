@@ -1,0 +1,5 @@
+# No deltas: a shared helper's home in this collection is the engine catalog,
+# which is where every batch of `re-express-the-collection` put one. The fact a
+# spec would assert — who uses it — is derived from who imports it instead.
+schema: spec-driven
+skip_specs: true

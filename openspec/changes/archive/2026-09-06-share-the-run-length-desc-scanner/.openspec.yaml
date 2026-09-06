@@ -1,0 +1,8 @@
+# No deltas: the extraction shipped, and its home is the engine catalog rather
+# than a spec — the same call every other batch of this sweep made for a shared
+# helper. What a spec would have to state is already stated where it cannot go
+# stale: the adopter roster is derived from who imports the module
+# (`src/run-length-desc.test.ts`), and the grammar's own limits are in
+# `run-length.ts`'s doc comment beside the code that enforces them.
+schema: spec-driven
+skip_specs: true

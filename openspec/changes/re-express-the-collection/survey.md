@@ -95,6 +95,18 @@ found (slant~tents 21, bricks~rome 23, singles~undead 19, bricks~clusters 21).
 **Already has its own change**, with a task 0 that sizes it on two games before
 committing to a shape. Do not fold it in here.
 
+> **Reported, 2026-09-06: eight, not thirteen.** The candidate list above is
+> what the scan returned, and the scan keyed on the letter-run arithmetic — a
+> feature two different grammars share. The eight that adopted the module are
+> bridges, filling, loopy, map, mosaic, palisade, pearl and slant. Bricks and
+> crossing were *rejected on reading*: Bricks' other token is a multi-digit clue
+> with `_` separators over a padded grid, and Crossing has no value character at
+> all — its decimals are a second kind of run, of open cells, alternating with
+> the letter runs of walls. The rest (mathrax, salad, boats, keen) were already
+> filed as the richer grammar. **The roster is now derived from who imports the
+> module** (`src/run-length-desc.test.ts`), so this paragraph cannot be the
+> thing that rots.
+
 ### B3 — the coordinate pair
 
 **Games:** the 36 that define their own `coord`/`fromCoord`, against the 10 that
@@ -221,7 +233,7 @@ manufactures a fork in the road for a reader nor belongs in a convergence sweep.
 
 ## What "done" means
 
-> **Status, 2026-09-06: B1 dissolved, B3–B6 archived, B2 outstanding.** B7 and
+> **Status, 2026-09-06: B1 dissolved, B2–B8 reported.** B7 and
 > B8 were found *during* the sweep and are additions to the list rather than
 > part of the original definition of done — which is the behavior the full-sweep
 > route was chosen for: the end state is named first and a later discovery is an
