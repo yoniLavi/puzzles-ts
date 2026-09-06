@@ -3,13 +3,18 @@
  * run of blanks.** `a` = 1 blank … `z` = 26, and a run longer than 26 is
  * written as repeated `z`s.
  *
- * Ten games' descs are exactly this — bricks, bridges, crossing, filling,
- * loopy, map, mosaic, palisade, pearl, slant — and each of them scanned it
- * **twice**: once in `validateDesc` to count the squares, once in `newState` to
- * fill them, with the `charCodeAt` arithmetic written out both times. Two
- * copies of a grammar inside one file is the shape this exists to remove; the
- * bytes it parses are frozen, so the scanner reproduces them exactly rather
- * than improving on them.
+ * Eight games' descs are exactly this — bridges, filling, loopy, map, mosaic,
+ * palisade, pearl, slant — and each of them scanned it **twice**: once in
+ * `validateDesc` to count the squares, once in `newState` to fill them, with
+ * the `charCodeAt` arithmetic written out both times. Two copies of a grammar
+ * inside one file is the shape this exists to remove; the bytes it parses are
+ * frozen, so the scanner reproduces them exactly rather than improving on them.
+ * `src/run-length-desc.test.ts` derives that roster from who imports this
+ * module, so it is a fact rather than the count above.
+ *
+ * Map is here for **half** its desc: its clue list is this grammar, its edge
+ * list is not. One desc, two run-length codings — see the comment at the
+ * encoder in `map/map-data.ts`.
  *
  * WHAT DOES NOT LIVE HERE is any game's *meaning*. The scanner reports what it
  * read and never what is legal: which value characters a game accepts, what
@@ -18,13 +23,23 @@
  * yields a bare character for anything that is not a run letter — including
  * characters the game will reject.
  *
- * **The eleven games with a richer desc do not use this, and should not.**
- * Towers, Keen, Solo, Undead, Unequal, Mathrax, Salad, Boats, Tents, Tracks and
- * Pattern parse multi-digit numbers, `_` separators, or two comma-separated
- * sections whose boundary the caller has to control. That is a different
- * grammar, not a harder version of this one; bending it through a token
- * iterator would mean handing the caller an index back and re-entering the
- * scan, which is longer than the loop it replaces.
+ * **The games with a richer desc do not use this, and should not.** Towers,
+ * Keen, Solo, Undead, Unequal, Mathrax, Salad, Boats, Tents, Tracks and Pattern
+ * parse multi-digit numbers, `_` separators, or two comma-separated sections
+ * whose boundary the caller has to control. That is a different grammar, not a
+ * harder version of this one; bending it through a token iterator would mean
+ * handing the caller an index back and re-entering the scan, which is longer
+ * than the loop it replaces.
+ *
+ * **Bricks and Crossing belong with them, and were misfiled here first.** A
+ * scan for the letter-run arithmetic finds both, because both have it — but
+ * what the *other* token means is what decides the grammar. Bricks' is a
+ * multi-digit clue with `_` separating two adjacent ones, over a padded grid
+ * whose `F_BOUND` cells the desc index skips independently of the cell index.
+ * Crossing has no value character at all: its decimal numbers are a *second
+ * kind of run*, of open cells, alternating with the letter runs of walls. So
+ * this module's key is not "does it write `charCodeAt(0) - 97`" but "is
+ * everything that is not a blank run a single value character".
  */
 
 /** One token of a run-length desc. */

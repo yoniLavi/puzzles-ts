@@ -12,6 +12,7 @@ import {
   gridNew,
   gridValidateDesc,
 } from "../../engine/grid/index.ts";
+import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 import { gridTypeOf, type LoopyParams } from "./params.ts";
 
 /**
@@ -106,55 +107,33 @@ function clueChar(clue: number): string {
  * single letter `a`–`z` (1–26 empties); clued faces become their digit.
  * Mirrors `state_to_text`.
  *
- * The run flush is written as upstream writes it — **the `> 25` test happens
- * before the increment**, so a run is flushed once it would exceed 26 and the
- * emitted letter is always in `a`–`z`. Reordering the test and the increment
- * shifts every long run by one character and changes the description.
+ * `keepTrailingBlanks` because a description must cover every face exactly —
+ * {@link validateDesc} rejects one that is short as well as one that is long.
  */
 export function encodeClues(clues: Int8Array, numFaces: number): string {
-  let out = "";
-  let empty = 0;
-  const flush = (): void => {
-    out += String.fromCharCode(97 + empty - 1);
-    empty = 0;
-  };
-  for (let i = 0; i < numFaces; i++) {
-    if (clues[i] < 0) {
-      if (empty > 25) flush();
-      empty++;
-    } else {
-      if (empty) flush();
-      out += clueChar(clues[i]);
-    }
-  }
-  if (empty) flush();
-  return out;
+  return encodeRunLength(numFaces, (i) => (clues[i] < 0 ? null : clueChar(clues[i])), {
+    keepTrailingBlanks: true,
+  });
 }
 
 /** Decode a clue description into a per-face clue array. Mirrors the decoding
  * loop in `new_game`; assumes the description has already been validated. */
 export function decodeClues(clueDesc: string, numFaces: number): Int8Array {
-  const clues = new Int8Array(numFaces);
-  let emptiesToMake = 0;
-  let p = 0;
-  for (let i = 0; i < numFaces; i++) {
-    if (emptiesToMake) {
-      emptiesToMake--;
-      clues[i] = NO_CLUE;
+  const clues = new Int8Array(numFaces).fill(NO_CLUE);
+  let i = 0;
+  for (const tok of scanRunLength(clueDesc)) {
+    if (i >= numFaces) break;
+    // A blank run just advances past faces already holding NO_CLUE.
+    if ("blanks" in tok) {
+      i += tok.blanks;
       continue;
     }
-    const c = clueDesc.charCodeAt(p);
+    const c = tok.value.charCodeAt(0);
     const digit = c - 48;
     const letter = c - 65 + 10;
-    if (digit >= 0 && digit < 10) {
-      clues[i] = digit;
-    } else if (letter >= 10 && letter < 36) {
-      clues[i] = letter;
-    } else {
-      clues[i] = NO_CLUE;
-      emptiesToMake = c - 97 + 1 - 1;
-    }
-    p++;
+    if (digit >= 0 && digit < 10) clues[i] = digit;
+    else if (letter >= 10 && letter < 36) clues[i] = letter;
+    i++;
   }
   return clues;
 }
@@ -206,12 +185,19 @@ export function validateDesc(p: LoopyParams, desc: string): string | null {
   const numFaces = faceCountFor(type, p.w, p.h, gridDesc);
   if (numFaces === null) return "Grid description describes an empty grid";
 
+  // Upstream's run test is a bare `c >= 'a'`, which reads `{`, `~` and every
+  // non-ASCII character as a run of 27 or more — lengths its own encoder can
+  // never write. Reading the grammar it documents (`a`–`z`) instead rejects
+  // those, and costs nothing: no generated description contains one.
   let count = 0;
-  for (const ch of clueDesc) {
-    if ((ch >= "0" && ch <= "9") || (ch >= "A" && ch <= "Z")) {
+  for (const tok of scanRunLength(clueDesc)) {
+    if ("blanks" in tok) {
+      count += tok.blanks;
+    } else if (
+      (tok.value >= "0" && tok.value <= "9") ||
+      (tok.value >= "A" && tok.value <= "Z")
+    ) {
       count++;
-    } else if (ch >= "a") {
-      count += ch.charCodeAt(0) - 97 + 1;
     } else {
       return "Unknown character in description";
     }

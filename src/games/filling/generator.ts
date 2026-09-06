@@ -13,7 +13,7 @@ import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { solveFilling } from "./solver.ts";
-import { DX, DY, encodeRun, type FillingParams, makeRegionDsf } from "./state.ts";
+import { DX, DY, encodeDesc, type FillingParams, makeRegionDsf } from "./state.ts";
 
 function maxRegionSize(w: number, h: number): number {
   // The `max(...,3)` is the documented w=h=2 special case (a 2×2 board needs
@@ -200,18 +200,5 @@ export function newFillingDesc(p: FillingParams, rng: RandomState): { desc: stri
   const { w, h } = p;
   const board = makeBoard(w, h, rng);
   minimizeClueSet(board, w, h, rng);
-
-  let desc = "";
-  let run = 0;
-  for (let i = 0; i < w * h; i++) {
-    if (board[i] === 0) {
-      run++;
-    } else {
-      desc += encodeRun(run);
-      run = 0;
-      desc += String(board[i]);
-    }
-  }
-  desc += encodeRun(run);
-  return { desc };
+  return { desc: encodeDesc(board, w * h) };
 }

@@ -285,6 +285,33 @@ returns a new state and `cloneState` is cheap by construction (parallel typed
 arrays clone well; see Galaxies'
 [`state.ts`](../../src/games/galaxies/state.ts)).
 
+### The two scans have to agree, and nothing makes them
+
+`validateDesc` and `newState` read the same grammar twice, and a game can have
+them disagree about a character without any test noticing: the accepted desc
+builds a board with its clues shifted, and **a typed array swallows the
+out-of-range write**, so nothing throws. Bricks shipped exactly that — its
+validator counted `A`–`Z` as blank runs while its parser ignored them, ported
+faithfully from an upstream that has the same split. When you write or change a
+codec, **read the two loops side by side and check they accept the same
+characters**, because no tier will tell you.
+
+Where the desc is the shared run-length grammar — a value character, or a
+letter standing for a run of blanks — write neither loop: use
+[`engine/run-length.ts`](../../src/engine/run-length.ts). Eight games do.
+`keepTrailingBlanks` is the one real decision it hands back and it is not a
+style knob: it decides whether the desc ends with the run reaching the last
+cell, and your own `validateDesc` depends on the answer.
+[`run-length-desc.test.ts`](../../src/run-length-desc.test.ts) derives the
+adopters from who imports the module and sweeps them; read its doc comment for
+which half of it has teeth before relying on it.
+
+**A letter-run is not enough to make it that grammar.** What decides is the
+*other* token: Bricks' is a multi-digit clue with `_` separators over a padded
+grid, and Crossing has no value character at all — its decimal numbers are a
+second kind of run. Both were misfiled as adopters by a scan keyed on the
+character arithmetic the two families share.
+
 ## Moves
 
 ### interpretMove and UI_UPDATE

@@ -10,6 +10,7 @@
 
 import { Dsf } from "../../engine/dsf.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { gengraph, graphEdgeIndex } from "./graph.ts";
 import type { MapParams } from "./state.ts";
@@ -135,12 +136,10 @@ export function validateDesc(params: MapParams, desc: string): string | null {
   p++;
 
   let area = 0;
-  while (p < desc.length) {
-    const ch = desc[p];
-    if (ch >= "0" && ch < String.fromCharCode(48 + 4)) area++;
-    else if (ch >= "a" && ch <= "z") area += ch.charCodeAt(0) - 97 + 1;
+  for (const tok of scanRunLength(desc.slice(p))) {
+    if ("blanks" in tok) area += tok.blanks;
+    else if (tok.value >= "0" && tok.value <= "3") area++;
     else return "Unexpected character in clue list";
-    p++;
   }
   if (area < n) return "Too little data in clue list";
   if (area > n) return "Too much data in clue list";
@@ -168,18 +167,16 @@ export function newMapData(
   // Parse the clue list.
   const coloring = new Int32Array(n).fill(-1);
   const immutable = new Uint8Array(n);
-  let p = parsed.next + 1; // skip the comma
   let pos = 0;
-  while (p < desc.length) {
-    const ch = desc[p];
-    if (ch >= "0" && ch < String.fromCharCode(48 + 4)) {
-      coloring[pos] = ch.charCodeAt(0) - 48;
-      immutable[pos] = 1;
-      pos++;
-    } else {
-      pos += ch.charCodeAt(0) - 97 + 1;
+  for (const tok of scanRunLength(desc.slice(parsed.next + 1))) {
+    // A blank run just advances past regions already holding -1.
+    if ("blanks" in tok) {
+      pos += tok.blanks;
+      continue;
     }
-    p++;
+    coloring[pos] = tok.value.charCodeAt(0) - 48;
+    immutable[pos] = 1;
+    pos++;
   }
 
   const { graph, ngraph } = gengraph(w, h, n, parsed.map);
@@ -450,25 +447,14 @@ export function encodeMapDesc(
     ret += ",";
   }
 
-  // Clue list: digits 0-3 interspersed with blank-run letters. Here `z` = a
-  // run of 26 (no implicit state switch).
-  {
-    let run = 0;
-    for (let i = 0; i < n; i++) {
-      if (coloring[i] < 0) {
-        if (run === 26) {
-          ret += "z";
-          run = 0;
-        }
-        run++;
-      } else {
-        if (run > 0) ret += String.fromCharCode(96 + run);
-        ret += String.fromCharCode(48 + coloring[i]);
-        run = 0;
-      }
-    }
-    if (run > 0) ret += String.fromCharCode(96 + run);
-  }
+  // Clue list: the shared run-length grammar over the regions — digits 0-3
+  // interspersed with blank-run letters, `z` = 26 with no state switch. The
+  // edge list above only *looks* like the same grammar: there a letter is a run
+  // of same-valued edges that also flips the value, and `z` is 25 and flips
+  // nothing. Two run-length codings in one desc, and only this one is shared.
+  ret += encodeRunLength(n, (i) => (coloring[i] < 0 ? null : String(coloring[i])), {
+    keepTrailingBlanks: true,
+  });
 
   return ret;
 }

@@ -470,7 +470,7 @@ field, finding it structurally rather than by name. A non-trivial *traversal*
 whatever a game does *while* the cursor moves; only the noun is shared.
 Discipline: [`input.md`](./input.md).
 
-### `run-length.ts` — the desc grammar ten games share
+### `run-length.ts` — the desc grammar eight games share
 
 `scanRunLength(desc)` yields `{ blanks }` for a letter run (`a` = 1 … `z` = 26,
 longer runs as repeated `z`s) and `{ value }` for anything else — including
@@ -483,19 +483,36 @@ reaches the last cell; Slant and Mosaic keep it, because their `validateDesc`
 rejects a desc that does not fill the grid *exactly*. Encode a Slant desc
 without it and the game refuses to load its own board.
 
-**Eleven games have a richer desc and do not use this**: Towers, Keen, Solo,
-Undead, Unequal, Mathrax, Salad, Boats, Tents, Tracks and Pattern parse
-multi-digit numbers, `_` separators, or two comma-separated sections whose
-boundary the caller controls. That is a different grammar, not a harder version
-of this one. Expect the *scanner* to reach further than the *encoder*: the
-decode side has one shape, the encode side has three (Filling's `encodeRun(n)`
-is called from inside a larger encoder and cannot be expressed as
-`encodeRunLength(count, emit)` at all).
+**Games with a richer desc do not use this**: Towers, Keen, Solo, Undead,
+Unequal, Mathrax, Salad, Boats, Tents, Tracks and Pattern parse multi-digit
+numbers, `_` separators, or two comma-separated sections whose boundary the
+caller controls. **Bricks and Crossing belong with them** and were misfiled as
+adopters first — the test is not "does it write `charCodeAt(0) - 97`" but "is
+everything that is not a blank run a single value character". Bricks' other
+token is a multi-digit clue with `_` separating two adjacent ones, over a padded
+grid whose `F_BOUND` cells the desc index skips; Crossing has no value character
+at all, its decimals being a second kind of *run*. Map is here for **half** its
+desc: the clue list is this grammar, the edge list is a different run coding in
+the same string.
+
+The decode side has one shape. The encode side has five, and every one of them
+writes the same bytes: Loopy tests `> 25` before the increment, Map and Bridges
+test `=== 26` after it, Pearl grows a run by *incrementing the letter it already
+wrote* and starts a fresh `a` at `z`, Palisade nested two `while`s. Five
+spellings of one grammar is the argument for the module.
 
 A desc is a player promise, so the encoder is fuzzed against the code it
 replaced rather than trusted — 4,000 trials biased toward long runs, with the
 prior nested-`while` encoder kept in `run-length.test.ts` as the oracle. That
-exists because Palisade, the first game converted, has no frozen differential.
+exists because Palisade, the first game converted, has no frozen differential;
+the other seven adopters have one and all seven are byte-clean.
+
+The adopter roster is derived from who imports the module and swept by
+[`run-length-desc.test.ts`](../../src/run-length-desc.test.ts), which also
+asserts the invariant the two hand-written scans existed to uphold: **a desc
+`validateDesc` accepts is one `newState` can build a board from.** Read that
+file's doc comment before relying on it — its two halves are worth different
+amounts, and it says which.
 
 ### `params-codec.ts` — the declared params codec
 

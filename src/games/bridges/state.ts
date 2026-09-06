@@ -1,5 +1,6 @@
 import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
+import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 /**
  * Types and pure state helpers for Bridges (Hashiwokakero).
  *
@@ -683,61 +684,62 @@ export class BridgesState {
 
 // --- Desc codec (bridges.c encode_game / new_game_sub / validate_desc) ---
 
-/** Row-major island-grid encoding: island counts (1-9, A-G) + run-length skips. */
+/**
+ * Row-major island-grid encoding: island counts (1-9, A-G) + run-length skips.
+ *
+ * `keepTrailingBlanks` because {@link validateDesc} insists the cells add up to
+ * the whole grid, in both directions — a desc ending short of the last row is
+ * "shorter than expected".
+ */
 export function encodeGame(state: BridgesState): string {
-  let ret = "";
-  let run = 0;
-  for (let y = 0; y < state.h; y++) {
-    for (let x = 0; x < state.w; x++) {
-      const is = state.islandAt(x, y);
-      if (is) {
-        if (run) {
-          ret += String.fromCharCode(96 + run); // 'a'-1+run
-          run = 0;
-        }
-        ret +=
-          is.count < 10
-            ? String.fromCharCode(48 + is.count)
-            : String.fromCharCode(65 + (is.count - 10));
-      } else {
-        if (run === 26) {
-          ret += String.fromCharCode(96 + run);
-          run = 0;
-        }
-        run++;
-      }
-    }
-  }
-  if (run) ret += String.fromCharCode(96 + run);
-  return ret;
+  const { w } = state;
+  return encodeRunLength(
+    w * state.h,
+    (i) => {
+      const is = state.islandAt(i % w, Math.floor(i / w));
+      if (!is) return null;
+      return is.count < 10
+        ? String.fromCharCode(48 + is.count)
+        : String.fromCharCode(65 + (is.count - 10));
+    },
+    { keepTrailingBlanks: true },
+  );
 }
 
+/**
+ * Bridges reads the desc *and* the grid at once: `lastRow` remembers, per
+ * column, whether the cell one row up held an island, so two islands that would
+ * touch orthogonally are caught during the scan. That walk over cells is what
+ * the token loop feeds; only the character arithmetic is shared.
+ */
 export function validateDesc(params: BridgesParams, desc: string): string | null {
   const w = params.w;
   const wh = params.w * params.h;
   const lastRow = new Array<boolean>(w).fill(false);
   let nislands = 0;
-  let di = 0;
   let i = 0;
-  for (i = 0; i < wh; i++) {
-    const c = desc[di];
-    if (c === undefined) return "Game description shorter than expected";
-    if ((c >= "1" && c <= "9") || (c >= "A" && c <= "G")) {
-      nislands++;
-      if ((i % w > 0 && lastRow[(i % w) - 1]) || lastRow[i % w]) {
-        return "Game description contains joined islands";
-      }
-      lastRow[i % w] = true;
-    } else if (c >= "a" && c <= "z") {
-      const runlen = c.charCodeAt(0) - 97 + 1;
-      for (let j = 0; j < runlen; j++) lastRow[(i + j) % w] = false;
-      i += c.charCodeAt(0) - 97; // plus the loop's i++
-    } else {
+  for (const tok of scanRunLength(desc)) {
+    // A token past the last cell is data the grid has no room for, whether or
+    // not it is a character this game accepts.
+    if (i >= wh) return "Game description longer than expected";
+    if ("blanks" in tok) {
+      for (let j = 0; j < tok.blanks; j++) lastRow[(i + j) % w] = false;
+      i += tok.blanks;
+      continue;
+    }
+    const c = tok.value;
+    if (!((c >= "1" && c <= "9") || (c >= "A" && c <= "G"))) {
       return "Game description contains unexpected character";
     }
-    di++;
+    nislands++;
+    if ((i % w > 0 && lastRow[(i % w) - 1]) || lastRow[i % w]) {
+      return "Game description contains joined islands";
+    }
+    lastRow[i % w] = true;
+    i++;
   }
-  if (di < desc.length || i > wh) return "Game description longer than expected";
+  if (i < wh) return "Game description shorter than expected";
+  if (i > wh) return "Game description longer than expected";
   if (nislands < 2) return "Game description has too few islands";
   return null;
 }
@@ -745,23 +747,23 @@ export function validateDesc(params: BridgesParams, desc: string): string | null
 /** Build a fresh state from a desc (C new_game_sub). */
 export function newStateFromDesc(params: BridgesParams, desc: string): BridgesState {
   const state = BridgesState.empty(params);
-  let di = 0;
-  let run = 0;
-  for (let y = 0; y < params.h; y++) {
-    for (let x = 0; x < params.w; x++) {
-      let c = "";
-      if (run === 0) {
-        c = desc[di++] ?? "";
-        if (c >= "a" && c <= "z") run = c.charCodeAt(0) - 97 + 1;
-      }
-      if (run > 0) {
-        c = "S";
-        run--;
-      }
-      if (c >= "1" && c <= "9") state.islandAdd(x, y, c.charCodeAt(0) - 48);
-      else if (c >= "A" && c <= "G") state.islandAdd(x, y, c.charCodeAt(0) - 65 + 10);
-      // 'S' = empty square; anything else was rejected by validateDesc.
+  const { w } = params;
+  const wh = w * params.h;
+  let i = 0;
+  for (const tok of scanRunLength(desc)) {
+    if (i >= wh) break;
+    // A blank run is a run of empty squares, which `empty()` already left so.
+    if ("blanks" in tok) {
+      i += tok.blanks;
+      continue;
     }
+    const c = tok.value;
+    const x = i % w;
+    const y = Math.floor(i / w);
+    if (c >= "1" && c <= "9") state.islandAdd(x, y, c.charCodeAt(0) - 48);
+    else if (c >= "A" && c <= "G") state.islandAdd(x, y, c.charCodeAt(0) - 65 + 10);
+    // Anything else was rejected by validateDesc.
+    i++;
   }
   state.mapFindOrthogonal();
   state.mapUpdatePossibles();

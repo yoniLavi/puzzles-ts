@@ -281,9 +281,17 @@ const isDigit = (c: string | undefined): boolean =>
 
 /**
  * Validate the run-length desc (upstream `validate_desc`): a digit run is a
- * clue on the current cell (rejected if > 7), a lowercase/uppercase letter
- * advances the playable-cell count by `(c - 'a'|'A') + 1`, anything else is
- * inert. The decoded count must equal exactly `params.w × params.h`.
+ * clue on the current cell (rejected if > 7), a lowercase letter advances the
+ * playable-cell count by `(c - 'a') + 1`, anything else is inert. The decoded
+ * count must equal exactly `params.w × params.h`.
+ *
+ * **Upstream counts `A`–`Z` as a second run alphabet here and its `new_game`
+ * ignores them, so the two scans disagree.** A desc using one validates and
+ * then builds a board with every later clue shifted — reachable by hand-typing
+ * a game ID, invisible to everything else. The branch is dropped rather than
+ * mirrored into {@link newState}, because nothing emits an uppercase letter:
+ * removing it costs no generated desc and adds no dialect the encoder cannot
+ * write.
  */
 export function validateDesc(p: BricksParams, desc: string): string | null {
   const s = p.w * p.h;
@@ -299,7 +307,6 @@ export function validateDesc(p: BricksParams, desc: string): string | null {
       continue;
     }
     if (c >= "a" && c <= "z") pos += c.charCodeAt(0) - 97 + 1;
-    else if (c >= "A" && c <= "Z") pos += c.charCodeAt(0) - 65 + 1;
     i++;
   }
   if (pos < s) return "Not enough spaces";

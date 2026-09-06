@@ -16,6 +16,7 @@ import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
+import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 export const EMPTY = 0;
@@ -113,15 +114,18 @@ export function validateDesc(p: FillingParams, desc: string): string | null {
   const sz = p.w * p.h;
   const m = maxClueValue(p);
   let area = 0;
-  for (const ch of desc) {
-    const code = ch.charCodeAt(0);
-    if (ch >= "a" && ch <= "z") {
-      area += code - 97 + 1;
-    } else if (code >= 48 && code <= 48 + m) {
-      area += 1;
+  for (const tok of scanRunLength(desc)) {
+    if ("blanks" in tok) {
+      area += tok.blanks;
     } else {
-      return `Invalid character '${ch}' in game description`;
+      const code = tok.value.charCodeAt(0);
+      if (code < 48 || code > 48 + m) {
+        return `Invalid character '${tok.value}' in game description`;
+      }
+      area += 1;
     }
+    // Inside the loop, so an overlong desc is reported as such even when a
+    // later character is also invalid.
     if (area > sz) return "Too much data to fit in grid";
   }
   return area < sz ? "Not enough data to fill grid" : null;
@@ -131,13 +135,10 @@ export function newState(p: FillingParams, desc: string): FillingState {
   const sz = p.w * p.h;
   const clues = new Uint8Array(sz); // all EMPTY
   let i = 0;
-  for (const ch of desc) {
-    const code = ch.charCodeAt(0);
-    if (ch >= "a" && ch <= "z") {
-      i += code - 97 + 1; // advance, leaving the empties as 0
-    } else {
-      clues[i++] = code - 48;
-    }
+  for (const tok of scanRunLength(desc)) {
+    // A blank run just advances, leaving the empties as 0.
+    if ("blanks" in tok) i += tok.blanks;
+    else clues[i++] = tok.value.charCodeAt(0) - 48;
   }
   return {
     w: p.w,
@@ -149,16 +150,17 @@ export function newState(p: FillingParams, desc: string): FillingState {
   };
 }
 
-/** Run-length encode a run of `run` empty cells (upstream `encode_run`). */
-export function encodeRun(run: number): string {
-  let s = "";
-  let r = run;
-  while (r > 26) {
-    s += "z";
-    r -= 26;
-  }
-  if (r > 0) s += String.fromCharCode(97 - 1 + r);
-  return s;
+/**
+ * Encode a finished board as a desc — the inverse of {@link newState}.
+ *
+ * `keepTrailingBlanks` because {@link validateDesc} rejects a desc whose cells
+ * do not add up to the whole grid ("Not enough data to fill grid"), so a board
+ * ending in empties needs the run that reaches the last cell.
+ */
+export function encodeDesc(board: ArrayLike<number>, sz: number): string {
+  return encodeRunLength(sz, (i) => (board[i] === EMPTY ? null : String(board[i])), {
+    keepTrailingBlanks: true,
+  });
 }
 
 // --- region DSF + completion --------------------------------------------

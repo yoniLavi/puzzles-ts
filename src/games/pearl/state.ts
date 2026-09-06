@@ -98,6 +98,7 @@ export function defaultParams(): PearlParams {
 
 import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
+import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 
 export function presets(): PresetMenu<PearlParams> {
   return {
@@ -159,33 +160,33 @@ export function validateParams(p: PearlParams, _full: boolean): string | null {
 }
 
 // --- desc codec ------------------------------------------------------------
-/** Run-length encode a clue grid (upstream's `new_game_desc` RLE): lowercase
- * runs compress unclued cells, `B` a black pearl, `W` a white pearl. */
+/**
+ * Run-length encode a clue grid: lowercase runs compress unclued cells, `B` is
+ * a black pearl, `W` a white pearl.
+ *
+ * `keepTrailingBlanks` because {@link validateDesc} rejects a desc whose cells
+ * do not add up to the whole grid ("string too short").
+ *
+ * Upstream grows a run by *incrementing the letter it already wrote*, starting
+ * a fresh `a` once it reaches `z`. That is a third spelling of the same
+ * grammar, not a different one: incrementing to `z` and restarting produces
+ * exactly the 26-cell chunks {@link encodeRunLength} writes, which the frozen
+ * differential checks byte for byte.
+ */
 export function encodeClues(clues: Uint8Array, sz: number): string {
-  let desc = "";
-  for (let i = 0; i < sz; i++) {
-    const c = clues[i];
-    if (c === NOCLUE && desc.length > 0) {
-      const last = desc[desc.length - 1];
-      if (last >= "a" && last < "z") {
-        desc = desc.slice(0, -1) + String.fromCharCode(last.charCodeAt(0) + 1);
-        continue;
-      }
-    }
-    if (c === NOCLUE) desc += "a";
-    else if (c === CORNER) desc += "B";
-    else if (c === STRAIGHT) desc += "W";
-  }
-  return desc;
+  return encodeRunLength(
+    sz,
+    (i) => (clues[i] === NOCLUE ? null : clues[i] === CORNER ? "B" : "W"),
+    { keepTrailingBlanks: true },
+  );
 }
 
 export function validateDesc(p: PearlParams, desc: string): string | null {
   const total = p.w * p.h;
   let sizeSoFar = 0;
-  for (let i = 0; i < desc.length; i++) {
-    const ch = desc[i];
-    if (ch >= "a" && ch <= "z") sizeSoFar += ch.charCodeAt(0) - 97 + 1;
-    else if (ch === "B" || ch === "W") sizeSoFar++;
+  for (const tok of scanRunLength(desc)) {
+    if ("blanks" in tok) sizeSoFar += tok.blanks;
+    else if (tok.value === "B" || tok.value === "W") sizeSoFar++;
     else return "unrecognized character in string";
   }
   if (sizeSoFar > total) return "string too long";
@@ -213,16 +214,11 @@ export function newState(p: PearlParams, desc: string): PearlState {
   const sz = p.w * p.h;
   const clues = new Uint8Array(sz);
   let j = 0;
-  for (let i = 0; i < desc.length; i++) {
-    const ch = desc[i];
-    if (ch >= "a" && ch <= "z") {
-      let n = ch.charCodeAt(0) - 97 + 1;
-      while (n-- > 0) clues[j++] = NOCLUE;
-    } else if (ch === "B") {
-      clues[j++] = CORNER;
-    } else if (ch === "W") {
-      clues[j++] = STRAIGHT;
-    }
+  for (const tok of scanRunLength(desc)) {
+    // NOCLUE is 0, so a blank run just advances past cells already holding it.
+    if ("blanks" in tok) j += tok.blanks;
+    else if (tok.value === "B") clues[j++] = CORNER;
+    else if (tok.value === "W") clues[j++] = STRAIGHT;
   }
   return {
     w: p.w,
