@@ -1,5 +1,0 @@
-# No deltas yet: blocked on the declarations existing, and the adapter's shape
-# is decided by co-development with the first re-expressed game rather than in
-# advance — which is the point of co-developing it.
-schema: spec-driven
-skip_specs: true

@@ -24,13 +24,32 @@ the invariants that must not move.
 | `retry-limit.ts`, `step-budget.ts` | Framework-injected budgets. |
 | `testing/` harness + the per-capability guards | The conformance suite's execution layer. |
 
-The `Game` interface itself remains the runtime contract the midend consumes:
-a framework definition *compiles to* (is adapted onto) a `Game` object. That
-adapter is the whole trick — the midend, worker, app shell and save formats
-do not change at all in phase one, which is what makes the migration
-incremental and abortable.
+The `Game` interface itself remains the runtime contract the midend consumes.
+
+> **⛔ The rest of this paragraph is withdrawn, 2026-09-06.** It read: *a
+> framework definition compiles to (is adapted onto) a `Game` object; that
+> adapter is the whole trick — the midend, worker, app shell and save formats do
+> not change at all in phase one, which is what makes the migration incremental
+> and abortable.* **There is no definition object and no adapter.** Every
+> declaration that reported shipped as a helper a game calls, or was withdrawn,
+> and none needed to know about another — so the trick had nothing to perform.
+> The property it claimed to buy was never at risk: rows 1 and 2 adopted one
+> game at a time with the other 38 untouched and playing, because a helper
+> nobody calls is already abortable at zero cost.
+> `openspec/postmortems/2026-09-06-game-definition-adapter-withdrawal.md`.
 
 ## Order of adoption
+
+> **⚠️ Steps 1–3 assume a framework core, and there is not one** (2026-09-06).
+> Every declaration that reported shipped as a **helper a game calls**, or was
+> withdrawn, and the adapter went with them — so there is no "framework game" to
+> distinguish from a non-framework one, which is what steps 2 and 3 turn on.
+> **Step 4 is the one that survives**, because its argument was never about a
+> definition: the corpus is the documentation, so a tree where two games mean
+> the same thing differently manufactures a fork in the road at every reading.
+> In its surviving form it batches by **concern** rather than by family, and it
+> is already running — see `re-express-the-collection`, which carries the one
+> open owner question about its shape.
 
 1. **The framework core co-developed with a greenfield pilot (Path), the way
    the TS midend was co-developed with Flip.** A greenfield game is the
@@ -55,9 +74,10 @@ incremental and abortable.
    the many-games ambition implies. The sweep waits until the exemplars
    have hardened the contract (a premature sweep multiplies every contract
    change by 57), then proceeds family by family, mechanical by that point.
-   A handful of games (Untangle, Cube) adopt the *definition* while keeping
-   bespoke input/render hatches — the hatches are part of the framework,
-   and even those games gain conformance enrollment.
+   A handful of games (Untangle, Cube) keep bespoke input/render hatches and
+   converge on everything else — a hatch has never been a reason to exempt a
+   game from the shared vocabulary, and each still gains every cross-game guard
+   its behavior enrolls it in.
 
    Two rules make 57 re-expressions tractable without diluting the
    acceptance doctrine:

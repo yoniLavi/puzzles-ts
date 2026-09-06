@@ -69,8 +69,8 @@ README's own argument for refactoring before building.
 | 2 | `declare-params-and-presets` | **SHIPPED** 2026-09-05 — again not as predicted; see below |
 | 3 | ~~`declare-the-gesture-table`~~ | **WITHDRAWN** 2026-09-05 — the exploration ran and the falsifier fired; see below |
 | 4 | ~~`declare-the-board-model`~~ | **WITHDRAWN** 2026-09-06 — the exemplar could not break it because it had already been served on another axis; see below |
-| 5 | `adopt-the-game-definition-adapter` | blocked on 2–4; co-developed with one re-expression, never built first |
-| 6 | `re-express-the-collection` | last, and splits into family batches before any code moves |
+| 5 | ~~`adopt-the-game-definition-adapter`~~ | **WITHDRAWN** 2026-09-06 — its own criterion came back "no" four times out of four; see below |
+| 6 | `re-express-the-collection` | **survives, route changed** — it never needed rows 1–5, and one owner question decides its shape |
 
 > **What row 1 actually taught, since it is the first evidence this ordering has
 > produced.** Its readiness line was *"the ladder now declares `tier`, and
@@ -108,9 +108,9 @@ README's own argument for refactoring before building.
 >
 > It also raised a question about rows 5 and 6 that this document should not
 > answer for them: rows 1 and 2 both shipped as **helpers a game calls**, with
-> no adapter and no definition object. See
-> `openspec/changes/adopt-the-game-definition-adapter/proposal.md`, which
-> carries the criterion for settling it.
+> no adapter and no definition object. **That question is now answered** — rows
+> 3 and 4 were withdrawn, row 5 with them, and row 6 is the survivor. See the
+> row 5 note below.
 
 > **What row 3 taught, by being wrong.** It is the first row to be *withdrawn*
 > rather than to ship differently, and the exploration that killed it is the
@@ -166,6 +166,38 @@ README's own argument for refactoring before building.
 > board's pixel origin twice, once for input and once for paint) and
 > `share-the-run-length-desc-scanner` (one desc grammar, four spellings, and
 > every game writes it twice — once to validate, once to decode).
+
+> **What row 5 taught: the trick it existed to perform was never needed.** Row 5
+> held the criterion for the whole definition end — *did a declaration need to
+> know about any other declaration to do its job?* Four rows reported and the
+> answer was no every time: rows 1 and 2 shipped as helpers a game calls, rows 3
+> and 4 were withdrawn. So the adapter was a manifest reader, not an adapter,
+> and its last argument — the capability diff — needs no manifest either:
+> `testing/enrollment.ts`'s `builtGames()` already hands back every game's live
+> object and real `Ui`, and a *derived* set cannot be forgotten by the
+> re-expression that drops a member.
+> `openspec/postmortems/2026-09-06-game-definition-adapter-withdrawal.md`.
+>
+> **The premise had failed earlier than the criterion did.** Row 5's
+> load-bearing claim was that without it, adopting the framework is a 57-game
+> commitment taken on faith. Rows 1 and 2 had already disproved that by
+> shipping: a helper nobody calls is abortable at zero cost, one game at a time,
+> with the other 38 untouched and playing. **The property the adapter existed to
+> buy arrived for free the moment the declarations stopped being declarations.**
+>
+> **Row 6 is the survivor, and it is the part that was always doing the work.**
+> Its argument — the corpus is the documentation, so a mixed tree manufactures a
+> fork in the road at every reading — never mentioned a definition object, and
+> its acceptance test is `AGENTS.md`'s dictum written as a procedure: *pick any
+> two games that mean the same thing and ask what still differs.* What changed
+> is that the sweep batches by **concern** rather than by **family**, which
+> means it is not a future event — `adopt-conventional-tier-names`,
+> `unify-cross-game-vocabulary`, `unify-the-note-taking-cell`,
+> `unify-the-note-taking-vocabulary` and `unify-the-board-origin` are five
+> passes of it, already archived. Whether that continuous route is what the
+> owner asked for on 2026-08-07, or whether a bounded family sweep with a
+> declarable end is still the goal, is the one open question in the whole
+> definition end.
 
 Presentation is **held**: the scene-graph postmortem's bar is real downstream
 pressure, and none exists yet. Hints for the deliberately held-back games
@@ -284,7 +316,7 @@ Three commitments shape everything here:
 | [`deduction.md`](./deduction.md) | The technique contract and its five projections; planners for non-deductive games; escape hatches and their obligations; how the known no-gos of the shared fixpoint are accommodated instead of denied. |
 | [`presentation.md`](./presentation.md) | The tile renderer the framework owns (cache, diff keys, overlays, animation — inverted from today's per-game loops), why this is *not* the withdrawn scene graph, and the bespoke-`redraw` escape hatch. |
 | [`guarantees.md`](./guarantees.md) | The conformance suite: what is asserted for every game automatically, enrollment-free, the moment a capability is declared. |
-| [`migration.md`](./migration.md) | The path from today's `Game` interface: which engine modules become framework organs, the adapter story, the order of adoption, and the invariants that must not regress. |
+| [`migration.md`](./migration.md) | The path from today's `Game` interface: which engine modules become framework organs, the order of adoption, and the invariants that must not regress. (Its adapter story is withdrawn in place; the invariants are the part that survives and they are not the adapter's.) |
 
 ## Adding a game, in one paragraph (the target experience)
 

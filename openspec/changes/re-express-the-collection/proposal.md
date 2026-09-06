@@ -3,10 +3,46 @@
 Realizes: `docs/framework-rdd/migration.md` § "Order of adoption", step 4 —
 *"then the full sweep, in family batches: every game is re-expressed"*.
 
-**Readiness: blocked, and deliberately last.** This is the change that ports the
-existing games into the framework. It must not start until the exemplars have
-hardened the contract: `migration.md` is explicit that *"a premature sweep
-multiplies every contract change by 57"*.
+**Readiness: the argument stands; the object changed, and that is an owner
+question.** This was written as the change that ports the existing games into
+the framework, blocked until the exemplars hardened the contract.
+
+> **There is no framework definition to port them into** (2026-09-06). All four
+> declarations have reported: rows 1 and 2 shipped as **helpers a game calls**,
+> rows 3 and 4 were withdrawn, and
+> `adopt-the-game-definition-adapter` — which was to build the capability diff
+> this change depends on — is withdrawn with them
+> (`openspec/postmortems/2026-09-06-game-definition-adapter-withdrawal.md`).
+>
+> **Everything below that matters survives**, because none of it mentions a
+> definition object: the corpus-is-the-documentation argument, the comparative
+> acceptance test, the two guards, the two-lane acceptance, and the
+> capability diff — which needs no manifest and is a few lines off
+> `testing/enrollment.ts`'s `builtGames()`, already memoized across all 57.
+>
+> **What changed is the route.** A game now adopts a shared shape by *calling*
+> it, so the sweep batches by **concern** rather than by **family** — and in
+> that form it is not a future event. It has been running for a month:
+> `adopt-conventional-tier-names` (29 games), `unify-cross-game-vocabulary`,
+> `unify-the-note-taking-cell` (11), `unify-the-note-taking-vocabulary` and
+> `unify-the-board-origin` (8) are each one pass of exactly the convergence this
+> change describes, each independently valuable, each archived alone.
+>
+> **The question for the owner, who made this call on 2026-08-07.** The decision
+> was *every game is re-expressed*, in family batches, rather than games
+> adopting at their leisure — and the stated reason was that a mixed tree
+> manufactures a fork in the road at every reading. Per-concern convergence
+> reaches the same end state and honors that reason **better** on one axis: it
+> never leaves a mixed tree standing for longer than a single change, whereas a
+> family sweep leaves one for the length of the sweep. It is worse on another:
+> there is no moment when someone can say the collection is done, because the
+> list of concerns is open.
+>
+> So: **is continuous per-concern convergence what was wanted, or is a bounded
+> family-batch sweep still the goal?** This change should not be started, split
+> or closed until that is answered. It is owner-named work and the answer
+> decides whether this remains one change, becomes a tracking umbrella for the
+> per-concern changes, or is closed as already-in-progress.
 
 ## Why
 
@@ -21,8 +57,15 @@ sweeping everything rather than letting games adopt at their leisure.
 re-expression that drops a game's keypad, its reference aid or its mistake
 checking still compiles, still plays, and still passes most of its tests. At a
 scale of 57 that is the failure that will actually happen, which is why the
-capability-manifest diff is built in `adopt-the-game-definition-adapter` — one
-change earlier, on purpose.
+capability diff must exist **before** the first game moves, whatever route this
+takes.
+
+It needs no manifest and no adapter. `testing/enrollment.ts`'s `builtGames()`
+already returns, for all 57 games, the live game object and the `Ui` its `newUi`
+actually returned; the set of optional `Game` members a game *has* plus the `Ui`
+fields it carries is a snapshot off that, and a derived set cannot be forgotten
+by the re-expression that drops a member — which is the whole reason a declared
+one would have been weaker (`audit-declared-versus-derived-capabilities`).
 
 ## This is where the dictum is cashed
 
@@ -61,10 +104,12 @@ comparative test above be applied by eye, by one reader, in one sitting.
   single snapshot takes the full owner-acceptance gate. **The scarce resource is
   owner time, not AI labor**, and this spends it only where behavior could have
   moved.
-- **A capability-manifest diff per game**, from the adapter change.
-- **Games that keep a hatch still adopt the definition.** Untangle and Cube keep
-  bespoke input/render; the hatches are part of the framework and those games
-  still gain conformance enrollment.
+- **A capability diff per game**, derived from `builtGames()` — built before the
+  first game moves, not alongside it.
+- **Games that keep a hatch still converge on everything else.** Untangle and
+  Cube keep bespoke input and render; that is what a hatch is for, and it has
+  never been a reason to exempt a game from the shared vocabulary, the tier
+  names or the cursor contract.
 
 ## Impact
 
@@ -72,9 +117,11 @@ comparative test above be applied by eye, by one reader, in one sitting.
   structure rather than behavior.
 - Affected code: all 57 game directories, in batches.
 - **Enormous blast radius, which is why the ordering above is load-bearing.**
-  Every invariant from the adapter change applies per game and per batch: ids
-  byte-stable, narrations byte-identical, snapshots explainable.
-- **This change should be split** once the exemplars exist — one change per
-  family batch, each archivable on its own. Keeping it as a single unit through
-  implementation would violate the repo's own "one change per coherent unit of
-  work", and a 57-game change cannot be reviewed or reverted.
+  The three migration invariants apply per game and per batch, whatever the
+  route: ids byte-stable, narrations byte-identical, snapshots explainable.
+  They are `migration.md`'s, not the withdrawn adapter's, and they survive it.
+- **This change should be split**, and the per-concern changes already archived
+  are what a split looks like — one pass, independently valuable, archivable
+  alone. Keeping this as a single unit through implementation would violate the
+  repo's own "one change per coherent unit of work", and a 57-game change cannot
+  be reviewed or reverted.
