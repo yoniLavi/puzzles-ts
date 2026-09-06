@@ -4,6 +4,7 @@
 // tile per non-gap cell, and a mid-slide animation frame that draws a
 // moving tile at an interpolated coordinate.
 import { describe, expect, it } from "vitest";
+import { raisedBevelWidth } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { executeMove, fifteenGame } from "./index.ts";
@@ -160,10 +161,13 @@ describe("the hint mark while the hinted slide animates", () => {
       const { dr, ops } = recordingDrawing();
       redraw(dr, ds, state, after, 1, UI, anim / 2, 0, step);
 
-      // The hint fill is drawTile's center rect (inset by hw = ts/20 = 2),
-      // drawn at the tile's interpolated position — half a cell from its
-      // origin toward the gap it slides into.
-      const hw = 2;
+      // The hint fill is drawTile's center rect, inset by the shared bevel
+      // width, drawn at the tile's interpolated position — half a cell from its
+      // origin toward the gap it slides into. Read from the helper rather than
+      // written out: this said `2` while the divisor was Fifteen's own, and
+      // went stale the day the collection agreed on one
+      // (`unify-the-raised-tile-bevel`).
+      const hw = raisedBevelWidth(TS);
       const x0 = coord(from % 4);
       const y0 = coord(Math.floor(from / 4));
       const x1 = coord(to % 4);

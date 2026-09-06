@@ -10,6 +10,7 @@
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { BLUE, PURPLE } from "../../engine/color/colors.ts";
 import { HELD } from "../../engine/color/palette.ts";
+import { drawRaisedBevel, raisedBevelWidth } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
@@ -61,9 +62,7 @@ export interface PegsDrawState {
 }
 // --- coordinate helpers ----------------------------------------------
 
-function highlightWidth(ts: number): number {
-  return Math.floor(ts / 16);
-}
+const highlightWidth = raisedBevelWidth;
 
 function border(ts: number): number {
   return Math.floor(ts / 2);
@@ -224,22 +223,18 @@ export function redraw(
         if (s.grid[y * w + x] !== GRID_OBST) {
           const cx = coord(x, ts);
           const cy = coord(y, ts);
-          dr.drawPolygon(
-            [
-              { x: cx + ts + hw - 1, y: cy - hw },
-              { x: cx - hw, y: cy + ts + hw - 1 },
-              { x: cx - hw, y: cy - hw },
-            ],
+          // The relief extends `hw` *outside* the cell, unlike the other five,
+          // because Pegs bevels the gaps between playable cells rather than
+          // the cells themselves.
+          drawRaisedBevel(
+            dr,
+            {
+              left: cx - hw,
+              top: cy - hw,
+              right: cx + ts + hw - 1,
+              bottom: cy + ts + hw - 1,
+            },
             COL_HIGHLIGHT,
-            COL_HIGHLIGHT,
-          );
-          dr.drawPolygon(
-            [
-              { x: cx + ts + hw - 1, y: cy - hw },
-              { x: cx - hw, y: cy + ts + hw - 1 },
-              { x: cx + ts + hw - 1, y: cy + ts + hw - 1 },
-            ],
-            COL_LOWLIGHT,
             COL_LOWLIGHT,
           );
         }

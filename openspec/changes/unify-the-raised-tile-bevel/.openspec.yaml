@@ -1,5 +1,4 @@
-# No delta yet: the requirement is worded from the existing recessed-border one,
-# and the sentence it needs — what the helper takes and what stays at the call
-# site — is settled by the extraction rather than before it.
+# ADDED, not MODIFIED: the raised bevel is a new concern beside the recessed
+# one rather than a change to it, and an ADDED delta cannot delete a scenario
+# from the requirement it sits next to.
 schema: spec-driven
-skip_specs: true

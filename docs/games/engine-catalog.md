@@ -510,12 +510,31 @@ dance.** Entry points by shape: `pack` (a hint step's highlights), `packCells`
 
 ### `draw.ts` — shared drawing primitives
 
-`drawRecessedBorder` (the two-pentagon playfield bevel), `drawRectOutline`
-(upstream `draw_rect_outline`), `drawRectCorners` (the four corner brackets
-marking a keyboard cursor — promoted from **seven** byte-identical copies; if
-you are typing eight `drawLine` calls around a center point, it exists).
-Extractions of drawing code are cheap to verify: emitted op order unchanged ⇒
-no render snapshot moves.
+`drawRecessedBorder` (the two-pentagon playfield bevel), `drawRaisedBevel` + its
+companion `raisedBevelWidth` (the raised *tile* — its opposite number),
+`drawRectOutline` (upstream `draw_rect_outline`), `drawThickRectOutline` (the
+"this is wrong" frame, four filled bands), `drawRectCorners` (the four corner
+brackets marking a keyboard cursor — promoted from **seven** byte-identical
+copies; if you are typing eight `drawLine` calls around a center point, it
+exists).
+
+**Three of the five were promoted from private copies at seven, eight and six
+games**, which is the pattern to notice rather than the individual helpers: if
+you are writing vertex arithmetic for a shape that any other game also draws,
+look here first. The reverse direction is guarded —
+`raised-bevel.test.ts` fails if a game re-derives the two triangles.
+
+**Sizing belongs here too, not only shape.** `raisedBevelWidth(ts)` exists
+because the six raised-tile games had four thickness formulas between them, so
+the same idiom read 1px in one game and 3px in another at the same tile size.
+When you extract a shape, check whether its *dimensions* were drifting as well.
+
+Extractions of drawing code are cheap to verify: emitted op order unchanged ⇒ no
+render snapshot moves. **The converse is not evidence** — an unchanged snapshot
+can also mean nothing was watching, which is what
+`promote-the-thick-rect-outline` found (deleting a side of the error frame
+failed exactly one test across eight games). Break the helper deliberately and
+see what goes red before believing a clean run.
 
 ### `flash.ts` — the win-celebration convention
 

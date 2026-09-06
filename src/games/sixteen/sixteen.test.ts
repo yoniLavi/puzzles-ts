@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { raisedBevelWidth } from "../../engine/draw.ts";
 import { ALREADY_SOLVED } from "../../engine/hint-refusal.ts";
 import type { GameDrawing, HintStep } from "../../engine/index.ts";
 import { randomNew } from "../../engine/random/index.ts";
@@ -1084,7 +1085,10 @@ describe("the hint marks while the hinted slide animates", () => {
   // mid-slide frame, which the settled-frame snapshots cannot see.
   const TS = 48;
   const BORDER = TS; // sixteen's border(ts) = ts
-  const HW = Math.max(1, Math.floor(TS / 20)); // HIGHLIGHT_WIDTH_DIV = 20
+  // Read from the helper, not written out: this restated Sixteen's own divisor
+  // and went stale the day the collection agreed on one
+  // (`unify-the-raised-tile-bevel`).
+  const HW = raisedBevelWidth(TS);
   const px = (cell: number) => cell * TS + BORDER;
 
   interface Op {

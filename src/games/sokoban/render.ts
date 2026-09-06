@@ -15,7 +15,7 @@ import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { BROWN, GREEN } from "../../engine/color/colors.ts";
 import { FLASH, GRID_MID, INK, PAPER, wallColor } from "../../engine/color/palette.ts";
 import { sokobanPit } from "../../engine/color/palette-games.ts";
-import { drawRaisedBevel } from "../../engine/draw.ts";
+import { drawRaisedBevel, raisedBevelWidth } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import {
@@ -135,7 +135,7 @@ function drawTile(
   dr.drawRect({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 }, bg);
 
   if (v === WALL) {
-    const hw = Math.floor(ts / 10); // HIGHLIGHT_WIDTH
+    const hw = raisedBevelWidth(ts);
     // Bevel, then the wall-colored inner square. The tile body is inset by one
     // to leave the grid line showing, so the bevel follows that rect.
     drawRaisedBevel(

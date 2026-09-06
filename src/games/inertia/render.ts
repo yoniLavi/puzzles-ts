@@ -23,7 +23,7 @@ import {
   INK,
   wallColor,
 } from "../../engine/color/palette.ts";
-import { drawRaisedBevel } from "../../engine/draw.ts";
+import { drawRaisedBevel, raisedBevelWidth } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { coord as coordE } from "../../engine/geometry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
@@ -103,7 +103,7 @@ export const PREFERRED_TILE_SIZE = 32;
 export const BORDER = 1;
 
 const coord = (pos: number, ts: number): number => coordE(pos, ts, BORDER);
-const highlightWidth = (ts: number): number => Math.floor(ts / 10);
+const highlightWidth = raisedBevelWidth;
 
 export function computeSize(p: InertiaParams, ts: number): Size {
   return { w: 2 * BORDER + 1 + p.w * ts, h: 2 * BORDER + 1 + p.h * ts };

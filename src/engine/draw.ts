@@ -87,6 +87,26 @@ export function drawRecessedBorder(
  * Lowlight is drawn first, then highlight. The two share their diagonal, so the
  * order decides a hairline — fixed here so it is one decision rather than six.
  */
+/**
+ * How wide the raised bevel's border reads, for a given tile size — the one
+ * formula, where there used to be four.
+ *
+ * The six games that draw a raised tile had `max(1, floor(ts/20))` (fifteen,
+ * sixteen), `max(1, floor(ts/10))` (mines), `floor(ts/10)` (inertia, sokoban)
+ * and `floor(ts/16)` (pegs), so the same visual idiom carried a 1px border in
+ * one game and a 3px one in another at the same tile size. Nothing in the six
+ * recorded a reason for the divisor, which makes it drift rather than design
+ * (`unify-the-raised-tile-bevel`).
+ *
+ * **The `max(1, …)` is not optional.** Three of the six had dropped it, and
+ * without it `hw` reaches 0 at small tile sizes — at which point the caller's
+ * inner rect covers both triangles completely and the bevel *disappears*
+ * rather than thinning.
+ */
+export function raisedBevelWidth(tileSize: number): number {
+  return Math.max(1, Math.floor(tileSize / 16));
+}
+
 export function drawRaisedBevel(
   dr: GameDrawing,
   bounds: BevelBounds,

@@ -12,7 +12,11 @@
  * `mines.test.ts` guards that.
  */
 
-import { drawRaisedBevel, drawRecessedBorder } from "../../engine/draw.ts";
+import {
+  drawRaisedBevel,
+  drawRecessedBorder,
+  raisedBevelWidth,
+} from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord } from "../../engine/geometry.ts";
 import { FLAG, KILLED, type MinesState, type MinesUi } from "./state.ts";
@@ -51,9 +55,7 @@ export function borderFor(tileSize: number): number {
 function outerHighlightWidth(border: number): number {
   return Math.max(border - 1, 1);
 }
-function highlightWidth(tileSize: number): number {
-  return Math.max(Math.floor(tileSize / 10), 1);
-}
+const highlightWidth = raisedBevelWidth;
 
 export interface MinesDrawState {
   w: number;

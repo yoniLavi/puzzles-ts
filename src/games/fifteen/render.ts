@@ -8,7 +8,11 @@
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { HINT_ACTION, INK } from "../../engine/color/palette.ts";
-import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
+import {
+  drawRecessedBorder as drawBevel,
+  drawRaisedBevel,
+  raisedBevelWidth,
+} from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import type { Color, Size } from "../../engine/types.ts";
@@ -19,7 +23,6 @@ import type { FifteenMove, FifteenParams, FifteenState, FifteenUi } from "./stat
 export const PREFERRED_TILE_SIZE = 48;
 export const ANIM_TIME = 0.13;
 export const FLASH_FRAME = 0.13;
-const HIGHLIGHT_WIDTH_DIV = 20;
 
 // --- color indices ---------------------------------------------------
 
@@ -106,25 +109,11 @@ function drawTile(
   if (tile === 0) {
     dr.drawRect({ x, y, w: ts, h: ts }, bgColor);
   } else {
-    // Lowlight triangle (bottom-right).
-    dr.drawPolygon(
-      [
-        { x: x + ts - 1, y: y + ts - 1 },
-        { x: x + ts - 1, y },
-        { x, y: y + ts - 1 },
-      ],
-      COL_LOWLIGHT,
-      COL_LOWLIGHT,
-    );
-    // Highlight triangle (top-left).
-    dr.drawPolygon(
-      [
-        { x, y },
-        { x, y: y + ts - 1 },
-        { x: x + ts - 1, y },
-      ],
+    drawRaisedBevel(
+      dr,
+      { left: x, top: y, right: x + ts - 1, bottom: y + ts - 1 },
       COL_HIGHLIGHT,
-      COL_HIGHLIGHT,
+      COL_LOWLIGHT,
     );
     // Center fill.
     dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColor);
@@ -173,7 +162,7 @@ export function redraw(
 ): void {
   const ts = ds.tilesize;
   const { w, h, n } = state;
-  const hw = Math.max(1, Math.floor(ts / HIGHLIGHT_WIDTH_DIV));
+  const hw = raisedBevelWidth(ts);
 
   let bgcolor = COL_BACKGROUND;
   if (flashTime > 0) {

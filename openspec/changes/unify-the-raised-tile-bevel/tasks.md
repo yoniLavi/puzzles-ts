@@ -55,11 +55,11 @@ the reviewable-diff property C2 exists for.
 
 ## 2. Unify the thickness — the visual change, its own commit
 
-- [ ] 2.0 **Convert fifteen, sixteen and pegs** to the helper. Their recordings
-      move by a vertex reorder (and, for pegs, a draw-order swap that shifts the
+- [x] 2.0 **Converted fifteen, sixteen and pegs.** Their recordings move by a
+      vertex reorder (and, for pegs, a draw-order swap that shifts the
       shared-diagonal hairline). Both are invisible in the painted frame and
       both re-baseline a snapshot, which is why they live here.
-- [ ] 2.1 Pick one formula. The measured spread is in the proposal's table;
+- [x] 2.1 Picked one formula. The measured spread is in the proposal's table;
       `max(1, floor(ts / N))` is the shape, and the open question is `N`. The
       three in use are 10 (heavy: 3px at ts=32), 16 (2px) and 20 (light: 1px).
       **Recommendation: `max(1, floor(ts / 16))`** — it is the middle of the
@@ -67,34 +67,70 @@ the reviewable-diff property C2 exists for.
       and it moves Fifteen and Sixteen (whose 1px border at their preferred
       ts=48 is the thinnest in the collection) toward the weight the rest of
       the collection already reads as "raised".
-- [ ] 2.2 The `max(1, …)` floor is not optional: without it the inner rect
+      **Taken as recommended**, and it ships as `raisedBevelWidth` in
+      `engine/draw.ts` so the formula has one home rather than six. Net effect:
+      fifteen and sixteen get heavier (2px → 3px at their ts=48), mines,
+      inertia and sokoban get one step lighter, pegs is unchanged except for
+      gaining the floor.
+- [x] 2.2 The `max(1, …)` floor is not optional: without it the inner rect
       covers the triangles completely and the bevel vanishes rather than
-      thinning. Inertia, Sokoban and Pegs lack it today.
-- [ ] 2.3 Snapshots re-baseline here, and that is expected. **Review the diff by
-      the color-work rule**: every changed line explainable by the declared
-      change, and nothing else in it. A changed *coordinate* is in budget; a
-      changed op, color or order is not.
-- [ ] 2.4 Run the app on all six and look at them. Bevel weight is exactly the
-      kind of thing a snapshot records faithfully and a person judges.
+      thinning. Inertia, Sokoban and Pegs lacked it; all six have it now.
+- [x] 2.3 Snapshots re-baselined, and reviewed by the color-work rule
+      **mechanically rather than by eye**: of every changed line in the four
+      moved snapshots, the count that is *not* a `w`/`h`/`x`/`y` value is
+      **zero**, and insertions equal deletions (440/440), so no op was added,
+      removed, recolored or reordered.
+- [x] 2.4 **Ran the app on all six.** Fifteen and Sixteen read as distinctly
+      raised where their 2px border had been faint; Mines, Inertia and Sokoban
+      still read as raised one step lighter; Pegs' board relief is unchanged to
+      the eye despite the draw-order swap. Two targeted assertions had hard-coded
+      the old width (`hw = 2` in fifteen's render test, `TS / 20` in sixteen's);
+      both now read `raisedBevelWidth`, so they cannot go stale again — the
+      "write the query, not its answer" rule applied to a test constant.
 
 ## 3. Guard and document
 
-- [ ] 3.1 A source scan, the reverse direction: no game draws a
-      `COL_LOWLIGHT`/`COL_HIGHLIGHT` triangle pair outside the helper. Key on
-      the **shape**, and expect it to catch Twiddle — then *classify* rather
-      than narrow the scan, which is this repo's standing instrument rule.
-      Twiddle's exclusion is a named allowance with the reason in the test.
-- [ ] 3.2 Prove the guard fails: point one game's call elsewhere, watch it name
-      that game, restore.
-- [ ] 3.3 `ts-engine` delta: `ADDED`, worded from the existing recessed-border
-      requirement, which is its sibling and its template.
-- [ ] 3.4 `docs/games/rendering.md` and `docs/games/engine-catalog.md`.
+- [x] 3.1 `src/engine/raised-bevel.test.ts` — a source scan, the reverse
+      direction: no adjacent `drawPolygon` pair filled with the bare
+      `COL_LOWLIGHT` and `COL_HIGHLIGHT` constants. Carries a vacuity number
+      (sources read ≥ 200, and `drawRaisedBevel` seen at least once).
+      **The scan does *not* catch Twiddle, and that is correct rather than an
+      exemption:** its trapezoid fills are ternaries carrying a per-edge cursor
+      color, so the key cannot match them and should not. What the key *does*
+      also catch is three lone `COL_LOWLIGHT` triangles (mathrax, salad,
+      seismic) — pencil-mode corner markers, a different thing — so the test
+      **classifies** them in a third assertion rather than narrowing the key,
+      per the standing instrument rule.
+- [x] 3.2 **Proved it fails**: restoring Sokoban's hand-rolled pair turns both
+      the offender list and the lone-triangle list red, each naming sokoban.
+      Restored.
+- [x] 3.3 `ts-engine` delta: `ADDED`, worded from the recessed-border
+      requirement. Three scenarios — the helper's use, Twiddle keeping its own,
+      and the no-re-derivation scan with its vacuity clause.
+- [x] 3.4 `docs/games/rendering.md` gains "Sharing a *primitive* is a different,
+      smaller move" (with the three lessons); `docs/games/engine-catalog.md`'s
+      `draw.ts` entry gains both new helpers, the promoted-from-N pattern, and
+      the warning that an unchanged snapshot is not evidence on its own.
 
 ## Standing constraints
 
-- [ ] C1 Twiddle is not bent into this. Four rotatable trapezoids with per-edge
-      cursor colors is a different shape; forcing it through a two-triangle
-      helper is the contortion AGENTS.md forbids.
-- [ ] C2 Task 1 and task 2 stay separate commits. A no-op extraction whose
-      snapshots must not move, and a deliberate visual change whose snapshots
-      must move, cannot be reviewed as one diff.
+- [x] C1 Twiddle is not bent into this, and it did not even need an exemption:
+      its per-edge cursor colors mean the guard's key cannot match it. A
+      normative scenario in the `ts-engine` delta records why.
+- [x] C2 Task 1 and task 2 are separate commits, and the split earned its keep —
+      task 1 landed with every snapshot unmoved, which is what made task 2's
+      440 changed lines reviewable as *only* coordinates.
+
+## Findings
+
+- **The survey missed vertex order**, and it decided the shape of the work: the
+  six wrote the highlight triangle's three vertices in three different orders,
+  which is invisible in the frame and visible in a recording. Task 1 could
+  therefore only be byte-clean for the largest group (3 of 6).
+- **Two tests had the old thickness written into them** as `2` and `TS / 20`.
+  Both now call `raisedBevelWidth`. A constant restated in a test is the same
+  hazard as a count restated in prose.
+- **The `max(1, …)` floor mattered more than the divisor.** Three of the six had
+  dropped it, so their bevel *disappeared* rather than thinning below ts ≈ 10 —
+  not reachable on a real viewport, but the kind of latent cliff that is free to
+  remove while the code is open.

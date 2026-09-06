@@ -272,6 +272,34 @@ Three things that generalize:
   exactly that — 225 and 237 ops here, unchanged. If a snapshot needs `-u`,
   pixels moved and the extraction is wrong.
 
+### Sharing a *primitive* is a different, smaller move
+
+`border-grid-render.ts` shares a mechanic's whole look. `engine/draw.ts` shares
+single shapes — the recessed frame, the raised tile bevel, the thick error
+frame, the corner brackets — and three of those were promoted only after six,
+seven and eight games had each written the vertex arithmetic out. **A shape any
+other game also draws belongs there**, and unlike a mechanic it needs no
+callback and no shared cache key: it takes a rect and colors and draws.
+
+Three things learned promoting the last two
+(`unify-the-raised-tile-bevel`, `promote-the-thick-rect-outline`):
+
+- **Check whether the *dimensions* were drifting too, not only the shape.** The
+  six raised-tile games had four thickness formulas, so one idiom read 1px in
+  Fifteen and 3px in Mines at the same tile size. `raisedBevelWidth` ships
+  beside `drawRaisedBevel` for that reason. Splitting the extraction (no pixels
+  move) from the sizing fix (pixels move) into two commits is what makes the
+  second one reviewable.
+- **A byte-clean snapshot is only evidence if something is watching.** Deleting
+  a whole side of the error frame, with the helper wired into eight games,
+  failed **one** test in the collection. Break the helper deliberately and see
+  what goes red before you believe an unchanged snapshot.
+- **The games may disagree on something the survey didn't measure.** Here it was
+  *vertex order inside the polygon* — three orders across six games. Winding is
+  invisible in the painted frame but a snapshot records the points array, so
+  "changes no draw call" was achievable for only the largest group; the rest
+  moved to the commit where a moved recording was already expected.
+
 ## Bespoke board geometry, draw side
 
 Some games store an odd-shaped board in a padded rectangle and shear it on
