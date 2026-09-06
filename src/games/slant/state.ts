@@ -18,6 +18,7 @@ import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
+import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- difficulty (upstream DIFFLIST: Easy, Hard) ---------------------------
@@ -144,9 +145,9 @@ export function validateParams(p: SlantParams, _full: boolean): string | null {
 export function validateDesc(p: SlantParams, desc: string): string | null {
   const area = (p.w + 1) * (p.h + 1);
   let squares = 0;
-  for (const ch of desc) {
-    if (ch >= "a" && ch <= "z") squares += ch.charCodeAt(0) - 96;
-    else if (ch >= "0" && ch <= "4") squares++;
+  for (const tok of scanRunLength(desc)) {
+    if ("blanks" in tok) squares += tok.blanks;
+    else if (tok.value >= "0" && tok.value <= "4") squares++;
     else return "Invalid character in game description";
   }
   if (squares < area) return "Not enough data to fill grid";
@@ -158,35 +159,22 @@ export function validateDesc(p: SlantParams, desc: string): string | null {
 export function decodeClues(p: SlantParams, desc: string): Int8Array {
   const clues = new Int8Array((p.w + 1) * (p.h + 1)).fill(-1);
   let pos = 0;
-  for (const ch of desc) {
-    if (ch >= "a" && ch <= "z") pos += ch.charCodeAt(0) - 96;
-    else clues[pos++] = ch.charCodeAt(0) - 48;
+  for (const tok of scanRunLength(desc)) {
+    if ("blanks" in tok) pos += tok.blanks;
+    else clues[pos++] = tok.value.charCodeAt(0) - 48;
   }
   return clues;
 }
 
-/** Encode a vertex-clue array as the upstream run-length desc. */
+/** Encode a vertex-clue array as the upstream run-length desc. The trailing run
+ * is kept: `validateDesc` above rejects a desc that does not fill the grid
+ * exactly, so dropping it would make Slant refuse its own boards. */
 export function encodeClues(clues: Int8Array): string {
-  let out = "";
-  let run = 0;
-  const flushRun = () => {
-    while (run > 0) {
-      // 'a'−1+run, capped at 'z' (a chunk of 26), exactly upstream.
-      const chunk = Math.min(run, 26);
-      out += String.fromCharCode(96 + chunk);
-      run -= chunk;
-    }
-  };
-  for (const clue of clues) {
-    if (clue === -1) {
-      run++;
-    } else {
-      flushRun();
-      out += String.fromCharCode(48 + clue);
-    }
-  }
-  flushRun();
-  return out;
+  return encodeRunLength(
+    clues.length,
+    (i) => (clues[i] === -1 ? null : String.fromCharCode(48 + clues[i])),
+    { keepTrailingBlanks: true },
+  );
 }
 
 export function newState(p: SlantParams, desc: string): SlantState {

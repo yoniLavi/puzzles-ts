@@ -9,6 +9,7 @@ import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
+import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell-state flags (upstream `enum cell_state`) ----------------------
@@ -143,37 +144,22 @@ export function validateParams(p: MosaicParams, _full: boolean): string | null {
 /** Encode a clue board as upstream's run-length desc: a digit per shown
  * clue, a letter `a`-`z` per run of 1-26 hidden cells (emitted lazily
  * before the next clue / at end / when the run hits 26). */
+/** The trailing run is kept: `validateDesc` below wants the desc to describe
+ * exactly `width × height` cells. */
 export function encodeBoard(board: MosaicBoard): string {
-  let out = "";
-  let run = 0;
-  for (const clue of board.clues) {
-    if (clue >= 0) {
-      if (run > 0) {
-        out += String.fromCharCode(96 + run); // 'a' = 1
-        run = 0;
-      }
-      out += String(clue);
-    } else {
-      if (run === 26) {
-        out += "z";
-        run = 0;
-      }
-      run++;
-    }
-  }
-  if (run > 0) out += String.fromCharCode(96 + run);
-  return out;
+  return encodeRunLength(
+    board.clues.length,
+    (i) => (board.clues[i] >= 0 ? String(board.clues[i]) : null),
+    { keepTrailingBlanks: true },
+  );
 }
 
 export function validateDesc(p: MosaicParams, desc: string): string | null {
   let length = 0;
-  for (const ch of desc) {
-    if (ch >= "a" && ch <= "z") {
-      length += ch.charCodeAt(0) - 97; // + the shared ++ below = run length
-    } else if (ch < "0" || ch > "9") {
-      return "Invalid character in game description";
-    }
-    length++;
+  for (const tok of scanRunLength(desc)) {
+    if ("blanks" in tok) length += tok.blanks;
+    else if (tok.value >= "0" && tok.value <= "9") length++;
+    else return "Invalid character in game description";
   }
   if (length !== p.width * p.height) return "Desc size mismatch";
   return null;
@@ -184,14 +170,15 @@ export function newState(p: MosaicParams, desc: string): MosaicState {
   const clues = new Int8Array(size).fill(-1);
   let notCompletedClues = 0;
   let loc = 0;
-  for (const ch of desc) {
-    if (ch >= "0" && ch <= "9") {
-      clues[loc] = ch.charCodeAt(0) - 48;
+  for (const tok of scanRunLength(desc)) {
+    if ("blanks" in tok) {
+      loc += tok.blanks; // hidden cells; already -1
+    } else if (tok.value >= "0" && tok.value <= "9") {
+      clues[loc] = tok.value.charCodeAt(0) - 48;
       notCompletedClues++;
       loc++;
     } else {
-      // Letter run of hidden cells ('a' = 1). The cells are already -1.
-      loc += ch >= "a" && ch <= "z" ? ch.charCodeAt(0) - 96 : 1;
+      loc++; // an unexpected character, skipped as before
     }
   }
   const board: MosaicBoard = Object.freeze({

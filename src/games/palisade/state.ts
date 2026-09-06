@@ -18,6 +18,7 @@ import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { dims, num, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
+import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // The edge bit encoding, direction tables and bounds test are shared with the
@@ -201,40 +202,23 @@ export function isSolved(
 
 // --- desc codec -----------------------------------------------------------
 
-const A = "a".charCodeAt(0);
-
 /** Run-length encode the clue grid: digit per clue, letter run per
  * clueless gap (trailing gap dropped). */
 export function encodeDesc(clues: Int8Array, wh: number): string {
-  let out = "";
-  let run = 0;
-  for (let i = 0; i < wh; i++) {
-    if (clues[i] !== EMPTY) {
-      while (run) {
-        while (run > 26) {
-          out += "z";
-          run -= 26;
-        }
-        out += String.fromCharCode(A - 1 + run);
-        run = 0;
-      }
-      out += String(clues[i]);
-    } else run++;
-  }
-  return out;
+  return encodeRunLength(wh, (i) => (clues[i] === EMPTY ? null : String(clues[i])));
 }
 
 export function validateDesc(p: PalisadeParams, desc: string): string | null {
   const wh = p.w * p.h;
   let squares = 0;
-  for (const ch of desc) {
-    if (ch >= "a" && ch <= "z") {
-      squares += ch.charCodeAt(0) - A + 1;
-    } else if (ch >= "0" && ch <= "9") {
-      if (ch > "4") return `Invalid (too large) number: '${ch}'`;
+  for (const tok of scanRunLength(desc)) {
+    if ("blanks" in tok) {
+      squares += tok.blanks;
+    } else if (tok.value >= "0" && tok.value <= "9") {
+      if (tok.value > "4") return `Invalid (too large) number: '${tok.value}'`;
       squares++;
     } else {
-      return `Invalid character in data: '${ch}'`;
+      return `Invalid character in data: '${tok.value}'`;
     }
   }
   if (squares > wh) return "Data describes too many squares";
@@ -246,12 +230,10 @@ export function newState(p: PalisadeParams, desc: string): PalisadeState {
   const wh = w * h;
   const clues = new Int8Array(wh).fill(EMPTY);
   let i = 0;
-  for (const ch of desc) {
-    if (ch >= "0" && ch <= "9") {
-      clues[i++] = ch.charCodeAt(0) - 48;
-    } else if (ch >= "a" && ch <= "z") {
-      i += ch.charCodeAt(0) - A + 1;
-    }
+  for (const tok of scanRunLength(desc)) {
+    if ("blanks" in tok) i += tok.blanks;
+    else if (tok.value >= "0" && tok.value <= "9")
+      clues[i++] = tok.value.charCodeAt(0) - 48;
   }
   return {
     w,

@@ -470,6 +470,33 @@ field, finding it structurally rather than by name. A non-trivial *traversal*
 whatever a game does *while* the cursor moves; only the noun is shared.
 Discipline: [`input.md`](./input.md).
 
+### `run-length.ts` — the desc grammar ten games share
+
+`scanRunLength(desc)` yields `{ blanks }` for a letter run (`a` = 1 … `z` = 26,
+longer runs as repeated `z`s) and `{ value }` for anything else — including
+characters the game will reject, because *which* value characters are legal, in
+what range, and with what error message are the game's rules and stay there.
+`encodeRunLength(count, emit)` is the other direction.
+
+**`keepTrailingBlanks` is not a style option.** Palisade drops the run that
+reaches the last cell; Slant and Mosaic keep it, because their `validateDesc`
+rejects a desc that does not fill the grid *exactly*. Encode a Slant desc
+without it and the game refuses to load its own board.
+
+**Eleven games have a richer desc and do not use this**: Towers, Keen, Solo,
+Undead, Unequal, Mathrax, Salad, Boats, Tents, Tracks and Pattern parse
+multi-digit numbers, `_` separators, or two comma-separated sections whose
+boundary the caller controls. That is a different grammar, not a harder version
+of this one. Expect the *scanner* to reach further than the *encoder*: the
+decode side has one shape, the encode side has three (Filling's `encodeRun(n)`
+is called from inside a larger encoder and cannot be expressed as
+`encodeRunLength(count, emit)` at all).
+
+A desc is a player promise, so the encoder is fuzzed against the code it
+replaced rather than trusted — 4,000 trials biased toward long runs, with the
+prior nested-`while` encoder kept in `run-length.test.ts` as the oracle. That
+exists because Palisade, the first game converted, has no frozen differential.
+
 ### `params-codec.ts` — the declared params codec
 
 `paramsCodec` derives **both** halves of `encodeParams`/`decodeParams` from one
