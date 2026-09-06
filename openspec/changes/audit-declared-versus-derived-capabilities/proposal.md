@@ -1,5 +1,10 @@
 # audit-declared-versus-derived-capabilities
 
+Realizes: `docs/framework-rdd/guarantees.md` § "The standing principle" — by
+**settling the word in it** rather than by building what it described. The
+survey's answer also amends `game-definition.md`'s opening frame, its
+"Affordances" section, and `migration.md`'s capability-diff bullet.
+
 **Readiness: survey run, decision recorded, implemented.** The sections below are
 kept as written, because the value of this change is partly in what it *asked*;
 what it found is in `tasks.md` and, normatively, in the `ts-engine` delta.

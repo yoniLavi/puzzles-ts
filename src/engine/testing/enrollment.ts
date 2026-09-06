@@ -2,14 +2,14 @@
  * **Who is in a shared mechanic, and did they actually use it** — the two
  * questions every cross-game guard in this repo asks, written once.
  *
- * Sixteen files derive a population from the registry and sixteen scan game
- * sources, and each had hand-written the same four steps: build every game,
- * filter it to the members, put a floor under the count so a sweep that found
- * nothing cannot report health, and name the offenders in the failure. Writing
- * two more of those (`note-taking-cell.test.ts`, `border-grid-render.test.ts`)
- * is what made the pattern worth extracting — *N guards sharing a shape means
- * the layer below them is missing*, which is the same rule the games are held
- * to, one level up.
+ * The cross-game guards — the files importing this one, plus the ones deriving
+ * a population straight from the registry — had each hand-written the same four
+ * steps: build every game, filter it to the members, put a floor under the count
+ * so a sweep that found nothing cannot report health, and name the offenders in
+ * the failure. Writing two more of those (`note-taking-cell.test.ts`,
+ * `border-grid-render.test.ts`) is what made the pattern worth extracting —
+ * *N guards sharing a shape means the layer below them is missing*, which is the
+ * same rule the games are held to, one level up.
  *
  * ON WHY THIS IS DERIVED AND NOT DECLARED. A game could instead *declare* its
  * capabilities and the guards read the manifest. This repo has already run that
@@ -18,8 +18,16 @@
  * game's own behavior was strictly stronger — a declaration can be forgotten by
  * a new game, left behind by a changed one, or simply wrong, and nothing
  * notices. Everything here reads what the game *is*: the object it registers,
- * the `Ui` its `newUi` returns, the text of its own source. None of those can
+ * the `Ui` its `newUi` returns, the code of its own source. None of those can
  * drift from the game, because they are the game.
+ *
+ * That argument was surveyed against the whole population and upheld
+ * (`audit-declared-versus-derived-capabilities`), so it is now a rule rather
+ * than this module's opinion: the `ts-engine` spec, "A shared mechanic is joined
+ * by having it", and `docs/games/testing.md` § "How a cross-game guard finds its
+ * population". What the survey added is the distinction the argument above is
+ * missing — a value a *mechanism consumes* (a technique's tier, a `paramConfig`
+ * field list) is a healthy declaration and not what any of this is against.
  *
  * Dev/test-only; never imported by production code.
  */
