@@ -483,6 +483,10 @@ though it were a shared artifact misreports the work as tracked when it is not.
 Acceptance is for work whose *correctness the owner is the only judge of* — which is a narrow, concrete set, not a vibe:
 
 - **Anything a player sees or feels.** How a game plays, renders, animates or responds to input; wording a player reads; a hint's explanation. This is the "Acceptance bar" section above, and it is unchanged.
+
+  **But player-visible does not automatically mean "stop and ask"** (owner, 2026-09-06): *"I'd prefer to do acceptance testing only on any particular pieces, where you're genuinely unsure what's better."* A refactor that unifies a behavior the collection was inconsistent about is still yours to decide when one answer is plainly better — make the call, say what you decided and why, and run the app yourself. **What earns the owner's time is genuine uncertainty**, not the player-visible label. This is a refinement of the bullet, not a hole in it: still run the app, still never call a shortfall cosmetic, and still ask *before* for anything that breaks a player's data.
+
+  During a run of framework refactoring the owner may also defer testing to the end of the arc rather than per change. Take that as said only when it is said.
 - **Anything the owner asked for by name.** If they described the outcome, they decide whether you hit it.
 - **Anything that breaks compatibility with data a player already has** — save formats, preference keys, shared game IDs. Ask *before*, with the cost stated, not after.
 
