@@ -142,6 +142,155 @@ Per-direction, what dark changes:
   contrast that gives the direction its confidence is much reduced. Its icon
   tiles, conversely, pop harder than anything else on the dark page.
 
-## 4. Direction
+## 4. The chosen direction — B · Index
 
-*(To be recorded once the owner picks on the canvas.)*
+Owner, 2026-09-07: *"let's please go with the Index design"*, with the
+information architecture of the rail and the bottom bar rebuilt rather than
+inherited — *"nothing should be kept just because it's the way things were."*
+Drawn on the canvas's **Chosen** page, dark and light, desktop and phone, plus
+a command-placement table.
+
+### 4.1 Tokens
+
+Two token layers change; the twelve-color **board** palette does not.
+
+| Role | Light | Dark |
+| --- | --- | --- |
+| Page ground | `#ffffff` | `#101319` |
+| Rail / raised | `#fafafa` | `#161920` |
+| Hairline (structure) | `#e3e4e7` | `#282c36` |
+| Row rule (list) | `#eef0f2` | `#20242c` |
+| Control border | `#dcdee2` | `#333844` |
+| Text, normal | `#16181d` | `#e8eaef` |
+| Text, secondary | `#2c2f37` / `#40434b` | `#ccd0d8` / `#b3b8c2` |
+| Text, quiet | `#63666e` | `#8d93a0` |
+| Text, faint | `#8b8e97` / `#a4a7ae` | `#7b8190` / `#666c79` |
+| Link / active | `#1f4e8c` | `#6eb3ff` |
+| Accent (hint) | `#ffc83d` — unchanged in both schemes |  |
+| Hint surface / border / ink | `#fff7e3` / `#e9c96a` / `#3d3526` | `#2f2718` / `#5b4a22` / `#eee3cd` |
+
+The accent is the lit cell from `public/favicon.svg`, the only color the mark
+contributes to the chrome. **`vite.config.ts`'s `theme_color` and
+`background_color` must move with the ground and rail tokens** — they are those
+tokens' resolved values, typed out as hex.
+
+### 4.2 Type, spacing, radius
+
+- **Faces**: IBM Plex Sans for everything; **IBM Plex Mono** for numerals that
+  are read as quantities — move counts, list counts, keyboard shortcuts, param
+  chips. Google Fonts, with `ui-sans-serif, system-ui` / `ui-monospace`
+  fallbacks.
+- **Scale**: 22 (game name) · 15.5 (list name) · 14 (body, controls) · 13.5
+  (secondary) · 12.5 (list objective) · 11 (shortcut, group label). Weights 400
+  / 500 / 600 only.
+- **Spacing**: an 8px rhythm loosened at group boundaries — 13px between rail
+  groups, 9px inside one, 18–26px between page sections.
+- **Radius**: 6px controls, 7px the hint block, 8–9px containers, 3–4px list
+  icons. No pill shapes; this direction is rectilinear.
+- **Rows**: 33px rail control, 52px desktop list, 64px phone list, 54px phone
+  tool. Phone tap targets never below 44px.
+
+### 4.3 The rule the information architecture follows
+
+**One home per command, grouped by what it acts on, ordered by how often it is
+used.** Today there are two command surfaces — a 14-item game menu and an
+8-button toolbar — with **Hint, Reference and Check & save in both**, and
+eleven more split between them with no rule. A player must learn both surfaces
+and can still miss things.
+
+**The rail being vertical is what pays for this.** A horizontal bar has no room
+for text, which is exactly why today's eight controls are icon-only and several
+are unguessable. A rail carries icon + label + shortcut on one row, so "label
+everything" costs nothing. Choosing this direction is what makes the fix
+affordable — the IA and the look are one decision, not two.
+
+### 4.4 The rail, top to bottom (desktop, 284px)
+
+1. `← All puzzles` — back to the catalog.
+2. **Game name** (22/600) and two param chips (`7×7`, `Easy`) that open the
+   type menu and show the current value instead of hiding it.
+3. **Where you are** — `Move 12 of 18` in mono, and it *is* the timeline
+   control. Under it, the game's status line for the **nine games that provide
+   one** (`cube`, `fifteen`, `flood`, `inertia`, `mosaic`, `netslide`,
+   `palisade`, `samegame`, `twiddle`); absent otherwise.
+4. **Undo / Redo**, labeled, with their shortcuts.
+5. **Help me play** — the fork's differentiator, named as a group:
+   **Next hint** (accent, primary) with its explanation and `STEP n / m`
+   inline; **Play hints for me** as a *switch*; **Check my work**;
+   **Fill all pencil marks**; **Reference** (games that have one);
+   **Show solution…** last, quiet, and confirmed.
+6. **Save checkpoint / Return to checkpoint**, paired.
+7. Pinned to the bottom: **New game**, **Restart this puzzle**,
+   **How to play <game>**, **More…**.
+
+`More…` holds Share, Copy image, Save game, Load game, Enter game ID,
+Preferences, About — the rare and the once-ever, and now the *only* things
+behind a menu.
+
+### 4.5 The phone
+
+A persistent bottom bar of exactly four: **Undo · Redo · Next hint · More**, at
+full tap size, with Next hint taking the free space. `More` opens the rail as a
+sheet in the same order with the same labels, so what a player learns on one
+transfers to the other. **The hint's explanation sits above the bar**, where a
+thumb cannot cover it. The keypad stays attached to the board — it is input,
+not a command.
+
+The top bar carries only back, name, the two chips and the move count: four
+items, so the overflow that breaks it today cannot recur. Structurally it
+cannot anyway — the commands are not laid out horizontally any more.
+
+### 4.6 What changes, and why
+
+| Change | Reason |
+| --- | --- |
+| **`Check my work` added** | `findMistakes` is implemented by **42 of 57 games** and has exactly one production caller, `checkAndSave` — the only way to be checked is to try to save. The largest single gap in the app. |
+| **Move counter replaces the History button** | `currentMove`/`totalMoves` are already signals on `Puzzle` and are never shown. State and control become one element. |
+| **Auto-hint becomes a switch** | It is a mode, drawn as the twin of an action. |
+| **`Solve` → `Show solution…`, confirmed** | Terminal, and one unguarded click away. |
+| **`Check & save`/`Quick-save` → `Save checkpoint`** | One button with two names, both naming the mechanism. It still verifies first where the game can — that is a guarantee, not a second feature. `Quick-load` → `Return to checkpoint`, beside its twin. |
+| **`New game` and `Restart` promoted** | The most common non-move action in a session was two levels deep. |
+| **Everything labeled** | Eight icon-only controls, several unguessable; `Fill all pencil marks` can overwrite notes and had no words. |
+| **`Other puzzles` menu removed** | A second, worse copy of the home screen, which is now a searchable index one click away. |
+| **The top app bar and the game menu removed** | The bar is what overflows at 390px; the menu is what duplicated the toolbar. |
+| **Home gains a Resume row** | The data exists (`savedGames.autoSavedPuzzles`); today it is a corner badge. First thing a returning player wants. |
+
+### 4.7 Keyboard — the experienced player
+
+**There are no app-level shortcuts today.** Keys go straight through
+`eventKeyToPuzzleKey` to the game; only Escape, Tab and Ctrl+C are handled by
+the frontend. Upstream had them — `midend.c` maps `n`, `u`, `r`, `q` behind a
+`one_key_shortcuts` **user preference** (default on), plus control codes that
+work regardless — and the port dropped all of them.
+
+Restore in two tiers:
+
+- **Always on**: `Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Shift+Z` and `Ctrl+Y` redo. Chords
+  cannot collide with a game's letter input. Not `Ctrl+S` — the browser owns it.
+- **Behind a preference, default on**: bare `u`, `r`, `n`, `h`, **suppressed for
+  a game that consumes that letter**. Derive the conflict from what the game
+  already declares — its `requestKeys()` labels and the button codes
+  `emittable-keys` already scans — never from a roster of games (`AGENTS.md`,
+  "a game joins a shared mechanic by *having* it").
+
+The rail shows each shortcut on its row, which is also what makes the drawn key
+chips true rather than decorative.
+
+### 4.8 Explicitly out of scope
+
+The board: game rendering, the twelve-color palette, the per-game colors, and
+the two dark-mode observations in §3 (the pinned black clue squares, the olive
+hint wash). The chrome changes around them.
+
+### 4.9 Needs the owner's word before it lands
+
+Three items break something a player can already see or has already set:
+
+1. **Removing the `Other puzzles` menu** — a control disappears.
+2. **`statusbar-placement`** (`start`/`end`/`hidden`) becomes moot once the rail
+   hosts the status line. That is a stored preference key.
+3. **Renaming Quick-save / Quick-load** — the words appear in toasts and alerts
+   a player may know.
+
+None is proposed as done; each is a question the implementation change asks
+before it changes it.

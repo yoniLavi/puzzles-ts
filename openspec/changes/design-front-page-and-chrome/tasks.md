@@ -33,8 +33,11 @@
 
 ## 3. Decide (owner)
 
-- [ ] 3.1 The owner picks a direction on the canvas, adjusting by hand where
+- [x] 3.1 The owner picks a direction on the canvas, adjusting by hand where
       they like.
+      **B · Index**, 2026-09-07, with the information architecture of the rail
+      and the bottom bar rebuilt rather than inherited. Redrawn on the canvas's
+      **Chosen** page with a command-placement table.
 - [x] 3.2 Dark scheme: drawn, or left to the tokens.
       **Drawn** — owner plays mainly in dark, so all three directions have a
       full dark row on a second canvas page, derived from the light artboards
@@ -43,11 +46,13 @@
 
 ## 4. Record
 
-- [ ] 4.1 `design.md`: the chosen direction as a spec for implementation —
+- [x] 4.1 `design.md`: the chosen direction as a spec for implementation —
       palette tokens, type scale, spacing, radius, header and catalog layout,
       puzzle app bar and toolbar layout, what the keypad and dialogs inherit,
-      and what is explicitly kept from today.
-- [ ] 4.2 Scaffold `implement-front-page-and-chrome` with tasks derived from
+      and what is explicitly kept from today. See §4, which also carries the
+      rebuilt information architecture, the keyboard tier, and the three items
+      that need the owner's word before they land.
+- [x] 4.2 Scaffold `implement-front-page-and-chrome` with tasks derived from
       `design.md`, and with acceptance on a real device where the deploy allows.
 
 ## 5. Close
