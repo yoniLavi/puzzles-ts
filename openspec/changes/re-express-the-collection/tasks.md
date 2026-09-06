@@ -20,17 +20,36 @@ end state somebody can declare done. Read the proposal's readiness block first.
 - [x] 0.3 **Proved it fails**: commenting `findMistakes` out of Towers' game
       object turned the snapshot red with a `- "findMistakes"` line, which is
       exactly the reviewable diff a batch needs. Restored.
-- [ ] 0.4 **Survey the collection and publish the end state** — the list of
-      differences that nobody can defend as belonging to the puzzle. This is the
-      sweep's definition of done, and it must be a *measurement*, not a list of
-      what somebody noticed: key on shape, count the population, and name the
-      games rather than counting them.
-- [ ] 0.5 Split into batches from the survey — one change per batch, each
-      archivable on its own. A single 57-game change cannot be reviewed or
-      reverted, and keeping it whole would break "one change per coherent unit
-      of work". **This directory holds the plan; it should not hold the work.**
-- [ ] 0.6 Sequence the batches by what each teaches: where the shared shape is
-      still soft, go first and let it harden; mechanical last.
+- [x] 0.4 **Surveyed; the end state is `survey.md`.** Five instruments, each
+      with its vacuity number: jscpd over 284 game files (53 clones, 994
+      duplicated lines — down from 1,262 on 2026-09-05 because
+      `unify-the-note-taking-cell` landed between the runs, which is the only
+      reason the delta means anything), a per-game file listing, an aliased-
+      wiring scan, the coordinate-pair partition, and the run-length encoder
+      scan. Six batches, B1–B6, with the games named.
+- [x] 0.5 **Split into B1–B6**, sequenced in `survey.md` by what each teaches.
+      B2 already has its own change (`share-the-run-length-desc-scanner`); the
+      rest are scaffolded as they are started. **This directory holds the plan;
+      it does not hold the work.**
+- [x] 0.6 Sequenced: B1 first (largest cluster, and the receiving module already
+      exists, so a contract adjustment shows there); B4 late and expected to
+      decline pairs; B6 after B5, because B5 creates the files B6 unifies.
+
+## The batches
+
+Each is its own change, scaffolded when started. `survey.md` holds the
+measurement; this is the tracking list, and it is the only place a batch's
+status lives.
+
+- [ ] B1 The Latin family's keyboard entry arm — 11 games, ~380 duplicated lines.
+- [ ] B2 The desc codec — `share-the-run-length-desc-scanner` (scaffolded; may
+      legitimately decline after its task 0 sizing).
+- [ ] B3 The coordinate pair — one spelling of the pixel↔cell conversion.
+- [ ] B4 The render layer's residue — expected to decline more pairs than it
+      takes; every decline recorded with its reason.
+- [ ] B5 Structure — the renderer lives in `render.ts` (4 games escape); no
+      aliased capability wiring (5 games).
+- [ ] B6 The sliding-tile family — after B5.
 
 ## Per batch
 
