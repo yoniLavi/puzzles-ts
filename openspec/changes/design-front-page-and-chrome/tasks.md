@@ -35,7 +35,11 @@
 
 - [ ] 3.1 The owner picks a direction on the canvas, adjusting by hand where
       they like.
-- [ ] 3.2 Dark scheme: drawn, or left to the tokens.
+- [x] 3.2 Dark scheme: drawn, or left to the tokens.
+      **Drawn** — owner plays mainly in dark, so all three directions have a
+      full dark row on a second canvas page, derived from the light artboards
+      by guarded palette substitution. Whether the *implementation* leaves dark
+      to the tokens stays open and is recorded with the chosen direction.
 
 ## 4. Record
 

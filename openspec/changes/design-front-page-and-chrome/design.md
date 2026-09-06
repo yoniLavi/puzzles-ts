@@ -92,6 +92,56 @@ the auto-saved game (the data already exists — `savedGames.autoSavedPuzzles`,
 which today only draws a corner badge on a card), and a **search field** (B and
 C lean on it; C needs it, because a tile shows no objective text).
 
-## 3. Direction
+## 3. Dark, drawn
+
+The owner plays mainly in dark, so all three directions are drawn dark as well
+— on a second canvas page ("Dark", the page the canvas opens on), same rows,
+same columns, same layouts, so flipping between pages compares like for like.
+Implementation may still leave dark to the tokens; the drawings exist so the
+direction is chosen on what the owner actually looks at.
+
+**Each dark artboard is derived from its light twin by palette substitution
+only**, and the derivation is guarded twice: no color literal passes through
+unmapped, and stripping every color literal from the output reproduces the
+light file byte for byte. A layout difference between the two pages would
+therefore be a bug, not a decision.
+
+**The board is drawn as the app really renders it in dark** — cells `#36383e`,
+grid `#515258`, black clues `#000000` — sampled from the running app rather
+than guessed. Three things follow that bear on the choice:
+
+1. **The clue squares sit at 1.79 : 1 against the board** (15.9 : 1 in light).
+   This is **deliberate**, not a defect: `hand-author-dark-palette` pinned it —
+   *"a piece that is black stays black in dark mode"* — and `lightup/render.ts`
+   says so at the assignment (`out[COL_BLACK] = BLACK`, "Pinned: a wall *is*
+   black and a bulb *is* white, in either scheme"). Recorded here with the
+   number because the chrome sits around it and because it is the scheme the
+   owner uses; whether the pin is still worth its dark-mode cost is the owner's
+   call, and no change is proposed.
+2. **The amber hint wash goes olive over a dark board.** `#ffc83d` at 22% over
+   `#36383e` reads as marked but muddy, where over the light board it stays a
+   clean pale amber. A dark treatment probably wants a stronger ring and little
+   or no fill. That is `COL_HINT`, so it belongs to the board palette, not the
+   chrome — noted, not proposed.
+3. **The 57 icons are light-background PNGs**, so on any dark chrome they
+   become bright squares. The effect scales with icon size, which cuts across
+   the choice: C's 88px tiles make it the point, A's 60px cards make it lively,
+   B's 32px rows make it negligible.
+
+Per-direction, what dark changes:
+
+- **A · Quiet Paper** — warm paper inverts to warm charcoal (`#191714`,
+  surfaces `#211f1b`); the amber is unchanged and carries the whole accent.
+  The direction dark flatters most: nothing needed adjusting.
+- **B · Index** — cool charcoal (`#101319`, rail `#161920`). The one color that
+  cannot survive as-is: the navy accent has to brighten to `#6eb3ff` to stay a
+  legible link.
+- **C · Lit** — masthead navy deepens to `#15325e` on `#0b1220`. **This is where
+  the direction changes most**: in light the masthead is a bold block against a
+  pale page; in dark it is a slightly lighter block against a dark one, so the
+  contrast that gives the direction its confidence is much reduced. Its icon
+  tiles, conversely, pop harder than anything else on the dark page.
+
+## 4. Direction
 
 *(To be recorded once the owner picks on the canvas.)*
