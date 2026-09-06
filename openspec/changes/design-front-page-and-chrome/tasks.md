@@ -2,27 +2,34 @@
 
 ## 1. Inventory
 
-- [ ] 1.1 List what a redesign touches, by file, split into *layout* (needs a
+- [x] 1.1 List what a redesign touches, by file, split into *layout* (needs a
       design) and *tokens* (retheme in one place): home screen + static header,
       catalog card, puzzle screen + components (app bar, toolbar, keypad, type
       menu, history panel, end notification), dialogs, `common.css` /
       `wa-tweaks.css` / `native.css`, help CSS, manifest colors.
-- [ ] 1.2 Screenshot the current front page and puzzle screen at phone and
+- [x] 1.2 Screenshot the current front page and puzzle screen at phone and
       desktop widths (Chrome via `playwright-cli`) as the "before" the canvas
       is judged against.
 
 ## 2. Directions
 
-- [ ] 2.1 Open a Claude Design canvas (the `design` skill) with two or three
+- [x] 2.1 Open a Claude Design canvas (the `design` skill) with two or three
       directions, each drawn for the front page and the puzzle screen at a
       phone width and a desktop width, light scheme.
-- [ ] 2.2 One direction is the owner's lean taken literally: calm and
+      Three directions, 15 artboards (a "today" row too, from real
+      screenshots): <https://claude.ai/code/artifact/8c5b60eb-4b17-4b15-b408-3d8cacab280d>
+- [x] 2.2 One direction is the owner's lean taken literally: calm and
       ergonomic — generous spacing, restrained color, the lit-cell mark as the
-      only accent, controls sized and placed for a thumb.
-- [ ] 2.3 At least one direction is deliberately different in feel, so the
-      choice is a real one.
-- [ ] 2.4 Each direction shows both catalog shapes under consideration (card
+      only accent, controls sized and placed for a thumb. (A · Quiet Paper.)
+- [x] 2.3 At least one direction is deliberately different in feel, so the
+      choice is a real one. (B · Index is utilitarian and structurally
+      different — a left rail, no top bar; C · Lit is brand-forward, navy and
+      amber used boldly.)
+- [x] 2.4 Each direction shows both catalog shapes under consideration (card
       grid vs a denser list), or states which it commits to and why.
+      Each commits to a different one — A cards, B a dense list, C icon tiles
+      — with its tradeoff stated on the canvas beside it, so the pick decides
+      the catalog shape too.
 
 ## 3. Decide (owner)
 
