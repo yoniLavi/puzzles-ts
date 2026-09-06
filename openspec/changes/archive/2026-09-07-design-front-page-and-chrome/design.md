@@ -226,9 +226,9 @@ affordable — the IA and the look are one decision, not two.
 5. Pinned to the bottom: **New game**, **Restart this puzzle**,
    **How to play <game>**, **More…**.
 
-`More…` holds Share, Copy image, Save game, Load game, Enter game ID,
-Preferences, About — the rare and the once-ever, and now the *only* things
-behind a menu.
+`More…` holds Switch puzzle…, Share, Copy image, Save game, Load game, Enter
+game ID, Preferences, About — the rare and the once-ever, and now the *only*
+things behind a menu.
 
 ### 4.5 The phone
 
@@ -255,10 +255,10 @@ cannot anyway — the commands are not laid out horizontally any more.
 | **Move counter replaces the History button** | `currentMove`/`totalMoves` are already signals on `Puzzle` and are never shown. State and control become one element. |
 | **Auto-hint becomes a switch** | It is a mode, drawn as the twin of an action. |
 | **`Solve` → `Show solution…`, confirmed** | Terminal, and one unguarded click away. |
-| **One name for the save, and its twin beside it** | The button reads `Check & save` for every game rather than switching to `Quick-save` where the game cannot check — one control, one name. `Quick-load` becomes `Back to last save` and sits directly beneath it, instead of living in the menu while its pair lived in the toolbar. **The wording is §4.9's third open question.** |
+| **One name for the save, and its twin beside it** | The button reads `Check & save` for every game rather than switching to `Quick-save` where the game cannot check — one control, one name. `Quick-load` becomes `Back to last save` and sits directly beneath it, instead of living in the menu while its pair lived in the toolbar. Confirmed by the owner (§4.9). |
 | **`New game` and `Restart` promoted** | The most common non-move action in a session was two levels deep. |
 | **Everything labeled** | Eight icon-only controls, several unguessable; `Fill all pencil marks` can overwrite notes and had no words. |
-| **`Other puzzles` menu removed** | A second, worse copy of the home screen, which is now a searchable index one click away. |
+| **`Other puzzles` menu → a quick-switch** | A 57-item dropdown was a second, worse copy of a home screen that now has search. Owner's call (§4.9): replace it with a type-to-filter jump on `Ctrl/Cmd+K`, plus a `Switch puzzle…` row in `More…` so touch keeps the capability. |
 | **The top app bar and the game menu removed** | The bar is what overflows at 390px; the menu is what duplicated the toolbar. |
 | **Home gains a Resume row** | The data exists (`savedGames.autoSavedPuzzles`); today it is a corner badge. First thing a returning player wants. |
 
@@ -289,16 +289,27 @@ The board: game rendering, the twelve-color palette, the per-game colors, and
 the two dark-mode observations in §3 (the pinned black clue squares, the olive
 hint wash). The chrome changes around them.
 
-### 4.9 Needs the owner's word before it lands
+### 4.9 The three player-visible calls — decided by the owner, 2026-09-07
 
-Three items break something a player can already see or has already set:
+Each breaks something a player can already see or has already set, so each was
+put to the owner before being designed as settled.
 
-1. **Removing the `Other puzzles` menu** — a control disappears.
-2. **`statusbar-placement`** (`start`/`end`/`hidden`) becomes moot once the rail
-   hosts the status line. That is a stored preference key.
-3. **The save's wording.** `Check & save` shown for every game (rather than
-   `Quick-save` where the game cannot check), and `Quick-load` → `Back to last
-   save`. The old words appear in toasts and alerts a player may know.
+1. **`Other puzzles` → a quick-switch.** Not simply removed: replaced with a
+   type-to-filter jump over all 57 games, opened by keyboard (the `Ctrl/Cmd+K`
+   convention) from anywhere in the app. It serves an experienced player better
+   than a 57-item dropdown, and it works from the home screen too.
 
-None is proposed as done; each is a question the implementation change asks
-before it changes it.
+   *Implementation call, mine:* it also gets a **`Switch puzzle…` entry in
+   `More…`**, so it is reachable by touch. A keyboard-only affordance would
+   quietly take away a touch player's ability to change games without going
+   home, which is not what "replace" was asked to mean.
+
+2. **`statusbar-placement` is retired.** The rail gives the status line one
+   correct home, so `start` / `end` stop denoting anything, and only nine games
+   print a line at all. The stored key is dropped; a player who had set it gets
+   the rail's placement.
+
+3. **`Check & save` / `Back to last save`.** One name for the save in every
+   game, rather than switching to `Quick-save` where the game cannot check, and
+   a partner that says where it takes you. The old words are retired from the
+   toasts and alerts that carry them.

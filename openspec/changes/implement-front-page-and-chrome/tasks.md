@@ -1,13 +1,14 @@
 # Tasks — implement-front-page-and-chrome
 
-Authoritative detail: `openspec/changes/design-front-page-and-chrome/design.md`
-§4 (archived with that change). Section references below point at it.
+Authoritative detail: `openspec/changes/archive/2026-09-07-design-front-page-and-chrome/design.md`
+§4. Section references below point at it.
 
-## 0. Ask first
+## 0. Asked and answered (owner, 2026-09-07 — `design.md` §4.9)
 
-- [ ] 0.1 Put §4.9's three items to the owner **before** touching them: removing
-      the `Other puzzles` menu, retiring `statusbar-placement`, and renaming
-      Quick-save / Quick-load. Record each answer here.
+- [x] 0.1 `Other puzzles` → **replaced by a quick-switch**, not merely removed.
+- [x] 0.2 `statusbar-placement` → **retired**; the rail hosts the status line.
+- [x] 0.3 Wording → **`Check & save` / `Back to last save`**, one name in every
+      game, old words retired from toasts and alerts.
 
 ## 1. Tokens and type (§4.1, §4.2)
 
@@ -60,6 +61,28 @@ Authoritative detail: `openspec/changes/design-front-page-and-chrome/design.md`
 - [ ] 4.3 The hint explanation renders above the bar.
 - [ ] 4.4 The top bar carries four items and is proved not to overflow at 390px
       — the defect this replaces.
+
+## 4b. Quick-switch (§4.9 item 1)
+
+- [ ] 4b.1 A type-to-filter jump over all 57 games: opens on `Ctrl/Cmd+K` from
+      the puzzle screen and the home screen, filters by name, Enter navigates.
+- [ ] 4b.2 A `Switch puzzle…` row in `More…` opening the same thing, so touch
+      keeps the capability the `Other puzzles` menu provided.
+- [ ] 4b.3 Delete `src/puzzle/components/other-puzzles-menu.ts` and its uses.
+- [ ] 4b.4 Reachable and dismissible by keyboard alone; Escape closes it without
+      reaching the board (`app-shell`'s existing Escape requirement still holds
+      — check that arm, do not assume it).
+- [ ] 4b.5 Test: every catalog id is reachable through it, counted, so a game
+      cannot be silently missing.
+
+## 4c. Retire `statusbar-placement` (§4.9 item 2)
+
+- [ ] 4c.1 Render the status line in the rail for the nine games that provide
+      one; absent, not blank, otherwise.
+- [ ] 4c.2 Remove the setting, its control in the settings dialog, and the
+      `statusbar-placement` attribute plumbing in `view.ts`.
+- [ ] 4c.3 A stored value must not break a returning player: dropping the key
+      leaves the rail's placement, and reading a stale one is harmless.
 
 ## 5. Home (§4.4, §4.6)
 

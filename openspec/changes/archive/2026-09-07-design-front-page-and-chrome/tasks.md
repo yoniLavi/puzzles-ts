@@ -57,5 +57,5 @@
 
 ## 5. Close
 
-- [ ] 5.1 `openspec validate design-front-page-and-chrome --strict`; archive.
+- [x] 5.1 `openspec validate design-front-page-and-chrome --strict`; archive.
       No code lands in this change.

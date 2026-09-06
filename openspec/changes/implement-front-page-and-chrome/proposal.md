@@ -30,8 +30,9 @@ the one case the combination cannot serve — see `design.md` §4.6.)*
 
 ## What Changes
 
-Authoritative detail is `design-front-page-and-chrome`'s `design.md` §4; this
-lists the work.
+Authoritative detail is
+`openspec/changes/archive/2026-09-07-design-front-page-and-chrome/design.md`
+§4; this lists the work.
 
 - **Tokens (§4.1).** Replace the Web Awesome stock brand blue with the recorded
   ground/rail/hairline/text/link scale in both schemes, and move
@@ -69,18 +70,21 @@ lists the work.
   acceptance bar applies in full — the owner judges it on sight, in dark, on a
   phone and on a desktop, and no shortfall is called cosmetic.
 
-## Open questions for the owner — ask before changing, not after
+## The three player-visible calls — answered by the owner, 2026-09-07
 
-Three items break something a player can already see or has already set
-(`design.md` §4.9):
+Asked before any of it was designed as settled (`design.md` §4.9):
 
-1. **Removing the `Other puzzles` menu** — a control disappears. The catalog is
-   one click away at the top of the rail and is now searchable.
-2. **`statusbar-placement`** (`start` / `end` / `hidden`) becomes moot once the
-   rail hosts the status line. That is a stored preference key.
-3. **Renaming Quick-save / Quick-load** to Save checkpoint / Return to
-   checkpoint — the old words appear in toasts and alerts a player may know.
+1. **`Other puzzles` is replaced by a quick-switch**, not merely removed — a
+   type-to-filter jump over all 57 games on `Ctrl/Cmd+K`, plus a
+   `Switch puzzle…` row in `More…` so touch keeps the capability.
+2. **`statusbar-placement` is retired.** The rail gives the status line one
+   home; only nine games print one. A stored preference key is dropped.
+3. **`Check & save` / `Back to last save`** — one name for the save in every
+   game, and a partner that says where it takes you.
 
 ## Depends on
 
-- **`design-front-page-and-chrome`** — the recorded direction. Archive it first.
+- **`design-front-page-and-chrome`** — archived 2026-09-07 as
+  `openspec/changes/archive/2026-09-07-design-front-page-and-chrome/`. Its
+  `design.md` §4 is the direction this change implements, and the canvas it was
+  chosen on is <https://claude.ai/code/artifact/8c5b60eb-4b17-4b15-b408-3d8cacab280d>.
