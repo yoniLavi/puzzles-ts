@@ -2,12 +2,8 @@ import { describe, expect, it } from "vitest";
 import { ALREADY_SOLVED } from "../../engine/hint-refusal.ts";
 import type { GameDrawing, HintStep } from "../../engine/index.ts";
 import { randomNew } from "../../engine/random/index.ts";
-import {
-  __lastHintEngagedFallback,
-  executeMove,
-  type SixteenHintHighlights,
-  sixteenGame,
-} from "./index.ts";
+import { __lastHintEngagedFallback, executeMove, sixteenGame } from "./index.ts";
+import type { SixteenHintHighlights } from "./render.ts";
 import {
   decodeParams,
   defaultParams,

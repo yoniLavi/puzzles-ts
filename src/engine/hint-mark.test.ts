@@ -110,7 +110,9 @@ describe("a hint marks beside the content, never behind it", () => {
   const byId = renderersById();
   /** Games that declare a cell-level target color, i.e. the ones this sweep can
    * say anything about. The grid-move games (Fifteen, Flood, Sixteen, Netslide's
-   * arrows, Untangle, Inertia) mark something other than a cell and are absent. */
+   * arrows, Untangle, Inertia) mark something other than a cell and are absent —
+   * Fifteen and Sixteen now by keeping `COL_HINT` unexported rather than by
+   * having no `render.ts`, which is the same answer for a better reason. */
   const CHECKED = HINT_GAMES.filter(
     ([id]) => typeof byId.get(id)?.["COL_HINT"] === "number",
   );
@@ -120,13 +122,13 @@ describe("a hint marks beside the content, never behind it", () => {
     // matches nothing yields `{}` and every assertion below then passes
     // vacuously — this repo has been bitten by that exact silence before.
     expect(byId.size).toBeGreaterThanOrEqual(50);
-    // Fifteen and Sixteen keep their drawing in `index.ts` — the two smallest
-    // ports, from before the per-game `render.ts` split — and neither marks a
-    // cell, so the sweep loses nothing by not finding them.
-    expect(HINT_GAMES.filter(([id]) => !byId.has(id)).map(([id]) => id)).toEqual([
-      "fifteen",
-      "sixteen",
-    ]);
+    // **Every hinting game's renderer is now findable.** Fifteen and Sixteen
+    // used to be absent here, keeping their drawing in `index.ts`; they got a
+    // `render.ts` with the rest of the collection in
+    // `move-renderers-into-render-ts`, so the list is empty — and an empty list
+    // still asserts something, because a game that hides its renderer again
+    // shows up here.
+    expect(HINT_GAMES.filter(([id]) => !byId.has(id)).map(([id]) => id)).toEqual([]);
     // …and the sweep itself cannot quietly shrink: a game whose `COL_HINT`
     // export is renamed away drops out of `CHECKED` in silence otherwise.
     expect(CHECKED.length).toBe(27);

@@ -50,10 +50,12 @@ status lives.
 - [ ] B3 The coordinate pair — one spelling of the pixel↔cell conversion.
 - [ ] B4 The render layer's residue — expected to decline more pairs than it
       takes; every decline recorded with its reason.
-- [ ] B5 Structure — **half done**. The four aliased capability wirings are
-      converged (`converge-capability-names-and-the-additive-rule`); what remains
-      is the renderer living in `render.ts` for the four games that keep it in
-      `index.ts` (flip, pegs, fifteen, sixteen).
+- [x] B5 Structure — **done**. The four aliased capability wirings converged in
+      `converge-capability-names-and-the-additive-rule`; the four renderers moved
+      to `render.ts` in `move-renderers-into-render-ts`, which also collapsed
+      Flip's four copies of the board origin.
+- [ ] B7 flip and pegs are still single-file for state, moves and generation —
+      found while doing B5, and a weaker case than B5 was. See `survey.md`.
 - [ ] B6 The sliding-tile family — after B5.
 
 ## Per batch

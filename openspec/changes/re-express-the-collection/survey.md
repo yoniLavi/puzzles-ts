@@ -165,6 +165,21 @@ twiddle, which jscpd sees only partially.
 Small, and it overlaps B5 (fifteen and sixteen are two of the four games with no
 `render.ts`). Do it after B5 so the files exist to unify.
 
+### B7 — flip and pegs are still single-file for everything else
+
+**Found while doing B5, 2026-09-06.** With their renderers moved out, flip and
+pegs still keep params, state, moves, generation and (for pegs) the board
+generator in one `index.ts`, where most of the collection splits `state.ts`,
+`generator.ts` and `solver.ts`. Flip's `index.ts` is 742 lines and pegs' is 796
+after the render move.
+
+This is a **different argument from B5's** and was deliberately not folded into
+it: a renderer's home is settled across 53 games, whereas the state/generator
+split is looser (blackbox, guess, samegame, twiddle and mosaic each vary), so
+"what does the majority do" is a weaker guide here. Do it only after reading
+what the majority actually is, and be ready to find that some of these games are
+small enough that one file is the honest answer.
+
 ### Not in scope: intra-game duplication
 
 jscpd also found four games duplicating *themselves*: subsets `solver.ts` (75

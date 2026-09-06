@@ -726,6 +726,16 @@ other.
   copy was an unnamed inline expression — so the scan would have reported the
   worst instance in the set as clean. See `AGENTS.md` § "Method", "A scan that
   keys on a name finds only the games that were named that way".
+- **And a scan keyed on *where* a thing is defined misses the copies that share
+  a file.** The sweep that found the eight games above keyed on "defines the
+  origin in more than one file", and reported Flip clean. Flip had **four**
+  copies of `tileSize >> 1` — for `interpretMove`, `computeSize`, `redraw` and
+  `drawTile` — all inside `index.ts`, so the key could not see them; they came
+  out only when the renderer moved to `render.ts`
+  (`move-renderers-into-render-ts`). The name-keyed miss and the location-keyed
+  miss are the same error: **the key was a proxy for the defect, not the
+  defect.** The defect is *more than one expression for one number*, and reading
+  the game is what finds it.
 
 ### Grid modes are a movement table
 

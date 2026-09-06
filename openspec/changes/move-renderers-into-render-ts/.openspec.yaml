@@ -1,0 +1,5 @@
+# No deltas: a file move. No behavior, format or contract changes — the rule it
+# serves ("one function, both callers" for the board origin) is already stated,
+# and the layout convention is a corpus fact rather than a spec requirement.
+schema: spec-driven
+skip_specs: true

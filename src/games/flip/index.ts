@@ -13,13 +13,10 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
-import { CURSOR, GRID_MID, HINT_ACTION, PAPER } from "../../engine/color/palette.ts";
-import { flipWrongFace } from "../../engine/color/palette-games.ts";
 import {
   dimensionParamConfig,
   fromCoord as fromCoordE,
   type Game,
-  type GameDrawing,
   registerGame,
   type SolveResult,
   UI_UPDATE,
@@ -36,7 +33,18 @@ import {
 } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import {
+  ANIM_TIME,
+  border,
+  colors,
+  computeSize,
+  FLASH_FRAME,
+  type FlipDrawState,
+  newDrawState,
+  PREFERRED_TILE_SIZE,
+  redraw,
+  setTileSize,
+} from "./render.ts";
 
 // --- types ----------------------------------------------------------
 
@@ -70,28 +78,6 @@ export interface FlipUi {
   cursor: GridCursor;
 }
 
-export interface FlipDrawState {
-  w: number;
-  h: number;
-  started: boolean;
-  tileSize: number;
-  /** Per-cell render cache; -1 = never drawn, 255 = animating. */
-  tiles: Int16Array;
-}
-
-// Color palette indices (mirror flip.c's enum).
-const COL_BACKGROUND = 0;
-const COL_WRONG = 1;
-const COL_RIGHT = 2;
-const COL_GRID = 3;
-const COL_DIAG = 4;
-const COL_HINT = 5;
-const COL_CURSOR = 6;
-const NCOLORS = 7;
-
-const PREFERRED_TILE_SIZE = 48;
-const ANIM_TIME = 0.25;
-const FLASH_FRAME = 0.07;
 const INT_MAX = 2147483647;
 
 // --- bitmap hex codec (flip.c encode_bitmap/decode_bitmap) ----------
@@ -508,30 +494,17 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     return { cursor: newCursor() };
   },
 
-  newDrawState(s): FlipDrawState {
-    return {
-      w: s.w,
-      h: s.h,
-      started: false,
-      tileSize: PREFERRED_TILE_SIZE,
-      tiles: new Int16Array(s.w * s.h).fill(-1),
-    };
-  },
-
-  setTileSize(ds, tileSize): void {
-    if (ds.tileSize !== tileSize) {
-      ds.tileSize = tileSize;
-      ds.started = false;
-      ds.tiles.fill(-1);
-    }
-  },
+  newDrawState,
+  setTileSize,
+  colors,
+  computeSize,
+  redraw,
 
   interpretMove(s, ui, ds, point, button): FlipMove | null | UiUpdate {
     const { w, h } = s;
     const wh = w * h;
     const tile = ds.tileSize;
-    const border = tile >> 1;
-    const fromCoord = (v: number) => fromCoordE(v, tile, border);
+    const fromCoord = (v: number) => fromCoordE(v, tile, border(tile));
 
     const isSelect = button === CURSOR_SELECT || button === CURSOR_SELECT2;
 
@@ -750,29 +723,6 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     return `${prefix}Moves: ${s.moves}`;
   },
 
-  colors(defaultBackground): Color[] {
-    const bg = defaultBackground;
-    const ret: Color[] = new Array(NCOLORS);
-    ret[COL_BACKGROUND] = bg;
-    ret[COL_WRONG] = flipWrongFace(bg);
-    ret[COL_RIGHT] = PAPER;
-    // The mid step, not the dark one: the diagonal marks sit on both the
-    // paper face and the dark face, and only a mid gray shows on each.
-    ret[COL_GRID] = GRID_MID;
-    ret[COL_DIAG] = ret[COL_GRID];
-    ret[COL_HINT] = HINT_ACTION;
-    ret[COL_CURSOR] = CURSOR;
-    return ret;
-  },
-
-  computeSize(p, tileSize): Size {
-    const border = tileSize >> 1;
-    return {
-      w: tileSize * p.w + 2 * border,
-      h: tileSize * p.h + 2 * border,
-    };
-  },
-
   animLength() {
     return ANIM_TIME;
   },
@@ -786,159 +736,6 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     }
     return 0;
   },
-
-  redraw(dr, ds, prev, s, _dir, ui, animTime, flashTime): void {
-    const { w, h } = s;
-    const wh = w * h;
-    const tile = ds.tileSize;
-    const border = tile >> 1;
-
-    if (!ds.started) {
-      // First paint of this drawstate: own the background. The
-      // engine's redraw deliberately paints no pixels of its own
-      // (we don't want the framework to overpaint cached tiles), so
-      // any time the drawstate is fresh — initial setup, canvas
-      // resize, palette replacement — this branch is responsible
-      // for clearing the whole window to the puzzle's background
-      // color. (Mirrors `midend.c`'s first-draw rect, just located
-      // where it belongs: in the game.)
-      const winW = tile * w + 2 * border;
-      const winH = tile * h + 2 * border;
-      dr.drawRect({ x: 0, y: 0, w: winW, h: winH }, COL_BACKGROUND);
-      for (let i = 0; i <= w; i++) {
-        dr.drawLine(
-          { x: i * tile + border, y: border },
-          { x: i * tile + border, y: h * tile + border },
-          COL_GRID,
-          1,
-        );
-      }
-      for (let i = 0; i <= h; i++) {
-        dr.drawLine(
-          { x: border, y: i * tile + border },
-          { x: w * tile + border, y: i * tile + border },
-          COL_GRID,
-          1,
-        );
-      }
-      dr.drawUpdate({ x: 0, y: 0, w: winW, h: winH });
-      ds.started = true;
-    }
-
-    const flashFrame = flashTime ? Math.floor(flashTime / FLASH_FRAME) : -1;
-    const anim = animTime / ANIM_TIME;
-    // The engine renders statically until it drives timed redraws; with
-    // animTime 0 the prior state is irrelevant (final state is drawn).
-    const animating = animTime > 0 && prev != null;
-
-    for (let i = 0; i < wh; i++) {
-      const x = i % w;
-      const y = (i / w) | 0;
-      let v = s.grid[i];
-      if (flashFrame >= 0) {
-        const fx = (((w + 1) / 2) | 0) - Math.min(x + 1, w - x);
-        const fy = (((h + 1) / 2) | 0) - Math.min(y + 1, h - y);
-        const fd = Math.max(fx, fy);
-        if (fd === flashFrame) v |= 1;
-        else if (fd === flashFrame - 1) v &= ~1;
-      }
-      if (!s.hintsActive) v &= ~2;
-      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y) v |= 4;
-
-      const vv = animating && prev && (s.grid[i] ^ prev.grid[i]) & ~2 ? 255 : v;
-      if (ds.tiles[i] === 255 || vv === 255 || ds.tiles[i] !== vv) {
-        drawTile(dr, ds, s, x, y, v, vv === 255, anim);
-        ds.tiles[i] = vv;
-      }
-    }
-  },
 };
-
-function drawTile(
-  dr: GameDrawing,
-  ds: FlipDrawState,
-  s: FlipState,
-  x: number,
-  y: number,
-  tile: number,
-  anim: boolean,
-  animTime: number,
-): void {
-  const { w, h } = s;
-  const wh = w * h;
-  const ts = ds.tileSize;
-  const border = ts >> 1;
-  const bx = x * ts + border;
-  const by = y * ts + border;
-  const dcol = tile & 4 ? COL_CURSOR : COL_DIAG;
-
-  dr.clip({ x: bx + 1, y: by + 1, w: ts - 1, h: ts - 1 });
-  dr.drawRect(
-    { x: bx + 1, y: by + 1, w: ts - 1, h: ts - 1 },
-    anim ? COL_BACKGROUND : tile & 1 ? COL_WRONG : COL_RIGHT,
-  );
-
-  if (anim) {
-    const at = Math.floor(ts * animTime);
-    const coords: Point[] = [
-      { x: bx + ts, y: by },
-      { x: bx + at, y: by + at },
-      { x: bx, y: by + ts },
-      { x: bx + ts - at, y: by + ts - at },
-    ];
-    let color = tile & 1 ? COL_WRONG : COL_RIGHT;
-    if (animTime < 0.5) color = COL_WRONG + COL_RIGHT - color;
-    dr.drawPolygon(coords, color, COL_GRID);
-  }
-
-  for (let i = 0; i < h; i++) {
-    for (let j = 0; j < w; j++) {
-      if (!s.matrix[(y * w + x) * wh + i * w + j]) continue;
-      const ox = j - x;
-      const oy = i - y;
-      const td = Math.max(1, (ts / 16) | 0);
-      const cx = bx + ((ts / 2) | 0) + (2 * ox - 1) * td;
-      const cy = by + ((ts / 2) | 0) + (2 * oy - 1) * td;
-      if (ox === 0 && oy === 0) {
-        dr.drawRect({ x: cx, y: cy, w: 2 * td + 1, h: 2 * td + 1 }, dcol);
-      } else {
-        dr.drawLine({ x: cx, y: cy }, { x: cx + 2 * td, y: cy }, dcol, 1);
-        dr.drawLine(
-          { x: cx, y: cy + 2 * td },
-          { x: cx + 2 * td, y: cy + 2 * td },
-          dcol,
-          1,
-        );
-        dr.drawLine({ x: cx, y: cy }, { x: cx, y: cy + 2 * td }, dcol, 1);
-        dr.drawLine(
-          { x: cx + 2 * td, y: cy },
-          { x: cx + 2 * td, y: cy + 2 * td },
-          dcol,
-          1,
-        );
-      }
-    }
-  }
-
-  if (tile & 2) {
-    let x1 = bx + ((ts / 20) | 0);
-    let x2 = bx + ts - ((ts / 20) | 0);
-    let y1 = by + ((ts / 20) | 0);
-    let y2 = by + ts - ((ts / 20) | 0);
-    for (let k = 0; k < 3; k++) {
-      dr.drawLine({ x: x1, y: y1 }, { x: x2, y: y1 }, COL_HINT, 1);
-      dr.drawLine({ x: x1, y: y2 }, { x: x2, y: y2 }, COL_HINT, 1);
-      dr.drawLine({ x: x1, y: y1 }, { x: x1, y: y2 }, COL_HINT, 1);
-      dr.drawLine({ x: x2, y: y1 }, { x: x2, y: y2 }, COL_HINT, 1);
-      x1++;
-      y1++;
-      x2--;
-      y2--;
-    }
-  }
-
-  dr.unclip();
-  dr.drawUpdate({ x: bx + 1, y: by + 1, w: ts - 1, h: ts - 1 });
-}
 
 registerGame(flipGame);
