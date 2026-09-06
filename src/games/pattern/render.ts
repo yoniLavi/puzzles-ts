@@ -20,6 +20,7 @@ import {
   INK,
   UNDECIDED,
 } from "../../engine/color/palette.ts";
+import { drawThickRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
@@ -144,21 +145,6 @@ const K_HINT_SHADE = 1 << 5; // an undecided cell of the reasoned line
 const K_HINT_BLACKREF = 1 << 6; // a cited black mark (teal ring)
 const K_HINT_WHITEREF = 1 << 7; // a cited white mark (violet ring)
 
-function rectOutline(
-  dr: GameDrawing,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  thick: number,
-  color: number,
-): void {
-  dr.drawRect({ x, y, w, h: thick }, color);
-  dr.drawRect({ x, y: y + h - thick, w, h: thick }, color);
-  dr.drawRect({ x, y, w: thick, h }, color);
-  dr.drawRect({ x: x + w - thick, y, w: thick, h }, color);
-}
-
 function gridSquare(
   dr: GameDrawing,
   ds: PatternDrawState,
@@ -213,7 +199,7 @@ function gridSquare(
 
   if (hintBits & (K_HINT_BLACKREF | K_HINT_WHITEREF)) {
     const t = Math.max(1, Math.floor(ts / 10));
-    rectOutline(
+    drawThickRectOutline(
       dr,
       dx,
       dy,
@@ -227,7 +213,7 @@ function gridSquare(
   if (mistake) {
     const t = Math.max(1, Math.floor(ts / 12));
     const inset = Math.max(1, Math.floor(ts / 8));
-    rectOutline(
+    drawThickRectOutline(
       dr,
       dx + inset,
       dy + inset,
@@ -240,7 +226,7 @@ function gridSquare(
 
   if (cur) {
     // Upstream's double 1px outline → a 2px frame.
-    rectOutline(dr, dx, dy, dw, dh, 2, COL_CURSOR);
+    drawThickRectOutline(dr, dx, dy, dw, dh, 2, COL_CURSOR);
   }
 
   dr.drawUpdate({ x: tx, y: ty, w: ts, h: ts });

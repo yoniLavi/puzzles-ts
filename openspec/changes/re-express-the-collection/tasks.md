@@ -51,14 +51,18 @@ status lives.
       (`one-spelling-of-the-pixel-to-cell-map`). Seventeen games converged onto
       `engine/geometry.ts`'s `fromCoord`, equivalence proven numerically; the six
       `Math.trunc` games keep their override, which is now legible *as* one.
-- [ ] B4 The render layer's residue — expected to decline more pairs than it
-      takes; every decline recorded with its reason.
+- [x] B4 The render layer's residue — **done**
+      (`promote-the-thick-rect-outline`). One primitive promoted from eight
+      copies; six pairs declined with their reasons, as predicted. Surfaced B8.
 - [x] B5 Structure — **done**. The four aliased capability wirings converged in
       `converge-capability-names-and-the-additive-rule`; the four renderers moved
       to `render.ts` in `move-renderers-into-render-ts`, which also collapsed
       Flip's four copies of the board origin.
 - [ ] B7 flip and pegs are still single-file for state, moves and generation —
       found while doing B5, and a weaker case than B5 was. See `survey.md`.
+- [ ] B8 Seven of eight error frames are drawn by code no test observes — found
+      while doing B4. A **coverage** gap, not a convergence one, so it is not
+      part of "done"; see `survey.md`.
 - [ ] B6 The sliding-tile family — after B5.
 
 ## Per batch

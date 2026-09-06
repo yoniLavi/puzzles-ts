@@ -28,7 +28,7 @@ import {
   HINT_EVIDENCE,
   INK,
 } from "../../engine/color/palette.ts";
-import { drawRectCorners } from "../../engine/draw.ts";
+import { drawRectCorners, drawThickRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Color, Size } from "../../engine/types.ts";
@@ -139,14 +139,13 @@ function drawErrRectangle(
 ): void {
   const thick = (ts / 10) | 0;
   const margin = (ts / 20) | 0;
-  dr.drawRect({ x: x + margin, y: y + margin, w: w - 2 * margin, h: thick }, COL_ERROR);
-  dr.drawRect({ x: x + margin, y: y + margin, w: thick, h: h - 2 * margin }, COL_ERROR);
-  dr.drawRect(
-    { x: x + margin, y: y + h - margin - thick, w: w - 2 * margin, h: thick },
-    COL_ERROR,
-  );
-  dr.drawRect(
-    { x: x + w - margin - thick, y: y + margin, w: thick, h: h - 2 * margin },
+  drawThickRectOutline(
+    dr,
+    x + margin,
+    y + margin,
+    w - 2 * margin,
+    h - 2 * margin,
+    thick,
     COL_ERROR,
   );
 }

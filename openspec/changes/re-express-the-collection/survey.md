@@ -165,6 +165,20 @@ twiddle, which jscpd sees only partially.
 Small, and it overlaps B5 (fifteen and sixteen are two of the four games with no
 `render.ts`). Do it after B5 so the files exist to unify.
 
+### B8 — seven of eight error frames are drawn by code no test observes
+
+**Found while doing B4, 2026-09-06.** With `drawThickRectOutline` wired into all
+eight games, deleting a whole side of the frame failed **one** test in the
+collection (Crossing's). Tents' and Magnets' render-scenario snapshots contain
+zero mistake ops — the overlay is simply not in any snapshotted frame.
+
+This is a **coverage** gap, not a convergence one, so it is not part of the
+sweep's definition of done. Closing it means adding mistake-overlay render
+scenarios (`showMistakes: true`) for the games whose overlay no frame reaches —
+cheap per game, and worth doing for the games whose mistake mark is their only
+Check-&-Save feedback. The shared primitive itself is now tested at its own
+level in `draw.test.ts`, which is the part that could not wait.
+
 ### B7 — flip and pegs are still single-file for everything else
 
 **Found while doing B5, 2026-09-06.** With their renderers moved out, flip and

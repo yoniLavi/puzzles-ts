@@ -23,6 +23,7 @@ import {
   RED_BOLD,
 } from "../../engine/color/colors.ts";
 import { ERROR, ERROR_TEXT, INK } from "../../engine/color/palette.ts";
+import { drawThickRectOutline } from "../../engine/draw.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
@@ -410,10 +411,7 @@ function drawTile(
     const sx = tx + inset;
     const sy = ty + inset;
     const span = ts - 2 * inset;
-    dr.drawRect({ x: sx, y: sy, w: span, h: thick }, COL_MISTAKE);
-    dr.drawRect({ x: sx, y: sy + span - thick, w: span, h: thick }, COL_MISTAKE);
-    dr.drawRect({ x: sx, y: sy, w: thick, h: span }, COL_MISTAKE);
-    dr.drawRect({ x: sx + span - thick, y: sy, w: thick, h: span }, COL_MISTAKE);
+    drawThickRectOutline(dr, sx, sy, span, span, thick, COL_MISTAKE);
   }
 
   if (cur) {

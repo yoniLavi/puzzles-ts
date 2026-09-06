@@ -1,0 +1,5 @@
+# No deltas: a drawing primitive promoted from eight private copies, with the
+# per-game style choices left where they were. No behavior, format or contract
+# change.
+schema: spec-driven
+skip_specs: true

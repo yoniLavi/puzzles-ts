@@ -24,6 +24,7 @@ import {
   highlightWash,
   INK,
 } from "../../engine/color/palette.ts";
+import { drawThickRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import {
@@ -300,10 +301,7 @@ function drawTile(
     const sx = cx + inset;
     const sy = cy + inset;
     const span = ts - 2 * inset;
-    dr.drawRect({ x: sx, y: sy, w: span, h: thick }, COL_MISTAKE);
-    dr.drawRect({ x: sx, y: sy + span - thick, w: span, h: thick }, COL_MISTAKE);
-    dr.drawRect({ x: sx, y: sy, w: thick, h: span }, COL_MISTAKE);
-    dr.drawRect({ x: sx + span - thick, y: sy, w: thick, h: span }, COL_MISTAKE);
+    drawThickRectOutline(dr, sx, sy, span, span, thick, COL_MISTAKE);
   }
 
   dr.drawUpdate({ x: cx, y: cy, w: ts, h: ts });

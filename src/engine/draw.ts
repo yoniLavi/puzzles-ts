@@ -87,6 +87,39 @@ export function drawRectOutline(
 }
 
 /**
+ * A rectangle outline `thickness` pixels wide, drawn as four filled rects —
+ * the collection's "this is wrong" frame, and upstream's
+ * `*_draw_err_rectangle` in every game that has one.
+ *
+ * Promoted from eight private copies (bricks, clusters, crossing, magnets,
+ * pattern, sticks, tents, unruly) by `re-express-the-collection` B4, the same
+ * way {@link drawRectCorners} was promoted from seven.
+ *
+ * **What stays with the game** is the two things it actually chooses: how thick
+ * the frame is (`ts/10`, `ts/16`, or its own) and whether it is inset from the
+ * cell (five games inset by `ts/20`; three draw flush to a span). Pass the rect
+ * you want framed and the thickness you want — this only draws it.
+ *
+ * The four rects are emitted top, left, bottom, right. All four are one color,
+ * so the order cannot affect the composited frame; it is fixed only so that a
+ * recording is stable.
+ */
+export function drawThickRectOutline(
+  dr: GameDrawing,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  thickness: number,
+  color: number,
+): void {
+  dr.drawRect({ x, y, w, h: thickness }, color);
+  dr.drawRect({ x, y, w: thickness, h }, color);
+  dr.drawRect({ x, y: y + h - thickness, w, h: thickness }, color);
+  dr.drawRect({ x: x + w - thickness, y, w: thickness, h }, color);
+}
+
+/**
  * Upstream `misc.c draw_rect_corners`: four L-shaped corner brackets on the
  * square of radius `r` centered at `(cx, cy)`, each arm reaching halfway along
  * its side — the collection's standard "keyboard cursor is here" mark.

@@ -25,6 +25,7 @@ import {
   INK,
   PAPER,
 } from "../../engine/color/palette.ts";
+import { drawThickRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
@@ -221,16 +222,7 @@ function drawTile(
     const thick = Math.floor(ts / 7);
     const margin = Math.floor(ts / 20);
     const inner = ts - 1 - 2 * margin;
-    dr.drawRect({ x: px + margin, y: py + margin, w: inner, h: thick }, COL_ERROR);
-    dr.drawRect({ x: px + margin, y: py + margin, w: thick, h: inner }, COL_ERROR);
-    dr.drawRect(
-      { x: px + margin, y: py + ts - 1 - margin - thick, w: inner, h: thick },
-      COL_ERROR,
-    );
-    dr.drawRect(
-      { x: px + ts - 1 - margin - thick, y: py + margin, w: thick, h: inner },
-      COL_ERROR,
-    );
+    drawThickRectOutline(dr, px + margin, py + margin, inner, inner, thick, COL_ERROR);
   }
 
   if (cursor) {

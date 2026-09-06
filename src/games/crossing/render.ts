@@ -46,7 +46,11 @@ import {
   pencilColor,
 } from "../../engine/color/palette.ts";
 import { crossingGhost } from "../../engine/color/palette-games.ts";
-import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
+import {
+  drawRectCorners,
+  drawRectOutline,
+  drawThickRectOutline,
+} from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
   drawMarkSides,
@@ -410,14 +414,13 @@ function drawErrRectangle(
   const thick = Math.floor(ts / 10);
   const margin = Math.floor(ts / 20);
   dr.clip({ x: tx, y: ty, w: ts, h: ts });
-  dr.drawRect({ x: x + margin, y: y + margin, w: w - 2 * margin, h: thick }, COL_ERROR);
-  dr.drawRect({ x: x + margin, y: y + margin, w: thick, h: h - 2 * margin }, COL_ERROR);
-  dr.drawRect(
-    { x: x + margin, y: y + h - margin - thick, w: w - 2 * margin, h: thick },
-    COL_ERROR,
-  );
-  dr.drawRect(
-    { x: x + w - margin - thick, y: y + margin, w: thick, h: h - 2 * margin },
+  drawThickRectOutline(
+    dr,
+    x + margin,
+    y + margin,
+    w - 2 * margin,
+    h - 2 * margin,
+    thick,
     COL_ERROR,
   );
   dr.unclip();
