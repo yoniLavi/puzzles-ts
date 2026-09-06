@@ -47,7 +47,10 @@ status lives.
       decomposition and the instrument lesson.
 - [ ] B2 The desc codec — `share-the-run-length-desc-scanner` (scaffolded; may
       legitimately decline after its task 0 sizing).
-- [ ] B3 The coordinate pair — one spelling of the pixel↔cell conversion.
+- [x] B3 The coordinate pair — **done**
+      (`one-spelling-of-the-pixel-to-cell-map`). Seventeen games converged onto
+      `engine/geometry.ts`'s `fromCoord`, equivalence proven numerically; the six
+      `Math.trunc` games keep their override, which is now legible *as* one.
 - [ ] B4 The render layer's residue — expected to decline more pairs than it
       takes; every decline recorded with its reason.
 - [x] B5 Structure — **done**. The four aliased capability wirings converged in

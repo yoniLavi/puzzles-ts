@@ -36,6 +36,7 @@ import {
 } from "../../engine/color/palette.ts";
 import { soloKiller, soloXDiagonals } from "../../engine/color/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
@@ -133,7 +134,7 @@ export const coord = (v: number, ts: number): number => v * ts + border(ts);
 
 /** Inverse of `coord` — faithful to `interpret_move`'s `(x+TILE-BORDER)/TILE-1`. */
 export function fromCoord(v: number, ts: number): number {
-  return Math.floor((v + (ts - border(ts))) / ts) - 1;
+  return fromCoordE(v, ts, border(ts));
 }
 
 export function computeSize(cr: number, ts: number): Size {

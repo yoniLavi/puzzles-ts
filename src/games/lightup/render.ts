@@ -25,6 +25,7 @@ import {
 } from "../../engine/color/palette.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import type { LightupHint, LightupMistake } from "./index.ts";
@@ -92,7 +93,7 @@ export const coord = (v: number, ts: number): number => v * ts + border(ts);
 /** Pixel → cell, upstream FROMCOORD (safe for coords just left of the
  * border thanks to the +TILE_SIZE shift). */
 export const fromCoord = (v: number, ts: number): number =>
-  Math.floor((v - border(ts) + ts) / ts) - 1;
+  fromCoordE(v, ts, border(ts));
 
 export function computeSize(p: { w: number; h: number }, ts: number): Size {
   return { w: p.w * ts + 2 * border(ts), h: p.h * ts + 2 * border(ts) };

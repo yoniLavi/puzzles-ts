@@ -22,6 +22,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   ALREADY_SOLVED,
   FIX_MISTAKES_FIRST,
@@ -132,7 +133,7 @@ function interpretMove(
   if (isMouseDown(button)) {
     const ts = ds.tilesize;
     const b = border(ts);
-    const fromCoord = (v: number): number => Math.floor((v - b) / ts);
+    const fromCoord = (v: number): number => fromCoordE(v, ts, b);
     r = fromCoord(p.y + ts) - 1;
     c = fromCoord(p.x + ts) - 1;
     if (outOfBounds(r, c, w, h)) return null;

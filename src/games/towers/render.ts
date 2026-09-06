@@ -24,6 +24,7 @@ import {
   playerEntryColor,
 } from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
@@ -111,7 +112,7 @@ export const y3d = (height: number, w: number, ts: number): number =>
   Math.floor((height * ts) / (4 * w));
 
 export function fromCoord(v: number, ts: number): number {
-  return Math.floor((v + (ts - border(ts))) / ts) - 1;
+  return fromCoordE(v, ts, border(ts));
 }
 
 export function computeSize(p: { w: number }, ts: number): Size {

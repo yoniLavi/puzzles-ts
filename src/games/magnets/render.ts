@@ -99,6 +99,11 @@ const DS_MISTAKE = 0x800; // fork overlay
 
 // --- geometry (NARROW_BORDERS: BORDER = 0) --------------------------------
 const BORDER = 0;
+/** The board's pixel origin: the clue row and column take a whole tile, and
+ * NARROW_BORDERS leaves no margin beyond it. Exported so `interpretMove` reads
+ * the same number the painter does — one function, both callers
+ * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+export const origin = (ts: number): number => ts + BORDER;
 const coord = (n: number, ts: number) => (n + 1) * ts + BORDER;
 
 export function computeSize(p: MagnetsParams, ts: number): Size {

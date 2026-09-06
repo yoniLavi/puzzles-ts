@@ -21,6 +21,7 @@ import {
   UNDECIDED,
 } from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import type { PatternHint } from "./index.ts";
@@ -96,7 +97,9 @@ function toCoord(ts: number, d: number, n: number): number {
 /** Cell coordinate under pixel `px` along a dimension of size `d` (or out of
  * range). */
 export function fromCoord(ts: number, d: number, px: number): number {
-  return Math.floor((px - (border(ts) + gutter(ts) + ts * (tlborder(d) - 1))) / ts) - 1;
+  // The origin clears the clue block: the border, the gutter, and `tlborder(d)`
+  // whole tiles of clue rows/columns.
+  return fromCoordE(px, ts, border(ts) + gutter(ts) + ts * tlborder(d));
 }
 
 function sizeOf(ts: number, d: number): number {

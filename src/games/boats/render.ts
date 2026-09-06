@@ -45,6 +45,7 @@ import {
 } from "../../engine/color/palette.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
@@ -156,7 +157,7 @@ const FLEET_MARGIN = 0.25;
 const STRIPE_SIZE = 2;
 
 export function fromCoord(pixel: number, ts: number): number {
-  return Math.floor((pixel - BORDER) / ts);
+  return fromCoordE(pixel, ts, BORDER);
 }
 
 /** One boat's slot in the fleet display. */

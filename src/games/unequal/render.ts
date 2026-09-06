@@ -26,6 +26,7 @@ import {
   playerEntryColor,
 } from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
@@ -136,7 +137,8 @@ export const border = (ts: number): number => Math.floor(ts / 2);
 export const coord = (v: number, ts: number): number => v * square(ts) + border(ts);
 
 export function fromCoord(v: number, ts: number): number {
-  return Math.floor((v - border(ts) + square(ts)) / square(ts)) - 1;
+  // The stride is a cell plus its inequality gap, not the bare tile size.
+  return fromCoordE(v, square(ts), border(ts));
 }
 
 export function drawSize(order: number, ts: number): number {

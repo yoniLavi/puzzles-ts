@@ -31,6 +31,7 @@ import {
 } from "../../engine/color/palette.ts";
 import { abcdBorderLetter } from "../../engine/color/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Color, Size } from "../../engine/types.ts";
@@ -88,9 +89,10 @@ export function colors(defaultBackground: Color): Color[] {
 const outerCoord = (v: number, ts: number): number => v * ts;
 const innerCoord = (v: number, ts: number, n: number): number => (v + n) * ts;
 
-/** Pixel → grid cell along one axis (returns an out-of-range index off-grid). */
+/** Pixel → grid cell along one axis (returns an out-of-range index off-grid).
+ * The origin is `n` whole tiles: the clue rows and columns sit outside the grid. */
 export function fromCoord(px: number, ts: number, n: number): number {
-  return Math.floor(px / ts) - n;
+  return fromCoordE(px, ts, n * ts);
 }
 
 export function computeSize(p: { w: number; h: number; n: number }, ts: number): Size {

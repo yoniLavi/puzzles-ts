@@ -19,6 +19,7 @@ import type {
   UiUpdate,
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   ALREADY_SOLVED,
   FIX_MISTAKES_FIRST,
@@ -115,7 +116,7 @@ function interpretMove(
   const { w, h } = state;
   const ts = ds.tilesize;
   const b = border(ts);
-  const fromCoord = (v: number) => Math.floor((v - b + ts) / ts) - 1;
+  const fromCoord = (v: number) => fromCoordE(v, ts, b);
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     let effective = button;

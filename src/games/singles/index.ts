@@ -22,6 +22,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   ALREADY_SOLVED,
   FIX_MISTAKES_FIRST,
@@ -167,7 +168,7 @@ function interpretMove(
   ) {
     const ts = ds.tilesize;
     const b = border(ts);
-    const fromCoord = (v: number): number => Math.floor((v - b + ts) / ts) - 1;
+    const fromCoord = (v: number): number => fromCoordE(v, ts, b);
     x = fromCoord(p.x);
     y = fromCoord(p.y);
     if (ui.cursor.visible) {

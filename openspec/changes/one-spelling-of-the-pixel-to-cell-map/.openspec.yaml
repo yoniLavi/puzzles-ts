@@ -1,0 +1,5 @@
+# No deltas: seventeen games now call a helper that already existed, with
+# behavior proven identical. The convention and its six overrides are stated at
+# the helper, which is where a reader meets them.
+schema: spec-driven
+skip_specs: true

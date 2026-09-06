@@ -27,6 +27,7 @@ import {
   INK,
 } from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import type { Color } from "../../engine/types.ts";
 import {
   type BridgesMistake,
@@ -707,7 +708,7 @@ export function redrawBridges(
 
 /** Map a pixel coordinate to a grid cell (bridges.c FROMCOORD). */
 export function fromCoord(px: number, ts: number, b: number): number {
-  return Math.floor((px - b + ts) / ts) - 1;
+  return fromCoordE(px, ts, b);
 }
 
 /** Map a grid cell to its top-left pixel (bridges.c COORD). */

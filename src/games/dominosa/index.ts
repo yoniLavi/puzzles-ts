@@ -21,6 +21,7 @@ import type {
   UiUpdate,
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   ALREADY_SOLVED,
   FIX_MISTAKES_FIRST,
@@ -123,7 +124,7 @@ function interpretMove(
   const ts = ds.tilesize;
   const b = border(ts);
   const coord = (v: number) => v * ts + b;
-  const fromCoord = (px: number) => Math.floor((px - b + ts) / ts) - 1;
+  const fromCoord = (px: number) => fromCoordE(px, ts, b);
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     const tx = fromCoord(p.x);

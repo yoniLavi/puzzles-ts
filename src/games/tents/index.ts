@@ -14,6 +14,7 @@ import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -43,6 +44,7 @@ import {
   PREFERRED_TILE_SIZE,
   redraw,
   type TentsDrawState,
+  TLBORDER,
 } from "./render.ts";
 import { tentsSolve } from "./solver.ts";
 import {
@@ -101,8 +103,7 @@ function interpretMove(
   const control = rawButton & MOD_CTRL;
   const button = stripModifiers(rawButton);
   const ts = ds.tilesize;
-  // NARROW_BORDERS FROMCOORD: TLBORDER = 1.
-  const fromCoord = (v: number) => Math.floor((v - 1 + ts) / ts) - 1;
+  const fromCoord = (v: number) => fromCoordE(v, ts, TLBORDER);
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     const x = fromCoord(p.x);

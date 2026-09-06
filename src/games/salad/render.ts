@@ -29,6 +29,7 @@ import {
   playerEntryColor,
 } from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
@@ -173,7 +174,8 @@ export function computeSize(p: { order: number }, ts: number): Size {
 /** Upstream `FROMCOORD`: the one-tile clue margin means cell 0 starts at
  * `TILE_SIZE`, and a click in the margin lands outside the play area. */
 export function fromCoord(v: number, ts: number): number {
-  return Math.floor(v / ts) - 1;
+  // The board's origin is a full tile: the clue ring sits outside the grid.
+  return fromCoordE(v, ts, ts);
 }
 
 // --- draw state ------------------------------------------------------------

@@ -89,7 +89,10 @@ const FLASH_BIT = 1 << 14;
 const MISTAKE_BIT = 1 << 15;
 
 // --- geometry (NARROW_BORDERS) --------------------------------------------
-const TLBORDER = 1;
+/** The board's pixel origin (NARROW_BORDERS). Exported so `interpretMove` reads
+ * the same number the painter does — one function, both callers
+ * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+export const TLBORDER = 1;
 const brBorder = (ts: number) => ts + 2;
 const coord = (n: number, ts: number) => n * ts + TLBORDER;
 

@@ -13,6 +13,7 @@ import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -33,6 +34,7 @@ import {
   FLASH_TIME,
   type MagnetsDrawState,
   newDrawState,
+  origin,
   PREFERRED_TILE_SIZE,
   redraw,
 } from "./render.ts";
@@ -90,7 +92,7 @@ function interpretMove(
   const { w, h, grid, flags, common } = state;
   const button = stripModifiers(rawButton);
   const ts = ds.tilesize;
-  const fromCoord = (v: number) => Math.floor(v / ts) - 1; // NARROW_BORDERS: BORDER = 0
+  const fromCoord = (v: number) => fromCoordE(v, ts, origin(ts));
 
   let gx = fromCoord(p.x);
   let gy = fromCoord(p.y);

@@ -10,6 +10,7 @@
 import { FOUR_FILLS } from "../../engine/color/colors.ts";
 import { ERROR, ERROR_TEXT, INK } from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -77,7 +78,7 @@ export function coord(x: number, ts: number): number {
 }
 
 export function fromCoord(px: number, ts: number): number {
-  return Math.floor((px - BORDER + ts) / ts) - 1;
+  return fromCoordE(px, ts, BORDER);
 }
 
 function epsilonX(button: number): number {
