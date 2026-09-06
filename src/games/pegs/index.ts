@@ -21,8 +21,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -30,477 +29,42 @@ import {
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
-  newCursor,
 } from "../../engine/pointer.ts";
-import { type RandomState, randomUpto } from "../../engine/random/index.ts";
-import { SortedMultiset } from "../../engine/sorted-multiset.ts";
-import type { GameStatus, Point } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
+import { newDesc } from "./generator.ts";
 import {
   colors,
   computeSize,
   FLASH_FRAME,
   fromCoordWithTileSize,
-  GRID_HOLE,
-  GRID_OBST,
-  GRID_PEG,
   newDrawState,
   type PegsDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
   setTileSize,
 } from "./render.ts";
+import {
+  decodeParams,
+  defaultParams,
+  deserializeMove,
+  encodeParams,
+  GRID_HOLE,
+  GRID_PEG,
+  newState,
+  newUi,
+  type PegsMove,
+  type PegsParams,
+  type PegsState,
+  type PegsUi,
+  presets,
+  serializeMove,
+  status,
+  textFormat,
+  validateDesc,
+  validateParams,
+} from "./state.ts";
 
-// --- grid cell values ------------------------------------------------
-// Defined in `render.ts` beside the two draw-state overlay values, so that
-// `render.ts` imports no *value* from this module: it may only import types,
-// which erase, or the two form a runtime import cycle (`module-layering.test.ts`
-// caught exactly that). Pegs has no `state.ts` to hold them instead.
-
-// --- board types -----------------------------------------------------
-
-const TYPE_CROSS = 0;
-const TYPE_OCTAGON = 1;
-const TYPE_RANDOM = 2;
-
-const BOARD_TYPE_NAMES = ["Cross", "Octagon", "Random"] as const;
-const BOARD_TYPE_LOWER = ["cross", "octagon", "random"] as const;
-
-// --- types -----------------------------------------------------------
-
-export interface PegsParams {
-  w: number;
-  h: number;
-  type: number; // TYPE_CROSS | TYPE_OCTAGON | TYPE_RANDOM
-}
-
-export interface PegsState {
-  w: number;
-  h: number;
-  completed: boolean;
-  /** Flat Uint8Array grid: GRID_HOLE | GRID_PEG | GRID_OBST. */
-  grid: Uint8Array;
-}
-
-export type PegsMove = { type: "jump"; sx: number; sy: number; tx: number; ty: number };
-
-export interface PegsUi {
-  dragging: boolean;
-  /** Grid coords of drag start cell. */
-  sx: number;
-  sy: number;
-  /** Pixel coords of current drag position. */
-  dx: number;
-  dy: number;
-  /** Keyboard cursor position. */
-  cursor: GridCursor;
-  /** When true, next cursor-move attempts a jump. */
-  curJumping: boolean;
-}
-
-// --- presets ---------------------------------------------------------
-
-const PEGS_PRESETS: PegsParams[] = [
-  { w: 5, h: 7, type: TYPE_CROSS },
-  { w: 7, h: 7, type: TYPE_CROSS },
-  { w: 5, h: 9, type: TYPE_CROSS },
-  { w: 7, h: 9, type: TYPE_CROSS },
-  { w: 9, h: 9, type: TYPE_CROSS },
-  { w: 7, h: 7, type: TYPE_OCTAGON },
-  { w: 5, h: 5, type: TYPE_RANDOM },
-  { w: 7, h: 7, type: TYPE_RANDOM },
-  { w: 9, h: 9, type: TYPE_RANDOM },
-];
-
-// --- params ----------------------------------------------------------
-
-function defaultParams(): PegsParams {
-  return { w: 7, h: 7, type: TYPE_CROSS };
-}
-
-function presets() {
-  return {
-    title: "Type",
-    submenu: PEGS_PRESETS.map((p) => {
-      let name = BOARD_TYPE_NAMES[p.type];
-      if (p.type === TYPE_CROSS || p.type === TYPE_RANDOM) {
-        name += ` ${p.w}×${p.h}`;
-      }
-      return { title: name, params: p };
-    }),
-  };
-}
-
-function encodeParams(p: PegsParams, full: boolean): string {
-  let s = `${p.w}x${p.h}`;
-  if (full) s += BOARD_TYPE_LOWER[p.type];
-  return s;
-}
-
-function decodeParams(s: string): PegsParams {
-  // `WxH`-or-square dimension prefix via the shared engine helper; the
-  // old `indexOf("x")` + slice mis-sliced a bare square form ("7" → w=7,
-  // h=undefined). `next` is the index of the trailing board-type word.
-  const { w, h, next } = parseDimensions(s, 0);
-  const rest = s.slice(next);
-  let type = TYPE_CROSS;
-  for (let i = 0; i < BOARD_TYPE_LOWER.length; i++) {
-    if (rest === BOARD_TYPE_LOWER[i]) {
-      type = i;
-      break;
-    }
-  }
-  return { w, h, type };
-}
-
-function validateParams(p: PegsParams, full: boolean): string | null {
-  if (full && (p.w <= 3 || p.h <= 3)) {
-    return "Width and height must both be greater than three";
-  }
-  if (p.w < 1 || p.h < 1) {
-    return "Width and height must both be at least one";
-  }
-  if (p.w > 10000 / p.h) {
-    return "Width times height must not be unreasonably large";
-  }
-  if (full && p.type === TYPE_CROSS) {
-    const valid =
-      (p.w === 9 && p.h === 5) ||
-      (p.w === 5 && p.h === 9) ||
-      (p.w === 9 && p.h === 9) ||
-      (p.w === 7 && p.h === 5) ||
-      (p.w === 5 && p.h === 7) ||
-      (p.w === 9 && p.h === 7) ||
-      (p.w === 7 && p.h === 9) ||
-      (p.w === 7 && p.h === 7);
-    if (!valid) {
-      return "This board type is only supported at 5×7, 5×9, 7×7, 7×9, and 9×9";
-    }
-  }
-  if (full && p.type === TYPE_OCTAGON) {
-    if (p.w !== 7 || p.h !== 7) {
-      return "This board type is only supported at 7×7";
-    }
-  }
-  return null;
-}
-
-// --- generator (Random boards) --------------------------------------
-
-interface GenMove {
-  x: number;
-  y: number;
-  dx: number;
-  dy: number;
-  /** 0, 1, or 2: how many OBST cells must become HOLE to play this move. */
-  cost: number;
-}
-
-function genMoveCmpByMove(a: GenMove, b: GenMove): number {
-  if (a.y !== b.y) return a.y - b.y;
-  if (a.x !== b.x) return a.x - b.x;
-  if (a.dy !== b.dy) return a.dy - b.dy;
-  if (a.dx !== b.dx) return a.dx - b.dx;
-  return 0;
-}
-
-function genMoveCmpByCost(a: GenMove, b: GenMove): number {
-  if (a.cost !== b.cost) return a.cost - b.cost;
-  return genMoveCmpByMove(a, b);
-}
-
-/**
- * Re-evaluate the twelve moves that can include (x,y) and update
- * the two sorted indexes. Mirrors C's `update_moves`.
- *
- * The C code uses `find234(byMove, &move, NULL)` to find an existing
- * move by position (since byMove's comparator ignores cost), then
- * checks if the cost changed. If so, it removes the old version from
- * both trees using the actual element (not the probe).
- *
- * We replicate this: first delete from byMove (position-only
- * comparator), then if we found the old element, delete *it* from
- * byCost (using the old element's actual cost for the comparator).
- * Then re-add if the move is still valid.
- */
-function updateMoves(
-  grid: Uint8Array,
-  w: number,
-  h: number,
-  x: number,
-  y: number,
-  byMove: SortedMultiset<GenMove>,
-  byCost: SortedMultiset<GenMove>,
-): void {
-  const DIRS: [number, number][] = [
-    [1, 0],
-    [0, 1],
-    [-1, 0],
-    [0, -1],
-  ];
-  for (const [ddx, ddy] of DIRS) {
-    for (let pos = 0; pos < 3; pos++) {
-      const mx = x - pos * ddx;
-      const my = y - pos * ddy;
-      if (mx < 0 || mx >= w || my < 0 || my >= h) continue;
-      const ex = mx + 2 * ddx;
-      const ey = my + 2 * ddy;
-      if (ex < 0 || ex >= w || ey < 0 || ey >= h) continue;
-
-      const v1 = grid[my * w + mx];
-      const v2 = grid[(my + ddy) * w + (mx + ddx)];
-      const v3 = grid[ey * w + ex];
-
-      const newCost = (v2 === GRID_OBST ? 1 : 0) + (v3 === GRID_OBST ? 1 : 0);
-
-      // Probe for the existing move by position (cost doesn't matter
-      // for the byMove comparator).
-      const positionProbe: GenMove = {
-        x: mx,
-        y: my,
-        dx: ddx,
-        dy: ddy,
-        cost: 0, // ignored by genMoveCmpByMove
-      };
-
-      // Remove from byMove (finds by position).
-      byMove.delete(positionProbe);
-
-      // Remove from byCost using the position probe. Since byCost
-      // compares cost first, we need to try all possible costs.
-      // But we can be smarter: just try deleting with the new cost.
-      // If the old element had a different cost, this won't find it.
-      // So we also need to try the other cost values.
-      // Actually, the simplest correct approach: delete from byCost
-      // for each possible cost (0, 1, 2). Only one will match.
-      for (let c = 0; c <= 2; c++) {
-        byCost.delete({ x: mx, y: my, dx: ddx, dy: ddy, cost: c });
-      }
-
-      if (v1 === GRID_PEG && v2 !== GRID_PEG && v3 !== GRID_PEG) {
-        // Move is valid. Add fresh copies to both trees.
-        const fresh: GenMove = { x: mx, y: my, dx: ddx, dy: ddy, cost: newCost };
-        byMove.add({ ...fresh });
-        byCost.add({ ...fresh });
-      }
-    }
-  }
-}
-
-/**
- * Build a random board by reverse-moves. Mirrors C's `pegs_genmoves`.
- * The grid is mutated in place.
- */
-function genMoves(grid: Uint8Array, w: number, h: number, rng: RandomState): void {
-  const byMove = new SortedMultiset<GenMove>(genMoveCmpByMove);
-  const byCost = new SortedMultiset<GenMove>(genMoveCmpByCost);
-
-  // Seed the move trees from all pegs on the board.
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (grid[y * w + x] === GRID_PEG) {
-        updateMoves(grid, w, h, x, y, byMove, byCost);
-      }
-    }
-  }
-
-  let nMoves = 0;
-
-  while (true) {
-    // Find the cheapest available moves.
-    const maxCost = nMoves < (w * h) / 2 ? 2 : 1;
-    let limit = -1;
-    let move: GenMove | undefined;
-
-    for (let cost = 0; cost <= maxCost; cost++) {
-      const probe: GenMove = { x: 0, y: h + 1, dx: 0, dy: 0, cost };
-      limit = byCost.lastIndexLessThan(probe);
-      if (limit >= 0) {
-        move = byCost.get(limit);
-        break;
-      }
-    }
-
-    if (!move) break;
-
-    // Pick a random move among those with the same cost.
-    // `limit` is the index of the last element with cost <= move.cost.
-    // We need the range of elements with cost == move.cost.
-    const costProbe: GenMove = { x: 0, y: -1, dx: 0, dy: 0, cost: move.cost };
-    const firstIdx = byCost.lastIndexLessThan(costProbe) + 1;
-    const rangeSize = limit - firstIdx + 1;
-    const pickIdx = firstIdx + randomUpto(rng, rangeSize);
-    const picked = byCost.get(pickIdx);
-
-    // Apply the reverse move: source becomes HOLE, middle becomes PEG, end becomes PEG.
-    grid[picked.y * w + picked.x] = GRID_HOLE;
-    grid[(picked.y + picked.dy) * w + (picked.x + picked.dx)] = GRID_PEG;
-    grid[(picked.y + 2 * picked.dy) * w + (picked.x + 2 * picked.dx)] = GRID_PEG;
-
-    // Re-evaluate moves around the three affected cells.
-    for (let i = 0; i <= 2; i++) {
-      const tx = picked.x + i * picked.dx;
-      const ty = picked.y + i * picked.dy;
-      updateMoves(grid, w, h, tx, ty, byMove, byCost);
-    }
-
-    nMoves++;
-  }
-}
-
-/**
- * Generate a random board, retrying until it touches all four edges.
- * Mirrors C's `pegs_generate`.
- */
-function generate(grid: Uint8Array, w: number, h: number, rng: RandomState): void {
-  while (true) {
-    grid.fill(GRID_OBST);
-    grid[Math.floor(h / 2) * w + Math.floor(w / 2)] = GRID_PEG;
-    genMoves(grid, w, h, rng);
-
-    // Check that the board touches all four edges.
-    let extremes = 0;
-    for (let y = 0; y < h; y++) {
-      if (grid[y * w] !== GRID_OBST) extremes |= 1;
-      if (grid[y * w + w - 1] !== GRID_OBST) extremes |= 2;
-    }
-    for (let x = 0; x < w; x++) {
-      if (grid[x] !== GRID_OBST) extremes |= 4;
-      if (grid[(h - 1) * w + x] !== GRID_OBST) extremes |= 8;
-    }
-
-    if (extremes === 15) break;
-  }
-}
-
-// --- newDesc ---------------------------------------------------------
-
-function newDesc(p: PegsParams, rng: RandomState): { desc: string } {
-  const { w, h, type } = p;
-  const grid = new Uint8Array(w * h);
-
-  if (type === TYPE_RANDOM) {
-    generate(grid, w, h, rng);
-  } else {
-    // Cross or Octagon layout.
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const cx = Math.abs(x - Math.floor(w / 2));
-        const cy = Math.abs(y - Math.floor(h / 2));
-        if (type === TYPE_CROSS) {
-          if (cx === 0 && cy === 0) grid[y * w + x] = GRID_HOLE;
-          else if (cx > 1 && cy > 1) grid[y * w + x] = GRID_OBST;
-          else grid[y * w + x] = GRID_PEG;
-        } else {
-          // TYPE_OCTAGON
-          if (cx + cy > 1 + Math.floor(Math.max(w, h) / 2)) {
-            grid[y * w + x] = GRID_OBST;
-          } else {
-            grid[y * w + x] = GRID_PEG;
-          }
-        }
-      }
-    }
-
-    // Octagon: the center hole is insoluble (parity proof in C comments).
-    // Pick a random solvable starting hole from one of three equivalence classes.
-    if (type === TYPE_OCTAGON) {
-      const cls = randomUpto(rng, 3);
-      let dx: number;
-      let dy: number;
-      if (cls === 0) {
-        // Remove a random corner piece.
-        dx = randomUpto(rng, 2) * 2 - 1;
-        dy = randomUpto(rng, 2) * 2 - 1;
-        if (randomUpto(rng, 2)) dy *= 3;
-        else dx *= 3;
-      } else if (cls === 1) {
-        // Remove a random piece two from the center.
-        dx = 2 * (randomUpto(rng, 2) * 2 - 1);
-        if (randomUpto(rng, 2)) dy = 0;
-        else {
-          dy = dx;
-          dx = 0;
-        }
-      } else {
-        // Remove a random piece one from the center.
-        dx = randomUpto(rng, 2) * 2 - 1;
-        if (randomUpto(rng, 2)) dy = 0;
-        else {
-          dy = dx;
-          dx = 0;
-        }
-      }
-      grid[(3 + dy) * w + (3 + dx)] = GRID_HOLE;
-    }
-  }
-
-  // Encode: P=peg, H=hole, O=obstacle.
-  let desc = "";
-  for (let i = 0; i < w * h; i++) {
-    desc += grid[i] === GRID_PEG ? "P" : grid[i] === GRID_HOLE ? "H" : "O";
-  }
-  return { desc };
-}
-
-// --- validateDesc ----------------------------------------------------
-
-function validateDesc(p: PegsParams, desc: string): string | null {
-  const len = p.w * p.h;
-  if (desc.length !== len) return "Game description is wrong length";
-  let nPeg = 0;
-  let nHole = 0;
-  for (let i = 0; i < len; i++) {
-    const ch = desc[i];
-    if (ch !== "P" && ch !== "H" && ch !== "O") {
-      return "Invalid character in game description";
-    }
-    if (ch === "P") nPeg++;
-    if (ch === "H") nHole++;
-  }
-  if (nPeg < 2) return "Too few pegs in game description";
-  if (nHole < 1) return "Too few holes in game description";
-  return null;
-}
-
-// --- state -----------------------------------------------------------
-
-function newState(p: PegsParams, desc: string): PegsState {
-  const grid = new Uint8Array(p.w * p.h);
-  for (let i = 0; i < desc.length; i++) {
-    grid[i] = desc[i] === "P" ? GRID_PEG : desc[i] === "H" ? GRID_HOLE : GRID_OBST;
-  }
-  return { w: p.w, h: p.h, completed: false, grid };
-}
-
-function newUi(state: PegsState): PegsUi {
-  // Place cursor on the first peg or hole.
-  for (let y = 0; y < state.h; y++) {
-    for (let x = 0; x < state.w; x++) {
-      const v = state.grid[y * state.w + x];
-      if (v === GRID_PEG || v === GRID_HOLE) {
-        return {
-          dragging: false,
-          sx: 0,
-          sy: 0,
-          dx: 0,
-          dy: 0,
-          cursor: newCursor(x, y),
-          curJumping: false,
-        };
-      }
-    }
-  }
-  // Should never happen (valid desc always has pegs/holes).
-  return {
-    dragging: false,
-    sx: 0,
-    sy: 0,
-    dx: 0,
-    dy: 0,
-    cursor: newCursor(),
-    curJumping: false,
-  };
-}
+export type { PegsMove, PegsParams, PegsState, PegsUi };
 
 // --- interpretMove ---------------------------------------------------
 
@@ -686,51 +250,6 @@ function executeMove(s: PegsState, m: PegsMove): PegsState {
 
   return { w, h, completed, grid };
 }
-
-// --- status ----------------------------------------------------------
-
-function status(s: PegsState): GameStatus {
-  return s.completed ? "solved" : "ongoing";
-}
-
-// --- text format -----------------------------------------------------
-
-function textFormat(s: PegsState): string {
-  const { w, h } = s;
-  let ret = "";
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const v = s.grid[y * w + x];
-      ret += v === GRID_HOLE ? "-" : v === GRID_PEG ? "*" : " ";
-    }
-    if (y < h - 1) ret += "\n";
-  }
-  return ret;
-}
-
-// --- move serialization ----------------------------------------------
-
-function serializeMove(m: PegsMove): unknown {
-  return `${m.sx},${m.sy}-${m.tx},${m.ty}`;
-}
-
-function deserializeMove(raw: unknown): PegsMove {
-  const s = String(raw);
-  const match = s.match(/^(-?\d+),(-?\d+)-(-?\d+),(-?\d+)$/);
-  // Pegs is the one game that parses its moves at the save boundary, so this is
-  // where a foreign move is caught — before `executeMove` ever sees it. Same
-  // message shape as every other game's refusal, and `raw` rather than `s`,
-  // which renders an object as the useless "[object Object]".
-  if (!match) rejectMove(raw, "pegs: deserializeMove");
-  return {
-    type: "jump",
-    sx: Number.parseInt(match[1], 10),
-    sy: Number.parseInt(match[2], 10),
-    tx: Number.parseInt(match[3], 10),
-    ty: Number.parseInt(match[4], 10),
-  };
-}
-
 // --- animation / flash -----------------------------------------------
 
 function flashLength(a: PegsState, b: PegsState): number {

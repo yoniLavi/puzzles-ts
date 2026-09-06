@@ -1,0 +1,4 @@
+# No deltas: files moved. The layout is a corpus convention (55 of 57 games)
+# rather than a spec requirement, and no behavior, format or contract changed.
+schema: spec-driven
+skip_specs: true

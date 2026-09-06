@@ -62,10 +62,10 @@ status lives.
       `converge-capability-names-and-the-additive-rule`; the four renderers moved
       to `render.ts` in `move-renderers-into-render-ts`, which also collapsed
       Flip's four copies of the board origin.
-- [ ] B7 flip and pegs have no `state.ts` — **55–2, as settled as the renderer
-      was at 53–4.** Filed as "a weaker case than B5" on an assertion that the
-      split varies; measured, it does not (`generator.ts` and `solver.ts` vary,
-      at ~45 of 57, and those stay per-game). See `survey.md`.
+- [x] B7 **Done** (`give-flip-and-pegs-a-state-module`). 55–2 once measured, not
+      the weak case it was filed as. Both games also gained a `generator.ts`,
+      and Pegs' grid vocabulary moved out of `render.ts` — undoing the
+      import-cycle workaround B5 had to invent for want of a state module.
 - [x] B8 **Ratcheted** (`ratchet-the-mistake-overlay-coverage`). The gap is
       wider than B4 saw — 19 of the 39 games offering `findMistakes` never paint
       the overlay in a test — and it cannot be closed by one guard, because both

@@ -4,7 +4,9 @@
  *
  * The board's pixel origin lives here and `interpretMove` imports its
  * `fromCoordWithTileSize` — one function, both callers
- * (`docs/games/mechanics.md`).
+ * (`docs/games/mechanics.md`). The grid vocabulary comes the other way, from
+ * `state.ts`: this module imports no value from `index.ts`, so the two cannot
+ * form a runtime cycle (`module-layering.test.ts`).
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -14,16 +16,14 @@ import { drawRaisedBevel, raisedBevelWidth } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
-import type { PegsParams, PegsState, PegsUi } from "./index.ts";
-
-// --- grid cell values ------------------------------------------------
-// These live here rather than in `index.ts` because `render.ts` must import no
-// *value* from it — a value import both ways is a runtime cycle, and Pegs has
-// no `state.ts` to hold the vocabulary instead.
-
-export const GRID_HOLE = 0;
-export const GRID_PEG = 1;
-export const GRID_OBST = 2;
+import {
+  GRID_HOLE,
+  GRID_OBST,
+  GRID_PEG,
+  type PegsParams,
+  type PegsState,
+  type PegsUi,
+} from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 33;
 
