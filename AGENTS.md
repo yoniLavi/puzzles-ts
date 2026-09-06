@@ -581,6 +581,24 @@ it. `src/help-coverage.test.ts` holds the directory and the catalog to each othe
 in **both** directions — one direction alone once hid a game with no help page at
 all.
 
+**A game's help page names every mode its ‘Type’ menu offers.** The 43 pages
+adopted from upstream were its *short* overview fragments, and a fragment
+describes the game's headline rule only — upstream put the rest in the halibut
+manual, which documented a different program and is gone. So Unequal's page
+explained `<` signs and never mentioned Adjacent, a mode sitting in three of its
+twelve presets. An omission inherited from a fragment is ours to fix; "keeps
+upstream's wording" protects the words that are there, not the ones that never
+were.
+
+**Do not try to guard this by sweeping preset-title vocabulary against the
+page.** It was measured: filtering out sizes and tier names still flags 18 games
+— Loopy's fifteen grid names, Cube's solids, Pegs' board shapes, "free ends",
+"multiplication only" — for the one real gap, and nothing mechanically separates
+a rule mode from a board shape without a manifest. Cube's page passes on the
+merits while failing the sweep, because it says "other regular solids" rather
+than "Octahedron". Read the presets menus instead; 57 of them is a readable
+population, and reading them is what found the one.
+
 Update `/help` when adding features that diverge from upstream.
 
 ## Git
