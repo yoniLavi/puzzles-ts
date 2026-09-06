@@ -1,0 +1,5 @@
+# No deltas yet: this change's first task is a survey, and it has a named way to
+# come out against its own hypothesis. A requirement written before that would
+# be a spec for a conclusion nobody has reached.
+schema: spec-driven
+skip_specs: true

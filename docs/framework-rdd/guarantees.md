@@ -21,6 +21,27 @@ in both directions, so an empty registry can never vacuously pass (the
 lesson is now a design input: **every sweep opens by asserting the size of
 the population it sweeps**).
 
+> **⚠️ The word "declaring" is under review** —
+> `audit-declared-versus-derived-capabilities`, opened 2026-09-06.
+>
+> The sentence above names `testing/hint-games.ts` as a hand-list that
+> declaration will retire. **It was retired in the meantime, by
+> `derive-hint-enrollment`, and not by a declaration**: it filters the registry
+> on `typeof game.hint === "function"`. Four pieces of shared machinery have now
+> shipped and none of them is joined by declaring anything — a game joins by
+> *having* the capability, and guards find it by reading what the game is
+> (`pencil-prefs.ts`, `border-grid.ts`, `border-grid-render.ts`,
+> `note-taking-cell.ts`). The one declarative attempt over this ground,
+> `declare-the-gesture-table`, was withdrawn.
+>
+> **Nothing in this document's promise depends on which it is.** The benefit is
+> enrollment-free guards the moment a capability exists; derivation keeps that
+> and only changes what "exists" means. The open question is whether some
+> guarantees need declared *intent* that behavior cannot show — the live example
+> being "this game deliberately has no keyboard", where `input-parity.test.ts`
+> already derives the fact, declares the intent, and asserts the two agree.
+> Read the change before writing a fifth capability either way.
+
 ## What every game gets asserted, per declaration
 
 | Declaration | Generated guarantees |

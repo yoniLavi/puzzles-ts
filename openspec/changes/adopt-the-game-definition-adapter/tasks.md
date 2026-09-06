@@ -1,9 +1,13 @@
 # adopt-the-game-definition-adapter — tasks
 
-Scaffolded 2026-09-04. **Blocked**: needs more than one declaration to have
-produced something to adapt. `declare-params-and-presets` shipped 2026-09-05;
-`declare-the-gesture-table` was withdrawn the same day, so the second
-declaration this waits on is now `declare-the-board-model`.
+Scaffolded 2026-09-04. **Blocked**, on two things now. It needs more than one
+declaration to have produced something to adapt — `declare-params-and-presets`
+shipped 2026-09-05, `declare-the-gesture-table` was withdrawn the same day, so
+the second it waits on is `declare-the-board-model`. And it should not be
+settled before `audit-declared-versus-derived-capabilities` reports: that survey
+tests whether a capability set can be *derived* rather than declared, which
+decides whether the capability-manifest diff — the last surviving argument for a
+definition object here — needs a manifest at all.
 
 ## 1. Co-develop, never build-then-point
 

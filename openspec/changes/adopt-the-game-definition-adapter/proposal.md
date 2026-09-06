@@ -45,6 +45,25 @@ now so the ordering is recorded, not so it is started next.
 > reaches for nothing. That is one concern declining to join, not four
 > declarations proving independent.
 >
+> **Three more concerns have since stood alone, 2026-09-05/06**, and they are
+> worth weighing together because they were not chosen to make this point:
+> `border-grid.ts`'s input mechanic, `border-grid-render.ts` (its look), and
+> `note-taking-cell.ts` across eleven games. Each is a module a game *calls*;
+> none reaches for another declaration; the three hardest integrations — a
+> crossword direction flip, a highlight held in element space, a hint layer
+> that must draw under the shared edges — were each solved by composing *around*
+> a helper, in ways a declaration cannot express without growing hooks.
+>
+> **And the manifest-diff argument may not need a manifest.** It is the strongest
+> surviving reason for a definition object, and the reason is that
+> `re-express-the-collection` needs somewhere to read a game's capability set
+> from. A *derived* set can be snapshotted and diffed the same way, and cannot be
+> forgotten by a game that has the capability — which is the direction
+> `derive-hint-enrollment` and `audit-input-mode-parity`'s removal of
+> `needsRightButton` both already went. `audit-declared-versus-derived-capabilities`
+> is checking exactly that, and this change should not be settled before it
+> reports, because its answer removes or keeps the last argument here.
+>
 > Do not settle it from rows 1 and 2 alone — they are the rows least likely to
 > need each other.
 
