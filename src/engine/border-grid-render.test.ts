@@ -28,6 +28,11 @@ import {
   tileWidth,
 } from "./border-grid-render.ts";
 import { newCursor } from "./pointer.ts";
+import {
+  enrolledIn,
+  membersNotMentioning,
+  SCANNED_SOURCE_FILES,
+} from "./testing/enrollment.ts";
 
 describe("geometry", () => {
   it("leaves room for the outer walls and a margin either side", () => {
@@ -107,35 +112,32 @@ describe("both border-grid games use the shared renderer", () => {
   // third game could adopt `interpretBorderGridInput` and hand-roll the look
   // beside it, which is exactly how two renderers came to exist. What is being
   // asserted is that no such code exists, so it has to be a source scan.
-  const sources = import.meta.glob<string>("../games/**/*.ts", {
-    query: "?raw",
-    import: "default",
-    eager: true,
+  //
+  // Membership here is derived from *source* rather than from the `Ui`, because
+  // what makes a game a border-grid game is that it calls the input mechanic.
+  // Same question, different fact about the game.
+  const borderGrid = enrolledIn(
+    (g) => membersNotMentioning([g.id], "interpretBorderGridInput").length === 0,
+  );
+
+  it("looked at the whole registry and every game's source (vacuity guard)", () => {
+    expect(borderGrid.population).toBeGreaterThanOrEqual(50);
+    expect(SCANNED_SOURCE_FILES).toBeGreaterThan(100);
   });
 
-  it("finds source to scan (vacuity guard)", () => {
-    expect(Object.keys(sources).length).toBeGreaterThan(100);
+  it("is Palisade and Separate", () => {
+    expect(borderGrid.ids).toEqual(["palisade", "separate"]);
   });
 
   it("every game using the border-grid input also uses its renderer", () => {
-    const byGame = new Map<string, { input: boolean; render: boolean }>();
-    for (const [path, text] of Object.entries(sources)) {
-      if (path.includes(".test.")) continue;
-      const game = path.split("/")[2];
-      const seen = byGame.get(game) ?? { input: false, render: false };
-      if (text.includes("interpretBorderGridInput")) seen.input = true;
-      if (text.includes("border-grid-render.ts")) seen.render = true;
-      byGame.set(game, seen);
-    }
-
-    const users = [...byGame].filter(([, s]) => s.input).map(([g]) => g);
-    expect(users.sort(), "the border-grid games").toEqual(["palisade", "separate"]);
-
-    const missing = users.filter((g) => !byGame.get(g)?.render);
+    // Keyed on the *call*, not the module path: importing the module and
+    // drawing the tile by hand beside it is exactly the state this guards
+    // against, and an import-path marker would be satisfied by it.
+    const missing = membersNotMentioning(borderGrid.ids, "drawBorderTile(");
     expect(
       missing,
-      `${missing.join(", ")} use the border-grid input mechanic but draw the ` +
-        "board themselves — the look is shared too (engine/border-grid-render.ts).",
+      "use the border-grid input mechanic but draw the board themselves — " +
+        "the look is shared too (engine/border-grid-render.ts).",
     ).toEqual([]);
   });
 });

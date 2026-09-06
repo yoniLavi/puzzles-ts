@@ -155,18 +155,25 @@ describe("module layering", () => {
   });
 
   it("the engine does not import games, except the named test helpers", () => {
-    // Two dev-only files derive a cross-game sweep's population from the
+    // These dev-only files derive a cross-game sweep's population from the
     // registry, so each has to import the module whose side effect populates it:
     //
     //   hint-games.ts     — every game that declares a `hint()`, the enrolled
     //                       set for six cross-game hint guards.
     //   params-corpus.ts  — every game's params cases, for the byte-stability
     //                       and codec-inverse guards.
+    //   enrollment.ts     — the shared answer to "who is in this mechanic, and
+    //                       did they actually use it", which every cross-game
+    //                       guard asks. It also reads game *sources*, which is
+    //                       the only way to assert that a hand-rolled copy does
+    //                       not exist.
     //
-    // Named one by one rather than exempting `engine/testing/`, so a third
-    // violation cannot hide behind them. Neither is reachable from production:
-    // nothing outside a `.test.ts` imports either.
+    // Named one by one rather than exempting `engine/testing/`, so a fourth
+    // violation cannot hide behind them — which is not hypothetical: this guard
+    // is what caught `enrollment.ts` on the commit that added it. None is
+    // reachable from production; nothing outside a `.test.ts` imports any.
     const ALLOWED = new Set([
+      "src/engine/testing/enrollment.ts",
       "src/engine/testing/hint-games.ts",
       "src/engine/testing/params-corpus.ts",
     ]);

@@ -35,7 +35,7 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import { registerAllGames } from "../games/index.ts";
-import { type Game, UI_UPDATE } from "./game.ts";
+import { UI_UPDATE } from "./game.ts";
 import {
   type CellEntry,
   type NoteTakingUi,
@@ -44,8 +44,12 @@ import {
   releaseHighlightAfterEntry,
 } from "./note-taking-cell.ts";
 import { LEFT_BUTTON, MIDDLE_BUTTON, newCursor, RIGHT_BUTTON } from "./pointer.ts";
-import { randomNew } from "./random/index.ts";
-import { getTsGame, registeredGameIds } from "./registry.ts";
+import {
+  builtGames,
+  enrolledIn,
+  membersNotMentioning,
+  SCANNED_SOURCE_FILES,
+} from "./testing/enrollment.ts";
 
 beforeAll(registerAllGames);
 
@@ -258,31 +262,26 @@ describe("what a symbol entry does to the highlight", () => {
 });
 
 describe("the enrolled population is derived, not listed", () => {
-  type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
+  /** A game is in the mechanic iff its `Ui` carries the fields — a fact about
+   * the game, read off what `newUi` actually returns. */
+  const noteTaking = enrolledIn(
+    (g) =>
+      typeof g.ui["pencilMode"] === "boolean" &&
+      typeof g.ui["cursorFromKeyboard"] === "boolean",
+  );
 
-  /** Every registered game whose `Ui` carries the mechanic's three fields. */
-  function enrolled(): string[] {
-    const out: string[] = [];
-    for (const id of registeredGameIds()) {
-      const game = getTsGame(id) as AnyGame | undefined;
-      if (!game) throw new Error(`${id} is registered but has no game object`);
-      const params = game.defaultParams();
-      const desc = game.newDesc(params, randomNew(`note-cell-${id}`)).desc;
-      const u = game.newUi(game.newState(params, desc)) as Record<string, unknown>;
-      if (
-        typeof u["pencilMode"] === "boolean" &&
-        typeof u["cursorFromKeyboard"] === "boolean"
-      )
-        out.push(id);
-    }
-    return out.sort();
-  }
+  it("looked at the whole registry (vacuity guard)", () => {
+    // A floor, not an equality: a fifty-eighth game is not this guard's
+    // business, and a sweep that found nothing is.
+    expect(noteTaking.population).toBeGreaterThanOrEqual(50);
+    expect(SCANNED_SOURCE_FILES).toBeGreaterThan(100);
+  });
 
   it("is the eleven note-taking games, by the shape of their Ui", () => {
-    // The count is asserted because it is the point: a twelfth game acquiring
-    // the fields should be a decision somebody makes, and a member losing them
-    // should fail here rather than silently leave the guards below.
-    expect(enrolled()).toEqual([
+    // The membership *is* asserted, unlike the population: a twelfth game
+    // acquiring the fields should be a decision somebody makes, and a member
+    // losing them should fail here rather than silently leave the guards below.
+    expect(noteTaking.ids).toEqual([
       "abcd",
       "crossing",
       "group",
@@ -297,32 +296,25 @@ describe("the enrolled population is derived, not listed", () => {
     ]);
   });
 
-  it("looked at the whole registry (vacuity guard)", () => {
-    expect(registeredGameIds().length).toBe(57);
-  });
-
   // The family used to answer this two ways: five games kept the highlight
   // through a mouse-driven pencil mark with no preference at all, six offered
   // the preference and defaulted it off. A player moving between Mathrax and
   // Solo met opposite behavior for the same gesture. One answer now, and the
   // preference everywhere so the answer is still the player's.
   it("every member offers keep-highlight, defaulted on", () => {
-    const off: string[] = [];
-    const unoffered: string[] = [];
-    for (const id of enrolled()) {
-      const game = getTsGame(id) as AnyGame;
-      const params = game.defaultParams();
-      const desc = game.newDesc(params, randomNew(`keep-highlight-${id}`)).desc;
-      const u = game.newUi(game.newState(params, desc)) as Record<string, unknown>;
-      if (u["pencilKeepHighlight"] !== true) off.push(id);
-      if (!game.prefs?.some((p) => p.kw === "pencil-keep-highlight"))
-        unoffered.push(id);
-    }
-    expect(off, `${off.join(", ")}: keep-highlight is not on by default`).toEqual([]);
+    const members = builtGames().filter((g) => noteTaking.ids.includes(g.id));
+    const off = members.filter((g) => g.ui["pencilKeepHighlight"] !== true);
+    const unoffered = members.filter(
+      (g) => !g.game.prefs?.some((p) => p.kw === "pencil-keep-highlight"),
+    );
     expect(
-      unoffered,
-      `${unoffered.join(", ")}: no pencil-keep-highlight preference, so a player ` +
-        "cannot turn it off — use pencilKeepHighlightPref()",
+      off.map((g) => g.id),
+      "keep-highlight is not on by default",
+    ).toEqual([]);
+    expect(
+      unoffered.map((g) => g.id),
+      "no pencil-keep-highlight preference, so a player cannot turn it off — " +
+        "use pencilKeepHighlightPref()",
     ).toEqual([]);
   });
 
@@ -332,27 +324,12 @@ describe("the enrolled population is derived, not listed", () => {
   // is being asserted is that no such code exists, so it has to be a source
   // scan — the same reasoning as `emittable-keys.test.ts`'s.
   it("every enrolled game routes its pointer press through the shared arm", () => {
-    const sources = import.meta.glob<string>("../games/**/*.ts", {
-      query: "?raw",
-      import: "default",
-      eager: true,
-    });
-    expect(Object.keys(sources).length).toBeGreaterThan(100); // vacuity guard
-
-    const missing = enrolled().filter(
-      (id) =>
-        !Object.entries(sources).some(
-          ([path, text]) =>
-            path.startsWith(`../games/${id}/`) &&
-            !path.includes(".test.") &&
-            text.includes("pressNoteTakingCell("),
-        ),
-    );
+    const missing = membersNotMentioning(noteTaking.ids, "pressNoteTakingCell(");
     expect(
       missing,
-      `${missing.join(", ")} carry the note-taking Ui but never call ` +
-        "pressNoteTakingCell — either route the press through it, or drop the " +
-        "fields if the game is not really doing this mechanic.",
+      "carry the note-taking Ui but never call pressNoteTakingCell — either " +
+        "route the press through it, or drop the fields if the game is not " +
+        "really doing this mechanic.",
     ).toEqual([]);
   });
 });
