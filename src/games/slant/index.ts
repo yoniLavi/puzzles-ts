@@ -41,6 +41,7 @@ import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import {
+  border,
   colors,
   computeSize,
   FLASH_TIME,
@@ -113,7 +114,7 @@ function interpretMove(
   const button = stripModifiers(rawButton);
   const { w, h } = state;
   const ts = ds.tilesize;
-  const b = Math.floor(ts / 3) + 1; // render.ts border (NARROW_BORDERS)
+  const b = border(ts);
   const fromCoord = (v: number) => Math.floor((v - b + ts) / ts) - 1;
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {

@@ -109,7 +109,11 @@ const HINT_BR = 0x08000000;
 // --- geometry -------------------------------------------------------------
 const clueRadius = (ts: number) => Math.floor(ts / 3);
 const clueTextSize = (ts: number) => Math.floor(ts / 2);
-const border = (ts: number) => clueRadius(ts) + 1; // NARROW_BORDERS
+/** The board's pixel origin — a clue circle plus a pixel (NARROW_BORDERS).
+ * Exported so `interpretMove` reads the same number the painter does — one
+ * function, both callers
+ * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+export const border = (ts: number) => clueRadius(ts) + 1;
 const coord = (n: number, ts: number) => n * ts + border(ts);
 
 export function computeSize(p: SlantParams, ts: number): Size {

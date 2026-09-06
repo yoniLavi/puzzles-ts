@@ -120,7 +120,11 @@ const DF_REF = 0x8000000;
 
 // --- geometry ---------------------------------------------------------------
 const gutter = (ts: number) => Math.floor(ts / 16);
-const border = (ts: number) => -gutter(ts); // NARROW_BORDERS
+/** The board's pixel origin — negative, so the domino gutters bleed to the
+ * canvas edge (NARROW_BORDERS). Exported so `interpretMove` reads the same
+ * number the painter does — one function, both callers
+ * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+export const border = (ts: number) => -gutter(ts);
 const coord = (n: number, ts: number) => n * ts + border(ts);
 const dominoRadius = (ts: number) => Math.floor(ts / 8);
 const coffset = (ts: number) => gutter(ts) + dominoRadius(ts);

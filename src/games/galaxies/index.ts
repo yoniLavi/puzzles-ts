@@ -64,6 +64,7 @@ import {
   removeAssocWithOpposite,
 } from "./moves.ts";
 import {
+  borderFor,
   COL_ARROW,
   COL_BACKGROUND,
   COL_BLACKBG,
@@ -534,7 +535,7 @@ function interpretMove(
   button: number,
 ): GalaxiesMove | null | UiUpdate {
   const tile = ds.tileSize;
-  const border = tile;
+  const border = borderFor(tile);
   const x = p.x;
   const y = p.y;
 
@@ -1235,7 +1236,8 @@ export const galaxiesGame: Game<
   },
 
   computeSize(p, tileSize): Size {
-    return { w: p.w * tileSize + 2 * tileSize, h: p.h * tileSize + 2 * tileSize };
+    const border = borderFor(tileSize);
+    return { w: p.w * tileSize + 2 * border, h: p.h * tileSize + 2 * border };
   },
 
   redraw,

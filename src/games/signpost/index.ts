@@ -43,7 +43,7 @@ import type { RandomState } from "../../engine/random/index.ts";
 import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
 import { newSignpostDesc } from "./generator.ts";
 import { dragReleaseMove, executeMove } from "./moves.ts";
-import { buildPalette, redrawSignpost } from "./render.ts";
+import { BORDER, buildPalette, FLASH_SPIN, redrawSignpost } from "./render.ts";
 import { solveState } from "./solver.ts";
 import {
   checkCompletion,
@@ -63,8 +63,6 @@ import {
 // --- geometry --------------------------------------------------------
 
 const PREFERRED_TILE_SIZE = 48;
-const BORDER = 1; // NARROW_BORDERS (webapp.cmake)
-const FLASH_SPIN = 0.7;
 
 const coord = (x: number, ts: number): number => x * ts + BORDER;
 const fromCoord = (px: number, ts: number): number => fromCoordE(px, ts, BORDER);

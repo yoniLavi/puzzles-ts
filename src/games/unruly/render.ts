@@ -119,7 +119,10 @@ const FF_HINT_AREA = 0x10000; // a journey-sibling empty cell (light shade)
 const FF_HINT_RING = 0x20000; // a cited premise / pivotal cell (COL_HINT_REF outline)
 
 // --- geometry -----------------------------------------------------------
-const border = (ts: number) => Math.floor(ts / 2);
+/** The board's pixel origin. Exported so `interpretMove` reads the same number
+ * the painter does — one function, both callers
+ * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+export const border = (ts: number) => Math.floor(ts / 2);
 const outerEdge = (ts: number) => Math.max(Math.floor(ts / 10), 1);
 const coord = (n: number, ts: number) => n * ts + border(ts);
 

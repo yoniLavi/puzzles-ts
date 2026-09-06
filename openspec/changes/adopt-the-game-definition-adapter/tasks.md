@@ -1,13 +1,21 @@
 # adopt-the-game-definition-adapter — tasks
 
-Scaffolded 2026-09-04. **Blocked**, on two things now. It needs more than one
-declaration to have produced something to adapt — `declare-params-and-presets`
-shipped 2026-09-05, `declare-the-gesture-table` was withdrawn the same day, so
-the second it waits on is `declare-the-board-model`. And it should not be
-settled before `audit-declared-versus-derived-capabilities` reports: that survey
-tests whether a capability set can be *derived* rather than declared, which
-decides whether the capability-manifest diff — the last surviving argument for a
-definition object here — needs a manifest at all.
+Scaffolded 2026-09-04. **No longer blocked — out of things to wait for**, which
+is itself the answer. It needed more than one declaration to have produced
+something to adapt: `declare-params-and-presets` shipped 2026-09-05 as a helper
+a game calls, `declare-the-gesture-table` was withdrawn the same day, and
+`declare-the-board-model` was withdrawn on 2026-09-06
+(`openspec/postmortems/2026-09-06-board-model-withdrawal.md`). And
+`audit-declared-versus-derived-capabilities` has reported: a capability set can
+be *derived*, so the capability-manifest diff — the last surviving argument for a
+definition object here — needs no manifest.
+
+**So task 0 is now to settle this change rather than to start it**: on its own
+stated criterion (did any declaration need to know about another?) the answer
+came back "no" four times out of four. Read the proposal's opening block, then
+either withdraw with a postmortem or restate what is left. Do not begin tasks
+1–4 without doing that first; they are written for an adapter whose premise has
+not survived.
 
 ## 1. Co-develop, never build-then-point
 

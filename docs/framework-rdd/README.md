@@ -68,7 +68,7 @@ README's own argument for refactoring before building.
 | 1 | `derive-difficulty-from-the-technique-ladder` | **SHIPPED** 2026-09-04 — but *not* as this table predicted; see below |
 | 2 | `declare-params-and-presets` | **SHIPPED** 2026-09-05 — again not as predicted; see below |
 | 3 | ~~`declare-the-gesture-table`~~ | **WITHDRAWN** 2026-09-05 — the exploration ran and the falsifier fired; see below |
-| 4 | `declare-the-board-model` | exemplar-gated; pick an edge or vertex game, chosen to break it |
+| 4 | ~~`declare-the-board-model`~~ | **WITHDRAWN** 2026-09-06 — the exemplar could not break it because it had already been served on another axis; see below |
 | 5 | `adopt-the-game-definition-adapter` | blocked on 2–4; co-developed with one re-expression, never built first |
 | 6 | `re-express-the-collection` | last, and splits into family batches before any code moves |
 
@@ -136,6 +136,36 @@ README's own argument for refactoring before building.
 > and Sixteen killed it, before a line of framework was written. That is what
 > the readiness lines and the named falsifiers are *for*, and it is why a
 > not-yet-ready row carries an exploration rather than a design.
+
+> **What row 4 taught: check whether the thing you are proposing is already in
+> the tree.** Row 4 was the largest declaration in the vision and the one this
+> document predicted would break. It did not break on contortion. It broke
+> because **a general board model already ships** — `src/engine/grid/` models any
+> planar graph as faces, edges and dots, carries all eighteen tilings,
+> `gridNearestEdge` for input hit-testing and `gridNewDesc`/`gridValidateDesc`
+> for the codec — and **55 of the 57 games decline it**, having voted with their
+> imports that `y*w+x` into a typed array is the right representation for a
+> square board. `openspec/postmortems/2026-09-06-board-model-withdrawal.md`.
+>
+> Three lessons, and the first two are rows 1–3's, at the highest price yet.
+> **The declaration a concern should be derived from is not always the one the
+> vision named** — for Palisade, the exemplar this document chose to break the
+> model, four of the five deliverables had already arrived from
+> `border-grid.ts`, keyed on the mechanic. **The axis decides everything**: two
+> games can share a topology and share nothing else, which is why Slant and
+> Palisade are both square grids with sub-cell entities and share not one line,
+> while `border-grid.ts` serves its two completely. And the new one: **a
+> deliverable list is a checklist, so walk it**. Of the five things row 4
+> promised, three had shipped, one is frozen by the migration invariants and can
+> only be re-expressed byte-identically, and the fifth — cloning — is 466 lines
+> whose entire content is a per-field judgment (*copy this layer or share this
+> reference*) that a topology does not know.
+>
+> What the exploration found instead is two measured duplications, both
+> `border-grid.ts`-shaped: `unify-the-board-origin` (eight games compute the
+> board's pixel origin twice, once for input and once for paint) and
+> `share-the-run-length-desc-scanner` (one desc grammar, four spellings, and
+> every game writes it twice — once to validate, once to decode).
 
 Presentation is **held**: the scene-graph postmortem's bar is real downstream
 pressure, and none exists yet. Hints for the deliberately held-back games
@@ -258,9 +288,13 @@ Three commitments shape everything here:
 
 ## Adding a game, in one paragraph (the target experience)
 
-You run the scaffolder and fill in five declarations: a **board model** (grid
+You run the scaffolder and fill in five declarations: ~~a **board model** (grid
 topology, cell domain, what an edge/vertex means — the desc codec, state
-cloning, coordinate maps and cursor movement fall out); ~~a **gesture table**
+cloning, coordinate maps and cursor movement fall out)~~ — **that one is
+withdrawn too** (2026-09-06): a game gets its board by importing `grid/` when it
+is a planar graph and by indexing a typed array when it is not, its cursor from
+`pointer.ts`, and its coordinate pair from `geometry.ts` curried with its own
+border; ~~a **gesture table**
 (click cycles a cell, drag paints, right-click marks — keyboard and touch
 equivalents are derived, which is what the input-parity bar demands)~~ — **that
 one is withdrawn**, and input stays a hand-written `interpretMove` over shared

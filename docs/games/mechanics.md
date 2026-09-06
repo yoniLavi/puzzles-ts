@@ -699,6 +699,34 @@ the move code; render should be asking, not deciding. Exemplar:
 [`crossing/render.ts`](../../src/games/crossing/render.ts) (`layoutNumbers`,
 `runForNumber`).
 
+**The rule's most common concrete instance is the board's pixel origin**, and it
+was violated in eight games until `unify-the-board-origin` swept for it: the
+border was computed once in the module hosting `interpretMove` and again in the
+module hosting `redraw`. All eight agreed, which is exactly why nobody looked —
+the failure mode is that they agree until one gains a reason to change, and then
+the click lands on a different cell than the one the player sees highlighted,
+with the whole suite green because nothing drives paint and input against each
+other.
+
+- **Put the origin in `render.ts`, export it, and import it from the input
+  path.** One function cannot drift from itself, so this needs no test at all —
+  which is stronger than a guard asserting the two agree. Exemplars:
+  [`mines/render.ts`](../../src/games/mines/render.ts) (`borderFor`) and
+  [`bricks/render.ts`](../../src/games/bricks/render.ts) (`offsets`, whose doc
+  comment says *"Shared with `interpretMove` so pointer mapping and drawing
+  agree"*).
+- **Tell: an input path that *cites* the render module in a comment instead of
+  importing from it.** Slant's read `const b = Math.floor(ts / 3) + 1; //
+  render.ts border (NARROW_BORDERS)` — a copy naming its own original, spelling
+  the same number a second way (`render.ts` said `clueRadius(ts) + 1`). A
+  comment pointing at the source of truth is the shape of an import that was
+  not written.
+- **Do not reach for a scan here.** One was considered and declined: it would
+  have to key on a name (`border`, `BORDER`, `margin`, `TLBORDER`), and Slant's
+  copy was an unnamed inline expression — so the scan would have reported the
+  worst instance in the set as clean. See `AGENTS.md` § "Method", "A scan that
+  keys on a name finds only the games that were named that way".
+
 ### Grid modes are a movement table
 
 **A game with several grid shapes is usually one substrate plus a per-mode

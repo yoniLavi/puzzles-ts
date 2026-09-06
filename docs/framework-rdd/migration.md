@@ -20,7 +20,7 @@ the invariants that must not move.
 | `difficulty.ts` (`DifficultyContract`) | Derived from the ladder; the contract type survives as the introspection surface. |
 | `overlay-sidecar.ts` | Internal to the tile renderer; no game-visible API. |
 | `pointer.ts`, `params.ts`, `key-labels.ts` | The param layer's leaves. (`pointer.ts` was to be the gesture library's; that direction is withdrawn — it stays what it is, the frontend-fact leaf, and the derivable half of a keyboard is already derived there.) |
-| `grid/`, `geometry.ts` | The board-model topology providers. |
+| `grid/`, `geometry.ts` | (Was to be the board model's topology providers; that direction is withdrawn — they stay what they are. `grid/` *is* the general board model, for the two games that want one; `geometry.ts` is the two-line coordinate pair the rest curry with their own border.) |
 | `retry-limit.ts`, `step-budget.ts` | Framework-injected budgets. |
 | `testing/` harness + the per-capability guards | The conformance suite's execution layer. |
 
@@ -107,9 +107,16 @@ incremental and abortable.
 
 Named up front, because an RDD doc that cannot fail is decoration:
 
-- The adapter forces contortion on the first non-Latin exemplar (the
+- ~~The adapter forces contortion on the first non-Latin exemplar (the
   Palisade re-expression is the test — edge games are where "cells with
-  domains" assumptions die).
+  domains" assumptions die).~~ **This one fired, 2026-09-06** — though not the
+  way it expected. Palisade could not be contorted by the board model because
+  it had already been served *by another axis*: `border-grid.ts` gives it state
+  allocation, its pixel→edge map, its half-grid cursor and its `computeSize`
+  geometry, keyed on the mechanic. And `src/engine/grid/` — a general
+  planar-graph board model with all eighteen tilings — has shipped since Pearl
+  and has two consumers. The board model is withdrawn:
+  `openspec/postmortems/2026-09-06-board-model-withdrawal.md`.
 - ~~The derived gesture layer cannot express a real game's input without more
   declaration than the `interpretMove` it replaces (Sixteen's drag-to-slide
   is the test).~~ **This one fired, 2026-09-05.** Sixteen's input decomposes

@@ -123,6 +123,14 @@ export function newDrawState(s: GalaxiesState): GalaxiesDrawState {
   };
 }
 
+/** The board's pixel origin: a full tile on every side, so the dots that sit on
+ * the outer grid lines have room to draw. Exported so `interpretMove` and
+ * `computeSize` read the same number the painter does — one function, both
+ * callers ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+export function borderFor(tileSize: number): number {
+  return tileSize;
+}
+
 export function setTileSize(ds: GalaxiesDrawState, tileSize: number): void {
   if (ds.tileSize === tileSize) return;
   ds.tileSize = tileSize;
@@ -740,7 +748,7 @@ export function redraw(
   // So does the hint's, which is what makes a hint appear on a frame where
   // nothing else changed (`hint-overlay.test.ts`).
   packHint(ds, w, h, hint?.highlights);
-  const border = tile;
+  const border = borderFor(tile);
   const drawWidth = w * tile + 2 * border;
   const drawHeight = h * tile + 2 * border;
   const edgeThickness = Math.max(tile >> 4, 2);

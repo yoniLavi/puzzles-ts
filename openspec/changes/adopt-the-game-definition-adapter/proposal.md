@@ -32,11 +32,28 @@ now so the ordering is recorded, not so it is started next.
 > without reaching for another, the definition object is real and this change
 > stays as written.
 >
-> **It was to be applied when `declare-the-gesture-table` landed. That change
-> was withdrawn** on 2026-09-05 (`openspec/postmortems/2026-09-05-gesture-table-withdrawal.md`),
-> so the criterion moves to `declare-the-board-model`, which is now the next
-> declaration to be tried and is in any case the one most likely to be reached
-> *for* rather than to reach.
+> **The criterion has now been applied, and there is no declaration left to
+> apply it to.** It was to be settled by `declare-the-gesture-table`, withdrawn
+> 2026-09-05, and then by `declare-the-board-model` — the one most likely to be
+> reached *for* rather than to reach. That change was withdrawn on 2026-09-06
+> (`openspec/postmortems/2026-09-06-board-model-withdrawal.md`), and the reason
+> bears directly on the criterion: **the board every other concern would have
+> reached for is not a declaration and never was.** A game gets its board by
+> importing `src/engine/grid/` when it is a planar graph, by indexing a typed
+> array when it is not, its cursor from `pointer.ts`, and its coordinate pair
+> from `geometry.ts`. Rows 1, 2, 3 and 4 are now four for four: every concern
+> the vision expected to compose into a definition object either shipped as a
+> helper a game calls, or declined to exist.
+>
+> **What that leaves this change as.** Nothing has been found that one
+> declaration cannot express without another, so on its own stated criterion
+> this is a manifest reader rather than an adapter, and
+> `re-express-the-collection` is N small per-concern adoptions rather than one
+> sweep. The remaining question is the capability diff, and
+> `audit-declared-versus-derived-capabilities` has since reported that a derived
+> set serves it — see the paragraph above. **Settle this change (as a
+> withdrawal, or as whatever the capability diff still needs) rather than
+> waiting on a fifth declaration; there is no longer one coming.**
 >
 > The withdrawal is weak evidence on the "stands alone" side and should be
 > weighed as weak: input was the concern most plausibly needing the board

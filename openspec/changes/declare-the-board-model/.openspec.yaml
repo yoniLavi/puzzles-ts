@@ -1,5 +1,0 @@
-# No deltas yet: exemplar-gated, and the exemplar is chosen to break it. If
-# Palisade or Slant shows contortion the outcome is a postmortem and a
-# withdrawal, not a requirement.
-schema: spec-driven
-skip_specs: true

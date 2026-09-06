@@ -29,6 +29,7 @@ import type { Color, Point, Size } from "../../engine/types.ts";
 import {
   animLength,
   type BlackboxDrawState,
+  borderFor,
   colors as colorsImpl,
   computeSize as computeSizeImpl,
   flashLength,
@@ -98,8 +99,7 @@ function tileSizeOf(ds: BlackboxDrawState): number {
  * clicks fold onto cell 0 exactly as upstream (where `(0,0)` is the
  * reveal button). */
 function fromDraw(px: number, ts: number): number {
-  const border = Math.floor(ts / 2);
-  return Math.trunc((px - border) / ts);
+  return Math.trunc((px - borderFor(ts)) / ts);
 }
 
 // --- input ------------------------------------------------------------

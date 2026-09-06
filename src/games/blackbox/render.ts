@@ -93,8 +93,15 @@ export function setTileSize(ds: BlackboxDrawState, tilesize: number): void {
   ds.rrad = Math.floor((3 * tilesize) / 8);
 }
 
+/** The board's pixel origin. Exported so `fromDraw` reads the same number the
+ * painter does — one function, both callers
+ * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+export function borderFor(tilesize: number): number {
+  return Math.floor(tilesize / 2);
+}
+
 export function computeSize(p: BlackboxParams, tilesize: number): Size {
-  const border = Math.floor(tilesize / 2);
+  const border = borderFor(tilesize);
   return {
     w: (p.w + 2) * tilesize + 2 * border,
     h: (p.h + 2) * tilesize + 2 * border,

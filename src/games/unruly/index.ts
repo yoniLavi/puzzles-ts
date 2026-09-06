@@ -43,6 +43,7 @@ import type { Color, Point, Size } from "../../engine/types.ts";
 import { type Cell, DIFF_NAMES, EMPTY, ONE, ZERO } from "./constants.ts";
 import { newDesc, solvableAt } from "./generator.ts";
 import {
+  border,
   colors,
   computeSize,
   FLASH_TIME,
@@ -78,10 +79,6 @@ import {
 
 function newUi(_state: UnrulyState): UnrulyUi {
   return { cursor: newCursor() };
-}
-
-function border(ts: number): number {
-  return Math.floor(ts / 2);
 }
 
 /** The cell value a key/click decided to set (upstream's `c`), or `null`

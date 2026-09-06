@@ -91,7 +91,10 @@ export function colors(defaultBackground: Color): Color[] {
 
 // --- geometry --------------------------------------------------------------
 
-const border = (ts: number): number => Math.floor(ts / 2);
+/** The board's pixel origin. Exported so `interpretMove` reads the same number
+ * the painter does — one function, both callers
+ * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+export const border = (ts: number): number => Math.floor(ts / 2);
 const crad = (ts: number): number => Math.floor(ts / 2) - 1;
 const textsz = (ts: number): number => Math.floor((14 * crad(ts)) / 10) - 1;
 const coord = (v: number, ts: number): number => v * ts + border(ts);

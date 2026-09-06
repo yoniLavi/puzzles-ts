@@ -1,0 +1,6 @@
+# No deltas: this changes no behavior, no format and no contract. It moves eight
+# duplicated definitions to one place each, byte-identically. The rule it serves
+# is already stated in docs/games/mechanics.md; what was missing was structure,
+# not a requirement.
+schema: spec-driven
+skip_specs: true

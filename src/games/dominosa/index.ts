@@ -49,6 +49,7 @@ import type {
 } from "../../engine/types.ts";
 import { newDominosaDesc } from "./generator.ts";
 import {
+  border,
   colors,
   computeSize,
   type DominosaDrawState,
@@ -120,9 +121,9 @@ function interpretMove(
 ): DominosaMove | null | UiUpdate {
   const { w, h } = state;
   const ts = ds.tilesize;
-  const border = -Math.floor(ts / 16); // NARROW_BORDERS
-  const coord = (v: number) => v * ts + border;
-  const fromCoord = (px: number) => Math.floor((px - border + ts) / ts) - 1;
+  const b = border(ts);
+  const coord = (v: number) => v * ts + b;
+  const fromCoord = (px: number) => Math.floor((px - b + ts) / ts) - 1;
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     const tx = fromCoord(p.x);

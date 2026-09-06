@@ -1,0 +1,6 @@
+# No deltas yet: the duplication is measured but the extraction is not proven to
+# survive contact — two games decide it in task 0, and a declined extraction is
+# a legitimate outcome. A requirement written now would spec a helper nobody has
+# sized.
+schema: spec-driven
+skip_specs: true

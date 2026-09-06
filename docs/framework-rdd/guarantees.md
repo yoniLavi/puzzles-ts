@@ -79,7 +79,7 @@ asserting the size of the population it sweeps**).
 
 | Capability | Generated guarantees |
 | --- | --- |
-| Board model | State clone independence; desc codec round-trip (property-fuzzed); coordinate maps agree from both callers; cursor stays in bounds on every topology. |
+| ~~Board model~~ | ~~State clone independence; desc codec round-trip (property-fuzzed); coordinate maps agree from both callers; cursor stays in bounds on every topology.~~ **Withdrawn 2026-09-06** with the declaration. The one row worth wanting — *coordinate maps agree from both callers* — turned out not to need it: making the board's pixel origin one exported function makes the agreement true by construction, which is stronger than a test asserting it (`unify-the-board-origin`). |
 | Gesture table | Every move constructor reachable by pointer, keyboard AND touch (or a declared, reported gap); the four frontend traps exercised; no raw-button comparison can go deaf to touch. |
 | Technique ladder | Fixpoint terminates within budget on every preset; grade cap-monotone; tiers bind (a board graded T is rejected by cap T−1); **N generated boards per preset walk to completion through the hint projection — the full-hints invariant**; every firing's narration non-empty and its highlights on-board. |
 | Planner | Plan exists from any reachable mid-position (resume guard); recompute-stability (one step forward → same subgoal); step budgets tick. |

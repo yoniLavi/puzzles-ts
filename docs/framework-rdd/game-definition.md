@@ -108,6 +108,21 @@ and decode are property-tested inverses — a test the framework generates.
 
 ## The board model
 
+> **⛔ WITHDRAWN, 2026-09-06.** The second piece of the vision to be *falsified*
+> rather than left unbuilt, and it is kept here for the argument only. The
+> exploration checked the five deliverables below against what is on disk and
+> found that **a general board model already ships** — `src/engine/grid/` models
+> any planar graph as faces, edges and dots, carries all eighteen tilings,
+> `gridNearestEdge` for input hit-testing and `gridNewDesc`/`gridValidateDesc`
+> for the codec — and that **55 of 57 games decline it**, because `y*w+x` into a
+> typed array is the right representation for a square board. The exemplar
+> `migration.md` named as this design's test, Palisade, had already received
+> four of the five from `border-grid.ts`, keyed on the mechanic rather than on
+> the topology. The full record and the measurements are
+> `openspec/postmortems/2026-09-06-board-model-withdrawal.md`; what the
+> exploration found is `unify-the-board-origin` and
+> `share-the-run-length-desc-scanner`.
+
 **You declare:** topology (square / hex / one of the eighteen `grid/` tilings
 / a bespoke coordinate pair), what a cell holds (a finite domain, a candidate
 set, a numeric range), and which entities exist (cells, edges, vertices —

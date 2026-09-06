@@ -42,6 +42,7 @@ import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import { newSinglesDesc } from "./generator.ts";
 import {
+  border,
   colors,
   computeSize,
   FLASH_TIME,
@@ -165,8 +166,8 @@ function interpretMove(
     button === RIGHT_BUTTON
   ) {
     const ts = ds.tilesize;
-    const border = Math.floor(ts / 2);
-    const fromCoord = (v: number): number => Math.floor((v - border + ts) / ts) - 1;
+    const b = border(ts);
+    const fromCoord = (v: number): number => Math.floor((v - b + ts) / ts) - 1;
     x = fromCoord(p.x);
     y = fromCoord(p.y);
     if (ui.cursor.visible) {

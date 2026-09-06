@@ -43,6 +43,7 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import {
+  border,
   colors,
   computeSize,
   FLASH_TIME,
@@ -130,8 +131,8 @@ function interpretMove(
 
   if (isMouseDown(button)) {
     const ts = ds.tilesize;
-    const border = Math.floor(ts / 2);
-    const fromCoord = (v: number): number => Math.floor((v - border) / ts);
+    const b = border(ts);
+    const fromCoord = (v: number): number => Math.floor((v - b) / ts);
     r = fromCoord(p.y + ts) - 1;
     c = fromCoord(p.x + ts) - 1;
     if (outOfBounds(r, c, w, h)) return null;

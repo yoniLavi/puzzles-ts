@@ -50,8 +50,12 @@ const COL_M0 = COL_B0 + 1 * NBACKGROUNDS;
 const COL_D0 = COL_B0 + 2 * NBACKGROUNDS;
 const COL_X0 = COL_B0 + 3 * NBACKGROUNDS;
 
-const BORDER = 1; // NARROW_BORDERS
-const FLASH_SPIN = 0.7;
+/** The board's pixel origin (NARROW_BORDERS). Exported so `interpretMove` and
+ * `computeSize` read the same number the painter does — one function, both
+ * callers ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+export const BORDER = 1;
+/** Win-flash duration, shared with `flashLength` for the same reason. */
+export const FLASH_SPIN = 0.7;
 const TWO_PI = 2 * Math.PI;
 
 // --- per-tile flags ---------------------------------------------------

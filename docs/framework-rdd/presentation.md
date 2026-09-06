@@ -43,11 +43,14 @@ per-game test someone remembered to write.
 
 ## What a game declares
 
-- **Board geometry**: from the board model ([`game-definition.md`](./game-definition.md)) —
-  tile size baseline, `computeSize`, coordinate maps. Bespoke geometry
-  (sheared bricks, non-square boards) supplies the coordinate pair
-  centrally once, used by input and paint both — the existing
-  "one function, both callers" rule, now structural.
+- **Board geometry**: ~~from the board model
+  ([`game-definition.md`](./game-definition.md))~~ — tile size baseline,
+  `computeSize`, coordinate maps. **The board model is withdrawn (2026-09-06)**,
+  and the half of this bullet worth keeping survives without it: a game supplies
+  its coordinate pair centrally once, used by input and paint both. That is the
+  existing "one function, both callers" rule made structural by *exporting one
+  function*, which Mines (`borderFor`) and Bricks (`offsets`) already do and
+  eight games do not — `unify-the-board-origin`.
 - **`tileKey`** — the packed per-cell key. The framework provides the packing
   helpers and refuses silently-truncated packs (a key wider than 32 bits
   fails loud at declaration; the Solo parallel-arrays answer becomes a
