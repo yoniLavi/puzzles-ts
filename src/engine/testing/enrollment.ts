@@ -107,6 +107,73 @@ export function enrolledIn(isMember: (g: BuiltGame) => boolean): Enrollment {
   return { ids: all.filter(isMember).map((g) => g.id), population: all.length };
 }
 
+// --- what each game can do, derived ----------------------------------------
+
+/**
+ * The optional members of the `Game` interface, read off its own declaration.
+ *
+ * The same derivation `contract-surface.test.ts` makes, for the complementary
+ * question. That file asks, per *member*, "does anyone implement this and does
+ * anyone read it"; this asks, per *game*, "what can it do" — so both must start
+ * from the interface itself rather than from a list somebody typed, or a
+ * capability added to `Game` next month is invisible to both.
+ */
+export const OPTIONAL_GAME_MEMBERS: readonly string[] = (() => {
+  const modules = import.meta.glob<string>("../game.ts", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  });
+  const text = Object.values(modules)[0];
+  if (text === undefined) throw new Error("enrollment: engine/game.ts not found");
+  const src = ts.createSourceFile("game.ts", text, ts.ScriptTarget.ESNext, true);
+  for (const st of src.statements) {
+    if (!ts.isInterfaceDeclaration(st) || st.name.text !== "Game") continue;
+    const names = st.members
+      .filter((m) => m.questionToken !== undefined && m.name !== undefined)
+      .map((m) => (m.name as ts.Identifier).text)
+      .sort();
+    if (names.length === 0)
+      throw new Error("enrollment: `Game` has no optional members");
+    return names;
+  }
+  throw new Error("enrollment: no `Game` interface in engine/game.ts");
+})();
+
+/** Everything one game is observably able to do. */
+export interface CapabilitySet {
+  readonly id: string;
+  /** The optional `Game` members this game actually carries, sorted. */
+  readonly members: string[];
+  /** The fields its `newUi` actually returned, sorted. */
+  readonly ui: string[];
+}
+
+/**
+ * What every registered game can do, read off the game and its `Ui`.
+ *
+ * **This is the guard `re-express-the-collection` runs before and after every
+ * batch**, and the reason it is derived is the reason the whole sweep is risky:
+ * its characteristic failure is *silent capability loss* — a converted game that
+ * quietly stops offering its keypad, its reference aid or its mistake checking
+ * still compiles, still plays, and still passes most of its own tests. A
+ * declared manifest cannot catch that, because the change that drops the
+ * capability drops its manifest entry in the same edit and nothing notices. A
+ * set read off the object cannot be edited into agreement with a mistake.
+ *
+ * Both halves are read, never listed: `members` from `Object.hasOwn` against
+ * the interface's own optional members, `ui` from the object `newUi` returned.
+ */
+export function capabilitySets(): CapabilitySet[] {
+  return builtGames().map((g) => ({
+    id: g.id,
+    members: OPTIONAL_GAME_MEMBERS.filter((m) =>
+      Object.hasOwn(g.game as object, m),
+    ).sort(),
+    ui: Object.keys(g.ui).sort(),
+  }));
+}
+
 /** Every game's own sources, by game id — test files excluded, because a guard
  * asking "does this game hand-roll the mechanic" must not be satisfied by a
  * test that merely mentions the helper. */

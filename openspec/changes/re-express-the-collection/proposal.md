@@ -3,8 +3,11 @@
 Realizes: `docs/framework-rdd/migration.md` § "Order of adoption", step 4 —
 *"then the full sweep, in family batches: every game is re-expressed"*.
 
-**Readiness: the argument stands; the object changed, and that is an owner
-question.** This was written as the change that ports the existing games into
+**Readiness: route decided by the owner, 2026-09-06 — the full sweep.** Asked
+whether the surviving work should be continuous per-concern convergence or a
+bounded family-batch sweep with a declarable end, the owner answered: *"Let's do
+a full sweep."* So this change proceeds, in batches, to an end state somebody can
+declare done. This was written as the change that ports the existing games into
 the framework, blocked until the exemplars hardened the contract.
 
 > **There is no framework definition to port them into** (2026-09-06). All four
@@ -28,21 +31,22 @@ the framework, blocked until the exemplars hardened the contract.
 > `unify-the-board-origin` (8) are each one pass of exactly the convergence this
 > change describes, each independently valuable, each archived alone.
 >
-> **The question for the owner, who made this call on 2026-08-07.** The decision
-> was *every game is re-expressed*, in family batches, rather than games
-> adopting at their leisure — and the stated reason was that a mixed tree
-> manufactures a fork in the road at every reading. Per-concern convergence
-> reaches the same end state and honors that reason **better** on one axis: it
-> never leaves a mixed tree standing for longer than a single change, whereas a
-> family sweep leaves one for the length of the sweep. It is worse on another:
-> there is no moment when someone can say the collection is done, because the
-> list of concerns is open.
+> **Answered, 2026-09-06: the full sweep.** The choice put to the owner was
+> continuous per-concern convergence — which was already running, five passes
+> archived — against a bounded sweep with a moment when the collection can be
+> declared done. The answer was the sweep, so the open-ended route is not what
+> this change is.
 >
-> So: **is continuous per-concern convergence what was wanted, or is a bounded
-> family-batch sweep still the goal?** This change should not be started, split
-> or closed until that is answered. It is owner-named work and the answer
-> decides whether this remains one change, becomes a tracking umbrella for the
-> per-concern changes, or is closed as already-in-progress.
+> **What that decides, concretely.** The end state is *enumerated first and then
+> exhausted*, rather than discovered one concern at a time: the survey below
+> produces the list of indefensible differences across all 57 games, the list is
+> the definition of done, and each batch closes part of it. A concern found
+> later still gets fixed — but it is an addition to a named list, not the whole
+> method.
+>
+> **What it does not change**: batches stay small and independently archivable,
+> the capability diff runs per batch, and the two-lane acceptance rule decides
+> where owner time is spent.
 
 ## Why
 

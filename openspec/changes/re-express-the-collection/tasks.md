@@ -1,33 +1,36 @@
 # re-express-the-collection — tasks
 
-Scaffolded 2026-09-04. **Waiting on one owner answer, not on a contract.** The
-framework definition this was to port games into does not exist — all four
-declarations reported and the adapter is withdrawn
-(`openspec/postmortems/2026-09-06-game-definition-adapter-withdrawal.md`). Read
-the proposal's readiness block first: the argument survives, the route changed,
-and whether the new route is what was asked for is the owner's call.
+Scaffolded 2026-09-04. **Route decided by the owner 2026-09-06: the full
+sweep.** The framework definition this was to port games into does not exist —
+all four declarations reported and the adapter is withdrawn
+(`openspec/postmortems/2026-09-06-game-definition-adapter-withdrawal.md`) — so
+the sweep converges the 57 games onto the shared shapes that *do* exist, to an
+end state somebody can declare done. Read the proposal's readiness block first.
 
-## 0. Get the route settled, then split
+## 0. Settle the route, build the net, name the end state
 
-- [ ] 0.1 **Ask the owner the question in the readiness block**: continuous
-      per-concern convergence (which is already running and has archived five
-      passes), or a bounded family-batch sweep with an end state someone can
-      declare done? Do not start, split or close this change before that is
-      answered — it is owner-named work and the two routes produce different
-      changes.
-- [ ] 0.2 **Build the capability diff first, whichever route wins.** Derived
-      from `testing/enrollment.ts`'s `builtGames()` — the optional `Game`
-      members a game has plus the `Ui` fields its `newUi` returns, snapshotted
-      and diffed. Silent capability loss is this change's characteristic risk at
-      any batch size, and by the time a sweep is running it is too late to add.
-- [ ] 0.3 **Prove it fails**: drop a capability from one game deliberately and
-      watch the diff catch it.
-- [ ] 0.4 Then split — one change per batch, each archivable on its own. A
-      single 57-game change cannot be reviewed or reverted, and keeping it whole
-      would break "one change per coherent unit of work". **This directory holds
-      the plan; it should not hold the work.**
-- [ ] 0.5 Sequence the batches by what each teaches, hardest-first where the
-      shared shape is still soft, mechanical-last.
+- [x] 0.1 **Route decided**: the full sweep, not open-ended per-concern
+      convergence. Recorded in the proposal's readiness block.
+- [x] 0.2 **Capability diff built, before any game moves.** Derived, not
+      declared: `enrollment.ts`'s `capabilitySets()` reads the optional `Game`
+      members a game carries (`Object.hasOwn` against the interface's own
+      optional members, read off its AST) plus the fields its `newUi` returned;
+      `src/capability-surface.test.ts` snapshots all 57 and pairs the snapshot
+      with assertions a careless `vitest -u` cannot erase.
+- [x] 0.3 **Proved it fails**: commenting `findMistakes` out of Towers' game
+      object turned the snapshot red with a `- "findMistakes"` line, which is
+      exactly the reviewable diff a batch needs. Restored.
+- [ ] 0.4 **Survey the collection and publish the end state** — the list of
+      differences that nobody can defend as belonging to the puzzle. This is the
+      sweep's definition of done, and it must be a *measurement*, not a list of
+      what somebody noticed: key on shape, count the population, and name the
+      games rather than counting them.
+- [ ] 0.5 Split into batches from the survey — one change per batch, each
+      archivable on its own. A single 57-game change cannot be reviewed or
+      reverted, and keeping it whole would break "one change per coherent unit
+      of work". **This directory holds the plan; it should not hold the work.**
+- [ ] 0.6 Sequence the batches by what each teaches: where the shared shape is
+      still soft, go first and let it harden; mechanical last.
 
 ## Per batch
 
