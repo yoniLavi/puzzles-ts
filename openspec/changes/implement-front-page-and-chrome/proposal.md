@@ -17,10 +17,16 @@ rather than matters of taste, measured against the running app:
   truncates to `7…`.
 - The board **uses about a third of its gray panel**, framed by dead surface.
 
-And the information architecture carries a fourth, larger one: **`findMistakes`
-is implemented by 42 of 57 games and has exactly one production caller**,
-`checkAndSave`. The only way a player can have their work checked is to try to
-save a checkpoint.
+The information architecture carries a fourth problem of a different kind:
+`hint`, `toggle-reference` and `check-and-save` are offered from **both** the
+game menu and the toolbar, and eleven further commands are split between them
+under no rule. A player has to learn both surfaces and can still miss a command
+that lives only in the other.
+
+*(`findMistakes` having one production caller, `checkAndSave`, is **not** a
+defect. The combined command was requested and designed that way, and it keeps
+its quick-access position. A separate, quieter check-only command is added for
+the one case the combination cannot serve — see `design.md` §4.6.)*
 
 ## What Changes
 
@@ -41,7 +47,9 @@ lists the work.
 - **The phone bar (§4.5).** Four actions — Undo, Redo, Next hint, More — with
   `More` opening the rail as a sheet in the same order and wording. The hint's
   explanation sits above the bar, out from under a thumb.
-- **`Check my work` (§4.6).** A front door for `findMistakes`.
+- **`Check & save` keeps quick access (§4.4, §4.5)**, bordered in the rail and
+  with a permanent slot in the phone bar; a quieter `Check without saving` is
+  added for the case a one-slot checkpoint cannot serve.
 - **The move counter replaces the History button.** `currentMove`/`totalMoves`
   are already signals on `Puzzle` and are shown nowhere.
 - **Home: one content axis, the dense list, search, and a Resume row.**

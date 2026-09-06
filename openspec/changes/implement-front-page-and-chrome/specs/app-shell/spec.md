@@ -36,31 +36,34 @@ once-ever commands may sit behind a menu.
 - **WHEN** the command surface renders a control
 - **THEN** it carries a visible text label, not an icon alone
 
-### Requirement: A player can have their work checked without saving
+### Requirement: Checking a board never costs a player their checkpoint
 
-Where a game implements `findMistakes`, the puzzle screen SHALL offer a command
-that runs it and reports the result **without writing a checkpoint**.
+The combined check-and-save command SHALL remain in the chrome's most reachable
+tier. Alongside it, where a game implements `findMistakes`, the puzzle screen
+SHALL also offer a quieter command that runs the check and reports the result
+**without writing a checkpoint**.
 
-`findMistakes` is implemented by 42 of the 57 games and had exactly one
-production caller, the quick-save action, which checks only as a precondition of
-saving and refuses to save when it finds something. Checking your work and
-keeping a checkpoint are different intentions, and a player who wanted the first
-could only get it by asking for the second.
+The combined command is deliberate and is what most players want: it verifies
+first and refuses to save over a mistake, so a saved checkpoint is a known-good
+one. What it cannot serve is a narrow case created by the store: **the
+quick-save slot is one per puzzle**, so checking overwrites it. A player who
+saved deliberately before a speculative branch, and then checks while the board
+is still consistent, silently loses the position they were keeping.
 
-The command SHALL appear only where the game reports `canFindMistakes`, derived
-from the game rather than from a list of games.
+Both commands SHALL appear only where the game reports `canFindMistakes`,
+derived from the game rather than from a list of games.
 
-#### Scenario: A game that can find mistakes
+#### Scenario: Checking without saving preserves an earlier checkpoint
 
-- **WHEN** the puzzle screen renders for a game reporting `canFindMistakes`
-- **THEN** a check command is offered
-- **AND** invoking it highlights the mistakes and reports the count
-- **AND** no checkpoint is written
+- **GIVEN** a checkpoint saved at an earlier position
+- **WHEN** the player runs the check-without-saving command at a later position
+- **THEN** the mistakes are highlighted and the count reported
+- **AND** returning to the checkpoint still restores the earlier position
 
-#### Scenario: A game that cannot
+#### Scenario: A game that cannot find mistakes
 
 - **WHEN** the game does not report `canFindMistakes`
-- **THEN** the command is absent rather than present and disabled
+- **THEN** both commands are absent rather than present and disabled
 
 ### Requirement: Undo and redo have keyboard shortcuts
 

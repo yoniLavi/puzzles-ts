@@ -38,17 +38,24 @@ Authoritative detail: `openspec/changes/design-front-page-and-chrome/design.md`
 - [ ] 2.6 `Play hints for me` as a switch, not a button.
 - [ ] 2.7 `Show solution…` quiet, last in its group, and confirmed.
 
-## 3. Check my work (§4.6)
+## 3. Check & save, and its narrow sibling (§4.4, §4.6)
 
-- [ ] 3.1 A rail command that runs `findMistakes` and reports the count without
-      saving anything — the first caller other than `checkAndSave`.
-- [ ] 3.2 Present only where `canFindMistakes`; derived, not listed.
-- [ ] 3.3 Test that it highlights and reports without writing a checkpoint.
+- [ ] 3.1 `Check & save` keeps quick access: bordered in the rail's position
+      group with a shortcut, and a permanent slot in the phone bar. Behavior
+      unchanged — it verifies first and refuses to save over a mistake.
+- [ ] 3.2 `Check without saving`: a quiet command low in "Help me play" that
+      runs `findMistakes` and reports without writing a checkpoint — the first
+      caller other than `checkAndSave`.
+- [ ] 3.3 Both present only where `canFindMistakes`; derived, not listed.
+- [ ] 3.4 Test that the quiet one highlights and reports and leaves the
+      quick-save slot untouched — including that a checkpoint saved earlier is
+      still restorable afterwards, which is the case it exists for.
 
 ## 4. The phone (§4.5)
 
-- [ ] 4.1 Bottom bar of exactly four, ≥44px targets, Next hint taking the free
-      space.
+- [ ] 4.1 Bottom bar of exactly five — Undo, Redo, Next hint, Check & save,
+      More — ≥44px targets, Next hint taking the free space and the only
+      filled one.
 - [ ] 4.2 `More` opens the rail as a sheet, same order and wording.
 - [ ] 4.3 The hint explanation renders above the bar.
 - [ ] 4.4 The top bar carries four items and is proved not to overflow at 390px

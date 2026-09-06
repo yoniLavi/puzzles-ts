@@ -209,18 +209,21 @@ affordable — the IA and the look are one decision, not two.
 1. `← All puzzles` — back to the catalog.
 2. **Game name** (22/600) and two param chips (`7×7`, `Easy`) that open the
    type menu and show the current value instead of hiding it.
-3. **Where you are** — `Move 12 of 18` in mono, and it *is* the timeline
-   control. Under it, the game's status line for the **nine games that provide
-   one** (`cube`, `fifteen`, `flood`, `inertia`, `mosaic`, `netslide`,
-   `palisade`, `samegame`, `twiddle`); absent otherwise.
-4. **Undo / Redo**, labeled, with their shortcuts.
-5. **Help me play** — the fork's differentiator, named as a group:
+3. **Your position in this game** — one group, because where you are, how you
+   move through it, and the checkpoint are one concern:
+   - `Move 12 of 18` in mono, and it *is* the timeline control. Under it, the
+     game's status line for the **nine games that provide one** (`cube`,
+     `fifteen`, `flood`, `inertia`, `mosaic`, `netslide`, `palisade`,
+     `samegame`, `twiddle`); absent otherwise.
+   - **Undo / Redo**, labeled, with their shortcuts.
+   - **Check & save**, bordered so it reads as a button among plain rows, with
+     its shortcut. **Back to last save** beneath it.
+4. **Help me play** — the fork's differentiator, named as a group:
    **Next hint** (accent, primary) with its explanation and `STEP n / m`
-   inline; **Play hints for me** as a *switch*; **Check my work**;
-   **Fill all pencil marks**; **Reference** (games that have one);
+   inline; **Play hints for me** as a *switch*; **Fill all pencil marks**;
+   **Reference** (games that have one); **Check without saving**, quiet;
    **Show solution…** last, quiet, and confirmed.
-6. **Save checkpoint / Return to checkpoint**, paired.
-7. Pinned to the bottom: **New game**, **Restart this puzzle**,
+5. Pinned to the bottom: **New game**, **Restart this puzzle**,
    **How to play <game>**, **More…**.
 
 `More…` holds Share, Copy image, Save game, Load game, Enter game ID,
@@ -229,12 +232,15 @@ behind a menu.
 
 ### 4.5 The phone
 
-A persistent bottom bar of exactly four: **Undo · Redo · Next hint · More**, at
-full tap size, with Next hint taking the free space. `More` opens the rail as a
-sheet in the same order with the same labels, so what a player learns on one
-transfers to the other. **The hint's explanation sits above the bar**, where a
-thumb cannot cover it. The keypad stays attached to the board — it is input,
-not a command.
+A persistent bottom bar of exactly five: **Undo · Redo · Next hint ·
+Check & save · More**, at full tap size, with Next hint taking the free space.
+Check & save holds a permanent slot **by owner request** (2026-09-07: *"I am
+very interested in it being in a highly accessible quick-access position"*),
+outlined rather than filled so the hint stays the one accent. `More` opens the
+rail as a sheet in the same order with the same labels, so what a player learns
+on one transfers to the other. **The hint's explanation sits above the bar**,
+where a thumb cannot cover it. The keypad stays attached to the board — it is
+input, not a command.
 
 The top bar carries only back, name, the two chips and the move count: four
 items, so the overflow that breaks it today cannot recur. Structurally it
@@ -244,11 +250,12 @@ cannot anyway — the commands are not laid out horizontally any more.
 
 | Change | Reason |
 | --- | --- |
-| **`Check my work` added** | `findMistakes` is implemented by **42 of 57 games** and has exactly one production caller, `checkAndSave` — the only way to be checked is to try to save. The largest single gap in the app. |
+| **`Check & save` keeps quick access** | It is an owner-requested feature, deliberately designed: it verifies first and refuses to save over a mistake. It sits high in the rail as a bordered button and keeps a permanent slot in the phone bar. **A first draft of this design demoted it in favor of a new check-only command; that was wrong** — "one production caller" is a fact about the code, not evidence of an oversight, and the same mistake was made about the pinned black clue squares in §3. |
+| **`Check without saving` added, quiet** | The narrow case the combined action cannot serve: the quick-save slot is **one per puzzle**, so checking overwrites it. Save a checkpoint before a guess, check later while still consistent, and the pre-guess restore point is gone. Low in "Help me play", never in the phone bar. |
 | **Move counter replaces the History button** | `currentMove`/`totalMoves` are already signals on `Puzzle` and are never shown. State and control become one element. |
 | **Auto-hint becomes a switch** | It is a mode, drawn as the twin of an action. |
 | **`Solve` → `Show solution…`, confirmed** | Terminal, and one unguarded click away. |
-| **`Check & save`/`Quick-save` → `Save checkpoint`** | One button with two names, both naming the mechanism. It still verifies first where the game can — that is a guarantee, not a second feature. `Quick-load` → `Return to checkpoint`, beside its twin. |
+| **One name for the save, and its twin beside it** | The button reads `Check & save` for every game rather than switching to `Quick-save` where the game cannot check — one control, one name. `Quick-load` becomes `Back to last save` and sits directly beneath it, instead of living in the menu while its pair lived in the toolbar. **The wording is §4.9's third open question.** |
 | **`New game` and `Restart` promoted** | The most common non-move action in a session was two levels deep. |
 | **Everything labeled** | Eight icon-only controls, several unguessable; `Fill all pencil marks` can overwrite notes and had no words. |
 | **`Other puzzles` menu removed** | A second, worse copy of the home screen, which is now a searchable index one click away. |
@@ -289,8 +296,9 @@ Three items break something a player can already see or has already set:
 1. **Removing the `Other puzzles` menu** — a control disappears.
 2. **`statusbar-placement`** (`start`/`end`/`hidden`) becomes moot once the rail
    hosts the status line. That is a stored preference key.
-3. **Renaming Quick-save / Quick-load** — the words appear in toasts and alerts
-   a player may know.
+3. **The save's wording.** `Check & save` shown for every game (rather than
+   `Quick-save` where the game cannot check), and `Quick-load` → `Back to last
+   save`. The old words appear in toasts and alerts a player may know.
 
 None is proposed as done; each is a question the implementation change asks
 before it changes it.
