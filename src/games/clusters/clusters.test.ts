@@ -20,6 +20,7 @@ import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import type { ChangeNotification, GameStatus, Point } from "../../engine/types.ts";
 import { newClustersDesc } from "./generator.ts";
 import { clustersGame } from "./index.ts";
+import { COL_ERROR } from "./render.ts";
 import {
   COMPLETE,
   clustersStatus,
@@ -446,6 +447,46 @@ describe("midend integration", () => {
     // Repaint the target to match its neighbors → the violation clears.
     m.playMoves([{ kind: "paint", cells: [{ index: target, fill: F_COLOR_1 }] }]);
     expect(m.findMistakes()).toBe(0);
+  });
+
+  it("Check & Save path: the mistake overlay is actually painted", () => {
+    // The test above proves `findMistakes` *finds* the violation. This one
+    // proves the frame *draws* it — the half that was uncovered here and in
+    // eighteen other games (`src/mistake-overlay-coverage.test.ts`), and that
+    // matters because the inset error frame is shared engine code: with
+    // `drawThickRectOutline` wired into eight games, deleting a side of it
+    // failed exactly one test in the collection.
+    const params = decodeParams("7x7");
+    const { desc } = newClustersDesc(params, randomNew("clusters-mistake"));
+    const st = newState(params, desc);
+    let target = -1;
+    for (let i = 0; i < st.grid.length; i++) {
+      if (!(st.grid[i] & F_SINGLE)) {
+        target = i;
+        break;
+      }
+    }
+    const w = params.w;
+    const moves: ClustersMove[] = [
+      { kind: "paint", cells: [{ index: target, fill: F_COLOR_0 }] },
+    ];
+    for (const nb of [target - 1, target + 1, target - w, target + w]) {
+      if (nb >= 0 && nb < st.grid.length && !(st.grid[nb] & F_SINGLE)) {
+        moves.push({ kind: "paint", cells: [{ index: nb, fill: F_COLOR_1 }] });
+      }
+    }
+
+    const { recording, mistakeCount } = renderScenario({
+      game: clustersGame,
+      id: `7x7:${desc}`,
+      moves,
+      showMistakes: true,
+    });
+
+    expect(mistakeCount).toBeGreaterThan(0);
+    // Four inset error-colored bands — the shared thick-rect frame.
+    const bands = recording.ops.filter((o) => o.op === "rect" && o.color === COL_ERROR);
+    expect(bands.length).toBeGreaterThanOrEqual(4);
   });
 
   it("save → load round-trips a played game", () => {

@@ -1089,6 +1089,42 @@ describe("crossing findMistakes", () => {
     expect(findMistakes(wrong)).toEqual([{ x, y, kind: "cell" }]);
   });
 
+  it("Check & Save path: the mistake overlay is actually painted", () => {
+    // The test above proves `findMistakes` *finds* the wrong digit; this proves
+    // the frame *draws* it, which is the half nineteen games were missing
+    // (`src/mistake-overlay-coverage.test.ts`).
+    //
+    // Crossing's mistake mark is **not** the run-error frame the test below
+    // covers: it is two nested `drawRectOutline` boxes inset well inside the
+    // tile, deliberately so the two reasons a cell turns red stay
+    // distinguishable. So this asserts *lines*, not rects — the per-game shape
+    // that is exactly why a single collection-wide overlay guard is not
+    // available.
+    const state = newState(P5, FIX.desc);
+    const answer = fixtureSolution();
+    const open = state.puzzle.walls.indexOf(0);
+    const [x, y] = [open % 5, Math.floor(open / 5)];
+
+    const clean = renderScenario({
+      game: crossingGame,
+      id: FIX_ID,
+      showMistakes: true,
+    });
+    const errLines = (r: { recording: RecordingDrawing }): number =>
+      r.recording.ops.filter((o) => o.op === "line" && o.color === COL_ERROR).length;
+    expect(errLines(clean)).toBe(0);
+
+    const dirty = renderScenario({
+      game: crossingGame,
+      id: FIX_ID,
+      moves: [{ kind: "set", x, y, digit: (answer[open] % 9) + 1 }],
+      showMistakes: true,
+    });
+    expect(dirty.mistakeCount).toBeGreaterThan(0);
+    // Two nested boxes, four sides each.
+    expect(errLines(dirty)).toBe(8);
+  });
+
   it("flags notes that have ruled out the answer, but not extra candidates", () => {
     const state = newState(P5, FIX.desc);
     const answer = fixtureSolution();

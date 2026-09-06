@@ -1,0 +1,5 @@
+# No deltas: a test-coverage guard. It asserts nothing about behavior that the
+# specs do not already require — what it adds is that somebody has seen the
+# behavior drawn.
+schema: spec-driven
+skip_specs: true

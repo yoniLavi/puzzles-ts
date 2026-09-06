@@ -60,9 +60,13 @@ status lives.
       Flip's four copies of the board origin.
 - [ ] B7 flip and pegs are still single-file for state, moves and generation —
       found while doing B5, and a weaker case than B5 was. See `survey.md`.
-- [ ] B8 Seven of eight error frames are drawn by code no test observes — found
-      while doing B4. A **coverage** gap, not a convergence one, so it is not
-      part of "done"; see `survey.md`.
+- [x] B8 **Ratcheted** (`ratchet-the-mistake-overlay-coverage`). The gap is
+      wider than B4 saw — 19 of the 39 games offering `findMistakes` never paint
+      the overlay in a test — and it cannot be closed by one guard, because both
+      reaching a mistaken board and the mark it draws are per-game. So it is a
+      derived ledger that may only shrink, now at **17**: clusters and crossing
+      closed. Still a coverage gap rather than a convergence one, so it was
+      never part of "done".
 - [x] B6 The sliding-tile family — **done**, and it turned out to already have a
       change: `unify-the-raised-tile-bevel`, surveyed 2026-09-05 and
       owner-approved in principle, *was* this batch. The clone the survey found
