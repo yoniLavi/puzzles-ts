@@ -5,8 +5,11 @@
  * unique-match bars) recomputed each frame from the validators; a
  * completion flash inverting filled tiles toward highlight/lowlight.
  *
- * The palette deliberately mirrors the C color-enum index layout so the
- * app's dark-mode `paletteOverrides` (keyed by index) apply unchanged.
+ * The palette deliberately mirrors the C color-enum index layout, so a reader
+ * can check it against upstream's slot by slot. Unruly has no dark-mode
+ * `paletteOverrides`: the two tile bases author their own dark values and
+ * `mkhighlightSpecific` hands those to each bevel trio, so nothing addresses a
+ * slot by number.
  */
 
 import { mkhighlightSpecific } from "../../engine/color/color-mkhighlight.ts";

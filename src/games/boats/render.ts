@@ -27,9 +27,9 @@
  * Save overlay rides in an `OverlaySidecar`, so it repaints a cell whose
  * contents are otherwise unchanged (the frame after the move that drew it).
  *
- * Palette indices are **index-for-index with the upstream `COL_*` enum**,
- * because `augmentation.ts` darkens index 4 (the water) in dark mode via
- * `paletteOverrides: { 4: 0.6 }` and a reindexed palette would mis-target it
+ * Palette indices are **index-for-index with the upstream `COL_*` enum**, so a
+ * reader can check this table against upstream's slot by slot. Boats has no
+ * dark-mode `paletteOverrides`, so nothing addresses a slot by number
  * (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 
@@ -104,10 +104,10 @@ export const COL_COUNT_ERROR = 12;
 export const COL_COLLISION_ERROR = 13;
 export const COL_COLLISION_TEXT = 14;
 /**
- * The hint colors are appended **past** the upstream enum. Safe here
- * specifically because `augmentation.ts` darkens this game's palette by index
- * (`paletteOverrides: { 4: 0.6 }` for the water), so only indices at or below 14
- * are spoken for — a *reindexed* palette would mis-target that override
+ * The hint colors are appended **past** the upstream enum, which keeps the
+ * indices above index-for-index with it. Boats has no dark-mode
+ * `paletteOverrides`, so nothing addresses a slot by number and an appended
+ * index cannot collide with one
  * (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 export const COL_HINT = 15;

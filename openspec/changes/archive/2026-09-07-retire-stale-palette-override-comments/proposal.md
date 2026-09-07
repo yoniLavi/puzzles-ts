@@ -19,7 +19,18 @@ The false ones, found while drawing dark-mode mockups for
 | `src/games/lightup/render.ts:12` | "the app's dark-mode `paletteOverrides` for lightup target indices 2 (black) and 3 (light)" |
 | `src/games/lightup/render.ts:57` | "lightup's dark-mode `paletteOverrides` touch only indices 2/3, so these are safe" |
 
-Pearl's two comments are accurate and stay. The ten comments that say a game
+A sixth, which the table above missed because it names no index, was found by
+the shape scan the guard is built on:
+
+| File | Claims |
+| --- | --- |
+| `src/games/unruly/render.ts:9` | the palette mirrors the C index layout "so the app's dark-mode `paletteOverrides` (keyed by index) apply unchanged" — there are none to apply |
+
+That one is the argument for classifying the whole shape rather than scanning
+for an index: a guard that looked only for *named indices* would have passed
+over it, and it is stale in exactly the same way.
+
+Pearl's two comments are accurate and stay. The twelve comments that say a game
 has **no** overrides are true, and stay.
 
 **Nothing is broken today**, which is exactly why this needs doing rather than
@@ -53,8 +64,10 @@ it*, and *a count written in prose is a census nobody re-runs*.
 
 - Affected specs: `ts-engine` gains a requirement that a comment naming a
   palette override index is checked against the declaration.
-- Affected code: `src/games/{boats,inertia,lightup}/render.ts` (comments only),
-  plus one new test.
+- Affected code: `src/games/{boats,inertia,lightup,unruly}/render.ts` (comments
+  only), plus one new test, `src/palette-override-claims.test.ts` — placed at
+  `src/` with the collection's other cross-boundary guards, so no engine module
+  has to reach into `src/puzzle/`.
 - Risk: none to behavior — the five edits are comments. The new guard is the
   substantive part, and its own failure mode (matching nothing) is covered by
   the vacuity count.

@@ -8,9 +8,9 @@
  * impossible-mark is a small black blob, and the completion flash is a
  * 3-phase background blink.
  *
- * The palette stays index-for-index with the upstream color enum —
- * the app's dark-mode `paletteOverrides` for lightup target indices 2
- * (black) and 3 (light).
+ * The palette stays index-for-index with the upstream color enum, so a reader
+ * can check it against upstream's slot by slot. Light Up has no dark-mode
+ * `paletteOverrides`, so nothing addresses a slot by number.
  */
 
 import { BLACK, WHITE, YELLOW_WASH } from "../../engine/color/colors.ts";
@@ -53,8 +53,8 @@ export const COL_LIGHT = 3; // white: bulbs and clue digits
 export const COL_LIT = 4; // yellow lit-square fill
 export const COL_ERROR = 5;
 export const COL_CURSOR = 6;
-// Fork hint colors, appended past the C enum (lightup's dark-mode
-// paletteOverrides touch only indices 2/3, so these are safe). The digit
+// Fork hint colors, appended past the C enum (Light Up has no dark-mode
+// paletteOverrides, so an appended index cannot collide with one). The digit
 // of a driving clue recolors COL_HINT (the Pattern clue↔move tie).
 export const COL_HINT = 7; // forced cell(s), blue fill (highlight only)
 export const COL_HINT_CELL = 8; // evidence: the shade on a *dark* square

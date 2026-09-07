@@ -64,8 +64,9 @@ export const COL_AIM = 10;
  * get two colors, each with a cue of its own (docs/games/hints.md § "The element-type color legend") — the
  * direction is a blue *arrow* (`COL_HINT`, the route arrow's own shape and
  * color: both mean "the solver says go this way"), and the subgoal gem is a
- * violet *ring*. The app's dark-mode `paletteOverrides` for inertia touch only
- * index 6, so appending past the C enum is safe. */
+ * violet *ring*. Appending past the C enum is safe: the app addresses Inertia's
+ * palette by number only through `paletteSwaps`, which pair indices 2 and 3 (the
+ * 3D bevel), and Inertia has no dark-mode `paletteOverrides` at all. */
 export const COL_HINT_GOAL = 11;
 /** Appended: the solved flash's tile fill. Its own slot because `COL_HIGHLIGHT`
  * is also the wall bevel and the mine's glint, which do not flash. */
