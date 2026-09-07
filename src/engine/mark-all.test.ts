@@ -22,6 +22,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { registerAllGames } from "../games/index.ts";
 import { UI_UPDATE } from "./game.ts";
+import { Midend } from "./midend.ts";
 import { randomNew } from "./random/index.ts";
 import { getTsGame, registeredGameIds } from "./registry.ts";
 import { type AnyGame, firstLeaf } from "./testing/hint-games.ts";
@@ -181,6 +182,38 @@ function board(row: Row, seed: string): { state: any; ui: any; params: any } {
   const state = row.game.newState(params, desc);
   return { state, ui: row.game.newUi(state), params };
 }
+
+describe("the chrome can tell a bare board from a marked one", () => {
+  /**
+   * `Midend` reports `hasPencilMarks` on every state change, and the Mark-all
+   * control reads it to say `Fill` or `Update`. It is computed **generically**,
+   * off the shared `pencil` field, rather than asked of each game — so what has
+   * to be true is that the generic read tracks the press in every game that
+   * offers it. A game whose notes moved somewhere else would report a
+   * permanently bare board and the label would silently freeze on `Fill`.
+   */
+  for (const row of MARK_ALL_GAMES) {
+    it(`${row.name}: reports no marks on a fresh board, and marks after a press`, () => {
+      const m = new Midend(row.game);
+      const seen: boolean[] = [];
+      m.setCallbacks(
+        (n) => {
+          if (n.type === "game-state-change") seen.push(n.hasPencilMarks);
+        },
+        () => {},
+      );
+      m.newGame();
+      expect(seen.at(-1), `${row.name}: a fresh board has no pencil marks`).toBe(false);
+
+      // 'M' (77) is the Mark-all press the chrome injects.
+      expect(m.processInput(0, 0, 77), `${row.name}: the press did nothing`).toBe(true);
+      expect(
+        seen.at(-1),
+        `${row.name}: pencil marks were written but the board still reports none`,
+      ).toBe(true);
+    });
+  }
+});
 
 describe("the Mark-all press converges", () => {
   for (const row of MARK_ALL_GAMES) {

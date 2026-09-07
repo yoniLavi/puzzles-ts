@@ -34,6 +34,7 @@ import type { FavoriteChangeEvent } from "../components/catalog-card.ts";
 import rawHomeScreenCSS from "../css/home-screen.css?inline";
 import { APP_NAME, APP_TAGLINE } from "../project-identity.ts";
 import { puzzleDataMap, puzzleIds } from "../puzzle/catalog.ts";
+import { matchesQuery } from "../puzzle/catalog-search.ts";
 import { puzzlePageUrl } from "../routing.ts";
 import { savedGames } from "../store/saved-games.ts";
 import { settings } from "../store/settings.ts";
@@ -90,7 +91,6 @@ export class HomeScreen extends SignalWatcher(Screen) {
 
       <div part="page" @favorite-change=${this.handleFavoriteChange}>
         ${settings.showIntro ? this.renderIntro() : nothing}
-        ${this.renderResume()}
         ${this.renderCatalog()}
       </div>
 
@@ -192,11 +192,23 @@ export class HomeScreen extends SignalWatcher(Screen) {
   /**
    * The games with an auto-save — where the player actually left off.
    *
+   * **Below the search box and the filters, not above them.** It sat above at
+   * first, which put a list in front of the controls that govern the list — a
+   * returning player met their own history before they met the way to look for
+   * anything else. It is now the first rows *inside* the catalog, under the
+   * controls, which is where a shortcut belongs relative to the thing it
+   * shortcuts.
+   *
    * Absent, not empty, when there are none: a heading over nothing is a
    * promise the page cannot keep, and a first-time visitor should meet the
-   * catalog, not a hole where their history would go.
+   * catalog, not a hole where their history would go. Absent too while a
+   * search or a filter is narrowing the list — the player has said what they
+   * are looking for, and it is not "where was I".
    */
   private renderResume() {
+    if (this.search.trim() || this.filter !== "all") {
+      return nothing;
+    }
     const inProgress = this.visibleIds.filter((id) =>
       savedGames.autoSavedPuzzles.has(id),
     );
@@ -204,8 +216,8 @@ export class HomeScreen extends SignalWatcher(Screen) {
       return nothing;
     }
     return html`
-      <section part="section">
-        <h2>Continue</h2>
+      <div part="subsection">
+        <h3 part="subheading">Continue</h3>
         <div part="list">
           ${repeat(
             inProgress,
@@ -213,7 +225,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
             (id) => this.renderCatalogRow(id),
           )}
         </div>
-      </section>
+      </div>
     `;
   }
 
@@ -228,7 +240,6 @@ export class HomeScreen extends SignalWatcher(Screen) {
 
   /** The rows the list is showing, after the filter and the search box. */
   private get listedIds(): readonly string[] {
-    const needle = this.search.trim().toLowerCase();
     return this.visibleIds.filter((puzzleId) => {
       switch (this.filter) {
         case "favorites":
@@ -240,11 +251,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
         case "all":
           break;
       }
-      if (!needle) return true;
-      // Name *and* objective: a player looking for "sudoku" is looking for
-      // Solo, whose name does not contain the word they know it by.
-      const { name, objective, description } = puzzleDataMap[puzzleId];
-      return `${name} ${objective} ${description}`.toLowerCase().includes(needle);
+      return matchesQuery(puzzleId, this.search);
     });
   }
 
@@ -278,19 +285,39 @@ export class HomeScreen extends SignalWatcher(Screen) {
           </div>
         </div>
 
+        ${this.renderResume()}
         ${
           listed.length > 0
-            ? html`<div part="list">
-                ${repeat(
-                  listed,
-                  (id) => id,
-                  (id) => this.renderCatalogRow(id),
-                )}
+            ? html`<div part="subsection">
+                ${
+                  this.showsResumeAbove
+                    ? html`<h3 part="subheading">All puzzles</h3>`
+                    : nothing
+                }
+                <div part="list">
+                  ${repeat(
+                    listed,
+                    (id) => id,
+                    (id) => this.renderCatalogRow(id),
+                  )}
+                </div>
               </div>`
             : html`<p part="empty">${this.emptyMessage}</p>`
         }
       </section>
     `;
+  }
+
+  /** Whether a Continue block is above the full list — which is the only time
+   * the list needs a heading of its own to say where Continue stopped. A lone
+   * list under the search box needs no label; the search box already says what
+   * it is a list of. */
+  private get showsResumeAbove(): boolean {
+    return (
+      !this.search.trim() &&
+      this.filter === "all" &&
+      this.visibleIds.some((id) => savedGames.autoSavedPuzzles.has(id))
+    );
   }
 
   /** Why the list is empty, in the words of whichever narrowing emptied it —

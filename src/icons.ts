@@ -50,6 +50,7 @@ import settingsIcon from "lucide-static/icons/settings.svg";
 import share2Icon from "lucide-static/icons/share-2.svg";
 import shieldCheckIcon from "lucide-static/icons/shield-check.svg";
 import sparklesIcon from "lucide-static/icons/sparkles.svg";
+import squareIcon from "lucide-static/icons/square.svg";
 import squareDashedMousePointer from "lucide-static/icons/square-dashed-mouse-pointer.svg";
 import squareMenuIcon from "lucide-static/icons/square-menu.svg";
 import squarePenIcon from "lucide-static/icons/square-pen.svg";
@@ -103,6 +104,9 @@ const defaultIcons: IconMap = {
   "reference": listChecksIcon,
   "play": playIcon,
   "pause": pauseIcon,
+  // The transport pair for auto-solve. A *square*, not a pause bar: pausing
+  // suggests the run is still there waiting to resume, and stopping ends it.
+  "stop": squareIcon,
   "history": historyIcon,
   "history-checkpoint": circleCheckIcon,
   "history-current-move": playIcon,

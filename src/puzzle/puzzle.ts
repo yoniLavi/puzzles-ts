@@ -178,6 +178,7 @@ export class Puzzle {
         update(this._totalMoves, message.totalMoves);
         update(this._canUndo, message.canUndo);
         update(this._canRedo, message.canRedo);
+        update(this._hasPencilMarks, message.hasPencilMarks);
         break;
       case "params-change":
         update(this._params, message.params);
@@ -243,6 +244,10 @@ export class Puzzle {
   private _totalMoves = signal<number>(0);
   private _canUndo = signal(false);
   private _canRedo = signal(false);
+  /** Whether the board carries any pencil marks — what makes the Mark-all
+   * control say `Fill` on a bare board and `Update` once there is something to
+   * narrow. Always false for a game without the press. */
+  private _hasPencilMarks = signal(false);
   private _params = signal<string>("");
   private _currentParams = computed<string | undefined>(() =>
     // The **full** params of the board on screen — difficulty included, which
@@ -280,14 +285,25 @@ export class Puzzle {
    * per press — a manual, self-paced version of Auto-Hint. Any intervening user
    * action disarms it via `disarmHintApply()`, so the next press shows the
    * now-relevant step rather than applying a stale one.
+   *
+   * A **signal**, because the chrome reads it: the hint control says
+   * `Next hint` while a press would show one and `Apply the hint` while a press
+   * would play it, and a label that only changed on the *next* unrelated
+   * re-render would be wrong for exactly the moment it matters.
    */
-  private _hintArmedToApply = false;
+  private _hintArmedToApply = signal(false);
+
+  /** Whether the next Hint press applies the step on display rather than
+   * showing a new one — the stepper's second beat. */
+  public get hintArmedToApply(): boolean {
+    return this._hintArmedToApply.get();
+  }
 
   /** Called by every intervening user action so a subsequent Hint press shows
    * rather than applies. The stepper's own `executeHint` deliberately does not
    * route through here. */
   private disarmHintApply(): void {
-    this._hintArmedToApply = false;
+    this._hintArmedToApply.set(false);
   }
 
   private setAutoHintMessage(msg: string, temp = false): void {
@@ -340,6 +356,10 @@ export class Puzzle {
 
   public get canUndo(): boolean {
     return this._canUndo.get();
+  }
+
+  public get hasPencilMarks(): boolean {
+    return this._hasPencilMarks.get();
   }
 
   public get canRedo(): boolean {
@@ -426,7 +446,7 @@ export class Puzzle {
   }
 
   public async hint(): Promise<string | undefined> {
-    if (this._hintArmedToApply) {
+    if (this.hintArmedToApply) {
       // Second press with nothing done in between: apply this one step in slow
       // motion and stop — `executeHint(true)` hides the plan on settle rather
       // than previewing the next step, and we disarm so the player gets a clean
@@ -455,7 +475,7 @@ export class Puzzle {
       this.setAutoHintMessage(err, true);
       return err;
     }
-    this._hintArmedToApply = true;
+    this._hintArmedToApply.set(true);
     return undefined;
   }
 
@@ -532,14 +552,36 @@ export class Puzzle {
     }
   }
 
-  public processKey(key: number): Promise<boolean> {
-    this.stopAutoHint("Canceled by manual move");
-    return this.enqueueInput(() => this.workerPuzzle.processKey(key));
+  /**
+   * Send a key to the game, and report whether the game took it.
+   *
+   * **A key the game declines is not a manual move**, so it must not cancel
+   * Auto-Hint or disarm the Hint stepper. Canceling first — which this used to
+   * do, unconditionally, before the game had even seen the key — made the app's
+   * bare-letter shortcuts unable to work at all: `h` reaches the game, is
+   * declined, comes back as `puzzle-key-unhandled`, and runs the `hint`
+   * command; but the disarm had already happened on the way in, so the stepper
+   * could never reach its second beat and a second `h` re-showed the same step
+   * for ever instead of playing it.
+   *
+   * Ordering is safe because both this and `executeHint` go through the same
+   * `enqueueInput` queue: the auto-hint loop cannot slip a step in between.
+   */
+  public async processKey(key: number): Promise<boolean> {
+    const consumed = await this.enqueueInput(() => this.workerPuzzle.processKey(key));
+    if (consumed) this.stopAutoHint("Canceled by manual move");
+    return consumed;
   }
 
-  public processMouse({ x, y }: Point, button: number): Promise<boolean> {
-    this.stopAutoHint("Canceled by manual move");
-    return this.enqueueInput(() => this.workerPuzzle.processMouse({ x, y }, button));
+  /** As {@link processKey}: a press the game declines — the gutter, a dead
+   * corner — is not a move, and canceling on it would make Auto-Hint stop for
+   * a click that did nothing. */
+  public async processMouse({ x, y }: Point, button: number): Promise<boolean> {
+    const consumed = await this.enqueueInput(() =>
+      this.workerPuzzle.processMouse({ x, y }, button),
+    );
+    if (consumed) this.stopAutoHint("Canceled by manual move");
+    return consumed;
   }
 
   public async requestKeys(): Promise<KeyLabel[]> {

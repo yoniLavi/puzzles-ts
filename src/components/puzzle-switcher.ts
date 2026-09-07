@@ -29,7 +29,9 @@ import { css, html, LitElement, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { puzzleDataMap, puzzleIds } from "../puzzle/catalog.ts";
+import { matchesQuery } from "../puzzle/catalog-search.ts";
 import { puzzlePageUrl } from "../routing.ts";
+import { closeOnBackdropClick } from "../utils/dialog.ts";
 
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
@@ -53,19 +55,15 @@ export class PuzzleSwitcher extends LitElement {
   @query("input")
   private input?: HTMLInputElement;
 
-  /** Every game whose name or objective contains what has been typed.
+  /** Every game matching what has been typed, by the collection's one search
+   * definition (`catalog-search.ts`) — so this box and the home screen's
+   * cannot answer the same query differently.
    *
-   * Name *and* objective, because a player hunting for Sudoku is hunting for
-   * Solo — the same reason the home screen's search box reads both. A game is
-   * never excluded for being experimental: this is a jump, not a catalog, and
-   * refusing to go somewhere the player named would just be baffling. */
+   * A game is never excluded for being experimental: this is a jump, not a
+   * catalog, and refusing to go somewhere the player named would just be
+   * baffling. */
   private get hits(): readonly string[] {
-    const needle = this.search.trim().toLowerCase();
-    if (!needle) return puzzleIds;
-    return puzzleIds.filter((puzzleId) => {
-      const { name, objective } = puzzleDataMap[puzzleId];
-      return `${name} ${objective}`.toLowerCase().includes(needle);
-    });
+    return puzzleIds.filter((puzzleId) => matchesQuery(puzzleId, this.search));
   }
 
   /** Show the switcher, cleared and focused. */
@@ -85,7 +83,11 @@ export class PuzzleSwitcher extends LitElement {
   protected override render() {
     const hits = this.hits;
     return html`
-      <dialog @keydown=${this.handleKeyDown} @close=${this.handleClose}>
+      <dialog
+          @keydown=${this.handleKeyDown}
+          @close=${this.handleClose}
+          @click=${closeOnBackdropClick}
+      >
         <div part="panel">
           <label part="field">
             <wa-icon name="search" label="Search puzzles"></wa-icon>

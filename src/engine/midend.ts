@@ -1469,7 +1469,35 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       totalMoves: this.history.length - 1,
       canUndo: this.pos > 0,
       canRedo: this.pos < this.history.length - 1,
+      hasPencilMarks: this.hasPencilMarks(),
     });
+  }
+
+  /**
+   * Does any cell carry a pencil mark?
+   *
+   * Read **generically, off the state's `pencil` field**, which is not a guess:
+   * `unify-the-note-taking-vocabulary` made that the single spelling across
+   * every note-taking game, and `mark-all.test.ts`'s cross-game probe already
+   * reads it the same way. Asking each game instead would be fifteen games
+   * re-answering a question none of them could legitimately answer differently
+   * — the shape `AGENTS.md` says means the layer below is missing one.
+   * `mark-all.test.ts` holds every `canMarkAll` game to exposing a readable
+   * `pencil`, so this cannot quietly answer `false` for a game that drifted.
+   *
+   * The predicate is "any marks at all", not "the next press will narrow rather
+   * than fill". Those differ only on a board where the player has marked some
+   * cells by hand and left others bare — after one press they agree, and the
+   * finer question needs each game's own idea of an empty cell.
+   */
+  private hasPencilMarks(): boolean {
+    if (!this.game.canMarkAll) return false;
+    const pencil = (this.state as { pencil?: ArrayLike<number> }).pencil;
+    if (!pencil) return false;
+    for (let i = 0; i < pencil.length; i++) {
+      if (pencil[i] !== 0) return true;
+    }
+    return false;
   }
 
   private emitStatusBar(): void {

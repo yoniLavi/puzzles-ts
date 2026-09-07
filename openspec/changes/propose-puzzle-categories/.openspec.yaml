@@ -1,0 +1,8 @@
+# No spec deltas yet, deliberately.
+#
+# This change is a *question put to the owner*, not a decision already made: the
+# taxonomy is the whole of it, and writing requirements before the axes are
+# chosen would publish an answer nobody has given. The deltas land in the same
+# change once `proposal.md` §"What needs deciding" has answers.
+schema: spec-driven
+skip_specs: true

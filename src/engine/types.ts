@@ -88,6 +88,16 @@ export type NotifyGameStateChange = {
   totalMoves: number;
   canUndo: boolean;
   canRedo: boolean;
+  /**
+   * Whether any cell on the board carries a pencil mark, for a game that offers
+   * the Mark-all press. Always `false` for a game that does not.
+   *
+   * The chrome uses it to say which of the press's two jobs it is about to do:
+   * *Fill* all pencil marks on a bare board, *Update* them once there are marks
+   * to narrow. The press has always done both — that is the point of it — and
+   * the control said "Fill" for both, so the second job was invisible.
+   */
+  hasPencilMarks: boolean;
 };
 
 export type NotifyParamsChange = {

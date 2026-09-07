@@ -20,6 +20,23 @@
 
 export interface PuzzleData {
   name: string;
+  /**
+   * Other names this puzzle is widely known by, for search to match on.
+   *
+   * A player hunts for the word they know a puzzle by, and this collection
+   * renames most of them: Sudoku is Solo, Nonogram is Pattern, Minesweeper is
+   * Mines. Without this the home screen's search box answers "no puzzle
+   * matches" to the single most likely first query anyone types.
+   *
+   * **A declaration a mechanism consumes, not a manifest** — search reads it,
+   * nothing asserts a game's membership from it, and a game with no other name
+   * simply has none. Where a game's own help page states one ("known as
+   * *Hakyuu*"), `catalog-aliases.test.ts` requires it to appear here, so the
+   * two cannot disagree; the rest are the standard names the puzzle is
+   * documented under everywhere. A name nobody could verify is left out, since
+   * a wrong alias sends a player to the wrong game.
+   */
+  aliases?: readonly string[];
   description: string;
   objective: string;
   collection: "original" | "unreleased";
@@ -38,6 +55,7 @@ export const puzzleCatalog = {
   },
   ascent: {
     name: "Ascent",
+    aliases: ["Hidato", "Hidoku", "1to25"],
     description: "Path-finding puzzle",
     objective: "Place each number once to create a path.",
     collection: "unreleased",
@@ -50,6 +68,7 @@ export const puzzleCatalog = {
   },
   boats: {
     name: "Boats",
+    aliases: ["Battleships"],
     description: "Boat-placing puzzle",
     objective: "Find the fleet in the grid.",
     collection: "unreleased",
@@ -57,12 +76,12 @@ export const puzzleCatalog = {
   bricks: {
     name: "Bricks",
     description: "Hexagonal shading puzzle",
-    objective:
-      "Shade several cells in the hexagonal grid while making sure each cell has another shaded cell below it.",
+    objective: "Shade cells in the hexagonal grid, each one supported from below.",
     collection: "unreleased",
   },
   bridges: {
     name: "Bridges",
+    aliases: ["Hashiwokakero", "Hashi"],
     description: "Bridge-placing puzzle",
     objective: "Connect all the islands with a network of bridges.",
     collection: "original",
@@ -75,6 +94,7 @@ export const puzzleCatalog = {
   },
   crossing: {
     name: "Crossing",
+    aliases: ["Nansuke", "Number Skeleton"],
     description: "Number crossword puzzle",
     objective: "Place each number from the list into the crossword.",
     collection: "unreleased",
@@ -87,18 +107,21 @@ export const puzzleCatalog = {
   },
   dominosa: {
     name: "Dominosa",
+    aliases: ["Dominoes"],
     description: "Domino tiling puzzle",
     objective: "Tile the rectangle with a full set of dominoes.",
     collection: "original",
   },
   fifteen: {
     name: "Fifteen",
+    aliases: ["15 Puzzle", "Sliding puzzle"],
     description: "Sliding block puzzle",
     objective: "Slide the tiles around to arrange them into order.",
     collection: "original",
   },
   filling: {
     name: "Filling",
+    aliases: ["Fillomino"],
     description: "Polyomino puzzle",
     objective: "Mark every square with the area of its containing region.",
     collection: "original",
@@ -111,15 +134,16 @@ export const puzzleCatalog = {
   },
   flood: {
     name: "Flood",
+    aliases: ["Flood It"],
     description: "Flood-filling puzzle",
     objective: "Turn the grid the same color in as few flood fills as possible.",
     collection: "original",
   },
   galaxies: {
     name: "Galaxies",
+    aliases: ["Spiral Galaxies", "Tentai Show"],
     description: "Symmetric polyomino puzzle",
-    objective:
-      "Divide the grid into rotationally symmetric regions each centered on a dot.",
+    objective: "Divide the grid into rotationally symmetric regions around dots.",
     collection: "original",
   },
   group: {
@@ -130,6 +154,7 @@ export const puzzleCatalog = {
   },
   guess: {
     name: "Guess",
+    aliases: ["Mastermind", "Bulls and Cows"],
     description: "Combination-guessing puzzle",
     objective: "Guess the hidden combination of colors.",
     collection: "original",
@@ -142,18 +167,21 @@ export const puzzleCatalog = {
   },
   keen: {
     name: "Keen",
+    aliases: ["KenKen", "Mathdoku", "Calcudoku"],
     description: "Arithmetic Latin square puzzle",
     objective: "Complete the latin square in accordance with the arithmetic clues.",
     collection: "original",
   },
   lightup: {
     name: "Light Up",
+    aliases: ["Akari"],
     description: "Light-bulb placing puzzle",
     objective: "Place bulbs to light up all the squares.",
     collection: "original",
   },
   loopy: {
     name: "Loopy",
+    aliases: ["Slitherlink"],
     description: "Loop-drawing puzzle",
     objective: "Draw a single closed loop, given clues about number of adjacent edges.",
     collection: "original",
@@ -178,18 +206,21 @@ export const puzzleCatalog = {
   },
   mines: {
     name: "Mines",
+    aliases: ["Minesweeper"],
     description: "Mine-finding puzzle",
     objective: "Find all the mines without treading on any of them.",
     collection: "original",
   },
   mosaic: {
     name: "Mosaic",
+    aliases: ["Fill-a-Pix"],
     description: "Grid-filling puzzle",
     objective: "Fill in the grid given clues about number of nearby black squares.",
     collection: "original",
   },
   net: {
     name: "Net",
+    aliases: ["NetWalk"],
     description: "Network jigsaw puzzle",
     objective: "Rotate each tile to reassemble the network.",
     collection: "original",
@@ -202,12 +233,14 @@ export const puzzleCatalog = {
   },
   palisade: {
     name: "Palisade",
+    aliases: ["Five Cells"],
     description: "Grid-division puzzle",
     objective: "Divide the grid into equal-sized areas in accordance with the clues.",
     collection: "original",
   },
   pattern: {
     name: "Pattern",
+    aliases: ["Nonogram", "Picross", "Griddlers", "Paint by Numbers"],
     description: "Pattern puzzle",
     objective:
       "Fill in the pattern in the grid, given only the lengths of runs of black squares.",
@@ -215,6 +248,7 @@ export const puzzleCatalog = {
   },
   pearl: {
     name: "Pearl",
+    aliases: ["Masyu"],
     description: "Loop-drawing puzzle",
     objective:
       "Draw a single closed loop, given clues about corner and straight squares.",
@@ -222,12 +256,14 @@ export const puzzleCatalog = {
   },
   pegs: {
     name: "Pegs",
+    aliases: ["Peg Solitaire"],
     description: "Peg solitaire puzzle",
     objective: "Jump pegs over each other to remove all but one.",
     collection: "original",
   },
   range: {
     name: "Range",
+    aliases: ["Kurodoko"],
     description: "Visible-distance puzzle",
     objective:
       "Place black squares to limit the visible distance from each numbered cell.",
@@ -235,6 +271,7 @@ export const puzzleCatalog = {
   },
   rect: {
     name: "Rectangles",
+    aliases: ["Shikaku"],
     description: "Rectangles puzzle",
     objective: "Divide the grid into rectangles with areas equal to the numbers.",
     collection: "original",
@@ -248,21 +285,21 @@ export const puzzleCatalog = {
   salad: {
     name: "Salad",
     description: "Pseudo-Latin square puzzle",
-    objective:
-      "Place each character once in every row and column. Some squares remain empty.",
+    objective: "Place each character once per row and column, leaving some empty.",
     collection: "unreleased",
   },
   samegame: {
     name: "Same Game",
+    aliases: ["Chain Shot"],
     description: "Block-clearing puzzle",
     objective: "Clear the grid by removing touching groups of the same color squares.",
     collection: "original",
   },
   seismic: {
     name: "Seismic",
+    aliases: ["Hakyuu", "Ripple Effect"],
     description: "Number placement puzzle",
-    objective:
-      "Place numbers in each area, keeping enough distance between equal numbers.",
+    objective: "Place numbers in each area, spacing equal numbers far enough apart.",
     collection: "unreleased",
   },
   separate: {
@@ -279,6 +316,7 @@ export const puzzleCatalog = {
   },
   singles: {
     name: "Singles",
+    aliases: ["Hitori"],
     description: "Number-removing puzzle",
     objective: "Black out the right set of duplicate numbers.",
     collection: "original",
@@ -309,9 +347,9 @@ export const puzzleCatalog = {
   },
   solo: {
     name: "Solo",
+    aliases: ["Sudoku", "Number Place"],
     description: "Number placement puzzle",
-    objective:
-      "Fill in the grid so that each row, column and square block contains one of every digit.",
+    objective: "Fill the grid so every row, column and block has one of each digit.",
     collection: "original",
   },
   spokes: {
@@ -322,6 +360,7 @@ export const puzzleCatalog = {
   },
   sticks: {
     name: "Sticks",
+    aliases: ["Tatebo-Yokobo"],
     description: "Line-drawing puzzle",
     objective: "Fill in the grid with horizontal and vertical line segments.",
     collection: "unreleased",
@@ -334,18 +373,21 @@ export const puzzleCatalog = {
   },
   tents: {
     name: "Tents",
+    aliases: ["Tents and Trees"],
     description: "Tent-placing puzzle",
     objective: "Place a tent next to each tree.",
     collection: "original",
   },
   towers: {
     name: "Towers",
+    aliases: ["Skyscrapers"],
     description: "Tower-placing Latin square puzzle",
     objective: "Complete the latin square of towers in accordance with the clues.",
     collection: "original",
   },
   tracks: {
     name: "Tracks",
+    aliases: ["Train Tracks"],
     description: "Path-finding railway track puzzle",
     objective: "Fill in the railway track according to the clues.",
     collection: "original",
@@ -358,13 +400,14 @@ export const puzzleCatalog = {
   },
   undead: {
     name: "Undead",
+    aliases: ["Haunted Mirror Maze"],
     description: "Monster-placing puzzle",
-    objective:
-      "Place ghosts, vampires and zombies so that the right numbers of them can be seen in mirrors.",
+    objective: "Place ghosts, vampires and zombies to match what the mirrors see.",
     collection: "original",
   },
   unequal: {
     name: "Unequal",
+    aliases: ["Futoshiki"],
     description: "Latin square puzzle",
     objective: "Complete the latin square in accordance with the > signs.",
     collection: "original",
@@ -377,6 +420,7 @@ export const puzzleCatalog = {
   },
   untangle: {
     name: "Untangle",
+    aliases: ["Planarity"],
     description: "Planar graph layout puzzle",
     objective: "Reposition the points so that the lines do not cross.",
     collection: "original",

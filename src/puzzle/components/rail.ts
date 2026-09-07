@@ -29,6 +29,7 @@ import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { homePageUrl } from "../../routing.ts";
 import { savedGames } from "../../store/saved-games.ts";
 import { cssWATweaks } from "../../utils/css.ts";
 import { puzzleContext } from "../contexts.ts";
@@ -41,7 +42,6 @@ import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "@awesome.me/webawesome/dist/components/switch/switch.js";
 import "./history.ts";
 import "./type-menu.ts";
 
@@ -104,7 +104,7 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
   private renderHeading() {
     return html`
       <div part="heading">
-        <a part="back" href="/" data-command="home">
+        <a part="back" href=${homePageUrl().href}>
           <wa-icon name="back-to-catalog"></wa-icon>
           All puzzles
         </a>
@@ -197,7 +197,10 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
               ${this.renderRow({
                 command: "hint",
                 icon: "hint",
-                label: "Next hint",
+                // The hint button has two beats — show, then play — and it used
+                // to say the same word for both, so the second press was a
+                // surprise. The label now says which beat the next press is.
+                label: this.puzzle.hintArmedToApply ? "Apply the hint" : "Next hint",
                 emphasis: "accent",
                 disabled: this.solved,
               })}
@@ -211,7 +214,12 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
             ? this.renderRow({
                 command: "mark-all",
                 icon: "mark-all",
-                label: "Fill all pencil marks",
+                // The press does double duty on purpose — fill the bare cells,
+                // or narrow what a placed value has ruled out — and saying
+                // "Fill" for both hid the second job entirely.
+                label: this.puzzle.hasPencilMarks
+                  ? "Update all pencil marks"
+                  : "Fill all pencil marks",
                 disabled: this.solved,
               })
             : nothing
@@ -264,23 +272,25 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
       </div>`;
   }
 
-  /** Auto-hint is a **mode**, so it is a switch. It was a second button beside
-   * Hint, drawn as its twin, which said "another action" when it meant
-   * "and keep going". */
+  /**
+   * Auto-solve: one button whose label and icon say what pressing it will do.
+   *
+   * It was drawn as a switch, on the reasoning that continuous hinting is a
+   * *mode*. In front of a player that reads worse than it argues: a switch says
+   * "a setting you leave in a position", and this is something that is running
+   * right now and that you will want to stop. So it is a button that says
+   * `Auto-solve for me`, and while it is running says `Stop auto-solving` with
+   * a stop icon — the state is in the words, not in the position of a track
+   * whose two ends look alike (owner, 2026-09-07).
+   */
   private renderAutoHintSwitch() {
     const active = this.puzzle?.autoHintActive === true;
-    return html`
-      <label part="row" class="switch-row">
-        <wa-icon part="row-icon" name=${active ? "pause" : "play"}></wa-icon>
-        <span part="row-label">Play hints for me</span>
-        <wa-switch
-            part="switch"
-            ?checked=${active}
-            ?disabled=${this.solved}
-            data-command="toggle-auto-hint"
-        ></wa-switch>
-      </label>
-    `;
+    return this.renderRow({
+      command: "toggle-auto-hint",
+      icon: active ? "stop" : "play",
+      label: active ? "Stop auto-solving" : "Auto-solve for me",
+      disabled: this.solved && !active,
+    });
   }
 
   /** Pinned to the bottom: the two most common non-move actions in a session
@@ -294,7 +304,7 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
           icon: "restart-game",
           label: "Restart this puzzle",
         })}
-        <a part="row" href=${this.helpHref} data-command="help">
+        <a part="row" href=${this.helpHref}>
           <wa-icon part="row-icon" name="help"></wa-icon>
           <span part="row-label">How to play ${this.gameName}</span>
         </a>
@@ -596,15 +606,6 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
         text-transform: uppercase;
         opacity: 0.75;
         margin-block-end: 2px;
-      }
-
-      .switch-row {
-        /* The switch itself carries the command; the row is its label. */
-        cursor: pointer;
-
-        wa-switch {
-          flex: 0 0 auto;
-        }
       }
 
       wa-dropdown [part="row"] {

@@ -5,8 +5,10 @@
 // (It's minified in vite.config.ts; you must restart the dev server to see changes.)
 // See color-scheme.ts for the runtime reactive logic.
 
-// change default to null when dark mode is no longer experimental
-const defaultIsDark = false;
+// `null` means "follow the system", which is the default: dark mode is no
+// longer experimental, and a player whose OS is dark should not have to find a
+// setting to stop being flashed white. An explicit stored choice still wins.
+const defaultIsDark: boolean | null = null;
 let isDark: boolean | null = defaultIsDark;
 
 try {

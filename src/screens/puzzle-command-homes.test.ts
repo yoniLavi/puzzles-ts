@@ -135,6 +135,13 @@ const NOT_A_RAIL_ROW: Record<string, string> = {
   "capture-icons": "dev-only, from the ?screenshot icon-capture bar",
   redraw: "dev-only debugging; no player-facing control",
   "change-type": "the parameter chips are a puzzle-type-menu, not a data-command",
+  // `All puzzles` and `How to play …` are real links, carrying an `href` and
+  // nothing else. `Screen.interceptCommandAndHrefClicks` routes the home URL to
+  // `navigateToHomePage` and a help URL to the help drawer, and it *throws* in
+  // dev on an element with both an href and a data-command — which is exactly
+  // what these two rows had at first, so the anchor won and "How to play"
+  // navigated to the raw help page instead of opening the drawer.
+  home: "the `All puzzles` row is an <a href>, routed by the href interceptor",
 };
 
 describe("every puzzle command has exactly one home in the rail", () => {
@@ -154,6 +161,25 @@ describe("every puzzle command has exactly one home in the rail", () => {
     expect(commandKeys.length).toBeGreaterThan(15);
     const rail = await mountRail("rail", fullyCapablePuzzle());
     expect(commandsIn(rail.shadowRoot as ParentNode).length).toBeGreaterThan(10);
+  });
+
+  it("gives no control both an href and a data-command", async () => {
+    // `Screen.interceptCommandAndHrefClicks` throws on such an element, but
+    // only in dev and only when somebody clicks it — so the `How to play …` row
+    // shipped with both, the anchor's navigation won the race, and the help
+    // drawer became a full-page load. Asserting it at render is what turns a
+    // click-time throw into a build-time failure.
+    for (const variant of ["rail", "sheet"] as const) {
+      document.body.replaceChildren();
+      const rail = await mountRail(variant, fullyCapablePuzzle());
+      const both = [
+        ...(rail.shadowRoot?.querySelectorAll("[data-command][href]") ?? []),
+      ].map((el) => `${el.tagName.toLowerCase()}[${el.getAttribute("data-command")}]`);
+      expect(
+        both,
+        `${variant}: a control is either a link or a command, never both`,
+      ).toEqual([]);
+    }
   });
 
   it("offers no command twice", async () => {

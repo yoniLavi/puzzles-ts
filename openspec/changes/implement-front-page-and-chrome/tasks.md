@@ -196,6 +196,79 @@ Authoritative detail: `openspec/changes/archive/2026-09-07-design-front-page-and
       speculative entries of my own — which is what that half is for. New
       `build-pipeline` requirement.
 
+## 8b. First round of owner acceptance (2026-09-07)
+
+Twelve items. Three of them found bugs in what had just shipped.
+
+- [x] 8b.1 **Default scheme → system.** Dark mode is no longer experimental, and
+      the chrome's direction was chosen on it. Both copies of the default move
+      together — `color-scheme-init.ts` paints before the store exists — and
+      `color-scheme-default.test.ts` holds them equal, since a disagreement is a
+      flash of the wrong scheme on every cold load. Proved to fail.
+- [x] 8b.2 **The intro was pinned to the viewport's left edge — my bug.** The
+      first cut centered *each child* of the page and then canceled the auto
+      margin on the intro to left-align it, so above 75rem the intro sat at the
+      window edge while the catalog stayed centered: the two-axes jag this whole
+      change exists to remove, reintroduced in the fix for it, in the one width
+      band I had not looked at. The column is now centered once, on the
+      container, and everything inside flows from its left edge.
+- [x] 8b.3 **Intro cut to one line.** Three paragraphs of upstream-derived prose
+      became one sentence. The Sudoku paragraph went with it, which 8b.7 makes
+      safe: searching "sudoku" now finds Solo.
+- [x] 8b.4 **Search and filters above Continue.** Continue was a list in front
+      of the controls that govern the list. It is now the first rows *inside*
+      the catalog, and hides while a search or filter is narrowing — at that
+      point the player has said what they want and it is not "where was I".
+- [x] 8b.5 **Categories/tags: parked as `propose-puzzle-categories`.** A
+      proposal, not an implementation: the taxonomy is the whole decision and it
+      is the owner's. Measured for it — `description` looks like a category
+      field and is 53 distinct values across 57 games, so it is a per-game
+      subtitle, not a taxonomy to group by.
+- [x] 8b.6 **Bigger icons, denser grid, no truncation.** 32px → 48px; the
+      column count follows the width (`auto-fill`, a 20rem track) rather than a
+      breakpoint ladder, giving 1/2/3/4; the objective wraps to at most three
+      lines instead of clipping to one. Then measured: at 1440px six of 57
+      still overflowed, so those six objectives were shortened, and the probe
+      now reports **zero clipped at every width from 390 to 2560**. The
+      content column went 75rem → 90rem, without which four columns could never
+      appear however wide the monitor.
+      Two more found by the same probe: the header's Help button overflowed the
+      viewport by 5px at 390px (an alignment margin larger than the padding it
+      ate into), and every card's bottom rule sat at its own content height
+      rather than the grid row's, ruling the list raggedly.
+- [x] 8b.7 **Search reads alternative names.** `aliases` on the catalog entry,
+      and one shared `catalog-search.ts` — the home box and the quick-switch had
+      *already* drifted (one read the description, the other did not).
+      `catalog-aliases.test.ts` requires every "known as *X*" a help page
+      publishes to be searchable, and rejects an alias that is a game's own name
+      or claimed by two games. It caught two of mine on the first run.
+- [x] 8b.8 **`Next hint` → `Apply the hint`** on the stepper's second beat.
+      **This exposed a real bug**: `Puzzle.processKey` canceled Auto-Hint and
+      disarmed the stepper *before* the game had seen the key, so the bare-`h`
+      shortcut could never reach the apply beat — every press re-showed the same
+      step. A key the game declines is not a manual move; both `processKey` and
+      `processMouse` now cancel only when the input was actually consumed.
+- [x] 8b.9 **`Auto-solve for me` / `Stop auto-solving`**, a button with a stop
+      icon rather than a switch. A switch says "a setting you leave in a
+      position"; this is something running now that you will want to stop.
+- [x] 8b.10 **`Fill` → `Update all pencil marks`** once the board has marks.
+      Derived generically from the state's `pencil` field — the collection's one
+      spelling for notes since `unify-the-note-taking-vocabulary` — rather than
+      asked of each of the fifteen games, which could not answer it differently.
+      `mark-all.test.ts` drives a real `Midend` per game to prove the flag
+      tracks the press.
+- [x] 8b.11 **Light-dismiss** on the quick-switch and the `More` sheet, shared
+      as `utils/dialog.ts`. `::backdrop` is a pseudo-element, so a click on it
+      targets the `<dialog>` itself — no coordinate arithmetic. Verified in the
+      browser that a click outside closes and a click inside does not.
+- [x] 8b.12 **`How to play` opens the drawer again — my bug.** Both the rail's
+      `<a>` rows carried an `href` *and* a `data-command`, which `Screen`'s
+      interceptor throws on in dev and which no test could see because the throw
+      needs a click. The anchor won and the help became a full-page load. Both
+      are plain links now, routed by the href interceptor as they were before,
+      and `puzzle-command-homes.test.ts` asserts at render that no control is
+      both.
+
 ## 9. Close
 
 - [x] 9.1 `openspec validate implement-front-page-and-chrome --strict`.

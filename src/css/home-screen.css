@@ -13,8 +13,17 @@
  */
 
 :root {
-  /* The one content axis. */
-  --app-content-width: 75rem;
+  /*
+   * The one content axis.
+   *
+   * 90rem, not the 75rem the old card grid used: the catalog is now a list
+   * whose column count follows the width, and 75rem capped it at three columns
+   * however wide the monitor was — 1200px of list with 700px of blank page
+   * either side. At 90rem a 1920px window gets its fourth column and a 1440px
+   * one is unaffected. Prose does not widen with it; that is what
+   * `--app-prose-width` is for.
+   */
+  --app-content-width: 90rem;
   /* A comfortable measure for running prose, applied inside that column. */
   --app-prose-width: 61ch;
 }
@@ -33,9 +42,19 @@ footer {
   padding-block: var(--app-padding);
 }
 
-/* The column. Everything that is page content is inside one of these. */
+/*
+ * The column itself, centered once. Everything inside it then flows from the
+ * same left edge, which is the whole point.
+ *
+ * **This is centered on the container, not on each child.** The first cut put
+ * `max-width` + `margin-inline: auto` on every child of the page and then had
+ * to undo the auto margin on the intro to left-align it — which pinned the
+ * intro to the *viewport's* left edge while the catalog stayed centered in the
+ * column, reproducing the two-axes jag this redesign exists to remove, and only
+ * above 75rem where it had not been looked at.
+ */
 [part="header-inner"],
-[part="page"] > *,
+[part="page"],
 noscript section,
 footer > * {
   max-width: var(--app-content-width);
@@ -50,25 +69,29 @@ footer > * {
 }
 
 [part="intro"] {
-  /* Left-aligned in the column and capped for readability — NOT centered in
-   * the viewport, which is what fought the catalog's left edge. */
-  max-width: min(var(--app-content-width), var(--app-prose-width));
-  margin-inline: 0;
+  /* Capped for readability, left-aligned *within the column*. */
+  max-width: var(--app-prose-width);
   color: var(--app-color-text-secondary);
+  font-size: var(--app-font-size-support);
 
   ::slotted(section) {
     padding: 0;
   }
 }
 
-[part="section"] {
-  h2 {
-    margin: 0 0 var(--wa-space-s);
-    font-size: var(--app-font-size-item);
-    font-weight: var(--wa-font-weight-bold);
-    letter-spacing: 0.01em;
-    color: var(--app-color-text-secondary);
+[part="subsection"] {
+  &:not(:first-child) {
+    margin-block-start: var(--app-gap-section);
   }
+}
+
+[part="subheading"] {
+  margin: 0 0 var(--wa-space-xs);
+  font-size: var(--app-font-size-micro);
+  font-weight: var(--wa-font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-color-text-faint);
 }
 
 /* The search box and the three filters, on one line at desktop and stacked on
@@ -153,22 +176,29 @@ footer > * {
 }
 
 /*
- * The list. Two columns at desktop, one on a phone.
+ * The list. As many columns as fit, one to four.
  *
- * `grid-auto-flow: row` with two tracks fills left-to-right, which is what a
- * reader of a two-column list expects when the order is alphabetical only
- * *within* a screenful — the alternative (a column-flowing masonry) makes
- * "next after Keen" mean "scroll to the top of the other column".
+ * `auto-fill` with a track floor rather than a breakpoint ladder: the number of
+ * columns is a question about how much room a row needs, and the row knows that
+ * better than a media query does. Everything else follows from the viewport — a
+ * phone gets one column, a tablet two, a 1440px window three, a 1920px one
+ * four.
+ *
+ * 20rem is the floor because four of them plus their gaps are what fits the
+ * 90rem content column; a 21rem floor missed the fourth track by a few pixels
+ * and quietly capped every wide monitor at three. The row itself is comfortable
+ * from about 19rem up (a 48px icon, a name, and an objective that wraps rather
+ * than clips), so the binding constraint here is the arithmetic, not the row.
+ *
+ * Rows fill **left to right** (the default `row` flow), which is what a reader
+ * of an alphabetical list expects — a column-flowing masonry would make "the
+ * one after Keen" mean "scroll back to the top of the next column".
  */
 [part="list"] {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
   column-gap: var(--wa-space-xl);
   touch-action: manipulation;
-
-  @media (min-width: 52rem) {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 [part="empty"] {
@@ -235,11 +265,21 @@ header {
     align-self: start;
     display: flex;
     gap: 0; /* toolbar buttons all have lots of padding built in */
-    /* Counteract wa-button padding and border */
+    /* Counteract wa-button padding and border, so the button's *label* lines
+     * up with the content edge rather than its invisible box.
+     *
+     * Clamped to the padding that is actually there: `--app-padding` shrinks to
+     * half scale on a phone, and an unclamped pull put the Help button 5px past
+     * the viewport at 390px — a horizontal scrollbar on the front page, from a
+     * margin that exists only for alignment. */
     margin-block: calc((1lh - var(--wa-form-control-height)) / 2);
     margin-inline-end: calc(
       -1 *
-      (var(--wa-form-control-padding-inline) + var(--wa-border-width-s))
+      min(
+        var(--wa-form-control-padding-inline) +
+        var(--wa-border-width-s),
+        var(--app-padding)
+      )
     );
 
     /* <a> styled as button before enhancement */

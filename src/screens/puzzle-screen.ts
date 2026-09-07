@@ -14,6 +14,7 @@ import { helpUrl, homePageUrl } from "../routing.ts";
 import { savedGames } from "../store/saved-games.ts";
 import { settings } from "../store/settings.ts";
 import { cssWATweaks } from "../utils/css.ts";
+import { closeOnBackdropClick } from "../utils/dialog.ts";
 import { preventDoubleTapZoomOnButtons } from "../utils/events.ts";
 import { debounced, sleep } from "../utils/timing.ts";
 import { Screen } from "./screen.ts";
@@ -311,7 +312,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
 
       <dialog
           class="more-sheet"
-          @click=${this.handleChromeClick}
+          @click=${this.handleSheetClick}
           @keydown=${this.handleSheetKeyDown}
       >
         <puzzle-rail
@@ -462,7 +463,6 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       "toggle-auto-hint": this.handleAutoHintToggle,
       "show-timeline": this.showTimeline,
       "switch-puzzle": this.openPuzzleSwitcher,
-      help: () => this.showHelpViewer(helpUrl(this.puzzleId).href),
       "copy-image": () => this.puzzle?.copyImage(),
       "enter-gameid": this.showEnterGameIDDialog,
       "load-game": this.showLoadGameDialog,
@@ -833,6 +833,13 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
    * it and drop a reference spotlight the player never asked to lose. */
   private handleSheetKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") event.stopPropagation();
+  };
+
+  /** A tap in the sheet does both jobs: outside the panel it dismisses, inside
+   * it hands the keyboard back like any other chrome click. */
+  private handleSheetClick = (event: MouseEvent) => {
+    closeOnBackdropClick(event);
+    this.handleChromeClick(event);
   };
 
   private async showTypeMenu() {

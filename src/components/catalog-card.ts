@@ -170,11 +170,20 @@ export class CatalogCard extends LitElement {
       :host {
         display: block;
         touch-action: manipulation;
-        --icon-size: 32px;
+        /* Big enough to read the puzzle *from*: at 32px these were a texture,
+         * and the icon is the fastest way to recognize a game you have played
+         * before. The committed PNGs are 64/128, so 48 is still served by the
+         * 1x file on a plain display and the 2x on a dense one. */
+        --icon-size: 48px;
       }
 
       [part="base"] {
         width: 100%;
+        /* Fill the grid cell, so every rule in a row lands on the same line.
+         * The host stretches (grid's default), but without this the row's own
+         * box stayed content-height and its bottom border rose with it —
+         * leaving the list ruled raggedly, one step per card. */
+        height: 100%;
         min-height: var(--app-row-list);
 
         display: grid;
@@ -254,10 +263,23 @@ export class CatalogCard extends LitElement {
         font-size: var(--app-font-size-detail);
         color: var(--app-color-text-quiet);
         line-height: var(--wa-line-height-condensed);
-        /* One line, clipped: the objective is a scent, not the help page. */
-        white-space: nowrap;
+
+        /* **Wrapped, not clipped.** A single clipped line ended in an ellipsis
+         * for most of the catalog once the columns got narrower, and an
+         * objective cut off mid-sentence is worse than no objective: it reads
+         * as a defect and it teaches nothing.
+         *
+         * Three lines rather than two, measured rather than chosen: at the
+         * narrowest track the grid produces (~344px, the two-column band around
+         * 768px) two lines still clipped six of the 57, and three clips none of
+         * them at any width. It is a *maximum* — the median objective is 57
+         * characters and still takes one or two — so the extra line costs
+         * nothing on the rows that do not need it. */
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
         overflow: hidden;
-        text-overflow: ellipsis;
       }
 
       [part="unfinished"] {

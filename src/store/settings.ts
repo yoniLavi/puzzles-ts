@@ -218,10 +218,14 @@ class Settings {
   //
 
   @commonSetting({
-    // TODO: When dark mode no longer experimental:
-    //   - change default to "system"
-    //   - replace the setCallback with an effect in color-scheme.ts
-    default: "light",
+    // Follow the system by default (owner, 2026-09-07). Dark mode is no longer
+    // experimental — it is the scheme the chrome's direction was chosen on —
+    // and defaulting to light flashed a white page at every player whose OS is
+    // dark. `color-scheme-init.ts` carries the same default, because it runs
+    // before this store exists and would otherwise paint the wrong one first.
+    // (The `setCallback` mirror below stays; replacing it with an effect in
+    // color-scheme.ts is still worth doing, and is unrelated to the default.)
+    default: "system",
     setCallback: (value) => {
       try {
         // Make the value available early for color-scheme-init.ts.
