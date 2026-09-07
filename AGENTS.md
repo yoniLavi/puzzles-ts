@@ -254,6 +254,18 @@ assert it in a test so it fails when it drifts. A figure with a date and a
 change id attached is a *measurement* and stays; a bare count in the present
 tense is a claim, and it rots.
 
+**And a fact about the codebase rots exactly like a count — sometimes in
+hours.** A scaffolded change carried the constraint "this reaches no player,
+because `processKey`'s return value is discarded at both call sites", correct on
+the day it was written. Nineteen hours later a commit derived the app's
+bare-letter shortcuts from that very value, and the "harmless" defect was
+costing Ascent's players undo, redo, New game and Hint. The constraint was not
+wrong when written and there was no way to write it better — what it needed was
+a **date**, so the next reader knows to re-check rather than inherit. So date a
+claim about the code the way you would date a count, and **re-verify a
+constraint that says "don't bother looking" before obeying it**; that phrasing
+is exactly the one that stops anyone from noticing it has expired.
+
 **Don't repoint a dead recipe — retire it.** When an instruction has gone stale,
 fixing the one part you noticed is the worst available outcome: every *other*
 line is equally dead, so the result looks maintained and fails on its first step.

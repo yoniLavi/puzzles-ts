@@ -3291,12 +3291,27 @@ sign that the button means something, and a game is reported meaningless only
 when it is invisible under every observation, so the derivation cannot convict an
 innocent game.
 
-**A known bound, recorded rather than implied**: a secondary press with an
-incidental side effect shared with the primary press — hiding a keyboard cursor
-on any mouse-down, as Ascent does — is credited on that alone. Closing it needs a
-"does the secondary do something the primary does not" comparison, which Slide's
-deliberate fold would fail, so the bound stands until a derivation exists that
-does not convict Slide.
+**A known bound, measured rather than merely admitted**: a secondary press whose
+only effect is incidental — shared with the primary press, such as hiding the
+keyboard cursor on any mouse-down — is credited on that alone. Removing both of
+Ascent's real secondary arms leaves the guard green for exactly this reason, so
+the gap is reachable rather than hypothetical.
+
+What is *not* true is that any shipped game rests on it. Measured across the
+collection: of the 50 games credited with a secondary meaning, **38 change the
+save** and the remaining **12 change the painted frame**, and all twelve were
+read — nine draw pencil marks (`pressNoteTakingCell`), plus Guess's peg holds,
+Samegame's selection highlight and Signpost's drag highlight. Every one is a
+meaning a player can see; none is an incidental repaint. The guard's priming
+SHALL therefore include a two-press and a drag setup, because a one-press prime
+left Ascent credited only by the incidental effect — the right verdict on
+evidence that would not have survived the game changing.
+
+Closing the gap entirely needs a "does the secondary do something the primary
+does not" comparison, and Slide's deliberate fold — where the secondary does
+*exactly* what the primary does — would fail it. The bound therefore stands
+until a derivation exists that does not convict Slide, and it is documented so
+the next reader does not rediscover it as a surprise.
 
 This flag is **not** upstream's `REQUIRE_RBUTTON` inverted, and SHALL NOT be
 derived from it. Those two describe different sets, and the difference is the

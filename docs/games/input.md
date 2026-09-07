@@ -236,7 +236,25 @@ Three resolutions, by whether the game uses the secondary button:
   The probe watches the **painted frame as well as the save**, because a
   secondary meaning may live in UI state a game never serializes — Guess's peg
   holds — and a save-only probe would demand the flag from a game that has a
-  meaning, turning off the very promotion it handles.
+  meaning, turning off the very promotion it handles. Of the 50 games credited
+  today, 38 change the save and 12 change only the frame (nine draw pencil
+  marks, plus Guess's holds, Samegame's selection and Signpost's drag
+  highlight).
+
+  **It primes the board three ways before pressing** — one press, two presses,
+  and a drag — because a secondary meaning is usually "undo what the primary
+  one did" and has nothing to act on until something is there. Ascent needs two
+  presses to place a number before its right-click erase has a target; with a
+  one-press prime it was credited only by an incidental cursor hide it shares
+  with the primary press. Right verdict, evidence that would not have survived
+  the game changing.
+
+  **The one gap, so it isn't a surprise:** a secondary press whose *only* effect
+  is one the primary press also has is still credited — remove both of Ascent's
+  real secondary arms and the guard stays green. No shipped game rests on that
+  (all twelve frame-only games were read), and closing it needs a "does the
+  secondary do something the primary does not" test that Slide's deliberate fold
+  would fail.
 - **Secondary meaning, but the promoted gesture should do the primary thing →
   fold right onto left** at the top of `interpretMove`. One line; exemplar
   `asPrimary()` in [`inertia/index.ts`](../../src/games/inertia/index.ts).

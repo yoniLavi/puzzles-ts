@@ -261,19 +261,38 @@ export function secondaryMeaning(game: AnyGame, id: string): SecondaryMeaning {
       : []),
   ];
 
+  /**
+   * How the board is set up before the secondary gesture. A secondary meaning
+   * is very often "undo what the primary one did", so it has nothing to act on
+   * until something is there — and *how much* setup it needs varies: Ascent
+   * places a number with two presses (pick a placed number, then an adjacent
+   * empty cell), and its right-click erase is invisible until one is on the
+   * board. With a one-press prime Ascent is credited only by an incidental
+   * cursor hide it shares with the primary press, which is the right verdict
+   * reached on evidence that would not survive the game changing.
+   */
+  const primes: { label: string; steps: Step[] }[] = [
+    { label: "", steps: [] },
+    { label: " after a primary press", steps: [at(LEFT_BUTTON), at(LEFT_RELEASE)] },
+    {
+      label: " after two primary presses",
+      steps: [at(LEFT_BUTTON), at(LEFT_RELEASE), to(LEFT_BUTTON), to(LEFT_RELEASE)],
+    },
+    {
+      label: " after a primary drag",
+      steps: [at(LEFT_BUTTON), to(LEFT_DRAG), to(LEFT_RELEASE)],
+    },
+  ];
+
   const play = (
     p: { x: number; y: number },
     q: { x: number; y: number },
-    prime: boolean,
+    prime: Step[],
     gesture: Step[],
     follow: Step[],
   ) => {
     reset();
-    if (prime) {
-      m.processInput(p.x, p.y, LEFT_BUTTON);
-      m.processInput(p.x, p.y, LEFT_RELEASE);
-    }
-    for (const s of [...gesture, ...follow]) {
+    for (const s of [...prime, ...gesture, ...follow]) {
       const target = s.at === "q" ? q : p;
       if (isPointerButton(s.button)) m.processInput(target.x, target.y, s.button);
       else m.processInput(0, 0, s.button);
@@ -297,28 +316,28 @@ export function secondaryMeaning(game: AnyGame, id: string): SecondaryMeaning {
 
   for (const p of probePoints(size)) {
     for (const q of targets(p)) {
-      for (const prime of [false, true]) {
+      for (const prime of primes) {
         // A press the game did not even consume cannot have changed anything,
         // so there is nothing to compare — and this is what keeps the sweep
         // cheap for the games that genuinely ignore the button, which are the
         // only ones that ever reach the end of this loop.
         reset();
-        if (prime) {
-          m.processInput(p.x, p.y, LEFT_BUTTON);
-          m.processInput(p.x, p.y, LEFT_RELEASE);
-        }
+        for (const s of prime.steps)
+          m.processInput(s.at === "q" ? q.x : p.x, s.at === "q" ? q.y : p.y, s.button);
         const consumed = m.processInput(p.x, p.y, RIGHT_BUTTON);
         m.processInput(p.x, p.y, RIGHT_RELEASE);
         if (!consumed) continue;
 
         for (const g of gestures)
           for (const f of followUps)
-            if (play(p, q, prime, [], f.steps) !== play(p, q, prime, g.steps, f.steps))
+            if (
+              play(p, q, prime.steps, [], f.steps) !==
+              play(p, q, prime.steps, g.steps, f.steps)
+            )
               return {
                 used: true,
                 evidence:
-                  `${g.label} at (${p.x},${p.y})` +
-                  `${prime ? " after a primary press" : ""} ${f.label} ` +
+                  `${g.label} at (${p.x},${p.y})${prime.label} ${f.label} ` +
                   "leaves a different game than the same sequence without it",
               };
       }
