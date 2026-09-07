@@ -92,10 +92,20 @@ candidate host, so none of them waits on the choice.
             **`hintful.click`** (2026-09-03; unregistered on the day, checked
             against the registry's RDAP with `nic.click` as the control), so
             this becomes `https://hintful.click/` once bought and pointed at the
-            host. **The first deploy does not wait on this**: on Cloudflare,
-            `puzzles-ts.pages.dev` is a working HTTPS origin immediately, and
-            the emitted `_headers` already `noindex`es it. Ship there, unblock
-            4.6, and add the canonical URL when the domain lands.
+            host. **The first deploy did not wait on this** —
+            `hintful-puzzles.pages.dev` shipped first and the emitted `_headers`
+            `noindex`es it, so 4.6 was unblocked without the domain.
+            **Bought 2026-09-08, at Dynadot, on Dynadot's own nameservers.**
+            The zone must move to Cloudflare: Pages does **not** support an
+            apex domain on external DNS (`hintful.click` would be impossible,
+            only `www.`), because a zone apex cannot be a CNAME and Cloudflare
+            solves that with flattening only where it is authoritative. So the
+            DNS change is **nameservers, not a record**. None of it is
+            reachable from `wrangler`, which has no zone, DNS, custom-domain or
+            ruleset commands at all — that surface is dashboard/API only, and
+            the OAuth session carries `zone:read` rather than write. Set this
+            variable **after** the domain resolves: canonical links pointing at
+            a parking page are worse than none.
       - [ ] `VITE_APP_NAME` — optional: the default is the product name from
             `src/project-identity.ts` ("Hintful Puzzles"), so set it only to
             brand a deployment differently.
@@ -142,8 +152,19 @@ candidate host, so none of them waits on the choice.
       per-zone setting and `pages.dev` is not our zone. That costs nothing today
       — `pages.dev` is HTTPS-only and we control no apex on it — so the comment
       is corrected in place and the decision is deferred **to the custom
-      domain**, where HSTS is worth having and awkward to reverse. Carried as
-      §2.2's domain work rather than left as a standing "still open".
+      domain**, where HSTS is worth having and awkward to reverse.
+- [x] 3.3 **HSTS decided (2026-09-08): a `_headers` rule, not the zone toggle.**
+      Same mechanism the two `pages.dev` noindex rules already use, so it is a
+      fact of the repository rather than dashboard state invisible from a
+      checkout. **Scoped by absolute URL to `https://hintful.click/*`**, because
+      `pages.dev` is shared with every other Pages project and pinning HTTPS for
+      a host we do not control is not ours to do. Shipped at `max-age=300` and
+      **ramping**: the lever for undoing HSTS lives in browsers already in the
+      field, not here, so it goes to `max-age=31536000; includeSubDomains` only
+      after the domain is verified serving. **No `preload`** — that is a
+      separate, deliberate decision once the domain has been stable, never part
+      of a ramp. The rule is inert until the domain resolves, so it is safe to
+      land ahead of the DNS work.
 
 ## 4. Verify the deployed artifact, not the local build
 

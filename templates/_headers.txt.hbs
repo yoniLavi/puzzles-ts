@@ -80,3 +80,27 @@ https://:project.pages.dev/*
   X-Robots-Tag: noindex
 https://:version.:project.pages.dev/*
   X-Robots-Tag: noindex
+
+{{! HSTS, scoped to the domain we own.
+
+    Deliberately a rule here rather than the Cloudflare zone toggle: the same
+    mechanism the two rules above already use, and it keeps the security
+    posture a fact of the repository instead of dashboard state nobody can see
+    from a checkout.
+
+    Scoped by absolute URL because `pages.dev` is NOT ours — it is shared with
+    every other Cloudflare Pages project, and pinning HTTPS for a host we do
+    not control is not ours to do. Absolute rules must begin with `https`, and
+    matching ignores the request's port and protocol.
+
+    RAMPING, so read before raising. A browser that has seen this refuses plain
+    HTTP for the whole max-age, which is what makes HSTS awkward to undo: the
+    lever is in browsers already in the field, not here. So it starts at five
+    minutes. Once the custom domain is verified serving on HTTPS, raise it to
+    `max-age=31536000; includeSubDomains` in one step and re-verify.
+
+    NO `preload`. That submits the domain to a browser-vendor list which is
+    slow and painful to leave, and it is a decision to take deliberately once
+    the domain has been stable for a while — never as part of a ramp. }}
+https://hintful.click/*
+  Strict-Transport-Security: max-age=300
