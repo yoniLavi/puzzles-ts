@@ -739,3 +739,6 @@ and Undead.
 - [ ] Keypad games implement `requestKeys`, pin it tier-1, and offer no key the
       game cannot accept on a board it generates.
 - [ ] Pointer coordinates rounded at the boundary if state stores pixels.
+- [ ] Every arm that acts on a pointer *position* also checks the button is a
+      pointer button — keys arrive at `(0, 0)`, inside your grid — so a button
+      you did not act on comes back `null`.
