@@ -70,13 +70,24 @@ offering the keys the game wants. Those need the browser, and the audit that
 built these guards was explicit that the sweep is the net and the browser pass
 is what catches what the net's mesh is shaped to miss.
 
-**On writing a probe of your own**, if you ever extend one of these: ask *was the
-button consumed*, never *did the board change*. A behavioral probe over generic
-geometry can only observe the latter, and there are many innocent reasons for it
-— a right-button eraser has nothing to erase on a fresh board, a Clear key on an
+**On writing a probe of your own**: take it from
+[`engine/testing/input-probe.ts`](../../src/engine/testing/input-probe.ts)
+rather than writing one. That module holds the board builder, the probe grid and
+the questions the guards ask, precisely because two guards in different
+directories had each grown their own copy and the copies had drifted — the
+bare-letter sweep seeded a different board and tested a single cursor position,
+so it reported a different set of games the moment that board changed.
+
+If you do extend one, the rule about the question still holds, and it is sharper
+than "consumed": **never convict a game because the board did not change.** A
+right-button eraser has nothing to erase on a fresh board, a Clear key on an
 empty cell is a legitimate no-op, and Fifteen's gap starts in the corner where
-two of the four arrows correctly do nothing. Each of those convicted an innocent
-game while `audit-input-mode-parity` was being written.
+two of the four arrows correctly do nothing — each of those convicted an
+innocent game while `audit-input-mode-parity` was being written. What *is* sound
+is the other direction: a change is a **sufficient** sign that an input means
+something, and a game is reported meaningless only when it is invisible under
+*every* observation. That asymmetry is what lets `secondaryMeaning` ask a much
+sharper question than "was it consumed" without re-opening the rejected one.
 
 ## The numeric keypad never arrives
 
@@ -204,11 +215,28 @@ Three resolutions, by whether the game uses the secondary button:
   where it is rather than teaching every game to survive it.
 
   **You do not get to choose freely.** `input-parity.test.ts` asserts the
-  biconditional — you declare it *iff* your `interpretMove` consumes
-  `RIGHT_BUTTON` nowhere on a real board — so it cannot be forgotten by a new
-  game or left behind by a game that grows a secondary meaning. It is **not**
-  upstream's `REQUIRE_RBUTTON` inverted: a game may *use* the secondary button
-  without *needing* it (Tracks), and that third group is the largest.
+  biconditional — you declare it *iff* the secondary button means nothing
+  observable on a real board — so it cannot be forgotten by a new game or left
+  behind by a game that grows a secondary meaning. It is **not** upstream's
+  `REQUIRE_RBUTTON` inverted: a game may *use* the secondary button without
+  *needing* it (Tracks), and that third group is the largest.
+
+  **"Meaning" is derived, and consumption is not it.** The guard asked "did
+  `interpretMove` return non-`null`" until `sharpen-the-secondary-button-derivation`,
+  and that was satisfied by a bare repaint: 16 of 57 games consume
+  `RIGHT_BUTTON` without ever committing a move, so for every one of them the
+  biconditional held whatever the game did. It now asks *did the secondary
+  gesture change anything the player can perceive, now or next* — which is one
+  question covering all three resolutions in this list, not three special cases.
+  Reading the whole collection is what showed they were one question. **You
+  need do nothing to enroll**: nine games get full credit for a pencil-mode
+  press they reach through `pressNoteTakingCell`, without a `RIGHT_BUTTON`
+  branch of their own.
+
+  The probe watches the **painted frame as well as the save**, because a
+  secondary meaning may live in UI state a game never serializes — Guess's peg
+  holds — and a save-only probe would demand the flag from a game that has a
+  meaning, turning off the very promotion it handles.
 - **Secondary meaning, but the promoted gesture should do the primary thing →
   fold right onto left** at the top of `interpretMove`. One line; exemplar
   `asPrimary()` in [`inertia/index.ts`](../../src/games/inertia/index.ts).

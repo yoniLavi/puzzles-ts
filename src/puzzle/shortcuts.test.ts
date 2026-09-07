@@ -18,15 +18,11 @@
  *   table lists first wins, in a file where order is otherwise meaningless.
  */
 import { beforeAll, describe, expect, it } from "vitest";
-import type { Game } from "../engine/game.ts";
-import { Midend } from "../engine/midend.ts";
 import { CURSOR_RIGHT } from "../engine/pointer.ts";
-import { randomNew } from "../engine/random/index.ts";
 import { getTsGame, registeredGameIds } from "../engine/registry.ts";
+import { type AnyGame, probeBoard } from "../engine/testing/input-probe.ts";
 import { registerAllGames } from "../games/index.ts";
 import { bareCommand, chordCommand, SHORTCUTS, shortcutLabel } from "./shortcuts.ts";
-
-type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
 
 /** A `KeyboardEvent`-shaped object for the matchers, which read five fields. */
 function key(k: string, mods: { ctrl?: boolean; shift?: boolean; alt?: boolean } = {}) {
@@ -183,24 +179,20 @@ describe("a bare shortcut letter reaches the app in every game", () => {
       const game = getTsGame(id) as AnyGame | undefined;
       expect(game, `${id} is registered but has no game object`).toBeDefined();
       if (!game) return;
-      const params = game.defaultParams();
-      const desc = game.newDesc(params, randomNew(`shortcut-${id}`)).desc;
-      const gameId = `${game.encodeParams(params, true)}:${desc}`;
-      const m = new Midend(game);
-      m.setCallbacks(
-        () => {},
-        () => {},
-        () => {},
-      );
+      const { m, reset } = probeBoard(game, id);
 
       const claimed: string[] = [];
+      // Walk the cursor rather than testing one cell. A game's letter is
+      // often legal only on some cells — Tents accepts 'n' on any square but
+      // a tree — so a single position makes the answer depend on what the
+      // seed happened to deal, and this sweep reported a different set of
+      // games the moment its board changed.
       for (const [letter] of bare)
-        for (const reveal of [false, true]) {
-          m.newGameFromId(gameId);
+        for (let steps = 0; steps <= 4 && !claimed.includes(letter); steps++) {
+          reset();
           // Keys reach the engine at (0, 0) — `worker-adapter.ts`.
-          if (reveal) m.processInput(0, 0, CURSOR_RIGHT);
-          if (m.processInput(0, 0, letter.charCodeAt(0)) && !claimed.includes(letter))
-            claimed.push(letter);
+          for (let n = 0; n < steps; n++) m.processInput(0, 0, CURSOR_RIGHT);
+          if (m.processInput(0, 0, letter.charCodeAt(0))) claimed.push(letter);
         }
       if (claimed.length) found[id] = claimed;
       swept++;

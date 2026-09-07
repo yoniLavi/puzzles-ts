@@ -9,10 +9,9 @@
  * of, and it is not what this frontend's traps break. The guards here cover
  * what a press-level sweep cannot see:
  *
- *  0. **The instrument itself.** Guards 1–3 all ask their question by
- *     `interpretMove`'s return value, so a game that answers *every* button
- *     makes all three unanswerable about itself while passing all three. That
- *     one runs first, and it is the reason the rest can be believed.
+ *  0. **The instrument itself.** A game that answers *every* button makes the
+ *     guards below unanswerable about itself while passing them. That one runs
+ *     first, and it is the reason the rest can be believed.
  *  1. **A gesture, not a press.** Press → drag → release from a finger must
  *     leave the same board as from a mouse.
  *  2. **The long press.** `detectSecondaryButton` promotes a finger that stays
@@ -40,9 +39,20 @@
  *    board whose regions are all smaller.
  *
  * Each of those masqueraded as a dead binding. So the questions asked below are
- * ones a game's semantics cannot make innocent: *was the button consumed*
- * (`interpretMove` returned non-null) rather than *did the board change*, and
- * every probe that needs something to act on is primed first.
+ * ones a game's semantics cannot make innocent, and every probe that needs
+ * something to act on is primed first.
+ *
+ * What is banned is convicting a game **because** the board did not change —
+ * the negation is what is unsound. A change is a perfectly sound *sufficient*
+ * sign that an input means something, which is how the secondary-button guard
+ * asks a far sharper question than "was it consumed" without re-opening the
+ * rejected one: a game is reported meaningless only when it is invisible under
+ * every observation. See `secondaryMeaning` in `testing/input-probe.ts`.
+ *
+ * The probes themselves live in
+ * [`testing/input-probe.ts`](./testing/input-probe.ts) so this file and
+ * `puzzle/shortcuts.test.ts` ask them identically — they each had their own
+ * copy, and the copies had already drifted.
  *
  * The sweeps are also frontend-faithful, which is load-bearing rather than
  * decorative: `view-interactive.ts` installs `pointerTracking` only `if
@@ -55,8 +65,6 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import { registerAllGames } from "../games/index.ts";
-import type { Game } from "./game.ts";
-import { Midend } from "./midend.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -74,13 +82,17 @@ import {
   LEFT_RELEASE,
   MOD_MASK,
   MOD_STYLUS,
-  RIGHT_BUTTON,
-  RIGHT_RELEASE,
 } from "./pointer.ts";
-import { randomNew } from "./random/index.ts";
 import { getTsGame, registeredGameIds } from "./registry.ts";
-
-type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
+import {
+  type AnyGame,
+  probeBoard as board,
+  fingerprint,
+  probePoints,
+  secondaryMeaning,
+  UNACTIONABLE,
+  unactionableClaims,
+} from "./testing/input-probe.ts";
 
 beforeAll(registerAllGames);
 
@@ -101,41 +113,6 @@ const NO_KEYBOARD: Record<string, string> = {
   // its edges). A game added here must record its reason in its own spec too.
 };
 
-/** One board per game, built once — the generators are the expensive part. */
-function board(game: AnyGame, id: string) {
-  const params = game.defaultParams();
-  const desc = game.newDesc(params, randomNew(`parity-${id}`)).desc;
-  const tileSize = game.preferredTileSize ?? 32;
-  const m = new Midend(game);
-  m.setCallbacks(
-    () => {},
-    () => {},
-    () => {},
-  );
-  const gameId = `${game.encodeParams(params, true)}:${desc}`;
-  const reset = () => m.newGameFromId(gameId);
-  reset();
-  return { params, tileSize, size: game.computeSize(params, tileSize), m, reset };
-}
-
-function fingerprint(m: Midend<unknown, unknown, unknown, unknown, unknown>): string {
-  const bytes = m.saveGame();
-  let h = 0;
-  for (const b of bytes) h = (h * 31 + b) | 0;
-  return String(h);
-}
-
-/** Probe points across the whole board — a coarse grid is not enough (an early
- * cut of the press sweep sailed straight past Untangle, whose vertices sit at
- * arbitrary points, and would have reported health). */
-function probePoints(size: { w: number; h: number }): { x: number; y: number }[] {
-  const step = Math.max(4, Math.floor(Math.min(size.w, size.h) / 12));
-  const pts: { x: number; y: number }[] = [];
-  for (let x = 2; x < size.w; x += step)
-    for (let y = 2; y < size.h; y += step) pts.push({ x, y });
-  return pts;
-}
-
 const LEFT: [number, number, number] = [LEFT_BUTTON, LEFT_DRAG, LEFT_RELEASE];
 
 /**
@@ -149,20 +126,6 @@ const INERT_PANEL_KEYS: Record<string, string[]> = {
   // bound where the *generator* bound was wanted; it now derives the keypad
   // from the generator (`maxGeneratedRegionSize`).
 };
-
-/**
- * **Codes no game can act on**, and the reason each is safe is asserted below
- * rather than asserted by the author.
- *
- * The obvious choice — Unicode's private-use area, `0xE000`+ — is **wrong
- * here, and picking it is how this guard was first mis-measured**. Button
- * codes are not Unicode: `MOD_MASK` is `0x7800`, so `0xE000` decodes as
- * `MOD_NUM_KEYPAD | MOD_SHFT | 0x8000` and carries two live modifier bits. It
- * convicted Sixteen, which reads the keypad bit and was answering the probe
- * exactly as designed. `0x0300`–`0x0302` sit in the gap above `CURSOR_SELECT2`
- * and below `MOD_STYLUS`; `0x10000` sits above every modifier.
- */
-const UNACTIONABLE = [0x0300, 0x0301, 0x0302, 0x10000];
 
 /**
  * Games that answer a button they cannot possibly have acted on, each with the
@@ -221,18 +184,7 @@ describe("a game does not claim a button it did not act on", () => {
     if (!game) continue;
 
     it(`${id}: declines a code it cannot act on`, () => {
-      const { size, m, reset } = board(game, id);
-      reset();
-      const before = fingerprint(m);
-      const claimed: string[] = [];
-      // The origin as well as the board, because a keyboard event arrives at
-      // (0, 0) and Ascent's defect was reachable from there and nowhere else
-      // on some geometries — a board-only sweep would have scored it healthy.
-      const points = [{ x: 0, y: 0 }, ...probePoints(size)];
-      for (const code of UNACTIONABLE)
-        for (const p of points)
-          if (m.processInput(p.x, p.y, code))
-            claimed.push(`0x${code.toString(16)} at (${p.x},${p.y})`);
+      const { claims: claimed, boardChanged } = unactionableClaims(game, id);
 
       if (claimed.length) claimants.push(id);
       // A biconditional, so the ledger cannot rot in either direction: a game
@@ -254,8 +206,8 @@ describe("a game does not claim a button it did not act on", () => {
       // one direction "did the board change" is safe to ask in (constraint C1
       // of `close-the-consumed-probe-blind-spot`): there is no innocent reason
       // for a code with no meaning to write to the grid.
-      expect(fingerprint(m), `${id} changed the board for a meaningless code`).toBe(
-        before,
+      expect(boardChanged, `${id} changed the board for a meaningless code`).toBe(
+        false,
       );
       sweptGames++;
     });
@@ -339,13 +291,24 @@ describe("a gesture from a finger does what the same gesture from a mouse does",
 
 describe("a long press cannot silently swallow a gesture", () => {
   /**
-   * The §3.8c trap, stated so it cannot be innocent. Asking "does the promoted
-   * gesture change the board?" is unanswerable — a right-button eraser on a
-   * fresh board correctly changes nothing. Asking "does the game consume
-   * `RIGHT_BUTTON` anywhere?" is not: if it never does, then *every* long press
-   * and *every* two-finger tap that player makes is dropped, whatever the board
-   * holds. That is the exact condition `Game.ignoresSecondaryButton` declares,
-   * so the two are asserted equal rather than merely compatible.
+   * The §3.8c trap, stated so it cannot be innocent. `Game.ignoresSecondaryButton`
+   * declares that the secondary button means nothing in this game, and the flag
+   * turns off `detectSecondaryButton` entirely — so a wrong answer in either
+   * direction costs a real gesture, and the two are asserted **equal** rather
+   * than merely compatible.
+   *
+   * **The question is "did anything observable happen", not "was it consumed".**
+   * Consumption is what this guard used to ask, and it was satisfied by a bare
+   * repaint: 16 of 57 games consumed `RIGHT_BUTTON` without ever committing a
+   * move, so for those the biconditional held whatever the game did. Ascent made
+   * that concrete — its `finishTyping` tail answered any in-grid pointer button,
+   * so deleting its entire right-button arm left this guard green.
+   *
+   * `secondaryMeaning` asks the sharper question, and it is one question rather
+   * than a list of special cases: the collection's three legitimate answers —
+   * commit a move (34 games), change what the next input does (16), fold onto
+   * the primary button (Slide) — are all "something observable changed", now or
+   * next. Nothing is declared; a game joins by *having* the behavior.
    */
   const declared: string[] = [];
   const observed: string[] = [];
@@ -355,42 +318,28 @@ describe("a long press cannot silently swallow a gesture", () => {
     if (!game) continue;
 
     it(`${id}: declares ignoresSecondaryButton iff it ignores it`, () => {
-      const { size, m, reset } = board(game, id);
-      let usesRight = false;
-      for (const p of probePoints(size)) {
-        if (usesRight) break;
-        // Twice: once on the fresh board, once after the left button has
-        // written something, because a secondary meaning is often "undo what
-        // the primary one did" and has nothing to act on until then.
-        for (const prime of [false, true]) {
-          reset();
-          if (prime) {
-            m.processInput(p.x, p.y, LEFT_BUTTON);
-            m.processInput(p.x, p.y, LEFT_RELEASE);
-          }
-          if (m.processInput(p.x, p.y, RIGHT_BUTTON)) usesRight = true;
-          m.processInput(p.x, p.y, RIGHT_RELEASE);
-          if (usesRight) break;
-        }
-      }
-      if (!usesRight) observed.push(id);
+      const { used, evidence } = secondaryMeaning(game, id);
+      if (!used) observed.push(id);
       if (game.ignoresSecondaryButton) declared.push(id);
 
       expect(
         game.ignoresSecondaryButton ?? false,
-        usesRight
-          ? `${id} consumes RIGHT_BUTTON, so it must NOT set ignoresSecondaryButton — ` +
-              "setting it would turn off a long press the game handles"
-          : `${id} never consumes RIGHT_BUTTON, so it MUST set ` +
-              "ignoresSecondaryButton — otherwise every long press and two-finger " +
-              "tap a touch player makes is silently dropped, and a press-and-drag " +
-              "gesture dies whenever they pause to aim",
-      ).toBe(!usesRight);
+        used
+          ? `${id} has a secondary meaning (${evidence}), so it must NOT set ` +
+              "ignoresSecondaryButton — setting it would turn off a long press " +
+              "the game handles"
+          : `${id} does nothing observable with RIGHT_BUTTON — no move, no ` +
+              "change to what the next input does, no fold onto the primary " +
+              "button — so it MUST set ignoresSecondaryButton. Otherwise every " +
+              "long press and two-finger tap a touch player makes is silently " +
+              "dropped, and a press-and-drag gesture dies whenever they pause " +
+              "to aim.",
+      ).toBe(!used);
     });
   }
 
   it("found the games it claims to have found", () => {
-    // Vacuity: a probe that consumed nothing anywhere would declare all 57
+    // Vacuity: a probe that observed nothing anywhere would declare all 57
     // games secondary-button-free and demand the flag on every one of them.
     expect(observed.length).toBeGreaterThan(0);
     expect(observed.length).toBeLessThan(REGISTERED.length / 2);
