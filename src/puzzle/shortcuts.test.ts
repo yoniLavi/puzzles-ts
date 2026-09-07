@@ -17,8 +17,16 @@
  * - **Nothing is bound twice.** Two commands on one chord means whichever the
  *   table lists first wins, in a file where order is otherwise meaningless.
  */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import type { Game } from "../engine/game.ts";
+import { Midend } from "../engine/midend.ts";
+import { CURSOR_RIGHT } from "../engine/pointer.ts";
+import { randomNew } from "../engine/random/index.ts";
+import { getTsGame, registeredGameIds } from "../engine/registry.ts";
+import { registerAllGames } from "../games/index.ts";
 import { bareCommand, chordCommand, SHORTCUTS, shortcutLabel } from "./shortcuts.ts";
+
+type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
 
 /** A `KeyboardEvent`-shaped object for the matchers, which read five fields. */
 function key(k: string, mods: { ctrl?: boolean; shift?: boolean; alt?: boolean } = {}) {
@@ -112,5 +120,112 @@ describe("the app's keyboard shortcuts", () => {
     // shortcut the app never meant to take.
     expect(chordCommand(key("p", { ctrl: true }))).toBeUndefined();
     expect(bareCommand(key("q"))).toBeUndefined();
+  });
+});
+
+/**
+ * Games that consume a bare shortcut letter themselves, each with the reason.
+ *
+ * These are **not defects**: the derivation's whole design is that the game is
+ * offered the key first, so a game with its own meaning for a letter keeps it.
+ * The ledger exists because that collision is otherwise invisible — the
+ * shortcut simply does nothing in that game, and nobody finds out from a green
+ * suite. An entry is a decision somebody made, and it must be one a player
+ * would agree with.
+ */
+const BINDS_A_SHORTCUT_LETTER: Record<string, string> = {
+  guess:
+    "binds 'h' (with 'H' and '?') to its own hint, which is the same command " +
+    "the bare letter would have run — a player pressing h gets a hint either way.",
+  pearl:
+    "binds 'h' (with 'H') to its own hint, which is the same command the bare " +
+    "letter would have run — a player pressing h gets a hint either way.",
+  tents:
+    "binds 'n' to 'not a tent', upstream's T/N/B cell vocabulary, and only " +
+    "while the keyboard cursor is visible — which is exactly when a player " +
+    "means the cell and not a new game. With the cursor hidden it declines 'n' " +
+    "and New game runs, so the letter is never simply lost.",
+};
+
+describe("a bare shortcut letter reaches the app in every game", () => {
+  /**
+   * **The other half of the derivation**, and the half no other test covers.
+   *
+   * `shortcuts.ts` resolves a bare letter by offering it to the game first and
+   * acting only if `interpretMove` returned `null`. The tests above prove the
+   * table and the matchers are right; none of them proves the *game* lets the
+   * letter through, and that is the half a player feels. Ascent used to answer
+   * every key — its `interpretMove` gated on the pointer coordinates alone,
+   * and keys arrive at (0, 0) — so undo, redo, new game and hint were all dead
+   * there while every test in this file passed
+   * (`close-the-consumed-probe-blind-spot`).
+   *
+   * The sweep is *sufficient*, not exhaustive: it asks on a fresh board and
+   * with the cursor revealed, which is the state a player is in when they reach
+   * for undo. A game that only claims a letter in some deeper mode escapes it —
+   * that is a missed catch, never a false conviction, because the ledger below
+   * is asserted to be exactly the set found.
+   */
+  const bare = SHORTCUTS.flatMap((s) => (s.bare ? [[s.bare, s.command] as const] : []));
+  const found: Record<string, string[]> = {};
+  let swept = 0;
+
+  beforeAll(registerAllGames);
+
+  it("has bare letters to sweep", () => {
+    // Vacuity: if the table ever loses its `bare` entries this whole describe
+    // block passes over nothing and reports health.
+    expect(bare.length).toBeGreaterThan(2);
+  });
+
+  for (const id of registeredGameIds()) {
+    it(`${id}: declines the letters the app needs`, () => {
+      const game = getTsGame(id) as AnyGame | undefined;
+      expect(game, `${id} is registered but has no game object`).toBeDefined();
+      if (!game) return;
+      const params = game.defaultParams();
+      const desc = game.newDesc(params, randomNew(`shortcut-${id}`)).desc;
+      const gameId = `${game.encodeParams(params, true)}:${desc}`;
+      const m = new Midend(game);
+      m.setCallbacks(
+        () => {},
+        () => {},
+        () => {},
+      );
+
+      const claimed: string[] = [];
+      for (const [letter] of bare)
+        for (const reveal of [false, true]) {
+          m.newGameFromId(gameId);
+          // Keys reach the engine at (0, 0) — `worker-adapter.ts`.
+          if (reveal) m.processInput(0, 0, CURSOR_RIGHT);
+          if (m.processInput(0, 0, letter.charCodeAt(0)) && !claimed.includes(letter))
+            claimed.push(letter);
+        }
+      if (claimed.length) found[id] = claimed;
+      swept++;
+
+      expect(
+        claimed.length > 0,
+        claimed.length
+          ? `${id} consumes ${claimed.join(", ")}, so ${claimed
+              .map((l) => bare.find(([b]) => b === l)?.[1])
+              .join(", ")} cannot be reached from the keyboard in this game. If ` +
+              "the game really does bind the letter, add it to " +
+              "BINDS_A_SHORTCUT_LETTER with the reason a player would accept; if " +
+              "it does not, it is answering a key it did not act on."
+          : `${id} is on BINDS_A_SHORTCUT_LETTER but no longer claims a ` +
+              "shortcut letter — delete its entry.",
+      ).toBe(id in BINDS_A_SHORTCUT_LETTER);
+    });
+  }
+
+  it("swept every registered game", () => {
+    expect(swept).toBe(registeredGameIds().length);
+    expect(Object.keys(found).sort()).toEqual(
+      Object.keys(BINDS_A_SHORTCUT_LETTER).sort(),
+    );
+    for (const reason of Object.values(BINDS_A_SHORTCUT_LETTER))
+      expect(reason.length).toBeGreaterThan(80);
   });
 });

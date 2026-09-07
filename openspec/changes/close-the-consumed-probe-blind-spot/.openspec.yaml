@@ -1,5 +1,1 @@
-# No deltas yet: the finding is measured but the fix is genuinely open — two
-# games may need opposite answers, and a requirement written now would spec a
-# conclusion nobody has reached.
 schema: spec-driven
-skip_specs: true

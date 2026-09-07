@@ -24,6 +24,7 @@ import {
   isEraseKey,
   isMouseDown,
   isMouseDrag,
+  isMouseRelease,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
@@ -803,7 +804,21 @@ export function interpretAscentMove(
     return UI_UPDATE;
   }
 
-  if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
+  /* **This arm needs a pointer button, not merely a pointer coordinate.**
+   * Keyboard events arrive at (0, 0), which is inside every grid, so a
+   * coordinate-only gate admits every key there is — `mouseClick` no-ops on a
+   * non-pointer button, but `finishTyping` is set and the tail below then
+   * answers `UI_UPDATE` to anything at all.
+   *
+   * That answer is a claim, and two things read it: the app derives its
+   * bare-letter shortcuts from whether the game declined the key
+   * (`src/puzzle/shortcuts.ts`), and the collection's input guards ask their
+   * questions by the same value. Upstream can gate on coordinates alone because
+   * its midend claims `n`/`u`/`r`/`q` above the game; this frontend does the
+   * opposite, so declining honestly is load-bearing here in a way it is not
+   * in the C. */
+  const pointer = isMouseDown(button) || isMouseDrag(button) || isMouseRelease(button);
+  if (pointer && gx >= 0 && gx < w && gy >= 0 && gy < h) {
     if (isMouseDrag(button) && ui.held >= 0 && !isNumberEdge(ui.select)) {
       const hx = isHexagonal(state.mode)
         ? gx * tilesize + (gy * tilesize) / 2 + tilesize / 2

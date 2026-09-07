@@ -6,9 +6,13 @@
  *
  * [`touch-input.test.ts`](./touch-input.test.ts) already proves that a single
  * touch *press* does what a mouse press does. That is not what play consists
- * of, and it is not what this frontend's traps break. The three guards here
- * cover what a press-level sweep cannot see:
+ * of, and it is not what this frontend's traps break. The guards here cover
+ * what a press-level sweep cannot see:
  *
+ *  0. **The instrument itself.** Guards 1–3 all ask their question by
+ *     `interpretMove`'s return value, so a game that answers *every* button
+ *     makes all three unanswerable about itself while passing all three. That
+ *     one runs first, and it is the reason the rest can be believed.
  *  1. **A gesture, not a press.** Press → drag → release from a finger must
  *     leave the same board as from a mouse.
  *  2. **The long press.** `detectSecondaryButton` promotes a finger that stays
@@ -60,9 +64,15 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  cursorDelta,
+  isCancelKey,
+  isMouseDown,
+  isMouseDrag,
+  isMouseRelease,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  MOD_MASK,
   MOD_STYLUS,
   RIGHT_BUTTON,
   RIGHT_RELEASE,
@@ -139,6 +149,124 @@ const INERT_PANEL_KEYS: Record<string, string[]> = {
   // bound where the *generator* bound was wanted; it now derives the keypad
   // from the generator (`maxGeneratedRegionSize`).
 };
+
+/**
+ * **Codes no game can act on**, and the reason each is safe is asserted below
+ * rather than asserted by the author.
+ *
+ * The obvious choice — Unicode's private-use area, `0xE000`+ — is **wrong
+ * here, and picking it is how this guard was first mis-measured**. Button
+ * codes are not Unicode: `MOD_MASK` is `0x7800`, so `0xE000` decodes as
+ * `MOD_NUM_KEYPAD | MOD_SHFT | 0x8000` and carries two live modifier bits. It
+ * convicted Sixteen, which reads the keypad bit and was answering the probe
+ * exactly as designed. `0x0300`–`0x0302` sit in the gap above `CURSOR_SELECT2`
+ * and below `MOD_STYLUS`; `0x10000` sits above every modifier.
+ */
+const UNACTIONABLE = [0x0300, 0x0301, 0x0302, 0x10000];
+
+/**
+ * Games that answer a button they cannot possibly have acted on, each with the
+ * reason — and the reason must also be in that game's spec, not only here.
+ *
+ * Empty, and meant to stay so. Ascent was the only entry: its `interpretMove`
+ * gated the `mouseClick` call on the *coordinates* alone, so every key sent to
+ * the keyboard origin fell through to the `finishTyping` tail's `UI_UPDATE`.
+ */
+const CLAIMS_UNACTIONABLE: Record<string, string> = {};
+
+describe("a game does not claim a button it did not act on", () => {
+  /**
+   * **The guard on the instrument the three guards below run on.** They ask
+   * their questions by `interpretMove`'s return value — see "ON THE INSTRUMENT"
+   * above — and a game that answers *everything* makes every one of those
+   * questions unanswerable about itself while passing all of them.
+   *
+   * It is not only the tests that read that value. `view-interactive.ts` raises
+   * `puzzle-key-unhandled` exactly when the game declines a key, and that is
+   * what lets a bare letter be an app shortcut without a per-game roster
+   * (`src/puzzle/shortcuts.ts`). A game claiming every code takes `u`, `r`, `n`
+   * and `h` away from its own players — which is what Ascent did.
+   */
+  it("the probe codes really are unactionable", () => {
+    // Checking the instrument before the finding: every reason these codes are
+    // safe is derived from the vocabulary, so a code that stops being safe
+    // (a new modifier bit, a new cursor button) fails here rather than
+    // silently convicting whichever game reads it.
+    for (const code of UNACTIONABLE) {
+      expect(code & MOD_MASK, `0x${code.toString(16)} carries modifier bits`).toBe(0);
+      expect(isMouseDown(code) || isMouseDrag(code) || isMouseRelease(code)).toBe(
+        false,
+      );
+      expect(cursorDelta(code)).toBe(null);
+      expect(code === CURSOR_SELECT || code === CURSOR_SELECT2).toBe(false);
+      expect(isCancelKey(code)).toBe(false);
+      // Not a character a keyboard or the on-screen panel can produce.
+      expect(code > 0x7e).toBe(true);
+    }
+    // And not a code any game's own keypad offers.
+    for (const id of REGISTERED) {
+      const game = getTsGame(id) as AnyGame | undefined;
+      for (const k of game?.requestKeys?.(game.defaultParams()) ?? [])
+        expect(UNACTIONABLE, `${id}'s keypad offers a probe code`).not.toContain(
+          k.button,
+        );
+    }
+  });
+
+  const claimants: string[] = [];
+  let sweptGames = 0;
+
+  for (const id of REGISTERED) {
+    const game = getTsGame(id) as AnyGame | undefined;
+    if (!game) continue;
+
+    it(`${id}: declines a code it cannot act on`, () => {
+      const { size, m, reset } = board(game, id);
+      reset();
+      const before = fingerprint(m);
+      const claimed: string[] = [];
+      // The origin as well as the board, because a keyboard event arrives at
+      // (0, 0) and Ascent's defect was reachable from there and nowhere else
+      // on some geometries — a board-only sweep would have scored it healthy.
+      const points = [{ x: 0, y: 0 }, ...probePoints(size)];
+      for (const code of UNACTIONABLE)
+        for (const p of points)
+          if (m.processInput(p.x, p.y, code))
+            claimed.push(`0x${code.toString(16)} at (${p.x},${p.y})`);
+
+      if (claimed.length) claimants.push(id);
+      // A biconditional, so the ledger cannot rot in either direction: a game
+      // that acquires the defect is caught, and a game that is fixed forces its
+      // entry to be deleted rather than left behind as a standing excuse.
+      expect(
+        claimed.length > 0,
+        claimed.length
+          ? `${id} answered a button code nothing could act on (${claimed[0]}, ` +
+              `${claimed.length} in all). It blinds every guard below, which asks ` +
+              "its question by this same return value, and it takes the bare-letter " +
+              "app shortcuts away from this game's players (`puzzle/shortcuts.ts`). " +
+              "Decline the button instead of falling through to a repaint."
+          : `${id} is on CLAIMS_UNACTIONABLE but no longer claims anything — ` +
+              "delete its entry.",
+      ).toBe(id in CLAIMS_UNACTIONABLE);
+
+      // A code nothing acts on cannot have moved the board either. This is the
+      // one direction "did the board change" is safe to ask in (constraint C1
+      // of `close-the-consumed-probe-blind-spot`): there is no innocent reason
+      // for a code with no meaning to write to the grid.
+      expect(fingerprint(m), `${id} changed the board for a meaningless code`).toBe(
+        before,
+      );
+      sweptGames++;
+    });
+  }
+
+  it("swept every registered game, over codes that exist", () => {
+    expect(sweptGames).toBe(REGISTERED.length);
+    expect(UNACTIONABLE.length).toBeGreaterThan(1);
+    expect(claimants.sort()).toEqual(Object.keys(CLAIMS_UNACTIONABLE).sort());
+  });
+});
 
 describe("a gesture from a finger does what the same gesture from a mouse does", () => {
   let sweptGames = 0;

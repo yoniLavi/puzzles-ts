@@ -41,21 +41,25 @@ unexamined gap. The precedent for why this is not paranoia:
 games completely deaf to touch**, discovered by an owner bug report rather than
 a test.
 
-**Five sweeps guard it automatically, all through the live registry and a real
-`Midend`, so your game is covered the day it is registered.** You do not have to
-remember they exist; you do have to know what they will tell you.
+**The sweeps below guard it automatically, all through the live registry and a
+real `Midend`, so your game is covered the day it is registered.** You do not
+have to remember they exist; you do have to know what they will tell you.
 
 - [`touch-input.test.ts`](../../src/engine/touch-input.test.ts) — a touch
   **press** does exactly what the same mouse press does, comparing the press's
   *effect* on the board. If it fails, your `interpretMove` is comparing a raw
   button somewhere.
-- [`input-parity.test.ts`](../../src/engine/input-parity.test.ts) — four more:
-  the same equivalence for a whole **press → drag → release gesture**; the
+- [`input-parity.test.ts`](../../src/engine/input-parity.test.ts) — the same
+  equivalence for a whole **press → drag → release gesture**; the
   `ignoresSecondaryButton` biconditional (§ "A touch hold arrives as the right
   button"); **keyboard reachability**, which asks not only whether a cursor key
-  is consumed but whether any keyboard-only sequence *commits a move*; and
+  is consumed but whether any keyboard-only sequence *commits a move*;
   **on-screen key reachability**, the reverse direction (§ "The on-screen
-  keypad").
+  keypad"); and the guard on the instrument all of those run on, that a game
+  **declines a button it did not act on** (§ "A button you did not act on must
+  not be claimed").
+- [`shortcuts.test.ts`](../../src/puzzle/shortcuts.test.ts) — that every bare
+  letter the app binds still reaches the app in your game (same section).
 - [`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts) — the
   source scan for a key that can never fire (§ "The numeric keypad never
   arrives").
@@ -597,6 +601,61 @@ thing. Galaxies shipped its left-drag this way for the length of one debugging
 session: the press toggled a wall, every drag frame was silently dropped, and
 the served module was verifiably the new one, so all the obvious suspects —
 stale worker, service worker, HTTP cache — checked out fine.
+
+## A button you did not act on must not be claimed
+
+**The exact mirror of the section above, and the more expensive of the two.**
+Returning `UI_UPDATE` for a button you did nothing with is not free politeness:
+`interpretMove`'s return value is a *claim*, and three parties read it.
+
+1. The **input guards** ask their questions by it — keyboard reachability, the
+   `ignoresSecondaryButton` biconditional, the on-screen-key sweep. A game that
+   answers everything passes all of them **vacuously**, and there is nothing to
+   see: the suite is green either way.
+2. The **app's bare-letter shortcuts** are derived from it.
+   `view-interactive.ts` raises `puzzle-key-unhandled` exactly when a game
+   declines a key, which is how `u`, `r`, `n` and `h` become undo, redo, New
+   game and Hint with no per-game roster ([`shortcuts.ts`](../../src/puzzle/shortcuts.ts)).
+   A game claiming every key takes all four away from its own players.
+3. The **frontend's gesture machinery** — that is § "A press you do not act on
+   must still be consumed", pulling the other way. The two together say: claim a
+   *pointer* button you are deferring on, decline everything else.
+
+**The trap, concretely.** Keyboard events arrive at `(0, 0)`, which is inside
+every grid. So a board arm gated on the *coordinates* alone runs for every key
+there is:
+
+```ts
+// Ascent, before `close-the-consumed-probe-blind-spot`. The gate is
+// coordinate-only, so a keypress at (0,0) reached it, set `finishTyping`, and
+// fell through the tail below into UI_UPDATE.
+if (gx >= 0 && gx < w && gy >= 0 && gy < h) { ret = mouseClick(…); finishTyping = true; }
+…
+if (finishTyping && !ret) return UI_UPDATE;
+```
+
+The fix is one conjunct — `isMouseDown(button) || isMouseDrag(button) ||
+isMouseRelease(button) &&` the coordinate test — **not** narrowing the tail. That
+tail is load-bearing (it repaints a moved cursor and a click that clears the UI),
+and comparing UI state before and after to decide whether to repaint is the
+deep-compare trap AGENTS.md forbids: suppress a no-op *locally*, in the arm that
+knows it is one.
+
+**Why upstream does not have this problem** and you cannot copy its shape here:
+upstream's midend claims `n`/`u`/`r`/`q` *above* the game, so its games never
+have to decline them. This port deliberately inverts that — offer the key to the
+game, act only if it declines — which needs no roster and cannot be forgotten by
+a new game, but which makes an honest `null` load-bearing in a way the C never
+made it.
+
+**On writing the probe**, if you extend the guard: the codes must be checked, not
+assumed. Unicode's private-use area is the obvious choice and it is **wrong** —
+button codes are not Unicode, `MOD_MASK` is `0x7800`, and `0xE000` decodes as
+`MOD_NUM_KEYPAD | MOD_SHFT | 0x8000`. Picking it convicted Sixteen, which reads
+the keypad bit and was behaving exactly as designed, and inflated a
+one-game finding into a two-game one that reached a proposal. `UNACTIONABLE` in
+[`input-parity.test.ts`](../../src/engine/input-parity.test.ts) derives every
+reason its codes are safe from the vocabulary itself.
 
 ## Round fractional pointer coordinates
 
