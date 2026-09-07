@@ -1,0 +1,6 @@
+# No deltas yet: the measurement is done but the fix is genuinely open — and
+# "close it with no code change, having corrected the guard's comment" is one of
+# the candidate outcomes, so a requirement written now would spec a conclusion
+# nobody has reached.
+schema: spec-driven
+skip_specs: true
