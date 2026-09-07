@@ -83,7 +83,7 @@ jobs:
       # `npm run gate` runs `vite build` into dist/, so this is that exact
       # output — not a second build of the same commit.
       - name: Keep the gated build for the deploy job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
@@ -110,8 +110,13 @@ jobs:
     # `main` only. `workflow_dispatch` on another ref runs the gate and stops.
     if: github.ref == 'refs/heads/main'
     steps:
+      # v8 downloads what v7 uploads — the two version independently and the
+      # pairing is the documented one. They were introduced here at v4, which
+      # runs on Node 20 and already draws a deprecation warning from the
+      # runner; a deprecation warning is a dated fact that becomes a hard
+      # failure, so it is worth clearing rather than reading every run.
       - name: Fetch the gated build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist

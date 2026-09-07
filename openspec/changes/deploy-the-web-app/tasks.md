@@ -75,10 +75,15 @@ candidate host, so none of them waits on the choice.
       (`if-no-files-found: error`), and the deploy job downloads that artifact
       rather than rebuilding — what ships is what was gated. Publishing is
       `cloudflare/wrangler-action@v4` with a pinned wrangler, `main` only.
-- [ ] 2.1b **Owner action, once:** create the Pages project and the two
-      repository secrets — see the handoff in the change's closing notes. Until
-      they exist the deploy job fails loudly on every push, which is the
-      intended signal rather than a silent no-op.
+- [x] 2.1b Owner created the Pages project and both repository secrets
+      (2026-09-07). **The automated path is proved end to end**: run
+      `34166272340` on `f1cbfda2` ran the gate to success, the deploy job
+      downloaded the gate's own artifact ("Download artifact has finished
+      successfully") and published it, and production now serves that build —
+      confirmed by `robots.txt`, whose trimmed form exists only in that commit,
+      which is evidence rather than inference. Cloudflare re-uploaded 68 of 326
+      files and recognized 258 as already present, so the content-addressed
+      dedup works across a manual and a CI deploy of the same tree.
 - [ ] 2.2 Set the deploy environment. Each of these is currently unset and each
       changes an output:
       - [ ] `VITE_CANONICAL_BASE_URL` — without it **no `sitemap.xml`** and no
