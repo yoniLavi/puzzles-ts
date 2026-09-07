@@ -1,10 +1,5 @@
-###
-### Served as-is unless VITE_CANONICAL_BASE_URL is set, in which case
-### vite-plugin-sitemap overwrites dist/robots.txt completely and emits a
-### sitemap.xml beside it. Both states are live: the plugin is registered only
-### when that variable is set (see vite.config.ts), so a build without a
-### canonical URL ships this file verbatim.
-###
+# Served verbatim. When VITE_CANONICAL_BASE_URL is set, vite-plugin-sitemap
+# overwrites dist/robots.txt completely and emits a sitemap.xml beside it.
 
 User-agent: *
 Allow: /

@@ -129,38 +129,67 @@ candidate host, so none of them waits on the choice.
 ## 3. Fix what the inherited config assumes
 
 - [x] 3.1 The Cloudflare Web Analytics CSP entries — done as 0.6.
-- [ ] 3.2 Re-read the rest of `securityHeaders()` for other assumptions about a
-      host we may not be on. `X-Frame-Options` is done (0.3). Still open: the
-      comments describe Cloudflare's *own* default `Strict-Transport-Security`
-      and `Expect-CT`, which another host may not add. If HSTS matters, it
-      becomes ours to set — and on a custom domain it is a commitment that is
-      awkward to reverse, so decide it with the domain rather than after.
+- [x] 3.2 Re-read the rest of `securityHeaders()` for other assumptions about a
+      host we may not be on. `X-Frame-Options` is done (0.3). **The HSTS
+      assumption is now measured rather than inherited**: the comment claimed
+      Cloudflare adds its own `Strict-Transport-Security` and `Expect-CT`; the
+      deployed origin returns **no HSTS header at all** (2026-09-07). It is a
+      per-zone setting and `pages.dev` is not our zone. That costs nothing today
+      — `pages.dev` is HTTPS-only and we control no apex on it — so the comment
+      is corrected in place and the decision is deferred **to the custom
+      domain**, where HSTS is worth having and awkward to reverse. Carried as
+      §2.2's domain work rather than left as a standing "still open".
 
 ## 4. Verify the deployed artifact, not the local build
 
 Each of these fails **silently**, which is why they are listed rather than left
 to a glance at the home page.
 
-- [ ] 4.1 A puzzle route loads by clean URL (`/pegs`), and so does a help page.
-      Check more than one, and check `/` and a 404 (`public/404.html` is the
-      page both Cloudflare and GitHub Pages serve for a miss).
-- [ ] 4.2 The **CSP header actually arrives** — `curl -I` the deployed URL, do
-      not infer it from `dist/_headers` existing. If the host cannot set it,
-      confirm that is the recorded decision from 1.3 rather than a surprise.
-      **Check a path from each cache class too**, not just `/`: the whole point
-      of 0.1's inversion is that `/pegs` now *inherits* rather than declaring,
-      so confirm `/pegs` carries `max-age=60` and `/assets/<hashed>` carries
-      `immutable`. An inherited value is exactly the kind that looks fine in the
-      file and never arrives.
-- [ ] 4.3 The service worker **registers on the deployed origin** and the app
-      opens with the network off. Registration is scope-sensitive and
-      `base`-sensitive; a laptop `vite preview` does not prove it.
-- [ ] 4.4 The manifest installs, with the intended name and icons.
-- [ ] 4.5 **`/sitemap.xml` exists** (gated on `VITE_CANONICAL_BASE_URL`, and the
-      easiest thing here to leave out and never notice) **and `/robots.txt` says
-      what it should** — it ships either way, so the check is its *content*, not
-      its presence: with the canonical URL set it should be the plugin's output
-      naming the sitemap, not the placeholder from `public/`.
+**First deploy: `hintful-puzzles.pages.dev`, 2026-09-07, from commit `9ec3f12e`**
+(manual `wrangler pages deploy` of the gated build, pending the CI secrets in
+2.1b). Everything below was measured against that live origin.
+
+- [x] 4.1 Clean URLs resolve: `/`, `/pegs`, `/solo` and `/help/pegs` all 200 as
+      `text/html`; `/help/index` 308s to the directory form; an unknown path
+      404s and serves our own `public/404.html` ("Nothing here"). Cloudflare
+      needed no configuration for any of it.
+- [x] 4.2 **Headers arrive, and every cache class is right** — the two that
+      could only be checked here both passed:
+      - `/` → `max-age=60`, **not doubled**. Under the old direction `/` needed
+        an `!` override, which is exactly what workers-sdk#11351 breaks; the
+        inversion means `/` inherits and detaches nothing.
+      - `/pegs` → `max-age=60` **with no rule of its own**, which is the whole
+        claim of 0.1's inversion, confirmed on the wire.
+      - `/assets/<hashed>.js` → `max-age=31556952, immutable`;
+        `/favicon.svg` → `max-age=14400`; `/manifest.webmanifest` → 60.
+      - `/sw.js` → **plain `no-cache`**, not `public, max-age=60,
+        must-revalidate, no-cache`. That is the `!` detach working against an
+        inherited value; a comma-joined result would have meant the merge had
+        beaten us.
+      - CSP, `X-Content-Type-Options`, `Referrer-Policy` and
+        `X-Frame-Options: DENY` all present. The CSP names **no** analytics
+        origin (0.6), confirmed in the delivered header rather than the source.
+      - `X-Robots-Tag: noindex` on both the project origin and the
+        `<version>.` deployment alias.
+- [x] 4.3 **Service worker registers and the app runs with the network off.**
+      Scope is `https://hintful-puzzles.pages.dev/` — root, as `base` is unset.
+      285 entries precached, worker `activated`. With
+      `context.setOffline(true)` (verified genuinely cut: an uncached `fetch`
+      throws), `/pegs` loads from cache and **renders a complete Cross 7×7
+      board on a real canvas**. Note for the next reader: a fresh browser tab
+      registers **no** worker and that is correct, not a defect —
+      `settings.allowOfflineUse ?? isRunningAsApp` (`src/utils/pwa.ts:98`), so
+      only an installed app opts in by default. The check has to enable it
+      first (Preferences → Advanced → Allow offline use) or it measures nothing.
+- [x] 4.4 Manifest serves with `name: "Hintful Puzzles"`, `short_name:
+      "Hintful"`, `start_url` and `scope` `/`, `display: standalone`, and the
+      two theme colors read out of `theme.css`. All six icons 200 with correct
+      content types.
+- [x] 4.5 `/sitemap.xml` 404s and `/robots.txt` serves the `public/` placeholder
+      — **both correct for a build with no `VITE_CANONICAL_BASE_URL`**, and
+      together they confirm 0.4's correction on the wire: one is gated, the
+      other is not. Re-check both when the domain lands; `robots.txt` should
+      then be the plugin's output naming the sitemap.
 - [ ] 4.6 Hand the URL over. `test-touch-on-a-real-device` is blocked on it and
       is where the touch acceptance the input-parity audit could not get
       actually happens. **Do this on the `pages.dev` URL rather than waiting for

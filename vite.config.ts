@@ -77,8 +77,14 @@ function securityHeaders(options: {
     // (Change this and `frame-ancestors` to "SAMEORIGIN"/'self' together if we
     // rework help-viewer to use an iframe.)
     "X-Frame-Options": "DENY",
-    // Cloudflare also adds its own Expect-CT and Strict-Transport-Security,
-    // plus the obsolete X-Xss-Protection
+    // No Strict-Transport-Security. The inherited comment here claimed
+    // Cloudflare adds its own; measured against the deployed origin on
+    // 2026-09-07, it does not — `hintful-puzzles.pages.dev` returns no HSTS
+    // header at all. (It is a per-zone setting, and `pages.dev` is not our
+    // zone.) That costs nothing today, because `pages.dev` is HTTPS-only and
+    // has no apex we control. It becomes a real decision with the custom
+    // domain, where HSTS is both worth having and awkward to reverse — so
+    // decide it there, either as a zone setting or as a line in this map.
   };
 
   const csp: Record<string, string> = {
