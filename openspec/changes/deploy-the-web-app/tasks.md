@@ -42,14 +42,18 @@ candidate host, so none of them waits on the choice.
 
 ## 1. Choose the host (owner's call — do not pick one silently)
 
-- [ ] 1.1 Put the comparison to the owner. **The header question is the whole
-      decision**; the clean-URL question turned out to discriminate almost
-      nothing (Cloudflare Pages, Workers static assets, Netlify and GitHub Pages
-      all serve `/pegs` from `pegs.html` unconfigured — only Vercel needs a
-      switch). GitHub Pages cannot set headers at all, so `dist/_headers`
-      becomes inert; Cloudflare reads the file we already emit, `!` directive
-      included, and nobody else implements that directive.
-- [ ] 1.2 If GitHub Pages is chosen, settle **user/org site vs project site**
+- [x] 1.1 Put the comparison to the owner. **Decided 2026-09-07: Cloudflare
+      Pages.** The header question was the whole decision; the clean-URL
+      question turned out to discriminate almost nothing (Cloudflare Pages,
+      Workers static assets, Netlify and GitHub Pages all serve `/pegs` from
+      `pegs.html` unconfigured — only Vercel needs a switch). GitHub Pages
+      cannot set headers at all, so `dist/_headers` becomes inert; Cloudflare
+      reads the file we already emit, `!` directive included, and nobody else
+      implements that directive.
+- [x] 1.1b **Direct upload, not the Pages GitHub integration** — see
+      `design.md` §3b. The integration cannot wait on a GitHub check, so it
+      would publish exactly the commits CI exists to catch.
+- [n/a] 1.2 If GitHub Pages is chosen, settle **user/org site vs project site**
       first. A project site serves from `/<repo>/`, `base` is unset today, and
       `base` reaches the service worker scope, the manifest and every
       `new URL(…, import.meta.url)`. **A custom domain keeps `base` at `/`** and
@@ -63,15 +67,18 @@ candidate host, so none of them waits on the choice.
 
 ## 2. Publish
 
-- [ ] 2.1 Deploy **only on a green gate**. Reuse `ci.yml`'s job (`needs:`), do
-      not duplicate the gate into a second workflow where the two can drift.
-      **`needs:` propagates the verdict, not the bytes** — the gate's
-      `vite build` runs with no deploy environment, so its `dist/` differs from
-      any publishable one (no Sentry origin in the CSP, no sitemap, no
-      canonical links). Per `design.md` §3: the gate job builds **with** the
-      production environment and uploads `dist/` as an artifact; the deploy job
-      downloads that artifact rather than rebuilding, so what shipped is what
-      was gated.
+- [x] 2.1 Deploy **only on a green gate**. Written into `.github/workflows/ci.yml`
+      as a second job with `needs: gate`, so the gate is not duplicated into a
+      workflow that could drift from it. **`needs:` propagates the verdict, not
+      the bytes**, so per `design.md` §3 the gate job now carries the
+      deploy-time environment and uploads its `dist/` as an artifact
+      (`if-no-files-found: error`), and the deploy job downloads that artifact
+      rather than rebuilding — what ships is what was gated. Publishing is
+      `cloudflare/wrangler-action@v4` with a pinned wrangler, `main` only.
+- [ ] 2.1b **Owner action, once:** create the Pages project and the two
+      repository secrets — see the handoff in the change's closing notes. Until
+      they exist the deploy job fails loudly on every push, which is the
+      intended signal rather than a silent no-op.
 - [ ] 2.2 Set the deploy environment. Each of these is currently unset and each
       changes an output:
       - [ ] `VITE_CANONICAL_BASE_URL` — without it **no `sitemap.xml`** and no

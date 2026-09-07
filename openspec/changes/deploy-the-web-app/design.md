@@ -49,7 +49,8 @@ asserting nothing. Both branches were proved to fail before being trusted.
 
 ## Decision 2: the host
 
-**Recommended: Cloudflare Pages, published by direct upload from CI.**
+**Decided: Cloudflare Pages, published by direct upload from CI.** Owner,
+2026-09-07, on the comparison below.
 
 The deciding property is not that the repo is already configured for Cloudflare
 — that is a sunk cost and not an argument. It is that **`! Cache-Control` has no
@@ -139,6 +140,32 @@ The alternative — a deploy job that rebuilds — is simpler and materially wea
 "deployed only from a green gate" would then mean "deployed from a build that
 resembles one that passed", and a header could differ with nothing to notice.
 The cost of the chosen form is one `actions/upload-artifact` step.
+
+## Decision 3b: direct upload, not the Pages GitHub integration
+
+Cloudflare Pages offers a Git integration: connect the repository once through
+OAuth, and Cloudflare builds and publishes on every push. It is one click
+against a two-secret setup, and it was the obvious thing to want.
+
+**It is incompatible with the requirement this change is built on.** Cloudflare
+builds on push to `main` with no way to wait on a GitHub check — the integration
+has no "deploy only if CI passed" setting, and none of the workarounds gate the
+*deploy*; they only observe it afterwards. So it would publish precisely the
+commits this repo's CI exists to catch: a `--no-verify` commit, or one from a
+clone whose hooks never installed. The build-pipeline scenario "a failing gate
+does not reach the public URL" would be false on the day it was written.
+
+Two lesser costs, either of which would be survivable alone:
+
+- **A second build environment.** Cloudflare would run its own `npm run build`
+  in its own container, from the same source as `npm run gate`, free to drift on
+  Node version or dependency resolution. The repo already puts `vite build` in
+  the gate specifically because two production-only breakages once sat
+  undetected; a second, unwatched build is the same hazard re-introduced.
+- **Build minutes.** The free plan allows 500 Cloudflare-run builds a month.
+  Direct upload does no building on Cloudflare at all.
+
+The cost of direct upload is one API token and two repository secrets, once.
 
 ## Decision 4: the CSP names no analytics vendor
 

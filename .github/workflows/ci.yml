@@ -32,10 +32,35 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   gate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+    # The gate's `vite build` IS the artifact that gets published, so it runs
+    # with the deploy-time environment rather than a bare one. Without this the
+    # deploy job would have to rebuild, and "deployed only from a green gate"
+    # would mean "deployed from a build resembling one that passed" — the CSP
+    # would differ (no Sentry origin), and the sitemap and canonical links
+    # would be absent from the thing that was checked but present in the thing
+    # that shipped. `needs:` propagates a verdict; only an artifact propagates
+    # the bytes. (deploy-the-web-app design.md §3.)
+    #
+    # Each is empty until configured, and empty is a working configuration:
+    # vite.config.ts branches on falsiness, so no canonical URL means no
+    # sitemap and no DSN means no Sentry. `vars` rather than `secrets` for the
+    # base URL because it is not a secret and wants to be readable; the DSN is
+    # a secret only by convention — it is compiled into a public bundle and is
+    # readable out of `dist/assets/` by anyone. Sentry's allowed-domains list
+    # is the control that actually does something.
+    env:
+      VITE_CANONICAL_BASE_URL: ${{ vars.VITE_CANONICAL_BASE_URL }}
+      VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+      VITE_GIT_SHA: ${{ github.sha }}
+
     steps:
       - uses: actions/checkout@v6
 
@@ -54,3 +79,58 @@ jobs:
 
       - name: Run the gate (typecheck → lint/format → test → prod build)
         run: npm run gate
+
+      # `npm run gate` runs `vite build` into dist/, so this is that exact
+      # output — not a second build of the same commit.
+      - name: Keep the gated build for the deploy job
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+          # An empty or missing dist/ means the gate's build branch silently
+          # produced nothing; fail here rather than deploy a hole.
+          if-no-files-found: error
+
+  # Publish to Cloudflare Pages — direct upload, NOT the Pages GitHub
+  # integration.
+  #
+  # The integration is one OAuth click and would be the easy path, but it
+  # builds and publishes on push to `main` with no way to wait on a GitHub
+  # check: Cloudflare offers no "deploy only if CI passed" setting. It would
+  # therefore publish exactly the commits this workflow exists to catch — a
+  # `--no-verify` commit, or one from a clone whose hooks never installed —
+  # which is what the build-pipeline requirement "a failing gate does not reach
+  # the public URL" forbids. It would also mean a second build environment,
+  # built from the same source by a different toolchain, free to drift.
+  deploy:
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # `main` only. `workflow_dispatch` on another ref runs the gate and stops.
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Fetch the gated build
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Publish to Cloudflare Pages
+        id: publish
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Pinned, so "has this been fixed upstream?" is answerable from
+          # inside the repo rather than being whatever the runner resolved
+          # today. Bump it deliberately.
+          wranglerVersion: "4.129.1"
+          # The project name is the product's, not the repository's: this is
+          # the origin players see (`hintful-puzzles.pages.dev`) until
+          # hintful.click is pointed at it. AGENTS.md: the product is Hintful
+          # Puzzles, the repository is puzzles-ts.
+          command: pages deploy dist --project-name=hintful-puzzles --branch=main
+
+      - name: Say where it went
+        run: echo "Deployed to ${{ steps.publish.outputs.deployment-url }}"
