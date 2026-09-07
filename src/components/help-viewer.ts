@@ -75,7 +75,7 @@ export class HelpViewer extends LitElement {
     // Must use <div slot=label> rather than <wa-drawer label=...> to avoid
     // Safari bug where slotted content disappears when some other dialog is closed.
     return html`
-      <wa-drawer id="help">
+      <wa-drawer id="help" light-dismiss>
         <div slot="label" id="drawer-label">${title}</div>
         ${this.renderHistoryButtons()}
         ${

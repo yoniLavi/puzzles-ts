@@ -1,8 +1,8 @@
 # Hintful Puzzles
 
-Fifty-seven logic puzzles to play in your browser, with hints that explain the
-next move rather than just making it. Most of the puzzles come from
-[Simon Tatham’s Portable Puzzle Collection][sgt-puzzles]; thirteen more are
+Logic puzzles to play in your browser, with hints that explain the next move
+rather than just making it. Most of the puzzles come from
+[Simon Tatham’s Portable Puzzle Collection][sgt-puzzles]; the rest are
 Lennard Sprong’s [additions][puzzles-unreleased] to it.
 
 * [Features](features) every puzzle shares: hints, checking your work,

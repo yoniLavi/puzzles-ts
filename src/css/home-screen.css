@@ -68,30 +68,22 @@ footer > * {
   padding-block-start: var(--app-gap-section);
 }
 
+/*
+ * One sentence, across the column's full width.
+ *
+ * A reading measure is for *running prose* — paragraphs you track down, where a
+ * long line loses its place on the return sweep. This is a single sentence read
+ * once, and capping it at 61ch made it a narrow block sitting over a
+ * four-column list, which reads as a stray column rather than as an
+ * introduction to what is below it (owner, 2026-09-07).
+ */
 [part="intro"] {
-  /* Capped for readability, left-aligned *within the column*. */
-  max-width: var(--app-prose-width);
   color: var(--app-color-text-secondary);
   font-size: var(--app-font-size-support);
 
   ::slotted(section) {
     padding: 0;
   }
-}
-
-[part="subsection"] {
-  &:not(:first-child) {
-    margin-block-start: var(--app-gap-section);
-  }
-}
-
-[part="subheading"] {
-  margin: 0 0 var(--wa-space-xs);
-  font-size: var(--app-font-size-micro);
-  font-weight: var(--wa-font-weight-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--app-color-text-faint);
 }
 
 /* The search box and the three filters, on one line at desktop and stacked on

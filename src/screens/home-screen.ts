@@ -189,45 +189,21 @@ export class HomeScreen extends SignalWatcher(Screen) {
     `;
   }
 
-  /**
-   * The games with an auto-save — where the player actually left off.
+  /*
+   * There is no separate "Continue" block, deliberately.
    *
-   * **Below the search box and the filters, not above them.** It sat above at
-   * first, which put a list in front of the controls that govern the list — a
-   * returning player met their own history before they met the way to look for
-   * anything else. It is now the first rows *inside* the catalog, under the
-   * controls, which is where a shortcut belongs relative to the thing it
-   * shortcuts.
+   * One was tried: the games with an auto-save, lifted to the top of the
+   * catalog. It duplicates rows that are already in the list a screen below,
+   * and it moves a game *out of alphabetical order* on the one page whose job
+   * is to let you find a game by name — so the row you know is in the Cs is
+   * suddenly at the top, and also still in the Cs.
    *
-   * Absent, not empty, when there are none: a heading over nothing is a
-   * promise the page cannot keep, and a first-time visitor should meet the
-   * catalog, not a hole where their history would go. Absent too while a
-   * search or a filter is narrowing the list — the player has said what they
-   * are looking for, and it is not "where was I".
+   * A game in progress is marked **in place** instead, by the blue triangle on
+   * its row, exactly as a favorite is marked in place by its filled heart
+   * (owner, 2026-09-07). The `In progress` filter is what turns that mark into
+   * a list, and it costs one tap rather than a permanent second copy of part of
+   * the catalog.
    */
-  private renderResume() {
-    if (this.search.trim() || this.filter !== "all") {
-      return nothing;
-    }
-    const inProgress = this.visibleIds.filter((id) =>
-      savedGames.autoSavedPuzzles.has(id),
-    );
-    if (inProgress.length < 1) {
-      return nothing;
-    }
-    return html`
-      <div part="subsection">
-        <h3 part="subheading">Continue</h3>
-        <div part="list">
-          ${repeat(
-            inProgress,
-            (id) => id,
-            (id) => this.renderCatalogRow(id),
-          )}
-        </div>
-      </div>
-    `;
-  }
 
   /** Every puzzle this player can see — the catalog, less the experimental ones
    * unless they asked for those. The search and the filters narrow *this*, so
@@ -285,39 +261,19 @@ export class HomeScreen extends SignalWatcher(Screen) {
           </div>
         </div>
 
-        ${this.renderResume()}
         ${
           listed.length > 0
-            ? html`<div part="subsection">
-                ${
-                  this.showsResumeAbove
-                    ? html`<h3 part="subheading">All puzzles</h3>`
-                    : nothing
-                }
-                <div part="list">
-                  ${repeat(
-                    listed,
-                    (id) => id,
-                    (id) => this.renderCatalogRow(id),
-                  )}
-                </div>
+            ? html`<div part="list">
+                ${repeat(
+                  listed,
+                  (id) => id,
+                  (id) => this.renderCatalogRow(id),
+                )}
               </div>`
             : html`<p part="empty">${this.emptyMessage}</p>`
         }
       </section>
     `;
-  }
-
-  /** Whether a Continue block is above the full list — which is the only time
-   * the list needs a heading of its own to say where Continue stopped. A lone
-   * list under the search box needs no label; the search box already says what
-   * it is a list of. */
-  private get showsResumeAbove(): boolean {
-    return (
-      !this.search.trim() &&
-      this.filter === "all" &&
-      this.visibleIds.some((id) => savedGames.autoSavedPuzzles.has(id))
-    );
   }
 
   /** Why the list is empty, in the words of whichever narrowing emptied it —

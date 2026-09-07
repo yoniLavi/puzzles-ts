@@ -269,6 +269,51 @@ Twelve items. Three of them found bugs in what had just shipped.
       and `puzzle-command-homes.test.ts` asserts at render that no control is
       both.
 
+## 8c. Second round of owner acceptance (2026-09-07)
+
+- [x] 8c.1 **The help drawer would not dismiss on an outside click** — it played
+      Web Awesome's *deny-close* pulse instead, which is the worst answer
+      available: it proves the click was received and then declines to act on
+      it, so the app reads as broken rather than as deliberately modal.
+      `wa-drawer` and `wa-dialog` are opt-**in** (`light-dismiss`), and the help
+      drawer never opted in. This predates the redesign — About, Preferences and
+      Share had the attribute and the help never did — and 8b.12 only made it
+      reachable again, which is how it surfaced.
+- [x] 8c.2 **The rule is written down rather than re-decided per dialog**
+      (`src/dialog-dismissal.test.ts`): reading or browsing light-dismisses;
+      entering something or answering something does not, because a stray click
+      must not discard a half-typed filename or a half-made decision. The scan
+      keys on the tag, and the four opted-out dialogs each carry their reason,
+      held exact in both directions.
+      It found two things on its first run: a **second** drawer in
+      `help-viewer.ts` that turned out to be a `<wa-drawer label=...>` mention
+      *inside a comment* (so the scan now blanks comments — a mention must not
+      vouch for a tag), and that `alert-dialog.ts`'s `?light-dismiss=${…}` is a
+      considered per-caller decision rather than an opt-out, so it does not
+      belong in the ledger. Proved to fail by removing the attribute again.
+
+- [x] 8c.3 **The intro is one full-width line, and the count is live.** A
+      reading measure is for running prose you track down a page; one sentence
+      capped at 61ch over a four-column list read as a stray column rather than
+      as an introduction to it. The owner's wording, with the hedge removed —
+      *"with hints that help you learn and keep you from getting stuck"* rather
+      than "most of them will" — which is **ahead of the code today** (30 of 57
+      games have a hint) and deliberately so: it is the launch claim, and the
+      remaining hints are the work `census-the-hintless-logic-games` tracks.
+      `help/features.md` still states the true present tense, which is where a
+      player who wants the detail goes.
+- [x] 8c.4 **"Fifty-seven" is no longer written down.** It was in the intro and
+      again in the page's meta description; both now render `{{ puzzleCount }}`
+      from `puzzleIds.length`, so the 58th game cannot leave two sentences lying
+      in the two places nobody re-reads.
+- [x] 8c.5 **The Continue block is removed** (owner, 2026-09-07). It duplicated
+      rows already a screen below, and it moved a game *out of alphabetical
+      order* on the one page whose job is finding a game by name. A game in
+      progress is marked **in place** by its blue triangle, exactly as a
+      favorite is marked in place by its filled heart; the `In progress` filter
+      is what turns that mark into a list, at the cost of one tap rather than a
+      permanent second copy of part of the catalog.
+
 ## 9. Close
 
 - [x] 9.1 `openspec validate implement-front-page-and-chrome --strict`.

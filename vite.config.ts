@@ -310,6 +310,12 @@ export default defineConfig(async ({ command, mode }) => {
     appName: APP_NAME,
     tagline: APP_TAGLINE,
     repoUrl: REPO_URL,
+    // How many puzzles the app actually ships, for the pages that say so.
+    // Counted from the catalog rather than written out, because it was written
+    // out — "Fifty-seven" appeared in the front page's intro and again in its
+    // meta description, and the 58th game would have left both of them lying
+    // in a place nobody re-reads.
+    puzzleCount: puzzleIds.length,
     preflightSrc,
     analytics_html,
     colorSchemeInitScript,

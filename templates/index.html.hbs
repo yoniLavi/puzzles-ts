@@ -5,7 +5,7 @@
     <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ appName }}&thinsp;&ndash;&thinsp;{{ tagline }}</title>
-    <meta name="description" content="Fifty-seven free logic puzzles to play in your browser, with hints that explain the next move instead of just making it. Works offline, with touch, mouse or keyboard.">
+    <meta name="description" content="{{ puzzleCount }} free logic puzzles to play in your browser, with hints that explain the next move instead of just making it. Works offline, with touch, mouse or keyboard.">
     <meta name="application-name" content="{{ appName }}">
   {{#if canonicalUrl}}
     <link rel="canonical" href="{{ canonicalUrl }}">
@@ -33,8 +33,8 @@
       </header>
 
       <section slot="intro">
-        <p>Fifty-seven logic puzzles, free and endlessly generated — and most of
-          them will show you the next move <em>and explain why</em>. Plays with
+        <p>{{ puzzleCount }} logic puzzles, free and endlessly generated, with
+          hints that help you learn and keep you from getting stuck. Plays with
           touch, mouse or keyboard, and works
           <a href="help/install">offline</a>.</p>
       </section>
