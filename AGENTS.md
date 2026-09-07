@@ -409,6 +409,32 @@ So the question to ask of any inherited invariant is not "is it true?" but **"wh
 - `npm run build` — production app build (tsc + vite). Needs no generated input of any kind: the game catalog is committed source (`src/puzzle/catalog-data.ts`), the icons are a committed snapshot, the help pages are committed markdown.
 - `npm run preview` — preview production build.
 - `npm run check` — biome format + lint with autofix.
+- **The app is live at <https://hintful-puzzles.pages.dev>**, on Cloudflare
+  Pages, and **nobody deploys it by hand**: `.github/workflows/ci.yml` runs the
+  gate on push to `main` and a second job publishes **the gate's own build
+  artifact**. A deploy is therefore always a commit that passed the full gate,
+  and the bytes that shipped are the bytes that were checked — the deploy job
+  downloads, it does not rebuild. Direct upload, deliberately **not** the Pages
+  GitHub integration, which cannot wait on a check and would publish exactly
+  the commits CI exists to catch.
+  - **`_headers` is a real deploy artifact**, read verbatim by Cloudflare and
+    carrying the CSP and the whole cache policy. It is **ten rules and must
+    stay constant in the size of the catalog** — Cloudflare parses at most 100,
+    on every plan and on Workers too, and drops the rest silently, so a rule
+    per puzzle would make a parser limit a limit on the number of games. The
+    build fails if a future edit reintroduces one. Adding a puzzle must not
+    add a header rule.
+  - **A build's environment changes its output**, and every variable is
+    optional with a working empty state: no `VITE_CANONICAL_BASE_URL` means no
+    `sitemap.xml` and no canonical links (`robots.txt` ships either way); no
+    `VITE_SENTRY_DSN` means no Sentry origin in the CSP and no client hints.
+    They are set on the CI job, not in a committed `.env`.
+  - **Verify a deploy against the deployed origin, never against `dist/`.**
+    Headers, clean URLs and service-worker scope are all host behavior, and
+    each fails invisibly. Note that a browser tab registers **no** service
+    worker by design — `settings.allowOfflineUse ?? isRunningAsApp` — so an
+    offline check must enable it first or it measures nothing and reports
+    health.
 - `npm run test` / `npm run test:run` — vitest.
 - `npm run probe` — the **local-feedback probe**: plants ~70 hand-chosen real
   defects in engine modules and runs only each module's own tests against them,

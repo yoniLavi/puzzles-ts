@@ -202,8 +202,21 @@ to a glance at the home page.
 
 ## 5. Close out
 
-- [ ] 5.1 `build-pipeline` spec: publishing as its own requirement, including
-      the green-gate precondition and whatever the host decision costs.
-- [ ] 5.2 `AGENTS.md` build-commands section: it currently ends at
-      `npm run preview`. Say where the app lives and how it gets there.
-- [ ] 5.3 `openspec validate deploy-the-web-app --strict`.
+- [x] 5.1 `build-pipeline` spec: four `ADDED` requirements — publishing from a
+      green gate with the verification done on the deployed origin, a host that
+      cannot deliver the headers being a recorded decision, the CSP granting
+      only origins the app loads, and the header rules not growing with the
+      catalog.
+- [x] 5.2 `AGENTS.md` build-commands section now says where the app lives, that
+      nothing is deployed by hand, that `_headers` must stay constant in the
+      size of the catalog, that a build's environment changes its output, and
+      that a deploy is verified against the deployed origin — including the
+      service-worker default that makes a naive offline check measure nothing.
+- [x] 5.3 `openspec validate deploy-the-web-app --strict` — passing, and it runs
+      in the commit gate on every commit anyway.
+
+**Still open, all tied to the domain rather than to the deploy:** buying
+`hintful.click` and setting `VITE_CANONICAL_BASE_URL` (2.2), the
+`VITE_SENTRY_DSN` decision (2.2), HSTS at the custom domain (3.2), and the
+owner's touch acceptance (4.6). The change stays open until those land; the
+publishing pipeline itself is done and proved.
