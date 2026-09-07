@@ -15,6 +15,7 @@ import {
   REPO_URL,
 } from "./src/project-identity.ts";
 import { puzzleIds, puzzleCatalog as puzzles } from "./src/puzzle/catalog-data.ts";
+import { dependencyNotices } from "./vite-plugins/dependency-notices.ts";
 import {
   extraPages,
   renderHandlebars,
@@ -383,40 +384,10 @@ export default defineConfig(async ({ command, mode }) => {
         thirdParty: {
           output: {
             file: path.join(import.meta.dirname, "dist", "dependencies-app.json"),
-            template(deps) {
-              const dependencies = deps.map(
-                ({ name, version, license, licenseText, noticeText }) => {
-                  if (license === "Apache-2.0" && !noticeText && licenseText) {
-                    // Some Apache-2.0 license users leave the required notice
-                    // in the template at the end of the license. (Some don't even
-                    // bother filling in the template, but that's a different issue).
-                    // Extract that notice, from a line starting "Copyright" to the end.
-                    const match =
-                      /APPENDIX: How to apply the Apache License.*^\s*(Copyright.+)/ms.exec(
-                        licenseText,
-                      );
-                    if (match) {
-                      noticeText = match[1];
-                    }
-                  }
-                  if (name === "workbox-window") {
-                    // The service worker uses several other workbox-* packages.
-                    // All share the same copyright and license (from their monorepo).
-                    // To avoid repeating this plugin in the VitePWA config,
-                    // use "workbox" to refer to all workbox packages used.
-                    name = "workbox";
-                  }
-                  const notice = noticeText || licenseText;
-                  return {
-                    name,
-                    version,
-                    license,
-                    notice,
-                  };
-                },
-              );
-              return JSON.stringify({ dependencies });
-            },
+            // Attribution is derived from each package, and the build fails
+            // rather than ship an unfilled license template or an uncredited
+            // package. See vite-plugins/dependency-notices.ts.
+            template: dependencyNotices,
           },
         },
       }),

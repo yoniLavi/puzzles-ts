@@ -47,6 +47,9 @@ interface DependencyInfo {
     version?: string;
     license: string | null;
     notice: string | null;
+    /** Who the package says publishes it — its author, contributors or
+     * repository, derived at build time. Absent when it names nobody. */
+    attribution?: string;
   }[];
 }
 
@@ -395,9 +398,24 @@ export class AboutDialog extends LitElement {
           </wa-details>
 
           ${this.dependencies?.map(
-            ({ name, license, notice }) => html`
+            ({ name, license, notice, attribution }) => html`
               <wa-details appearance="plain" icon-placement="start">
-                <div slot="summary" translate="no">${name}</div>
+                <div slot="summary" translate="no">
+                  <span>${name}</span>
+                  ${
+                    // Who publishes it, from the package's own author,
+                    // contributors or repository — see
+                    // `vite-plugins/dependency-notices.ts`. Shown beside the
+                    // name because the license text underneath is where a
+                    // copyright line lives, and several packages state one
+                    // nowhere else.
+                    attribution
+                      ? html`<span class="attribution" translate="no"
+                          >${attribution}</span
+                        >`
+                      : nothing
+                  }
+                </div>
                 ${licenseTextToHTML(notice ?? `${license} license (no license text provided)`)}
               </wa-details>
             `,
@@ -415,7 +433,19 @@ export class AboutDialog extends LitElement {
       :host {
         display: contents;
       }
-  
+
+      /* Who publishes a bundled package, beside its name in the list. Quiet:
+       * it is context for the name, not a second heading. */
+      .attribution {
+        color: var(--app-color-text-quiet, var(--wa-color-text-quiet));
+        font-size: var(--app-font-size-detail, 0.8em);
+        font-weight: var(--wa-font-weight-normal);
+
+        &::before {
+          content: " — ";
+        }
+      }
+
       wa-dialog {
         --width: min(calc(100vw - 2 * var(--wa-space-l)), 65ch);
       }

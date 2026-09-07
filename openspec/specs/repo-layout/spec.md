@@ -1557,14 +1557,20 @@ on someone else's desk, and a queue with one server is where work goes to wait.
 The help pages the app serves SHALL describe the features this fork adds beyond
 upstream that a player can invoke from the app's own controls — at minimum the
 explained hint (including its stepper and continuous modes), mistake checking,
-the quick-save slot the mistake check gates, and the toolbar affordances that
-have no keyboard equivalent a touch player can reach.
+the one-slot save the mistake check gates, and the controls that have no
+keyboard equivalent a touch player can reach.
 
 A feature the app ships a control for SHALL NOT be undiscoverable from the help.
 This is required because its absence hid the fork's most-invested divergence:
 thirty games implement an explained `hint()` against a documented quality bar,
 and on 2026-08-06 the whole of `help/` referred to hints once, in passing,
 inside a note about a different puzzle's difficulty naming.
+
+The help SHALL name a control the way the app names it. A page that sends a
+player to a surface the app no longer has is worse than one that omits the
+feature, because it reads as maintained and fails on its first step: the help
+described a "toolbar" and a "game menu", and both were deleted when the chrome
+was rebuilt around a single command surface.
 
 The hint's description SHALL say what distinguishes it from upstream's — that it
 explains **why** a move is forced rather than only revealing the move — and
@@ -1632,6 +1638,12 @@ SHALL be checked against the stylesheet that defines it rather than assumed.
 - **THEN** the help-coverage check fails
 - **AND** it fails for a capability that is merely absent from the check's own
   list, not only for one whose section was deleted
+
+#### Scenario: The chrome is rebuilt and the help still names its controls
+
+- **WHEN** a command moves to a different surface, or a surface is removed
+- **THEN** every help page that directed a player to the old surface is
+  corrected in the same change
 
 #### Scenario: A named tier promises something the help has explained
 

@@ -2,23 +2,30 @@
 
 ## Purpose
 TBD - created by archiving change fix-canvas-sizing-race. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: The puzzle board sizes to fit on load without a manual resize
 
 The puzzle view SHALL size its canvas to fill the available space as soon as a game is loaded,
 **without** requiring a subsequent window/element resize to correct it.
 
 The available-size measurement SHALL NOT be derived from any chrome whose own size is a
-function of the board size (a circular measurement). In particular, the available board
-**width** SHALL be measured from the board's own padded wrapper, NOT from a container that also
-holds the hint banner: the banner reserves `max(canvasSize.w, 34rem)`, and the first
-(pre-game) resize sets `canvasSize` to the full available width, so a container-based width
-measurement is inflated by the banner while the freshly-attached canvas is still at its default
-size — sizing the board far too small. Because the host element is `flex: 1` and its box does
-not change after first layout, the `ResizeObserver` does not re-fire once the canvas attaches,
-so such a mis-measurement stays stuck until an incidental resize. Measuring against the
-banner-free wrapper makes the existing post-attach recompute produce the correct size on the
-first try.
+function of the board size — that is a loop, and it settles on whatever value it started at.
+In particular, the available board **width** SHALL be measured from the board's own padded
+wrapper, NOT from a container that may also hold something sized from the board. Because the
+host element is `flex: 1` and its box does not change after first layout, the
+`ResizeObserver` does not re-fire once the canvas attaches, so such a mis-measurement stays
+stuck until an incidental resize.
+
+*The rule was learned from a hint banner that reserved `max(canvasSize.w, 34rem)`: the first
+(pre-game) resize set `canvasSize` to the full available width, the container went full-width
+while the freshly-attached canvas was still at its default size, and the board came out far
+too small and stayed there. That banner is gone — `implement-front-page-and-chrome` moved the
+hint's explanation into the command surface beside the button that asks for it, so the
+container and the wrapper are now the same box — but the requirement is stated about the
+**shape** rather than about the banner, because anything later added to the container that
+sizes itself from the board would re-open the loop.*
 
 The recompute SHALL be **idempotent**: once the board is correctly sized, a further size
 recompute with no layout change SHALL report no change and SHALL NOT trigger a resize loop.
@@ -43,4 +50,3 @@ and the `maxScale` clamp still bounds it.
 - **WHEN** the board has been sized correctly and a size recompute runs again with no layout
   change
 - **THEN** the recompute reports no change and no further resize/redraw is triggered
-

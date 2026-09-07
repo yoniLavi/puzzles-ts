@@ -32,7 +32,14 @@ function maxWorkers(): number {
 
 export default defineConfig({
   test: {
-    include: ["src/**/*.test.ts"],
+    // `vite-plugins/` is included because the build side is real logic now, not
+    // configuration: it decides what the About box credits and refuses to ship
+    // an asset outside the offline cache. Both were written without tests
+    // because there was nowhere to put them — `src/**` was the only pattern —
+    // and both had bugs their first run caught. They are typechecked by
+    // `tsconfig.node.json`, so they may use Node types the browser-shaped
+    // `src/` project does not have.
+    include: ["src/**/*.test.ts", "vite-plugins/**/*.test.ts"],
     environment: "node",
     maxWorkers: maxWorkers(),
     // ONE generous ceiling for the whole suite; no test sets its own.

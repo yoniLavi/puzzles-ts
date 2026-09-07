@@ -158,9 +158,8 @@ Authoritative detail: `openspec/changes/archive/2026-09-07-design-front-page-and
 - [x] 7.3 Keyboard (`h`, `⌘K`, Escape), mouse and the 44px touch floors
       checked. The fonts are precached like every other asset, so the offline
       path is unchanged in kind.
-- [ ] 7.4 **Owner acceptance on sight, in dark.** Not mine to tick — this is
-      the largest player-visible change the fork has made and the acceptance bar
-      applies in full.
+- [x] 7.4 **Owner acceptance on sight** — given 2026-09-07 after three rounds
+      (§8b, §8c): *"that all looks fabulous to me now"*.
 
 ## 8. Fallout this change owns
 
@@ -317,5 +316,4 @@ Twelve items. Three of them found bugs in what had just shipped.
 ## 9. Close
 
 - [x] 9.1 `openspec validate implement-front-page-and-chrome --strict`.
-- [ ] 9.2 Full gate, commit. **Archive waits on 7.4** — this change is squarely
-      inside the acceptance bar's first bullet.
+- [x] 9.2 Full gate, commit, archive — after acceptance, per 7.4.
