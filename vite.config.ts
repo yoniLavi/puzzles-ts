@@ -20,6 +20,7 @@ import {
   extraPages,
   renderHandlebars,
   renderMarkdown,
+  type Transform,
 } from "./vite-plugins/extra-pages.ts";
 import { precacheCoverage } from "./vite-plugins/precache-coverage.ts";
 
@@ -68,8 +69,14 @@ function securityHeaders(options: {
     // Cloudflare defaults to Referrer-Policy: same-origin; we relax that a bit
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "X-Content-Type-Options": "nosniff",
-    // (Change this to "SAMEORIGIN" if we rework help-viewer to use an iframe)
-    "X-Frame-Options": "NONE",
+    // `DENY` and `SAMEORIGIN` are the only values browsers define; the `NONE`
+    // this inherited is not one of them and was ignored wherever it was read.
+    // The CSP's `frame-ancestors 'none'` below is what actually forbids
+    // framing, so nothing was unprotected — but a header stating a value no
+    // parser accepts is worse than no header, because it reads as a decision.
+    // (Change this and `frame-ancestors` to "SAMEORIGIN"/'self' together if we
+    // rework help-viewer to use an iframe.)
+    "X-Frame-Options": "DENY",
     // Cloudflare also adds its own Expect-CT and Strict-Transport-Security,
     // plus the obsolete X-Xss-Protection
   };
@@ -77,19 +84,27 @@ function securityHeaders(options: {
   const csp: Record<string, string> = {
     "default-src": "'self'",
     // wa-icon uses fetch on icon urls that vite has inlined as data: uris
-    "connect-src": `'self' data: blob: https://cloudflareinsights.com`,
+    "connect-src": `'self' data: blob:`,
     // Some accessibility extensions (and some browser anti-fingerprinting mechanisms)
     // use data: fonts.
     "font-src": "'self' data:",
     "img-src": "'self' data: blob:",
     "manifest-src": "'self'",
     "object-src": "'none'",
-    "script-src": [
-      "'self'",
-      "https://static.cloudflareinsights.com",
-      ...extraScriptSrc,
-      "'report-sample'",
-    ].join(" "),
+    // No analytics vendor origin. The policy inherited from the upstream fork
+    // granted `https://static.cloudflareinsights.com` a script-src and
+    // `https://cloudflareinsights.com` a connect-src unconditionally, for a
+    // vendor this fork never chose and does not load — a whitelist of an unused
+    // third-party script origin, which is strictly weaker for no benefit.
+    //
+    // They are removed rather than made conditional on `VITE_ANALYTICS_BLOCK`
+    // because there is no honest conditional form for a vendor nobody has
+    // picked: the block is arbitrary html, and Cloudflare's beacon posts to an
+    // origin that does not appear anywhere in its own script tag, so gating
+    // those two literals on a generic flag would hardcode one vendor's answer
+    // behind a name that promises any vendor. Whichever change turns analytics
+    // on adds the origins it needs, in the same change that adds the block.
+    "script-src": ["'self'", ...extraScriptSrc, "'report-sample'"].join(" "),
     // Web Awesome uses inline styles in progress-ring and slider:
     // https://github.com/shoelace-style/webawesome/issues/1937
     "style-src": "'self' 'unsafe-inline' 'report-sample'",
@@ -155,6 +170,47 @@ function securityHeaders(options: {
 
   return headers;
 }
+
+/**
+ * Cloudflare parses at most **100 rules** out of a `_headers` file — the same
+ * 100 on Pages and on Workers static assets, on every plan. Exceeding it is the
+ * silent-drop failure this repo keeps rediscovering: the file still ships, the
+ * site still serves, and whichever rules fell off the end simply stop applying.
+ *
+ * A rule is a path pattern; the indented lines under it are its headers. The
+ * template is written so the count does not grow with the catalog — it is ten
+ * — so this is a guard against a future edit reintroducing a per-page rule, not
+ * a budget anyone is expected to spend down.
+ *
+ * The count is asserted rather than written in a comment, because a count in
+ * prose is a census nobody re-runs. `vite build` is in the commit gate, so a
+ * rule-per-puzzle edit fails there rather than on a deployed origin, where
+ * nothing a visitor can see would change.
+ */
+const CLOUDFLARE_HEADER_RULE_LIMIT = 100;
+
+const checkHeaderRuleBudget: Transform = function (data) {
+  const rendered = typeof data.html === "string" ? data.html : "";
+  // Key on the shape a rule has — an unindented line naming a path pattern or a
+  // full URL — not on the paths themselves, which are exactly what changes.
+  const rules = rendered
+    .split("\n")
+    .filter((line) => /^(\/|https?:\/\/)\S*$/.test(line));
+  if (rules.length === 0) {
+    // Vacuity guard: an empty render would otherwise sail through the budget
+    // check below while asserting nothing at all.
+    this.error("_headers rendered no rules at all; the template is broken");
+  }
+  if (rules.length > CLOUDFLARE_HEADER_RULE_LIMIT) {
+    this.error(
+      `_headers has ${rules.length} rules, over Cloudflare's ` +
+        `${CLOUDFLARE_HEADER_RULE_LIMIT}; the rules past the limit are dropped ` +
+        "silently on the deployed origin. The template is meant to be constant " +
+        "in the size of the catalog — see its header comment.",
+    );
+  }
+  return data;
+};
 
 // (There was an `insertPuzzleScreenshot` transform here, which floated a
 // thumbnail inside each help page's <h1>. It looked for
@@ -464,17 +520,21 @@ export default defineConfig(async ({ command, mode }) => {
             ],
           },
           {
-            // Cloudflare Pages HTTP headers
+            // Cloudflare `_headers` — read verbatim by Pages and by Workers
+            // static assets. No `puzzleIds`: the file is deliberately constant
+            // in the size of the catalog (see the template's header comment).
             virtualPages: [
               {
                 urlPathname: "_headers",
                 data: {
-                  puzzleIds,
                   securityHeaders: securityHeaders({ env, extraScriptSrc }),
                 },
               },
             ],
-            transforms: [renderHandlebars({ file: "templates/_headers.txt.hbs" })],
+            transforms: [
+              renderHandlebars({ file: "templates/_headers.txt.hbs" }),
+              checkHeaderRuleBudget,
+            ],
             entryPoint: false,
           },
         ],

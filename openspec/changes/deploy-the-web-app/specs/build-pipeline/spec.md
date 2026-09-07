@@ -78,3 +78,37 @@ does not, for no benefit.
 
 - **WHEN** the app is built with no analytics block configured
 - **THEN** the emitted CSP names no analytics vendor origin
+
+### Requirement: The emitted header rules do not grow with the catalog
+
+The `_headers` file the build emits SHALL contain a number of rules that does
+not depend on how many puzzles the catalog holds, and the build SHALL fail if
+the rendered file exceeds the host's rule limit.
+
+The limit is a parser limit rather than a quota — Cloudflare reads at most 100
+rules, identically on Pages and on Workers static assets and identically on
+every plan — so it cannot be raised by migrating or by paying, and rules past it
+are dropped with no error and no visible change. A file carrying one rule per
+puzzle entry page therefore converts that parser limit into a limit on the
+number of **games**, which is a constraint the collection must never acquire by
+accident.
+
+Nothing about a cache policy depends on the size of the catalog. Where a broad
+rule and a narrow rule would otherwise merge, the broad rule SHALL carry the
+value the many paths want and the few exceptions SHALL detach and replace it,
+rather than the reverse — which is what makes the per-page rule unnecessary.
+
+The rule count SHALL be asserted by the build rather than recorded in a comment,
+and the assertion SHALL carry a vacuity guard, since a render producing no rules
+would otherwise satisfy a limit check while measuring nothing.
+
+#### Scenario: A build whose header rules would be silently truncated
+
+- **WHEN** the rendered `_headers` file contains more rules than the host will
+  parse
+- **THEN** the build fails, naming the count and the limit
+
+#### Scenario: Adding a puzzle does not add a header rule
+
+- **WHEN** a puzzle is added to the catalog
+- **THEN** the number of rules in the emitted `_headers` file is unchanged

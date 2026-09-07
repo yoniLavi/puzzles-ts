@@ -1,34 +1,45 @@
-# Cloudflare Pages HTTP headers control
+# Cloudflare HTTP headers control (`_headers`), read verbatim by Cloudflare
+# Pages and by Workers static assets.
+#
+# TEN RULES, AND IT STAYS TEN however many puzzles the catalog holds.
+# Cloudflare caps a `_headers` file at 100 rules — the same 100 on Pages and on
+# Workers static assets, on every plan, so neither migrating nor paying raises
+# it. This file used to emit one rule per puzzle entry page, which made that cap
+# a cap on the number of GAMES: 71 rules at 57 puzzles, 100 at around 88.
+# Nothing about a cache policy needs to know how many puzzles there are.
+#
+# The coupling came from which way round the default ran. Cloudflare MERGES the
+# headers of every rule an incoming request matches, and a header named twice is
+# comma-joined — a broad `Cache-Control` plus a narrow one yields
+# `public, max-age=14400, must-revalidate, no-cache`, which is why the broad
+# default sat commented out for so long. `! Cache-Control` detaches the
+# inherited value, letting a narrow rule replace rather than append. Defaulting
+# `/*` to the LONG cache therefore made every short-cached path an override —
+# and the short-cached paths are the entry pages, one per game.
+#
+# So the default is inverted: `/*` carries the SHORT cache the entry pages want,
+# and the few paths wanting a long one detach it. `/`, `/pegs` and `/help/*`
+# then need no rule at all, because inheriting is already the right answer.
+#
+# Inverting also steps around cloudflare/workers-sdk#11351 (open as of
+# 2026-09-07), where `!` fails to detach on the root path `/` and the response
+# carries both values. Under the old direction `/` needed exactly that override;
+# under this one `/` is the default and detaches nothing.
+#
+# The rule count is not left to this comment: the `_headers` transform in
+# `vite.config.ts` counts the rendered rules and fails `vite build` — which is
+# in the commit gate — before the file can reach the cap.
 
-{{! Default for images and other files
-# Cannot set default like this: it gets merged with later overrides.
-# E.g., sw.js gets served with:
-#   Cache-Control: public, max-age=14400, must-revalidate, no-cache
-# Could use ! to detach the default in later rules, but that's broken on "/":
-# https://github.com/cloudflare/workers-sdk/issues/11351
-/*
-  Cache-Control: public, max-age=14400, must-revalidate
-/
-  ! Cache-Control
-  Cache-Control: public, max-age=60, must-revalidate
-}}
-
+{{! Everything, unless a rule below detaches and replaces it. The short cache is
+    what the HTML entry points want: `/`, the 57 puzzle pages, `/help/*`, the
+    manifest and the JSON. }}
 /*
 {{#each securityHeaders}}
   {{{ @key }}}: {{{ this }}}
 {{/each}}
+  Cache-Control: public, max-age=60, must-revalidate
 
-{{! Favicons, robots.txt, etc. }}
-/:file.png
-  Cache-Control: public, max-age=14400, must-revalidate
-/:file.ico
-  Cache-Control: public, max-age=14400, must-revalidate
-/:file.svg
-  Cache-Control: public, max-age=14400, must-revalidate
-/:file.txt
-  Cache-Control: public, max-age=14400, must-revalidate
-
-{{! Static assets with hashed filenames: cache "forever" }}
+{{! Static assets with hashed filenames: cache "forever". }}
 /assets/*
   ! Cache-Control
   Cache-Control: public, max-age=31556952, immutable
@@ -37,36 +48,34 @@
   ! Cache-Control
   Cache-Control: public, max-age=31556952, immutable
 
-{{! Entry pages (clean urls: no .html): cache 60 seconds, allow high-entropy client hints to Sentry. }}
-/
+{{! Favicons, robots.txt and friends. Unhashed, so not immutable, but they
+    change far more rarely than a page. `:file` matches one path segment, so
+    these reach the root only — a hashed png under /assets/ keeps the rule
+    above. }}
+/:file.png
   ! Cache-Control
-  Cache-Control: public, max-age=60, must-revalidate
-{{#each puzzleIds}}
+  Cache-Control: public, max-age=14400, must-revalidate
 
-/{{{this}}}
+/:file.ico
   ! Cache-Control
-  Cache-Control: public, max-age=60, must-revalidate
-{{/each}}
+  Cache-Control: public, max-age=14400, must-revalidate
 
-/help/*
+/:file.svg
   ! Cache-Control
-  Cache-Control: public, max-age=60, must-revalidate
+  Cache-Control: public, max-age=14400, must-revalidate
 
-{{! Other app-related assets without hashed filenames: cache same as entry pages }}
-/:file.json
+/:file.txt
   ! Cache-Control
-  Cache-Control: public, max-age=60, must-revalidate
+  Cache-Control: public, max-age=14400, must-revalidate
 
-/:file.webmanifest
-  ! Cache-Control
-  Cache-Control: public, max-age=60, must-revalidate
-
-{{! Service worker: always check for latest version (browser may apply its own policy) }}
+{{! Service worker: always check for the latest version (the browser may apply
+    its own policy on top). }}
 /sw.js
   ! Cache-Control
   Cache-Control: no-cache
 
-{{! Discourage indexing of pages.dev deployments }}
+{{! Discourage indexing of the preview deployments, so only the canonical
+    domain is indexed. }}
 https://:project.pages.dev/*
   X-Robots-Tag: noindex
 https://:version.:project.pages.dev/*

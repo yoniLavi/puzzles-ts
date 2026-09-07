@@ -45,13 +45,18 @@ const NOT_PRECACHEABLE: Record<string, { why: string; conditional?: true }> = {
   "**/*.map": {
     why: "source maps are a debugging aid; caching them doubles the store",
   },
-  // Emitted only when VITE_CANONICAL_BASE_URL is set, so their absence from an
-  // ordinary build is not a stale entry. `conditional` is what keeps the
-  // reverse check below honest rather than merely quiet: without it the check
-  // would fail on every local build, and the fix would have been to delete the
-  // check.
-  "robots.txt": { why: "for crawlers, never fetched by the app", conditional: true },
-  "sitemap.xml": { why: "likewise", conditional: true },
+  // `robots.txt` is NOT conditional: `public/robots.txt` is copied on every
+  // build, and `vite-plugin-sitemap` overwrites it only when
+  // VITE_CANONICAL_BASE_URL is set. It was marked conditional here on the same
+  // stale belief the file's own body carried — that the plugin is the only
+  // thing that emits it — which excused it from the reverse check for nothing.
+  "robots.txt": { why: "for crawlers, never fetched by the app" },
+  // `sitemap.xml` genuinely is conditional: the plugin is registered only when
+  // VITE_CANONICAL_BASE_URL is set, so its absence from an ordinary build is
+  // not a stale entry. `conditional` is what keeps the reverse check below
+  // honest rather than merely quiet: without it the check would fail on every
+  // local build, and the fix would have been to delete the check.
+  "sitemap.xml": { why: "for crawlers, never fetched by the app", conditional: true },
 };
 
 export interface PrecacheCoverageOptions {
@@ -68,13 +73,29 @@ export interface PrecacheCoverageOptions {
 export function precacheCoverage(options: PrecacheCoverageOptions = {}): Plugin {
   const outDir = options.outDir ?? "dist";
   const globIgnores = options.globIgnores ?? [];
+  /**
+   * Whether this build got as far as producing a bundle.
+   *
+   * `closeBundle` runs even when an earlier plugin's `generateBundle` threw,
+   * and `dist/` is then half-written — so the file-count guard below fired on a
+   * failed build and reported "the listing found almost nothing" as the error,
+   * burying the one that actually stopped the build. A guard that reports
+   * someone else's failure as its own is worse than no guard: it sends the next
+   * reader to the wrong file. (Found while adding the `_headers` rule-budget
+   * check in vite.config.ts, whose deliberate failure this masked.)
+   */
+  let bundled = false;
   return {
     name: "precache-coverage",
     apply: "build",
+    generateBundle() {
+      bundled = true;
+    },
     closeBundle: {
       // After vite-plugin-pwa has written sw.js.
       order: "post",
       handler() {
+        if (!bundled) return; // the build failed before a bundle existed
         const swPath = path.join(outDir, "sw.js");
         if (!fs.existsSync(swPath)) return; // no service worker in this build
         const sw = fs.readFileSync(swPath, "utf8");
