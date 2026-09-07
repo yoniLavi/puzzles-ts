@@ -8,6 +8,7 @@
   wa-theme-overrides;
 @import url("/node_modules/@awesome.me/webawesome/dist/styles/utilities/scroll-lock.css");
 @import url("/node_modules/@awesome.me/webawesome/dist/styles/themes/default.css");
+@import url("theme.css");
 @import url("native.css");
 
 :root {
@@ -57,11 +58,31 @@ body,
 :root {
   --app-size: large;
   --app-orientation: vertical;
+  /*
+   * Which command surface the puzzle screen wears: the 284px vertical `rail`,
+   * or the five-slot phone `bar` with the rail behind its `More…`.
+   *
+   * Its own token rather than a reading of `--app-size` / `--app-orientation`,
+   * because it answers a different question. Those two describe how much room
+   * there is *in general*; this one asks whether a 284px column can be spent
+   * without squeezing the board, and the answer is about width alone — a short
+   * landscape phone (`--app-orientation: horizontal`) is exactly where a rail
+   * helps most, and deriving it from those tokens would have taken the rail
+   * away there.
+   */
+  --app-chrome: rail;
   --app-padding: var(--wa-space-xl);
   --app-gap: var(--wa-space-xl);
   --app-spacing: var(--wa-space-l);
   --app-title-font-size: var(--wa-font-size-l);
   --app-theme-color: var(--wa-color-brand-fill-normal);
+}
+@media (max-width: 48rem) {
+  :root {
+    /* Below this there is not enough width for a 284px rail *and* a board
+     * worth looking at, so the commands move to the bottom bar. */
+    --app-chrome: bar;
+  }
 }
 @media (max-width: 40rem) {
   :root {

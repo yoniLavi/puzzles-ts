@@ -12,7 +12,8 @@ Lennard Sprong’s [additions][puzzles-unreleased] to it.
 * [Differences](differences) from Simon Tatham’s original collection
 
 Every puzzle has its own help page describing how to play it. Reach it from
-the [Puzzles](puzzles) list, or from the game menu while you are playing.
+the [Puzzles](puzzles) list, or from *How to play* beside the board while you
+are playing.
 
 [puzzles-unreleased]: https://github.com/x-sheep/puzzles-unreleased
 [sgt-puzzles]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/

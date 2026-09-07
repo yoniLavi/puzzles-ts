@@ -185,6 +185,14 @@ export class Puzzle {
       case "status-bar-change":
         update(this._statusbarText, message.statusBarText);
         update(this._activeHintExplanation, message.activeHintExplanation ?? "");
+        // Rendered as "Step 2 of 3" beside a multi-leg hint; empty for a
+        // single-leg one, which is most of them.
+        update(
+          this._hintJourney,
+          message.hintJourney && message.hintJourney.length > 1
+            ? `Step ${message.hintJourney.index} of ${message.hintJourney.length}`
+            : "",
+        );
         break;
       default:
         // The last hand-rolled copy of `assertNever`, written before the helper
@@ -259,6 +267,11 @@ export class Puzzle {
   private _autoHintActive = signal<boolean>(false);
   private _autoHintMessage = signal<string>("");
   private _activeHintExplanation = signal<string>("");
+  /** "Step 2 of 3" while one deduction plays out over several legs; empty for a
+   * single-leg hint and when no hint is displayed. Formatted here rather than
+   * in the chrome so the two surfaces that show it (the rail and the phone's
+   * hint strip) cannot word it differently. */
+  private _hintJourney = signal<string>("");
   private _autoHintMessageTimeoutId?: ReturnType<typeof setTimeout>;
   /**
    * Stepper state for the Hint button. A press that *shows* a step arms this;
@@ -299,6 +312,10 @@ export class Puzzle {
 
   public get autoHintMessage(): string {
     return this._autoHintMessage.get();
+  }
+
+  public get hintJourney(): string {
+    return this._hintJourney.get();
   }
 
   public get activeHintExplanation(): string {

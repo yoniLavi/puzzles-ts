@@ -99,6 +99,20 @@ export interface NotifyStatusBarChange {
   type: "status-bar-change";
   statusBarText: string;
   activeHintExplanation?: string;
+  /**
+   * Where the displayed hint sits in its **journey**, 1-based, and how many
+   * legs the journey has — so the chrome can say "Step 2 of 3" while a single
+   * deduction plays out over several moves.
+   *
+   * A *journey* is the collection's own unit (`ts-engine`, "One deduction
+   * firing is one journey"): the step on display plus every following step
+   * flagged `continuesPrevious`. It is deliberately not the position in the
+   * stored plan — for a plan-based game like Inertia that would read "Step 3
+   * of 47", which is a fact about the solver, not about the hint the player is
+   * being shown. Absent when there is no displayed hint; `length` is 1 for a
+   * single-leg hint, and the chrome shows nothing then.
+   */
+  hintJourney?: { index: number; length: number };
 }
 
 export type PuzzleId = string;

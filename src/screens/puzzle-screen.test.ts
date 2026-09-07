@@ -78,7 +78,7 @@ interface CommandHost {
   commandMap: Record<string, (...args: unknown[]) => unknown>;
   handleBubbledKeyDown: (event: KeyboardEvent) => Promise<void> | void;
   handleCommand: (command: string) => boolean;
-  handleToolbarClick: (event: MouseEvent) => void;
+  handleChromeClick: (event: MouseEvent) => void;
 }
 
 /** Build a screen with a fake puzzle injected, without scheduling a Lit
@@ -205,6 +205,73 @@ describe("puzzle-screen: Check-&-Save command", () => {
   });
 });
 
+describe("puzzle-screen: Check without saving", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /**
+   * **The case this command exists for.** The quick-save slot is one per
+   * puzzle, so the combined Check & save overwrites it. A player who saved
+   * deliberately before a speculative branch and then checks would lose the
+   * position they were keeping — and would lose it *silently*, because the
+   * check succeeded.
+   *
+   * "Does not call quickSave" is the assertion that matters, and it is the one
+   * that would still pass if the command were wired to the wrong handler. So it
+   * is checked alongside the two halves that say the command did its own job:
+   * the board was examined, and the result was reported.
+   *
+   * That an untouched slot is still restorable afterwards is `saved-games`'
+   * own guarantee, round-tripped in `saved-games.test.ts` against
+   * `fake-indexeddb`; re-asserting it here through this file's mock would be
+   * asserting that the mock remembers what it was told.
+   */
+  it("checks and reports without touching the quick-save slot", async () => {
+    const { host, findMistakes } = makeScreen({
+      canFindMistakes: true,
+      mistakeCount: 2,
+    });
+    await host.commandMap["check-only"].call(host);
+    expect(findMistakes).toHaveBeenCalledOnce();
+    expect(quickSave).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledOnce();
+    expect(showToast.mock.calls[0]?.[0]).toMatchObject({
+      label: "2 mistakes found",
+      type: "warning",
+    });
+    // The message says the checkpoint survived, because that is the whole
+    // reason a player chose this command over the other one.
+    expect(String(showToast.mock.calls[0]?.[0]?.message)).toContain("untouched");
+    // A report, not an interruption: there is nothing here that failed to
+    // happen, so there is nothing to stop the player for.
+    expect(showAlert).not.toHaveBeenCalled();
+  });
+
+  it("reports a clean board too", async () => {
+    const { host } = makeScreen({ canFindMistakes: true, mistakeCount: 0 });
+    await host.commandMap["check-only"].call(host);
+    expect(quickSave).not.toHaveBeenCalled();
+    expect(showToast.mock.calls[0]?.[0]).toMatchObject({
+      label: "No mistakes",
+      type: "success",
+    });
+  });
+
+  it("does nothing on a game that cannot check", async () => {
+    // Both commands are gated on `canFindMistakes` in the rail, so this arm is
+    // only ever reached by a shortcut or a stale surface — and it must not
+    // report a clean board it never examined.
+    const { host, findMistakes } = makeScreen({
+      canFindMistakes: false,
+      mistakeCount: 0,
+    });
+    await host.commandMap["check-only"].call(host);
+    expect(findMistakes).not.toHaveBeenCalled();
+    expect(showToast).not.toHaveBeenCalled();
+  });
+});
+
 describe("puzzle-screen: reference panel toggle command", () => {
   it("toggle-reference flips the panel and keeps the spotlight on close", () => {
     const { screen, host, selectReference } = makeScreen({
@@ -268,13 +335,15 @@ describe("puzzle-screen: focus returns to the board after a command", () => {
     expect(focus).not.toHaveBeenCalled();
   });
 
-  it("hands focus to the board after a toolbar button is clicked", async () => {
-    // The toolbar's buttons (undo/redo/hint/mark-all/check-&-save) are wired to
-    // their own handlers, not the command bus, so they need their own path.
+  it("hands focus to the board after a chrome control is clicked", async () => {
+    // A pointer click anywhere in the rail or the phone bar hands the keyboard
+    // back, whether or not the control also went through the command bus — a
+    // control may be both a `data-command` and a menu trigger, and only a real
+    // event's composed path tells those apart.
     const { screen, host } = makeScreen({ canFindMistakes: false, mistakeCount: 0 });
     const focus = stubBoard(screen);
 
-    host.handleToolbarClick(new MouseEvent("click", { detail: 1 }));
+    host.handleChromeClick(new MouseEvent("click", { detail: 1 }));
     await Promise.resolve();
     expect(focus).toHaveBeenCalledWith({ preventScroll: true });
   });
@@ -286,7 +355,7 @@ describe("puzzle-screen: focus returns to the board after a command", () => {
     const { screen, host } = makeScreen({ canFindMistakes: false, mistakeCount: 0 });
     const focus = stubBoard(screen);
 
-    host.handleToolbarClick(new MouseEvent("click", { detail: 0 }));
+    host.handleChromeClick(new MouseEvent("click", { detail: 0 }));
     await Promise.resolve();
     expect(focus).not.toHaveBeenCalled();
   });

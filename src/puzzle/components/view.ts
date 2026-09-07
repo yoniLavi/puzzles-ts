@@ -5,7 +5,6 @@ import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
-import { styleMap } from "lit/directives/style-map.js";
 import { currentColorScheme } from "../../color-scheme.ts";
 import type { FontInfo, Size } from "../../engine/types.ts";
 import {
@@ -40,11 +39,17 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   @property({ type: Number, attribute: "max-scale" })
   maxScale: number = Number.POSITIVE_INFINITY;
 
-  /**
-   * Where (and whether) to show the status bar (for puzzles that have one).
+  /*
+   * `statusbar-placement` was here — `start` / `end` / `hidden`, bound to a
+   * stored preference, deciding whether the nine games that print a status line
+   * showed it above the board, below it, or not at all.
+   *
+   * The line is no longer the board's to draw. The chrome gives it one home
+   * (the rail on desktop, above the phone bar on a phone), so the placement
+   * stopped denoting anything and the preference was retired with it — owner's
+   * call, `design-front-page-and-chrome` design.md §4.9 item 2. Reading a
+   * stored value from an older version is harmless: nothing asks for it.
    */
-  @property({ attribute: "statusbar-placement", type: String, reflect: true })
-  statusbarPlacement: "start" | "end" | "hidden" = "start";
 
   @consume({ context: puzzleContext, subscribe: true })
   @state()
@@ -142,52 +147,27 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   protected contentTabIndex: string | typeof nothing = nothing;
 
-  protected get bannerMessage(): string {
-    return this.puzzle?.activeHintExplanation || this.puzzle?.autoHintMessage || "";
-  }
+  /*
+   * The hint banner was here — a reserved line under the board carrying
+   * `activeHintExplanation` / `autoHintMessage`.
+   *
+   * The chrome now gives the explanation one home, right where the button that
+   * asked for it is: under `Next hint` in the rail, and above the phone bar
+   * where a thumb cannot cover it. Keeping the banner as well would have made
+   * the hint's own words the fourth thing offered from two places at once,
+   * which is the defect this whole redesign is against.
+   *
+   * Its removal also un-warps the board. To keep the board from jumping as
+   * hints toggled, the banner reserved a stable width of `max(board, 34rem)` —
+   * which on a 390px phone made `[part=content]` **736px wide**, twice the
+   * viewport, so the board's mat bled off both edges. Nothing reserves a
+   * footprint here any more, and the mat hugs the board again.
+   */
 
   protected override render() {
     return html`
       <div part="content" tabindex=${this.contentTabIndex}>
-        ${this.statusbarPlacement === "start" ? this.renderStatusbar() : nothing}
         ${this.renderPuzzle()}
-        ${
-          // The hint banner reserves a line (min-height) so the board
-          // doesn't jump when a hint appears/disappears. A game that can't
-          // hint never shows one, so reserving the line would just be dead
-          // space below the board — omit it for those (capability-based,
-          // not per-game). Mirrors how the status bar is gated on
-          // `wantsStatusbar`.
-          this.puzzle?.canHint
-            ? html`<div
-                class="hint-banner"
-                role="status"
-                style=${
-                  this.canvasSize
-                    ? styleMap({
-                        // Reserve a STABLE width whether or not a hint is
-                        // showing — the board width, or a readable floor
-                        // (~34rem ≈ 50ch), whichever is wider — so the
-                        // content box doesn't resize horizontally as hints
-                        // toggle (a real UX sore on small boards like
-                        // Singles, where an empty banner would otherwise
-                        // collapse and a shown hint would jump the box out to
-                        // 34rem). Concrete px+rem (no circular `%`); the
-                        // container caps it via `max-width: 100%` in CSS, and
-                        // a long hint wraps within this width.
-                        width: `max(${this.canvasSize.w}px, 34rem)`,
-                      })
-                    : nothing
-                }>
-                ${
-                  this.bannerMessage
-                    ? html`<span class="hint-banner-text">${this.bannerMessage}</span>`
-                    : nothing
-                }
-              </div>`
-            : nothing
-        }
-        ${this.statusbarPlacement === "end" ? this.renderStatusbar() : nothing}
         ${this.renderLoadingIndicator()}
       </div>
     `;
@@ -203,18 +183,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   protected renderCanvas() {
     return html`<div id="canvasPlaceholder"></div>`;
-  }
-
-  protected renderStatusbar() {
-    if (!this.puzzle?.wantsStatusbar) {
-      return nothing;
-    }
-    const style = this.canvasSize
-      ? styleMap({ "max-width": `${this.canvasSize.w}px` })
-      : nothing;
-    return html`
-      <div part="statusbar" role="status" style=${style}>${this.puzzle?.statusbarText}</div>
-    `;
   }
 
   protected renderLoadingIndicator() {
@@ -537,75 +505,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         box-sizing: border-box;
         padding: var(--spacing);
         position: relative;
-      }
-
-      .hint-banner {
-        text-align: center;
-        /* Inline width reserves a stable footprint (max of board width and
-         * ~34rem, set from the canvas size) whether or not a hint is showing,
-         * so the content box never resizes as hints toggle. max-width 100%
-         * caps it to the container on narrow viewports (the text wraps
-         * within); a long hint may grow taller (extra lines) — that's fine.
-         * Centered so the board sits centered when the reserved banner is wider
-         * than it. */
-        max-width: 100%;
-        margin-inline: auto;
-        overflow-wrap: break-word;
-        padding-inline: var(--spacing);
-        padding-block: 0 var(--spacing);
-        color: var(--wa-color-brand-fill-loud, var(--app-theme-color, var(--wa-color-brand-fill-normal, var(--wa-color-text-normal))));
-        font-size: var(--wa-font-size-s, 14px);
-        font-weight: var(--wa-font-weight-bold, 700);
-        line-height: 1.4;
-        /* Always reserve one line of space so the puzzle does not jump
-         * vertically when a hint message appears or disappears (the
-         * content area is centered, so any height change reflows it). */
-        box-sizing: border-box;
-        min-height: calc(1.4em + var(--spacing));
-      }
-
-      .hint-banner-text {
-        display: inline-block;
-        animation: hintFadeIn 0.15s ease-out;
-        /* Make the hint sentence selectable/copyable as text. Without this it
-         * inherits the puzzle area's non-selectable behavior and a copy grabs
-         * the canvas image instead of the words. */
-        -webkit-user-select: text;
-        -moz-user-select: text;
-        user-select: text;
-        cursor: text;
-      }
-
-      @keyframes hintFadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-      
-      [part="statusbar"] {
-        text-align: center;
-        
-        /* (Top or bottom spacing is redundant with [part="puzzle"]) */
-        padding: var(--spacing);
-        :host([statusbar-placement="start"]) & {
-          padding-block-end: 0;
-        }
-        :host([statusbar-placement="end"]) & {
-          padding-block-start: 0;
-        }
-
-        /* Don't collapse when no content (e.g., Rectangles) */
-        min-height: 1em;
-        max-height: 1em;
-        line-height: 1.0;
-        text-wrap: nowrap;
-        text-overflow: ellipsis;
-
-        /* For puzzles with timers (e.g., Mines), variable width is distracting */
-        font-variant-numeric: tabular-nums;
       }
 
       #loadingIndicator {

@@ -449,7 +449,7 @@ to one small `Ui` + a four-armed move union).
 `changedState(ui, oldState, newState)` reconciles a `Ui` that tracks state
 after every real move/undo/redo/solve/restart (never on a bare `UI_UPDATE` —
 the user is mid-edit then). **A drag-preview game must cancel a dangling drag
-here**: the board can change under a held pointer (toolbar undo mid-drag), and
+here**: the board can change under a held pointer (an undo mid-drag), and
 a preview that then simulates its move against the new board throws where
 upstream asserted. See [rendering](./rendering.md) § "Drag previews and blitters" for the
 render half.
@@ -534,7 +534,7 @@ through `Midend.getStaticProperties`.
 | --- | --- | --- |
 | Explained hints | `hint` (+ plan hooks) | [hints](./hints.md) — **every game is expected to ship one** (coverage incomplete; see that guide's opening) |
 | Mistake checking | `findMistakes` | computing: [solver & generator](./solver-and-generator.md); rendering: [rendering](./rendering.md) § "Overlay sidecars" |
-| Quick-save / Check & Save | free once `findMistakes` exists | shell-owned |
+| Check & save / Check without saving | free once `findMistakes` exists | shell-owned |
 | Pencil marks | `canMarkAll` + moves + prefs | below |
 | Reference aid | `reference`/`selectReference` | below |
 
@@ -573,7 +573,8 @@ a hand-written row per game whose whole job was to say where that game's notes
 were — the last per-game roster in the cross-game guards.
 
 - **Mark-all — `canMarkAll: true`.** The game handles `M`/`m` in
-  `interpretMove`; the flag surfaces the toolbar button that injects it.
+  `interpretMove`; the flag surfaces the *Fill all pencil marks* row that
+  injects it.
   A *candidate-elimination* game (one with a `regionsOf` — see
   [hints](./hints.md) § "Candidate-elimination games") routes `M` through
   `adaptiveMarkAllMove`
@@ -643,8 +644,8 @@ The explained pencil-notes hint these games want is its own change — see
 **A game whose core bookkeeping is "which pieces have I used?" can offer a
 reference aid** — a non-blocking checklist panel of the fixed piece inventory
 with found status, where clicking a piece spotlights its candidate placements.
-A deliberate learning-aid divergence, gated behind a toolbar button like
-Solve. The seam is generic (Dominosa implements it today):
+A deliberate learning-aid divergence, gated behind a rail row like
+*Show solution…*. The seam is generic (Dominosa implements it today):
 
 - **Two optional hooks.** `reference(state, ui): ReferenceModel` returns the
   checklist, derived **purely from the player's own placements**, never the
@@ -653,7 +654,7 @@ Solve. The seam is generic (Dominosa implements it today):
   skips the repaint). It is the first clean app→`Ui` push channel — shaped
   like a `UI_UPDATE`, no move, no history, not serialized.
 - **Presence flows the `canMarkAll` chain** (`hasReference` →
-  `PuzzleStaticAttributes` → toolbar + menu). The panel is the generic
+  `PuzzleStaticAttributes` → a *Reference* row in the rail). The panel is the generic
   [`components/reference-panel.ts`](../../src/components/reference-panel.ts):
   side-docked with room, a bottom sheet on narrow viewports *and* in the
   short-landscape orientation (a side dock there shoves the board off-center —

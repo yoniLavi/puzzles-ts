@@ -1,3 +1,23 @@
+/**
+ * One puzzle in the catalog, as a **list row**.
+ *
+ * This was a 64px-icon card in a `minmax(16rem, 1fr)` grid — about twelve games
+ * per screen, so browsing all 57 meant scrolling three times. The Index
+ * direction (`design-front-page-and-chrome` design.md §2, §4.2) trades the card
+ * for a dense two-column list: 32px icon, name, objective on the same line, ~26
+ * games per desktop screen and twelve on a phone.
+ *
+ * **The element keeps its name and its event.** `catalog-card` is what
+ * `home-screen.ts` renders and `favorite-change` is what it listens for; only
+ * the drawing changed, so nothing above had to learn a new vocabulary. The
+ * `srcset` pair and the lazy `loading`/opacity fade are unchanged — the icons
+ * are the committed 64/128 PNGs either way.
+ *
+ * **`Experimental` stopped being a rubber stamp.** The stamp was positioned
+ * absolutely against a 64px icon and rotated; at 32px there is nowhere to put
+ * it and nothing to rotate against, so it is a small label on the name line,
+ * which also stops it covering the icon it used to sit on.
+ */
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { cssWATweaks } from "../utils/css.ts";
@@ -90,12 +110,19 @@ export class CatalogCard extends LitElement {
 
   private renderGameInProgressBadge() {
     return this.gameInProgress
-      ? html`<wa-icon name="game-in-progress" label="(Game in progress)"></wa-icon>`
+      ? html`<wa-icon
+          part="in-progress"
+          name="game-in-progress"
+          label="(Game in progress)"
+        ></wa-icon>`
       : nothing;
   }
 
   private renderUnfinishedBadge() {
-    return this.unfinished ? html`<div part="unfinished">Experimental</div>` : nothing;
+    return this.unfinished
+      ? html`<span part="unfinished" title="Experimental — still being worked on"
+        >Experimental</span>`
+      : nothing;
   }
 
   protected override render() {
@@ -103,11 +130,13 @@ export class CatalogCard extends LitElement {
     return html`
       <a part="base" href=${this.href} draggable="false" tabindex="0">
         ${this.renderIcon()}
-        <h3 part="title">${this.name}</h3>
-        ${this.renderUnfinishedBadge()}
-        ${this.renderGameInProgressBadge()}
+        <span part="name-line">
+          <span part="title">${this.name}</span>
+          ${this.renderUnfinishedBadge()}
+          ${this.renderGameInProgressBadge()}
+        </span>
+        <span part="description">${this.objective}</span>
         ${this.renderFavoriteToggle()}
-        <div part="description">${this.objective}</div>
       </a>
     `;
   }
@@ -137,87 +166,64 @@ export class CatalogCard extends LitElement {
       * {
         box-sizing: border-box;
       }
-      
+
       :host {
         display: block;
         touch-action: manipulation;
-        --icon-size: 64px;
-        --padding: var(--wa-space-m);
-        --spacing: var(--wa-space-xs);
+        --icon-size: 32px;
       }
-      
+
       [part="base"] {
-        height: 100%;
         width: 100%;
-  
-        position: relative;
-        
+        min-height: var(--app-row-list);
+
         display: grid;
-        grid-template-areas:
-          "icon title          favorite"
-          "icon description description";
-        grid-template-columns: var(--icon-size) 1fr auto;
-        grid-template-rows: auto 1fr;
-  
-        padding: var(--padding);
-        column-gap: var(--padding);
-        row-gap: var(--spacing);
-  
-        background-color: var(--wa-color-surface-default);
-        color: var(--wa-color-text-normal);
-        border-color: var(--wa-color-surface-border);
-        border-radius: var(--wa-panel-border-radius);
-        border-style: var(--wa-panel-border-style);
-        border-width: var(--wa-panel-border-width);
-        
+        grid-template-areas: "icon name favorite" "icon description favorite";
+        grid-template-columns: var(--icon-size) minmax(0, 1fr) auto;
+        grid-template-rows: auto auto;
+        align-content: center;
+        align-items: center;
+        column-gap: 0.75rem;
+        row-gap: 1px;
+
+        padding-block: 0.375rem;
+        padding-inline: 0.5rem;
+        border-radius: var(--app-radius-control);
+
+        color: var(--app-color-text);
+        text-decoration: none;
+        cursor: pointer;
+
+        /* The rule between rows *is* the list's structure in this direction —
+         * there are no card borders left to carry it. Drawn on the row rather
+         * than the container so the two columns rule independently. */
+        border-block-end: 1px solid var(--app-color-row-rule);
+
         &:focus-visible {
           outline: var(--wa-focus-ring);
           outline-offset: var(--wa-focus-ring-offset);
         }
-        
-        &:is(a) {
-          /* Remove some <a> styles and behaviors */
-          cursor: pointer;
-          text-decoration: none;
+      }
+
+      /* A row is a tap target before it is a hover target: on a phone it grows
+       * to the 64px row and never below the 44px floor. */
+      @media (max-width: 40rem) {
+        [part="base"] {
+          min-height: var(--app-row-list-phone);
         }
       }
-  
+
       @media (hover: hover) {
-        @media (prefers-reduced-motion: no-preference) {
-          [part="base"] {
-            transition:
-                transform var(--wa-transition-normal) var(--wa-transition-easing),
-                box-shadow var(--wa-transition-normal) var(--wa-transition-easing);
-          }
-  
-          [part="base"]:hover {
-            transform: translateY(calc(-1 * var(--wa-space-2xs)));
-            box-shadow: var(--wa-shadow-l);
-          }
+        [part="base"]:hover {
+          background-color: var(--app-color-rail);
         }
       }
-  
+
       [part="icon"] {
         grid-area: icon;
-
         width: var(--icon-size);
         height: var(--icon-size);
-        border-radius: var(--wa-border-radius-s);
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        font-size: calc(var(--icon-size) - 2 * var(--wa-space-xs));
-        background-color: var(--wa-color-neutral-fill-quiet);
-        color: var(--wa-color-neutral-on-quiet);
-        :host([unfinished]) & {
-          color: var(--wa-color-warning-fill-loud);
-        }
-
-        &:is(wa-icon)::part(svg) {
-          width: unset;
-        }
+        border-radius: var(--app-radius-icon);
 
         opacity: 1;
         &.loading {
@@ -225,96 +231,75 @@ export class CatalogCard extends LitElement {
         }
         transition: opacity var(--wa-transition-fast) var(--wa-transition-easing);
       }
-  
+
+      [part="name-line"] {
+        grid-area: name;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        min-width: 0;
+      }
+
       [part="title"] {
-        grid-area: title;
-        min-width: 1em;
+        font-size: var(--app-font-size-item);
+        font-weight: var(--wa-font-weight-semibold);
+        line-height: var(--wa-line-height-condensed);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
-      h3 {
-        margin: 0;
+      [part="description"] {
+        grid-area: description;
+        font-size: var(--app-font-size-detail);
+        color: var(--app-color-text-quiet);
         line-height: var(--wa-line-height-condensed);
-        color: var(--wa-color-text-normal);
-        font-size: var(--wa-font-size-l);
+        /* One line, clipped: the objective is a scent, not the help page. */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      [part="unfinished"] {
+        flex: 0 0 auto;
+        font-size: var(--app-font-size-micro);
         font-weight: var(--wa-font-weight-semibold);
+        line-height: 1;
+        padding: 2px 5px;
+        border-radius: var(--app-radius-icon);
+        color: var(--wa-color-warning-on-quiet, var(--app-color-text-secondary));
+        background-color: var(--wa-color-warning-fill-quiet);
+        border: 1px solid var(--wa-color-warning-border-normal);
+      }
+
+      [part="in-progress"] {
+        flex: 0 0 auto;
+        font-size: var(--app-font-size-detail);
+        color: var(--app-color-link);
+        &::part(svg) {
+          fill: currentColor;
+        }
       }
 
       [part="favorite"] {
         grid-area: favorite;
-        
-        /* Exclude padding from layout calculations */
-        margin: calc(-1 * var(--wa-space-xs));
-        
-        /* Remove some button padding and allow natural size */
+        color: var(--app-color-text-faintest);
+
         &::part(base) {
           padding: var(--wa-space-xs);
           height: auto;
           width: auto;
+          min-height: var(--app-tap-min);
+          min-width: var(--app-tap-min);
         }
-        
-        /* Toggled-on appearance */
-        color: var(--wa-color-text-quiet);
-        &[aria-pressed="true"] wa-icon {
-          /*color: var(--wa-color-brand-fill-loud);*/
-          &::part(svg) {
+
+        /* Filled when on — the heart is the only place a color other than the
+         * link navy appears in a row, so it stays the accent's neighbor rather
+         * than a second accent. */
+        &[aria-pressed="true"] {
+          color: var(--app-color-text-secondary);
+          wa-icon::part(svg) {
             fill: currentColor;
-          }
-        }
-      }
-  
-      [part="description"] {
-        grid-area: description;
-  
-        color: var(--wa-color-text-quiet);
-        font-size: var(--wa-font-size-m);
-        font-weight: var(--wa-font-weight-normal);
-        line-height: var(--wa-line-height-normal);
-      }
-      
-      [part="unfinished"] {
-        position: absolute;
-        inset-block-start: calc(var(--padding) + var(--icon-size));
-        inset-inline-start: calc(var(--padding) + var(--icon-size)/2);
-        transform: translate(-50%, -40%) rotate(-7.5deg);
-        transform-origin: 50% 50%;
-        
-        padding: var(--wa-space-3xs);
-        font-size: var(--wa-font-size-2xs);
-        line-height: 1;
-
-        background-color: var(--wa-color-surface-default);
-        color: var(--wa-color-text-normal);
-        
-        --border-width: var(--wa-border-width-m);
-        border-style: solid;
-        border-width: var(--border-width);
-        border-image-source: repeating-linear-gradient(
-            -45deg,
-            var(--wa-color-warning-border-loud),
-            var(--wa-color-warning-border-loud) calc(2 * var(--border-width)),
-            var(--wa-color-surface-default) calc(2 * var(--border-width)),
-            var(--wa-color-surface-default)  calc(3 * var(--border-width))
-        );
-        border-image-slice: 1;
-      }
-
-      wa-icon[name="game-in-progress"] {
-        position: absolute;
-        inset-block-start: calc(var(--padding) - 0.5em);
-        inset-inline-start: calc(var(--padding) - 0.5em);
-        
-        color: var(--wa-color-brand-fill-loud);
-        &::part(svg) {
-          fill: currentColor;
-          
-          @supports (paint-order: stroke) {
-            /* Add a background outline to stand off from icon */
-            stroke: var(--wa-color-surface-default);
-            stroke-width: calc(2 * var(--wa-border-width-m));
-            paint-order: stroke;
           }
         }
       }

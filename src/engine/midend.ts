@@ -1497,6 +1497,34 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       type: "status-bar-change",
       statusBarText: text,
       activeHintExplanation: this.displayedHintStep?.explanation,
+      hintJourney: this.hintJourney(),
     });
+  }
+
+  /**
+   * Where the displayed step sits in its journey, and how long the journey is.
+   *
+   * A journey is one deduction firing: the first step of the run plus every
+   * following step the game flagged `continuesPrevious` (`ts-engine`, "One
+   * deduction firing is one journey"). Walking back to that first step and
+   * forward to the last is the whole computation, and it is **derived from a
+   * flag the game already sets for its own reasons** — nothing has to declare a
+   * journey, and a game that never groups its steps simply reports length 1.
+   *
+   * `undefined` when no hint is displayed: there is no journey to be in.
+   */
+  private hintJourney(): { index: number; length: number } | undefined {
+    const plan = this.activeHint;
+    if (plan === null || this.displayedHintStep === undefined) return undefined;
+    let first = plan.index;
+    while (first > 0 && plan.steps[first].continuesPrevious === true) first--;
+    let last = plan.index;
+    while (
+      last + 1 < plan.steps.length &&
+      plan.steps[last + 1].continuesPrevious === true
+    ) {
+      last++;
+    }
+    return { index: plan.index - first + 1, length: last - first + 1 };
   }
 }

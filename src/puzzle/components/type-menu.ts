@@ -46,6 +46,23 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
   @property({ type: String })
   placement: HTMLElementTagNameMap["wa-dropdown"]["placement"] = "bottom";
 
+  /**
+   * How the trigger draws.
+   *
+   * `button` is the Web Awesome button with a caret, used where this menu is
+   * one control among several. `chips` splits the current parameter
+   * description into its own small monospaced chips — `7×7`, `Easy` — which is
+   * what the rail and the phone's top bar want: the type is a *fact about the
+   * board in front of you*, and hiding it behind a caret while the board is
+   * governed by it is the wrong way round
+   * (`design-front-page-and-chrome` design.md §4.4).
+   *
+   * Both draw the same `currentGameTypeLabel`, computed once in `willUpdate`,
+   * so the chips cannot say something the menu disagrees with.
+   */
+  @property({ type: String })
+  presentation: "button" | "chips" = "button";
+
   // Game presets, with submenus flattened
   @state()
   private presets: PresetMenuEntry[] = [];
@@ -98,18 +115,46 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
           @wa-hide=${this.handleDropdownHide}
           @wa-select=${this.handleDropdownSelect}
       >
-        <wa-button 
-            slot="trigger"
-            part="trigger"
-            exportparts="base:trigger-base"
-            appearance=${this.appearance ?? nothing}
-            variant=${this.variant ?? nothing}
-            with-caret
-        >${this.renderTriggerContent()}</wa-button>
+        ${
+          this.presentation === "chips"
+            ? html`
+              <button
+                  slot="trigger"
+                  part="trigger"
+                  type="button"
+                  class="chips"
+                  aria-label="${this.label}: ${this.currentGameTypeLabel}"
+              >${this.renderChips()}</button>`
+            : html`
+              <wa-button
+                  slot="trigger"
+                  part="trigger"
+                  exportparts="base:trigger-base"
+                  appearance=${this.appearance ?? nothing}
+                  variant=${this.variant ?? nothing}
+                  with-caret
+              >${this.renderTriggerContent()}</wa-button>`
+        }
         ${this.renderPresetMenuItems()}
         <slot></slot>
       </wa-dropdown>
     `;
+  }
+
+  /** The parameter description as chips. Split on commas, which is how
+   * `augmentation.ts`'s `describeConfig` formatters join the parts — "7x7,
+   * Easy" is two facts, and two facts read better as two chips than as one
+   * sentence with a comma in it. A game with nothing to say yet gets a single
+   * "Type…" chip, so the control is never an empty target. */
+  private renderChips() {
+    const parts = this.currentGameTypeLabel
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (parts.length < 1) {
+      return html`<span part="chip">Type…</span>`;
+    }
+    return parts.map((part) => html`<span part="chip">${part}</span>`);
   }
 
   private renderTriggerContent() {
@@ -292,6 +337,36 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
       /* Allow flexing */
       wa-dropdown, wa-button {
         width: 100%;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        align-items: center;
+        width: 100%;
+        min-height: var(--app-tap-min);
+        padding: 0;
+        border: none;
+        background: none;
+        cursor: pointer;
+        text-align: start;
+
+        &:focus-visible {
+          outline: var(--wa-focus-ring);
+          outline-offset: var(--wa-focus-ring-offset);
+        }
+      }
+
+      [part="chip"] {
+        font-family: var(--app-font-mono);
+        font-size: var(--app-font-size-micro);
+        line-height: 1;
+        padding: 4px 6px;
+        border: 1px solid var(--app-color-control-border);
+        border-radius: var(--app-radius-icon);
+        color: var(--app-color-text-secondary);
+        white-space: nowrap;
       }
       wa-button::part(label) {
         flex: 0 1 auto;

@@ -1159,6 +1159,48 @@ describe("Midend re-validates a kept plan (a displayed step is never stale)", ()
     expect((m.activeHintStep()?.move as StrikeMove & { i: number }).i).toBe(1);
   });
 
+  it("reports where a displayed step sits in its journey", () => {
+    // "Step 2 of 3" in the chrome. The journey is the unit the collection
+    // already has — a lead leg plus the steps flagged `continuesPrevious` — so
+    // this is derived from what the game says for its own reasons, and a game
+    // that never groups steps simply reports a journey of one.
+    const m = new Midend(strikeGame({ sideEffect: false }));
+    const seen: { index: number; length: number }[] = [];
+    m.setCallbacks(
+      (n) => {
+        if (n.type === "status-bar-change" && n.hintJourney) seen.push(n.hintJourney);
+      },
+      () => {},
+    );
+    m.newGame();
+    m.hint(); // plan: strike 0, 1, 2 — legs 1 and 2 continue the first
+    expect(seen.at(-1)).toEqual({ index: 1, length: 3 });
+
+    m.processInput(0, 0, 100); // strike 0; the journey stays displayed
+    expect(seen.at(-1)).toEqual({ index: 2, length: 3 });
+
+    expect(seen, "the whole run, so an off-by-one is visible").toEqual([
+      { index: 1, length: 3 },
+      { index: 2, length: 3 },
+    ]);
+  });
+
+  it("reports no journey when no hint is displayed", () => {
+    // The absence matters as much as the number: a stale "Step 3 of 3" left
+    // beside a board with no hint on it is a label for something that is not
+    // there.
+    const m = new Midend(strikeGame({ sideEffect: false }));
+    const seen: (unknown | undefined)[] = [];
+    m.setCallbacks(
+      (n) => {
+        if (n.type === "status-bar-change") seen.push(n.hintJourney);
+      },
+      () => {},
+    );
+    m.newGame();
+    expect(seen.at(-1)).toBeUndefined();
+  });
+
   it("a scripted replay drops the stored plan, and hint() recomputes fresh", () => {
     const m = new Midend(strikeGame({ sideEffect: true }));
     m.newGame();

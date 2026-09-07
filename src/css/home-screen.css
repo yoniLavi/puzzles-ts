@@ -1,33 +1,181 @@
+/*
+ * The front page's layout.
+ *
+ * **One column, one left edge.** `--app-content-width` is the page's single
+ * content axis, and the header's inner block, the intro, the Continue row and
+ * the catalog all sit in it. The two axes this replaces — a `61ch` intro
+ * centered in the viewport over a `75rem` grid pinned to the left padding —
+ * produced a visible jag down the middle of the page at desktop width, and it
+ * was the first of the four findings that put this redesign on the list
+ * (`design-front-page-and-chrome` design.md §1). The intro still gets a reading
+ * measure, but by *capping* its width inside the column, never by centering
+ * itself in a wider one.
+ */
+
+:root {
+  /* The one content axis. */
+  --app-content-width: 75rem;
+  /* A comfortable measure for running prose, applied inside that column. */
+  --app-prose-width: 61ch;
+}
+
 header,
-section,
+[part="page"],
 noscript,
 footer {
   box-sizing: border-box;
-  padding: var(--app-padding);
-  @media (prefers-reduced-motion: no-preference) {
-    transition: padding var(--wa-transition-fast) var(--wa-transition-easing);
-  }
+  padding-inline: var(--app-padding);
 }
 
-section,
+[part="page"],
 noscript,
 footer {
-  margin: 0 auto;
+  padding-block: var(--app-padding);
+}
 
-  *:first-child {
-    margin-block-start: 0;
+/* The column. Everything that is page content is inside one of these. */
+[part="header-inner"],
+[part="page"] > *,
+noscript section,
+footer > * {
+  max-width: var(--app-content-width);
+  margin-inline: auto;
+}
+
+[part="page"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-gap-section);
+  padding-block-start: var(--app-gap-section);
+}
+
+[part="intro"] {
+  /* Left-aligned in the column and capped for readability — NOT centered in
+   * the viewport, which is what fought the catalog's left edge. */
+  max-width: min(var(--app-content-width), var(--app-prose-width));
+  margin-inline: 0;
+  color: var(--app-color-text-secondary);
+
+  ::slotted(section) {
+    padding: 0;
   }
 }
-section {
-  padding-block-end: 0;
-}
-section[slot="intro"],
-footer {
-  max-width: 61ch;
+
+[part="section"] {
+  h2 {
+    margin: 0 0 var(--wa-space-s);
+    font-size: var(--app-font-size-item);
+    font-weight: var(--wa-font-weight-bold);
+    letter-spacing: 0.01em;
+    color: var(--app-color-text-secondary);
+  }
 }
 
-noscript section {
-  max-width: calc(61ch - 2 * var(--app-padding));
+/* The search box and the three filters, on one line at desktop and stacked on
+ * a phone, where the search field wants the whole width. */
+[part="catalog-controls"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wa-space-s);
+  margin-block-end: var(--wa-space-m);
+}
+
+[part="search"] {
+  flex: 1 1 16rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--app-tap-min);
+  padding-inline: 0.625rem;
+  border: 1px solid var(--app-color-control-border);
+  border-radius: var(--app-radius-control);
+  background-color: var(--app-color-ground);
+  color: var(--app-color-text-quiet);
+
+  &:focus-within {
+    border-color: var(--app-color-link);
+  }
+
+  input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: none;
+    outline: none;
+    font: inherit;
+    font-size: var(--app-font-size-body);
+    color: var(--app-color-text);
+
+    &::placeholder {
+      color: var(--app-color-text-faint);
+    }
+  }
+}
+
+[part="filters"] {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0;
+
+  /* A segmented control: one border round the set, hairlines between. */
+  border: 1px solid var(--app-color-control-border);
+  border-radius: var(--app-radius-control);
+  overflow: hidden;
+}
+
+[part="filter"] {
+  min-height: var(--app-tap-min);
+  padding-inline: 0.75rem;
+  border: none;
+  border-inline-start: 1px solid var(--app-color-control-border);
+  background-color: var(--app-color-ground);
+  color: var(--app-color-text-secondary);
+  font: inherit;
+  font-size: var(--app-font-size-body);
+  cursor: pointer;
+
+  &:first-child {
+    border-inline-start: none;
+  }
+
+  &[aria-pressed="true"] {
+    background-color: var(--app-color-link);
+    color: var(--wa-color-brand-on-loud);
+    font-weight: var(--wa-font-weight-semibold);
+  }
+
+  @media (hover: hover) {
+    &:hover:not([aria-pressed="true"]) {
+      background-color: var(--app-color-rail);
+    }
+  }
+}
+
+/*
+ * The list. Two columns at desktop, one on a phone.
+ *
+ * `grid-auto-flow: row` with two tracks fills left-to-right, which is what a
+ * reader of a two-column list expects when the order is alphabetical only
+ * *within* a screenful — the alternative (a column-flowing masonry) makes
+ * "next after Keen" mean "scroll to the top of the other column".
+ */
+[part="list"] {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: var(--wa-space-xl);
+  touch-action: manipulation;
+
+  @media (min-width: 52rem) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+[part="empty"] {
+  margin: 0;
+  padding-block: var(--wa-space-l);
+  color: var(--app-color-text-quiet);
+  font-size: var(--app-font-size-body);
 }
 
 header {
@@ -35,7 +183,15 @@ header {
   top: 0;
   z-index: 1;
   background-color: var(--app-theme-color);
+  border-block-end: 1px solid var(--app-color-hairline);
 
+  padding-block: var(--app-padding);
+  @media (prefers-reduced-motion: no-preference) {
+    transition: padding var(--wa-transition-fast) var(--wa-transition-easing);
+  }
+}
+
+[part="header-inner"] {
   display: grid;
   grid-template-areas:
     "logo title    controls"
@@ -69,9 +225,9 @@ header {
     display: flex;
     align-items: end;
 
-    font-size: var(--wa-font-size-m);
+    font-size: var(--app-font-size-support);
     font-weight: var(--wa-font-weight-normal);
-    color: var(--wa-color-text-quiet);
+    color: var(--app-color-text-quiet);
   }
 
   .controls {
@@ -112,7 +268,7 @@ header {
   }
 
   wa-button[appearance="plain"]::part(base) {
-    color: var(--wa-color-text-normal);
+    color: var(--app-color-text);
   }
 }
 
@@ -120,6 +276,10 @@ footer {
   display: flex;
   flex-direction: column;
   gap: var(--app-spacing);
+  color: var(--app-color-text-quiet);
+  font-size: var(--app-font-size-support);
+  border-block-start: 1px solid var(--app-color-hairline);
+  margin-block-start: var(--app-gap-section);
   @media (prefers-reduced-motion: no-preference) {
     transition: gap var(--wa-transition-fast) var(--wa-transition-easing);
   }
@@ -184,12 +344,10 @@ header {
   from {
     padding-block: var(--app-padding);
     box-shadow: none;
-    grid-template-rows: auto 1fr;
   }
   to {
     padding-block: var(--app-spacing);
     box-shadow: var(--wa-shadow-l);
-    grid-template-rows: auto 0fr;
   }
 }
 

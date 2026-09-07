@@ -22,6 +22,12 @@ export class Screen extends LitElement {
   @property({ type: String, reflect: true })
   orientation: "horizontal" | "vertical" = "vertical";
 
+  /** Which command surface the puzzle screen wears — see `--app-chrome` in
+   * `common.css`. Read here because this is where the layout tokens are read;
+   * only `PuzzleScreen` consumes it. */
+  @property({ type: String, reflect: true })
+  chrome: "rail" | "bar" = "rail";
+
   @state()
   protected themeColor?: string;
 
@@ -35,6 +41,7 @@ export class Screen extends LitElement {
       const styles = window.getComputedStyle(this);
       const orientation = styles.getPropertyValue("--app-orientation");
       const size = styles.getPropertyValue("--app-size");
+      const chrome = styles.getPropertyValue("--app-chrome");
       if (!import.meta.env.PROD) {
         if (orientation !== "horizontal" && orientation !== "vertical") {
           throw new Error(`Unknown --app-orientation='${orientation}'`);
@@ -42,9 +49,13 @@ export class Screen extends LitElement {
         if (size !== "large" && size !== "medium" && size !== "small") {
           throw new Error(`Unknown --app-size='${size}'`);
         }
+        if (chrome !== "rail" && chrome !== "bar") {
+          throw new Error(`Unknown --app-chrome='${chrome}'`);
+        }
       }
       this.orientation = orientation as Screen["orientation"];
       this.size = size as Screen["size"];
+      this.chrome = chrome as Screen["chrome"];
     }
   };
 

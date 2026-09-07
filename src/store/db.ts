@@ -33,7 +33,7 @@ export interface CommonSettings {
   // Appearance
   showEndNotification?: boolean;
   showPuzzleKeyboard?: boolean;
-  statusbarPlacement?: "start" | "end" | "hidden";
+  oneKeyShortcuts?: boolean;
   maxScale?: number | null; // null in DB/json === Infinity in exposed value
 }
 

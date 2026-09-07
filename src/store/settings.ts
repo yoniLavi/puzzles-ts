@@ -288,8 +288,23 @@ class Settings {
   @commonSetting({ default: true })
   declare showPuzzleKeyboard: boolean;
 
-  @commonSetting({ default: "start" })
-  declare statusbarPlacement: "start" | "end" | "hidden";
+  /**
+   * Whether a bare `u` / `r` / `n` / `h` runs Undo / Redo / New game / Next
+   * hint. Upstream's `one_key_shortcuts`, and default on for the same reason.
+   *
+   * Unlike upstream's, this one never takes a letter away from a game: the key
+   * reaches the game first and only becomes a command if the game declined it
+   * (`src/puzzle/shortcuts.ts`). The preference is for a player who would
+   * rather no bare letter ever meant anything at the app level.
+   *
+   * (`statusbarPlacement` was here. The rail gives the status line one home, so
+   * `start` / `end` stopped denoting anything and the key was dropped — owner's
+   * call, `design-front-page-and-chrome` design.md §4.9 item 2. A stored value
+   * is simply never read; `CommonSettings` no longer declares the field, so
+   * `getCommonSettings` returns it and nothing asks.)
+   */
+  @commonSetting({ default: true })
+  declare oneKeyShortcuts: boolean;
 
   @commonSetting({
     default: Number.POSITIVE_INFINITY,

@@ -127,10 +127,16 @@ table.puzzles-list td:not(:last-child) {
  * `help-coverage.test.ts` holds every glyph the help names to this block.
  *
  * The names are the app's own logical icon names (`src/icons.ts`), and the
- * targets are its imports, so a help glyph and the toolbar button it describes
- * are the same picture. */
+ * targets are its imports, so a help glyph and the control it describes are the
+ * same picture. */
+.icon-back-to-last-save {
+  --icon: url(/node_modules/lucide-static/icons/bookmark.svg);
+}
 .icon-check-and-save {
   --icon: url(/node_modules/lucide-static/icons/bookmark-check.svg);
+}
+.icon-check-only {
+  --icon: url(/node_modules/lucide-static/icons/search-check.svg);
 }
 .icon-checkpoint-remove {
   --icon: url(/node_modules/lucide-static/icons/trash-2.svg);

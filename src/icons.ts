@@ -4,10 +4,12 @@ import {
 } from "@awesome.me/webawesome/dist/components/icon/library.js";
 import installDesktopIcon from "@material-design-icons/svg/outlined/install_desktop.svg";
 import arrowLeftIcon from "lucide-static/icons/arrow-left.svg";
+import arrowLeftRightIcon from "lucide-static/icons/arrow-left-right.svg";
 import arrowLeftToLineIcon from "lucide-static/icons/arrow-left-to-line.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
 import awardIcon from "lucide-static/icons/award.svg";
 import badgeQuestionMarkIcon from "lucide-static/icons/badge-question-mark.svg";
+import bookmarkIcon from "lucide-static/icons/bookmark.svg";
 import bookmarkCheckIcon from "lucide-static/icons/bookmark-check.svg";
 import boxIcon from "lucide-static/icons/box.svg";
 import boxesIcon from "lucide-static/icons/boxes.svg";
@@ -21,6 +23,7 @@ import circleXIcon from "lucide-static/icons/circle-x.svg";
 import crownIcon from "lucide-static/icons/crown.svg";
 import deleteIcon from "lucide-static/icons/delete.svg";
 import downloadIcon from "lucide-static/icons/download.svg";
+import ellipsisIcon from "lucide-static/icons/ellipsis.svg";
 import externalLinkIcon from "lucide-static/icons/external-link.svg";
 import flaskConicalIcon from "lucide-static/icons/flask-conical.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
@@ -41,6 +44,8 @@ import playIcon from "lucide-static/icons/play.svg";
 import plusIcon from "lucide-static/icons/plus.svg";
 import redo2Icon from "lucide-static/icons/redo-2.svg";
 import rocketIcon from "lucide-static/icons/rocket.svg";
+import searchIcon from "lucide-static/icons/search.svg";
+import searchCheckIcon from "lucide-static/icons/search-check.svg";
 import settingsIcon from "lucide-static/icons/settings.svg";
 import share2Icon from "lucide-static/icons/share-2.svg";
 import shieldCheckIcon from "lucide-static/icons/shield-check.svg";
@@ -75,7 +80,16 @@ const defaultIcons: IconMap = {
   // to a help page means adding its rule, pointed at the same import as here.
   // general
   "back-to-catalog": boxesIcon,
+  // The quick-save pair reads as one pair: a bookmark you *place* (with the
+  // check that says it was verified first) and the same bookmark you go *back*
+  // to. They were a bookmark and an upload arrow, which is what let them live
+  // on two different surfaces without looking related.
   "check-and-save": bookmarkCheckIcon,
+  "back-to-last-save": bookmarkIcon,
+  "check-only": searchCheckIcon,
+  "more": ellipsisIcon,
+  "search": searchIcon,
+  "switch-puzzle": arrowLeftRightIcon,
   "checkpoint-add": shieldCheckIcon,
   "checkpoint-remove": trash2Icon,
   "copy-image": imagesIcon,

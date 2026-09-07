@@ -136,7 +136,7 @@ import cycle. Split them into a small `moves.ts` both import. Exemplar:
 ### `changedState` cancels a dangling drag
 
 **A drag preview names a piece on the board, and the board can change while
-the pointer is still down** — an undo from the toolbar or keyboard mid-drag.
+the pointer is still down** — an undo from the rail or the keyboard mid-drag.
 Upstream's `game_redraw` `assert`s the simulated move succeeds, so that
 sequence is a thrown error in a naive port. Cancel the drag in `changedState`
 (a bare `UI_UPDATE` never reaches that hook, so the live gesture is unharmed)

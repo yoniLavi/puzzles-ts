@@ -253,7 +253,23 @@ export class PuzzleViewInteractive extends PuzzleView {
       mods |= PuzzleButton.MOD_NUM_KEYPAD;
     }
 
-    await this.puzzle.processKey(button | mods);
+    const consumed = await this.puzzle.processKey(button | mods);
+    if (!consumed) {
+      // **The game declined this key**, which `Midend.processInput` reports by
+      // returning false exactly when `interpretMove` returned null. That is the
+      // signal an app-level bare-letter shortcut needs, and it is a stronger
+      // one than any declaration: it cannot be forgotten by a new game, cannot
+      // be left behind by a changed one, and covers a game that consumes a
+      // letter without ever putting it on the keypad. `puzzle-screen.ts`
+      // listens; see `src/puzzle/shortcuts.ts`.
+      this.dispatchEvent(
+        new CustomEvent<KeyboardEvent>("puzzle-key-unhandled", {
+          bubbles: true,
+          composed: true,
+          detail: event,
+        }),
+      );
+    }
   };
 
   //
@@ -555,21 +571,18 @@ export class PuzzleViewInteractive extends PuzzleView {
         outline-offset: var(--wa-focus-ring-offset);
       }
 
-      [part="puzzle"], 
-      [part="statusbar"] {
-        /* Disable double-tap to zoom (puzzles want rapid taps) 
+      [part="puzzle"] {
+        /* Disable double-tap to zoom (puzzles want rapid taps)
          * and single-finger panning (puzzles want dragging).
          * Allow zooming and multi-finger panning for accessibility.
-         * (Insufficient on iOS Safari; see @click and @touchstart handlers.) 
+         * (Insufficient on iOS Safari; see @click and @touchstart handlers.)
          */
         touch-action: pinch-zoom;
 
         /* Disable long-press selection/magnifier bubble on iOS Safari.
          * If Safari gets a long-press on something that's not selectable
          * (like the puzzle), it looks for something--anything--nearby
-         * to select instead (like the statusbar). A bubble on the statusbar
-         * when you long-press the puzzle is annoying, so disable on both.
-         */
+         * to select instead. */
         -webkit-user-select: none;
         -moz-user-select: none;
         user-select: none;
@@ -579,8 +592,16 @@ export class PuzzleViewInteractive extends PuzzleView {
   ];
 }
 
+/** A key the board offered to the game and the game declined — carrying the
+ * original event, so a listener can decide with the full modifier state. */
+export type PuzzleKeyUnhandledEvent = CustomEvent<KeyboardEvent>;
+
 declare global {
   interface HTMLElementTagNameMap {
     "puzzle-view-interactive": PuzzleViewInteractive;
+  }
+
+  interface HTMLElementEventMap {
+    "puzzle-key-unhandled": PuzzleKeyUnhandledEvent;
   }
 }

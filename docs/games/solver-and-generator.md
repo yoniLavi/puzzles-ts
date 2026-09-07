@@ -724,7 +724,7 @@ depends on it.** The shell's Check & Save control
 (`src/puzzle/quick-save-actions.ts`) hard-blocks a save only when
 `canFindMistakes` is true, which is exactly `game.findMistakes !== undefined`.
 A uniquely-solvable game without the hook silently degrades the control to a
-plain Quick-save that **saves a wrong board without complaint** (shipped in
+plain save that **saves a wrong board without complaint** (shipped in
 Unruly's first cut; caught on owner smoke-test). So for any game with a
 unique solution, `findMistakes(state)` is part of "done": re-solve from the
 fixed clues and return every player cell that contradicts the unique solution

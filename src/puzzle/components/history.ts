@@ -10,7 +10,6 @@ import { currentColorScheme } from "../../color-scheme.ts";
 import { cssWATweaks } from "../../utils/css.ts";
 import { puzzleContext } from "../contexts.ts";
 import type { Puzzle } from "../puzzle.ts";
-import { checkAndSave } from "../quick-save-actions.ts";
 
 // Component registration
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -71,93 +70,34 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
   }
 
   protected override render() {
-    return html`
-      <div class="history-container">
-        <wa-button-group>
-          <wa-button
-              ?disabled=${!this.puzzle?.canUndo}
-              @pointerdown=${this.handleUndoRedoPointerDown}
-              @click=${this.handleUndo}>
-            <wa-icon name="undo" label="Undo"></wa-icon>
-          </wa-button>
-          ${this.renderHistoryButton()}
-          ${
-            this.puzzle?.canHint
-              ? html`
-              <wa-button
-                  ?disabled=${this.puzzle?.status === "solved"}
-                  @pointerdown=${this.handleUndoRedoPointerDown}
-                  @click=${this.handleHint}>
-                <wa-icon name="hint" label="Hint"></wa-icon>
-              </wa-button>
-              <wa-button
-                  ?disabled=${this.puzzle?.status === "solved"}
-                  variant=${this.puzzle?.autoHintActive ? "brand" : "default"}
-                  @pointerdown=${this.handleUndoRedoPointerDown}
-                  @click=${this.handleAutoHintToggle}>
-                <wa-icon name=${this.puzzle?.autoHintActive ? "pause" : "play"} label="Auto Hint"></wa-icon>
-              </wa-button>
-              `
-              : nothing
-          }
-          ${
-            this.puzzle?.hasReference
-              ? html`
-              <wa-button
-                  data-command="toggle-reference"
-                  @pointerdown=${this.handleUndoRedoPointerDown}>
-                <wa-icon name="reference" label="Domino reference"></wa-icon>
-              </wa-button>
-              `
-              : nothing
-          }
-          <wa-button
-              ?disabled=${!this.puzzle?.canRedo}
-              @pointerdown=${this.handleUndoRedoPointerDown}
-              @click=${this.handleRedo}>
-            <wa-icon name="redo" label="Redo"></wa-icon>
-          </wa-button>
-          ${
-            this.puzzle?.canMarkAll
-              ? html`
-              <wa-button
-                  ?disabled=${this.puzzle?.status === "solved"}
-                  @pointerdown=${this.handleUndoRedoPointerDown}
-                  @click=${this.handleMarkAll}>
-                <wa-icon name="mark-all" label="Fill in all pencil marks"></wa-icon>
-              </wa-button>
-              `
-              : nothing
-          }
-          ${
-            this.puzzle
-              ? html`
-              <wa-button
-                  @pointerdown=${this.handleUndoRedoPointerDown}
-                  @click=${this.handleCheckAndSave}>
-                <wa-icon
-                  name="check-and-save"
-                  label=${this.puzzle.canFindMistakes ? "Check and save" : "Quick-save"}
-                ></wa-icon>
-              </wa-button>
-              `
-              : nothing
-          }
-        </wa-button-group>
-      </div>
-    `;
+    return this.renderHistoryButton();
   }
 
+  /**
+   * **The move counter is the timeline control.**
+   *
+   * `currentMove` and `totalMoves` were already signals on `Puzzle` and were
+   * shown nowhere; the timeline hid behind a wordless clock icon in a row of
+   * seven identical buttons. State and control are now one element — a player
+   * reads where they are, and clicking where they are is how they go somewhere
+   * else (`design-front-page-and-chrome` design.md §4.6).
+   *
+   * The numerals are IBM Plex Mono: they are a quantity that changes on every
+   * move, and proportional digits make the row twitch as it counts.
+   */
   private renderHistoryButton() {
+    const current = this.puzzle?.currentMove ?? 0;
+    const total = this.puzzle?.totalMoves ?? 0;
     // TODO: keyboard nav doesn't work for history items wrapped in <ol>
     return html`
-      <wa-dropdown 
-          placement="top"
+      <wa-dropdown
+          placement="bottom-start"
           @wa-select=${this.handleSelectCheckpoint}
       >
-        <wa-button slot="trigger" with-caret>
-          <wa-icon name="history" label="History"></wa-icon>
-        </wa-button>
+        <button part="counter" slot="trigger" type="button" data-command="show-timeline">
+          <wa-icon name="history" label="Timeline"></wa-icon>
+          <span part="counter-text">Move <b>${current}</b> of <b>${total}</b></span>
+        </button>
 
         <header>
           History
@@ -297,53 +237,17 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
     `;
   }
 
+  /** Open the timeline from somewhere other than its own trigger — the command
+   * bus, so a shortcut or another surface can name it without building a second
+   * dropdown that would then be a second thing to keep in step. */
+  showTimeline() {
+    if (this.dropdown) this.dropdown.open = true;
+  }
+
   private handleHistoryCloseButton() {
     const dropdown = this.dropdown;
     if (dropdown) {
       dropdown.open = false;
-    }
-  }
-
-  private handleUndoRedoPointerDown(event: PointerEvent) {
-    // If the dropdown is open, keep it open when clicking undo/redo buttons.
-    // (Prevents the pointerdown event from reaching the dropdown's backdrop,
-    // while allowing button click events to work normally.)
-    if (event.isPrimary && this.dropdown?.open) {
-      event.stopPropagation();
-    }
-  }
-
-  private async handleUndo() {
-    await this.puzzle?.undo();
-  }
-
-  private async handleRedo() {
-    await this.puzzle?.redo();
-  }
-
-  private async handleCheckAndSave() {
-    if (this.puzzle) await checkAndSave(this.puzzle);
-  }
-
-  private async handleHint() {
-    await this.puzzle?.hint();
-  }
-
-  /** Inject the 'M' key (ASCII 77): the game's adaptive Mark-all press — fill
-   * every cell that has no pencil marks yet, else clear the candidates already
-   * ruled out by a placed value. Only ever adds or removes, so a press can't
-   * undo the player's own deductions. Only games with `canMarkAll` show this
-   * control. */
-  private async handleMarkAll() {
-    await this.puzzle?.processKey(77);
-  }
-
-  private handleAutoHintToggle() {
-    if (!this.puzzle) return;
-    if (this.puzzle.autoHintActive) {
-      this.puzzle.stopAutoHint();
-    } else {
-      this.puzzle.startAutoHint();
     }
   }
 
@@ -384,36 +288,57 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
         --dot-size: 5px;
       }
 
-      .history-container {
+      :host {
+        display: block;
+      }
+
+      [part="counter"] {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        gap: 6px;
-      }
+        gap: 0.625rem;
+        width: 100%;
+        min-height: var(--app-row-rail, 2.0625rem);
+        padding-inline: 0.5rem;
+        border: none;
+        border-radius: var(--app-radius-control, 6px);
+        background: none;
+        color: var(--app-color-text, var(--wa-color-text-normal));
+        font: inherit;
+        font-size: var(--app-font-size-body, 0.875rem);
+        text-align: start;
+        cursor: pointer;
 
-
-      wa-button-group {
-        /* Collapse the gap between buttons, overlapping the borders.
-         * Stack the dropdown trigger (which is never disabled) above
-         * the other buttons to avoid partly-disabled border appearance. */
-        &::part(base) {
-          gap: 0;
-          flex-wrap: nowrap;
-        }
-        wa-button[slot="trigger"]::part(base) {
-          margin-inline: calc(-1 * var(--wa-border-width-s));
-          position: relative;
-          z-index: 1;
-        }
-      }
-  
-      wa-button {
-        /* Disable double-tap to zoom on keys that might be tapped quickly.
-         * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
-         */
+        /* Disable double-tap to zoom on a control that may be tapped quickly.
+         * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.) */
         touch-action: pinch-zoom;
+
+        &:focus-visible {
+          outline: var(--wa-focus-ring);
+          outline-offset: var(--wa-focus-ring-offset);
+        }
+
+        @media (hover: hover) {
+          &:hover {
+            background-color: var(--app-color-row-rule, var(--wa-color-surface-lowered));
+          }
+        }
+
+        wa-icon {
+          flex: 0 0 auto;
+          color: var(--app-color-text-quiet, var(--wa-color-text-quiet));
+        }
       }
-  
+
+      [part="counter-text"] {
+        flex: 1 1 auto;
+        b {
+          /* A quantity that changes on every move: monospaced digits keep the
+           * row from twitching as it counts. */
+          font-family: var(--app-font-mono, ui-monospace, monospace);
+          font-weight: var(--wa-font-weight-semibold);
+        }
+      }
+
       header {
         display: flex;
         align-items: center;

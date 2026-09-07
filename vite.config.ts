@@ -20,6 +20,7 @@ import {
   renderHandlebars,
   renderMarkdown,
 } from "./vite-plugins/extra-pages.ts";
+import { precacheCoverage } from "./vite-plugins/precache-coverage.ts";
 
 /**
  * `esbuild.supported` is forwarded by Vite but absent from its type.
@@ -165,6 +166,18 @@ function securityHeaders(options: {
 
 // Arbitrary metadata to identify own stack frames.
 // Used as Sentry.thirdPartyErrorFilterIntegration filterKeys
+/**
+ * Files the service worker deliberately does not precache: the 404 page, and
+ * the unsupported-browser page, which exists precisely for a browser that
+ * cannot run the app (and therefore cannot install the worker).
+ *
+ * Shared between Workbox's `globIgnores` and the `precache-coverage` plugin, so
+ * "deliberately excluded" has one definition. The plugin fails the build for
+ * anything else that is emitted and not precached — which is how the
+ * self-hosted fonts were caught shipping outside the offline cache.
+ */
+const PRECACHE_IGNORES = ["404.html", "**/unsupported*.{html,css,js}"];
+
 const sentryFilterApplicationId = "code-from-puzzles-web";
 
 // Build src/preflight.ts for production and return its (public) url.
@@ -239,6 +252,41 @@ async function buildColorSchemeInitScript() {
 function cspHashSrc(inlineCode: string) {
   const hash = crypto.createHash("sha256").update(inlineCode).digest("base64");
   return `'sha256-${hash}'`;
+}
+
+/**
+ * A chrome color from `src/css/theme.css`, read at build time.
+ *
+ * The PWA manifest's `background_color` (the splash screen) and `theme_color`
+ * (the OS status bar) are the light scheme's page ground and rail — the same
+ * two decisions the CSS makes, and a player sees them *before* a stylesheet has
+ * loaded, so they cannot be expressed as custom properties. Typing them out
+ * again is what made them stale: the manifest still carried Web Awesome's stock
+ * brand blue long after nothing else in the app did.
+ *
+ * So they are **derived rather than duplicated-and-checked**. The light value
+ * is the definition before `:root.wa-dark`, because a manifest has one pair of
+ * colors and no way to express a scheme, and a cold boot shows light.
+ *
+ * Absence throws: `vite build` is in the commit gate, so a renamed or deleted
+ * token fails there rather than shipping a manifest with a hole in it.
+ */
+function themeColor(token: string): string {
+  const source = fs.readFileSync("src/css/theme.css", "utf8");
+  // Split on the dark *selector*, brace included — the file's own doc comment
+  // names `:root.wa-dark` in prose, and splitting on the bare name cut the
+  // light block off above every token in it. Key on the syntax, not the name.
+  const lightBlock = source.split(/:root\.wa-dark\s*\{/)[0];
+  const value = new RegExp(`${token}:\\s*(#[0-9a-fA-F]{3,8})\\s*;`).exec(
+    lightBlock,
+  )?.[1];
+  if (!value) {
+    throw new Error(
+      `${token} is not defined in the light block of src/css/theme.css; ` +
+        "the PWA manifest reads it for the splash screen and status bar",
+    );
+  }
+  return value;
 }
 
 export default defineConfig(async ({ command, mode }) => {
@@ -459,8 +507,9 @@ export default defineConfig(async ({ command, mode }) => {
         manifest: {
           name: env["VITE_APP_NAME"] || APP_NAME,
           short_name: APP_SHORT_NAME,
-          background_color: "#e8f3ff", // --wa-color-brand-fill-quiet (page bg)
-          theme_color: "#d1e8ff", // --wa-color-brand-fill-normal (app bar)
+          // Read out of the stylesheet rather than typed here; see themeColor.
+          background_color: themeColor("--app-color-ground"),
+          theme_color: themeColor("--app-color-rail"),
         },
         registerType: "prompt",
         pwaAssets: {
@@ -471,13 +520,27 @@ export default defineConfig(async ({ command, mode }) => {
         filename: "sw.ts",
         injectManifest: {
           // enableWorkboxModulesLogs: true, // see workbox logging in production
-          globIgnores: ["404.html", "**/unsupported*.{html,css,js}"],
-          // Include all help files, icons, etc. (There is no wasm to
+          globIgnores: PRECACHE_IGNORES,
+          // Include all help files, icons, fonts, etc. (There is no wasm to
           // precache any more — every game is native TypeScript, so it ships
           // inside the worker bundle.)
-          globPatterns: ["**/*.{css,html,js,json,png,svg}"],
+          //
+          // `woff2` is here because the app self-hosts IBM Plex (see
+          // `src/css/fonts.css`) precisely so that offline is the same as
+          // online. Without the extension the faces build and ship but are not
+          // precached, so the first offline visit renders in the fallback stack
+          // — a silent, cosmetic-looking failure of the whole reason they are
+          // not loaded from Google Fonts. `src/pwa-precache.test.ts` holds the
+          // pattern to the asset types the build actually emits.
+          // `ico` is the tab icon, which the guard found was also outside the
+          // cache — a second, older gap of the same kind.
+          globPatterns: ["**/*.{css,html,ico,js,json,png,svg,woff2}"],
         },
       }),
+      // After VitePWA, because it reads the sw.js that plugin writes. It is
+      // handed the *same* globIgnores array, so the files Workbox deliberately
+      // skips and the files this check skips cannot drift apart.
+      precacheCoverage({ globIgnores: PRECACHE_IGNORES }),
       createSentryVitePlugin(), // Must be last plugin
       // sitemap.xml and robots.txt are SEO deploy artifacts that require the
       // canonical URL; without it the plugin crashes (it calls

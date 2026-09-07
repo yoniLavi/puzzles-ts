@@ -760,7 +760,7 @@ place. The move is performed for real only in **animation mode**: auto-hint
 calls `executeHint`, which applies the move, so the cell then renders as the
 actual mark and (for fill games) plays its placement animation.
 
-The toolbar **Hint button alternates show/apply** (`add-hint-button-stepper`):
+The rail's **Next hint button alternates show/apply** (`add-hint-button-stepper`):
 the first press *shows* the step (highlight-only), and a second press *with
 nothing done in between* calls `executeHint(true)` to apply that one step in
 slow motion and then **stop** — the plan is hidden and the banner reads "Hint
@@ -875,7 +875,7 @@ uses for something else (Subsets' reference aid; Crossing's selected-run wash,
 suppressed so blue and green can't both mean "washed square"), the suppression
 is invisible until the player touches that surface — and then **nothing
 happens at all**: no wash, no aid, no change, and no way out of hint mode
-short of finding the right toolbar button.
+short of finding the right control in the rail.
 
 The gap in the plumbing: `hintKeepTrack` is only consulted for **moves**. In a
 game whose board clicks *are* moves, going your own way returns `"off"` and

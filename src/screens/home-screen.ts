@@ -1,6 +1,34 @@
+/**
+ * The front page.
+ *
+ * Rebuilt to the Index direction (`design-front-page-and-chrome` design.md §4).
+ * Four things changed, three of them defects measured against the running app:
+ *
+ * 1. **One content axis.** The intro was `max-width: 61ch; margin: 0 auto` and
+ *    the catalog was `max-width: 75rem` from the left padding, so at desktop
+ *    width the prose floated mid-viewport while the cards sat hard left — a
+ *    visible jag down the page. Everything now shares one column and one left
+ *    edge; the intro keeps a reading measure by *capping* its width, not by
+ *    centering itself in a wider one.
+ * 2. **A dense list instead of a card grid**, two columns at desktop and one on
+ *    a phone: ~26 games a screen rather than ~12, so the collection can be
+ *    browsed without three scrolls. The row is `catalog-card`, restyled.
+ * 3. **Search and filters.** 57 games is more than a page of rows, and a player
+ *    who knows what they want should not have to hunt. `All / Favorites /
+ *    In progress` replaces the separate Favorites *section* — a section and a
+ *    filter are two answers to one question, and the filter is the one that
+ *    also covers "what have I got going?".
+ * 4. **A Resume row.** `savedGames.autoSavedPuzzles` already knew which games
+ *    are part-played and spent that knowledge on a corner badge. It is the
+ *    first thing a returning player wants, so it is the first thing on the page.
+ *
+ * The search and filter state is deliberately **not** persisted: it is a way of
+ * looking at this page right now, not a preference, and a player who returns to
+ * a filtered catalog they do not remember setting has lost the other 50 games.
+ */
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, nothing, unsafeCSS } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type { FavoriteChangeEvent } from "../components/catalog-card.ts";
 import rawHomeScreenCSS from "../css/home-screen.css?inline";
@@ -22,6 +50,16 @@ import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "../components/catalog-card.ts";
 import "../components/command-link";
 import "../components/dynamic-content.ts";
+import "../components/puzzle-switcher.ts";
+
+/** Which slice of the catalog the list is showing. */
+type CatalogFilter = "all" | "favorites" | "in-progress";
+
+const FILTERS: { id: CatalogFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "favorites", label: "Favorites" },
+  { id: "in-progress", label: "In progress" },
+];
 
 @customElement("home-screen")
 export class HomeScreen extends SignalWatcher(Screen) {
@@ -34,20 +72,28 @@ export class HomeScreen extends SignalWatcher(Screen) {
     });
   }
 
+  @state()
+  private search = "";
+
+  @state()
+  private filter: CatalogFilter = "all";
+
   protected override render() {
     // Deliberately skip <slot name="header"> and <slot="footer">
     // to substitute our interactive versions for the static ones in index.html.
     return html`
-      <header part="header">${
-        this.size === "large" ? this.renderWideHeader() : this.renderCompactHeader()
-      }</header>
+      <header part="header">
+        <div part="header-inner">${
+          this.size === "large" ? this.renderWideHeader() : this.renderCompactHeader()
+        }</div>
+      </header>
 
-      <div @favorite-change=${this.handleFavoriteChange}>
+      <div part="page" @favorite-change=${this.handleFavoriteChange}>
         ${settings.showIntro ? this.renderIntro() : nothing}
-        ${this.renderFavorites()}
+        ${this.renderResume()}
         ${this.renderCatalog()}
       </div>
-      
+
       <footer slot="footer">
         <div>Credits, privacy info, copyright notices and licenses are in the
           <command-link command="about" hide-icon>about box</command-link>.</div>
@@ -56,6 +102,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
           or endorsement by their owners.</small></div>
       </footer>
 
+      <puzzle-switcher></puzzle-switcher>
       <dynamic-content></dynamic-content>
     `;
   }
@@ -114,7 +161,6 @@ export class HomeScreen extends SignalWatcher(Screen) {
   }
 
   private renderOptionsMenuContent() {
-    // TODO: add view options here
     return html`
       <wa-dropdown-item
           data-command="toggle-intro"
@@ -143,40 +189,123 @@ export class HomeScreen extends SignalWatcher(Screen) {
     `;
   }
 
-  private renderFavorites() {
-    if (settings.favoritePuzzles.size < 1) {
+  /**
+   * The games with an auto-save — where the player actually left off.
+   *
+   * Absent, not empty, when there are none: a heading over nothing is a
+   * promise the page cannot keep, and a first-time visitor should meet the
+   * catalog, not a hole where their history would go.
+   */
+  private renderResume() {
+    const inProgress = this.visibleIds.filter((id) =>
+      savedGames.autoSavedPuzzles.has(id),
+    );
+    if (inProgress.length < 1) {
       return nothing;
     }
-    const favoriteIds = [...settings.favoritePuzzles].sort();
-    return this.renderPuzzleGrid(favoriteIds, "Favorites");
-  }
-
-  private renderCatalog() {
-    const catalogIds = settings.showUnfinishedPuzzles
-      ? puzzleIds
-      : puzzleIds.filter((puzzleId) => !puzzleDataMap[puzzleId].unfinished);
-    return this.renderPuzzleGrid(
-      catalogIds,
-      settings.favoritePuzzles.size > 0 ? "All puzzles" : undefined,
-    );
-  }
-
-  private renderPuzzleGrid(puzzleIds: readonly string[], heading?: string) {
     return html`
-      <section part="puzzle-section">
-        ${heading ? html`<h2>${heading}</h2>` : nothing}
-        <div part="puzzle-grid">
+      <section part="section">
+        <h2>Continue</h2>
+        <div part="list">
           ${repeat(
-            puzzleIds,
-            (puzzleId) => puzzleId,
-            (puzzleId) => this.renderCatalogCard(puzzleId),
+            inProgress,
+            (id) => id,
+            (id) => this.renderCatalogRow(id),
           )}
         </div>
       </section>
     `;
   }
 
-  private renderCatalogCard(puzzleId: string) {
+  /** Every puzzle this player can see — the catalog, less the experimental ones
+   * unless they asked for those. The search and the filters narrow *this*, so
+   * neither can surface a game the setting hides. */
+  private get visibleIds(): readonly string[] {
+    return settings.showUnfinishedPuzzles
+      ? puzzleIds
+      : puzzleIds.filter((puzzleId) => !puzzleDataMap[puzzleId].unfinished);
+  }
+
+  /** The rows the list is showing, after the filter and the search box. */
+  private get listedIds(): readonly string[] {
+    const needle = this.search.trim().toLowerCase();
+    return this.visibleIds.filter((puzzleId) => {
+      switch (this.filter) {
+        case "favorites":
+          if (!settings.favoritePuzzles.has(puzzleId)) return false;
+          break;
+        case "in-progress":
+          if (!savedGames.autoSavedPuzzles.has(puzzleId)) return false;
+          break;
+        case "all":
+          break;
+      }
+      if (!needle) return true;
+      // Name *and* objective: a player looking for "sudoku" is looking for
+      // Solo, whose name does not contain the word they know it by.
+      const { name, objective, description } = puzzleDataMap[puzzleId];
+      return `${name} ${objective} ${description}`.toLowerCase().includes(needle);
+    });
+  }
+
+  private renderCatalog() {
+    const listed = this.listedIds;
+    return html`
+      <section part="section">
+        <div part="catalog-controls">
+          <label part="search">
+            <wa-icon name="search" label="Search puzzles"></wa-icon>
+            <input
+                type="search"
+                placeholder="Search ${this.visibleIds.length} puzzles"
+                .value=${this.search}
+                @input=${this.handleSearchInput}
+            >
+          </label>
+          <div part="filters" role="group" aria-label="Show">
+            ${FILTERS.map(
+              ({ id, label }) => html`
+                <button
+                    part="filter"
+                    type="button"
+                    aria-pressed=${String(this.filter === id)}
+                    @click=${() => {
+                      this.filter = id;
+                    }}
+                >${label}</button>
+              `,
+            )}
+          </div>
+        </div>
+
+        ${
+          listed.length > 0
+            ? html`<div part="list">
+                ${repeat(
+                  listed,
+                  (id) => id,
+                  (id) => this.renderCatalogRow(id),
+                )}
+              </div>`
+            : html`<p part="empty">${this.emptyMessage}</p>`
+        }
+      </section>
+    `;
+  }
+
+  /** Why the list is empty, in the words of whichever narrowing emptied it —
+   * "no results" would leave a player who pressed Favorites by accident with
+   * nothing to undo. */
+  private get emptyMessage(): string {
+    if (this.search.trim()) {
+      return `No puzzle matches “${this.search.trim()}”.`;
+    }
+    return this.filter === "favorites"
+      ? "No favorites yet — tap a heart to add one."
+      : "No games in progress. Start one from All.";
+  }
+
+  private renderCatalogRow(puzzleId: string) {
     const { name, description, objective, unfinished } = puzzleDataMap[puzzleId];
     const isFavorite = settings.favoritePuzzles.has(puzzleId);
     const href = puzzlePageUrl({ puzzleId });
@@ -194,6 +323,10 @@ export class HomeScreen extends SignalWatcher(Screen) {
     `;
   }
 
+  private handleSearchInput(event: Event) {
+    this.search = (event.target as HTMLInputElement).value;
+  }
+
   //
   // Command handling
   //
@@ -202,12 +335,37 @@ export class HomeScreen extends SignalWatcher(Screen) {
     super.registerCommandHandlers();
     Object.assign(this.commandMap, {
       "toggle-intro": this.toggleIntro,
+      "switch-puzzle": this.openPuzzleSwitcher,
     });
   }
 
   private toggleIntro() {
     settings.showIntro = !settings.showIntro;
   }
+
+  /** The quick-switch, which works from here too: on the home screen it is a
+   * faster search than the box, and it is the same one the puzzle screen
+   * opens, so a player learns it once. */
+  private openPuzzleSwitcher() {
+    this.shadowRoot?.querySelector("puzzle-switcher")?.open();
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener("keydown", this.handleAppKeyDown);
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener("keydown", this.handleAppKeyDown);
+  }
+
+  private handleAppKeyDown = (event: KeyboardEvent) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      this.openPuzzleSwitcher();
+    }
+  };
 
   private handleFavoriteChange(event: FavoriteChangeEvent) {
     const { puzzleId, isFavorite } = event.detail;
@@ -227,10 +385,10 @@ export class HomeScreen extends SignalWatcher(Screen) {
         display: block;
         box-sizing: border-box;
       }
-      
+
       .title wa-button[slot="trigger"] {
         margin-block: calc(
-          (var(--wa-font-size-xl) * var(--wa-line-height-condensed) 
+          (var(--wa-font-size-xl) * var(--wa-line-height-condensed)
            - var(--wa-form-control-height)
           ) / 2
         );
@@ -239,32 +397,6 @@ export class HomeScreen extends SignalWatcher(Screen) {
             var(--wa-border-width-s))
         );
       }
-
-      [part="puzzle-section"] {
-        max-width: 75rem;
-
-        h2 {
-          margin-block-end: var(--wa-space-m);
-          color: var(--wa-color-text-normal);
-          font-weight: var(--wa-font-weight-semibold);
-          font-size: var(--wa-font-size-l);
-        }
-      }
-
-      [part="puzzle-grid"] {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-        gap: var(--app-spacing);
-        align-items: stretch;
-
-        touch-action: manipulation;
-
-        @media (prefers-reduced-motion: no-preference) {
-          transition:
-              gap var(--wa-transition-fast)  var(--wa-transition-easing);
-        }
-      }
-
     `,
   ];
 }

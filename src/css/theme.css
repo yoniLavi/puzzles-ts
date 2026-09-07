@@ -1,0 +1,184 @@
+/*
+ * **The app's own theme** — the one place the chrome's colors, faces, rhythm
+ * and radii are decided.
+ *
+ * Before this the whole chrome was Web Awesome's stock `brand` blue: nothing in
+ * the tree ever chose a hue, and `vite.config.ts`'s manifest colors were that
+ * default's resolved values typed out as hex. The direction here is **B ·
+ * Index** from `design-front-page-and-chrome` (its `design.md` §4.1 and §4.2 are
+ * the authority for every number below), and the accent is the lit cell from
+ * `public/favicon.svg` — the only color the mark contributes to the chrome.
+ *
+ * **Two layers, one direction of dependency.** The design's decisions are
+ * `--app-*` tokens; the Web Awesome semantic tokens the app uses are then
+ * *mapped onto them*. WA derives its own tokens from a lightness ramp
+ * (`--wa-color-brand-95` … `-05`), which this palette is not — it is a set of
+ * chosen neutrals, one link navy and one accent amber — so remapping the
+ * semantics is the honest shape and redefining the ramp would be a fiction.
+ * `grep -rho '\-\-wa-color-[a-z-]*' src/ templates/` is therefore the complete
+ * list of what a future retheme has to answer; every token it returns is
+ * either mapped here or is a status color (success/warning/danger) that stays
+ * Web Awesome's.
+ *
+ * **Dark is a second set of values, not a derivation.** `:root.wa-dark` is the
+ * app's dark switch (`src/color-scheme-init.ts` sets the class before first
+ * paint). Both blocks are unlayered, so they win over every `@layer` Web
+ * Awesome ships, and `:root.wa-dark` outranks `:root` on specificity.
+ *
+ * **The board palette is not here and never will be.** `src/engine/color/` owns
+ * the twelve game colors; this file is the chrome around them.
+ */
+
+@import url("fonts.css");
+
+:root {
+  /* #region Color — light (design.md §4.1) */
+
+  /** The page. */
+  --app-color-ground: #ffffff;
+  /** The rail, and any raised surface: panels, dialogs, sheets. */
+  --app-color-rail: #fafafa;
+  /** Structure: the line that separates the rail from the board. */
+  --app-color-hairline: #e3e4e7;
+  /** The lighter rule between rows of a list. */
+  --app-color-row-rule: #eef0f2;
+  /** The border of a control that has one. */
+  --app-color-control-border: #dcdee2;
+
+  --app-color-text: #16181d;
+  --app-color-text-secondary: #2c2f37;
+  --app-color-text-tertiary: #40434b;
+  --app-color-text-quiet: #63666e;
+  --app-color-text-faint: #8b8e97;
+  --app-color-text-faintest: #a4a7ae;
+
+  /** Links, and the active state of a control. */
+  --app-color-link: #1f4e8c;
+
+  /** The accent, and it is the hint's alone — the mark's lit cell. Unchanged
+   * between schemes, which is what keeps it the one thing that reads as this
+   * app in either. */
+  --app-color-accent: #ffc83d;
+  --app-color-hint-surface: #fff7e3;
+  --app-color-hint-border: #e9c96a;
+  --app-color-hint-ink: #3d3526;
+
+  /* #endregion */
+
+  /* #region Type (design.md §4.2) */
+
+  /* Self-hosted; see fonts.css. The fallbacks are real stacks, not decoration:
+   * `font-display: swap` renders in them first on every cold load. */
+  --app-font-sans: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --app-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* In rem against the 16px root, so the coarse-pointer 120% bump in
+   * `common.css` scales the type and the row heights below together. The
+   * comments carry the drawn pixel value. */
+  --app-font-size-title: 1.375rem; /* 22 — the game name */
+  --app-font-size-item: 0.969rem; /* 15.5 — a list row's name */
+  --app-font-size-body: 0.875rem; /* 14 — body, and every control */
+  --app-font-size-support: 0.844rem; /* 13.5 — secondary text */
+  --app-font-size-detail: 0.781rem; /* 12.5 — a list row's objective */
+  --app-font-size-micro: 0.688rem; /* 11 — a shortcut, a group label */
+
+  /* Web Awesome's weight tokens already are the direction's three:
+   * normal 400, semibold 500, bold 600. Nothing to override. */
+
+  /* #endregion */
+
+  /* #region Rhythm and shape (design.md §4.2) */
+
+  /* An 8px rhythm, loosened at group boundaries. */
+  --app-gap-row: 0.5625rem; /* 9 — between rows inside one group */
+  --app-gap-group: 0.8125rem; /* 13 — between rail groups */
+  --app-gap-section: 1.375rem; /* 22 — between page sections */
+
+  --app-row-rail: 2.0625rem; /* 33 — a rail control */
+  --app-row-list: 3.25rem; /* 52 — a desktop catalog row */
+  --app-row-list-phone: 4rem; /* 64 */
+  --app-row-tool-phone: 3.375rem; /* 54 — the phone bar */
+  /** No tap target on a phone goes below this. */
+  --app-tap-min: 2.75rem; /* 44 */
+
+  --app-radius-control: 6px;
+  --app-radius-hint: 7px;
+  --app-radius-container: 8px;
+  --app-radius-icon: 4px;
+
+  /* #endregion */
+}
+
+:root.wa-dark {
+  --app-color-ground: #101319;
+  --app-color-rail: #161920;
+  --app-color-hairline: #282c36;
+  --app-color-row-rule: #20242c;
+  --app-color-control-border: #333844;
+
+  --app-color-text: #e8eaef;
+  --app-color-text-secondary: #ccd0d8;
+  --app-color-text-tertiary: #b3b8c2;
+  --app-color-text-quiet: #8d93a0;
+  --app-color-text-faint: #7b8190;
+  --app-color-text-faintest: #666c79;
+
+  /* The one color that cannot survive the scheme flip as-is: the navy has to
+   * brighten to stay a legible link (design.md §3). */
+  --app-color-link: #6eb3ff;
+
+  --app-color-hint-surface: #2f2718;
+  --app-color-hint-border: #5b4a22;
+  --app-color-hint-ink: #eee3cd;
+}
+
+@layer wa-theme-overrides {
+  /*
+   * The mapping. Everything below is a Web Awesome semantic token pointed at
+   * one of the decisions above; no color is *chosen* in this block.
+   *
+   * Written once and inherited by both schemes, because each right-hand side
+   * is an `--app-*` token that already differs between them. A token appearing
+   * only in one scheme's block would be the way this drifts.
+   */
+  :root,
+  :root.wa-dark {
+    --wa-font-family-body: var(--app-font-sans);
+    --wa-font-family-heading: var(--app-font-sans);
+    --wa-font-family-code: var(--app-font-mono);
+
+    /* The page ground and the bar. `common.css` paints `:root` with the first
+     * and `--app-theme-color` carries the second; `vite.config.ts`'s manifest
+     * `background_color`/`theme_color` are these two resolved, and
+     * `src/manifest-theme.test.ts` holds them equal. */
+    --wa-color-brand-fill-quiet: var(--app-color-ground);
+    --wa-color-brand-fill-normal: var(--app-color-rail);
+    --wa-color-brand-fill-loud: var(--app-color-link);
+    --wa-color-brand-border-quiet: var(--app-color-hairline);
+    --wa-color-brand-border-normal: var(--app-color-control-border);
+    --wa-color-brand-border-loud: var(--app-color-link);
+    --wa-color-brand-on-quiet: var(--app-color-link);
+    --wa-color-brand-on-normal: var(--app-color-text);
+    --wa-color-brand-on-loud: var(--app-color-ground);
+
+    --wa-color-surface-default: var(--app-color-ground);
+    --wa-color-surface-raised: var(--app-color-rail);
+    --wa-color-surface-lowered: var(--app-color-rail);
+    --wa-color-surface-border: var(--app-color-hairline);
+
+    --wa-color-text-normal: var(--app-color-text);
+    --wa-color-text-quiet: var(--app-color-text-quiet);
+    --wa-color-text-link: var(--app-color-link);
+
+    --wa-color-neutral-fill-quiet: var(--app-color-rail);
+    --wa-color-neutral-fill-normal: var(--app-color-row-rule);
+    --wa-color-neutral-border-quiet: var(--app-color-row-rule);
+    --wa-color-neutral-border-normal: var(--app-color-control-border);
+    --wa-color-neutral-on-quiet: var(--app-color-text-secondary);
+
+    --wa-color-focus: var(--app-color-link);
+
+    --wa-panel-border-radius: var(--app-radius-container);
+    --wa-form-control-border-radius: var(--app-radius-control);
+  }
+}

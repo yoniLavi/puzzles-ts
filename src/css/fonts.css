@@ -1,0 +1,68 @@
+/*
+ * The app's two faces, **self-hosted**.
+ *
+ * IBM Plex Sans for everything, IBM Plex Mono for numerals that are read as
+ * quantities — a move count, a list count, a keyboard shortcut, a parameter
+ * chip. The design direction names both (`design-front-page-and-chrome`
+ * design.md §4.2).
+ *
+ * ON WHY THESE ARE NOT LOADED FROM GOOGLE FONTS, which is what the direction
+ * assumed: this app is a PWA that must work offline, and a cross-origin
+ * stylesheet is not in the precache manifest — the first offline visit would
+ * render in the fallback stack and the chrome would be a different app. Vite
+ * fingerprints these files into `dist/assets/`, Workbox precaches them with
+ * everything else, and offline is the same as online.
+ *
+ * Three files, ~75 KB total: the **variable** Sans (one file, weights 100–700,
+ * 45.7 KB) and Mono at 400 and 500 (14.7 + 14.9 KB). Only the `latin` subsets
+ * are declared. `wght.css` in the package ships six subsets — cyrillic, greek,
+ * latin-ext, vietnamese and the rest — and a browser downloads only what a page
+ * needs, but the *service worker* would precache all six, so the subsetting is
+ * spelled out here rather than inherited.
+ *
+ * `font-display: swap` matches the packages' own rule: the fallback stack in
+ * `theme.css` renders immediately and the face swaps in when it lands, which is
+ * the right trade for a page whose first paint is a puzzle grid.
+ *
+ * The `/node_modules/` URLs follow the convention `common.css` already uses for
+ * the Web Awesome theme; Vite rewrites them to hashed asset paths at build.
+ */
+
+@font-face {
+  font-family: "IBM Plex Sans Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 700;
+  src: url("/node_modules/@fontsource-variable/ibm-plex-sans/files/ibm-plex-sans-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}

@@ -19,11 +19,31 @@ and that is why eight controls shipped wordless. Commands SHALL be grouped by
 what they act on and ordered by how often they are used, and only rare or
 once-ever commands may sit behind a menu.
 
+**A phone's quick-access bar is a promotion, not a second surface.** Where the
+viewport is too narrow for the vertical surface, a small bar MAY offer the most
+frequent commands, and the surface itself SHALL remain reachable behind it with
+the same order and the same wording. Every command in that bar SHALL also be in
+the surface — the bar is a **subset**, checked as one — so a player who learns
+the surface has learned everything the bar can do and a command can never be
+promoted into the bar and nowhere else. The rule this refines is unchanged in
+its purpose: what it forbids is *two surfaces a player must both learn*, which
+is what the game menu and the toolbar were.
+
+The surface and the bar SHALL be drawn from one implementation, so that "the
+same order and the same wording" is a property of the code rather than a promise
+somebody has to keep.
+
 #### Scenario: A command is offered twice
 
 - **WHEN** a command in the puzzle screen's command map is reachable from more
-  than one place in the rendered chrome
+  than one place in the rendered command surface
 - **THEN** a test fails, naming the command and both places
+
+#### Scenario: A command is in the phone bar but not in the surface
+
+- **WHEN** the phone's quick-access bar offers a command
+- **AND** the command surface behind it does not
+- **THEN** a test fails, because `More…` no longer reaches everything
 
 #### Scenario: A command has no home
 
@@ -70,16 +90,21 @@ derived from the game rather than from a list of games.
 The app SHALL bind `Ctrl/Cmd+Z` to undo and `Ctrl/Cmd+Shift+Z` and `Ctrl+Y` to
 redo, in every game, and SHALL show each binding on its control.
 
-Keys reach the game through the frontend's key map and nothing above it claims
-any, so the collection shipped with no way to undo from the keyboard. Upstream
-bound `u`, `r` and `n` behind a user preference and further bound control codes
-unconditionally; the port carried neither.
+Keys reach the game through the frontend's key map and almost nothing above it
+claims any, so the collection shipped with no way to undo from the keyboard.
+Upstream bound `u`, `r` and `n` behind a user preference and further bound
+control codes unconditionally; the port carried neither. (`Ctrl/Cmd+S` was the
+one exception, bound to the combined check-and-save; it stays bound, and now
+appears on that command's control, where it was never shown.)
 
 Single-letter shortcuts MAY additionally be offered behind a preference, and
-SHALL be suppressed for a game that consumes that letter as input. The
-suppression SHALL be **derived** from what the game already declares — the key
-labels it returns and the button codes it handles — never from a list of games,
-which a new game can join without anyone noticing.
+SHALL NOT fire for a game that consumes that letter as input. That SHALL be
+**derived from the game's own behavior, not from any declaration about it**: the
+key is offered to the game first and becomes an app command only if the game
+declines it, which the midend already reports by returning false exactly when
+`interpretMove` returned null. This is stronger than reading a game's declared
+key labels, because it also covers a game that consumes a letter without ever
+offering it on a keypad — and it is why no game has to say anything at all.
 
 The key shown on a control SHALL be asserted equal to the key that is bound, so
 a shortcut label cannot become decorative.
@@ -94,6 +119,7 @@ a shortcut label cannot become decorative.
 - **WHEN** single-letter shortcuts are enabled
 - **AND** the game consumes that letter as input
 - **THEN** the letter reaches the game and does not trigger the app command
+- **AND** the game declared nothing to bring that about
 
 #### Scenario: The shown key is the bound key
 

@@ -59,15 +59,15 @@ button instead. A plain right-click works as usual.
 
 ## Hints {#hints}
 
-Many puzzles here have a ::hint:: **Hint** button, on the toolbar and in the
-game menu. It doesn't simply reveal a move. It shows you the next move *and
+Many puzzles here have a ::hint:: **Next hint** button, high in the panel
+beside the board (or in the bar along the bottom, on a phone). It doesn't simply reveal a move. It shows you the next move *and
 explains why that move is forced*, so that what you take away is a technique you
 can use again by yourself rather than one square you didn't work out.
 
 Hint works in two beats:
 
 * **Press once to see it.** The board marks what the hint is talking about and
-  the explanation appears in the status line. Nothing has been played — the move
+  the explanation appears directly under the button. Nothing has been played — the move
   is still yours to make, and you're free to make a different one.
 
 * **Press again to play it.** A second press, with nothing done in between,
@@ -120,13 +120,14 @@ it's worth knowing which one you're looking at.
   The puzzle is still solvable; there just isn't a next step that can be
   explained, which is what an [Unreasonable](#difficulty) puzzle is for. Save
   your position, try something, and come back if it doesn't work out — or take
-  the answer from ::show-solution:: *Solve* in the game menu.
+  the answer from ::show-solution:: *Show solution…*, at the foot of the
+  *Help me play* group.
 
 The hint says which of the two has happened. It never guesses on your behalf and
 then presents the guess as a deduction: a guess that happens to come off is not
 a technique, and teaching you one would be the point.
 
-Not every puzzle has a Hint button. A puzzle has one where it's solved by
+Not every puzzle has a *Next hint* button. A puzzle has one where it's solved by
 reasoning *and* the game can put that reasoning into words. Where the challenge
 is dexterity, search or luck instead, there's no technique to teach and no
 button to press.
@@ -136,15 +137,22 @@ button to press.
 Where a puzzle has a single provable answer, this app can tell you whether what
 you've entered so far contradicts it.
 
-::check-and-save:: **Check & save** — on the toolbar, in the game menu, and on
-<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> — checks the board and then saves
-your position if it's sound. If it isn't, it tells you how many squares are
+::check-and-save:: **Check & save** — beside the board, in the bottom bar on a
+phone, and on <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> — checks the board and
+then saves your position if it's sound. If it isn't, it tells you how many squares are
 wrong, highlights them, and **doesn't save**; the position you saved earlier is
 left exactly as it was, so a check you fail can never cost you the one you
-passed. Return to that saved position at any time with *Quick-load*.
+passed. Return to that saved position at any time with
+::back-to-last-save:: **Back to last save**, directly beneath it.
 
-In a puzzle that can't check itself, the same button reads **Quick-save** and
-simply saves.
+In a puzzle that can't check itself the button reads the same and simply saves —
+one name for the save in every puzzle.
+
+There is also a quieter ::check-only:: **Check without saving**, low in the
+*Help me play* group. It highlights and counts the mistakes exactly as above but
+writes nothing, which is what you want when you already saved a position you
+mean to keep: the save slot holds one position per puzzle, so checking-and-saving
+would replace it.
 
 Two things worth knowing about what the highlighting claims:
 
@@ -180,7 +188,7 @@ Three things make trying-and-taking-back cheap:
 
 * ::undo:: **Undo**, for stepping back a move at a time.
 * **[Save your position](#checking)** before you commit to a line, and
-  *Quick-load* to get back to it.
+  *Back to last save* to get back to it.
 * **[Checkpoints](#checkpoints)**, when you want to hold more than one position
   at once, or to mark the spot and keep playing.
 
@@ -201,8 +209,8 @@ And pressing it a second time doesn't start over: in most of these puzzles it
 crosses out the candidates that the board has since ruled out, so repeated
 presses narrow rather than reset.
 
-On a keyboard this is also the <kbd>M</kbd> key. The button is the only way to
-reach it on a touchscreen, which is why it's on the toolbar.
+On a keyboard this is also the <kbd>M</kbd> key. The ::mark-all:: **Fill all
+pencil marks** button is the only way to reach it on a touchscreen.
 
 It's a move like any other, so ::undo:: undoes it.
 
@@ -258,7 +266,7 @@ To discard every game in progress, open the
 
 ## Sharing a game {#sharing}
 
-*::share:: Share…* in the game menu (or
+*::share:: Share* in *More…* (or
 <command-link command="share:link">here</command-link>) offers:
 
 * **This specific game**: a link to the game you are playing, as it was dealt.
@@ -276,8 +284,8 @@ To discard every game in progress, open the
 * **Game ID** and **random seed**: for use with other apps that play the same
   collection. Simon Tatham’s manual explains the format under
   [*Specifying games with the game ID*][sgt-gameid]. To open an ID or seed you
-  were given, use <command-link command="enter-gameid">*Enter ID/seed*</command-link>
-  in the game menu.
+  were given, use <command-link command="enter-gameid">*Enter game ID*</command-link>
+  in *More…*.
 
 For puzzles that exist on Simon Tatham’s website, the share dialog also links
 the same game there, which is handy for comparing behavior when something
@@ -285,8 +293,9 @@ looks wrong.
 
 ## Saving, loading, exporting and importing {#saved-games}
 
-*::save-game:: Save…* in the game menu keeps the whole game, undo history and
-[checkpoints](#checkpoints) included, and *::load-game:: Load…* brings it back.
+*::save-game:: Save game* in *More…* keeps the whole game, undo history and
+[checkpoints](#checkpoints) included, and *::load-game:: Load game* brings it
+back.
 Saved games stay on your device, in your browser’s storage.
 
 *Export…* in the save dialog writes a file you can move to another app that

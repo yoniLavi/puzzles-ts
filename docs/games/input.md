@@ -237,11 +237,22 @@ than the detection round trip from losing its release.
 ## The board keeps the keyboard after a control
 
 **You can rely on this now, but know what it is doing for you.** Pressing a
-control — a game-menu command, a `data-command` button, a toolbar button —
-hands keyboard focus back to the interactive board view. Before
+control — any `data-command` row in the rail, the phone bar or the More
+sheet — hands keyboard focus back to the interactive board view. Before
 `fix-board-focus-after-command`, focus stayed on the trigger, so one click
 made the board deaf to the keyboard until it was clicked again (Enter reopened
 the menu; cursor keys went nowhere).
+
+**The app claims a few keys above the game, and the rest reach it untouched.**
+`src/puzzle/shortcuts.ts` is the one table: always-on chords
+(`Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Shift+Z` and `Ctrl+Y` redo, `Ctrl/Cmd+S`
+Check & save, `Ctrl/Cmd+K` the quick-switch), and bare `u`/`r`/`n`/`h`
+behind the `oneKeyShortcuts` preference. **A bare letter is offered to the
+game first and only becomes an app command if the game declines it** —
+`Midend.processInput` returns false exactly when `interpretMove` returned
+null, so a game that takes `n` simply keeps it and has to declare nothing.
+The same table supplies the key drawn on each rail row, so a label cannot
+come adrift from its binding (`src/puzzle/shortcuts.test.ts`).
 
 It matters most to a game whose aid is a *keyboard* loop over a *menu* command
 — Inertia's route-following (pick Solve, then press Enter repeatedly to walk

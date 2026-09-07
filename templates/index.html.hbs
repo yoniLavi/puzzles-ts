@@ -19,14 +19,16 @@
   <body>
     <home-screen>
       <header slot="header">
-        <img class="logo" src="/favicon.svg" alt="" role="presentation">
-        <div class="title">
-          <h1 translate="no">{{ appName }}</h1>
-        </div>
-        <div class="subtitle">{{ tagline }}</div>
-        <div class="controls">
-          <a class="help-button" href="help/">
-            <img src="/node_modules/lucide-static/icons/circle-question-mark.svg" alt="">Help</a>
+        <div part="header-inner">
+          <img class="logo" src="/favicon.svg" alt="" role="presentation">
+          <div class="title">
+            <h1 translate="no">{{ appName }}</h1>
+          </div>
+          <div class="subtitle">{{ tagline }}</div>
+          <div class="controls">
+            <a class="help-button" href="help/">
+              <img src="/node_modules/lucide-static/icons/circle-question-mark.svg" alt="">Help</a>
+          </div>
         </div>
       </header>
 
