@@ -93,14 +93,21 @@ https://:version.:project.pages.dev/*
     not control is not ours to do. Absolute rules must begin with `https`, and
     matching ignores the request's port and protocol.
 
-    RAMPING, so read before raising. A browser that has seen this refuses plain
-    HTTP for the whole max-age, which is what makes HSTS awkward to undo: the
-    lever is in browsers already in the field, not here. So it starts at five
-    minutes. Once the custom domain is verified serving on HTTPS, raise it to
-    `max-age=31536000; includeSubDomains` in one step and re-verify.
+    RAMPED, 2026-09-08. It shipped at `max-age=300` first and was raised only
+    after the five-minute form was observed arriving on this exact host, with a
+    valid certificate, every route answering, and `http://` 301ing to `https://`
+    — because a browser that has seen this refuses plain HTTP for the whole
+    max-age, and the lever for undoing that lives in browsers already in the
+    field rather than here. A year is not a value to ship untested.
+
+    `includeSubDomains` extends the promise to every subdomain, so **any
+    subdomain of hintful.click must be HTTPS from the moment it exists** —
+    there are none today, and a Pages custom domain is HTTPS anyway, but a
+    plain-HTTP subdomain added later would be unreachable rather than merely
+    insecure.
 
     NO `preload`. That submits the domain to a browser-vendor list which is
     slow and painful to leave, and it is a decision to take deliberately once
     the domain has been stable for a while — never as part of a ramp. }}
 https://hintful.click/*
-  Strict-Transport-Security: max-age=300
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
