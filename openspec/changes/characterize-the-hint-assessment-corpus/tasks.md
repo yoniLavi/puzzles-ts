@@ -29,7 +29,15 @@ rather than a gap. Not started.
 - [ ] 3.1 Name the two or three to write hints for first, and **what each would
       falsify** about the framework contract if it went badly. A corpus entry
       that cannot fail anything is not an assessment.
-- [ ] 3.2 Hand the top pick to the `find`/`apply`/`narrate` exemplar change.
+- [ ] 3.2 Hand the top pick to whatever change writes its hint. **There is no
+      `find`/`apply`/`narrate` exemplar change, and this line used to assume one**
+      — that split is still fiction (`docs/framework-rdd/deduction.md`), and
+      `settle-the-framework-vision` records the question it now owes an answer to:
+      *what does it buy beyond the hint walk, which already fails when a technique
+      fires without narrating, and which `refuse-honestly-at-every-tier` widens
+      from one preset to all of them?* So the top pick's hint is written against
+      today's machinery, and what it costs is the evidence — not a contract
+      chosen in advance.
 
 ## Findings
 
