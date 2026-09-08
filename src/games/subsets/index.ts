@@ -35,8 +35,8 @@ import {
 import {
   ALREADY_SOLVED,
   CONTRADICTION_UNLOCALIZED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import {
   BACKSPACE,
@@ -569,7 +569,7 @@ function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlight
     };
   }
   if (plan.deductions.length === 0) {
-    return { ok: false, error: NO_DEDUCTION_LEFT };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
 
   const steps = plan.deductions.flatMap((d) => stepsForFiring(state, d));

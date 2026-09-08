@@ -692,15 +692,33 @@ clue's line").
 
 **Never write a refusal message.** Import it from
 [`src/engine/hint-refusal.ts`](../../src/engine/hint-refusal.ts):
-`ALREADY_SOLVED`, `FIX_MISTAKES_FIRST`, `NO_DEDUCTION_LEFT`,
+`ALREADY_SOLVED`, `FIX_MISTAKES_FIRST`, `DEDUCTION_EXHAUSTED`,
 `CONTRADICTION_UNLOCALIZED`, `NO_MOVE_WORTH_MAKING` and friends. The two-line
 opening most deductive games want is `commonHintRefusal(completed, mistakes)`.
 
+**"Never" includes the shared builders**, and that is not a hypothetical:
+`candidate-hint.ts` builds the whole `hint()` of eleven candidate games and held
+literal copies of three of these constants, while its own doc comment described
+them as shared "so a wording tweak lands in one place instead of drifting". It
+was one place — just not the same one place as everybody else's
+(`refuse-honestly-at-every-tier`).
+
 `hint-refusal.test.ts` enforces it in both directions — a new phrasing fails,
-and so does an inlined copy of an approved one. A game that genuinely should
-read differently adds itself to that test's `EXCEPTIONS` with the reason;
+and so does an inlined copy of an approved one. It reads `src/games/**` **and
+the engine's hint builders**, because a refusal lives wherever a `hint()` is
+built and eleven of them are not built under `games/`. A game that genuinely
+should read differently adds itself to that test's `EXCEPTIONS` with the reason;
 Untangle and Inertia are the two that qualify today, and both qualify because
 naming their specific dead end *is* the hint's value.
+
+**There is one message for running out of deduction, not two.** It used to be a
+bare `NO_DEDUCTION_LEFT` and a `…_TRIAL_AND_ERROR` variant, and the distinction
+was assumed rather than observed. Walking every preset of every hinting game
+found thirteen refusals and **every one was on a board whose tier permits
+search**; a game whose tiers are all deduction-complete cannot reach the message
+at all. So `DEDUCTION_EXHAUSTED` says what the position is *and* what to do
+about it, and `hint-resume.test.ts` fails any refusal outside a
+search-permitting tier.
 
 The reason this is a rule: `help/features.md` §Hints teaches "there is a mistake
 on the board" and "deduction has run out" as a pair, because they call for
@@ -1509,9 +1527,11 @@ The recorder + driver shape that made it clean and resume-safe:
   replayed.
 - **Trivial boards come out all-placements**, so barriers appear only when a
   harder tier genuinely needs one — the barriers read as teaching, not
-  busywork. The `hint-resume.test.ts` walk (first preset = Trivial) is
-  therefore all placements; add a game-local test that walks a *Hard* board to
-  solved to exercise the barrier path (`dominosa-hint.test.ts`).
+  busywork. The `hint-resume.test.ts` walk covers every preset in the slow tier
+  and one per declared tier in the gate slice, so the Trivial board is one case
+  among them rather than the whole check; the game-local
+  `dominosa-hint.test.ts` still walks a *Hard* board because the barrier path is
+  worth asserting in the game's own voice.
 
 The recorder is **gated** (`this.recording`), so `runSolver` — the generator's
 path — is byte-identical and the differential is unaffected by construction.
@@ -1934,6 +1954,20 @@ This is enforced for **every** hint-bearing game by
 [`hint-resume.test.ts`](../../src/engine/hint-resume.test.ts): it walks a
 fresh board to solved one *freshly-recomputed* hint at a time (apply only
 `steps[0]`, recompute, repeat), asserting a hint never gives up before solved.
+
+**It walks every preset**, not just the first — the gate slice keeps one preset
+per declared tier, the slow tier takes them all. It walked `firstLeaf` alone
+until `refuse-honestly-at-every-tier`, i.e. by convention the smallest and
+easiest board each game offers, so the collection's strongest hint guarantee had
+never seen a Hard board, an `Unreasonable` board, or any mode variant. Widened,
+it found thirteen refusals across seven games at once.
+
+**The one refusal it accepts** is running out of deduction on a board whose tier
+name promises search (`Unreasonable`), and only with
+`hint-refusal.ts`'s `DEDUCTION_EXHAUSTED`. Anywhere else — a deduction-complete
+tier, or a game with no difficulty contract at all — a refusal fails the walk.
+Permission is derived from the tier the game already declares; there is no
+roster.
 
 **Enrollment is one line, and it covers every cross-game guard at once.** The
 guards all iterate the shared list in
@@ -2449,8 +2483,11 @@ and lean on the gate:
 - **Killer is heavy on the hint path.** A from-empty killer resume is ~0.8 s /
   ~120 moves — fine for a single hint, slow-but-correct in a killer-walking
   test. Do **not** give such a test its own timeout ([`testing.md`](./testing.md)
-  § "Seed-deterministic, never clock-gated"). `hint-resume.test.ts` only walks Solo's *trivial* first
-  preset; variant breadth lives in `solo-hint.test.ts`.
+  § "Seed-deterministic, never clock-gated"). `hint-resume.test.ts` walks one
+  Solo preset per declared tier in the gate slice and all sixteen in the slow
+  tier, so Killer and Jigsaw are reached there; *variant* breadth that is not a
+  tier — X, Jigsaw, Killer against each other — still lives in
+  `solo-hint.test.ts`.
 
 ### Placement-first letter games (Group)
 

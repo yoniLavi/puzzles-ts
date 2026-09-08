@@ -27,8 +27,8 @@ import {
 import {
   ALREADY_SOLVED,
   CONTRADICTION_UNLOCALIZED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
   PUZZLE_NOT_REASONABLE,
 } from "../../engine/hint-refusal.ts";
 import {
@@ -463,7 +463,7 @@ function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
 
   const plan = deduceBricksPlan(grid, w, h);
   if (plan.length === 0) {
-    return { ok: false, error: NO_DEDUCTION_LEFT };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   const steps: HintStep<BricksMove, BricksHint>[] = plan.map((m) => {
     // One value, read by both the sentence and the frame — the narration must

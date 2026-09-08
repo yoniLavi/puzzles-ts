@@ -24,6 +24,7 @@ import {
   regionDuplicateMarks,
 } from "./candidate-hint.ts";
 import type { HintStep } from "./game.ts";
+import { ALREADY_SOLVED, DEDUCTION_EXHAUSTED } from "./hint-refusal.ts";
 import type { DeductionRecord } from "./latin.ts";
 import { rowColRegions } from "./latin-hint.ts";
 
@@ -55,7 +56,7 @@ describe("candidateHint (shared hint entry)", () => {
       () => [],
       () => oneStep,
     );
-    expect(r).toEqual({ ok: false, error: "This board is already solved." });
+    expect(r).toEqual({ ok: false, error: ALREADY_SOLVED });
   });
 
   it("refuses a board with mistakes, pointing at the overlay", () => {
@@ -78,7 +79,11 @@ describe("candidateHint (shared hint entry)", () => {
     );
     expect(r).toEqual({
       ok: false,
-      error: "No further move can be deduced from this position.",
+      // Imported, not retyped — a test that restates the wording is the same
+      // defect `hint-refusal.ts` exists to prevent, one layer out, and these
+      // three (here, Boats, Crossing) were what actually broke when the
+      // collection collapsed to one out-of-deduction message.
+      error: DEDUCTION_EXHAUSTED,
     });
   });
 

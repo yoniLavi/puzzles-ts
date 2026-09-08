@@ -23,8 +23,8 @@ import type {
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT_TRIAL_AND_ERROR,
 } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
@@ -429,7 +429,7 @@ function hint(state: LightupState): HintResult<LightupMove, LightupHint> {
     // deduction-complete by generation): refuse honestly at the guess point.
     return {
       ok: false,
-      error: NO_DEDUCTION_LEFT_TRIAL_AND_ERROR,
+      error: DEDUCTION_EXHAUSTED,
     };
   }
   return { ok: true, steps: plan.map(buildStep) };

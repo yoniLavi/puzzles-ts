@@ -61,15 +61,27 @@ board runs out of deduction, it is a board whose tier permitted search.** The
 distinction between the two constants was assumed, never measured, and the
 measurement dissolves it.
 
-**A fourth spelling, and it is the one that rots.**
-`engine/candidate-hint.ts:139` returns the string `"No further move can be
-deduced from this position."` as a **literal**, not as `NO_DEDUCTION_LEFT` — in
-the shared module the Latin family's refusals all pass through, which is why
-Keen, Solo and Towers appear in the table above without appearing in any grep for
-the constant. That is `AGENTS.md` § "A scan that keys on a name" and § "a grep
-for a constant's *name* is blind to a copy that spells out its *value*", in the
-one module where a wording change would otherwise be assumed to reach eleven
-games.
+**A fourth spelling, and it is the one that rots — and there turned out to be
+three of it.** `engine/candidate-hint.ts` returns `ALREADY_SOLVED`,
+`FIX_MISTAKES_FIRST` **and** the out-of-deduction refusal as **string literals**,
+not as the constants — in the shared module that builds the entire `hint()` of
+eleven candidate games, which is why Keen, Solo and Towers appear in the table
+above without appearing in any grep for the constant.
+
+Its own doc comment is what made that invisible: *"the three user-facing refusal
+strings … is shared so a wording tweak lands in one place instead of drifting."*
+It was one place. It was not the same one place as the other 21 games', so a
+tweak to either half left the other lying.
+
+**And `hint-refusal.test.ts` could not see it either**, which is the sharper
+half. That guard exists precisely so a new phrasing cannot arrive unnoticed, and
+it is *well* built — it walks the AST for every `{ ok: false, error: <literal> }`
+wherever it appears, deliberately taking a superset rather than keying on a
+function's name, with the reason written in its header. It scanned
+`src/games/**` only. **A refusal lives wherever a `hint()` is built, and eleven
+of them are not built under `games/`** — so the guard keyed on the right shape
+and still swept the wrong place, which is a variant of `AGENTS.md` § "Method"
+this repo has not recorded before.
 
 **Why now, ahead of new games.** 27 games are deliberately hintless as the
 corpus for assessing this framework work (`characterize-the-hint-assessment-
@@ -87,11 +99,16 @@ after, and the extended walk is the instrument those hints will be judged by.
   legal only where the preset's tier permits search, and the message is the one
   message. A refusal on a deduction-complete tier is a defect and fails here.
 - **One constant for "deduction has run out on a sound board."** The two
-  existing constants collapse; Galaxies' bespoke literal is deleted in favor of
-  it. Wording is decided in task 2 and run in the app — Galaxies' is the most
-  useful of the three today because it says what to *do*, and that is the
-  starting point, not a foregone conclusion.
-- **`candidate-hint.ts` imports the constant** instead of retyping its value.
+  existing constants collapse into `DEDUCTION_EXHAUSTED`, and Galaxies' bespoke
+  sentence becomes its wording — adopted verbatim because it was the only one of
+  the three that tells the player what to *do*, and the only one an owner had
+  accepted (owner, 2026-08-11). The name changes with the collapse deliberately:
+  21 call sites used `NO_DEDUCTION_LEFT`, and keeping that name while changing
+  its value would have moved every one of their words with nobody looking at
+  them.
+- **`candidate-hint.ts` imports all three constants** instead of retyping their
+  values, and **`hint-refusal.test.ts` widens its scan** to the engine's hint
+  builders.
 - `hint-refusal.ts`'s doc comment and `hint-refusal.test.ts`'s list follow.
 
 ## Impact

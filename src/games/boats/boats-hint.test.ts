@@ -14,6 +14,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import type { DrawOp } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
@@ -445,7 +446,11 @@ describe("boats hint — refusals", () => {
     const blank = newState(p, "-,".repeat(p.w + p.h));
     const r = hintOf(blank);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toMatch(/deduce/i);
+    // The constant, not a substring of it. `/deduce/i` matched "can be deduced"
+    // and stopped matching when the collection settled on one out-of-deduction
+    // wording that says "by deduction" — a regex over a message is a second,
+    // weaker statement of what the message is (`refuse-honestly-at-every-tier`).
+    if (!r.ok) expect(r.error).toBe(DEDUCTION_EXHAUSTED);
   });
 });
 

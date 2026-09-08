@@ -33,9 +33,8 @@ import { describe, expect, it } from "vitest";
 import {
   ALREADY_SOLVED,
   CONTRADICTION_UNLOCALIZED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
-  NO_DEDUCTION_LEFT_TRIAL_AND_ERROR,
   NO_MOVE_WORTH_MAKING,
   PUZZLE_NOT_REASONABLE,
 } from "./hint-refusal.ts";
@@ -43,19 +42,35 @@ import {
 /** Every non-test source file in the games tree, as raw text. Read through Vite
  * so this file stays in the browser-shaped type world, which means an unmatched
  * glob yields `{}` silently — hence the vacuity assertion below. */
-const gameSources = import.meta.glob<string>("../games/**/*.ts", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const gameSources = {
+  ...import.meta.glob<string>("../games/**/*.ts", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }),
+  // **And the engine's shared hint modules**, which the scan used to miss
+  // entirely. `candidate-hint.ts` builds the `hint()` of eleven candidate games
+  // and spelled out `ALREADY_SOLVED`, `FIX_MISTAKES_FIRST` and the
+  // out-of-deduction refusal as **literals** — so a third of the collection's
+  // refusals lived outside the one file this guard reads, and no grep for a
+  // constant's name could see them either (`refuse-honestly-at-every-tier`).
+  //
+  // The lesson is this file's own, applied to itself: it keys on the right
+  // *shape* and still scanned the wrong *place*. A refusal is wherever a
+  // `hint()` is built, and eleven of them are not built under `games/`.
+  ...import.meta.glob<string>("./{candidate-hint,latin-hint,hint-plan}.ts", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }),
+};
 
 /** The approved refusals. A game emitting one of these needs no exception. */
 const APPROVED = new Set([
   ALREADY_SOLVED,
   CONTRADICTION_UNLOCALIZED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
-  NO_DEDUCTION_LEFT_TRIAL_AND_ERROR,
   NO_MOVE_WORTH_MAKING,
   PUZZLE_NOT_REASONABLE,
 ]);
@@ -201,7 +216,7 @@ describe("a hint refusal says the same thing in every game", () => {
     // The counterpart to the vacuity check: proves the scan reaches the hint
     // paths, not merely the Solve ones it would also match.
     const live = new Set(found.map((f) => f.message));
-    for (const approved of [ALREADY_SOLVED, FIX_MISTAKES_FIRST, NO_DEDUCTION_LEFT]) {
+    for (const approved of [ALREADY_SOLVED, FIX_MISTAKES_FIRST, DEDUCTION_EXHAUSTED]) {
       // Inlined by a game that imports the constant, so the literal is gone from
       // the tree — which is the point. Assert instead that no *copy* survives.
       expect(live.has(approved), `a game inlines ${JSON.stringify(approved)}`).toBe(

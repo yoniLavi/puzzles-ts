@@ -28,8 +28,8 @@ import { fromCoord } from "../../engine/geometry.ts";
 import {
   ALREADY_SOLVED,
   CONTRADICTION_UNLOCALIZED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import {
@@ -425,7 +425,7 @@ function hint(state: ClustersState): HintResult<ClustersMove, ClustersHintHighli
     };
   }
   if (plan.verdict !== COMPLETE || plan.deductions.length === 0) {
-    return { ok: false, error: NO_DEDUCTION_LEFT };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   const steps: HintStep<ClustersMove, ClustersHintHighlights>[] = plan.deductions.map(
     (d) => ({

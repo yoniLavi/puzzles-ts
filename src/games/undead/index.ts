@@ -27,8 +27,8 @@ import {
 } from "../../engine/game.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import { clearKey } from "../../engine/key-labels.ts";
 import {
@@ -749,7 +749,7 @@ function hint(
   // no auto-pencil pref and ignores `ui` (design D4).
   const steps = buildSteps(state);
   if (steps.length === 0) {
-    return { ok: false, error: NO_DEDUCTION_LEFT };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   return { ok: true, steps };
 }

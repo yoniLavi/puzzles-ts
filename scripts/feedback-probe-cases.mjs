@@ -736,8 +736,14 @@ export const MODULES = [
       {
         within: "candidateHint",
         why: "a hint deduces from a board with known mistakes instead of refusing",
-        find: "  if (findMistakes(state).length > 0) {",
-        replace: "  if (false) {",
+        // Re-anchored by `refuse-honestly-at-every-tier`: this module used to
+        // write the refusal pair out itself and now calls `commonHintRefusal`,
+        // so the mistake count is what to neuter. Same planted defect — the
+        // candidate family's hint reasons from a board it knows is wrong —
+        // asked of the same module, which is what keeps the measurement
+        // comparable across the move.
+        find: "  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);",
+        replace: "  const refusal = commonHintRefusal(state.completed, 0);",
       },
       {
         within: "candidateHint",

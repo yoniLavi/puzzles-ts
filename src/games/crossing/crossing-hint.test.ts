@@ -15,6 +15,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
+import { ALREADY_SOLVED, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import { Midend } from "../../engine/index.ts";
 import { LEFT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
@@ -299,7 +300,7 @@ describe("crossing hint — refusals", () => {
       grid: Array.from(answer.grid),
     });
     const res = crossingGame.hint?.(solved);
-    expect(res).toEqual({ ok: false, error: "This board is already solved." });
+    expect(res).toEqual({ ok: false, error: ALREADY_SOLVED });
   });
 
   it("refuses a board carrying a wrong entry, pointing at the overlay", () => {
@@ -346,10 +347,7 @@ describe("crossing hint — refusals", () => {
     const state = newState(AMBIGUOUS, AMBIGUOUS_DESC);
     expect(crossingGame.findMistakes?.(state)).toEqual([]);
     const res = crossingGame.hint?.(state);
-    expect(res).toEqual({
-      ok: false,
-      error: "No further move can be deduced from this position.",
-    });
+    expect(res).toEqual({ ok: false, error: DEDUCTION_EXHAUSTED });
   });
 });
 

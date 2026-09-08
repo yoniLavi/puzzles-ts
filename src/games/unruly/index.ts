@@ -20,8 +20,8 @@ import {
 } from "../../engine/game.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
@@ -296,7 +296,7 @@ function hint(state: UnrulyState): HintResult<UnrulyMove, UnrulyHint> {
   }
   const plan = deduceHintPlan(state);
   if (plan.length === 0) {
-    return { ok: false, error: NO_DEDUCTION_LEFT };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   const steps: HintStep<UnrulyMove, UnrulyHint>[] = plan.map((m) => {
     const value = m.value as Cell;

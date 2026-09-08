@@ -24,7 +24,11 @@ import {
 } from "../../engine/color/palette.ts";
 import { galaxiesBlackRegion } from "../../engine/color/palette-games.ts";
 import { type DifficultyContract, tierNames } from "../../engine/difficulty.ts";
-import { ALREADY_SOLVED, FIX_MISTAKES_FIRST } from "../../engine/hint-refusal.ts";
+import {
+  ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
+  FIX_MISTAKES_FIRST,
+} from "../../engine/hint-refusal.ts";
 import {
   type Game,
   type HintResult,
@@ -912,13 +916,13 @@ function hint(s: GalaxiesState): HintResult<GalaxiesMove, GalaxiesHint> {
     // breaks, and a hint that reported the survivor of a search would be
     // teaching nothing (owner, 2026-08-11). Say what the position is and what
     // the player's options are.
-    return {
-      ok: false,
-      error:
-        "Nothing further follows by deduction here. This board's difficulty " +
-        "allows positions that need trial and error: save a checkpoint, try " +
-        "one, and undo if it breaks.",
-    };
+    //
+    // These were Galaxies' own words until `refuse-honestly-at-every-tier`, and
+    // they are now the collection's: measured against every other hinting game,
+    // this was the only one of three phrasings that told the player what to do,
+    // and the only one an owner had accepted. It moved to
+    // `hint-refusal.ts` unchanged rather than the other way round.
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   return { ok: true, steps };
 }

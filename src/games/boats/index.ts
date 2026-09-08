@@ -40,8 +40,8 @@ import {
 } from "../../engine/game.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
@@ -537,7 +537,7 @@ function hint(state: BoatsState): HintResult<BoatsMove, BoatsHint> {
 
   const plan = deduceBoatsPlan(state);
   const steps = plan.firings.flatMap((f) => stepsFor(f, state.params.w));
-  if (steps.length === 0) return { ok: false, error: NO_DEDUCTION_LEFT };
+  if (steps.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
   return { ok: true, steps };
 }
 

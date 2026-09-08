@@ -18,8 +18,8 @@ import {
 } from "../../engine/game.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import {
   CURSOR_SELECT,
@@ -317,7 +317,7 @@ function hint(state: PatternState): HintResult<PatternMove, PatternHint> {
   }
   const plan = deduceHintPlan(state);
   if (plan.length === 0) {
-    return { ok: false, error: NO_DEDUCTION_LEFT };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   const { w } = state.common;
   const steps: HintStep<PatternMove, PatternHint>[] = plan.map((m) => ({

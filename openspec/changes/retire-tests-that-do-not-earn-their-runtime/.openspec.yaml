@@ -1,0 +1,15 @@
+# No spec deltas yet: the retirement bar cannot honestly be written as a
+# requirement before the audit says what it is. Task 0 is a measurement, and
+# writing a normative rule over an unmeasured population is the "instrument
+# before the finding" error this repo keeps catching — here it would be
+# especially costly, because the category most obviously in scope (the 59
+# c-reference differentials) is also where the strongest nets under solver
+# refactoring live.
+#
+# Task 3.1 adds the delta once the audit has an answer to defend.
+#
+# `schema` is required for this file to be valid change metadata at all — without
+# it the `skip_specs` marker parses but is *not honored*, and `validate` says so
+# rather than passing. It names the same workflow as `openspec/config.yaml`.
+schema: spec-driven
+skip_specs: true

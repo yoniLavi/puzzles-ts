@@ -21,8 +21,8 @@ import {
 } from "../../engine/game.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import {
@@ -267,7 +267,7 @@ function hint(state: FillingState): HintResult<FillingMove, FillingHint> {
   }
   const plan = deduceHintPlan(state.board, state.w, state.h);
   if (plan.length === 0) {
-    return { ok: false, error: NO_DEDUCTION_LEFT };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   const steps: HintStep<FillingMove, FillingHint>[] = plan.map((m) => ({
     move: { type: "set", cells: m.cells, value: m.value },

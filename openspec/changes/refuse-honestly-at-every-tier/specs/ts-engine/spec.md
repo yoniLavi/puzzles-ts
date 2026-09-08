@@ -53,11 +53,20 @@ and what to do about it. A refusal that says only that nothing follows leaves a
 player unable to distinguish a puzzle demanding a guess from a broken hint, which
 is the pair `help/features.md` § Hints teaches as calling for opposite responses.
 
-**Shared modules SHALL import the constant, never retype its value.**
-`candidate-hint.ts` returned the bare refusal as a string literal, which is why
-the whole candidate family carried a wording no grep for the constant's name
-could find. A guard SHALL sweep for the *values* of the refusal constants, not
-only their names.
+**Every builder of a `hint()` SHALL import the constants, shared ones included,
+and SHALL NOT retype their values.** `candidate-hint.ts` — which is the whole
+`hint()` of eleven candidate games — held literal copies of **three** of the
+seven refusal constants while its own doc comment described them as shared "so a
+wording tweak lands in one place". It was one place, and not the same one place
+as the other 21 games'; a change to either half would have left the other lying,
+and no grep for a constant's *name* could see it.
+
+**The guard that scans for stray refusals SHALL read the engine's hint builders
+as well as `src/games/`.** It already keys on the right *shape* — every
+`{ ok: false, error: <string literal> }` in the AST, deliberately a superset —
+and still missed a third of the collection's refusals by scanning the wrong
+*place*. A refusal lives wherever a `hint()` is built, and eleven of them are not
+built under `games/`.
 
 **A refusal SHALL be reachable only where the game's own tier declaration permits
 search.** The permission is derived — a tier named `Unreasonable` is the
@@ -77,6 +86,13 @@ game.
 - **WHEN** a game returns its own sentence for deduction having run out
 - **THEN** the refusal guard fails, whether the sentence is written at the game's
   call site or inside a shared module
+
+#### Scenario: A shared hint builder inlines a refusal
+
+- **WHEN** a module under `src/engine/` that builds a `hint()` writes a refusal
+  as a string literal rather than importing the constant
+- **THEN** the refusal guard sees it and fails, because its scan covers the
+  engine's hint builders and not only `src/games/`
 
 #### Scenario: A refusal escapes onto a deduction-complete tier
 

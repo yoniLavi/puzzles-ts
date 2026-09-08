@@ -22,8 +22,8 @@ import { UI_UPDATE } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import {
   CURSOR_SELECT,
@@ -416,7 +416,7 @@ function hint(state: SlantState): HintResult<SlantMove, SlantHint> {
   }
   const plan = deduceHintPlan(state.w, state.h, state.clues, state.soln);
   if (plan.length === 0) {
-    return { ok: false, error: NO_DEDUCTION_LEFT };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   const steps: HintStep<SlantMove, SlantHint>[] = [];
   for (const firing of plan) {

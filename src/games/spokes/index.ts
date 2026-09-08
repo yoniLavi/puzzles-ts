@@ -34,8 +34,8 @@ import {
 import { fromCoord } from "../../engine/geometry.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
   PUZZLE_NOT_REASONABLE,
 } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -436,7 +436,7 @@ function hint(state: SpokesState): HintResult<SpokesMove, SpokesHint> {
 
   const plan = deduceSpokesPlan(cloneBoard(state));
   if (plan.length === 0) {
-    return { ok: false, error: NO_DEDUCTION_LEFT };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   return { ok: true, steps: plan.flatMap((f) => stepsOfFiring(f)) };
 }

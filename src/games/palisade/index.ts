@@ -30,8 +30,8 @@ import {
 } from "../../engine/game.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
 } from "../../engine/hint-refusal.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -261,7 +261,7 @@ function hint(state: PalisadeState): HintResult<PalisadeMove, PalisadeHint> {
       error: FIX_MISTAKES_FIRST,
     };
   const forced = deduceForcedEdges(paramsOf(state), state.clues, state.borders);
-  if (forced.length === 0) return { ok: false, error: NO_DEDUCTION_LEFT };
+  if (forced.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
 
   // Split the flat, discovery-ordered list into contiguous runs of one
   // firing (a firing's surviving edges stay contiguous after dedup), and

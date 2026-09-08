@@ -24,8 +24,8 @@ import { UI_UPDATE } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   ALREADY_SOLVED,
+  DEDUCTION_EXHAUSTED,
   FIX_MISTAKES_FIRST,
-  NO_DEDUCTION_LEFT,
   PUZZLE_NOT_REASONABLE,
 } from "../../engine/hint-refusal.ts";
 import { parseConfigInt } from "../../engine/params.ts";
@@ -488,7 +488,7 @@ function hint(state: DominosaState): HintResult<DominosaMove, DominosaHint> {
     }
   }
 
-  if (steps.length === 0) return { ok: false, error: NO_DEDUCTION_LEFT };
+  if (steps.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
   return { ok: true, steps };
 }
 

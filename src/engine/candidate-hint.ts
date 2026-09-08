@@ -24,6 +24,7 @@
 
 import type { DeductionRecord } from "./deduction-record.ts";
 import type { HintResult, HintStep, HintTrackVerdict } from "./game.ts";
+import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "./hint-refusal.ts";
 import type { ClassifyRegion } from "./latin-hint.ts";
 import type { OrderedCell } from "./overlay-sidecar.ts";
 
@@ -111,9 +112,18 @@ export interface CandidateHighlights {
  * solved board, refuse (pointing at the mistake overlay) on a wrong board, build
  * the plan, refuse when it is empty, else return it. The only per-game inputs are
  * the game's own `findMistakes` and `buildSteps` (the latter owns the walk that
- * genuinely differs); everything else — the three user-facing refusal strings and
- * the `autoPencil` default — is shared so a wording tweak lands in one place
- * instead of drifting across four games.
+ * genuinely differs); everything else — the three refusals and the `autoPencil`
+ * default — comes from {@link ../hint-refusal.ts}, which is the collection's one
+ * statement of what a refusal says.
+ *
+ * **The refusals used to be spelled out here as literals**, and this comment
+ * used to justify that by saying a wording tweak would land "in one place". It
+ * would have — this place, and not the other one. `unify-hint-refusals` had
+ * converged 21 games onto `hint-refusal.ts` while the eleven candidate games
+ * routed through here kept private copies of `ALREADY_SOLVED`,
+ * `FIX_MISTAKES_FIRST` and `NO_DEDUCTION_LEFT`, so a change to either half left
+ * the other lying and no grep for a constant *name* could see it (AGENTS.md,
+ * "a grep for a constant's name is blind to a copy that spells out its value").
  *
  * `autoPencil` defaults **off**: with no `ui` (tests/harness) the hint teaches the
  * trivial row/column/region eliminations as explicit strikes rather than folding
@@ -125,18 +135,12 @@ export function candidateHint<State extends { completed: boolean }, Move, Hint>(
   findMistakes: (state: State) => readonly unknown[],
   buildSteps: (state: State, autoClean: boolean) => HintStep<Move, Hint>[],
 ): HintResult<Move, Hint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
-    };
-  }
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
   const autoClean = ui?.autoPencil ?? false;
   const steps = buildSteps(state, autoClean);
   if (steps.length === 0) {
-    return { ok: false, error: "No further move can be deduced from this position." };
+    return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   return { ok: true, steps };
 }
