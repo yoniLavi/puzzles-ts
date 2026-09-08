@@ -46,9 +46,6 @@ export class CatalogCard extends LitElement {
   @property({ type: String })
   objective = "";
 
-  @property({ type: Boolean })
-  unfinished = false;
-
   @property({ type: String })
   href = "";
 
@@ -118,13 +115,6 @@ export class CatalogCard extends LitElement {
       : nothing;
   }
 
-  private renderUnfinishedBadge() {
-    return this.unfinished
-      ? html`<span part="unfinished" title="Experimental — still being worked on"
-        >Experimental</span>`
-      : nothing;
-  }
-
   protected override render() {
     // (The tabindex should be automatic for an <a>, but Safari seems to need it)
     return html`
@@ -132,7 +122,6 @@ export class CatalogCard extends LitElement {
         ${this.renderIcon()}
         <span part="name-line">
           <span part="title">${this.name}</span>
-          ${this.renderUnfinishedBadge()}
           ${this.renderGameInProgressBadge()}
         </span>
         <span part="description">${this.objective}</span>
@@ -282,17 +271,6 @@ export class CatalogCard extends LitElement {
         overflow: hidden;
       }
 
-      [part="unfinished"] {
-        flex: 0 0 auto;
-        font-size: var(--app-font-size-micro);
-        font-weight: var(--wa-font-weight-semibold);
-        line-height: 1;
-        padding: 2px 5px;
-        border-radius: var(--app-radius-icon);
-        color: var(--wa-color-warning-on-quiet, var(--app-color-text-secondary));
-        background-color: var(--wa-color-warning-fill-quiet);
-        border: 1px solid var(--wa-color-warning-border-normal);
-      }
 
       [part="in-progress"] {
         flex: 0 0 auto;

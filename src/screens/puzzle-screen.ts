@@ -39,10 +39,6 @@ import "../components/puzzle-switcher.ts";
 import "../puzzle/components/view-interactive.ts";
 import "../puzzle/components/end-notification.ts";
 
-// How often to show the warning for unfinished puzzles, in milliseconds.
-// (Maybe make this a setting: hourly, daily, weekly, never. Then default to 1 hour.)
-const UNFINISHED_WARNING_REPEAT = 24 * 60 * 60 * 1000;
-
 @customElement("puzzle-screen")
 export class PuzzleScreen extends SignalWatcher(Screen) {
   /** The puzzle type, e.g. "blackbox" */
@@ -133,13 +129,6 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       this.puzzleLoaded = false;
       this.referenceOpen = false; // a new puzzle type may have no reference
       this.defaultHelpLabel = `${this.puzzleData.name} Help`;
-    }
-  }
-
-  protected override updated(changedProperties: Map<string, unknown>) {
-    super.updated(changedProperties);
-    if (changedProperties.has("puzzleId")) {
-      void this.showUnfinishedWarning();
     }
   }
 
@@ -1059,28 +1048,11 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     if (command) this.handleCommand(command);
   };
 
-  private async showUnfinishedWarning() {
-    // Show an alert for unfinished puzzles, at most once per UNFINISHED_WARNING_REPEAT.
-    if (this.puzzleId && this.puzzleData?.unfinished) {
-      await settings.loaded;
-      const lastShown = await settings.getLastUnfinishedAlert(this.puzzleId);
-      const now = Date.now();
-      if (lastShown === undefined || now - lastShown > UNFINISHED_WARNING_REPEAT) {
-        await settings.setLastUnfinishedAlert(this.puzzleId, now);
-        await showAlert({
-          label: "Experimental puzzle",
-          message:
-            // showAlert doesn't support html. (Could render alert-dialog instead.)
-            `“${this.puzzleData.name}” is an experimental, unfinished puzzle.` +
-            " Don’t be surprised if you find bugs or unexpected behavior." +
-            " (Check “Help” for the current status.)",
-          type: "warning",
-          icon: "unfinished",
-          lightDismiss: true,
-        });
-      }
-    }
-  }
+  /* There is no unfinished-puzzle warning. It fired when the catalog's
+   * `unfinished` flag was set, throttled to once a day per puzzle — and no
+   * puzzle has ever set that flag. All 57 ship finished, and new games are
+   * implemented in one go, so the alert, its throttle and the preference that
+   * revealed those puzzles were three surfaces over an empty set. */
 
   //
   // Styles
@@ -1335,19 +1307,23 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         }
       }
 
-      /* Next hint takes the free space and is the one filled control on the
-       * screen: it is what this fork is for. */
+      /* Next hint takes the free space, because it is the one action here with
+       * a word rather than an icon and the bar reads better with it wide.
+       *
+       * It is NOT filled. It used to be — the single accent control on the
+       * screen, on the reasoning that explained hints are what this fork is
+       * for. That is a fact about the fork, and as a filled button it read to a
+       * player as advice: take a hint. Taking one is the player's choice, and
+       * wanting to solve it unaided is the better instinct to leave room for.
+       * So the hint is offered plainly, in the same place, with the same label
+       * and the same two beats, and nothing about the chrome urges it. */
       .phone-action.hint {
         flex: 1 1 auto;
         flex-direction: row;
         gap: 0.375rem;
-        background-color: var(--app-color-accent);
-        color: var(--app-color-hint-ink);
         font-size: var(--app-font-size-body);
-        font-weight: var(--wa-font-weight-semibold);
 
         &:disabled {
-          background-color: var(--app-color-row-rule);
           color: var(--app-color-text-faintest);
         }
       }

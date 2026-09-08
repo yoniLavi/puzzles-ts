@@ -16,8 +16,6 @@ export interface CommonSettings {
 
   // Catalog-level settings
   favoritePuzzles?: PuzzleId[];
-  showIntro?: boolean;
-  showUnfinishedPuzzles?: boolean;
 
   // Preferences shared between all puzzles
   puzzlePreferences?: ConfigValues;
@@ -64,9 +62,6 @@ export interface PuzzleSettings {
    * no schema bump needed.
    */
   lastGameId?: string;
-
-  // For unfinished puzzles, timestamp when the alert was last shown
-  lastUnfinishedAlert?: number;
 }
 
 export type SettingsRecord =

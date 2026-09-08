@@ -224,11 +224,6 @@ export class Puzzle {
 
   // Static properties (no reactivity needed)
   public readonly displayName: string;
-  // An `isUnfinished` used to sit here, copied off the catalog's `unfinished`
-  // flag and read by nobody: every consumer — the home screen's filter, the
-  // other-puzzles menu, the experimental-puzzle warning, the share dialog —
-  // reads `puzzleDataMap[id].unfinished` straight from the catalog, which is
-  // where the fact lives (`audit-vestigial-contract-surface`).
   public readonly canSolve: boolean;
   public readonly canHint: boolean;
   public readonly canFindMistakes: boolean;

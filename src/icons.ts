@@ -25,7 +25,6 @@ import deleteIcon from "lucide-static/icons/delete.svg";
 import downloadIcon from "lucide-static/icons/download.svg";
 import ellipsisIcon from "lucide-static/icons/ellipsis.svg";
 import externalLinkIcon from "lucide-static/icons/external-link.svg";
-import flaskConicalIcon from "lucide-static/icons/flask-conical.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
 import gemIcon from "lucide-static/icons/gem.svg";
 import gridIcon from "lucide-static/icons/grid-3x3.svg";
@@ -122,7 +121,6 @@ const defaultIcons: IconMap = {
   "share": share2Icon,
   "show-solution": sparklesIcon,
   "undo": undo2Icon,
-  "unfinished": flaskConicalIcon,
   // generic notifications
   "info": infoIcon,
   "success": checkIcon,

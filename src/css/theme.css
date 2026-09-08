@@ -55,10 +55,19 @@
   /** Links, and the active state of a control. */
   --app-color-link: #1f4e8c;
 
-  /** The accent, and it is the hint's alone — the mark's lit cell. Unchanged
-   * between schemes, which is what keeps it the one thing that reads as this
-   * app in either. */
-  --app-color-accent: #ffc83d;
+  /** The hint's amber, and it is the hint's alone.
+   *
+   * There was a fourth token here, `--app-color-accent: #ffc83d`, a saturated
+   * fill for the one control the chrome wanted to shout. Its only two consumers
+   * were the rail's hint row and the phone bar's hint button, and both were
+   * retired: a filled hint button reads as advice, and whether to take a hint is
+   * the player's call. Removed rather than left declared, because a palette
+   * token nothing consumes is a color the next reader will assume is in use.
+   *
+   * These three stay, and they are where the amber lives now — the hint
+   * explanation panel, which is the hint speaking rather than the chrome
+   * recommending. Unchanged between schemes only in role; the values below flip
+   * with the scheme. */
   --app-color-hint-surface: #fff7e3;
   --app-color-hint-border: #e9c96a;
   --app-color-hint-ink: #3d3526;

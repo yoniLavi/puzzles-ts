@@ -5,8 +5,8 @@
  * The switcher replaces the `Other puzzles` dropdown, and a jump that cannot
  * reach a game is worse than the dropdown was: the dropdown at least showed
  * everything it had. The failure mode is quiet — a filter that excludes a game
- * for a reason nobody meant (an experimental one, say, or one whose objective
- * text is empty) looks exactly like a game that does not exist.
+ * for a reason nobody meant (one whose objective text is empty, say) looks
+ * exactly like a game that does not exist.
  *
  * So this counts. It mounts the real component, walks the whole catalog through
  * the search box, and asserts that each id comes back — and that the count of

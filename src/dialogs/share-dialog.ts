@@ -183,15 +183,17 @@ export class ShareDialog extends SignalWatcher(LitElement) {
     gameId?: string;
     randomSeed?: string;
   }) {
-    if (
-      !puzzleId ||
-      puzzleDataMap[puzzleId]?.collection !== "original" ||
-      puzzleDataMap[puzzleId]?.unfinished
-    ) {
-      // Despite being "unfinished", Group actually _is_ available at SGT's site.
-      if (puzzleId !== "group") {
-        return nothing;
-      }
+    // Upstream's site carries its own games, so the link is offered for those
+    // and no others.
+    //
+    // This used to also exclude puzzles flagged `unfinished`, with an escape
+    // hatch reading "Despite being 'unfinished', Group actually _is_ available
+    // at SGT's site". Both are gone with the flag: Group's collection is
+    // "original", so it never reached the escape hatch, and every puzzle that
+    // did reach it was by construction not Group — which made the guard
+    // unconditionally true and the branch an unconditional return.
+    if (!puzzleId || puzzleDataMap[puzzleId]?.collection !== "original") {
+      return nothing;
     }
 
     const sgtBaseUrl = `https://www.chiark.greenend.org.uk/~sgtatham/puzzles/js/${encodeURIComponent(puzzleId)}.html`;

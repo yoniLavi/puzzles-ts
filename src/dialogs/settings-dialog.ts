@@ -81,6 +81,15 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   private renderAppearanceSection() {
     return html`
       <wa-details id="appearance" name="panel" summary="Appearance">
+        <wa-radio-group
+            orientation="horizontal"
+            label="Color scheme"
+            .value=${autoBind(settings, "colorScheme")}
+        >
+          <wa-radio value="light" appearance="button">Light</wa-radio>
+          <wa-radio value="dark" appearance="button">Dark</wa-radio>
+          <wa-radio value="system" appearance="button">System</wa-radio>
+        </wa-radio-group>
         <wa-checkbox
             ?checked=${autoBind(settings, "showEndNotification")}
             hint="Victory message with “New game” button"
@@ -249,20 +258,6 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         <div class="offline-status" role="status" aria-atomic="true">
           Offline content: ${this.renderOfflineStatus()}
         </div>
-        <wa-divider></wa-divider>
-        <wa-radio-group
-            orientation="horizontal"
-            label="Color scheme (experimental)"
-            .value=${autoBind(settings, "colorScheme")}
-        >
-          <wa-radio value="light" appearance="button">Light</wa-radio>
-          <wa-radio value="dark" appearance="button">Dark</wa-radio>
-          <wa-radio value="system" appearance="button">System</wa-radio>
-        </wa-radio-group>
-        <wa-checkbox
-            hint="Puzzles with unfinished code (may have lots of bugs!)"
-            ?checked=${autoBind(settings, "showUnfinishedPuzzles")}
-        >Show experimental puzzles</wa-checkbox>
       </wa-details>
     `;
   }

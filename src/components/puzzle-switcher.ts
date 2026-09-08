@@ -59,9 +59,11 @@ export class PuzzleSwitcher extends LitElement {
    * definition (`catalog-search.ts`) — so this box and the home screen's
    * cannot answer the same query differently.
    *
-   * A game is never excluded for being experimental: this is a jump, not a
-   * catalog, and refusing to go somewhere the player named would just be
-   * baffling. */
+   * No game is ever excluded: this is a jump, not a catalog, and refusing to go
+   * somewhere the player named would just be baffling. (There is nothing left
+   * to exclude *for*, either — the catalog's `unfinished` flag and the
+   * preference that hid those games are both retired — but the reason above is
+   * the durable one and would hold whatever the catalog grew.) */
   private get hits(): readonly string[] {
     return puzzleIds.filter((puzzleId) => matchesQuery(puzzleId, this.search));
   }

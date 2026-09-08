@@ -40,9 +40,11 @@ export interface PuzzleData {
   description: string;
   objective: string;
   collection: "original" | "unreleased";
-  /** An upstream *unfinished* puzzle someone opted into building. Nothing in
-   * the shipped catalog sets this today; the home screen still honors it. */
-  unfinished?: boolean;
+  // There is no `unfinished?: boolean`. It marked an upstream unfinished puzzle
+  // someone had opted into building, and its own comment recorded that nothing
+  // in the shipped catalog set it — while the home screen, the catalog card and
+  // the puzzle screen all still honored it. All 57 games ship finished and new
+  // ones are implemented in one go, so the flag and its three consumers went.
 }
 
 export const puzzleCatalog = {

@@ -27,7 +27,7 @@
  * a filtered catalog they do not remember setting has lost the other 50 games.
  */
 import { SignalWatcher } from "@lit-labs/signals";
-import { css, html, nothing, unsafeCSS } from "lit";
+import { css, html, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type { FavoriteChangeEvent } from "../components/catalog-card.ts";
@@ -90,7 +90,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
       </header>
 
       <div part="page" @favorite-change=${this.handleFavoriteChange}>
-        ${settings.showIntro ? this.renderIntro() : nothing}
+        ${this.renderIntro()}
         ${this.renderCatalog()}
       </div>
 
@@ -117,13 +117,10 @@ export class HomeScreen extends SignalWatcher(Screen) {
       <div class="subtitle">${APP_TAGLINE}</div>
 
       <div class="controls">
-        <wa-dropdown>
-          <wa-button slot="trigger" appearance="plain" variant="brand" with-caret>
-            <wa-icon slot="start" name="options"></wa-icon>
-            Options
-          </wa-button>
-          ${this.renderOptionsMenuContent()}
-        </wa-dropdown>
+        <wa-button data-command="settings" appearance="plain" variant="brand">
+          <wa-icon name="settings" slot="start"></wa-icon>
+          Preferences
+        </wa-button>
         <wa-button href="help/" appearance="plain" variant="brand">
           <wa-icon name="help" slot="start"></wa-icon>
           Help
@@ -133,21 +130,25 @@ export class HomeScreen extends SignalWatcher(Screen) {
   }
 
   private renderCompactHeader() {
-    // When space is tight, turn the title into the options menu trigger
-    // (but keep the separate help button)
+    // The title is a title. It used to be the options menu's trigger, which is
+    // an odd thing for a page's own name to be; with the menu gone it has no
+    // reason to be a control.
     return html`
       <img class="logo" src="/favicon.svg" alt="" role="presentation">
       <div class="title">
-        <wa-dropdown>
-          <wa-button slot="trigger" appearance="plain" variant="brand" with-caret>
-            <h1 translate="no">${APP_NAME}</h1>
-          </wa-button>
-          ${this.renderOptionsMenuContent()}
-        </wa-dropdown>
+        <h1 translate="no">${APP_NAME}</h1>
       </div>
       <div class="subtitle">${APP_TAGLINE}</div>
 
       <div class="controls">
+        <wa-button data-command="settings" appearance="plain" variant="brand">${
+          this.size === "small"
+            ? html`<wa-icon name="settings" label="Preferences"></wa-icon>`
+            : html`
+                <wa-icon name="settings" slot="start"></wa-icon>
+                Preferences
+              `
+        }</wa-button>
         <wa-button href="help/" appearance="plain" variant="brand">${
           this.size === "small"
             ? html`<wa-icon name="help" label="Help"></wa-icon>`
@@ -160,26 +161,22 @@ export class HomeScreen extends SignalWatcher(Screen) {
     `;
   }
 
-  private renderOptionsMenuContent() {
-    return html`
-      <wa-dropdown-item
-          data-command="toggle-intro"
-          type="checkbox"
-          ?checked=${settings.showIntro}
-      >
-        Show intro message
-      </wa-dropdown-item>
-      <wa-divider></wa-divider>
-      <wa-dropdown-item data-command="settings">
-        <wa-icon slot="icon" name="settings"></wa-icon>
-        Preferences
-      </wa-dropdown-item>
-      <wa-dropdown-item data-command="about">
-        <wa-icon slot="icon" name="info"></wa-icon>
-        About
-      </wa-dropdown-item>
-    `;
-  }
+  /*
+   * There is no Options menu.
+   *
+   * It held three items: a "Show intro message" checkbox, Preferences and
+   * About. The intro is one line now, so a control for hiding it costs a player
+   * more attention than it saves them — and with it gone the menu held two
+   * items, which is a dropdown standing between the player and two taps.
+   *
+   * About did not need a home here: the footer already links to it in prose,
+   * naming exactly what is inside ("Credits, privacy info, copyright notices
+   * and licenses are in the about box"), which is a better signpost than a menu
+   * row labeled "About" ever was.
+   *
+   * So Preferences is a button beside Help, and the compact header's title went
+   * back to being a title rather than a menu trigger.
+   */
 
   private renderIntro() {
     return html`
@@ -205,13 +202,16 @@ export class HomeScreen extends SignalWatcher(Screen) {
    * the catalog.
    */
 
-  /** Every puzzle this player can see — the catalog, less the experimental ones
-   * unless they asked for those. The search and the filters narrow *this*, so
-   * neither can surface a game the setting hides. */
+  /** Every puzzle this player can see, which is all of them. The search and the
+   * filters narrow *this*.
+   *
+   * It used to subtract the catalog's `unfinished` games unless a preference
+   * asked for them. No puzzle has ever set that flag — all 57 ship finished, and
+   * new games are implemented in one go — so the preference, this filter, the
+   * card's badge and the puzzle screen's warning were four surfaces over an
+   * empty set. */
   private get visibleIds(): readonly string[] {
-    return settings.showUnfinishedPuzzles
-      ? puzzleIds
-      : puzzleIds.filter((puzzleId) => !puzzleDataMap[puzzleId].unfinished);
+    return puzzleIds;
   }
 
   /** The rows the list is showing, after the filter and the search box. */
@@ -289,7 +289,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
   }
 
   private renderCatalogRow(puzzleId: string) {
-    const { name, description, objective, unfinished } = puzzleDataMap[puzzleId];
+    const { name, description, objective } = puzzleDataMap[puzzleId];
     const isFavorite = settings.favoritePuzzles.has(puzzleId);
     const href = puzzlePageUrl({ puzzleId });
     return html`
@@ -301,7 +301,6 @@ export class HomeScreen extends SignalWatcher(Screen) {
         objective=${objective}
         ?game-in-progress=${savedGames.autoSavedPuzzles.has(puzzleId)}
         ?favorite=${isFavorite}
-        ?unfinished=${unfinished}
       ></catalog-card>
     `;
   }
@@ -317,13 +316,8 @@ export class HomeScreen extends SignalWatcher(Screen) {
   protected override registerCommandHandlers() {
     super.registerCommandHandlers();
     Object.assign(this.commandMap, {
-      "toggle-intro": this.toggleIntro,
       "switch-puzzle": this.openPuzzleSwitcher,
     });
-  }
-
-  private toggleIntro() {
-    settings.showIntro = !settings.showIntro;
   }
 
   /** The quick-switch, which works from here too: on the home screen it is a

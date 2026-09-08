@@ -262,11 +262,11 @@ class Settings {
     }
   }
 
-  @commonSetting({ default: true })
-  declare showIntro: boolean;
-
-  @commonSetting({ default: false })
-  declare showUnfinishedPuzzles: boolean;
+  // No `showIntro` and no `showUnfinishedPuzzles`. The intro is one line, so a
+  // control for hiding it cost more attention than it saved; and no puzzle has
+  // ever set the catalog's `unfinished` flag, so the second gated an empty set
+  // — the filter, the badge and the warning dialog with it. Rows already stored
+  // under these keys are harmless: nothing reads them.
 
   @commonSetting({ default: false })
   declare showMouseButtonToggle: boolean;
@@ -454,24 +454,8 @@ class Settings {
     });
   }
 
-  async getLastUnfinishedAlert(puzzleId: PuzzleId): Promise<number | undefined> {
-    const puzzleRecord = await this.getPuzzleSettings(puzzleId);
-    return puzzleRecord?.lastUnfinishedAlert;
-  }
-
-  async setLastUnfinishedAlert(
-    puzzleId: PuzzleId,
-    lastUnfinishedAlert: number,
-  ): Promise<void> {
-    const { lastUnfinishedAlert: _, ...current } =
-      (await this.getPuzzleSettings(puzzleId)) ?? {};
-    const updated: PuzzleSettings = { ...current, lastUnfinishedAlert };
-    await db.settings.put({
-      id: puzzleId,
-      type: "puzzle",
-      data: updated,
-    });
-  }
+  // No `get`/`setLastUnfinishedAlert`. They throttled a warning about
+  // unfinished puzzles to once a day, and no puzzle has ever been unfinished.
 
   async clearCommonSettings() {
     await db.settings.delete(COMMON_SETTINGS_ID);

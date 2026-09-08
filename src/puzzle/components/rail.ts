@@ -55,7 +55,7 @@ interface Row {
    * player that the app is broken for this puzzle. */
   disabled?: boolean;
   /** Drawn as a bordered button rather than a plain row. */
-  emphasis?: "accent" | "bordered";
+  emphasis?: "bordered";
   /** Drawn quieter than its neighbors — a terminal or rarely-wanted action. */
   quiet?: boolean;
 }
@@ -201,7 +201,6 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
                 // to say the same word for both, so the second press was a
                 // surprise. The label now says which beat the next press is.
                 label: this.puzzle.hintArmedToApply ? "Apply the hint" : "Next hint",
-                emphasis: "accent",
                 disabled: this.solved,
               })}
               ${this.renderHintExplanation()}
@@ -380,7 +379,6 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
   private renderRow(row: Row): TemplateResult {
     const key = shortcutLabel(row.command);
     const classes = [
-      row.emphasis === "accent" ? "accent" : "",
       row.emphasis === "bordered" ? "bordered" : "",
       row.quiet ? "quiet" : "",
     ]
@@ -548,27 +546,16 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
         color: var(--app-color-text-faint);
       }
 
-      /* The hint is the one accent in the chrome. */
-      [part="row"].accent {
-        background-color: var(--app-color-accent);
-        color: var(--app-color-hint-ink);
-        font-weight: var(--wa-font-weight-semibold);
-
-        [part="row-icon"] {
-          color: inherit;
-        }
-
-        &:disabled {
-          background-color: var(--app-color-row-rule);
-          color: var(--app-color-text-faintest);
-        }
-
-        @media (hover: hover) {
-          &:hover:not(:disabled) {
-            background-color: var(--app-color-hint-border);
-          }
-        }
-      }
+      /* There is no accent row. The hint used to be one — filled amber, the
+       * single loudest control in the chrome — on the reasoning that explained
+       * hints are what this fork is for. That reasoning is about the fork, and
+       * on a player's screen it read as advice: take a hint. The hint is a
+       * choice, and a player should be free to want to solve it themselves, so
+       * the chrome offers it and does not urge it.
+       *
+       * The amber is not gone, it moved to where it belongs: the hint
+       * explanation panel below, which is the hint *speaking* rather than the
+       * chrome *recommending*. */
 
       /* Check & save reads as a button among plain rows, because it is the one
        * row in this group that writes something. */
