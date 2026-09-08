@@ -306,5 +306,9 @@ To delete every saved game, open the
 <command-link command="settings:data">preferences</command-link> and choose
 *Clear data… Delete saved games.*
 
+Your games and settings stay in your own browser, on your device. The
+<command-link command="about:privacy">privacy note</command-link> sets out what
+the app does and does not keep.
+
 [sgt-common]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/doc/common.html#common
 [sgt-gameid]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/doc/common.html#common-id

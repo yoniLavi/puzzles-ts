@@ -199,8 +199,14 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
                 icon: "hint",
                 // The hint button has two beats — show, then play — and it used
                 // to say the same word for both, so the second press was a
-                // surprise. The label now says which beat the next press is.
-                label: this.puzzle.hintArmedToApply ? "Apply the hint" : "Next hint",
+                // surprise. The label says which beat the next press is.
+                //
+                // The resting word is just "Hint": it sits under a "Help me
+                // play" heading, beside "Auto-solve for me" and "Show
+                // solution", so "Next" was doing no work the group did not
+                // already do. The armed word stays a full phrase, because it
+                // is the state a player has not seen before.
+                label: this.puzzle.hintArmedToApply ? "Apply the hint" : "Hint",
                 disabled: this.solved,
               })}
               ${this.renderHintExplanation()}

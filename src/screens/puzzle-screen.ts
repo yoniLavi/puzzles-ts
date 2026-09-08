@@ -282,7 +282,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
                   ?disabled=${puzzle.status === "solved"}
               >
                 <wa-icon name="hint"></wa-icon>
-                <span>Next hint</span>
+                <span>${puzzle.hintArmedToApply ? "Apply the hint" : "Hint"}</span>
               </button>`
             : nothing
         }
@@ -1307,8 +1307,13 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         }
       }
 
-      /* Next hint takes the free space, because it is the one action here with
-       * a word rather than an icon and the bar reads better with it wide.
+      /* The hint takes the free space, because its label grows when the hint is
+       * armed and the bar reads better with it wide either way.
+       *
+       * Its two beats — show, then apply — are spelled out here as well as in
+       * the rail. The phone bar used to hardcode one word for both, which is
+       * the surprise the rail's label exists to prevent, on the surface where a
+       * player is most likely to meet it.
        *
        * It is NOT filled. It used to be — the single accent control on the
        * screen, on the reasoning that explained hints are what this fork is

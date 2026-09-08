@@ -15,5 +15,8 @@ Every puzzle has its own help page describing how to play it. Reach it from
 the [Puzzles](puzzles) list, or from *How to play* beside the board while you
 are playing.
 
+The <command-link command="about">about box</command-link> holds the credits,
+the privacy information, and the copyright notices and licenses.
+
 [puzzles-unreleased]: https://github.com/x-sheep/puzzles-unreleased
 [sgt-puzzles]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/

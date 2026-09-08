@@ -38,3 +38,6 @@ work, but they are likely to change in a future update, and might be removed.
 
 Earlier changes to individual puzzles have since been accepted into the
 original collection, so they are no longer differences.
+
+The <command-link command="about:credits">credits</command-link> name everyone
+whose work this collection is built on.
