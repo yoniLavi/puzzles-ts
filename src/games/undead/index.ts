@@ -25,11 +25,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  ALREADY_SOLVED,
-  DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
-} from "../../engine/hint-refusal.ts";
+import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import { clearKey } from "../../engine/key-labels.ts";
 import {
   noOpEntryResult,
@@ -738,13 +734,8 @@ function hint(
   _aux?: string,
   _ui?: UndeadUi,
 ): HintResult<UndeadMove, UndeadHint> {
-  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
   // Undead has no trivial (non-teachable) elimination to fold away, so it takes
   // no auto-pencil pref and ignores `ui` (design D4).
   const steps = buildSteps(state);

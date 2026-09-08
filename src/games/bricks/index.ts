@@ -435,6 +435,15 @@ function narrate(
 }
 
 function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
+  // **Deliberately not `commonHintRefusal`** (`adopt-the-shared-refusal-opening`,
+  // which took the pair into the helper for fifteen games). Bricks owes a
+  // *second* wrong-board refusal the pair cannot express: its `findMistakes` is
+  // a rule validator, so a mark that is wrong but breaks no local rule is
+  // invisible to it, and the re-solve below answers that case with
+  // `CONTRADICTION_UNLOCALIZED` instead — a message that asks the player to undo
+  // rather than promising a highlight that will never appear. The helper takes no
+  // parameter for the second message on purpose; a knob for two games would make
+  // a convention into a configuration language.
   if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0) {
     return {

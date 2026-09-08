@@ -407,6 +407,12 @@ function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlight
 }
 
 function hint(state: ClustersState): HintResult<ClustersMove, ClustersHintHighlights> {
+  // **Deliberately not `commonHintRefusal`** (`adopt-the-shared-refusal-opening`).
+  // Like Bricks, Clusters can reach a board that is inconsistent without any one
+  // cell being provably wrong, and answers that with `CONTRADICTION_UNLOCALIZED`
+  // below — so its wrong-board arm is a choice between two messages rather than
+  // the pair's single one. That choice is about the puzzle, which is what a
+  // first-class override is for; the helper grows no parameter for it.
   if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0) {
     return {

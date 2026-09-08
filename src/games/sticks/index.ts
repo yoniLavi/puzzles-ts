@@ -26,11 +26,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  ALREADY_SOLVED,
-  DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
-} from "../../engine/hint-refusal.ts";
+import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_LEFT,
@@ -462,15 +458,10 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
 }
 
 function hint(state: SticksState): HintResult<SticksMove, SticksHint> {
-  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   // A wrong line makes every deduction from here worthless, so refuse and let
   // the midend light the offenders through findMistakes (§4).
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
 
   const plan = deduceSticksPlan(state);
   if (plan.length === 0) {

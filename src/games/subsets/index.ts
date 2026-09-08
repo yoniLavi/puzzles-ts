@@ -33,10 +33,9 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import {
-  ALREADY_SOLVED,
   CONTRADICTION_UNLOCALIZED,
+  commonHintRefusal,
   DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
 } from "../../engine/hint-refusal.ts";
 import {
   BACKSPACE,
@@ -529,13 +528,8 @@ function stepsForFiring(
 }
 
 function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlights> {
-  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
 
   // A mark can be wrong without yet breaking a local rule (a letter the unique
   // solution excludes). The solution is derivable from the givens, so compare

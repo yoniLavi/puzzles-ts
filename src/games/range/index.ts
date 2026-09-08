@@ -23,11 +23,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
-import {
-  ALREADY_SOLVED,
-  DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
-} from "../../engine/hint-refusal.ts";
+import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -441,13 +437,8 @@ function buildHighlightsInner(
 }
 
 function hint(state: RangeState): HintResult<RangeMove, RangeHint> {
-  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
   const plan = deduceHintPlan(state.grid, state.w, state.h);
   if (plan.length === 0) {
     return { ok: false, error: DEDUCTION_EXHAUSTED };

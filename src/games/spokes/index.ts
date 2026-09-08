@@ -33,9 +33,8 @@ import {
 } from "../../engine/game.ts";
 import { fromCoord } from "../../engine/geometry.ts";
 import {
-  ALREADY_SOLVED,
+  commonHintRefusal,
   DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
   PUZZLE_NOT_REASONABLE,
 } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -419,17 +418,11 @@ function stepsOfFiring(f: SpokesFiring): HintStep<SpokesMove, SpokesHint>[] {
 }
 
 function hint(state: SpokesState): HintResult<SpokesMove, SpokesHint> {
-  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-
   // A hint off a contradictory board would present a "forced" move that only
   // follows from the player's own error, so refuse and light up the offenders
   // (Check & Save paints the same overlay — design D4).
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
   if (!solveFromClues(state)) {
     return { ok: false, error: PUZZLE_NOT_REASONABLE };
   }

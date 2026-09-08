@@ -16,11 +16,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  ALREADY_SOLVED,
-  DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
-} from "../../engine/hint-refusal.ts";
+import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -306,15 +302,8 @@ function narrate(
 }
 
 function hint(state: PatternState): HintResult<PatternMove, PatternHint> {
-  if (state.completed) {
-    return { ok: false, error: ALREADY_SOLVED };
-  }
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
   const plan = deduceHintPlan(state);
   if (plan.length === 0) {
     return { ok: false, error: DEDUCTION_EXHAUSTED };

@@ -28,11 +28,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  ALREADY_SOLVED,
-  DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
-} from "../../engine/hint-refusal.ts";
+import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
@@ -254,12 +250,8 @@ function buildStep(
  * sweep) form one multi-leg journey; distinct firings stay separate
  * hints. */
 function hint(state: PalisadeState): HintResult<PalisadeMove, PalisadeHint> {
-  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-  if (findMistakes(state).length > 0)
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
   const forced = deduceForcedEdges(paramsOf(state), state.clues, state.borders);
   if (forced.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
 

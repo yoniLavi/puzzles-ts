@@ -23,9 +23,8 @@ import type {
 import { UI_UPDATE } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
-  ALREADY_SOLVED,
+  commonHintRefusal,
   DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
   PUZZLE_NOT_REASONABLE,
 } from "../../engine/hint-refusal.ts";
 import { parseConfigInt } from "../../engine/params.ts";
@@ -411,13 +410,8 @@ function narrateBarrier(
 }
 
 function hint(state: DominosaState): HintResult<DominosaMove, DominosaHint> {
-  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
   const { numbers, params } = state;
   const n = params.n;
   const w = state.w;

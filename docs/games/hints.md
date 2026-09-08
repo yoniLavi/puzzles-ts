@@ -693,8 +693,33 @@ clue's line").
 **Never write a refusal message.** Import it from
 [`src/engine/hint-refusal.ts`](../../src/engine/hint-refusal.ts):
 `ALREADY_SOLVED`, `FIX_MISTAKES_FIRST`, `DEDUCTION_EXHAUSTED`,
-`CONTRADICTION_UNLOCALIZED`, `NO_MOVE_WORTH_MAKING` and friends. The two-line
-opening most deductive games want is `commonHintRefusal(completed, mistakes)`.
+`CONTRADICTION_UNLOCALIZED`, `NO_MOVE_WORTH_MAKING` and friends.
+
+**And never write the *opening* either.** The two refusals every deductive hint
+owes are `commonHintRefusal(completed, mistakeCount)`:
+
+```ts
+const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+if (refusal) return refusal;
+```
+
+Two rules live in those two lines and are invisible at each hand-written copy —
+which is why they are the helper's and not yours. The refusals are asked **in
+order**, because a finished board is not a wrong board; and
+`FIX_MISTAKES_FIRST` **promises a highlight**, so it may fire only where the
+game has established there is something to light up. Fifteen games wrote the
+pair out by hand and `commonHintRefusal` had **no callers at all** until
+`adopt-the-shared-refusal-opening`; `hint-refusal.test.ts` now derives the
+non-adopters and holds them to a ledger.
+
+**Two things a game may still answer for itself**, both about the puzzle:
+*which* second refusal it owes — Bricks and Clusters choose
+`CONTRADICTION_UNLOCALIZED` when the board is inconsistent with no entry
+provably wrong — and *whether it owes one at all*, for a game with no mistake
+concept (Flood, Fifteen, Sixteen: a solved check is the whole opening). Write
+the explicit form and say why at the site. **The helper does not grow a
+parameter for the second message**; a knob added so two games can pass a
+different constant turns a convention into a configuration language.
 
 **"Never" includes the shared builders**, and that is not a hypothetical:
 `candidate-hint.ts` builds the whole `hint()` of eleven candidate games and held

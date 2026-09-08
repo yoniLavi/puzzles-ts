@@ -38,11 +38,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  ALREADY_SOLVED,
-  DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
-} from "../../engine/hint-refusal.ts";
+import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -524,16 +520,12 @@ function stepsFor(f: BoatsFiring, w: number): HintStep<BoatsMove, BoatsHint>[] {
 }
 
 function hint(state: BoatsState): HintResult<BoatsMove, BoatsHint> {
-  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-
-  // A re-solve, so this also catches the placement that breaks no rule *yet*
-  // but appears in no solution — deducing onward from a doomed board would
-  // produce confident nonsense (docs/games/hints.md § "Refusal couples to the mistake overlay").
-  if (findMistakes(state).length > 0)
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
+  // `findMistakes` is a re-solve, so this also catches the placement that breaks
+  // no rule *yet* but appears in no solution — deducing onward from a doomed
+  // board would produce confident nonsense (docs/games/hints.md § "Refusal
+  // couples to the mistake overlay").
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
 
   const plan = deduceBoatsPlan(state);
   const steps = plan.firings.flatMap((f) => stepsFor(f, state.params.w));

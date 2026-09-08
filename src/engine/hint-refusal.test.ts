@@ -225,3 +225,54 @@ describe("a hint refusal says the same thing in every game", () => {
     }
   });
 });
+
+/**
+ * Why a game still names `ALREADY_SOLVED` or `FIX_MISTAKES_FIRST` itself instead
+ * of taking the pair from `commonHintRefusal` — one entry per game, and the
+ * derivation below asserts this is *exactly* the set that did not adopt.
+ *
+ * This is the `NO_KEYBOARD` shape (`docs/games/testing.md` § "How a cross-game
+ * guard finds its population"): the derivation says **who**, the ledger says
+ * **why**, and neither can rot, because a game that adopts starts failing until
+ * its entry is deleted and a game that regresses fails until one is added.
+ */
+const OPENS_ITS_OWN_REFUSAL: Record<string, string> = {
+  bricks:
+    "chooses between FIX_MISTAKES_FIRST and CONTRADICTION_UNLOCALIZED: its board can be inconsistent with no single entry provably wrong, and the promised highlight would never come.",
+  clusters: "as Bricks — the second refusal is conditional, not the pair's.",
+  fifteen:
+    "no mistake concept at all, and its completion test is `isCompletedTiles(...)` rather than a `completed` field. One line is the whole opening.",
+  flood: "as Fifteen — a solved check and nothing to be wrong about.",
+  sixteen: "as Fifteen; its completion test is `outOfPlace === 0`.",
+};
+
+describe("the shared refusal opening", () => {
+  /** Games whose `index.ts` still names either half of the pair. After
+   * `adopt-the-shared-refusal-opening` an adopter names neither — it calls
+   * `commonHintRefusal` — so this set *is* the non-adopters. */
+  const opensItsOwn = new Set<string>();
+  let adopters = 0;
+  for (const [path, text] of Object.entries(gameSources)) {
+    const m = path.match(/games\/([^/]+)\/index\.ts$/);
+    if (!m) continue;
+    if (/\bALREADY_SOLVED\b|\bFIX_MISTAKES_FIRST\b/.test(text)) opensItsOwn.add(m[1]);
+    if (text.includes("commonHintRefusal(")) adopters++;
+  }
+
+  it("is taken by every game that owes the plain pair", () => {
+    // THE GUARD. A game that hand-writes "solved first, then wrong" is asking
+    // for two rules to be got right by hand that the helper makes structural:
+    // the order (a finished board is not a wrong board) and the promise that
+    // `FIX_MISTAKES_FIRST` only fires where something will actually be
+    // highlighted. Fifteen games wrote them out and `commonHintRefusal` had
+    // **no callers at all** until `adopt-the-shared-refusal-opening`.
+    expect([...opensItsOwn].sort()).toEqual(Object.keys(OPENS_ITS_OWN_REFUSAL).sort());
+  });
+
+  it("counts the adopters, so the sweep cannot quietly shrink", () => {
+    // The vacuity half: the assertion above would also pass if the scan stopped
+    // seeing game sources entirely. Fifteen adopted; the floor sits below that
+    // and is not a ratchet a legitimate change has to bump.
+    expect(adopters).toBeGreaterThan(10);
+  });
+});

@@ -24,11 +24,7 @@ import {
 } from "../../engine/color/palette.ts";
 import { galaxiesBlackRegion } from "../../engine/color/palette-games.ts";
 import { type DifficultyContract, tierNames } from "../../engine/difficulty.ts";
-import {
-  ALREADY_SOLVED,
-  DEDUCTION_EXHAUSTED,
-  FIX_MISTAKES_FIRST,
-} from "../../engine/hint-refusal.ts";
+import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import {
   type Game,
   type HintResult,
@@ -902,13 +898,8 @@ function findMistakes(s: GalaxiesState): readonly GalaxiesMistake[] {
  * player is looking at, not about the deduction.
  */
 function hint(s: GalaxiesState): HintResult<GalaxiesMove, GalaxiesHint> {
-  if (s.completed) return { ok: false, error: ALREADY_SOLVED };
-  if (findMistakes(s).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  const refusal = commonHintRefusal(s.completed, findMistakes(s).length);
+  if (refusal) return refusal;
   const steps = galaxiesHintSteps(s);
   if (steps.length === 0) {
     // On an Unreasonable board this is the expected end of the road, not a
