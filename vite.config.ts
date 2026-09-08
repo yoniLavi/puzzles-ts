@@ -15,6 +15,7 @@ import {
   REPO_URL,
 } from "./src/project-identity.ts";
 import { puzzleIds, puzzleCatalog as puzzles } from "./src/puzzle/catalog-data.ts";
+import { canonicalCoverage } from "./vite-plugins/canonical-coverage.ts";
 import { dependencyNotices } from "./vite-plugins/dependency-notices.ts";
 import {
   extraPages,
@@ -243,6 +244,16 @@ const PRECACHE_IGNORES = ["404.html", "**/unsupported*.{html,css,js}"];
 
 const sentryFilterApplicationId = "code-from-puzzles-web";
 
+/**
+ * Pages deliberately absent from `sitemap.xml`: the 404 page and the
+ * unsupported-browser page, neither of which is a destination.
+ *
+ * Shared between the sitemap plugin's `exclude` and `canonical-coverage`'s
+ * exemptions, so "not advertised" has one definition. Two copies would let a
+ * page be excused by one and demanded by the other.
+ */
+const NOT_IN_SITEMAP = ["/404", "/unsupported"];
+
 // Build src/preflight.ts for production and return its (public) url.
 // (It needs a lower build target than the main bundle, and must be kept
 // separate from it by placing in the public dir.)
@@ -368,6 +379,38 @@ export default defineConfig(async ({ command, mode }) => {
   if (canonicalBaseUrl && !canonicalBaseUrl.endsWith("/")) {
     canonicalBaseUrl += "/";
   }
+
+  /**
+   * The canonical URL of a page, **derived from the pathname the pipeline
+   * already carries** rather than computed per page set.
+   *
+   * It used to be computed per set, and only two of the four sets did it — so
+   * the 62 help pages went into `sitemap.xml` with no `<link rel="canonical">`
+   * at all, while the index and the 57 puzzle pages had one. Nothing could
+   * notice: each set was individually correct, and the two that were checked
+   * by hand after the domain went live were the two that worked.
+   *
+   * Deriving it from `urlPathname` means a page set cannot opt out by
+   * omission, and a page set added later gets it without being told. The forms
+   * must match what `vite-plugin-sitemap` advertises, because a canonical that
+   * disagrees with the sitemap is worse than none: `index.html` is the base
+   * itself, `pegs.html` is `/pegs`, and `help/index.html` is `/help` with no
+   * trailing slash.
+   */
+  const canonicalUrlFor = (urlPathname: unknown): string | undefined => {
+    if (!canonicalBaseUrl) {
+      return undefined;
+    }
+    const path = String(urlPathname)
+      .replace(/\.html$/, "")
+      .replace(/(^|\/)index$/, "");
+    return new URL(path, canonicalBaseUrl).href;
+  };
+
+  const withCanonicalUrl: Transform = (data) => ({
+    ...data,
+    canonicalUrl: canonicalUrlFor(data.urlPathname),
+  });
   const analytics_html = env["VITE_ANALYTICS_BLOCK"];
   const commonTemplateData = {
     appName: APP_NAME,
@@ -458,21 +501,15 @@ export default defineConfig(async ({ command, mode }) => {
         pages: [
           {
             virtualPages: [
-              {
-                urlPathname: "index.html",
-                data: {
-                  ...commonTemplateData,
-                  canonicalUrl: canonicalBaseUrl || undefined,
-                },
-              },
+              { urlPathname: "index.html", data: { ...commonTemplateData } },
             ],
-            transforms: [renderHandlebars({ file: "templates/index.html.hbs" })],
+            transforms: [
+              withCanonicalUrl,
+              renderHandlebars({ file: "templates/index.html.hbs" }),
+            ],
           },
           {
             virtualPages: Object.entries(puzzles).map(([id, puzzleData]) => {
-              const canonicalUrl = canonicalBaseUrl
-                ? new URL(id, canonicalBaseUrl).href
-                : undefined;
               let iconUrl: string | undefined = `src/assets/icons/${id}-64d8.png`;
               if (!fs.existsSync(iconUrl)) {
                 iconUrl = undefined;
@@ -487,11 +524,13 @@ export default defineConfig(async ({ command, mode }) => {
                     ...puzzleData,
                   },
                   iconUrl,
-                  canonicalUrl,
                 },
               };
             }),
-            transforms: [renderHandlebars({ file: "templates/puzzle.html.hbs" })],
+            transforms: [
+              withCanonicalUrl,
+              renderHandlebars({ file: "templates/puzzle.html.hbs" }),
+            ],
           },
           {
             // Our own help pages, served at /help/...
@@ -505,6 +544,7 @@ export default defineConfig(async ({ command, mode }) => {
                 typographer: true,
               }),
               (data) => ({ ...commonTemplateData, ...data }),
+              withCanonicalUrl,
               renderHandlebars({ file: "help/_template.html.hbs" }),
             ],
           },
@@ -522,6 +562,7 @@ export default defineConfig(async ({ command, mode }) => {
                 linkify: true,
                 typographer: true,
               }),
+              withCanonicalUrl,
               renderHandlebars({ file: "help/_game.html.hbs" }),
             ],
           },
@@ -584,6 +625,10 @@ export default defineConfig(async ({ command, mode }) => {
       // handed the *same* globIgnores array, so the files Workbox deliberately
       // skips and the files this check skips cannot drift apart.
       precacheCoverage({ globIgnores: PRECACHE_IGNORES }),
+      // Holds `sitemap.xml` and every page's `<link rel="canonical">` to each
+      // other. Inert without VITE_CANONICAL_BASE_URL, since neither exists
+      // then; live in CI, which is the build that reaches players.
+      canonicalCoverage({ excluded: NOT_IN_SITEMAP }),
       createSentryVitePlugin(), // Must be last plugin
       // sitemap.xml and robots.txt are SEO deploy artifacts that require the
       // canonical URL; without it the plugin crashes (it calls
@@ -595,11 +640,16 @@ export default defineConfig(async ({ command, mode }) => {
             hostname: canonicalBaseUrl.replace(/\/$/, ""),
             changefreq: "weekly",
             generateRobotsTxt: true,
-            exclude: [
-              // Skip 404.html and unsupported.html
-              "/404",
-              "/unsupported",
-            ],
+            // The plugin emits `/help` for `help/index.html`, while Cloudflare
+            // serves a folder index WITH a trailing slash and 308s `/help` to
+            // `/help/` — which is also what the app's own header links to and
+            // what the canonical says. The two forms denote one resource, and
+            // the plugin normalizes a trailing slash away (0.8.2, the current
+            // release), so `exclude` + `dynamicRoutes` cannot express it. The
+            // agreement check in `canonical-coverage` compares resources
+            // rather than strings instead, which is the correct comparison
+            // rather than a loosened one.
+            exclude: NOT_IN_SITEMAP,
           })
         : undefined,
     ],

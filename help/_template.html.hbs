@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <title>{{ title }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {{#if canonicalUrl}}
+  <link rel="canonical" href="{{ canonicalUrl }}">
+  {{/if}}
   <link rel="stylesheet" href="/src/css/help-page.css">
   <script>{{{ colorSchemeInitScript }}}</script>
 </head>

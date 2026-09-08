@@ -7,6 +7,39 @@ import {
 } from "./errors-shared.ts";
 
 /**
+ * Marks the last recovery reload, so a chunk that is missing for some reason a
+ * reload cannot fix produces one reload rather than an endless loop.
+ *
+ * `sessionStorage` because the window is per-tab and per-visit: a reload
+ * preserves it, a new tab starts clean. Both accessors are wrapped, because
+ * reading or writing web storage *throws* where a browser blocks site data,
+ * and a thrown guard here would take out the recovery it exists to bound.
+ */
+const STALE_CHUNK_RELOAD_KEY = "hintful.staleChunkReloadAt";
+const STALE_CHUNK_RELOAD_COOLDOWN_MS = 30_000;
+
+function recentlyReloadedForStaleChunks(): boolean {
+  const now = Date.now();
+  let previous = 0;
+  try {
+    previous = Number(sessionStorage.getItem(STALE_CHUNK_RELOAD_KEY)) || 0;
+  } catch {
+    // Storage unavailable. Treat it as "no recent reload" so recovery still
+    // happens; the cost of being wrong is one extra reload, not a loop, since
+    // a page that cannot store also cannot accumulate.
+  }
+  if (now - previous < STALE_CHUNK_RELOAD_COOLDOWN_MS) {
+    return true;
+  }
+  try {
+    sessionStorage.setItem(STALE_CHUNK_RELOAD_KEY, String(now));
+  } catch {
+    // See above.
+  }
+  return false;
+}
+
+/**
  * Install last-resort error handlers on the main thread.
  * These will report unhandled exceptions and promise rejections.
  */
@@ -14,6 +47,39 @@ export function installErrorHandlers() {
   if (typeof window === "undefined") {
     throw new Error("installErrorHandlers must be called from the main thread");
   }
+
+  // Recover from a stale page after a deploy.
+  //
+  // Screens import their dialogs lazily (`await import("../dialogs/…")`), and
+  // every chunk filename carries a content hash. A deploy replaces those
+  // hashes, and Cloudflare Pages serves only the current deployment — so a page
+  // loaded before the deploy names files that no longer exist, and the next
+  // lazy import fails with "Failed to fetch dynamically imported module".
+  //
+  // It reached a player on the day the custom domain went live: the About
+  // dialog would not open, and the rejection fell through to the handler below,
+  // which showed a crash dialog. That is the wrong report. The page is stale,
+  // not broken, and nothing is wrong with the app — so recover rather than
+  // accuse. A reload fetches HTML naming files that exist.
+  //
+  // Reloading is safe because it is not lossy: the puzzle screen autosaves to
+  // IndexedDB after every move and restores on load, so a player is returned to
+  // the position they were in. (Checked, not assumed — `puzzle-screen.ts`,
+  // `autoSaveGame`.)
+  window.addEventListener("vite:preloadError", (event) => {
+    // Suppress Vite's default rethrow; we are handling it.
+    event.preventDefault();
+    if (recentlyReloadedForStaleChunks()) {
+      // A second failure this soon means reloading did not fix it, so a reload
+      // loop is the risk now rather than the cure. Report it for real.
+      void reportError(
+        `${String(event.payload).trim()} [stale chunk, and reloading did not help]`,
+        event.payload,
+      );
+      return;
+    }
+    location.reload();
+  });
 
   // Catch otherwise unhandled JavaScript errors
   window.addEventListener("error", (event) => {

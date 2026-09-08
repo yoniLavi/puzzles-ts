@@ -216,3 +216,71 @@ describe("every cataloged puzzle has its generated icons", () => {
     }
   });
 });
+
+/*
+ * Every page template renders a canonical URL.
+ *
+ * `sitemap.xml` advertises all 120 pages, but `<link rel="canonical">` was
+ * computed per page set — and only two of the four sets did it. The 62 help
+ * pages shipped with none, which nothing could notice: each set was
+ * individually correct, the sitemap was individually correct, and the two
+ * pages checked by hand on the live origin after the domain went live were the
+ * two that happened to work.
+ *
+ * The derivation is fixed in `vite.config.ts` (one `withCanonicalUrl`
+ * transform, from the pathname the pipeline already carries, so a page set
+ * cannot opt out by omission). This is the other half: the *template* has to
+ * render what the transform supplies, and that is per-file by nature.
+ *
+ * The population is derived from the shape rather than listed — a page
+ * template is a `.hbs` containing `<head`, which is what makes it a page. A
+ * roster would be the thing a new template gets forgotten from.
+ */
+/*
+ * NOT HERE: a check that every lazily-imported module resolves.
+ *
+ * It was written, and it worked — renaming the About dialog made it fail with a
+ * clear message. Then the instrument was checked against something outside
+ * itself, and `tsgo` reports the same rename as `TS2307` from the *first* step
+ * of the gate, well before vitest runs. A literal `import("…")` specifier is
+ * statically analyzable, so the typechecker already owns it.
+ *
+ * Removed rather than kept as belt-and-braces: a second guard over ground the
+ * first already covers is a maintenance cost that reads as coverage, and the
+ * next person to touch it has to re-derive that it was never load-bearing.
+ * Recorded here so it does not get rebuilt.
+ */
+
+const pageTemplates = import.meta.glob<string>(
+  ["../templates/*.hbs", "../help/*.hbs"],
+  { query: "?raw", import: "default", eager: true },
+);
+
+describe("every page template renders a canonical URL", () => {
+  // Which .hbs files are *pages* — the ones with a document head. `_headers`
+  // is a template too and must not be caught by this.
+  const pages = Object.entries(pageTemplates).filter(([, text]) =>
+    text.includes("<head"),
+  );
+
+  it("finds page templates to scan (sanity)", () => {
+    // Vacuity guard: an unmatched glob yields {}, and every assertion below
+    // would then pass over nothing and report health. Four today — index,
+    // puzzle, and the two help templates.
+    expect(pages.map(([path]) => path).sort()).toEqual([
+      "../help/_game.html.hbs",
+      "../help/_template.html.hbs",
+      "../templates/index.html.hbs",
+      "../templates/puzzle.html.hbs",
+    ]);
+  });
+
+  it.each(pages)("%s", (path, text) => {
+    expect(
+      text,
+      `${path} renders no <link rel="canonical">, so its pages would be in ` +
+        "sitemap.xml with nothing pointing them at the canonical origin. " +
+        "vite.config.ts supplies `canonicalUrl` to every page set.",
+    ).toMatch(/<link\s+rel="canonical"\s+href="\{\{\s*canonicalUrl\s*\}\}">/);
+  });
+});

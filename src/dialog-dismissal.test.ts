@@ -62,10 +62,20 @@ const MODAL_ON_PURPOSE: Record<string, string> = {
  * than `<wa-drawer label=...>`", which this scan counted as a second, undecided
  * drawer on its first run.
  *
+ * Comments are blanked to spaces rather than deleted so every remaining
+ * character keeps its offset and line number.
+ *
  * Template literals are deliberately left intact, because that is where the
  * real markup lives. The one thing that could go wrong is a `//` inside a
  * string on the same line as a dialog tag (a URL); no such line exists, and the
  * tag-count floor below would notice mass blanking.
+ *
+ * **Kept local on purpose.** Two other files in the tree strip comments and
+ * neither is this: `palette-override-claims.test.ts` strips the comment
+ * *markers* in order to read the prose, which is the opposite job, and
+ * `module-layering.test.ts` deletes block comments outright, having no use for
+ * offsets. Sharing a word is not sharing a purpose, and this had exactly one
+ * consumer when a shared home was tried.
  */
 function stripComments(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, " "));
