@@ -1,0 +1,15 @@
+# No spec deltas yet. The `sixteen` spec already requires what is broken — a
+# hint that reaches a solved board — so this change makes the code obey a
+# requirement that is written, exactly as `assert-that-tiers-bind` did for
+# Undead. A delta gets added only if the fix establishes something new: the
+# likely candidate is a subgoal-stability requirement in `ts-engine`, and task
+# 3 decides whether that generalizes or stays Sixteen's.
+#
+# Writing it now would be guessing at the shape of a fix that has not been
+# designed.
+#
+# `schema` is required for this file to be valid change metadata at all — without
+# it the `skip_specs` marker parses but is *not honored*, and `validate` says so
+# rather than passing. It names the same workflow as `openspec/config.yaml`.
+schema: spec-driven
+skip_specs: true

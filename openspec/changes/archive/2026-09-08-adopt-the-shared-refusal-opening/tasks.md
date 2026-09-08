@@ -54,8 +54,12 @@
 
 ## 4. Close
 
-- [ ] 4.1 `npm run gate`.
-- [ ] 4.2 Archive under self-driven initiative. No owner acceptance: no player
+- [x] 4.1 `npm run gate` — green first time: 301 files, 8,484 tests, plus the
+      parallel `vite build`. **78 s**, against 167–216 s for the same gate earlier
+      in the session; the box had been at load average 533 and was not, by then.
+      Worth recording because two test-cost decisions today were made against
+      timings taken under that load.
+- [x] 4.2 Archived under self-driven initiative. No owner acceptance: no player
       sees a different string on any board.
 
 ## Findings
