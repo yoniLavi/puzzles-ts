@@ -84,9 +84,14 @@ candidate host, so none of them waits on the choice.
       which is evidence rather than inference. Cloudflare re-uploaded 68 of 326
       files and recognized 258 as already present, so the content-addressed
       dedup works across a manual and a CI deploy of the same tree.
-- [ ] 2.2 Set the deploy environment. Each of these is currently unset and each
-      changes an output:
-      - [ ] `VITE_CANONICAL_BASE_URL` — without it **no `sitemap.xml`** and no
+- [x] 2.2 Set the deploy environment. Each changes an output:
+      - [x] `VITE_CANONICAL_BASE_URL` — set as a repository **variable** (not a
+            secret; it is not one and wants to be readable) to
+            `https://hintful.click/` on 2026-09-08, once the domain resolved.
+            `sitemap.xml` (120 URLs), the plugin's `robots.txt` naming it, and
+            `<link rel=canonical>` on every page are live and verified on the
+            origin. The history below is kept because it is what the next
+            domain move would need to know. — without it **no `sitemap.xml`** and no
             `<link rel=canonical>` on 57 puzzle pages. (`robots.txt` ships
             either way — see 0.4.) The owner's chosen domain is
             **`hintful.click`** (2026-09-03; unregistered on the day, checked
@@ -106,27 +111,40 @@ candidate host, so none of them waits on the choice.
             the OAuth session carries `zone:read` rather than write. Set this
             variable **after** the domain resolves: canonical links pointing at
             a parking page are worse than none.
-      - [ ] `VITE_APP_NAME` — optional: the default is the product name from
-            `src/project-identity.ts` ("Hintful Puzzles"), so set it only to
-            brand a deployment differently.
-      - [ ] `VITE_GIT_SHA` / `VITE_APP_VERSION` — so a report from a phone names
-            a build. Both default sensibly under `actions/checkout` (the git dir
-            is present, so `git rev-parse HEAD` works); set them only to pin.
-      - [ ] `VITE_SENTRY_DSN` — a real decision, not a checkbox: it widens
-            `connect-src` and turns on `Accept-CH` client hints. The repo's
-            "let unrecoverable errors reach Sentry" rule has teeth for the first
-            time once there is a public URL. **It is not a secret** — a
-            client-side DSN is compiled into a public bundle and readable out of
-            `dist/assets/`. The real controls are Sentry's allowed-domains list
-            and rate limits, set in Sentry. Do not mistake a CI secret for one.
-- [ ] 2.3 Translate `_headers` for the chosen host if it does not read that
-      format (Netlify: nearly the same file, minus `!`; Render: `render.yaml`;
-      Vercel: `vercel.json`). **Translate the cache-control rules too, not only
-      the CSP** — `/assets/*` and `/preflight/*` are `immutable` for a year and
-      the HTML is not, and getting that backwards ships a stale app that will
-      not update. The inversion in 0.1 makes this materially smaller: seven
-      rules use the Cloudflare-only `!` directive now, down from 64.
-- [ ] 2.4 **Keep the privacy notes true for the deployed build.** The About
+      - [x] `VITE_APP_NAME` — **deliberately not set.** The default is the
+            product name from `src/project-identity.ts` ("Hintful Puzzles"),
+            which is what this deployment should say; setting it would only
+            brand a deployment differently. Recorded as a decision rather than
+            left looking unfinished.
+      - [x] `VITE_GIT_SHA` — set on the gate job to `${{ github.sha }}`, which
+            is exact rather than inferred. `VITE_APP_VERSION` is left to its
+            default (`<date>.<short sha>`), which already names a build.
+      - [→] `VITE_SENTRY_DSN` — **the one item this change does not close**,
+            and it is a decision rather than a task: it widens `connect-src`,
+            turns on `Accept-CH` client hints, and is bound to the crash-report
+            paragraph of the privacy notes. Moved to its own change,
+            `enable-crash-reporting`, rather than archived over or left as a
+            dangling checkbox. What was learned here goes with it: the DSN is
+            **not a secret** — a client-side DSN is compiled into a public
+            bundle and readable out of `dist/assets/`, so the real controls are
+            Sentry's allowed-domains list and rate limits.
+- [n/a] 2.3 Translate `_headers` for the chosen host — **not needed.**
+      Cloudflare Pages reads the emitted file verbatim, `!` detach directive
+      included, which is the property that decided the host. The translation
+      notes are kept in `design.md` against a future move (Netlify is nearly the
+      same file minus `!`; Render and Vercel mean a rewrite), and the inversion
+      in 0.1 shrank the Cloudflare-only part from 64 rules to seven.
+- [x] 2.4 **Privacy notes checked against the shipped build, and true.** No
+      analytics vendor is loaded and the CSP names none (0.6), so the
+      measurement paragraph describes the deployment exactly — nothing is
+      counted at all. No crash reporting is on, so the crash-report paragraph
+      describes a state the build is not in, which its own wording already
+      allows ("When a build of the app has crash reporting switched on"). Games
+      and settings are in IndexedDB on the device, as the storage paragraph
+      says. **The remaining binding travels with `enable-crash-reporting`**:
+      turning the DSN on must keep `sendDefaultPii: false`
+      (`src/utils/sentry.ts:33`, checked 2026-09-07) or amend the notes in the
+      same change. Original duty text kept below. The About
       dialog's Privacy panel (`src/assets/privacy.html`, written by
       `claim-project-authorship`, 2026-09-02) promises: no personal information
       collected or stored; games and settings stay in the browser; any
@@ -216,10 +234,12 @@ to a glance at the home page.
       together they confirm 0.4's correction on the wire: one is gated, the
       other is not. Re-check both when the domain lands; `robots.txt` should
       then be the plugin's output naming the sitemap.
-- [ ] 4.6 Hand the URL over. `test-touch-on-a-real-device` is blocked on it and
-      is where the touch acceptance the input-parity audit could not get
-      actually happens. **Do this on the `pages.dev` URL rather than waiting for
-      the domain** — it is the whole reason the deploy is urgent.
+- [x] 4.6 URL handed over, and the acceptance happened: the owner played
+      **Magnets to completion on a phone** (2026-09-08) against the deployed
+      app. That is the touch acceptance the input-parity audit could not get,
+      and it unblocks `test-touch-on-a-real-device`. It also produced the first
+      real bug report — a stale-chunk failure opening the About dialog, fixed in
+      `f251fc30` — which is the argument for the whole change in one line.
 
 ## 5. Close out
 
@@ -236,8 +256,18 @@ to a glance at the home page.
 - [x] 5.3 `openspec validate deploy-the-web-app --strict` — passing, and it runs
       in the commit gate on every commit anyway.
 
-**Still open, all tied to the domain rather than to the deploy:** buying
-`hintful.click` and setting `VITE_CANONICAL_BASE_URL` (2.2), the
-`VITE_SENTRY_DSN` decision (2.2), HSTS at the custom domain (3.2), and the
-owner's touch acceptance (4.6). The change stays open until those land; the
-publishing pipeline itself is done and proved.
+**Done, and accepted by the owner 2026-09-08.** The app is at
+<https://hintful.click>, published from the gate's own artifact on every green
+push to `main`. Everything the domain was waiting on landed with it: the zone
+moved to Cloudflare (nameservers, because Pages cannot serve an apex on external
+DNS), the canonical URL turned on the sitemap and the canonical links, HSTS
+ramped from five minutes to a year after being seen arriving, and the touch
+acceptance happened on a phone.
+
+**One item left this change rather than closing with it.** `VITE_SENTRY_DSN` is
+a decision about what the app sends to a third party, bound to a paragraph of
+the privacy notes, and it does not belong as an unchecked box inside a shipped
+deploy. It is scaffolded as `enable-crash-reporting`, which carries the reasons
+and the constraints found here — the DSN is public by construction,
+`sendDefaultPii: false` must stay, and the CSP and `Accept-CH` both widen when
+it is set.
