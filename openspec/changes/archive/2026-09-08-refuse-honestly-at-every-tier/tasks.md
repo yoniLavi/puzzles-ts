@@ -95,12 +95,27 @@
 
 ## 4. Close
 
-- [ ] 4.1 `npm run gate`.
-- [ ] 4.2 Run the app: Solo `Unreasonable` to the deduction wall, read the
-      banner; Galaxies `Unreasonable` (the game losing its bespoke sentence);
-      one Easy board to confirm nothing changed there.
-- [ ] 4.3 Archive under self-driven initiative, stating the wording chosen and
-      why.
+- [x] 4.1 `npm run gate` — green on the third attempt, and **both failures were
+      the gate doing its job**:
+      - the **probe-anchor check** fired, because moving the mistake test out of
+        `candidate-hint.ts` moved a line the local-feedback corpus quotes.
+        Re-anchored on the `commonHintRefusal` call with the reason at the site;
+        same planted defect, same module, so the measurement stays comparable.
+      - **three tests restated the wording** instead of importing it — Boats
+        (`/deduce/i`, which stopped matching once the message said "by
+        deduction"), Crossing, and `candidate-hint.test.ts`. All three now import
+        the constant. That is this change's own rule one layer out: a regex over
+        a message is a second, weaker statement of what the message is, and it
+        drifts exactly like a copied literal.
+- [x] 4.2 Ran the app in Chrome. Galaxies `Unreasonable` (keeps its words) and
+      Solo `Unreasonable` (gains them through the candidate path) both show the
+      banner. The refusal renders as a **five-line amber callout in the ~250 px
+      sidebar** under the Hint button, wrapping cleanly with no clipping — the
+      thing no test could have told me, since the new sentence is 152 characters
+      and the one it replaces was 47.
+- [x] 4.3 Archived under self-driven initiative. **Wording: Galaxies', verbatim**
+      — the only one of the three that tells the player what to do, and the only
+      one an owner had accepted (2026-08-11).
 
 ## Findings
 
