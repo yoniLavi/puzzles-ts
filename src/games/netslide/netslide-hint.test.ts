@@ -380,15 +380,24 @@ describe("netslide hint narration", () => {
       const res = hintOf(state, aux);
       if (!res.ok) continue;
       for (const step of res.steps) {
-        if (step.continuesPrevious) continue;
+        // Select on the **sentence**, not on a guess at which step will carry
+        // it. Picking steps by their marks — belongs, and a destination next to
+        // the source — over-selects: a tile on the source's own row or column is
+        // narrated by the frozen-line branch above this one, which takes
+        // precedence and says something else entirely. That predicate held only
+        // as long as no such step happened to come first in forty boards, and
+        // the moment better plans changed which step did, it convicted a
+        // perfectly good sentence.
+        if (!step.explanation.includes("belongs beside the source")) continue;
+        // No preamble: the sentence opens on the tile or on the imperative,
+        // never on a lecture about what the source can and cannot do.
+        expect(step.explanation).toMatch(/^(This|Take this) /);
+        // …and the claim it makes is true of the step it is attached to.
         const marks = step.highlights as NetslideHint;
         const dx = Math.abs((marks.destination % state.w) - state.cx);
         const dy = Math.abs(Math.floor(marks.destination / state.w) - state.cy);
-        if (!marks.belongs || dx + dy !== 1) continue;
-        // Either shape, but no preamble: the sentence opens on the tile or on the
-        // imperative, never on a lecture about what the source can and cannot do.
-        expect(step.explanation).toMatch(/belongs beside the source/);
-        expect(step.explanation).toMatch(/^(This|Take this) /);
+        expect(marks.belongs).toBe(true);
+        expect(dx + dy).toBe(1);
         seen = true;
       }
     }

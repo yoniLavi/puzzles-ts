@@ -95,25 +95,40 @@ function leafEntries(menu: PresetMenu<unknown>): { title: string; params: unknow
 /**
  * The presets the resume walk covers.
  *
- * **Every preset in the slow tier; one per declared tier in the gate slice.**
+ * **Every preset in the slow tier; in the gate slice, one per axis the game
+ * actually varies.**
+ *
  * This walked `firstLeaf` alone until `refuse-honestly-at-every-tier` — by
  * convention the smallest and easiest board a game offers — so the collection's
  * strongest hint guarantee had never seen a Hard board, an `Unreasonable` board
  * or any mode variant. Widened, it found thirteen refusals across seven games
  * that the narrow form could not reach, saying three different things.
  *
- * The slice is keyed on **tier** rather than on a count because tier is the axis
- * the narrow form was blind to; a slice that fell back to one preset per game
- * would restore exactly the blindness this exists to remove
- * (`testing/slow.ts`: never defer the only case for a configuration).
+ * **Tier is the right axis only for a game that has one.** Keyed on tier alone,
+ * every preset of an *untiered* game collapses to a single key, so the slice
+ * took the first and nothing else — reinstating, for those games, exactly the
+ * first-preset blindness the widening existed to remove. It cost a real defect:
+ * Sixteen is untiered with five presets, its 3×3 walks in seven moves, and the
+ * hint cycled for ever on its 5×5 (`fix-sixteen-hint-recompute-stability`) where
+ * only the slow tier could see it.
+ *
+ * So an untiered game is sliced by **size** instead, taking the first preset and
+ * the last. Presets are conventionally ordered smallest-first, which is the same
+ * convention `firstLeaf` already relies on, and taking both ends is the cheap
+ * honest approximation of "cover the axis this game varies". It costs one extra
+ * walk per untiered game.
  */
 function walkedPresets(game: AnyGame): { title: string; params: unknown }[] {
   const all = leafEntries(game.presets());
   if (SLOW_TESTS_ENABLED) return all;
   const contract = game.difficulty as DifficultyContract<unknown> | undefined;
+  if (!contract) {
+    // First and last, de-duplicated for a game that offers only one preset.
+    return all.length <= 1 ? all : [all[0], all[all.length - 1]];
+  }
   const seen = new Set<unknown>();
   return all.filter((e) => {
-    const key = contract?.tierOf(e.params) ?? "untiered";
+    const key = contract.tierOf(e.params);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -249,7 +264,11 @@ describe("a hint can solve from any mid-game position", () => {
         // **This walk buys breadth over presets; the seed count is not the dial
         // to turn, and that was priced rather than assumed.** One seed either
         // way: the slow tier widens the *presets* (209 cases, ~2 min), the gate
-        // takes one per declared tier (~70 cases, 35 s).
+        // slices by the axis a game varies — 76 cases, 69 s measured 2026-09-08
+        // on this box at load 4.7, so read that as an upper bound rather than a
+        // clean figure. Adding the untiered games' last preset took it from 65
+        // walks to 76; the eleven it added are each a game's *largest* board,
+        // which is why eleven walks in six cost roughly as much as the first 65.
         //
         // Five seeds — the count `SEEDS` carried when this walked a single
         // preset — was tried over every preset and **withdrawn**: 50 minutes of
@@ -285,7 +304,7 @@ let walkedCases = 0;
 describe("the resume walk", () => {
   it("covered enough boards to mean something", () => {
     // The floor separates "working" from "enumerating nothing" and sits well
-    // below the gate slice's true count (~70 walks over 30 games when written),
+    // below the gate slice's true count (76 walks over 30 games when written),
     // so it is not a ratchet a legitimate change has to bump.
     expect(walkedCases).toBeGreaterThan(40);
   });

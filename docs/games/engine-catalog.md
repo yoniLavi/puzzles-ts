@@ -414,10 +414,13 @@ Fifteen's and Sixteen's hints read as one voice.
 
 ### `slide-planner.ts` — sliding-permutation search
 
-Bucket-queue A\* + exact bidirectional BFS + the no-progress gate + partial
-plans, over "the board as the player sees it" (one integer per cell — two
-boards showing the same picture are the same position, which matters when
-tiles are interchangeable). Consumers: Sixteen, Netslide.
+Bucket-queue A\* + exact bidirectional BFS + partial plans, over "the board as
+the player sees it" (one integer per cell — two boards showing the same picture
+are the same position, which matters when tiles are interchangeable). The exact
+search runs on **every** board, and a game supplies its budget but never *when*
+to spend it; gating it is what made Sixteen's hint cycle, and
+`docs/games/hints.md` § "Sliding-permutation games" lesson (b) has the numbers.
+Consumers: Sixteen, Netslide.
 
 ### `hint-mark.ts` — the ring and the outline
 

@@ -403,16 +403,6 @@ function statusbarText(state: SixteenState, _ui: SixteenUi): string {
 
 // --- hint heuristic ----------------------------------------------------
 
-/** Test-only diagnostic: whether the most recent `hint()` engaged the exact
- * bidirectional fallback — the expensive (~0.5-2s) path the no-progress gate
- * exists to avoid on boards the forward search can already make progress on.
- * Tests assert this directly instead of timing a wall-clock proxy (which
- * flakes under full-suite CPU contention). Unused in production. */
-let lastHintEngagedFallback = false;
-export function __lastHintEngagedFallback(): boolean {
-  return lastHintEngagedFallback;
-}
-
 /** Sixteen's own move for a planned slide. The planner's `delta` already means
  * "how far a tile travels", which is Sixteen's sense too, so only the axis
  * spelling differs. */
@@ -481,11 +471,12 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     goal,
     heuristic,
     moves,
-    // Near the solved state a somewhat larger budget resolves shallow
-    // plateaus; deep local minima (two swapped pairs) are beyond *any* sane
-    // forward budget and are the exact fallback's job, so there is no point
-    // burning a huge budget here.
-    maxStates: outOfPlace <= 8 ? 6000 : 4000,
+    // The heuristic search only ever runs on boards the exact search below
+    // could not reach, which are the ones far from finished. One budget, not the
+    // 6000-or-4000 it used to be depending on how close the board looked: that
+    // was a gate on a board measure, which is the shape this game's hint cycle
+    // came from, and the exact search is the whole cost anyway.
+    maxStates: 6000,
     // Don't open by undoing (or partly undoing) the slide the player just made.
     rejectFirstMove:
       last?.type === "slide"
@@ -504,17 +495,22 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
             );
           }
         : undefined,
-    // A local minimum sits ~8 plies uphill — beyond any forward budget — but
-    // meeting in the middle crosses it at ~4 plies a side, paid once for the
-    // whole endgame thanks to plan-carrying. Only worth it near the end, and
-    // only once the forward search has proved itself helpless.
-    exactSearch:
-      outOfPlace <= 8
-        ? { when: "no-progress" as const, maxDepth: 10, maxStates: 4_000_000 }
-        : undefined,
+    // Shortest first, on every board, unconditionally — which is what makes a
+    // hint the player keeps re-asking for actually arrive. A local minimum
+    // (two swapped pairs) sits ~8 plies uphill of every slide, beyond any
+    // forward budget, and meeting in the middle crosses it at ~4 plies a side.
+    //
+    // **The unconditional part is the whole fix, and it was not obvious.**
+    // Arming this only near the finish reads like an easy saving and is a
+    // ping-pong: the exact plan walks *uphill* in both of the cheap measures of
+    // "near" (measured on a 5×5 board — a plan starting at 9 tiles out of place
+    // and a travel distance of 9 peaks at 17 and 30 on the way home), so any
+    // gate switches off partway down its own descent and hands the board back
+    // to the heuristic, which walks it straight back to where it started. Three
+    // gates were tried and all three cycled.
+    exactSearch: { maxDepth: 10, maxStates: 2_500_000 },
   });
 
-  lastHintEngagedFallback = plan.usedExactSearch;
   const path = plan.moves;
   if (path.length === 0) {
     return { ok: false, error: NO_MOVE_WORTH_MAKING };

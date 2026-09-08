@@ -277,25 +277,48 @@ describe("planSlides", () => {
   });
 
   describe("the exact bidirectional search", () => {
+    // **One known gap, stated rather than left to be rediscovered.** Nothing
+    // here catches the search *answering mid-level* — taking a level's first
+    // meet instead of its cheapest, which the module's own doc names as the
+    // subtle way to get it wrong. It is the local-feedback probe's one survivor
+    // in this file, and that is not for want of trying:
+    //
+    //  - Path length does not expose it. An independent breadth-first check of
+    //    every exact plan against the true distance was written and run over 352
+    //    boards with the mutation in place: not one non-shortest path. That
+    //    agrees with two earlier measurements (601 and ~3,900 scrambles) and has
+    //    a reason — the search always grows the *smaller* frontier, so a level's
+    //    meets sit at the same other-side depth. The check was not kept: 13.7 s
+    //    to catch nothing this suite does not already catch.
+    //  - What the mutation *does* change is when the search gives up, because
+    //    answering mid-level answers before the next budget check. A differential
+    //    against the pre-rewrite implementation over 426 boards found the two
+    //    agreeing move for move everywhere except two, both in the
+    //    budget-exhausted regime, where the mutant answered and the original
+    //    refused.
+    //
+    // A guard would have to reach a board whose level straddles the state cap.
+    // Worth writing if one turns up; not worth manufacturing.
     const EXACT = { maxDepth: 10, maxStates: 200_000 } as const;
 
-    it("stays out of the way while the forward search is making progress", () => {
+    it("runs on a board the heuristic could have handled, and still answers", () => {
+      // It runs on *every* board — the guarantee, not an oversight: a search
+      // held back until the heuristic proves helpless is the shape that made
+      // Sixteen's hint cycle. Here the heuristic would have got home on its own,
+      // and the answer is the same either way, one move shorter or equal.
       const start = apply(solved(N), W, H, [{ axis: "row", index: 2, delta: +1 }]);
 
-      const plan = puzzle(start, {
-        exactSearch: { when: "no-progress", ...EXACT },
-      });
+      const plan = puzzle(start, { exactSearch: EXACT });
 
       expect(plan.reachedGoal).toBe(true);
-      expect(plan.usedExactSearch).toBe(false);
+      expect(plan.moves).toHaveLength(1);
     });
 
-    it("engages when the forward search is at a strict local minimum", () => {
+    it("crosses a strict local minimum the forward search cannot", () => {
       // A flat heuristic — every unsolved board scores the same — leaves the
-      // forward search with nothing to improve on, which is exactly the strict
-      // local minimum the gate is there to catch. With a budget too small to
+      // forward search with nothing to improve on. With a budget too small to
       // stumble onto the goal by breadth alone, only the exact search can rescue
-      // it.
+      // it — and a board like this is what the search exists for.
       const scramble: SlideMove[] = [
         { axis: "row", index: 0, delta: +1 },
         { axis: "col", index: 2, delta: -1 },
@@ -306,11 +329,10 @@ describe("planSlides", () => {
 
       const plan = puzzle(start, {
         heuristic: (board) => (board.every((v, i) => v === i + 1) ? 0 : 100),
-        exactSearch: { when: "no-progress", ...EXACT },
+        exactSearch: EXACT,
         maxStates: 20,
       });
 
-      expect(plan.usedExactSearch).toBe(true);
       expect(plan.reachedGoal).toBe(true);
       expect(plan.moves).toHaveLength(scramble.length);
       expect(apply(start, W, H, plan.moves)).toEqual(solved(N));
@@ -328,9 +350,8 @@ describe("planSlides", () => {
       ];
       const start = apply(solved(N), W, H, scramble);
 
-      const plan = puzzle(start, { exactSearch: { when: "first", ...EXACT } });
+      const plan = puzzle(start, { exactSearch: EXACT });
 
-      expect(plan.usedExactSearch).toBe(true);
       expect(plan.reachedGoal).toBe(true);
       expect(apply(start, W, H, plan.moves)).toEqual(solved(N));
       expect(plan.moves.length).toBe(scramble.length);
@@ -350,7 +371,7 @@ describe("planSlides", () => {
       let board = start;
       let previous = Number.POSITIVE_INFINITY;
       for (let step = 0; step < 20; step++) {
-        const plan = puzzle(board, { exactSearch: { when: "first", ...EXACT } });
+        const plan = puzzle(board, { exactSearch: EXACT });
         if (plan.moves.length === 0) break;
         expect(plan.moves.length).toBeLessThan(previous);
         previous = plan.moves.length;
@@ -368,17 +389,19 @@ describe("planSlides", () => {
       );
 
       const plan = puzzle(start, {
-        exactSearch: { when: "first", maxDepth: 4, maxStates: 500 },
+        exactSearch: { maxDepth: 4, maxStates: 500 },
       });
 
       // The exact search could not reach, but the plan is still useful.
       expect(plan.moves.length).toBeGreaterThan(0);
       const distance = travel(W, H);
       expect(distance(apply(start, W, H, plan.moves))).toBeLessThan(distance(start));
-      // …and it still reports having been engaged. The flag is the games' only
-      // load-independent proxy for what the search cost, so a run that spent the
-      // budget and came back empty must not read as a run that never happened.
-      expect(plan.usedExactSearch).toBe(true);
+      // And the plan really is the heuristic's rather than the exact search's:
+      // capped at depth 4, the exact search cannot return more than four moves,
+      // so a longer plan can only have come from the fallthrough. (Asserting
+      // `reachedGoal` here would say nothing — the heuristic reaches the goal on
+      // this board, which is the *point*: the fallthrough is not a failure.)
+      expect(plan.moves.length).toBeGreaterThan(4);
     });
 
     it("may slide the same line several times running", () => {
@@ -403,10 +426,10 @@ describe("planSlides", () => {
         goal: solved(w * h),
         moves: singleStepMoves(w, h),
         heuristic: travel(w, h),
-        exactSearch: { when: "first", ...EXACT },
+        exactSearch: EXACT,
       });
 
-      expect(plan.usedExactSearch).toBe(true);
+      expect(plan.reachedGoal).toBe(true);
       expect(plan.moves).toEqual([
         { axis: "row", index: 0, delta: -1 },
         { axis: "row", index: 0, delta: -1 },

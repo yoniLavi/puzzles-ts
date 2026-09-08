@@ -1,0 +1,18 @@
+# `schema` is required for this file to be valid change metadata at all — without
+# it the workflow marker parses but is *not honored*, and `validate` says so
+# rather than passing. It names the same workflow as `openspec/config.yaml`.
+schema: spec-driven
+
+# No spec deltas yet, and deliberately so: the `sixteen` spec already requires a
+# hint that reaches a solved board, so nothing here has to be written down before
+# the code can obey it. A delta becomes necessary only if the mechanism chosen in
+# task 1 establishes something new — a pattern database the engine owns, or a
+# constructive endgame with its own narration contract — and which of those it
+# will be is exactly what has not been decided.
+#
+# Writing a delta now would be guessing at the shape of a fix that has not been
+# designed. (The previous change learned the other half of this lesson: it
+# skipped specs on the same reasoning and was wrong, because the specs there did
+# not merely fail to forbid the defect, they mandated it. Checked here: neither
+# the `sixteen` nor the `ts-engine` spec says anything that stranding satisfies.)
+skip_specs: true

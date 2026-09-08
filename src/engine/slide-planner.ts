@@ -19,12 +19,12 @@
  *
  * - **A bucket-queue A\*** over the move set, with lazy node allocation. `f = g +
  *   h` is a small integer, so a bucket per `f` beats a comparison heap.
- * - **An exact bidirectional BFS** that returns a genuinely *shortest* path. Two
- *   uses, chosen by the game (see `exactSearch`): as a last resort when the
- *   heuristic is helpless, or up front when the board is close enough that a
- *   shortest plan is worth having.
- * - **The no-progress gate**, so the expensive search is not spent on boards the
- *   heuristic can already move.
+ * - **An exact bidirectional BFS** that returns a genuinely *shortest* path, and
+ *   runs on every board before the heuristic does. A shortest plan is what makes
+ *   a hint the player keeps re-asking for arrive rather than cycle; running it
+ *   unconditionally is what makes that a guarantee rather than a hope. See
+ *   `exactSearch`, which is also where the two gates that were tried and cycled
+ *   are recorded.
  * - **Partial plans.** A search that improved on the starting board without
  *   reaching the goal returns the path to its best board. The plan runs out, the
  *   player is closer, and the next request recomputes.
@@ -85,33 +85,42 @@ export interface SlidePuzzle {
   /** Forward-search budget, in nodes expanded. */
   maxStates?: number;
   /**
-   * The exact bidirectional search. Omit it to disable it; a game decides for
-   * itself whether the cost is worth it, and *when* to spend it:
+   * The exact bidirectional search, which runs on **every** board before the
+   * heuristic does, falling through to it when the ends do not meet inside the
+   * budget. Omit it to disable it; a game decides only whether it can afford
+   * one, never when to spend it.
    *
-   * - **`"no-progress"`** — only at a strict local minimum, where the forward
-   *   search improved on nothing at all and no budget will rescue it. The
-   *   last-resort path (Sixteen's two-swapped-pairs endgame sits ~8 plies uphill
-   *   of every slide, but meeting in the middle crosses it at ~4 a side).
-   * - **`"first"`** — before the heuristic search runs at all, falling through to
-   *   it if the ends do not meet inside the budget. The reason to want this is
-   *   not that the plan comes out shorter. **A shortest plan is what stops a
-   *   recomputed plan from cycling:** its first move provably shortens the true
-   *   distance to the goal by one, so a hint recomputed after every move walks a
-   *   strictly decreasing distance and must arrive. A heuristic plan carries no
-   *   such guarantee, and near the finish it demonstrably loops — Netslide was
-   *   found sending a board five slides of the same row, each separately scoring
-   *   as progress, back to exactly where it started.
+   * The reason to want it is not that the plan comes out shorter. **A shortest
+   * plan is what stops a recomputed plan from cycling:** its first move provably
+   * shortens the true distance to the goal by one, so a hint recomputed after
+   * every move walks a strictly decreasing distance and must arrive. A heuristic
+   * plan carries no such guarantee, and near the finish it demonstrably loops —
+   * Netslide was found sending a board five slides of the same row, each
+   * separately scoring as progress, back to exactly where it started.
    *
-   * **One budget, whichever you choose.** It is tempting to run a cheap search on
-   * every board and hold a bigger one in reserve for when the heuristic proves
-   * helpless. That breaks the guarantee in a way that is very hard to see: the big
-   * search opens a descent from ten moves out, the player takes one step, and the
-   * cheap search cannot sustain it from nine — so the heuristic takes back over and
-   * walks the board round a loop. **The search that opens a descent must be the one
-   * that finishes it.**
+   * **On every board is not a missing optimization — it is the guarantee.** It
+   * is tempting to hold this search back for the boards that need it: run the
+   * cheap heuristic first and reach for the exact search only where the
+   * heuristic proves helpless, or arm it only once the board *looks* nearly
+   * finished. Both break the guarantee in a way that is very hard to see, and
+   * both were measured breaking it here.
+   *
+   * The reason is that **a shortest plan does not look like progress on the way
+   * home**. Sixteen's endgame is the worked example: a 5×5 plan starting 9 tiles
+   * out of place, with the tiles a total of 9 slides from their homes, peaks at
+   * 17 and 30 on those two measures before it arrives. So a gate keyed on either
+   * of them switches off partway down the descent it just opened, the heuristic
+   * takes back over, and it walks the board straight back to where it started —
+   * a period-4 cycle that no budget and no depth would have removed. **The
+   * search that opens a descent must be the one that finishes it**, and the only
+   * way to be sure of that is for it to be the one that always runs.
+   *
+   * What that costs is a search on boards far too far away to reach, which come
+   * back empty having spent the whole budget. That is the price of the
+   * guarantee, and it is why the budget wants to be the smallest one that still
+   * crosses the game's worst endgame rather than the largest one affordable.
    */
   exactSearch?: {
-    when: "first" | "no-progress";
     maxDepth: number;
     maxStates: number;
   };
@@ -124,16 +133,6 @@ export interface SlidePlan {
   /** Whether `moves` ends at the goal, as opposed to at the best board the
    * search reached inside its budget (a partial plan). */
   reachedGoal: boolean;
-  /** Whether the exact bidirectional search was engaged. Exposed so a game's
-   * tests can assert the no-progress gate still gates — a load-independent proxy
-   * for the cost, never an elapsed-time assertion.
-   *
-   * It reports the search having *run*, not the search having *succeeded*: a
-   * `"first"` game whose ends did not meet inside the budget paid for the
-   * attempt, and the plan it ends up with came from the heuristic. Reporting
-   * `false` there would be a cost proxy that under-reports exactly the run that
-   * cost the most. */
-  usedExactSearch: boolean;
 }
 
 /** Shortest distance between two positions on a wrap-around axis of length
@@ -169,6 +168,13 @@ export function slidePieces(
   }
 }
 
+/** How many bits one cell's value needs. */
+function cellBits(maxValue: number): number {
+  let bits = 1;
+  while (1 << bits <= maxValue) bits++;
+  return bits;
+}
+
 /**
  * A collision-free string key for a board of small integers, packed several cells
  * to a character.
@@ -183,8 +189,7 @@ export function slidePieces(
  * the surrogate range, so the string stays a plain sequence of BMP characters.
  */
 function makeKeyFn(maxValue: number, cells: number): (arr: Int32Array) => string {
-  let bits = 1;
-  while (1 << bits <= maxValue) bits++;
+  const bits = cellBits(maxValue);
   const perChar = Math.max(1, Math.floor(15 / bits));
 
   return (arr: Int32Array): string => {
@@ -205,6 +210,194 @@ function invert(m: SlideMove): SlideMove {
 }
 
 /**
+ * A board squeezed into a handful of 31-bit words, and hashed.
+ *
+ * The exact search below is the expensive half of a hint and it now runs on
+ * *every* board rather than only on the ones the heuristic gave up on (see
+ * `exactSearch`), so what it costs per board is the constraint on the whole
+ * design. Measured on Sixteen 5×5, one board through the obvious
+ * string-key-in-a-`Map` route costs about 2 µs, and a search that crosses the
+ * endgame visits two million of them: four to six seconds, per hint. The same
+ * search on the storage below is a little under one second, because a board
+ * stops being an object at all — five words in a shared pool, addressed by
+ * index.
+ *
+ * Thirty-one bits per word, not thirty-two: a cell is never allowed to straddle
+ * a word boundary (the packing arithmetic is then a shift and a mask, with no
+ * carry), and the top bit is left alone so a word never comes back negative.
+ * Five bits a cell for a Sixteen tile, four for a Netslide wire mask.
+ *
+ * `pack` leaves the packed board in `buf`, which `SearchSide.find` and
+ * `SearchSide.add` read from — **one buffer, no allocation per successor**,
+ * which is the point. The two sides of the search share one packer, and never
+ * hold a packed board across a `pack` call.
+ */
+class BoardPacker {
+  /** How many words one board occupies. */
+  readonly words: number;
+  /** The board `pack` was last given. */
+  readonly buf: Int32Array;
+  private readonly perWord: number;
+  private readonly mask: number;
+
+  constructor(
+    private readonly bits: number,
+    cells: number,
+  ) {
+    this.perWord = Math.max(1, Math.floor(31 / bits));
+    this.words = Math.ceil(cells / this.perWord);
+    this.mask = (1 << bits) - 1;
+    this.buf = new Int32Array(this.words);
+  }
+
+  /** Pack `board` into `buf` and return its hash (FNV-1a over the words). */
+  pack(board: Int32Array): number {
+    // Hoisted one by one rather than destructured: biome's unused-private-member
+    // rule does not count a read through `const { … } = this`, and a suppression
+    // to buy back the shorter line would be hiding the measurement rather than
+    // satisfying it.
+    const buf = this.buf;
+    const bits = this.bits;
+    const perWord = this.perWord;
+    buf.fill(0);
+    for (let i = 0; i < board.length; i++) {
+      buf[(i / perWord) | 0] |= board[i] << ((i % perWord) * bits);
+    }
+    return hashWords(buf, 0, buf.length);
+  }
+
+  /** The reverse, out of a pool: `words[offset …]` back into `out`. */
+  unpack(words: Int32Array, offset: number, out: Int32Array): void {
+    const bits = this.bits;
+    const perWord = this.perWord;
+    const mask = this.mask;
+    for (let i = 0; i < out.length; i++) {
+      out[i] = (words[offset + ((i / perWord) | 0)] >>> ((i % perWord) * bits)) & mask;
+    }
+  }
+}
+
+function hashWords(words: Int32Array, offset: number, count: number): number {
+  let hash = 0x811c9dc5;
+  for (let k = 0; k < count; k++) {
+    hash ^= words[offset + k];
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * One end of the bidirectional search: every board it has reached, in the order
+ * it reached them, with an open-addressed index for "have I seen this board?".
+ *
+ * Nodes are appended level by level, so a level's frontier is simply the
+ * contiguous index range the previous level appended — there is no frontier
+ * array, and no per-node object anywhere.
+ *
+ * `parent`, `move` and `depth` are read by the path reconstruction and are
+ * deliberately public. `move` is an index into the puzzle's move list, `-1` at
+ * the root; for the backward side it is the move as the *search* applied it,
+ * which the reconstruction inverts to read the path forwards.
+ *
+ * Memory, since the caller's `maxStates` is what bounds it: a node costs
+ * `words` + 3 words in the pools, plus up to two slots in the index, so a
+ * 2.5-million-state Sixteen search peaks around 200 MB across both sides —
+ * a third of what the same search cost as objects and string keys.
+ */
+class SearchSide {
+  count = 0;
+  parent: Int32Array;
+  move: Int32Array;
+  depth: Int32Array;
+  private boards: Int32Array;
+  private capacity = 1 << 12;
+  /** Slot → node index + 1; 0 means empty. Linear probing, grown at half full. */
+  private table = new Int32Array(1 << 13);
+  private mask = this.table.length - 1;
+
+  constructor(
+    private readonly packer: BoardPacker,
+    root: Int32Array,
+  ) {
+    this.boards = new Int32Array(this.capacity * packer.words);
+    this.parent = new Int32Array(this.capacity);
+    this.move = new Int32Array(this.capacity);
+    this.depth = new Int32Array(this.capacity);
+    this.add(packer.pack(root), -1, -1, 0);
+  }
+
+  /** The node holding the packer's current board, or -1. */
+  find(hash: number): number {
+    const { buf, words } = this.packer;
+    for (let slot = hash & this.mask; ; slot = (slot + 1) & this.mask) {
+      const entry = this.table[slot];
+      if (entry === 0) return -1;
+      const base = (entry - 1) * words;
+      let same = true;
+      for (let k = 0; k < words; k++) {
+        if (this.boards[base + k] !== buf[k]) {
+          same = false;
+          break;
+        }
+      }
+      if (same) return entry - 1;
+    }
+  }
+
+  /** Append the packer's current board, and return its index. */
+  add(hash: number, parent: number, move: number, depth: number): number {
+    if (this.count === this.capacity) this.growPools();
+    if (this.count * 2 >= this.table.length) this.growTable();
+
+    const { buf, words } = this.packer;
+    const index = this.count++;
+    const base = index * words;
+    for (let k = 0; k < words; k++) this.boards[base + k] = buf[k];
+    this.parent[index] = parent;
+    this.move[index] = move;
+    this.depth[index] = depth;
+    this.insert(hash, index);
+    return index;
+  }
+
+  private insert(hash: number, index: number): void {
+    let slot = hash & this.mask;
+    while (this.table[slot] !== 0) slot = (slot + 1) & this.mask;
+    this.table[slot] = index + 1;
+  }
+
+  /** Board `index` back into `out`. */
+  unpack(index: number, out: Int32Array): void {
+    this.packer.unpack(this.boards, index * this.packer.words, out);
+  }
+
+  private growPools(): void {
+    this.capacity *= 2;
+    const boards = new Int32Array(this.capacity * this.packer.words);
+    boards.set(this.boards);
+    this.boards = boards;
+    this.parent = grown(this.parent, this.capacity);
+    this.move = grown(this.move, this.capacity);
+    this.depth = grown(this.depth, this.capacity);
+  }
+
+  private growTable(): void {
+    this.table = new Int32Array(this.table.length * 2);
+    this.mask = this.table.length - 1;
+    const { words } = this.packer;
+    for (let i = 0; i < this.count; i++) {
+      this.insert(hashWords(this.boards, i * words, words), i);
+    }
+  }
+}
+
+function grown(from: Int32Array, length: number): Int32Array {
+  const to = new Int32Array(length);
+  to.set(from);
+  return to;
+}
+
+/**
  * Exact bidirectional BFS from the board to the finished one: expand level by
  * level from both ends, always growing the smaller frontier, until the two
  * visited sets meet. Returns a **shortest** move path, or null when the ends do
@@ -222,31 +415,9 @@ function invert(m: SlideMove): SlideMove {
 function bidirectionalPlan(
   p: SlidePuzzle,
   caps: { maxDepth: number; maxStates: number },
-  arrayToKey: (arr: Int32Array) => string,
 ): SlideMove[] | null {
   const { w, h, start, goal, moves } = p;
   const n = start.length;
-
-  /** `parent` walks toward the start; `move` leads from the parent to here. */
-  interface FwdInfo {
-    parent: string | null;
-    move: SlideMove | null;
-    depth: number;
-  }
-  /** `parent` walks toward the goal; `out` is the forward-direction move that
-   * leads from here to the parent. */
-  interface BwdInfo {
-    parent: string | null;
-    out: SlideMove | null;
-    depth: number;
-  }
-  interface FrontierNode {
-    board: Int32Array;
-    key: string;
-    /** The move that produced this node, so its successors can be restricted to
-     * a canonical ordering (see `redundant`). */
-    from: SlideMove | null;
-  }
 
   /**
    * Would this move, played after `prev`, only ever re-tread a board some other
@@ -265,65 +436,67 @@ function bidirectionalPlan(
    * The same-line immediate undo goes too. A shortest path never contains one:
    * it would be shorter without it.
    */
-  const redundant = (prev: SlideMove | null, m: SlideMove): boolean => {
-    if (!prev || prev.axis !== m.axis) return false;
+  const redundant = (prevMove: number, mi: number): boolean => {
+    if (prevMove < 0) return false;
+    const prev = moves[prevMove];
+    const m = moves[mi];
+    if (prev.axis !== m.axis) return false;
     if (m.index < prev.index) return true;
     return m.index === prev.index && m.delta === -prev.delta;
   };
 
-  const startKey = arrayToKey(start);
-  const goalKey = arrayToKey(goal);
-  const fwdSeen = new Map<string, FwdInfo>([
-    [startKey, { parent: null, move: null, depth: 0 }],
-  ]);
-  const bwdSeen = new Map<string, BwdInfo>([
-    [goalKey, { parent: null, out: null, depth: 0 }],
-  ]);
-  let fwdFrontier: FrontierNode[] = [{ board: start, key: startKey, from: null }];
-  let bwdFrontier: FrontierNode[] = [{ board: goal, key: goalKey, from: null }];
+  let maxValue = 0;
+  for (let i = 0; i < n; i++) {
+    if (start[i] > maxValue) maxValue = start[i];
+    if (goal[i] > maxValue) maxValue = goal[i];
+  }
+  const packer = new BoardPacker(cellBits(maxValue), n);
+  const fwd = new SearchSide(packer, start);
+  const bwd = new SearchSide(packer, goal);
+
+  const node = new Int32Array(n);
+  const scratch = new Int32Array(n);
+  let fwdFrom = 0;
+  let bwdFrom = 0;
   let fwdDepth = 0;
   let bwdDepth = 0;
 
-  const scratch = new Int32Array(n);
-
-  /** The path start→goal through a key present in both visited maps: the forward
-   * parent chain (reversed), then the backward chain's outgoing moves. */
-  const joinPaths = (meetKey: string): SlideMove[] => {
+  /** The path start→goal through a board present on both sides: the forward
+   * parent chain (reversed), then the backward chain's moves read the other way
+   * round — read forward, a backward edge runs successor --inv(move)--> node. */
+  const joinPaths = (meetFwd: number, meetBwd: number): SlideMove[] => {
     const path: SlideMove[] = [];
-    for (
-      let info = fwdSeen.get(meetKey);
-      info !== undefined && info.move !== null && info.parent !== null;
-      info = fwdSeen.get(info.parent)
-    ) {
-      path.push(info.move);
+    for (let i = meetFwd; i >= 0 && fwd.move[i] >= 0; i = fwd.parent[i]) {
+      path.push(moves[fwd.move[i]]);
     }
     path.reverse();
-    for (
-      let info = bwdSeen.get(meetKey);
-      info !== undefined && info.out !== null && info.parent !== null;
-      info = bwdSeen.get(info.parent)
-    ) {
-      path.push(info.out);
+    for (let i = meetBwd; i >= 0 && bwd.move[i] >= 0; i = bwd.parent[i]) {
+      path.push(invert(moves[bwd.move[i]]));
     }
     return path;
   };
 
-  while (
-    fwdFrontier.length > 0 &&
-    bwdFrontier.length > 0 &&
-    fwdDepth + bwdDepth < caps.maxDepth
-  ) {
-    const forward = fwdFrontier.length <= bwdFrontier.length;
-    const frontier = forward ? fwdFrontier : bwdFrontier;
-    const next: FrontierNode[] = [];
+  while (fwdDepth + bwdDepth < caps.maxDepth) {
+    const fwdSize = fwd.count - fwdFrom;
+    const bwdSize = bwd.count - bwdFrom;
+    if (fwdSize === 0 || bwdSize === 0) break;
+
+    const forward = fwdSize <= bwdSize;
+    const side = forward ? fwd : bwd;
+    const other = forward ? bwd : fwd;
+    const from = forward ? fwdFrom : bwdFrom;
+    // The frontier is the level just appended, so it is the contiguous index
+    // range [from, count) — read once, before this level starts appending to it.
+    const until = side.count;
     const depth = (forward ? fwdDepth : bwdDepth) + 1;
 
     // Collect every meet this level turns up, so the cheapest can be taken once
     // the level is done (see the note above — this is what makes it shortest).
-    let bestMeet: string | null = null;
+    let bestFwd = -1;
+    let bestBwd = -1;
     let bestTotal = Number.POSITIVE_INFINITY;
 
-    for (const node of frontier) {
+    for (let ni = from; ni < until; ni++) {
       // The budget is enforced *inside* the level, not merely between levels. One
       // level expands to many times the frontier, so a frontier already near the
       // cap balloons far past it before anyone looks again — a single hint was
@@ -331,43 +504,34 @@ function bidirectionalPlan(
       // Abandoning mid-level means giving up rather than answering, because a meet
       // found before the level is finished is not guaranteed to be the cheapest,
       // and a path one move too long is worse than no path at all (see above).
-      if (fwdSeen.size + bwdSeen.size >= caps.maxStates) return null;
+      if (fwd.count + bwd.count >= caps.maxStates) return null;
 
-      for (const move of moves) {
-        if (redundant(node.from, move)) continue;
+      side.unpack(ni, node);
+      const prevMove = side.move[ni];
+      for (let mi = 0; mi < moves.length; mi++) {
+        if (redundant(prevMove, mi)) continue;
 
-        slidePieces(node.board, scratch, w, h, move);
-        const key = arrayToKey(scratch);
+        slidePieces(node, scratch, w, h, moves[mi]);
+        const hash = packer.pack(scratch);
+        if (side.find(hash) >= 0) continue;
+        const added = side.add(hash, ni, mi, depth);
 
-        if (forward) {
-          if (fwdSeen.has(key)) continue;
-          fwdSeen.set(key, { parent: node.key, move, depth });
-          const other = bwdSeen.get(key);
-          if (other && depth + other.depth < bestTotal) {
-            bestTotal = depth + other.depth;
-            bestMeet = key;
-          }
-        } else {
-          if (bwdSeen.has(key)) continue;
-          // Read forward, this edge runs successor --inv(move)--> node.
-          bwdSeen.set(key, { parent: node.key, out: invert(move), depth });
-          const other = fwdSeen.get(key);
-          if (other && depth + other.depth < bestTotal) {
-            bestTotal = depth + other.depth;
-            bestMeet = key;
-          }
+        const met = other.find(hash);
+        if (met >= 0 && depth + other.depth[met] < bestTotal) {
+          bestTotal = depth + other.depth[met];
+          bestFwd = forward ? added : met;
+          bestBwd = forward ? met : added;
         }
-        next.push({ board: new Int32Array(scratch), key, from: move });
       }
     }
 
-    if (bestMeet !== null) return joinPaths(bestMeet);
+    if (bestFwd >= 0) return joinPaths(bestFwd, bestBwd);
 
     if (forward) {
-      fwdFrontier = next;
+      fwdFrom = until;
       fwdDepth = depth;
     } else {
-      bwdFrontier = next;
+      bwdFrom = until;
       bwdDepth = depth;
     }
   }
@@ -397,20 +561,13 @@ export function planSlides(p: SlidePuzzle): SlidePlan {
 
   const startH = heuristic(start);
   if (startH === 0 || isGoal(start)) {
-    return { moves: [], reachedGoal: true, usedExactSearch: false };
+    return { moves: [], reachedGoal: true };
   }
 
-  const exact = p.exactSearch;
-  // Tracked rather than re-derived at each return: the two `"first"` exits
-  // disagreed about whether a search that ran and came back empty had happened,
-  // so the flag read `true` on the partial plan and `false` on the very same
-  // fallthrough when the heuristic then reached the goal.
-  let usedExactSearch = false;
-  if (exact?.when === "first") {
-    usedExactSearch = true;
-    const shortest = bidirectionalPlan(p, exact, arrayToKey);
+  if (p.exactSearch) {
+    const shortest = bidirectionalPlan(p, p.exactSearch);
     if (shortest && shortest.length > 0) {
-      return { moves: shortest, reachedGoal: true, usedExactSearch };
+      return { moves: shortest, reachedGoal: true };
     }
     // Out of reach inside the budget: fall through to the heuristic, which at
     // least gets the board closer.
@@ -516,21 +673,13 @@ export function planSlides(p: SlidePuzzle): SlidePlan {
   };
 
   if (goalNode) {
-    return { moves: pathTo(goalNode), reachedGoal: true, usedExactSearch };
+    return { moves: pathTo(goalNode), reachedGoal: true };
   }
 
-  // The no-progress gate. `bestNode` is still the start node exactly when no
-  // expanded board beat the start's heuristic — a strict local minimum, which no
-  // forward budget will climb out of. Only there is the exact search worth its
-  // cost: as the last resort for a game that keeps it in reserve, or at a bigger
-  // budget for a game that already tried it cheaply and first.
-  const noProgress = bestNode.move === null;
-  if (noProgress && exact?.when === "no-progress") {
-    usedExactSearch = true;
-    const shortest = bidirectionalPlan(p, exact, arrayToKey);
-    if (shortest) return { moves: shortest, reachedGoal: true, usedExactSearch };
-    return { moves: [], reachedGoal: false, usedExactSearch };
-  }
-
-  return { moves: pathTo(bestNode), reachedGoal: false, usedExactSearch };
+  // `bestNode` is still the start node exactly when no expanded board beat the
+  // start's heuristic — a strict local minimum, which no forward budget will
+  // climb out of. There is nothing left to try: the exact search has already run
+  // and come back empty, and re-running it would spend the same budget on the
+  // same board. The empty plan says so, and the game turns it into a refusal.
+  return { moves: pathTo(bestNode), reachedGoal: false };
 }

@@ -1,8 +1,9 @@
 # fix-sixteen-hint-recompute-stability
 
-**Readiness: ready.** The defect is deterministic, reproduced twice, and
-characterized down to its period. It is a known failure mode with a known fix
-shape; what remains is doing it.
+**Status: implemented.** The diagnosis below is what the change was written on;
+the two paragraphs marked **Corrected** record where it was wrong, because both
+errors cost investigation time and one of them sent the diagnosis looking for
+something exotic.
 
 ## Why
 
@@ -30,83 +31,103 @@ The opening half works — 24 down to 13, then on to 4. Then it locks into a
 **period-4 oscillation, 7 → 4 → 6 → 6 → 7 → …, forever.** It reaches four tiles
 from solved and walks away from it, repeatedly.
 
-**Two hypotheses died on the way to that**, and both are worth recording because
-each was plausible from the code alone:
+**Corrected — it *is* a state cycle.** The original diagnosis recorded "a
+state-repeat probe over 900 moves found **no** repeated board", and concluded
+that only the potential cycled while the board did not. That is false. The boards
+repeat with period 4 and have done since move 155 (`board repeat: move 163 ==
+159`, and so on to the 800-move cap). Whatever the original probe compared, it
+was not board identity. The claim mattered: it is what made the defect look like
+something stranger than the ordinary cycle it is.
 
-- *"The exact bidirectional fallback never arms."* Sixteen enables it only at
-  `outOfPlace <= 8`, and 5×5 has 25 tiles — so a plateau above the threshold
-  would leave the forward search alone with `maxStates: 4000`. **False**: the
-  trace reaches 4. The fallback arms and is *part of the oscillation*.
-- *"It is a cycle."* The walk's own error says `(loop?)`. **Also false, in the
-  sense that matters**: a state-repeat probe over 900 moves found **no repeated
-  board**. The *potential* cycles while the board does not, which is why nothing
-  simpler than this trace would have shown it.
+**Corrected — the exact search does arm, but the stated reasoning did not show
+it.** The original argued "the trace reaches 4, so the `outOfPlace <= 8`
+threshold is not what blocks it". That does not follow: the fallback needed the
+*forward search to be at a strict local minimum* as well, so reaching 4 shows
+only that one of two conditions holds. It does arm, and the timings prove it —
+the two moves of the cycle at `oop=4` cost 2.5–5 s and return an 8-move plan,
+against 0.2–0.7 s for the other two.
 
 ## What it actually is
 
 **The recompute-stability defect the collection has already paid for once.**
 `docs/games/hints.md` § "Recompute-stable plans" records it from Inertia: *a plan
-is recomputed whenever the player goes their own way, and Inertia's first cut
-sent the ball north-east, then — one move later, from a freshly-grown heuristic
-tour — south-west, for ever. The fix is a monotone potential, never
-"cache the plan", which only hides it.*
+is recomputed whenever the player goes their own way … The fix is a monotone
+potential, never "cache the plan", which only hides it.*
 
-Sixteen is that, at a larger board size. Its hint computes a plan up to 10 plies
-deep and the walk — like a player going their own way — applies the first move
-and asks again. The fresh search from the new state finds a *different* plan
-that partly undoes the last one. The code comment at the `exactSearch` site even
-names the mechanism it is relying on to avoid this — *"paid once for the whole
-endgame thanks to plan-carrying"* — which is exactly the assumption
-`hint-resume.test.ts` exists to refuse, because plan-carrying is the path a
+Sixteen is that, and its monotone potential is the **true distance to the goal**,
+which it already had a way to measure: the exact bidirectional search returns a
+shortest plan, so following the first move leaves a board exactly one move
+nearer. What was wrong is that this search was **gated** — armed only at a strict
+local minimum, and only on a board with at most eight tiles out of place. The
+code comment at the site even named the mechanism it was relying on to stay safe,
+*"paid once for the whole endgame thanks to plan-carrying"*, which is exactly the
+assumption `hint-resume.test.ts` exists to refuse: plan-carrying is the path a
 player who follows every hint takes and not the path anyone else does.
 
-**So the fix is not a bigger budget.** A deeper search or a wider `maxStates`
-would move the oscillation, not remove it: nothing in the current design makes
-the second plan agree with the first about *where it is going*. What is missing
-is a subgoal that survives recomputation — the monotone potential Inertia
-adopted.
+**No gate on a cheap board measure can work, and this is the finding of the
+change.** It is tempting to read the failure as a badly-chosen threshold. It is
+not, and the reason is structural: **a shortest plan does not look like progress
+on the way home.** On seed `hr-b` at 5×5, a plan that starts 9 tiles out of place
+with 9 total travel peaks at **17** and **30** before it arrives. So a gate keyed
+on either measure switches off partway down the descent the search itself opened,
+the heuristic takes back over, and it walks the board straight back. Three gates
+were tried on the failing walk and all three cycled:
 
-## What Changes
+| gate | 5×5 seed `hr-a` | 5×5 seed `hr-b` |
+| --- | --- | --- |
+| `outOfPlace <= 8` (shipped) | cycles | cycles |
+| `outOfPlace <= 12` | solves, 49 moves | cycles |
+| total travel `<= 20` | solves, 49 moves | cycles |
+| **none** | **solves, 49 moves** | **solves, 36 moves** |
 
-- **Sixteen's hint holds a recompute-stable subgoal**, so a plan computed one
-  move later pursues the same thing. The shape is Inertia's, not a cache.
-- **The cross-game guard gains the property**, rather than only catching its
-  symptom: `hint-resume.test.ts` proves *a* plan finishes, and
-  `docs/framework-rdd/guarantees.md`'s planner row asks for the stronger check —
-  drive every planner one step forward and assert the subgoal is unchanged. That
-  is a second change if it grows; it is named here so the connection is not lost.
-- **`walkedPresets`' untiered blind spot is closed** — see below. It must land
-  *with* the fix, not before, because widening the slice turns the gate red on
-  the very defect being fixed.
+Ungated, `hr-b` walks home with plan lengths 8, 7, 6, 5, 4, 3, 2, 1 — the
+monotone descent, visible.
 
-## The guard that found this could not have found it cheaply — and that is a defect of mine
+## What Changed
 
-`hint-resume.test.ts`'s gate slice keys on
-`contract?.tierOf(params) ?? "untiered"`. For a **tiered** game that is right:
-one preset per tier. For an **untiered** game every preset collapses to the one
-key `"untiered"`, so the slice walks exactly the first — which is precisely the
-first-preset blindness the widening existed to remove, reinstated for every
-untiered game.
+- **The exact search runs on every board.** `exactSearch` loses its `when` field
+  entirely: with both consumers wanting the same thing, when to spend the search
+  is not a decision a game legitimately makes differently, so it stops being one
+  (`AGENTS.md` § "Convention over configuration"). `SlidePlan.usedExactSearch`
+  goes too — it existed only so a game's tests could assert the gate still gated.
+- **The search was rewritten to afford it.** Ungated at the old speed a hint cost
+  4–6 s. Packing boards into 31-bit words in a flat pool behind an
+  open-addressed index — no per-node object, no string key — made the same search
+  **4.5–7× faster** and brought always-on into range: Sixteen 5×5 now hints in
+  ~0.7 s mean, 1.5 s worst. Verified differentially against the old
+  implementation over 426 boards, 0 mismatches.
+- **Netslide was measured rather than assumed**, as the tasks required. It never
+  showed the cycle, but it showed the signature — plan lengths falling 19, 18,
+  17, 16, 15, 14 and rising to 16 as the heuristic took back over. Converted, its
+  walks are *shorter* (4×4 medium 20 → 12 moves, 5×5 easy 28 → 22) for a worst
+  hint of 1.27 s against 0.88 s.
+- **`walkedPresets`' untiered blind spot is closed.** It keyed on tier, which
+  collapses every preset of an untiered game to one — reinstating the
+  first-preset blindness the widening existed to remove, for twelve games, on the
+  day it removed it. An untiered game is now sliced first-and-last by size.
+  Landed *with* the fix, and proved to catch it: restoring the gate alone turns
+  the gate slice red with the very error at the top of this document.
+- **A hint may now tell the player to undo the slide they just made**, where that
+  is the move that finishes the board. The veto against it cannot be applied to a
+  shortest plan without destroying the property that makes the plan converge, and
+  from one slide off a finished board the undo is the only correct advice.
 
-Sixteen is untiered and has five presets; the gate walks 3×3, and 3×3 is fine
-(7 moves). The defect lives at 5×5 and only the slow tier reaches it.
+## What it did not fix
 
-**The slice must cover the axis a game actually varies**: tier where there is
-one, and size where there is not. Taking the first *and last* preset for an
-untiered game is the cheap honest approximation — presets are conventionally
-ordered smallest-first, a convention the repo already relies on — and it costs
-one extra walk per untiered game.
+**Sixteen 5×5 strands the player at four tiles from finished in about 19% of
+games.** Pre-existing, unrelated to the cycle, and reachable only now that the
+cycle is gone. Such a board is exactly 9 moves from home and the search reaches
+8; crossing 9 costs 18–24 M states, ~10 s and most of a gigabyte, so no budget
+fixes it. Filed with its measurements as `fix-sixteen-endgame-stranding`.
 
 ## Impact
 
-- Affected specs: `sixteen`, and `ts-engine` if the subgoal-stability guard
-  generalizes.
-- Affected code: `src/games/sixteen/index.ts` (the hint), possibly
-  `src/engine/slide-planner.ts` (shared with Netslide — **check Netslide for the
-  same shape before changing it**, and do not fix one by breaking the other),
-  and `src/engine/hint-resume.test.ts` for the slice.
-- **Netslide is the other consumer of the shared planner and was not measured
-  here.** Its presets all walked green, but that proves the symptom absent, not
-  the property present. Say which you checked.
+- Affected specs: `ts-engine` (the planner requirement is replaced, and the hint
+  walk's slice rule modified), `sixteen`. `netslide` needs no delta — its
+  requirement asks for an exact shortest search and is satisfied more completely
+  than before.
+- Affected code: `src/engine/slide-planner.ts`, `src/games/sixteen/index.ts`,
+  `src/games/netslide/hint.ts`, `src/engine/hint-resume.test.ts`.
 - Owner acceptance: **yes.** This is a hint a player follows, on a board size
-  that ships, and the fix changes which moves it suggests.
+  that ships, and the fix changes which moves it suggests — in Netslide's case on
+  every preset.

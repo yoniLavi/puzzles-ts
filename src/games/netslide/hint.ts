@@ -392,26 +392,21 @@ export function hint(
     // started. The first move of a *shortest* plan shortens the true distance to
     // the finish by one, so the walk cannot help but arrive.
     //
-    // The exact search, and the two things about it that are load-bearing.
-    //
-    // **It fires only when the heuristic is helpless** — a strict local minimum,
-    // where no forward budget will climb out. That keeps it off the common path:
-    // most of the time it would be spent on a board far too far from the finish to
-    // reach, and a search that cannot succeed still costs its whole budget. This is
-    // affordable precisely because a plan, once found, is *carried*: the midend
-    // keeps it while the player follows it, so the search is paid once and its whole
-    // plan plays out.
-    //
-    // **And the budget is large, because the boards that reach it have earned it.**
+    // **The budget is large, because the boards that need it have earned it.**
     // The endgame Sixteen calls a swapped pair — two tiles wanting each other's
     // cells — reads as *two* cells from finished and is really ten moves away, with
-    // every slide from it looking worse. Nothing but an exact search crosses that,
-    // and a plan that is *shortest* is also what keeps a recomputed one from
-    // cycling: its first move provably shortens the way home, so the walk cannot
-    // help but arrive. A heuristic plan carries no such guarantee, and near the
-    // finish it demonstrably loops — five slides of the same row, each one scoring
-    // as progress, land the board exactly where it started.
-    exactSearch: { when: "no-progress", maxDepth: 14, maxStates: 1_200_000 },
+    // every slide from it looking worse. Nothing but an exact search crosses that.
+    //
+    // This search used to be held back until the heuristic had proved itself
+    // helpless, which reads as a saving and is where Sixteen's hint cycle came
+    // from (see `exactSearch` in the planner). Netslide never showed that cycle,
+    // but it did show its signature: over a walk that recomputes after every
+    // move, plan lengths fell 19, 18, 17, 16, 15, 14 and then rose to 16 as the
+    // heuristic took back over. Running the search on every board removed those
+    // and made the walks *shorter* — over the nine presets, 4×4 medium fell from
+    // 20 moves to 12 and 5×5 easy from 28 to 22 — for a worst single hint of
+    // about 1.3 s.
+    exactSearch: { maxDepth: 14, maxStates: 1_200_000 },
     // Never open by undoing the slide the player just made. It is useless advice
     // ("you just did that"), and it is the exact shape a hint ping-pong takes
     // when a recompute picks a different route: the player follows the hint, the

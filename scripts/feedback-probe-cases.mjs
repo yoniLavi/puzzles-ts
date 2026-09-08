@@ -962,7 +962,10 @@ export const MODULES = [
         replace: "  void src;",
       },
       {
-        within: "makeKeyFn",
+        // Lives in `cellBits` since the exact search stopped keying boards as
+        // strings: both it and `makeKeyFn` read their cell width from here, so
+        // this one defect now reaches the forward search and the exact one alike.
+        within: "cellBits",
         why: "the board key is one bit too narrow, so two different boards can key alike",
         find: "  while (1 << bits <= maxValue) bits++;",
         replace: "  while (1 << bits < maxValue) bits++;",
@@ -986,35 +989,47 @@ export const MODULES = [
         replace: "    return m.index === prev.index;",
       },
       {
-        // EQUIVALENT, and settled by measurement rather than by argument. The
-        // module's own comment names this as the subtle way to get the search
-        // wrong, so the case is worth carrying — but the two consumers' move
-        // sets do not expose it. Taking the first meet of a level instead of its
-        // cheapest was run against an independent breadth-first search over 601
-        // scrambles of a 4×4 board (3–5 slides deep) and never once returned a
-        // non-shortest path, and against the real planner over ~3,900 scrambles
-        // with no divergence in plan length, goal or flag at all. The reason is
-        // that the search always grows the *smaller* frontier, so the two depths
-        // stay within one of each other and a level's meets are all at the same
-        // other-side depth. That balance is a property of these move sets, not
-        // of the algorithm, which is why the code stays as it is — and why the
-        // harness flagging this case as CAUGHT would mean the argument expired.
+        // **Was marked EQUIVALENT, and is not.** The earlier verdict measured
+        // the right thing and stopped one question short, which is worth keeping
+        // in view: taking a level's first meet rather than its cheapest was run
+        // against an independent breadth-first search over 601 scrambles of a
+        // 4×4 board and against the real planner over ~3,900 more, and never
+        // once returned a non-shortest path. Re-measured over another 352 boards
+        // during the search rewrite (2026-09-08): still never. The reason is
+        // sound — the search always grows the *smaller* frontier, so the two
+        // depths stay within one of each other and a level's meets sit at the
+        // same other-side depth.
+        //
+        // But path length is not the only thing this edit changes. Answering
+        // mid-level also answers *before the next budget check*, so a search that
+        // should have given up returns a path instead. A differential of the
+        // rewritten search against the old one caught exactly that: of 426
+        // boards, the two agreed move for move everywhere except two, both of
+        // them in the budget-exhausted regime, where the mutant answered and the
+        // original refused. That is a real difference in a real code path — the
+        // budget exists precisely because these searches do run out — and
+        // nothing in the suite sees it. So it is carried as a genuine SURVIVED
+        // rather than excused.
+        //
+        // Nothing cheap catches it, and that was measured too: the planner's own
+        // suite is green under this mutation, and a purpose-built guard checking
+        // exact plans against an independent BFS over 352 boards was green as
+        // well, at 13.7 s. A guard for it would have to reach a board where a
+        // level's meets straddle the state cap.
         within: "bidirectionalPlan",
-        why: "the first meet in a level is taken rather than the cheapest, so the “shortest” path can be one move too long",
-        equivalent: true,
+        why: "the first meet in a level is taken rather than the cheapest, so the search answers before its budget check and can return a path where it should refuse",
         find:
-          "          const other = bwdSeen.get(key);\n" +
-          "          if (other && depth + other.depth < bestTotal) {",
+          "        const met = other.find(hash);\n" +
+          "        if (met >= 0 && depth + other.depth[met] < bestTotal) {",
         replace:
-          "          const other = bwdSeen.get(key);\n" +
-          "          if (other && bestMeet === null) {",
+          "        const met = other.find(hash);\n" +
+          "        if (met >= 0 && bestFwd < 0) {",
       },
       {
         within: "planSlides",
         why: "a board that is already finished is reported as a partial plan",
-        find: "    return { moves: [], reachedGoal: true, usedExactSearch: false };",
-        replace:
-          "    return { moves: [], reachedGoal: false, usedExactSearch: false };",
+        find: "    return { moves: [], reachedGoal: true };",
+        replace: "    return { moves: [], reachedGoal: false };",
       },
       {
         // EQUIVALENT. `isGoal` is read at exactly two sites and both spell it
@@ -1032,10 +1047,15 @@ export const MODULES = [
         replace: "  const isGoal = p.isGoal ?? ((): boolean => false);",
       },
       {
+        // This case used to plant the opposite defect — the exact search running
+        // up front for a game that had asked to keep it in reserve — back when a
+        // game could ask. Keeping it in reserve *is* the defect
+        // (`fix-sixteen-hint-recompute-stability`), so what is worth planting now
+        // is the search failing to run at all.
         within: "planSlides",
-        why: "the exact search runs up front for a game that asked to keep it in reserve",
-        find: '  if (exact?.when === "first") {',
-        replace: '  if (exact?.when === "no-progress") {',
+        why: "a game that asked for the exact search never gets it, so every board past the heuristic's reach falls back to a partial plan",
+        find: "  if (p.exactSearch) {",
+        replace: "  if (false) {",
       },
       {
         within: "planSlides",
@@ -1061,27 +1081,13 @@ export const MODULES = [
         find: "        f: nextG + nextH,",
         replace: "        f: nextH,",
       },
-      {
-        within: "planSlides",
-        why: "the no-progress gate is inverted, spending the exact search exactly where it is not needed",
-        find: "  const noProgress = bestNode.move === null;",
-        replace: "  const noProgress = bestNode.move !== null;",
-      },
-      {
-        within: "planSlides",
-        why: "a plan that fell back from the exact search reports the search was never engaged",
-        find:
-          "    usedExactSearch = true;\n" +
-          "    const shortest = bidirectionalPlan(p, exact, arrayToKey);\n" +
-          "    if (shortest && shortest.length > 0) {\n" +
-          "      return { moves: shortest, reachedGoal: true, usedExactSearch };\n" +
-          "    }",
-        replace:
-          "    const shortest = bidirectionalPlan(p, exact, arrayToKey);\n" +
-          "    if (shortest && shortest.length > 0) {\n" +
-          "      return { moves: shortest, reachedGoal: true, usedExactSearch: true };\n" +
-          "    }",
-      },
+      // Two cases retired here with the code they planted defects in, and
+      // nothing is left uncovered by their going: the no-progress gate
+      // (`const noProgress = bestNode.move === null;`) and the `usedExactSearch`
+      // flag are both deleted, the first because gating the exact search is the
+      // defect and the second because it existed only so a game's tests could
+      // assert the gate still gated. There is no remaining configuration for
+      // them to be the only case for.
       {
         within: "planSlides",
         why: "the forward path is handed back leaf-first, so the plan plays in reverse",

@@ -1831,6 +1831,27 @@ re-solve — rather than abandoning the monotonicity. Don't reach for "just
 cache the plan": carrying a plan hides the instability while the player
 follows it, and hands them the ping-pong the moment they don't.
 
+**Sixteen is the second worked example, and it says where the potential comes
+from when the game has no natural one.** A sliding-permutation game has no
+"nearest gem": the honest potential is the *true distance to the goal*, and the
+only way to have it is a search that returns a genuinely shortest plan, because
+then following the first move leaves a board exactly one move nearer. Two things
+generalize from getting it wrong:
+
+- **A cheap measure that correlates with "nearly finished" is not a potential,
+  and using one as a *gate* is the same error as using it as the potential.**
+  Sixteen ran its exact search only where the board looked nearly finished, and
+  a shortest plan walks uphill in every such measure on its way home — so the
+  gate switched off mid-descent and the heuristic walked the board back. See
+  § "Sliding-permutation games" lesson (b) for the numbers and the three gates
+  that were tried.
+- **A game with no difficulty tiers still has an axis, and the guard has to walk
+  it.** `hint-resume.test.ts`'s gate slice keyed on tier, which collapses every
+  preset of an untiered game to one — so it walked Sixteen's 3×3 (seven moves,
+  fine) and never its 5×5 (cycled for ever). An untiered game is now sliced by
+  size instead, first preset and last. When you add a hint, ask which axis your
+  game varies and check that the slice covers it.
+
 ### Read one plan out loud
 
 The cheapest test there is, and it found the sharpest bug in Inertia's hint:
@@ -1850,10 +1871,11 @@ green and the sentence was still a lie.
 Fifteen, Sixteen and Netslide are one family — a toroidal grid, a move slides
 a whole line — and the search is shared:
 [`engine/slide-planner.ts`](../../src/engine/slide-planner.ts). It owns the
-bucket-queue A\*, the exact bidirectional search, the no-progress gate and the
-partial-plan return. A game supplies its board, its finished board, its legal
-moves, **a `heuristic(board)`**, and when to run the exact search. Exemplar:
-[`netslide/hint.ts`](../../src/games/netslide/hint.ts).
+bucket-queue A\*, the exact bidirectional search and the partial-plan return. A
+game supplies its board, its finished board, its legal moves, **a
+`heuristic(board)`**, and a budget for the exact search — never *when* to spend
+it, which used to be a per-game decision and is the subject of lesson (b) below.
+Exemplar: [`netslide/hint.ts`](../../src/games/netslide/hint.ts).
 
 Two lessons, both of which cost a full debugging cycle and generalize past
 this family:
@@ -1895,16 +1917,39 @@ load-bearing properties, **each got wrong first**:
    generates every permutation of a run of row-slides. Restricting a same-axis
    run to non-decreasing index order keeps one representative and loses
    nothing.
-4. **Fire it only when the heuristic is *helpless***
-   (`exactSearch: { when: "no-progress" }`), then give it a *big* budget.
-   Running it on every board costs its whole budget on every board it cannot
-   reach (5×5 hints went from ~1 s to 4–5 s). It is affordable as a last
-   resort precisely because **a plan, once found, is carried**: `hintKeepTrack`
-   keeps it while the player follows it. Do not split the difference with a
-   small search plus a bigger one in reserve — the big one opens a descent
-   from ten moves out, the player takes one step, and the small one cannot
-   sustain it from nine. **The search that opens a descent must be the one
-   that finishes it.**
+4. **Run it on every board.** This item used to say the opposite — fire it only
+   where the heuristic is helpless, because running it everywhere costs its
+   whole budget on every board it cannot reach. The cost was real and the
+   conclusion was wrong, and it cost Sixteen's 5×5 hint: it cycled for ever,
+   period 4, seven tiles out of place down to four and back.
+
+   The reason is that **a shortest plan does not look like progress on the way
+   home.** Sixteen's own endgame is the counter-example: a 5×5 plan starting 9
+   tiles out of place, with the tiles a total of 9 slides from home, peaks at 17
+   and 30 on those two measures before it arrives. So *any* gate keyed on a
+   board measure switches off partway down the descent it just opened, the
+   heuristic takes back over, and it walks the board straight back where it came
+   from. Three gates were tried — `outOfPlace ≤ 8`, `outOfPlace ≤ 12`, total
+   travel `≤ 20` — and all three cycled. "Only when the heuristic is helpless"
+   is the same mistake wearing different clothes: the boards on a shortest
+   descent are exactly the ones the heuristic still thinks it can improve.
+
+   **The search that opens a descent must be the one that finishes it**, and the
+   only way to be sure of that is for it to be the one that always runs. Do not
+   split the difference with a small search plus a bigger one in reserve either;
+   that is the same defect with an extra budget.
+
+   What that costs is the failed searches, and the answer is to make them cheap
+   rather than rare: the packed, allocation-free storage in `slide-planner.ts`
+   took the same search from 4–6 s to under 1 s, which is what brought
+   always-on into range. **Pick the smallest budget that still crosses the
+   game's worst endgame**, not the largest one affordable — every extra state is
+   spent in full on every board out of reach.
+
+   Do not lean on the plan being carried, either. `hintKeepTrack` does keep it
+   while the player follows it, and that is exactly the path that hides this
+   defect: it appears the moment a player goes their own way, which is the
+   ordinary thing for a player to do.
 
 And a structural note: **the planner works on the board the player sees, not
 on labeled pieces.** For a game with identical pieces that is *necessary* —
@@ -1912,12 +1957,16 @@ every slide on an odd-width torus is an even permutation, so a target that
 distinguishes identical tiles can sit in a coset the board cannot reach, while
 the finished *picture* is two moves away.
 
-**Test it the way the midend plays it.** A followed hint keeps its plan, so
-the honest walk is "ask, follow the whole plan, ask again"
-(`netslide-hint.test.ts`), not "ask, take one move, throw the plan away" — the
-latter demands a guarantee the app never needs and pays the worst cost on
-every step. Keep the strict recompute-every-move walk for the small presets;
-`hint-resume.test.ts` runs it for every game on the *first* preset only.
+**Test it both ways, and the strict one is the one that finds things.** A
+followed hint keeps its plan, so "ask, follow the whole plan, ask again"
+(`netslide-hint.test.ts`) is how the midend actually plays it. But the strict
+walk — ask, take one move, throw the plan away, ask again — is *not* a
+guarantee the app never needs, which is what this paragraph used to claim. It
+is what a player who goes their own way gets, and it is the only walk that sees
+lesson (b)'s defect at all: the followed-plan walk is green on a game whose hint
+ping-pongs, because following the plan is the one path that never recomputes.
+`hint-resume.test.ts` runs the strict walk for every game, over one preset per
+axis the game varies (see § "Recompute-stable plans").
 
 ### Recover the answer from the board
 
@@ -1981,11 +2030,15 @@ fresh board to solved one *freshly-recomputed* hint at a time (apply only
 `steps[0]`, recompute, repeat), asserting a hint never gives up before solved.
 
 **It walks every preset**, not just the first — the gate slice keeps one preset
-per declared tier, the slow tier takes them all. It walked `firstLeaf` alone
-until `refuse-honestly-at-every-tier`, i.e. by convention the smallest and
-easiest board each game offers, so the collection's strongest hint guarantee had
-never seen a Hard board, an `Unreasonable` board, or any mode variant. Widened,
-it found thirteen refusals across seven games at once.
+per axis the game varies (one per declared tier where there is one; first and
+last preset where there is not), and the slow tier takes them all. It walked
+`firstLeaf` alone until `refuse-honestly-at-every-tier`, i.e. by convention the
+smallest and easiest board each game offers, so the collection's strongest hint
+guarantee had never seen a Hard board, an `Unreasonable` board, or any mode
+variant. Widened, it found thirteen refusals across seven games at once — and
+then, keyed on tier alone, it silently kept the old blindness for the twelve
+untiered games, which is how Sixteen's cycling 5×5 survived a round of widening
+(`fix-sixteen-hint-recompute-stability`).
 
 **The one refusal it accepts** is running out of deduction on a board whose tier
 name promises search (`Unreasonable`), and only with

@@ -3,7 +3,7 @@ import { raisedBevelWidth } from "../../engine/draw.ts";
 import { ALREADY_SOLVED } from "../../engine/hint-refusal.ts";
 import type { GameDrawing, HintStep } from "../../engine/index.ts";
 import { randomNew } from "../../engine/random/index.ts";
-import { __lastHintEngagedFallback, executeMove, sixteenGame } from "./index.ts";
+import { executeMove, sixteenGame } from "./index.ts";
 import type { SixteenHintHighlights } from "./render.ts";
 import {
   decodeParams,
@@ -532,28 +532,67 @@ describe("Sixteen hint", () => {
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
-    // This strict local minimum is exactly the case the exact bidirectional
-    // fallback exists for — it must have engaged.
-    expect(__lastHintEngagedFallback()).toBe(true);
-    // The fallback runs once and returns the whole path out of the local
-    // minimum: following the single stored plan reaches the solved state
-    // with no recomputation.
+    // Only the exact bidirectional search can cross this hill, so a plan that
+    // reaches the solved board is proof it ran and succeeded — which is the
+    // thing worth asserting, and it needs no flag to say so.
     for (const step of result.steps) s = executeMove(s, step.move);
     expect(s.completed).toBeGreaterThan(0);
     // The exact bidirectional BFS over ~1.5M states is inherently slow; the
     // assertions above are the guarantee, never the clock. Ceiling: vitest.config.ts.
   });
 
-  // Bounded, fixed-board forward search: correctness is asserted by the
-  // deterministic fallback-engaged proxy below, not by time.
-  it("a mid-game board with deep displacements hints fast from the forward search", () => {
-    // Regression (owner-reported, 2026-06-10): 7 tiles out of place in
-    // one 7-cycle needing a 12-slide solution. The exact bidirectional
-    // fallback (depth cap 10) could never solve it, but used to engage
-    // anyway — burning ~3s hitting its caps before the forward search's
-    // partial plan was returned regardless. The no-progress gate skips
-    // it: the forward search improves the board substantially, so its
-    // partial plan is returned at forward-search cost (~0.2s).
+  it("recomputing after every move still lands on the same board, one move nearer", () => {
+    // The property the plan above only *displays*: a player who re-asks after
+    // every move gets a fresh search each time, and those searches must agree
+    // about where they are going. They do because each returns a **shortest**
+    // plan, so following its first move leaves a board exactly one move nearer —
+    // and the plan length falls by exactly one, every time, until it is gone.
+    //
+    // This is the guard for `fix-sixteen-hint-recompute-stability`: the same
+    // endgame, walked rather than replayed. Before that change the walk found a
+    // period-4 cycle here instead of a descent.
+    let s: SixteenState = {
+      w: 5,
+      h: 5,
+      n: 25,
+      tiles: new Int32Array([
+        6, 2, 3, 4, 5, 1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 17, 18, 19, 16, 21, 22,
+        23, 24, 25,
+      ]),
+      completed: 0,
+      cheated: false,
+      moveCount: 0,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    let previous: number | null = null;
+    let first = 0;
+    let steps = 0;
+    while (s.completed === 0) {
+      const result = sixteenGame.hint?.(s);
+      expect(result?.ok, `stalled after ${steps} moves`).toBe(true);
+      if (!result?.ok) return;
+      if (previous === null) first = result.steps.length;
+      else expect(result.steps.length, `at move ${steps}`).toBe(previous - 1);
+      previous = result.steps.length;
+      s = executeMove(s, result.steps[0].move);
+      steps++;
+      // Vacuity: a walk that never entered the loop, or one that wandered, both
+      // report health without this.
+      expect(steps).toBeLessThanOrEqual(first);
+    }
+    expect(steps).toBe(first);
+    expect(first).toBeGreaterThan(1);
+  });
+
+  it("a mid-game board out of the exact search's reach still gets a useful plan", () => {
+    // Regression (owner-reported, 2026-06-10): 7 tiles out of place in one
+    // 7-cycle needing a 12-slide solution — beyond the exact search's depth cap,
+    // so it comes back empty having spent its budget and the heuristic's partial
+    // plan is what the player gets. That fallthrough is on the common path now
+    // that the exact search runs on every board, so what matters is that the
+    // partial plan is still *useful*: it must exist and it must net-improve the
+    // board, which is what this asserts.
     const s: SixteenState = {
       w: 5,
       h: 5,
@@ -571,12 +610,6 @@ describe("Sixteen hint", () => {
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
-    // The point of the no-progress gate: the forward search makes progress
-    // here, so the expensive bidirectional fallback must NOT engage. Assert
-    // that mechanism directly rather than timing a wall-clock proxy (which
-    // flaked under full-suite CPU contention — a starved fast path can still
-    // exceed any tight millisecond bound).
-    expect(__lastHintEngagedFallback()).toBe(false);
     expect(result.steps.length).toBeGreaterThan(0);
     // Each step must net-improve tile placement (partial plans from the
     // forward search are useful, not noise).
@@ -747,27 +780,34 @@ describe("Sixteen hint", () => {
   });
 
   describe("backtracking and oscillation prevention", () => {
-    it("never recommends immediately undoing or contradicting a slide on the same axis/index", () => {
+    it("says plainly to slide back the move that undid a finished board", () => {
+      // This used to assert the opposite — that a hint never opens by undoing
+      // the slide the player just made, on the grounds that it is useless advice
+      // and is the shape a ping-pong takes. The second half of that was the real
+      // reason and it no longer applies: the ping-pong is prevented by the plan
+      // being *shortest* (`exactSearch` in the planner), and the veto cannot be
+      // applied to a shortest plan without destroying exactly that guarantee —
+      // forbid a plan's true first move and what comes back is no longer a plan
+      // whose first move shortens the way home.
+      //
+      // What is left is the first half, and it was wrong. From one slide off a
+      // finished board there is exactly one move that finishes it, and it is the
+      // undo. Withholding it does not save the player anything; it sends them
+      // the long way round. So the guarantee here is the useful one: the hint
+      // gives the move that finishes the board.
+      //
+      // The veto is still wired, and still earns its place on the boards the
+      // exact search cannot reach, where the heuristic has no such guarantee to
+      // fall back on. `slide-planner.test.ts` tests it there, directly.
       const s0 = solvedState(4, 4);
 
-      // 1. If user does slide right by 1, next hint must not be slide left by 1.
-      const s1 = executeMove(s0, { type: "slide", axis: "row", index: 0, delta: 1 });
-      const hint1 = sixteenGame.hint?.(s1);
-      expect(hint1?.ok).toBe(true);
-      if (hint1?.ok && hint1.steps[0].move.type === "slide") {
-        const move1 = hint1.steps[0].move;
-        expect(move1.axis === "row" && move1.index === 0 && move1.delta === -1).toBe(
-          false,
-        );
-      }
-
-      // 2. If user does slide right by 2 (e.g. via dragging or half-grid shift), next hint must not be ANY slide on row 0.
-      const s2 = executeMove(s0, { type: "slide", axis: "row", index: 0, delta: 2 });
-      const hint2 = sixteenGame.hint?.(s2);
-      expect(hint2?.ok).toBe(true);
-      if (hint2?.ok && hint2.steps[0].move.type === "slide") {
-        const move2 = hint2.steps[0].move;
-        expect(move2.axis === "row" && move2.index === 0).toBe(false);
+      for (const delta of [1, 2]) {
+        const s1 = executeMove(s0, { type: "slide", axis: "row", index: 0, delta });
+        const hint = sixteenGame.hint?.(s1);
+        expect(hint?.ok).toBe(true);
+        if (!hint?.ok) continue;
+        expect(hint.steps, `slide by ${delta}`).toHaveLength(1);
+        expect(executeMove(s1, hint.steps[0].move).completed).toBeGreaterThan(0);
       }
     });
   });
