@@ -74,8 +74,9 @@
 
 ## 4. Close
 
-- [ ] 4.1 `npm run gate`.
-- [ ] 4.2 Archive under self-driven initiative. No owner acceptance: nothing a
+- [x] 4.1 `npm run gate` — 301 files, 8,481 tests, green, plus the parallel
+      `vite build`. Re-run by the pre-commit hook on the commit itself.
+- [x] 4.2 Archive under self-driven initiative. No owner acceptance: nothing a
       player sees changes — Undead's Normal boards were always Normal, and it was
       the grading instrument that said otherwise.
 
