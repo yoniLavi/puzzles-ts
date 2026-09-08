@@ -109,9 +109,24 @@
 
 ## 4. Close
 
-- [ ] 4.1 `npm run gate`, plus `npm run test:slow` on `hint-resume.test.ts`.
-- [ ] 4.2 Run the app: deal Sixteen 5×5 and follow the hint to a solved board.
-- [ ] 4.3 Owner acceptance.
+- [x] 4.1 `npm run gate` green (301 files, 8485 tests). Slow tier on
+      `hint-resume.test.ts` green — 95 tests, 226 s at load 8.6 — which is the
+      walk that found the defect, now passing on the board it failed.
+- [x] 4.2 **Ran the app.** Two 5×5 boards, Hint pressed until it stopped.
+      - The second solved outright: **"COMPLETED! Moves: 41"**, entirely by
+        following hints, which was impossible before this change. The hint marks
+        and the slide animation are right, including mid-slide — the tile mark
+        rides with the tile and the destination outline stays put.
+      - The first is the stranding: 30 moves down to tiles 3↔4 swapped in the top
+        row and 25↔20 in the last column, then "No move here would get you
+        closer." That is the filed defect, seen rather than inferred.
+- [ ] 4.3 Owner acceptance. **The one thing to weigh** is that Sixteen 5×5 still
+      strands about one game in five, on a defect this change did not introduce
+      and cannot fix within a browser's memory. Every case is strictly better
+      than before — the alternative was a hint that never arrived at all — but it
+      is a shortfall a player can hit, so it is named here rather than deferred
+      quietly. `fix-sixteen-endgame-stranding` carries the measurements and three
+      candidate fixes, the cheapest of which is priced but not measured.
 
 ## Findings — a second defect, filed rather than fixed
 
