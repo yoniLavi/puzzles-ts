@@ -11,13 +11,21 @@ fails against *its own spec*.
 
 ## Why
 
-**`ts-migration` promised this property as the replacement for the byte-match
-oracle, and then nobody wrote it.** When byte-parity was released, the spec named
-what had to take its place — *"the differential SHALL be re-founded on the
-property that every generated board is uniquely solvable at exactly its stated
-difficulty"* — and `AGENTS.md` states the same thing as a product bar: *"the
-difference between a difficulty tier that means something and one that
-doesn't."* `difficulty-contract.test.ts` asserts a great deal about tiers — that
+**The rule exists, the helper exists, the guard does not.** `ts-migration`
+§ "A difficulty tier binds the board it generates" already requires it in as many
+words — *"A game offering more than one difficulty SHALL NOT generate, at any tier
+above the easiest, a board that its own solver can complete at the tier below"* —
+with the scenario spelled out; `engine/difficulty.ts` already exports
+`solvableAtExactlyTier` as its single expression, and
+`docs/games/solver-and-generator.md` § "A tier means exactly its rung" already
+tells a porter to use it. **So this change adds no rule.** It adds the one thing
+missing: something that checks.
+
+That is the whole of the gap, and it is worth being precise about, because the
+first draft of this proposal was about to add a requirement the spec already
+carried.
+
+`difficulty-contract.test.ts` asserts a great deal about tiers — that
 the set is derived, that the names come from the collection's scale, that a
 capped solve is monotone, that every declared tier either generates or refuses
 with a reason — but **it never compares the tier a board was generated at with
@@ -41,16 +49,34 @@ undead "5x5 Normal" claims tier 1 (Normal) → boards needed caps [0,0,0,0]
 undead "7x7 Normal" claims tier 1 (Normal) → boards needed caps [0,0,0,0]
 ```
 
-A player picking **Undead Normal gets an Easy board**, at every size the menu
-offers, nearly always. And this is not a divergence somebody chose: the `undead`
-spec already requires the opposite, in as many words —
+**And the cause is not the generator.** Read rather than assumed, which is what
+the first version of task 2.1 demanded and what turned out to matter:
 
-> - **AND** the board's grade matches the highest rung the ladder needed (Easy =
->   arc-consistency within the pass cap, Normal = arc beyond the cap or counting,
->   `Unreasonable` = forcing)
+- `undead/generator.ts`'s `gradeMatchesTier` is **honest**. Easy requires
+  `rung === RUNG_ARC && arcPasses <= EASY_MAX_ARC_PASSES` (3); Normal requires
+  arc-consistency *beyond* that pass cap, or the counting rung. That is exactly
+  what the `undead` spec says — *"Easy = arc-consistency within the pass cap,
+  Normal = arc beyond the cap or counting"* — and exactly what the boards are.
+- **The difficulty contract's `solveAtCap` drops the pass cap.** At
+  `cap === DIFF_EASY` it runs `solveDeductive(common, start, RUNG_ARC)` with no
+  bound on passes, so a board needing eight arc passes — a Normal board by the
+  game's own definition — is reported *solved at Easy*.
 
-— so the game has a live requirement that nothing checks and the code does not
-meet.
+So Undead deals correct boards and **the instrument that grades them is broader
+than the game.** No board moves; the fix is four lines in the contract. What was
+actually broken is every consumer of `cappedSolveFor` for Undead — including the
+collection's own monotonicity guard, which has been reading an Easy that is not
+Undead's Easy.
+
+**That inversion is the reusable half of this change.** The tier-binding property
+can be broken from either side — the generator accepting a board that does not
+need its tier, or the contract's capped solve being wider than the tier it names
+— and only the first is visible to a game's own tests. The second is invisible
+*by construction*, because a game grades with its generator's spelling and every
+cross-game guard grades with the contract's, and nothing had ever compared the
+two. This is the `AGENTS.md` § "Method" shape at one remove: not a guard
+measuring a neighbor of the thing, but two spellings of one rule that no test
+made meet.
 
 **The 282 are the other half of the finding, and they change what this change
 is.** `docs/framework-rdd/deduction.md` argues the framework should own the
@@ -78,9 +104,8 @@ first commit, with no enrollment, that its Normal deals Normal boards.
   Keyed on **the presets a player can pick** and their own `contract.tierOf`,
   not on `withTier` applied to the cheapest preset — see the instrument note
   below, which is load-bearing.
-- **Undead's Normal tier is made to mean Normal**, or its Normal presets are
-  made to refuse honestly. Which of the two is task 2's finding, not a decision
-  this proposal makes.
+- **Undead's `solveAtCap` learns the pass cap its generator has always used**, so
+  the contract grades Undead's tiers the way Undead does. No board moves.
 - **Exceptions are derived from a declaration the game already makes**
   (`nonUniqueTiers`, `nonMonotone`), never from a new roster. Dominosa's
   "Ambiguous" is already exempt by its own declaration; nothing else needs to
@@ -109,16 +134,17 @@ doc comment so the next reader does not simplify it back.
 
 ## Impact
 
-- Affected specs: `ts-engine` (the new cross-game requirement). **No delta for
-  `undead`** — its spec already requires the behavior; this change makes the
-  code obey a requirement that is already written.
-- Affected code: `src/engine/difficulty-contract.test.ts`, and whichever of
-  `src/games/undead/generator.ts` or its params validation task 2 settles on.
-- **Boards may move.** If Undead's generator is corrected, every Undead Normal
-  desc changes, and its differential fixtures are re-founded rather than
-  re-recorded (`AGENTS.md` § "Upstream policy" — there is no oracle to
-  re-baseline against). A fixture that survives a generator correction unchanged
-  would mean the correction did not reach generation.
-- Owner acceptance: **yes, for the Undead half** — it changes which boards a
-  player is dealt at a named difficulty. The guard half is an internal contract
-  and is not.
+- Affected specs: `ts-engine` — the **guard's** contract only. The behavioral
+  rule is `ts-migration` § "A difficulty tier binds the board it generates" and
+  is not restated; the `undead` spec already requires what Undead's generator
+  already does, so neither gets a delta.
+- Affected code: `src/engine/difficulty-contract.test.ts`,
+  `src/games/undead/index.ts` (the contract's `solveAtCap`), and the guides named
+  in tasks 3.
+- **No board moves.** The fix is to the grading instrument, not to generation, so
+  every desc, differential fixture and shared game ID is untouched — and a
+  fixture that *did* move would mean the fix reached generation, which is the
+  check rather than an afterthought.
+- Owner acceptance: **not required.** Nothing a player sees changes; Undead's
+  Normal boards were always Normal. This is an internal contract and a guard —
+  archive it with the same self-driven initiative it was created with.

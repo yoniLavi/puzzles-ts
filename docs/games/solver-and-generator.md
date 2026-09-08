@@ -416,6 +416,30 @@ separate times because there was nowhere to put it). Notes:
 - **A tier that cannot bind is refused, not silently downgraded** — the
   `ts-migration` requirement of that name; two tiers were *removed* rather
   than left generating boards of a different difficulty than their label.
+- **It is now checked cross-game.** `difficulty-contract.test.ts` deals a board
+  from every preset whose tier the contract can read and requires its lowest
+  solving cap to *be* that tier (`assert-that-tiers-bind`). Until then nothing
+  compared the two numbers — the monotonicity test computed the lowest cap and
+  used it only as a floor.
+
+**Tell: the rule has two spellings, and a game's own tests only exercise one.**
+A generator states tier acceptance in its own terms (`gradeMatchesTier`,
+`solvableAtExactlyTier`, a hand-written `ret !== diff`); the game's
+`DifficultyContract.solveAtCap` states it *again* for every cross-game consumer.
+Nothing inside a game makes the two meet, so a `solveAtCap` that is **wider**
+than the tier it names is invisible — the game deals correct boards and every
+test it owns passes.
+
+Undead is the worked example. Its Easy is arc-consistency **within
+`EASY_MAX_ARC_PASSES` (3)**; a board needing more passes is Normal even though it
+never leaves the arc rung. `gradeMatchesTier` had that bound and `solveAtCap` did
+not, so all three of its Normal presets reported as Easy-solvable and the
+collection's difficulty guards graded Undead against an Easy that was not
+Undead's. The constant now lives beside the rungs in `solver.ts` and both readers
+import it — **one spelling, because a second copy is what the defect was.**
+
+So when you write a `solveAtCap`, check it against the generator's acceptance
+rule line by line, and put any bound they share in one exported place.
 
 ### Cap-monotonicity, and the game that broke it
 

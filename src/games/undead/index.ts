@@ -78,6 +78,7 @@ import {
   type UndeadHint,
 } from "./render.ts";
 import {
+  EASY_MAX_ARC_PASSES,
   findUndeadSolution,
   type HintOp,
   RUNG_ARC,
@@ -849,10 +850,19 @@ function flashLength(from: UndeadState, to: UndeadState): number {
  * maps to a `Rung` and the question `solveAtCap` asks is the generator's own:
  * does the ladder, capped there, narrow every cell to a singleton?
  *
- * The generator additionally requires the *exact* rung for the tier (and, for
- * Easy, a pass-count bound). That is a tier-acceptance rule, not solvability,
- * and it belongs to the generator — `solvableAtExactlyTier` is the shared
- * expression of the same idea. */
+ * The generator additionally requires the *exact* rung for the tier. That is a
+ * tier-acceptance rule, not solvability, and it belongs to the generator —
+ * `solvableAtExactlyTier` is the shared expression of the same idea.
+ *
+ * **Easy is a rung *and* a bound, and this cap must carry both**
+ * (`assert-that-tiers-bind`, 2026-09-08). Undead's Easy is arc-consistency
+ * within {@link EASY_MAX_ARC_PASSES} passes; a board needing more passes is a
+ * Normal board even though it never leaves the arc rung. This function ran the
+ * arc rung *unbounded* at `DIFF_EASY`, so every Normal board answered "solved"
+ * at cap Easy — and the collection's difficulty guards, which grade through this
+ * contract rather than through the generator, read an Easy that was not
+ * Undead's. The generator was right the whole time; the instrument was wide, and
+ * nothing compared the two spellings until a guard did. */
 const difficulty: DifficultyContract<UndeadParams> = {
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
@@ -863,6 +873,7 @@ const difficulty: DifficultyContract<UndeadParams> = {
     const start = new Uint8Array(common.numTotal).fill(MON_NONE);
     const grade = solveDeductive(common, start, maxRung);
     if (grade.inconsistent) return "impossible";
+    if (cap === DIFF_EASY && grade.arcPasses > EASY_MAX_ARC_PASSES) return "unsolved";
     return grade.solved ? "solved" : "unsolved";
   },
 };

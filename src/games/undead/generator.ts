@@ -17,6 +17,7 @@
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import {
+  EASY_MAX_ARC_PASSES,
   isUniquelySolvable,
   nextList,
   RUNG_ARC,
@@ -47,10 +48,6 @@ import {
   type UndeadCommon,
   type UndeadParams,
 } from "./state.ts";
-
-/** Easy-tier cap on arc-consistency passes (boards solvable by more passes than
- * this fall to Normal even without needing counting). */
-const EASY_MAX_ARC_PASSES = 3;
 
 /**
  * Does this board's required deductive rung match the requested tier? The

@@ -2,21 +2,30 @@
 
 ## ADDED Requirements
 
-### Requirement: A generated board SHALL need the tier its preset claims
+### Requirement: A cross-game guard SHALL assert that tiers bind
 
-A board dealt from a preset whose difficulty the game can read SHALL be solvable
-by the game's capped solver at that tier and **not** at any lower one. A
-cross-game guard SHALL assert it over a population derived from the registry,
-with no enrollment list.
+`ts-migration` § "A difficulty tier binds the board it generates" already
+requires the behavior, and `engine/difficulty.ts`'s `solvableAtExactlyTier` is
+its one expression. **This requirement adds only the check**, because until it
+nothing in the collection compared the tier a board was generated at with the
+tier the board needs: `difficulty-contract.test.ts` computed the lowest solving
+cap and used it only as the floor of a monotonicity sweep — an assertion sitting
+beside the very value that would have proved the point, measuring a neighbor of
+it (`AGENTS.md` § "Method").
 
-This is the property `ts-migration` named as the replacement for the byte-match
-oracle when byte-parity was released — *every generated board is uniquely
-solvable at exactly its stated difficulty* — and until this requirement nothing
-asserted it. `difficulty-contract.test.ts` computed the lowest solving cap and
-used it only as the floor of a monotonicity sweep, so a generator that quietly
-downgraded a tier passed every guard in the collection. That is the defect shape
-`AGENTS.md` § "Method" opens with: an assertion sitting beside the value that
-would have proved the point, measuring a neighbor of it.
+A cross-game guard SHALL, over a population derived from the registry with no
+enrollment list, require that a board dealt from a preset whose tier the game's
+difficulty contract can read is solvable at that tier and at no lower one.
+
+**The rule has two spellings and the guard SHALL be what makes them meet.** A
+game's generator states the tier-acceptance rule in its own terms, and the
+game's `DifficultyContract.solveAtCap` states it again for every cross-game
+consumer. A game's own tests exercise only the first, so a contract whose capped
+solve is *wider* than the tier it names is invisible: Undead's generator bounded
+Easy at three arc-consistency passes while its contract ran arc-consistency
+unbounded, so every Normal board graded as Easy-solvable and the collection's
+difficulty guards read an Easy that was not Undead's. Neither side was checkable
+alone.
 
 **The guard SHALL be keyed on the presets a player can pick**, reading each
 preset's own tier through the difficulty contract — never on a tier written onto
@@ -51,6 +60,13 @@ tier, with the doc comment stating what the gate slice still covers.
   preset the menu labels with the higher tier
 - **THEN** the cross-game guard fails, naming the game, the preset and the caps
   it found
+
+#### Scenario: A contract's capped solve is wider than the tier it names
+
+- **WHEN** a game's `solveAtCap` omits a bound its generator's tier-acceptance
+  rule applies, so boards of a higher tier solve at a lower cap
+- **THEN** the guard fails, even though the game deals correct boards and every
+  test the game owns passes
 
 #### Scenario: A tier is unreachable at a size
 

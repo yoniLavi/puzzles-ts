@@ -81,12 +81,38 @@ asserting the size of the population it sweeps**).
 | --- | --- |
 | ~~Board model~~ | ~~State clone independence; desc codec round-trip (property-fuzzed); coordinate maps agree from both callers; cursor stays in bounds on every topology.~~ **Withdrawn 2026-09-06** with the declaration. The one row worth wanting — *coordinate maps agree from both callers* — turned out not to need it: making the board's pixel origin one exported function makes the agreement true by construction, which is stronger than a test asserting it (`unify-the-board-origin`). |
 | Gesture table | Every move constructor reachable by pointer, keyboard AND touch (or a declared, reported gap); the four frontend traps exercised; no raw-button comparison can go deaf to touch. |
-| Technique ladder | Fixpoint terminates within budget on every preset; grade cap-monotone; tiers bind (a board graded T is rejected by cap T−1); **N generated boards per preset walk to completion through the hint projection — the full-hints invariant**; every firing's narration non-empty and its highlights on-board. |
+| Technique ladder | Fixpoint terminates within budget on every preset; grade cap-monotone; ~~tiers bind (a board graded T is rejected by cap T−1)~~ **SHIPPED** (see below); **N generated boards per preset walk to completion through the hint projection — the full-hints invariant**; every firing's narration non-empty and its highlights on-board. |
 | Planner | Plan exists from any reachable mid-position (resume guard); recompute-stability (one step forward → same subgoal); step budgets tick. |
 | Invariants / mistakes | Clean board → empty; a seeded wrong board → non-empty; overlay clears on next transition; refusal couples to the banner. |
 | Presentation | Paint-twice for every overlay plane (warm cache → overlay appears; third frame → erases); doctrine invariants (no engine pixels, `canvasCleared` the only stale signal); snapshot baselines per preset opener frame. |
 | Params | Encode/decode inverse; `validateParams` agrees with the dialog path; presets encode fully. |
 | Affordances | Pencil: mark-all resets notes (mutation-checked — the guard must *narrow* a cell or the bug hides); reference: spotlight dismisses per the suppression rule; prefs survive `newUi`. |
+
+> **✅ SHIPPED: "tiers bind"** — `assert-that-tiers-bind`, 2026-09-08.
+> `difficulty-contract.test.ts` deals a board from every preset whose tier the
+> contract can read and requires its lowest solving cap to *be* that tier. The
+> live contract is
+> [`docs/games/solver-and-generator.md`](../games/solver-and-generator.md)
+> § "A tier means exactly its rung"; read that, not this.
+>
+> **Three things it taught that this table did not anticipate.** The rule was
+> already normative (`ts-migration` § "A difficulty tier binds the board it
+> generates") and already had one expression (`solvableAtExactlyTier`) — what
+> was missing was never a framework organ, only something that checked, which is
+> the fifth time this directory has predicted a build and got a guard.
+>
+> **The generators were already right**: 282 of 285 preset cases bound exactly,
+> by hand, across 39 hand-written generators. So `deduction.md`'s argument that a
+> framework-owned strip/accept loop would make on-tier generation *"the only
+> thing the driver can do"* is answering a question the corpus had already
+> answered; that build must now argue economy, not correctness.
+>
+> **And the one real failure was on the side nobody was watching.** Undead's
+> generator was honest and its *difficulty contract* was wide — `solveAtCap` ran
+> arc-consistency unbounded where the generator bounded it at three passes — so
+> every Normal board graded as Easy-solvable while every Undead test passed. A
+> rule with two spellings and nothing making them meet is a defect class this
+> table's "generated guarantees" framing does not name.
 
 Per-game tests do not disappear — they shrink to what is actually per-game:
 the technique logic's own unit tests, the narration wording assertions, and

@@ -458,6 +458,20 @@ is the `ts-engine` spec, "A shared mechanic is joined by having it".
    for a comment explaining that it deliberately has no stylus branch. Key on
    the name and take the superset; narrowing the key is the error this repo
    makes most (AGENTS.md, "A scan that keys on a name").
+6. **Ask a question the system is actually asked.** A guard that *synthesizes*
+   its own inputs can pose one no code path ever poses, and then convict games of
+   failing to answer it. `assert-that-tiers-bind`'s first cut asked "does a board
+   generated with tier T applied to the collection's cheapest valid preset need
+   tier T?" — and a 4×4 Solo board cannot be Hard however its params are labeled,
+   so it reported **ten violations across four games**. Re-keyed on the presets a
+   player can pick, reading each one's *own* tier: **three, in one game, and they
+   were real.** `validateParams` accepting a params record is not evidence a board
+   can carry what is in it.
+
+   **Tell:** your guard builds its inputs with a `with*`/setter rather than
+   reading them off something the game offers. The population is what the game
+   presents — its presets, its registered object, its `Ui` — not what the guard
+   can construct out of the parts.
 
 ## Metrics and instruments
 

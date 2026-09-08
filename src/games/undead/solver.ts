@@ -314,6 +314,21 @@ export const RUNG_FORCING = 2;
 export const RUNG_RECURSION = 3;
 export type Rung = 0 | 1 | 2 | 3;
 
+/**
+ * Easy's bound on arc-consistency passes: a board needing more than this falls
+ * to Normal even though it never leaves the arc rung.
+ *
+ * **It lives here, beside the rungs, because Easy is a rung *and a bound* and
+ * both of its readers need the pair.** The generator's tier-acceptance rule
+ * (`gradeMatchesTier`) and the difficulty contract's `solveAtCap` are two
+ * spellings of one rule, and while this constant was private to the generator
+ * the contract could not say it — so `solveAtCap` ran arc-consistency unbounded
+ * at cap Easy and reported every Normal board as Easy-solvable. Nothing caught
+ * it, because a game's own tests exercise the generator's spelling and every
+ * cross-game guard exercises the contract's (`assert-that-tiers-bind`).
+ */
+export const EASY_MAX_ARC_PASSES = 3;
+
 /** Outcome of one propagation step/fixpoint. */
 type Step = "progress" | "stuck" | "inconsistent";
 
