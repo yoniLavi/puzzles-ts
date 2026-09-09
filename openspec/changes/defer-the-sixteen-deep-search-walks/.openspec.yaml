@@ -1,0 +1,13 @@
+# No spec deltas: this is an *application* of `build-pipeline`'s existing
+# deferral rules, not an extension of them. "Defer where the cost is board size
+# rather than configuration; never defer the only cover for a configuration;
+# state what still covers it" already says everything this change does, and
+# `retire-tests-that-do-not-earn-their-runtime` added the retirement bar and the
+# targeted-invocation requirement a day earlier.
+#
+# The `Purpose` rewrite touches `openspec/specs/build-pipeline/spec.md` outside
+# a delta on purpose: `Purpose` is the spec's front-matter, written by
+# `openspec archive` as a `TBD` placeholder, and is not a requirement — there is
+# no delta verb that addresses it.
+schema: spec-driven
+skip_specs: true

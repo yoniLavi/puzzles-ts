@@ -1,7 +1,25 @@
 # build-pipeline Specification
 
 ## Purpose
-TBD - created by archiving change remove-docker-emcc-build. Update Purpose after archive.
+
+**How this repository decides that a tree is fit to commit, publish and run —
+and what that decision is allowed to cost.**
+
+It governs the gate (`tsc` → biome → probe-anchor → spelling → `openspec
+validate` → `vitest run` → `vite build`), which runs identically in the
+pre-commit hook and in CI; the rule that no correctness check may be dropped or
+weakened to buy speed, and the narrow scopings that are permitted instead; how a
+test earns its place on the per-commit path, and how one is retired or deferred
+by measurement rather than by category; the on-demand instruments that are
+deliberately *not* gates (`npm run metrics`, `npm run probe`, `npm run diff`) and
+must never be ratcheted; the build's independence from any native toolchain; and
+the deploy, which publishes the gate's own artifact and is verified against the
+deployed origin rather than against `dist/`.
+
+Two things it deliberately does not govern: which *individual* tests a commit
+runs (see the gate requirement — graph-based selection is unproven against this
+repo's glob-based cross-game guards and is not authorized), and what any single
+test asserts, which belongs to the capability spec that test serves.
 
 ## Requirements
 

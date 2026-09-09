@@ -138,10 +138,15 @@ const SEARCH_REACH: Record<string, string> = {
     "Plans by searching for the finished board. Its tangled endgames are a " +
     "dozen moves out with a branching factor of 40, which no arrangement of " +
     "this machinery reaches (`fix-sixteen-deep-local-minima`). Largest board " +
-    "on every commit: sixteen.test.ts walks recomputed hints to solved on five " +
-    "hand-picked 5x5 boards — the tangles and swapped pairs the hint actually " +
-    "gave up on — which is strictly sharper evidence than one random 5x5, and " +
-    "was verified to fail when the tangle term is removed.",
+    "on every commit: sixteen.test.ts drives a 5x5 endgame only the exact " +
+    "bidirectional search can cross, and walks that board with a fresh search " +
+    "per move for recompute stability. The deep-search walks over its tangled " +
+    "5x5 boards are DEFERRED by owner decision (2026-09-09) — the hint is " +
+    "settled and not expected to change — so a regression in the tangle " +
+    "measure specifically is caught by " +
+    "`npm run test:slow -- src/games/sixteen`, not by the gate. Verified both " +
+    "ways: zeroing TANGLE_COST leaves the gate green and turns the slow tier " +
+    "red.",
 };
 
 /** Does this preset's tier promise that its boards may need search?
