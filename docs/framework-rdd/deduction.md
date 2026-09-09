@@ -46,9 +46,33 @@ concentrate.
 > `characterize-the-hint-assessment-corpus`'s corpus and the honest test of
 > whether this end's argument is true.
 >
-> **⏳ The corpus is characterized and the measurement is not yet taken**
-> (2026-09-09, `characterize-the-hint-assessment-corpus`). Two things it found
-> that this document should know before its verdict is read again:
+> **✅ The measurement is taken, and it settles this end** (2026-09-10,
+> `add-tracks-hint`; the full table and reasoning are that change's
+> `findings.md`). Tracks' recording projection cost **+536 lines against the
+> control's +387** — larger raw, ~18% smaller per narratable premise, and either
+> way not a number adoption moved. **But there was no second walk**: the hint
+> runs the same eight `DeductionTechnique` objects through one
+> `runDeductionFixpoint` call, no rung reimplemented, **zero engine lines**, with
+> two hooks the runner already had (`settled`, `beforeTechnique`) doing the whole
+> job. So the correction to the sentence below is not "it does not":
+>
+> > The runner carries the **loop** — the ordered pass, the tier cap, the restart
+> > rule, the grade, the budget, the non-termination attribution. The recorder is
+> > per-game, and its cost is proportional to **the number of distinct premises a
+> > game's rungs hold**, not to the number of rungs.
+>
+> **And that is why the `find`/`apply`/`narrate` split below would not have
+> helped.** It splits at the rung; narration splits *below* the rung. Tracks has
+> 8 rungs and 12 narratable premises — `update-flags` alone holds five local
+> rules — so a contract making `find` return one firing would either force
+> `update-flags` into five techniques, changing what a tier means and the grade
+> with it, or leave the per-premise early return exactly where it now is (nine
+> times, in `tracks/solver.ts`). If there is a move left at this end it is
+> *"grade these premises together, narrate them apart"*, and Tracks is the second
+> game to want it (Towers was the first, and paid for it with a bug).
+>
+> The two findings the corpus characterization contributed, which the above
+> builds on:
 >
 > - **The runner carries the *loop*, not the record.** `DeductionTechnique.run`
 >   returns a `number` and `deduction-fixpoint.ts` says it is *"oblivious"* to
@@ -63,9 +87,11 @@ concentrate.
 >   lines, of which +387 is the recording projection**. That +387 is the only
 >   part adoption could plausibly move.
 >
-> The measurement is `add-tracks-hint`, which carries the falsifier in as many
-> words. **If Tracks still needs a comparable second walk, this end closes on
-> its own arithmetic the way [`presentation.md`](./presentation.md) did.**
+> The measurement was `add-tracks-hint`, which carried the falsifier in as many
+> words; the verdict is at the top of this block. **This end does not close the
+> way [`presentation.md`](./presentation.md) did — its wiring claim survived
+> intact — but its cost claim is gone**, and what replaces it is the sentence
+> about premises above.
 
 ## The Technique contract
 

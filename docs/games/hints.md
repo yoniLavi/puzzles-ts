@@ -681,6 +681,90 @@ ladder**: the rungs are named, and the game's `<game>-ladder.test.ts` says which
 of them the generator ever reaches, so a rung in the `unreached` ledger needs no
 narration at all.
 
+**But it does supply the single-firing driver, out of hooks it already has
+(Tracks).** An adopted game does not need a hand-rolled "run the ladder until
+one rung fires" loop beside the runner's:
+
+- **`settled: () => board.impossible || rec.ops.length > 0`.** That hook is
+  documented as broader than "solved" — *stop, this pass has a firing to
+  narrate* is the same kind of reason as Undead's contradiction and Spokes'
+  spent budget. It is checked at the top of an iteration, so the ladder always
+  finishes the rung it is in.
+- **`beforeTechnique`** clears the standing reason, which is what makes *a rung
+  that declares no reason narrates nothing* a checked property rather than a
+  hope. Give the recorder a `silent` tally keyed by rung id and assert its keys:
+  Tracks' is exactly `["update-flags"]`, which is also what would catch its
+  never-firing `check-single` rung if that ever changed.
+
+Wrap the two in a `next()` closure and hand it to `deduceHintPlan`. Exemplar:
+`tracksRecordingPass` in [`tracks/solver.ts`](../../src/games/tracks/solver.ts).
+What this does **not** save you is the record itself — measured against a
+control, an adopted game's recording projection is not cheaper than an
+unadopted one's (`add-tracks-hint`'s `findings.md`), because the loop was never
+the expensive part.
+
+### A rung is not a premise, so return per premise
+
+**One `DeductionTechnique` routinely holds several separate teachable rules, and
+the runner cannot see inside one.** Tracks has 8 rungs and **12** narratable
+premises; `update-flags` alone holds five local rules. A rung that scans the
+whole grid therefore fires many *independent* deductions in a single `run()`,
+and left alone they all land in one hint step — the exact defect § "Group one
+firing into one step" records from Towers, one level up.
+
+The fix is the same one, and it is the single most repeated shape in a recording
+projection: **return at the first premise that changed something, gated on the
+recorder**, so the generator's accumulate-across-the-whole-grid path stays
+byte-identical.
+
+```ts
+const before = did;
+const rec = b.rec;
+if (rec) rec.reason = { kind: "…", /* evidence, captured now */ };
+…apply the premise…
+if (rec && did > before) return did;   // one firing = one step
+if (rec) rec.reason = null;            // a premise that changed nothing lends nothing
+```
+
+Two things that are easy to get wrong here, both found by writing it:
+
+- **Reset the standing reason only when the premise recorded nothing.** Clearing
+  it after a firing hands the driver ops with no reason, and the narration
+  switch then reads `null.kind`.
+- **Build the reason *behind* the `if (rec)`, never as an argument to a helper.**
+  A reason carries its evidence, and some of that evidence costs a full-board
+  scan; a `claim(b, {…})` helper looks tidier and builds all of it on the
+  generator's hot path, where nothing reads it.
+
+**And capture the evidence inside the rung, before it acts** — not from a
+snapshot afterwards. A rung can destroy its own premise: Tracks' `looseEndSpans`
+cites a line's *unfinished* squares and then finishes one of them, so a
+post-firing snapshot shades a different set than the sentence counts.
+
+### Census the reasons, not only the rungs
+
+`<game>-ladder.test.ts`'s `unreached` ledger says which **rungs** a corpus
+reaches. Run the same census one level finer over the **reason kinds**, because
+an arm of a reachable rung can be just as unreachable: measured over 119 boards
+and 10,356 firings, three of Tracks' twelve premises fire on no board its
+generator produces, one of them because a cheaper rung always gets there first.
+
+The shape that works (`tracks-hint.test.ts`):
+
+- A `Record<Reason["kind"], true>` const, so **adding a variant breaks
+  compilation** until the census lists it.
+- A ledger of the unreached, one entry per member with its reason, asserted to
+  be exactly disjoint from what the corpus reached — the `NO_KEYBOARD` shape
+  from [`testing.md`](./testing.md) § "How a cross-game guard finds its
+  population".
+- **Direct `narrate(reason)` unit tests for the ledgered arms.** They are the
+  only instrument that can read a sentence no board produces; the cross-game
+  narration guard walks *fired* steps, so it has never seen them either.
+
+Do not delete an unreachable arm whose deduction is byte-matched to upstream:
+the deduction stays either way, and without a reason it would start changing the
+player's board *silently* instead.
+
 **A solver that *wipes the board* cannot be replayed as-is (Boats).** A
 recording solver written to run from empty is not automatically resumable;
 Boats is the sharp end. `solveBoats` opens with `solverInitial`, which

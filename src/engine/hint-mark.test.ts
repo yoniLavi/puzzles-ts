@@ -131,7 +131,7 @@ describe("a hint marks beside the content, never behind it", () => {
     expect(HINT_GAMES.filter(([id]) => !byId.has(id)).map(([id]) => id)).toEqual([]);
     // …and the sweep itself cannot quietly shrink: a game whose `COL_HINT`
     // export is renamed away drops out of `CHECKED` in silence otherwise.
-    expect(CHECKED.length).toBe(27);
+    expect(CHECKED.length).toBe(28);
     // And the wash list names real games, so a rename cannot leave a dead
     // exemption behind that silently stops guarding anything.
     for (const id of EVIDENCE_WASH_GAMES)

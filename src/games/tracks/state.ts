@@ -145,6 +145,42 @@ export interface Board {
   colS: number;
   numErrors: Uint8Array; // length w + h
   impossible: boolean;
+  /**
+   * The hint path's recorder, present only there — the generator and
+   * `findMistakes` leave it undefined and allocate nothing.
+   *
+   * It rides on the board because the board *is* Tracks' solver state: every
+   * rung already takes it, so one optional field threads the recorder to all
+   * eight of them and, more to the point, to the two primitive flag setters
+   * every one of them changes the board through
+   * (docs/games/hints.md § "Recording the deduction", the Singles precedent).
+   *
+   * `reason` is `unknown` for the same reason `DeductionRecord.reason` is: the
+   * shape belongs to the solver, and naming it here would point the state
+   * module at the deduction module. `solver.ts` narrows it once, in
+   * `tracksRecordingPass`.
+   */
+  rec?: TracksRecorder;
+}
+
+/**
+ * What the recording path collects for **one firing**.
+ *
+ * The driver clears it before each rung attempt; a setter appends to `ops` only
+ * when it actually changes a flag *and* a reason is standing, so a rung that
+ * declares no reason changes the board without claiming a hint step
+ * (`silent` counts those, and `tracks-hint.test.ts` asserts exactly which rungs
+ * appear in it).
+ */
+export interface TracksRecorder {
+  /** The premise the rung is currently acting on; `null` between attempts. */
+  reason: unknown;
+  /** The rung being attempted, for {@link silent}'s attribution. */
+  rung: string;
+  /** The flag changes this firing made, in the order it made them. */
+  ops: TracksOp[];
+  /** Changes made with no reason standing, by rung id. */
+  silent: Map<string, number>;
 }
 
 export function blankBoard(w: number, h: number): Board {

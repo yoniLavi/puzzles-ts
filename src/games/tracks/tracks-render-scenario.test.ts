@@ -8,8 +8,9 @@
 import { describe, expect, it } from "vitest";
 import { CURSOR_RIGHT, CURSOR_SELECT2 } from "../../engine/pointer.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import type { TracksHighlights } from "./hint.ts";
 import { tracksGame } from "./index.ts";
-import { COL_CURSOR, COL_ERROR } from "./render.ts";
+import { COL_CURSOR, COL_ERROR, COL_HINT, COL_HINT_CELL } from "./render.ts";
 import type { TracksMove, TracksParams } from "./state.ts";
 
 const P: TracksParams = { w: 6, h: 6, diff: 0, singleOnes: true };
@@ -41,6 +42,65 @@ describe("Tracks render scenarios", () => {
     expect(mistakeCount).toBeGreaterThan(0);
     expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_ERROR)).toBe(
       true,
+    );
+  });
+
+  it("a displayed hint marks the board, and never fills a square", () => {
+    const { recording, hint } = renderScenario({
+      game: tracksGame,
+      id: ID,
+      showHint: true,
+    });
+    expect(hint?.explanation.length).toBeGreaterThan(20);
+
+    // The opening firing blocks two sides of a given piece, so its action mark
+    // is the game's own edge cross recolored — a *line*, not a rect. Asserting
+    // "some op carries the action color" rather than "some rect does" is the
+    // point: a rect-only check would read as healthy on a frame whose whole
+    // hint is drawn in lines (docs/games/hints.md § "Echo the move's shape in
+    // the hint color").
+    expect(
+      recording.ops.some((o) => "color" in o && o.color === COL_HINT),
+      "the hint painted nothing in the action color",
+    ).toBe(true);
+    expect(
+      recording.ops.some((o) => "color" in o && o.color === COL_HINT_CELL),
+      "the hint painted no evidence",
+    ).toBe(true);
+
+    // …and no hint mark is a fill. The cross-game guard says this too, but a
+    // frame-level assertion here is what survives a careless `vitest -u`
+    // (docs/games/hints.md § "Shade vs ring").
+    const cell = 33; // PREFERRED_TILE_SIZE
+    for (const o of recording.ops) {
+      if (o.op !== "rect") continue;
+      if (o.color !== COL_HINT && o.color !== COL_HINT_CELL) continue;
+      const short = Math.min(o.w, o.h);
+      expect(
+        short * 4 < Math.max(o.w, o.h) || short < cell / 2,
+        `a hint mark is cell-sized in both directions: ${JSON.stringify(o)}`,
+      ).toBe(true);
+    }
+    expect(recording.ops).toMatchSnapshot();
+  });
+
+  it("a step that counts with a clue recolors that clue's digit", () => {
+    // Half of several Tracks deductions lives in the margin rather than on the
+    // grid, so the clue has to be part of the picture (docs/games/hints.md
+    // § "Off-board evidence"). Walk the plan to the first step that cites one.
+    const { recording, hint } = renderScenario({
+      game: tracksGame,
+      id: ID,
+      showHint: true,
+      hintUntil: (s) =>
+        ((s as { highlights?: TracksHighlights }).highlights?.clues.length ?? 0) > 0,
+    });
+    const clues = (hint as { highlights?: TracksHighlights } | undefined)?.highlights
+      ?.clues;
+    expect(clues?.length, "no step in the plan counts with a clue").toBeGreaterThan(0);
+    const hinted = recording.ops.filter((o) => o.op === "text" && o.color === COL_HINT);
+    expect(hinted.length, "the cited clue's digit is not in the hint color").toBe(
+      clues?.length,
     );
   });
 

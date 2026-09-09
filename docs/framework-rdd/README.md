@@ -334,23 +334,24 @@ this adoption would serve — and what a hint costs *after* adoption is the hone
 test of whether this end's argument is true. If it does not get cheaper, that
 closes the vision for good.
 
-> **⏳ Where that stands, 2026-09-09.** The corpus is characterized and the
-> measurement is not yet taken. Characterizing it produced a **control** — an
-> A1-class game hinted four weeks before it was wired to the runner, at +1,138
-> game lines of which **+387 is the recording projection** — and a **falsifier**
-> written before the work: if an adopted game still needs a comparable second
-> walk over its own ladder, adoption bought the wiring guarantee and nothing
-> else. It also found that the runner carries the *loop* and not the record, so
-> the sentence *"the runner is what carries the recorder"* is an aspiration
-> rather than a shipped property. Both are in
-> [`deduction.md`](./deduction.md)'s banner; the measurement is `add-tracks-hint`.
+> **✅ It reported, 2026-09-10 (`add-tracks-hint`).** The falsifier fired on its
+> stated terms: Tracks' recording projection cost **+536 lines against the
+> control's +387**. It did *not* need a second walk — the hint runs the same
+> eight technique objects through one `runDeductionFixpoint` call, zero engine
+> lines, on two hooks the runner already had — so the wiring claim is real and
+> stronger than the tree had shown. What is gone is the **cost** claim: the loop
+> is about ten lines and was already shared, while a recording projection's cost
+> is the per-premise *why*, the evidence it captures, and a per-premise early
+> return the runner structurally cannot supply. The replacement sentence, and
+> the finding that a **rung is not a premise** (8 rungs, 12 premises, which is
+> also why `find`/`apply`/`narrate` would not have helped), are marked at the
+> claims they correct in [`deduction.md`](./deduction.md); the table is that
+> change's `findings.md`.
 >
-> **So this is the one place in this document where "what remains" is a single
-> named change**, and it is deliberate: every other end reported by shipping,
-> completing or being withdrawn, and this one reports by a number nobody has
-> taken yet. When it reports, the vision has nothing left to say — and per the
-> table above, that fact will live in `openspec list` and in the marker at the
-> claim, not in a status line here.
+> **With that, this document has nothing further to report.** Every end has now
+> shipped, completed, been withdrawn, or — this one — reported a number. Per the
+> table above, what remains anywhere is a question for `openspec list` and for
+> the markers at the claims, never for a status line here.
 
 ## What the framework is for
 

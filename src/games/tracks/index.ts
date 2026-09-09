@@ -12,8 +12,16 @@
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
-import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
+import type {
+  Game,
+  HintResult,
+  HintStep,
+  HintTrackVerdict,
+  SolveResult,
+  UiUpdate,
+} from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
+import { commonHintRefusal } from "../../engine/hint-refusal.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -34,6 +42,7 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
+import { type TracksHighlights, tracksHint, tracksKeepTrack } from "./hint.ts";
 import {
   copyAndApplyDrag,
   executeMove,
@@ -317,6 +326,20 @@ function findMistakes(state: TracksState): readonly TracksMistake[] {
   return out;
 }
 
+/**
+ * The explained hint: refuse the two refusals every deductive hint owes, then
+ * hand over to the recording projection ([`hint.ts`](./hint.ts)).
+ *
+ * `findMistakes` is what makes the plan trustworthy rather than merely
+ * available: the deduction runs from the player's own marks, so a wrong one
+ * would have it deducing from a false premise.
+ */
+function hint(state: TracksState): HintResult<TracksMove, TracksHighlights> {
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
+  return tracksHint(state);
+}
+
 /** Tracks' difficulty contract (`engine/difficulty.ts`). `tracksSolve` returns
  * `{ ret, maxDiff }` with `ret` −1 impossible, 0 non-converged, 1 uniquely
  * solved; `stateToBoard` on the initial state gives the clue-only board. */
@@ -368,6 +391,13 @@ export const tracksGame: Game<
   solve,
   difficulty,
   findMistakes,
+  hint,
+  hintKeepTrack: (
+    m: TracksMove,
+    step: HintStep<TracksMove>,
+    state: TracksState,
+  ): HintTrackVerdict =>
+    tracksKeepTrack(m, step as HintStep<TracksMove, TracksHighlights>, state),
 
   textFormat,
 
