@@ -1951,6 +1951,44 @@ load-bearing properties, **each got wrong first**:
    defect: it appears the moment a player goes their own way, which is the
    ordinary thing for a player to do.
 
+5. **When the search runs out of reach, change what is scarce, not how much of
+   it you spend.** Removing the gate above exposed the next wall: Sixteen's
+   swapped-pair endgames are **nine** moves from finished and a search that
+   stores every board it visits tops out at eight here. Nine costs 18–24 million
+   stored boards, some ten seconds and most of a gigabyte — so the hint gave up,
+   on twelve of forty walked 5×4 games and five of forty 5×5 ones.
+
+   Buying the ninth ply with memory is not available in a tab. But the two
+   halves of a bidirectional search are not alike: the **goal side** is the same
+   for every hint of a puzzle and can be built once and kept, while the **board
+   side** is what has to reach further. So keep four plies of the goal side as
+   an *endgame database* — 835 k boards, 0.3 s, tens of MB — and walk the board
+   side depth-first, sliding a line in place and sliding it back on the way out,
+   which holds one board however deep it goes. Memory stops being the binding
+   constraint and time becomes it, and time is the one you can spend once:
+   ~4 s, on the one hint per game that needs it. All 116 walked games across
+   every preset now finish. `deepSearch` in
+   [`slide-planner.ts`](../../src/engine/slide-planner.ts) is the shape.
+
+   Two things that arrangement needs, and both are easy to get wrong:
+
+   - **A gated search is safe when an *ungated* one covers everything it hands
+     off to.** This one is gated (it only fires where the heuristic is helpless
+     too), which is the very thing item 4 says cycles — the difference is that it
+     reaches exactly *one* ply further than the ungated search, so the plan it
+     opens is one move longer than what the ungated search can finish. Play that
+     move and the rest is the ungated search's. Reach two plies further and the
+     cycle is back.
+   - **A hash table that narrows its key goes half blind rather than breaking.**
+     The database stores a Zobrist hash beside each board in an `Int32Array`,
+     which makes it signed; comparing that against an unsigned `>>> 0` copy of
+     the same hash fails for every value with the top bit set. Half of every
+     database was invisible, and the search *quietly returned no plan* on boards
+     it should have solved — indistinguishable from not reaching far enough. It
+     survived a full round of measurement and produced a confident wrong
+     conclusion. What caught it was asking a mechanism with no hash table in it
+     for the same answer.
+
 And a structural note: **the planner works on the board the player sees, not
 on labeled pieces.** For a game with identical pieces that is *necessary* —
 every slide on an odd-width torus is an even permutation, so a target that

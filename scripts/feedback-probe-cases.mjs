@@ -983,10 +983,15 @@ export const MODULES = [
         replace: "  return { ...m };",
       },
       {
+        // The stronger pruning is now *derived* — `sameLineMovesCompose` reads
+        // off the move set whether two slides of one line collapse into one — so
+        // the defect to plant is applying it to a game whose slides do not
+        // compose, which is Netslide's ±1 move set and where a shortest path
+        // really does slide one line twice running.
         within: "bidirectionalPlan",
         why: "sliding the same line twice running is pruned, so any path needing a double slide is missed",
-        find: "    return m.index === prev.index && m.delta === -prev.delta;",
-        replace: "    return m.index === prev.index;",
+        find: "    return strict || m.delta === -prev.delta;",
+        replace: "    return true;",
       },
       {
         // **Was marked EQUIVALENT, and is not.** The earlier verdict measured
@@ -1099,6 +1104,31 @@ export const MODULES = [
         why: "the bidirectional path's forward half is not reversed before its backward half is appended",
         find: "    path.reverse();",
         replace: "    void path;",
+      },
+      {
+        // The one that actually happened, and the reason the deep search's
+        // database is asserted directly rather than through its answers. It does
+        // not break anything — it makes half the database unmatchable, so the
+        // search returns "no plan" for boards it holds, which is indistinguishable
+        // from a search that cannot reach far enough. It produced a confident
+        // wrong conclusion about Sixteen's endgame before a referee caught it.
+        within: "hash",
+        why: "the database's key is narrowed on the way in and compared unsigned on the way out, so half of it is invisible",
+        find: "    return hash | 0;",
+        replace: "    return hash >>> 0;",
+      },
+      {
+        within: "sameLineMovesCompose",
+        why: "slides of one line are assumed to compose for every game, so a shortest path that slides one line twice running is pruned away from the games whose moves do not",
+        find: "        if (sum !== 0 && !deltas.has(sum)) return false;",
+        replace: "        if (false) return false;",
+      },
+      {
+        within: "deepPlan",
+        why: "the deep search stops one ply short, so the boards it exists for stay out of reach",
+        find: "    if (depth === caps.forwardDepth || depth + 1 >= bestTotal) return;",
+        replace:
+          "    if (depth + 1 >= caps.forwardDepth || depth + 1 >= bestTotal) return;",
       },
     ],
   },

@@ -541,6 +541,78 @@ describe("Sixteen hint", () => {
     // assertions above are the guarantee, never the clock. Ceiling: vitest.config.ts.
   });
 
+  it("finds the way home from the swapped-pair endgames that used to strand it", () => {
+    // **The boards the hint gave up on**, and it gave up often: walking forty
+    // games of each preset one recomputed hint at a time, 5×5 stopped on five of
+    // them and 5×4 on twelve, always saying "No move here would get you closer."
+    // on a board that was perfectly solvable. Every one had this shape — one or
+    // two pairs of tiles sitting in each other's cells, which is a strict local
+    // minimum of the distance measure (every slide makes it worse) and is nine
+    // moves from finished while looking like two.
+    //
+    // Nine is one past what a search that stores every board it visits can
+    // afford here, so these are the boards `deepSearch` exists for. **The plan
+    // length is the assertion that says so**: the state-bounded search never
+    // returns more than eight moves at this size, so a nine-move plan can only
+    // have come from the deep search. A weaker check — that a plan came back at
+    // all — would go on passing if the deep search were quietly disabled and the
+    // board happened to be reachable another way.
+    const cases: { label: string; w: number; h: number; tiles: number[] }[] = [
+      {
+        label: "5×4, one swapped pair",
+        w: 5,
+        h: 4,
+        // biome-ignore format: keep the 5×4 grid readable.
+        tiles: [
+          1, 2, 3, 4, 5,
+          6, 7, 8, 9, 10,
+          11, 12, 14, 13, 15,
+          16, 17, 18, 19, 20,
+        ],
+      },
+      {
+        label: "5×5, two swapped pairs",
+        w: 5,
+        h: 5,
+        // biome-ignore format: keep the 5×5 grid readable.
+        tiles: [
+          1, 2, 3, 4, 5,
+          6, 7, 8, 9, 15,
+          11, 12, 13, 14, 10,
+          16, 18, 17, 19, 20,
+          21, 22, 23, 24, 25,
+        ],
+      },
+    ];
+
+    for (const { label, w, h, tiles } of cases) {
+      const state: SixteenState = {
+        w,
+        h,
+        n: w * h,
+        tiles: new Int32Array(tiles),
+        completed: 0,
+        cheated: false,
+        moveCount: 0,
+        moveTarget: 0,
+        lastMovementSense: 0,
+      };
+      const result = sixteenGame.hint?.(state);
+      expect(result?.ok, `${label}: the hint gave up`).toBe(true);
+      if (!result?.ok) continue;
+      expect(
+        result.steps.length,
+        `${label}: a plan this short is within the state-bounded search's reach, so it does not exercise the deep search`,
+      ).toBeGreaterThan(8);
+      let board = state;
+      for (const step of result.steps) board = executeMove(board, step.move);
+      expect(
+        board.completed,
+        `${label}: the plan does not finish the board`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
   it("recomputing after every move still lands on the same board, one move nearer", () => {
     // The property the plan above only *displays*: a player who re-asks after
     // every move gets a fresh search each time, and those searches must agree

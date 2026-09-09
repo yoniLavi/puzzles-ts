@@ -122,3 +122,18 @@ export function firstLeaf<P>(menu: PresetMenu<P>): P {
   }
   throw new Error("no leaf preset");
 }
+
+/**
+ * Every leaf preset a game offers, with the title its menu shows.
+ *
+ * The counterpart to `firstLeaf`, and the reason it is here rather than local
+ * to one sweep: **a cross-game sweep keyed on tier is blind to the games that
+ * have none**, and both sweeps that made that mistake needed this to fix it —
+ * one preset per tier where a game has tiers, and its presets where it does not,
+ * because that is the axis such a game varies (`hint-resume.test.ts` walked one,
+ * `hint-quality.test.ts` walked none).
+ */
+export function leafPresets<P>(menu: PresetMenu<P>): { title: string; params: P }[] {
+  if (menu.params !== undefined) return [{ title: menu.title, params: menu.params }];
+  return (menu.submenu ?? []).flatMap(leafPresets);
+}

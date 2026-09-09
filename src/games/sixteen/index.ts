@@ -509,6 +509,18 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     // to the heuristic, which walks it straight back to where it started. Three
     // gates were tried and all three cycled.
     exactSearch: { maxDepth: 10, maxStates: 2_500_000 },
+    // The endgame the search above cannot reach. Sixteen's two-swapped-pairs
+    // boards — four tiles out of place, every slide from them looking worse —
+    // are **exactly nine moves** from finished, and that search tops out at
+    // eight: crossing nine by storing states costs 18–24 million of them, some
+    // ten seconds and most of a gigabyte, which is not a thing a browser tab
+    // may spend. Walking five plies forward into a four-ply database of the
+    // finished board costs the same nine moves of reach for a few tens of MB,
+    // and the database is built once and answers every later hint.
+    //
+    // Without this the hint gave up on about one 5×5 game in five, four tiles
+    // from home, on a board that was perfectly solvable.
+    deepSearch: { forwardDepth: 5, databaseDepth: 4 },
   });
 
   const path = plan.moves;

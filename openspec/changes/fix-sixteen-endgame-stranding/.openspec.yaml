@@ -3,16 +3,16 @@
 # rather than passing. It names the same workflow as `openspec/config.yaml`.
 schema: spec-driven
 
-# No spec deltas yet, and deliberately so: the `sixteen` spec already requires a
-# hint that reaches a solved board, so nothing here has to be written down before
-# the code can obey it. A delta becomes necessary only if the mechanism chosen in
-# task 1 establishes something new — a pattern database the engine owns, or a
-# constructive endgame with its own narration contract — and which of those it
-# will be is exactly what has not been decided.
+# This began as `skip_specs: true`, reasoning that the `sixteen` spec already
+# required a hint that reaches a solved board, so nothing had to be written down
+# before the code could obey it. That was right about the outcome and wrong about
+# the change: the fix establishes a *mechanism* with a rule attached to it — a
+# search that may reach exactly one ply further than the ungated one, and no more
+# — and a rule that has to be obeyed by whoever tunes it next belongs in a spec
+# rather than only in a comment. The `ts-engine` delta carries it, along with the
+# completeness obligation the half-blind hash taught, and a modification to the
+# hint walk's slice rule for the second sweep found with the same blind spot.
 #
-# Writing a delta now would be guessing at the shape of a fix that has not been
-# designed. (The previous change learned the other half of this lesson: it
-# skipped specs on the same reasoning and was wrong, because the specs there did
-# not merely fail to forbid the defect, they mandated it. Checked here: neither
-# the `sixteen` nor the `ts-engine` spec says anything that stranding satisfies.)
-skip_specs: true
+# `netslide` needs no delta: measured over 108 walked games across all nine
+# presets, it never strands, so it configures no deep search and nothing about
+# its requirement changes.

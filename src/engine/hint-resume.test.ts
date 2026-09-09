@@ -22,10 +22,14 @@
  */
 import { describe, expect, it } from "vitest";
 import { type DifficultyContract, difficultyTiers } from "./difficulty.ts";
-import type { PresetMenu } from "./game.ts";
 import { DEDUCTION_EXHAUSTED } from "./hint-refusal.ts";
 import { randomNew } from "./random/index.ts";
-import { type AnyGame, firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
+import {
+  type AnyGame,
+  firstLeaf,
+  HINT_GAMES,
+  leafPresets,
+} from "./testing/hint-games.ts";
 import { SLOW_TESTS_ENABLED } from "./testing/slow.ts";
 
 /** Walk a fresh board to solved, recomputing the hint after every move.
@@ -86,12 +90,6 @@ function permitsSearch(game: AnyGame, params: unknown): boolean {
   );
 }
 
-/** Every leaf preset with the title the menu shows for it. */
-function leafEntries(menu: PresetMenu<unknown>): { title: string; params: unknown }[] {
-  if (menu.params !== undefined) return [{ title: menu.title, params: menu.params }];
-  return (menu.submenu ?? []).flatMap(leafEntries);
-}
-
 /**
  * The presets the resume walk covers.
  *
@@ -119,7 +117,7 @@ function leafEntries(menu: PresetMenu<unknown>): { title: string; params: unknow
  * walk per untiered game.
  */
 function walkedPresets(game: AnyGame): { title: string; params: unknown }[] {
-  const all = leafEntries(game.presets());
+  const all = leafPresets(game.presets());
   if (SLOW_TESTS_ENABLED) return all;
   const contract = game.difficulty as DifficultyContract<unknown> | undefined;
   if (!contract) {

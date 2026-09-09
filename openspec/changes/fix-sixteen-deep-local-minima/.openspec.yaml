@@ -1,0 +1,10 @@
+# `schema` is required for this file to be valid change metadata at all — without
+# it the workflow marker parses but is *not honored*, and `validate` says so
+# rather than passing. It names the same workflow as `openspec/config.yaml`.
+schema: spec-driven
+
+# No deltas, and deliberately: the first task is a scope decision the owner makes
+# — whether Sixteen's hint is to be complete or bounded-and-honest — and the two
+# answers want different requirements. Writing either now would be recording a
+# guess about which way it goes.
+skip_specs: true

@@ -37,7 +37,12 @@
 import { describe, expect, it } from "vitest";
 import { difficultyTiers } from "./difficulty.ts";
 import { randomNew } from "./random/index.ts";
-import { declaresNoMarks, firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
+import {
+  declaresNoMarks,
+  firstLeaf,
+  HINT_GAMES,
+  leafPresets,
+} from "./testing/hint-games.ts";
 
 const SEEDS = ["hq-a", "hq-b", "hq-c"];
 
@@ -232,7 +237,7 @@ describe("hint narration form, cross-game", () => {
 });
 
 /**
- * The same speculative-vocabulary check, **at every tier**.
+ * The same speculative-vocabulary check, **across everything a game varies**.
  *
  * It needs its own sweep because the block above samples
  * `firstLeaf(game.presets())` — each game's *easiest* preset — and a trial rung
@@ -240,25 +245,46 @@ describe("hint narration form, cross-game", () => {
  * "further along" in Bricks' lookahead narration left the block above green,
  * because Bricks' first preset is Easy and Easy never reaches that arm. The
  * check was therefore guarding nothing on precisely the tiers it exists for.
+ *
+ * **Tier is only one axis, and this used to walk off the end of games that have
+ * no tiers at all.** `if (!contract || !tiers) continue` skipped the whole case,
+ * so twelve of the thirty hinting games — Sixteen, Netslide, Palisade, Inertia,
+ * Pattern, Range and the rest — were outside it entirely, and the per-game
+ * vacuity guard below could not say so because it only ran for the games that
+ * got as far as running. A game with no tiers varies by *preset* instead, and is
+ * walked that way. (`hint-resume.test.ts` had the same blind spot in a milder
+ * form, sampling one preset rather than none; both were found by
+ * `fix-sixteen-endgame-stranding`. If you add a sweep over games, the question
+ * to ask is what axis each game varies, not what axis you keyed on.)
  */
 describe("no hint leaves a chain for the player to carry, at any tier", () => {
   for (const [name, game] of HINT_GAMES) {
     const contract = game.difficulty;
     const tiers = difficultyTiers(game);
-    if (!contract || !tiers) continue;
     it(`${name}: every tier`, () => {
       const base = firstLeaf(game.presets());
+      // One params per tier where the game has tiers; one per preset where it
+      // does not, which is the axis such a game actually varies.
+      const cases: { label: string; params: unknown }[] =
+        contract && tiers
+          ? tiers.map((tierName, tier) => ({
+              label: `tier ${tier} ("${tierName}")`,
+              params: contract.withTier(base, tier),
+            }))
+          : leafPresets(game.presets()).map((e) => ({
+              label: `preset "${e.title}"`,
+              params: e.params,
+            }));
       let checked = 0;
-      for (let tier = 0; tier < tiers.length; tier++) {
-        const params = contract.withTier(base, tier);
-        if (game.validateParams(params, true)) continue; // tier refused at this size
+      for (const { label, params } of cases) {
+        if (game.validateParams(params, true)) continue; // refused at this size
         for (const seed of SEEDS) {
           let desc: string;
           let aux: string | undefined;
           try {
             ({ desc, aux } = game.newDesc(
               params,
-              randomNew(`${name}-${tier}-${seed}`),
+              randomNew(`${name}-${label}-${seed}`),
             ));
           } catch {
             continue; // ungenerable at this size; difficulty-contract.test.ts owns that
@@ -269,14 +295,15 @@ describe("no hint leaves a chain for the player to carry, at any tier", () => {
           for (const step of res.steps) {
             expect(
               SPECULATIVE.test(step.explanation),
-              `${name} tier ${tier} ("${tiers[tier]}")/${seed}: "${step.explanation}" — asks the player to carry a chain it never lays out`,
+              `${name} ${label}/${seed}: "${step.explanation}" — asks the player to carry a chain it never lays out`,
             ).toBe(false);
           }
         }
       }
       // The "how many did I actually look at?" guard: without it, a game whose
-      // every tier failed to generate would pass while asserting nothing.
-      expect(checked, `${name}: no tier produced a hint to check`).toBeGreaterThan(0);
+      // every case failed to generate would pass while asserting nothing. It
+      // now also covers the games that used to be skipped before reaching it.
+      expect(checked, `${name}: nothing produced a hint to check`).toBeGreaterThan(0);
     });
   }
 });

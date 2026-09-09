@@ -437,6 +437,181 @@ describe("planSlides", () => {
       ]);
     });
   });
+
+  describe("the deep search", () => {
+    // Two searches over the same graph, by different machinery — one storing
+    // every board it reaches, one storing almost none — so each is a referee for
+    // the other. **This is the check that matters, and it is not decoration.**
+    //
+    // The deep search's index narrows its hash into an `Int32Array`, and an
+    // earlier version compared that narrowed word against an unsigned `>>> 0`
+    // copy of the same hash. Half of every database was therefore invisible. It
+    // did not fail — it went half blind, quietly returned "no plan" on boards it
+    // should have solved, and read exactly like a search that could not reach
+    // that far. It survived a whole round of measurement and produced a
+    // confident, wrong conclusion about Sixteen's endgame; what caught it was
+    // asking a mechanism with no hash table in it for the same answer.
+    //
+    // Small board, small depths: the property is about agreement, not size, and
+    // this runs in a moment.
+    const w = 4;
+    const h = 3;
+    const n = w * h;
+    const moves = singleStepMoves(w, h);
+
+    it("holds every board within its database depth, and can say so", () => {
+      // **The guard for the half-blind index, and it has to be this one.** With
+      // `forwardDepth: 0` the search walks nowhere: it probes the board against
+      // the database and nothing else, so a plan comes back exactly when the
+      // database holds that board. Every board `k ≤ databaseDepth` slides from
+      // the goal is one it must hold.
+      //
+      // The end-to-end agreement check below does *not* catch this, which was
+      // measured rather than assumed: with half the entries unmatchable it still
+      // passed, because at these depths there are enough other ways to reach the
+      // goal that losing half of them changes no answer. That is precisely why
+      // the bug survived in the first place — it only bites where the search is
+      // stretched to its limit, and a test small enough to be fast is never
+      // stretched. So the property is asserted directly instead.
+      let held = 0;
+      for (let scramble = 1; scramble <= 3; scramble++) {
+        for (let trial = 0; trial < 10; trial++) {
+          const picked: SlideMove[] = [];
+          for (let s = 0; s < scramble; s++) {
+            picked.push(moves[(trial * 3 + s * 7) % moves.length]);
+          }
+          const start = apply(solved(n), w, h, picked);
+          if (travel(w, h)(start) === 0) continue;
+          const plan = planSlides({
+            w,
+            h,
+            start,
+            goal: solved(n),
+            moves,
+            heuristic: travel(w, h),
+            maxStates: 1,
+            deepSearch: { forwardDepth: 0, databaseDepth: 3 },
+          });
+          held++;
+          expect(
+            plan.reachedGoal,
+            `a board ${scramble} slides from the goal is not in a 3-deep database (scramble ${trial})`,
+          ).toBe(true);
+          expect(plan.moves.length).toBeLessThanOrEqual(scramble);
+          expect(apply(start, w, h, plan.moves)).toEqual(solved(n));
+        }
+      }
+      expect(held).toBeGreaterThan(20);
+    });
+
+    it("agrees with the state-bounded search, move for move", () => {
+      let compared = 0;
+      // Up to the deep search's full reach (3 + 3), so a board that needs the
+      // *last* forward ply is among them — otherwise a search that stopped one
+      // ply short would agree on everything asked of it.
+      for (let scramble = 1; scramble <= 6; scramble++) {
+        for (let trial = 0; trial < 8; trial++) {
+          // A deterministic scramble: no RNG, so a failure names a fixed board.
+          const picked: SlideMove[] = [];
+          for (let s = 0; s < scramble; s++) {
+            picked.push(moves[(trial * 7 + s * 5) % moves.length]);
+          }
+          const start = apply(solved(n), w, h, picked);
+          if (travel(w, h)(start) === 0) continue;
+          const base = {
+            w,
+            h,
+            start,
+            goal: solved(n),
+            moves,
+            heuristic: travel(w, h),
+            maxStates: 1,
+          };
+          const stored = planSlides({
+            ...base,
+            exactSearch: { maxDepth: 6, maxStates: 200_000 },
+          });
+          const deep = planSlides({
+            ...base,
+            deepSearch: { forwardDepth: 3, databaseDepth: 3 },
+          });
+          compared++;
+          expect(
+            deep.reachedGoal,
+            `scramble ${scramble}/${trial}: the stored search reached the goal in ${stored.moves.length}, the deep search did not`,
+          ).toBe(stored.reachedGoal);
+          expect(
+            deep.moves.length,
+            `scramble ${scramble}/${trial}: plans of different length`,
+          ).toBe(stored.moves.length);
+          expect(apply(start, w, h, deep.moves)).toEqual(solved(n));
+        }
+      }
+      // How many did I actually look at?
+      expect(compared).toBeGreaterThan(20);
+    });
+
+    it("reaches a board the state-bounded search cannot", () => {
+      // The whole point of it: a budget too small to store the way there, and a
+      // depth that walks it anyway.
+      const start = apply(solved(n), w, h, [
+        moves[0],
+        moves[5],
+        moves[9],
+        moves[2],
+        moves[6],
+      ]);
+      const base = {
+        w,
+        h,
+        start,
+        goal: solved(n),
+        moves,
+        heuristic: travel(w, h),
+        maxStates: 1,
+      };
+
+      const starved = planSlides({
+        ...base,
+        exactSearch: { maxDepth: 8, maxStates: 40 },
+      });
+      expect(starved.reachedGoal).toBe(false);
+
+      const deep = planSlides({
+        ...base,
+        exactSearch: { maxDepth: 8, maxStates: 40 },
+        deepSearch: { forwardDepth: 3, databaseDepth: 3 },
+      });
+      expect(deep.reachedGoal).toBe(true);
+      expect(apply(start, w, h, deep.moves)).toEqual(solved(n));
+    });
+
+    it("shortens the distance to the goal on every step of the walk", () => {
+      // The same convergence property the stored search carries, asserted of the
+      // deep one — because a game mixes the two and the walk must descend either
+      // way (see `deepSearch` in the planner).
+      const start = apply(solved(n), w, h, [moves[1], moves[7], moves[4], moves[10]]);
+      let board = start;
+      let previous = Number.POSITIVE_INFINITY;
+      for (let step = 0; step < 20; step++) {
+        const plan = planSlides({
+          w,
+          h,
+          start: board,
+          goal: solved(n),
+          moves,
+          heuristic: travel(w, h),
+          maxStates: 1,
+          deepSearch: { forwardDepth: 3, databaseDepth: 3 },
+        });
+        if (plan.moves.length === 0) break;
+        expect(plan.moves.length).toBeLessThan(previous);
+        previous = plan.moves.length;
+        board = apply(board, w, h, [plan.moves[0]]);
+      }
+      expect(board).toEqual(solved(n));
+    });
+  });
 });
 
 describe("toroidalDist", () => {

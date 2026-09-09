@@ -1,70 +1,136 @@
 # fix-sixteen-endgame-stranding — tasks
 
-## 0. What is already measured — do not re-derive it
+## 0. What was measured before implementation
 
-All of this is from `fix-sixteen-hint-recompute-stability` (2026-09-08), taken
-with the exact search already running on every board.
+From `fix-sixteen-hint-recompute-stability` (2026-09-08), with the exact search
+already running on every board.
 
-- [x] 0.1 **Frequency**: 16 seeds of Sixteen 5×5, walked one recomputed hint at a
-      time — 13 solve, **3 strand**, at moves 32, 35 and 35.
-- [x] 0.2 **Shape**: every stranding is at `outOfPlace = 4` and is two swapped
-      pairs. The refusal is `NO_MOVE_WORTH_MAKING` ("No move here would get you
-      closer.") on a solvable board.
-- [x] 0.3 **Distance**: such a board is **exactly 9 moves** from finished. Worked
-      example, seed `hr-d` after 43 hint moves:
-      `1,2,8,4,5,6,7,3,9,10,11,12,13,14,15,16,17,18,20,19,21,22,23,24,25`.
-- [x] 0.4 **Reach**: the exact search solves scrambles of 4–8 every time in under
+- [x] 0.1 **Frequency** — and it was worse than the proposal said, on a preset
+      the proposal never measured. Walking **forty** games of each preset one
+      recomputed hint at a time: **5×5 stranded 5 of 40**, **5×4 stranded 12 of
+      40** (30%), 4×4 stranded none. The proposal had 5×5 only.
+- [x] 0.2 **Shape** — one shape per preset, and both are the same thing.
+      Every 5×5 stranding is `outOfPlace = 4`, permutation cycle type `[2,2]`
+      (two swapped pairs); every 5×4 stranding is `outOfPlace = 2`, cycle type
+      `[2]` (**one** swapped pair). The refusal is `NO_MOVE_WORTH_MAKING` on a
+      solvable board.
+- [x] 0.3 **Distance**: nine moves, measured against a referee search.
+- [x] 0.4 **Reach**: the state-bounded search solves scrambles of 4–8 in under
       0.5 s and never returns a plan longer than 8.
-- [x] 0.5 **Cost of reaching 9**: fails at 6 M / 10 M / 14 M / 18 M states;
-      succeeds at 24 M, in 10.0 s. Distance 8 costs 2.5 M and 0.5 s.
-- [x] 0.6 **Not a regression**: the pre-fix code refuses on the same boards. It
-      cycled before reaching them, which is why this was never seen.
+- [x] 0.5 **Cost of reaching 9 by storing states**: fails at 6/10/14/18 M states,
+      succeeds at 24 M in 10 s. Distance 8 costs 2.5 M and 0.5 s.
+- [x] 0.6 **Not a regression**: the pre-fix code refuses on the same boards.
 
-## 1. Choose the mechanism
+## 1. The mechanism
 
-- [ ] 1.0 **Price candidate 3 first** — store the backward half of the exact
-      search (four plies, ~1.25 M states, ~40 MB, identical for every hint at a
-      given board size) and run the forward half as an iterative-deepening DFS to
-      five plies, probing each leaf against it. Memory then scales with depth
-      rather than breadth, which is the thing that rules distance 9 out today.
-      Count the leaf probes before designing around it: the 5–8 s estimate is
-      extrapolated from the stored forward frontier, not measured. If this works
-      the other two candidates are unnecessary.
-- [ ] 1.1 Build the 4-tile pattern database (25·24·23·22 ≈ 304 k entries; slides
-      act on positions, so a pattern's transition is well defined) and **measure
-      what reach it buys** the forward A\* before designing around it. The current
-      forward heuristic is total toroidal travel, which is not admissible and is
-      helpless at a local minimum; the question is whether an admissible PDB
-      heuristic gets a distance-9 board solved inside a sane budget.
-- [ ] 1.2 If it does not, or if the hint it produces is unreadable, design the
-      constructive endgame instead: place tiles by commutator, with the potential
-      being how far through the algorithm the board is. Longer plans, always
-      available, monotone by construction, and it can *explain the maneuver* —
-      which is what the hint quality bar actually wants here.
-- [ ] 1.3 Decide where it lives. Shared through `slide-planner.ts` only if it
-      generalizes; `src/games/sixteen/` otherwise.
+- [x] 1.0 **Candidate 3 priced, and adopted.** Memory is what rules out the ninth
+      ply, not time — and the two halves of the search are not alike. The
+      **goal side** is identical for every hint of a puzzle, so four plies of it
+      are built once and kept: **835 k boards, 0.3 s, tens of MB**. The **board
+      side** walks five plies depth-first, sliding a line in place and sliding it
+      back, so it holds one board at any depth. Reach 9 for a few seconds and no
+      gigabyte.
 
-## 2. Measure Netslide rather than assuming
+      Getting it fast enough took three passes, and the numbers are worth
+      keeping: the obvious version repacked and rehashed every board (39 M nodes,
+      **21 s**); Zobrist hashing updated a line at a time and slides done in
+      place took it to 11 s; flattening the move tables and removing a per-node
+      object allocation from the undo path, to **7 s**; and the stronger pruning
+      below to **~4 s**.
+- [x] 1.1 Pattern database not built — unnecessary once candidate 3 worked.
+- [x] 1.2 Constructive endgame not built, and **it would not have worked**: the
+      resume walk applies only a plan's *first* move and recomputes, so a
+      maneuver whose potential only falls at the *end* of it is walked into the
+      middle and abandoned. Only mechanisms returning shortest — or otherwise
+      per-move monotone — plans survive that walk. Recorded because it looks like
+      the obvious answer.
+- [x] 1.3 Lives in `slide-planner.ts` as `deepSearch`, declared by the game as
+      two depths and never as a condition. Sixteen sets `{ forwardDepth: 5,
+      databaseDepth: 4 }`.
+- [x] 1.4 **The rule that makes gating it safe, which is not the same rule the
+      previous change removed.** A gated search is safe when an *ungated* one
+      covers everything it hands off to: this one reaches exactly one ply further
+      than the ungated search, so the plan it opens is one move longer than that
+      search can finish, and playing that move hands back a board the ungated
+      search handles. Two plies further and the cycle returns. Stated in the
+      contract and in the spec, because it is a rule for whoever tunes it next.
+- [x] 1.5 **The stronger pruning, derived not declared.** Where a game's slides
+      of one line compose into one legal slide, a shortest path can never contain
+      two of them inside a run of same-axis moves, so the canonical ordering
+      tightens from non-decreasing to strictly increasing indices — a third of
+      the search. `sameLineMovesCompose` reads that off the move set: true for
+      Sixteen (deltas 1…w−1), false for Netslide (±1 only, where `+1` twice is
+      legitimate and `+2` is not a move). A game that changed its move set would
+      change the answer in the same commit.
 
-- [ ] 2.1 Netslide shares the planner and was **not** measured for this. Its win
-      condition is weaker (any arrangement that powers every tile finishes it) and
-      its branch factor is far smaller, so it may not have the shape at all. Walk
-      its presets over many seeds the way task 0.1 walked Sixteen's, and say what
-      was found — including "nothing", which is a result.
+## 2. Netslide, measured rather than assumed
+
+- [x] 2.1 **It does not strand.** 108 walked games — all nine presets × 12 seeds,
+      recomputing after every move — all solved, none refused, worst single hint
+      1.5 s. Its move set is ±1 only, so its branch factor at 5×5 is 16 against
+      Sixteen's 40 and its state-bounded search reaches far deeper for the same
+      budget; its win condition is weaker besides. It configures no deep search
+      and nothing about its spec changes.
 
 ## 3. The guard
 
-- [ ] 3.1 **The existing guard would not have found this**, and that is the point
-      to fix: `hint-resume.test.ts` walks one seed per preset, and 13 of 16 seeds
-      pass. A defect on a fifth of boards needs a sweep over *seeds*, in the slow
-      tier, asserting the walk arrives.
-- [ ] 3.2 Prove it fails before trusting it: restore the stranding and watch it go
-      red.
+- [x] 3.1 **Pinned by shape, not by sampling — and that is the finding.** A seed
+      sweep is what the proposal asked for, and it is the wrong instrument: the
+      defect appears on about a fifth of boards, so catching it reliably needs
+      ~8 seeds per preset, and this repo has already priced that (five seeds over
+      every preset was 50 minutes and was withdrawn; the file's own comment says
+      the seed count is not the dial to turn). But every instance is the *same
+      recognizable shape*, so a test that names one board of each shape asserts
+      the same property deterministically in five seconds.
+
+      It asserts **plan length > 8**, not merely that a plan came back: the
+      state-bounded search never returns more than eight moves at this size, so
+      only a longer plan proves the deep search ran. Without that, disabling the
+      deep search would leave the test green on any board reachable another way.
+- [x] 3.2 **Proved to fail**: commenting out Sixteen's `deepSearch` turns it red
+      on the 5×4 board, with "the hint gave up".
+- [x] 3.3 **And a guard for the mechanism, at the level it broke.** The index
+      narrowed its Zobrist hash into an `Int32Array` and compared it against an
+      unsigned copy, so half of every database was unmatchable. It did not fail —
+      it went half blind and returned "no plan" on boards it held, which reads
+      exactly like a search that cannot reach far enough, and it produced a
+      confident wrong conclusion that survived a whole round of measurement.
+
+      What caught it was a referee with no hash table in it. What guards it now
+      is a direct membership assertion: with `forwardDepth: 0` the search probes
+      the board against the database and nothing else, so every board within the
+      database's depth must come back with a plan. **The end-to-end agreement
+      check does not catch this** — measured, not assumed: it passed with half
+      the database invisible, because at test-sized depths losing half the
+      entries changes no answer. That is exactly why the bug survived.
 
 ## 4. Close
 
-- [ ] 4.1 `npm run gate`, plus the new seed sweep.
-- [ ] 4.2 Run the app: deal Sixteen 5×5 repeatedly and follow the hint to a solved
-      board on a seed that strands today.
-- [ ] 4.3 Owner acceptance — this changes what a hint says, and candidate 2
-      changes what it teaches.
+- [x] 4.1 **116 walked games finish**, across every preset: 5×5 16/16, 5×4 40/40,
+      4×4 20/20, 4×3 20/20, 3×3 20/20 — against 35/40 and 28/40 before. Worst
+      single hint 3.7 s (5×5) and 3.2 s (5×4), which is the one deep search a
+      stranded game needs; typical worst is ~1.5 s.
+
+      **That sample was not wide enough, and the app said so** — see the finding
+      below. Read 116/116 as "the shape this change targets is gone", not as "the
+      hint never strands".
+- [x] 4.2 `npm run gate` green (301 files, 8502 tests).
+- [x] 4.3 **Ran the app.** Five 5×4 games followed to "COMPLETED!" — 5×4 is the
+      preset that stranded 12 of 40 before. A 5×5 game then stranded, on a deeper
+      shape: see below.
+- [ ] 4.4 Owner acceptance — the change is a real improvement with a named
+      remainder, and the remainder is a scope question rather than a bug to
+      squash.
+
+## Findings — a second sweep with the same blind spot, fixed here
+
+`hint-quality.test.ts`'s "no hint leaves a chain for the player to carry, at any
+tier" sweep opened with `if (!contract || !tiers) continue`, so the **twelve
+untiered hinting games were outside it entirely** — not sampled thinly, as in
+`hint-resume.test.ts`, but skipped before its own vacuity count could notice. A
+game with no tiers varies by preset, and is now walked that way; the shared
+preset enumeration both sweeps needed now lives with the other cross-game hint
+helpers rather than in one of them.
+
+Free, and measured before it was done: 112 hints across those twelve games, zero
+speculative phrasings, so closing the gap changed nothing but coverage.
