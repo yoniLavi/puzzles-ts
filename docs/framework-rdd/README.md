@@ -40,12 +40,48 @@ above, which cannot go stale because nothing maintains them.
 
 *A guard on those citations was considered and declined (2026-09-04).* Measured
 first: of the 49 change-id-shaped tokens cited across `docs/` and `AGENTS.md`,
-**45 resolve to a real change and the other four are not change ids at all** —
+**45 resolved to a real change and the other four were not change ids at all** —
 `prefers-color-scheme`, `pre-ts-pivot`, `color-dark-check`, `auto-mark-complete`.
-So there is no dead citation to catch today, and any guard keyed on "kebab-case
-token in backticks" would need an allowlist for CSS features, git tags and
-script names that grows with the docs. Worth revisiting if a dead citation ever
-does appear; not worth speculative machinery before one has.
+So there was no dead citation to catch, and any guard keyed on "kebab-case token
+in backticks" would need an allowlist for CSS features, git tags and script names
+that grows with the docs. The decline named its own revisit condition: *worth
+revisiting if a dead citation ever does appear.*
+
+> **⏱ It appeared 46 minutes later, and nobody noticed for five days.** The
+> measurement landed in `548594b4` at 15:21 on 2026-09-04; at 16:07 the same
+> afternoon `dda81631` rescoped and **renamed** `census-the-hintless-logic-games`
+> to `characterize-the-hint-assessment-corpus` — and left `AGENTS.md` § "Hint
+> quality bar" saying the old name "exists to characterize that corpus". The
+> directory it named had been deleted by the commit that wrote the sentence's
+> replacement. Corrected 2026-09-09 by `settle-the-framework-vision`.
+>
+> This is `AGENTS.md` § "Method" — *a fact about the codebase rots exactly like a
+> count* — at its sharpest yet. That entry's worked example took nineteen hours
+> to expire. This one took forty-six minutes, and the thing that made it stale
+> was not a distant change: it was the **rename of the very id the sentence
+> cited**, which is the one mutation a prose citation cannot survive and the one
+> a grep would have caught for free.
+>
+> **Re-measured 2026-09-09**, same key and same scope (`docs/` + `AGENTS.md`, 16
+> files): **80 change-id-shaped tokens, of which 74 resolve** — 71 to an open
+> change or a dated archive entry, and three to postmortems
+> (`declare-the-gesture-table`, `declare-the-board-model`,
+> `adopt-the-game-definition-adapter`, whose directories are gone *by design*
+> because the rows were withdrawn). **Five are not change ids** — the original
+> four plus `puzzle-key-unhandled`, a DOM event. **One was dead**, and it is the
+> one above.
+>
+> *An instrument note, because it changed the number.* The first run of the
+> re-measurement reported **twelve** unresolved, not one: its glob resolved
+> `<id>` against `openspec/changes/archive/*-<id>` only, so it missed every
+> citation written with the date already in it and every withdrawn row living in
+> `openspec/postmortems/`. Eleven of the twelve were the instrument, not the
+> docs — `AGENTS.md` § "Method", *check the instrument before the finding*, and
+> the correction ran in the direction that makes a guard look *more* worthwhile,
+> not less.
+>
+> **So the revisit condition has fired**, and what to build is scoped in
+> `guard-change-id-citations` rather than argued here.
 
 **A change may exist before it is ready, but it must say so.** The pieces that
 have shipped were small, independently valuable, and provable against frozen
@@ -63,17 +99,33 @@ economic argument — "adding a game" only gets cheap if the declarations work.
 The corpus that pressures it is **the 57 games already here**, which is the
 README's own argument for refactoring before building.
 
-| # | Change | Readiness |
-| --- | --- | --- |
-| 1 | `derive-difficulty-from-the-technique-ladder` | **SHIPPED** 2026-09-04 — but *not* as this table predicted; see below |
-| 2 | `declare-params-and-presets` | **SHIPPED** 2026-09-05 — again not as predicted; see below |
-| 3 | ~~`declare-the-gesture-table`~~ | **WITHDRAWN** 2026-09-05 — the exploration ran and the falsifier fired; see below |
-| 4 | ~~`declare-the-board-model`~~ | **WITHDRAWN** 2026-09-06 — the exemplar could not break it because it had already been served on another axis; see below |
-| 5 | ~~`adopt-the-game-definition-adapter`~~ | **WITHDRAWN** 2026-09-06 — its own criterion came back "no" four times out of four; see below |
-| 6 | `re-express-the-collection` | **survives, route changed** — it never needed rows 1–5, and one owner question decides its shape |
+**The order is the argument; it is not a scoreboard.** Each row is the lever the
+previous row's lesson pointed at, which is the only reason the sequence is worth
+reading. **What each row did — shipped, shipped differently, withdrawn,
+completed — is stated in its own lesson block below**, at the claim it corrects,
+and it stays correct without anybody maintaining this list.
 
-> **What row 1 actually taught, since it is the first evidence this ordering has
-> produced.** Its readiness line was *"the ladder now declares `tier`, and
+1. `derive-difficulty-from-the-technique-ladder`
+2. `declare-params-and-presets`
+3. ~~`declare-the-gesture-table`~~
+4. ~~`declare-the-board-model`~~
+5. ~~`adopt-the-game-definition-adapter`~~
+6. `re-express-the-collection`
+
+**This list carried a Readiness column until 2026-09-09, and it is instructive
+that it did.** Row 6's cell read *"survives, route changed — one owner question
+decides its shape"* for three days after that question was answered, the change
+was executed in eight batches and archived — so the page told a reader the last
+live question in the definition end was open when the whole end had reported.
+Nothing about completing `re-express-the-collection` required touching a table
+two hundred lines from anything it changed, which is precisely the drift the
+section above argues against and then reproduced. The lessons were never the
+part that rotted; the column was.
+
+> **Row 1 — SHIPPED 2026-09-04, and not as this document predicted
+> (`derive-difficulty-from-the-technique-ladder`). What it actually taught,
+> since it is the first evidence this ordering has produced.**
+> Its readiness line was *"the ladder now declares `tier`, and
 > nothing reads it"* — and that lever turned out not to fit the lock. The tier
 > list could not be projected from the ladder for three independent reasons (now
 > a `ts-engine` requirement, so the survey is not repeated). What *could* be
@@ -89,7 +141,9 @@ README's own argument for refactoring before building.
 > And **the win to look for is per-game surface removed**, not framework surface
 > added; row 1 deleted 29 hand-written lists and shipped one function.
 
-> **What row 2 taught, and it is the same lesson twice.** Its readiness line
+> **Row 2 — SHIPPED 2026-09-05, again not as predicted
+> (`declare-params-and-presets`). What it taught, and it is the same lesson
+> twice.** Its readiness line
 > promised a shared `WxH` parser; the parser already existed and 47 of 57 games
 > already called it. The declaration that actually held the field list was
 > **`paramConfig`** — every field's key, type and accessors, already written —
@@ -112,7 +166,8 @@ README's own argument for refactoring before building.
 > 3 and 4 were withdrawn, row 5 with them, and row 6 is the survivor. See the
 > row 5 note below.
 
-> **What row 3 taught, by being wrong.** It is the first row to be *withdrawn*
+> **Row 3 — WITHDRAWN 2026-09-05; the exploration ran and the falsifier fired.
+> What it taught, by being wrong.** It is the first row to be *withdrawn*
 > rather than to ship differently, and the exploration that killed it is the
 > most valuable thing this ordering has produced —
 > `openspec/postmortems/2026-09-05-gesture-table-withdrawal.md`.
@@ -137,7 +192,9 @@ README's own argument for refactoring before building.
 > the readiness lines and the named falsifiers are *for*, and it is why a
 > not-yet-ready row carries an exploration rather than a design.
 
-> **What row 4 taught: check whether the thing you are proposing is already in
+> **Row 4 — WITHDRAWN 2026-09-06; the exemplar could not break it because it
+> had already been served on another axis. What it taught: check whether the
+> thing you are proposing is already in
 > the tree.** Row 4 was the largest declaration in the vision and the one this
 > document predicted would break. It did not break on contortion. It broke
 > because **a general board model already ships** — `src/engine/grid/` models any
@@ -167,7 +224,9 @@ README's own argument for refactoring before building.
 > `share-the-run-length-desc-scanner` (one desc grammar, four spellings, and
 > every game writes it twice — once to validate, once to decode).
 
-> **What row 5 taught: the trick it existed to perform was never needed.** Row 5
+> **Row 5 — WITHDRAWN 2026-09-06; its own criterion came back "no" four times
+> out of four. What it taught: the trick it existed to perform was never
+> needed.** Row 5
 > held the criterion for the whole definition end — *did a declaration need to
 > know about any other declaration to do its job?* Four rows reported and the
 > answer was no every time: rows 1 and 2 shipped as helpers a game calls, rows 3
@@ -184,23 +243,42 @@ README's own argument for refactoring before building.
 > shipping: a helper nobody calls is abortable at zero cost, one game at a time,
 > with the other 38 untouched and playing. **The property the adapter existed to
 > buy arrived for free the moment the declarations stopped being declarations.**
->
-> **Row 6 is the survivor, and it is the part that was always doing the work.**
-> Its argument — the corpus is the documentation, so a mixed tree manufactures a
-> fork in the road at every reading — never mentioned a definition object, and
-> its acceptance test is `AGENTS.md`'s dictum written as a procedure: *pick any
-> two games that mean the same thing and ask what still differs.* What changed
-> is that the sweep batches by **concern** rather than by **family**, which
-> means it is not a future event — `adopt-conventional-tier-names`,
-> `unify-cross-game-vocabulary`, `unify-the-note-taking-cell`,
-> `unify-the-note-taking-vocabulary` and `unify-the-board-origin` are five
-> passes of it, already archived. Whether that continuous route is what the
-> owner asked for on 2026-08-07, or whether a bounded family sweep with a
-> declarable end is still the goal, is the one open question in the whole
-> definition end.
 
-Presentation is **held**: the scene-graph postmortem's bar is real downstream
-pressure, and none exists yet. Hints for the deliberately held-back games
+> **Row 6 — DONE 2026-09-06, archived as
+> `2026-09-06-re-express-the-collection`. It was the survivor, and it is the
+> part that was always doing the work.** Its argument — the corpus is the documentation, so a mixed
+> tree manufactures a fork in the road at every reading — never mentioned a
+> definition object, and its acceptance test is `AGENTS.md`'s dictum written as
+> a procedure: *pick any two games that mean the same thing and ask what still
+> differs.*
+>
+> **What it settled, and how it knew it was finished.** The route was the row's
+> one open question — continuous per-concern convergence, which was already
+> running, against a bounded sweep with a moment somebody can declare done — and
+> the owner answered it on 2026-09-06: *"Let's do a full sweep."* A sweep needs
+> an end, so the change's `survey.md` **enumerated one first and then exhausted
+> it**: the differences across all 57 games that nobody can defend as belonging
+> to the puzzle, measured by five named instruments each carrying its own
+> vacuity number, with the games named rather than counted. That list was the
+> definition of done, and batches **B1–B8 all reported** against it — B1
+> dissolved on measurement, B8 ratcheted rather than closed, the other six done
+> — with the instruments re-run at the end to prove it rather than to assert it.
+> Five earlier passes (`adopt-conventional-tier-names`,
+> `unify-cross-game-vocabulary`, `unify-the-note-taking-cell`,
+> `unify-the-note-taking-vocabulary`, `unify-the-board-origin`) were the same
+> convergence archived one concern at a time.
+>
+> **So the definition end has reported in full.** Two rows shipped — as helpers
+> a game calls, not as declarations — three were withdrawn with postmortems, and
+> one completed. There is no open question left in it. What remains anywhere in
+> this vision is what `openspec list` says remains, which is the only place that
+> answer has ever been safe to keep.
+
+Presentation is **held**, and it is the vision's one remaining unfalsified
+claim: the scene-graph postmortem's bar is real downstream pressure, and none
+exists yet. `explore-the-tile-loop-inversion` is the change that will test it —
+not ready, an `/opsx:explore` as task 0, and it may withdraw itself the way rows
+3–5 did. Hints for the deliberately held-back games
 (`characterize-the-hint-assessment-corpus`) sit *after* the declarations, because
 they validate a framework and there needs to be more of one to validate.
 

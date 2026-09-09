@@ -37,6 +37,27 @@ Technique<Board, Firing> {
 > `run` is still a single closure that both detects and applies, so the
 > `find` / `apply` / `narrate` split below — the half that would make a
 > hintless technique inexpressible — remains fiction.
+>
+> **The open question the next person to propose the split has to answer:
+> what does it buy beyond the widened hint walk?** (Recorded 2026-09-09, not
+> answered.) The split's promise is *totality* — a technique that fires without
+> narrating does not compile, so hint coverage is a property of the type system.
+> That benefit is **already delivered behaviorally**: `hint-resume.test.ts`
+> walks a game's own hints to a solved board, so a firing nothing can narrate
+> fails the walk, and `refuse-honestly-at-every-tier` (2026-09-08) widened that
+> walk from the single easiest preset to the tier and size axes each game
+> actually varies — every preset in the slow tier. A compile-time guarantee is
+> genuinely stronger than a test: it holds for the board nobody generated. The
+> question is whether that margin is worth a change to the contract every
+> technique in the collection implements.
+>
+> **Read row 3 before answering, because this is its exact shape.** Row 3 was
+> withdrawn on the finding that *the parity bar it existed to make a resting
+> state was already one, derived from behavior* — the benefit had shipped, and
+> the declaration would have re-declared it. Rows 4 and 5 fell to variants of
+> the same check. That is not a verdict on this split, which really does reach
+> somewhere a test does not; it is the standard of evidence the argument now has
+> to meet.
 
 (The one illustrative type block in these docs; everything else is stated as
 contract prose. `Narration` is `{ text, highlights, legs? }` — the text plus
@@ -86,6 +107,26 @@ derives:
    only thing the driver can do.** Only an explicitly-named "Unreasonable"
    tier may introduce a search step, and it must narrate its bifurcations
    honestly (the Slant/Clusters honest-non-local patterns).
+
+   > **⚠️ The corpus had already answered this, and the figure is the
+   > argument's problem** (`assert-that-tiers-bind`, 2026-09-08). Asked how
+   > often the hand-written generators actually miss their tier,
+   > `difficulty-contract.test.ts` dealt a board from every preset whose tier
+   > it can read and required its lowest solving cap to *be* that tier:
+   > **282 of 285 preset cases bound exactly, by hand, across 39 hand-written
+   > generators.** So "the only thing the driver can do" is offering a
+   > correctness guarantee against a defect that occurs in roughly 1% of cases.
+   > **This build must now argue economy — per-game lines removed — not
+   > correctness**, which is a different and much harder case to make.
+   >
+   > **And the one real failure was on the side nobody was watching**, which is
+   > a defect class this projection's framing does not name. Undead's generator
+   > was honest; its *difficulty contract* was wide — `solveAtCap` ran
+   > arc-consistency unbounded where the generator bounded it at three passes —
+   > so every Normal board graded as Easy-solvable while every Undead test
+   > passed. A rule with two spellings and nothing making them meet is not
+   > fixed by owning the strip/accept loop; it is fixed by the two spellings
+   > being made to meet.
 4. **Hint** — the same fixpoint with the recorder on: each firing becomes a
    plan step via its own `narrate`. One firing, one step, legs flagged. The
    plan lifecycle (one hint per request, keep-track verdicts, refresh of

@@ -81,11 +81,11 @@ asserting the size of the population it sweeps**).
 | --- | --- |
 | ~~Board model~~ | ~~State clone independence; desc codec round-trip (property-fuzzed); coordinate maps agree from both callers; cursor stays in bounds on every topology.~~ **Withdrawn 2026-09-06** with the declaration. The one row worth wanting — *coordinate maps agree from both callers* — turned out not to need it: making the board's pixel origin one exported function makes the agreement true by construction, which is stronger than a test asserting it (`unify-the-board-origin`). |
 | Gesture table | Every move constructor reachable by pointer, keyboard AND touch (or a declared, reported gap); the four frontend traps exercised; no raw-button comparison can go deaf to touch. |
-| Technique ladder | Fixpoint terminates within budget on every preset; grade cap-monotone; ~~tiers bind (a board graded T is rejected by cap T−1)~~ **SHIPPED** (see below); **N generated boards per preset walk to completion through the hint projection — the full-hints invariant**; every firing's narration non-empty and its highlights on-board. |
+| Technique ladder | Fixpoint terminates within budget on every preset; grade cap-monotone; ~~tiers bind (a board graded T is rejected by cap T−1)~~ **SHIPPED** (see below); ~~**N generated boards per preset walk to completion through the hint projection — the full-hints invariant**~~ **SHIPPED** (see below); every firing's narration non-empty and its highlights on-board. |
 | Planner | Plan exists from any reachable mid-position (resume guard); recompute-stability (one step forward → same subgoal); step budgets tick. |
 | Invariants / mistakes | Clean board → empty; a seeded wrong board → non-empty; overlay clears on next transition; refusal couples to the banner. |
-| Presentation | Paint-twice for every overlay plane (warm cache → overlay appears; third frame → erases); doctrine invariants (no engine pixels, `canvasCleared` the only stale signal); snapshot baselines per preset opener frame. |
-| Params | Encode/decode inverse; `validateParams` agrees with the dialog path; presets encode fully. |
+| Presentation | Paint-twice for every overlay plane (warm cache → overlay appears; third frame → erases) — **partly shipped, see below**; doctrine invariants (no engine pixels, `canvasCleared` the only stale signal); snapshot baselines per preset opener frame. |
+| Params | ~~Encode/decode inverse~~ **SHIPPED** (see below); `validateParams` agrees with the dialog path; presets encode fully. |
 | Affordances | Pencil: mark-all resets notes (mutation-checked — the guard must *narrow* a cell or the bug hides); reference: spotlight dismisses per the suppression rule; prefs survive `newUi`. |
 
 > **✅ SHIPPED: "tiers bind"** — `assert-that-tiers-bind`, 2026-09-08.
@@ -113,6 +113,66 @@ asserting the size of the population it sweeps**).
 > every Normal board graded as Easy-solvable while every Undead test passed. A
 > rule with two spellings and nothing making them meet is a defect class this
 > table's "generated guarantees" framing does not name.
+
+> **✅ SHIPPED: the full-hints invariant** — `refuse-honestly-at-every-tier`,
+> 2026-09-08. `hint-resume.test.ts` walks a game's own hints to a solved board,
+> so a firing that cannot be narrated fails the walk; that guarantee existed
+> already, and what this change widened is the **preset axis**. It had walked
+> `firstLeaf` alone — by convention the smallest, easiest board a game offers —
+> so the collection's strongest hint guarantee had never seen a Hard board, an
+> `Unreasonable` board or any mode variant. Widened, it **found thirteen
+> refusals across seven games saying three different things**, which is also
+> where `DEDUCTION_EXHAUSTED` came from.
+>
+> **It did not ship as "N boards per preset", and the difference is a cost
+> decision worth reading.** The slow tier walks all 209 presets (~2 min); the
+> gate slice takes one preset per axis the game actually varies, which is *tier*
+> for a tiered game and *size* — first and last — for an untiered one. Keying
+> on tier alone was tried and collapsed every untiered game to a single case,
+> reinstating exactly the first-preset blindness the widening removed, and it
+> cost a real defect: Sixteen's 5×5 hint cycled for ever
+> (`fix-sixteen-hint-recompute-stability`). Raising N above one per preset was
+> also tried and withdrawn at 50 minutes. **So "N per preset" is not a knob this
+> suite can afford to turn up**, and a conformance design that assumes it can
+> should read `hint-resume.test.ts`'s `walkedPresets` before budgeting.
+
+> **✅ SHIPPED: params encode/decode inverse** — `declare-params-and-presets`,
+> 2026-09-05, asserted by `src/engine/params-stability.test.ts`. Both halves the
+> row wanted, in the two shapes that do different jobs: encode and decode are
+> **mutual inverses over 612 derived cases for all 57 games, with no exemption
+> roster** — a property, so adding a preset keeps it true and a careless
+> `vitest -u` cannot re-baseline it — and the recorded encodings are **frozen as
+> a per-game snapshot**, which is what makes replacing a codec safe at all.
+>
+> Note what the *absence* of this had meant: params ride inside every shared game
+> ID, the frozen differentials cover **descs** and not params, so until
+> 2026-09-05 a codec could have been rewritten with the whole suite green and
+> every shared link silently invalidated. The row's other two halves —
+> `validateParams` agreeing with the dialog path, presets encoding fully —
+> remain fiction.
+
+> **⚠️ Presentation is partly built, and reading this row as wholly unbuilt is
+> the row-4 error.** Two of the three named overlay planes are already watched,
+> both by *derived* guards rather than by a conformance suite:
+>
+> - **Hint — the guard exists.** `src/engine/hint-overlay.test.ts` is the
+>   paint-twice check, driving the production path: warm the midend's drawstate
+>   with a settled frame, prove the next frame paints nothing, display a hint,
+>   and require the very next frame — same drawstate, same board — to emit paint
+>   ops. It enrolls every hinting game at once off `HINT_GAMES` and needs no
+>   per-game color knowledge.
+> - **Mistake — a ledger, not a guard.** `src/mistake-overlay-coverage.test.ts`
+>   (`ratchet-the-mistake-overlay-coverage`, 2026-09-06) derives both the
+>   population and the covered set and holds the shortfall as a list that **may
+>   only shrink**: 19 games at filing, **17 today**. There is no single
+>   collection-wide mistake guard to write, because reaching a mistaken board
+>   takes a game-specific move and the mark is a game-specific shape.
+> - **Reference — neither.** No cross-game guard covers the reference-aid plane.
+>
+> This does not make the row true; a framework-owned plane would be *in the diff
+> key by construction*, which is stronger than any of the above. It does mean the
+> claim's remaining value has to be argued against what already ships, which is
+> what `explore-the-tile-loop-inversion` exists to measure.
 
 Per-game tests do not disappear — they shrink to what is actually per-game:
 the technique logic's own unit tests, the narration wording assertions, and

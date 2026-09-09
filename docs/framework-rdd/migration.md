@@ -40,34 +40,61 @@ The `Game` interface itself remains the runtime contract the midend consumes.
 
 ## Order of adoption
 
-> **⚠️ Steps 1–3 assume a framework core, and there is not one** (2026-09-06).
+> **⚠️ This section has finished. Nothing in it is a plan any more** — steps
+> 1–3 are withdrawn and step 4 is done — and it is kept for the argument, not
+> for the sequence. The part of this file a future change still has to obey is
+> [§ "Invariants that must not move"](#invariants-that-must-not-move), which is
+> live and unmarked; read that.
+>
+> **Steps 1–3 assume a framework core, and there is not one** (2026-09-06).
 > Every declaration that reported shipped as a **helper a game calls**, or was
 > withdrawn, and the adapter went with them — so there is no "framework game" to
 > distinguish from a non-framework one, which is what steps 2 and 3 turn on.
-> **Step 4 is the one that survives**, because its argument was never about a
+>
+> **Step 4 is the one that survived, and it is DONE** — archived 2026-09-06 as
+> `2026-09-06-re-express-the-collection`. Its argument was never about a
 > definition: the corpus is the documentation, so a tree where two games mean
 > the same thing differently manufactures a fork in the road at every reading.
-> In its surviving form it batches by **concern** rather than by family, and it
-> is already running — see `re-express-the-collection`, which carries the one
-> open owner question about its shape.
+> Two things about it read differently from the text below. It batched by
+> **concern** rather than by family, because a game now adopts a shared shape by
+> *calling* it; and the owner settled its route on 2026-09-06 — *"Let's do a full
+> sweep"* — so it was **enumerated first and then exhausted** rather than left
+> open-ended. The change's `survey.md` is that enumeration: five instruments,
+> each with its vacuity number, naming the games rather than counting them. All
+> eight batches reported against it, and the instruments were re-run at the end.
+>
+> **Both rules below were exercised, and both held.** The *capability diff* ran
+> on every batch and never moved, derived exactly as its own inner note
+> predicted — no manifest was ever needed. *Two-lane acceptance* did the job it
+> was designed for: **five of the six accepted batches re-baselined nothing** and
+> took the cheap lane, and the one that moved snapshots
+> (`unify-the-raised-tile-bevel`) was a visual change the owner had already
+> approved in principle, run in the browser on all six games it touched. No
+> fixture or differential file changed anywhere in the sweep.
 
-1. **The framework core co-developed with a greenfield pilot (Path), the way
-   the TS midend was co-developed with Flip.** A greenfield game is the
+1. ~~**WITHDRAWN**~~ **The framework core co-developed with a greenfield pilot
+   (Path), the way the TS midend was co-developed with Flip.**
+   A greenfield game is the
    cheapest honest pressure on the contract: no frozen IDs, no fixtures, no
    narration strings to preserve — the validation is "is this clearly nicer
    than what the playbook would have produced?", answered on a real game.
    Numgame is the second data point. Given the dozens-of-new-games ambition
    (see the README), greenfield-first is also simply the value stream.
-2. **The conformance suite over the registry**, replacing the hand-enrollment
+2. ~~**WITHDRAWN**~~ **The conformance suite over the registry**, replacing the
+   hand-enrollment
    lists for framework games; non-framework games keep today's guards.
-3. **Re-expression exemplars, one per family, opt-in** — one Latin game
+3. ~~**WITHDRAWN**~~ **Re-expression exemplars, one per family, opt-in** — one
+   Latin game
    (Towers), one edge game (Palisade), one planner game (Sixteen), one
    bespoke-hatch game (Loopy — which exists to prove the hatch, not the
    fit). These validate the *migration* invariants (byte-stable IDs, frozen
    narrations) that greenfield games cannot. A game adopts only when the
    re-expression is *nicer* — the standing "noticeably cleaner is
    sufficient, contortion is disqualifying" rule decides, per game.
-4. **Then the full sweep, in family batches (owner decision, 2026-08-07):
+4. **DONE** (`2026-09-06-re-express-the-collection`) — **but batched by concern,
+   not by family, and its route re-decided by the owner on 2026-09-06; see the
+   banner above.**
+   **Then the full sweep, in family batches (owner decision, 2026-08-07):
    every game is re-expressed.** In an AI-driven repo the corpus is the
    documentation — future sessions learn the architecture from the games
    they open, so a mixed tree manufactures divergence at exactly the scale

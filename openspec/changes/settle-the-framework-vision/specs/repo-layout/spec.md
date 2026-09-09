@@ -11,13 +11,19 @@ through `openspec list` and the archive rather than through a column.
 
 The existing quarantine requirement covers a doc whose *mechanism* ships. This
 covers a doc whose *plan* finishes, which is a different failure and the one that
-actually occurred: the vision README's "Where this stands" argues at length that a
+actually occurred: the vision README's "Where this stands" argued at length that a
 hand-maintained status column drifts — citing the `openspec/project.md` that ended
-up describing deleted directories — and then prints a six-row table with a
+up describing deleted directories — and then printed a six-row table with a
 Readiness column. Row 6 read "survives, route changed … one owner question decides
-its shape" for two days after that question was answered, the change was executed
+its shape" for three days after that question was answered, the change was executed
 in eight batches and archived, so the page's own scoreboard told a reader the last
 live question in the definition end was open when the whole end had reported.
+
+**The mechanism of the drift is the part worth generalizing**: completing
+`re-express-the-collection` required touching nothing anywhere near that table.
+A status column rots precisely because keeping it true is nobody's job at the
+moment it becomes false, whereas a marker at the claim is edited by whoever
+changes the claim.
 
 **A withdrawn or completed item SHALL be struck through and kept with its
 argument**, never deleted. The withdrawals of the gesture table, the board model

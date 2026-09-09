@@ -4,6 +4,25 @@
 > Authored by `rewrite-game-dev-docs` (2026-08-07). Current truth:
 > [`docs/games/`](../games/README.md). See the [vision README](./README.md).
 
+> **This is the vision's one remaining unfalsified claim** (2026-09-09). Every
+> other part has reported: the definition end shipped twice as helpers and was
+> withdrawn three times, `re-express-the-collection` archived done on 2026-09-06,
+> and the deduction end's generator projection was measured on 2026-09-08 and
+> found a near-zero correctness case. Presentation is the only claim left with
+> real money on it and **no measurement against the tree**.
+>
+> **`explore-the-tile-loop-inversion` is the change that will test it** — not
+> ready, an `/opsx:explore` as task 0, and it may withdraw this document the way
+> rows 3–5 of the README were withdrawn. Its first job is the number below that
+> nobody has taken: *~80 lines of identical bookkeeping per game*. Three things
+> already say it is not 80 — part of the benefit ships today (`OverlaySidecar`
+> in 19 games, `border-grid-render.ts`, `raised-bevel.ts`, the shared thick-rect
+> outline, and `hint-overlay.test.ts`, a **derived** paint-twice guard that
+> already asserts the hint overlay survives the cache for every hinting game);
+> see [`guarantees.md`](./guarantees.md) § "What every game gets asserted, per
+> capability" for what is and is not watched. **Read the exploration's verdict
+> before building anything described below.**
+
 ## This is not the scene graph, and the difference is the design
 
 The collection already tried a declarative rendering pivot once —
