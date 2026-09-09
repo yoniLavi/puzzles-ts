@@ -530,6 +530,26 @@ is the `ts-engine` spec, "A shared mechanic is joined by having it".
    reading them off something the game offers. The population is what the game
    presents — its presets, its registered object, its `Ui` — not what the guard
    can construct out of the parts.
+7. **A coverage guard has a *second* key, and it needs the same discipline as
+   the first.** Rules 1–6 are about finding *who*; a guard that reports a
+   shortfall also has to decide who is already covered, and that side is the one
+   nobody checks — an over-reported shortfall fails no commit. It sits in the
+   tree looking like diligence until somebody tries to close it and finds the
+   test already there. `mistake-overlay-coverage.test.ts` derived its population
+   from the capability set, argued the point at length, and then keyed coverage
+   on the string `showMistakes` — one harness's flag, and the newest of three
+   ways to drive a mistake frame. **Six of the seventeen games it convicted
+   already had the test**, including Galaxies, whose three-frame version this
+   guide's `rendering.md` cites *by name* as the exemplar
+   (`widen-the-mistake-overlay-coverage-key`, 2026-09-09).
+
+   **And the fix's own first cut repeated the defect one layer down**: the
+   widened key matched `\bredraw\w*\(` and still missed Galaxies, which calls
+   `galaxiesRedraw(`. Take the superset on *both* keys and classify what it
+   catches.
+
+   **Tell:** the covered set is a single `includes("…")` while the population
+   above it took twenty lines to derive.
 
 ## Metrics and instruments
 

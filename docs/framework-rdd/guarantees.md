@@ -164,7 +164,9 @@ asserting the size of the population it sweeps**).
 > - **Mistake — a ledger, not a guard.** `src/mistake-overlay-coverage.test.ts`
 >   (`ratchet-the-mistake-overlay-coverage`, 2026-09-06) derives both the
 >   population and the covered set and holds the shortfall as a list that **may
->   only shrink**: 19 games at filing, **17 today**. There is no single
+>   only shrink**: 19 games at filing, 17 after a coverage key that saw one of
+>   three spellings, **11 once it saw all three**
+>   (`widen-the-mistake-overlay-coverage-key`). There is no single
 >   collection-wide mistake guard to write, because reaching a mistaken board
 >   takes a game-specific move and the mark is a game-specific shape.
 > - **Reference — neither.** No cross-game guard covers the reference-aid plane.
@@ -177,9 +179,9 @@ asserting the size of the population it sweeps**).
 > the diff key by construction" turned out to describe most of the collection
 > already**: a game that folds its overlay bit into the packed key cannot omit
 > it, and all 38 games whose `redraw` takes a `mistakes` parameter route it
-> correctly. The mistake ledger's "17 today" is also an over-count — at least
-> six of the seventeen already have a paint-twice test written in a spelling the
-> coverage key does not see (`widen-the-mistake-overlay-coverage-key`).
+> correctly. The mistake ledger's "17" was also an over-count — six of the
+> seventeen already had a paint-twice test, written in a spelling the coverage
+> key could not see (`widen-the-mistake-overlay-coverage-key`, now shipped).
 
 Per-game tests do not disappear — they shrink to what is actually per-game:
 the technique logic's own unit tests, the narration wording assertions, and
