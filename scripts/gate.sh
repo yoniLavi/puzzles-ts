@@ -2,27 +2,35 @@
 # The pre-commit gate, in one place so `.husky/pre-commit` and `npm run gate`
 # cannot drift (the build-pipeline spec requires they mirror each other).
 #
+# THIS COMMENT DESCRIBES THE SHAPE, NOT THE STEPS. The steps are the commands
+# below, and naming them up here is how this header came to say `tsc` for the
+# thirty-five days after the gate switched to `tsgo` — eight lines above the line
+# that runs it (`state-the-gate-steps-once`). The readable list, with the reason
+# for each step, is `AGENTS.md` § "Git", and it is the only prose copy there is.
+#
 # Order and semantics:
-#   1. Fast fail-fast prefix — `tsc -b --noEmit`, then biome (lint + format +
-#      import order), then the probe-anchor check (~0.2s). A type, lint,
-#      formatting or rotted-anchor error fails here in seconds without spending
-#      the heavy branches. The biome scope is per-commit (staged files, when the
-#      hook sets GATE_BIOME_STAGED=1) or whole-tree (CI / manual `npm run gate`)
-#      — see the branch below.
+#   1. Fast fail-fast prefix — the typechecks, then biome, then the cheap node
+#      guards, ordered roughly cheapest-first. A type, lint, formatting, spelling
+#      or guard failure fails here in seconds without spending the heavy
+#      branches. The biome scope is per-commit (staged files, when the hook sets
+#      GATE_BIOME_STAGED=1) or whole-tree (CI / manual `npm run gate`) — see the
+#      branch below. Guards that read `docs/` or `AGENTS.md` MUST live in this
+#      prefix rather than in vitest; see the documentation-only shortcut below
+#      for why, and `src/gate-scope.test.ts` for what enforces it.
 #   2. Heavy checks — `vitest run` and `vite build`. They share no inputs or
 #      outputs, so on a machine with spare cores they run concurrently and the
 #      gate wall-clock is ~max(vitest, build) instead of their sum (~40s off the
 #      critical path). The gate fails if EITHER fails; blocking semantics are
 #      unchanged.
 #
-# `vite build` stays in the gate because tsc/lint/vitest never exercise the
+# `vite build` stays in the gate because nothing in the prefix exercises the
 # production build, so a broken build (vite-plugin closeBundle crashes,
 # unresolved `?raw`/asset imports, plugin/dep regressions) is otherwise
 # invisible until deploy — exactly how two such bugs sat undetected on main.
-# `tsc` already covers the `tsc &&` half of `npm run build`, so run `vite build`
-# directly (leaner, no double typecheck). Needs no generated assets at all: the
-# catalog is committed source (`retire-c-engine`) and the manual, the last
-# generated artifact, is deleted (`retire-the-upstream-help-tree`).
+# The prefix already covers the typecheck half of `npm run build`, so run
+# `vite build` directly (leaner, no double typecheck). Needs no generated assets
+# at all: the catalog is committed source (`retire-c-engine`) and the manual, the
+# last generated artifact, is deleted (`retire-the-upstream-help-tree`).
 #
 # CONCURRENCY. `vitest` and `vite build` share no inputs or outputs, so they
 # always run concurrently and the gate's wall clock is ~max(vitest, build)

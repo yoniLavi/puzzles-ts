@@ -219,10 +219,9 @@ substantial game change:
 ## Close out
 
 Keep the openspec change current as you go (tasks ticked, decisions recorded in
-`design.md`). The pre-commit gate — `tsc -b --noEmit` → biome → the
-probe-anchor check → the spelling guard (American English; see `AGENTS.md`
-§ "Code conventions") → `openspec validate` → `vitest run` → `vite build` —
-must pass; **never bypass it**. On owner acceptance, archive the change
+`design.md`). The pre-commit gate must pass; **never bypass it**. Its steps are
+listed once, in `AGENTS.md` § "Git" — `npm run gate` runs them, and
+`scripts/gate.sh` is their definition. On owner acceptance, archive the change
 (`openspec archive <change-id> --yes`), committing work and archive together.
 A follow-up the work surfaced gets its own change opened there and then, while
 the measurement is in hand.

@@ -5,8 +5,8 @@
 **How this repository decides that a tree is fit to commit, publish and run —
 and what that decision is allowed to cost.**
 
-It governs the gate (`tsc` → biome → probe-anchor → spelling → `openspec
-validate` → `vitest run` → `vite build`), which runs identically in the
+It governs the gate — defined by `scripts/gate.sh` and listed, with the reason
+for each step, in `AGENTS.md` § "Git" — which runs identically in the
 pre-commit hook and in CI; the rule that no correctness check may be dropped or
 weakened to buy speed, and the narrow scopings that are permitted instead; how a
 test earns its place on the per-commit path, and how one is retired or deferred

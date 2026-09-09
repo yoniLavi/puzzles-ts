@@ -1,8 +1,10 @@
 # The gate lives in scripts/gate.sh so this hook and `npm run gate` share one
 # implementation (the build-pipeline spec requires they mirror each other).
-# tsc → biome (lint + format + import order) → probe-anchor check → spelling
-# guard → openspec validate (the fast fail-fast prefix), then `vitest run` ∥
-# `vite build` concurrently, failing the commit if either fails.
+# A fail-fast prefix of cheap checks, then `vitest run` ∥ `vite build`
+# concurrently, failing the commit if either fails. The steps are the commands in
+# scripts/gate.sh; the readable list with the reason for each is `AGENTS.md`
+# § "Git". Deliberately not repeated here — this comment was one of six
+# transcriptions that had drifted apart (`state-the-gate-steps-once`).
 #
 # Two env vars scope this run by role, and both rely on CI as the backstop:
 #
