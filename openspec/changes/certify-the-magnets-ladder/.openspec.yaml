@@ -1,0 +1,10 @@
+# No spec deltas: this change certifies behavior that already ships and changes
+# none of it. What it adds is a firing census over a ladder nothing was checking
+# — the `ladder-equivalence.ts` shape — plus the oracle loop it compares
+# against. Nothing normative moves, and writing a requirement over an existing
+# solver's rungs would state as product behavior what is really a test's reach.
+#
+# `schema` is required for this file to be valid change metadata at all — without
+# it the `skip_specs` marker parses but is *not honored*.
+schema: spec-driven
+skip_specs: true

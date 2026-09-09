@@ -45,6 +45,27 @@ concentrate.
 > by lines removed. Five of the seven are hintless, which makes them
 > `characterize-the-hint-assessment-corpus`'s corpus and the honest test of
 > whether this end's argument is true.
+>
+> **⏳ The corpus is characterized and the measurement is not yet taken**
+> (2026-09-09, `characterize-the-hint-assessment-corpus`). Two things it found
+> that this document should know before its verdict is read again:
+>
+> - **The runner carries the *loop*, not the record.** `DeductionTechnique.run`
+>   returns a `number` and `deduction-fixpoint.ts` says it is *"oblivious"* to
+>   what a firing recorded; the `onFiring` seam all seven adopters carry reports
+>   a rung **id**, for `ladder-equivalence.ts`'s census. So *"the runner is what
+>   carries the recorder"* is an aspiration, not a shipped property, and the
+>   `find`/`apply`/`narrate` split below is still the thing that would make it
+>   true. **Filling is the only game in the tree that threads a recorder through
+>   its solve path**; Clusters, Subsets and Undead each wrote a *parallel* one.
+> - **There is a control, and it is a number.** Galaxies — same solver class,
+>   hinted four weeks *before* it was wired to the runner — cost **+1,138 game
+>   lines, of which +387 is the recording projection**. That +387 is the only
+>   part adoption could plausibly move.
+>
+> The measurement is `add-tracks-hint`, which carries the falsifier in as many
+> words. **If Tracks still needs a comparable second walk, this end closes on
+> its own arithmetic the way [`presentation.md`](./presentation.md) did.**
 
 ## The Technique contract
 

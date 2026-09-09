@@ -334,6 +334,24 @@ this adoption would serve — and what a hint costs *after* adoption is the hone
 test of whether this end's argument is true. If it does not get cheaper, that
 closes the vision for good.
 
+> **⏳ Where that stands, 2026-09-09.** The corpus is characterized and the
+> measurement is not yet taken. Characterizing it produced a **control** — an
+> A1-class game hinted four weeks before it was wired to the runner, at +1,138
+> game lines of which **+387 is the recording projection** — and a **falsifier**
+> written before the work: if an adopted game still needs a comparable second
+> walk over its own ladder, adoption bought the wiring guarantee and nothing
+> else. It also found that the runner carries the *loop* and not the record, so
+> the sentence *"the runner is what carries the recorder"* is an aspiration
+> rather than a shipped property. Both are in
+> [`deduction.md`](./deduction.md)'s banner; the measurement is `add-tracks-hint`.
+>
+> **So this is the one place in this document where "what remains" is a single
+> named change**, and it is deliberate: every other end reported by shipping,
+> completing or being withdrawn, and this one reports by a number nobody has
+> taken yet. When it reports, the vision has nothing left to say — and per the
+> table above, that fact will live in `openspec list` and in the marker at the
+> claim, not in a status line here.
+
 ## What the framework is for
 
 **The owner's stated ambition (2026-08-07) is dozens to hundreds of new
