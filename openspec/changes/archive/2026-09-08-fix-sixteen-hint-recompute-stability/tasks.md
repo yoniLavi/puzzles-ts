@@ -120,13 +120,15 @@
       - The first is the stranding: 30 moves down to tiles 3↔4 swapped in the top
         row and 25↔20 in the last column, then "No move here would get you
         closer." That is the filed defect, seen rather than inferred.
-- [ ] 4.3 Owner acceptance. **The one thing to weigh** is that Sixteen 5×5 still
-      strands about one game in five, on a defect this change did not introduce
-      and cannot fix within a browser's memory. Every case is strictly better
-      than before — the alternative was a hint that never arrived at all — but it
-      is a shortfall a player can hit, so it is named here rather than deferred
-      quietly. `fix-sixteen-endgame-stranding` carries the measurements and three
-      candidate fixes, the cheapest of which is priced but not measured.
+- [x] 4.3 **Owner acceptance given, 2026-09-09.** The thing this task asked the
+      owner to weigh — that Sixteen 5×5 still stranded about one game in five —
+      had been closed by `fix-sixteen-endgame-stranding` before the acceptance
+      was given (5 of 40 to 0 of 40 on the same seeds), so it was accepted with
+      that already fixed rather than as a cost to swallow.
+
+      **Recorded by inference and flagged as such**: the acceptance named the
+      successor change, and this one is the same body of work with its stated
+      caveat removed. If that reading is wrong, this is the line to correct.
 
 ## Findings — a second defect, filed rather than fixed
 

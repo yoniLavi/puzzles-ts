@@ -130,9 +130,10 @@ already running on every board.
 - [x] 4.3 **Ran the app.** Five 5×4 games followed to "COMPLETED!" — 5×4 is the
       preset that stranded 12 of 40 before. A 5×5 game then stranded, on a deeper
       shape: see below.
-- [ ] 4.4 Owner acceptance — the change is a real improvement with a named
-      remainder, and the remainder is a scope question rather than a bug to
-      squash.
+- [x] 4.4 **Owner acceptance given, 2026-09-09**, on the change as described here
+      — the improvement together with its named remainder. Accepting it is not
+      accepting the remainder as fine: `fix-sixteen-deep-local-minima` stays open
+      and carries it.
 
 ## Findings — a second sweep with the same blind spot, fixed here
 
