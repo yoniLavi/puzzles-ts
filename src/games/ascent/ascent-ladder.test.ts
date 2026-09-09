@@ -94,7 +94,7 @@ describeLadderEquivalence<AscentCase>({
   unreached: {},
   caps: [DIFF_EASY, DIFF_NORMAL, DIFF_TRICKY, DIFF_HARD],
   cases,
-  viaRunner: (b, cap, onFiring) => ascentSolve(b.grid, cap, b.sc, onFiring),
+  viaRunner: (b, cap, firings) => ascentSolve(b.grid, cap, b.sc, firings),
   viaLegacy: (b, cap) => ascentSolveLegacy(b.grid, cap, b.sc),
   // Every array the rungs write: the working grid, the candidate bitmap, the
   // path segments, and the endpoint latch whose persistence is the quirk above.

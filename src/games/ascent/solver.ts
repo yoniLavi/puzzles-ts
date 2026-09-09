@@ -16,6 +16,7 @@
 
 import {
   type DeductionTechnique,
+  type FiringTally,
   runDeductionFixpoint,
 } from "../../engine/deduction-fixpoint.ts";
 import {
@@ -463,7 +464,7 @@ export function ascentSolve(
   puzzle: Int16Array,
   diff: number,
   sc: SolverScratch,
-  onFiring?: (id: string) => void,
+  firings?: FiringTally,
 ): void {
   const s = sc.w * sc.h;
 
@@ -496,16 +497,8 @@ export function ascentSolve(
 
   const ladder = ascentLadder(sc, diff);
   runDeductionFixpoint({
-    techniques: onFiring
-      ? ladder.map((t) => ({
-          ...t,
-          run: () => {
-            const did = t.run();
-            if (did > 0) onFiring(t.id);
-            return did;
-          },
-        }))
-      : ladder,
+    techniques: ladder,
+    firings,
     // The gates were mid-ladder `break`s; the runner skips over-cap rungs
     // instead, which agrees because this ladder is tier-sorted.
     maxTier: diff,

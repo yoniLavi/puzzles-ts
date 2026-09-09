@@ -330,7 +330,7 @@ generator shapes — lives in
 
 ### `deduction-fixpoint.ts` — the shared technique ladder
 
-`runDeductionFixpoint({ techniques, maxTier, budget, settled })`: the
+`runDeductionFixpoint({ techniques, maxTier, budget, firings, settled })`: the
 ordered-technique fixpoint loop behind "a generator and an explained hint are two
 projections of one deduction engine". A technique is a **declaration** —
 `{ id, tier, run }`, both `id` and `tier` required — so the grade is the highest
@@ -358,6 +358,15 @@ Galaxies and Bridges. **Do not quote that number without re-deriving it**: it is
 comment-stripped scan for `runDeductionFixpoint` under `src/games/`, and five
 name-keyed counts of this population went wrong in one session, Loopy's and
 Boats' headers *explaining why they do not use the runner* among them.
+
+**`firings` is a caller-supplied tally, and it is how a rung's reachability is
+observed at all** (`return-the-firing-tally-from-the-runner`). Omit it and the
+runner allocates nothing, which is the generator path's standing rule; pass one
+and each firing is counted by `id`, sharing the map the step budget uses for
+attribution. It is a sink rather than a field on the result because the runner is
+called *inside* a game's solver — a returned tally would have to be threaded back
+out through each game's own return shape. It replaced seven hand-written
+ladder-wrapping closures.
 
 An adoption is proved by a **ladder-equivalence** test, not by the game's
 byte-match differential — see

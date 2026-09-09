@@ -43,6 +43,7 @@
  */
 import {
   type DeductionTechnique,
+  type FiringTally,
   runDeductionFixpoint,
 } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
@@ -512,7 +513,7 @@ function solverOpposites(board: RomeBoard): number {
 export function romeSolve(
   board: RomeBoard,
   maxdiff: number,
-  onFiring?: (id: string) => void,
+  firings?: FiringTally,
 ): number {
   const { w, h, grid, pencil } = board;
   const s = w * h;
@@ -554,16 +555,8 @@ export function romeSolve(
   ];
 
   runDeductionFixpoint({
-    techniques: onFiring
-      ? ladder.map((t) => ({
-          ...t,
-          run: () => {
-            const did = t.run();
-            if (did > 0) onFiring(t.id);
-            return did;
-          },
-        }))
-      : ladder,
+    techniques: ladder,
+    firings,
     // **The tier gates were mid-ladder `break`s and this is a `maxTier` skip,
     // and the two agree only because the ladder is tier-sorted.** Breaking on
     // the first over-cap rung abandons everything after it; skipping abandons

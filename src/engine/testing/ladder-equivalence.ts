@@ -30,6 +30,7 @@
  * the declaration and nothing else.
  */
 import { describe, expect, it } from "vitest";
+import type { FiringTally } from "../deduction-fixpoint.ts";
 
 export interface LadderEquivalenceSpec<Board> {
   /** The game, for test names. */
@@ -52,8 +53,18 @@ export interface LadderEquivalenceSpec<Board> {
   caps: readonly number[];
   /** One labeled case per board; the factory is called fresh per cap, per side. */
   cases: readonly { label: string; board: () => Board }[];
-  /** The adopted solver, with its firing seam. */
-  viaRunner: (board: Board, cap: number, onFiring: (id: string) => void) => unknown;
+  /**
+   * The adopted solver, taking the tally it forwards to
+   * `runDeductionFixpoint`'s `firings` option.
+   *
+   * **Why a game's solver carries a parameter only a test supplies.** A rung's
+   * reachability cannot be observed from the game's own results — that is this
+   * file's whole premise — so the game has to hand the census a channel. The
+   * runner does the counting; the game forwards the map and nothing else. This
+   * was seven copies of a ladder-wrapping closure until
+   * `return-the-firing-tally-from-the-runner`.
+   */
+  viaRunner: (board: Board, cap: number, firings: FiringTally) => unknown;
   /** The hand-written loop, kept as the oracle. */
   viaLegacy: (board: Board, cap: number) => unknown;
   /**
@@ -70,7 +81,9 @@ export function describeLadderEquivalence<Board>(
   const { game, rungs, unreached, caps, cases, viaRunner, viaLegacy, key } = spec;
 
   describe(`${game}: the shared runner drives the ladder exactly as the hand-written loop did`, () => {
-    const fired = new Set<string>();
+    // One tally across every board and cap: the census asks which rungs the
+    // *corpus* reaches, not which a single board does.
+    const fired: FiringTally = new Map();
     let compared = 0;
 
     for (const { label, board } of cases) {
@@ -79,7 +92,7 @@ export function describeLadderEquivalence<Board>(
           const runnerBoard = board();
           const legacyBoard = board();
 
-          const got = viaRunner(runnerBoard, cap, (id) => fired.add(id));
+          const got = viaRunner(runnerBoard, cap, fired);
           const want = viaLegacy(legacyBoard, cap);
           compared++;
 
@@ -105,7 +118,9 @@ export function describeLadderEquivalence<Board>(
         `${game}: a ladder with no rungs certifies nothing`,
       ).toBeGreaterThan(0);
 
-      const missing = rungs.filter((id) => !fired.has(id)).sort();
+      // A rung present with a zero count would be a rung that never fired, so
+      // membership alone is not the question the census asks.
+      const missing = rungs.filter((id) => (fired.get(id) ?? 0) === 0).sort();
       expect(
         missing,
         `${game}: a rung this corpus never fires is a rung this file does not ` +

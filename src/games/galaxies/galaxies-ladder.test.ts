@@ -70,7 +70,7 @@ describeLadderEquivalence<GalaxiesState>({
   // are verdict sentinels, not harder tiers.
   caps: [GalaxiesDiff.Normal],
   cases,
-  viaRunner: (s, _cap, onFiring) => galaxiesLadderOnly(s, onFiring),
+  viaRunner: (s, _cap, firings) => galaxiesLadderOnly(s, firings),
   viaLegacy: (s) => galaxiesLadderLegacy(s),
   // Everything the rungs write: the wall/edge flag word per space, and the
   // per-tile association (which dot owns it) with its count.

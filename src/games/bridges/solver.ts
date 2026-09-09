@@ -18,6 +18,7 @@
  */
 import {
   type DeductionTechnique,
+  type FiringTally,
   runDeductionFixpoint,
 } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
@@ -472,19 +473,11 @@ class Solver {
     ];
   }
 
-  solveSub(difficulty: number, onFiring?: (id: string) => void): number {
+  solveSub(difficulty: number, firings?: FiringTally): number {
     const ladder = this.ladder();
     const { impossible } = runDeductionFixpoint({
-      techniques: onFiring
-        ? ladder.map((t) => ({
-            ...t,
-            run: () => {
-              const did = t.run();
-              if (did > 0) onFiring(t.id);
-              return did;
-            },
-          }))
-        : ladder,
+      techniques: ladder,
+      firings,
       // The gates were `difficulty < 1` / `< 2` / `< 3` after each stage, and
       // the ladder is tier-sorted, so a `maxTier` skip agrees with them. The
       // trailing `difficulty < 3` guarded a fourth stage that does not exist.
@@ -542,13 +535,13 @@ class Solver {
 export function solveFromScratch(
   state: BridgesState,
   difficulty: number,
-  onFiring?: (id: string) => void,
+  firings?: FiringTally,
 ): number {
   state.mapClear();
   const solver = new Solver(state);
   solver.mapGroup();
   state.mapUpdatePossibles();
-  return solver.solveSub(difficulty, onFiring);
+  return solver.solveSub(difficulty, firings);
 }
 
 /** {@link solveFromScratch} through the hand-written loop — the oracle

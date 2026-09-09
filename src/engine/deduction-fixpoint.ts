@@ -135,6 +135,16 @@ export interface DeductionTechnique {
   run: () => number;
 }
 
+/**
+ * Per-rung firing counts, keyed by {@link DeductionTechnique.id}.
+ *
+ * Counts rather than a set of ids, because the step budget's non-termination
+ * attribution needs *how many* — "a runaway technique holds ~the whole budget
+ * against its name" — and a census that only needs membership reads the keys.
+ * One map serves both; two would be two things to keep in step.
+ */
+export type FiringTally = Map<string, number>;
+
 export interface DeductionFixpointOptions {
   /**
    * The ladder, easiest first. A pass tries the techniques in order and
@@ -163,6 +173,31 @@ export interface DeductionFixpointOptions {
    * unguarded (and byte-for-byte unchanged).
    */
   budget?: StepBudget;
+  /**
+   * A caller-supplied tally the runner writes each firing into, keyed by
+   * {@link DeductionTechnique.id} — **how a caller observes which rungs a board
+   * actually reached.**
+   *
+   * A ladder's rungs are not all reachable, and nothing in a game's own results
+   * says which are: `ladder-equivalence.ts` exists because deleting one of
+   * Tracks' eight rungs left all 39 of its tests green. So a corpus that walks
+   * the ladder needs a census, and this is where it comes from.
+   *
+   * **A sink rather than a returned value, deliberately.** This runner is called
+   * *inside* a game's solver, so a tally on {@link DeductionFixpointResult}
+   * would have to be threaded back out through each game's own return shape —
+   * seven different shapes, each widened for a reader that is not the game. A
+   * sink passes straight through in one line. It replaced seven copies of a
+   * ladder-wrapping closure that did the same counting by hand
+   * (`return-the-firing-tally-from-the-runner`).
+   *
+   * **Omit it and the runner allocates nothing**, which is the generator path's
+   * standing rule. When a `budget` is present the runner needs a tally anyway
+   * for non-termination attribution; supplying one here means both read the same
+   * map, so a budget trip on a recording path is attributed through the caller's
+   * own census.
+   */
+  firings?: FiringTally;
   /**
    * Run once before each technique attempt — e.g. `latinSolverTop` bumps its
    * firing-group id here so every record of one firing shares a `group`. Not
@@ -239,9 +274,9 @@ export function runDeductionFixpoint(
 ): DeductionFixpointResult {
   const { techniques, maxTier, baseGrade = 0, beforeTechnique, settled } = opts;
   let grade = baseGrade;
-  // Firing attribution exists only where the budget does, so the generator path
-  // allocates nothing and runs the loop it always ran.
-  const firings = opts.budget ? new Map<string, number>() : null;
+  // A tally exists only where a caller asked for one or a budget needs one, so
+  // the generator path allocates nothing and runs the loop it always ran.
+  const firings = opts.firings ?? (opts.budget ? new Map<string, number>() : null);
   const budget =
     opts.budget && firings ? attributingBudget(opts.budget, firings) : undefined;
 

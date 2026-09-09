@@ -11,6 +11,7 @@
  */
 import {
   type DeductionTechnique,
+  type FiringTally,
   runDeductionFixpoint,
 } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
@@ -858,7 +859,7 @@ function solverStateInner(
   maxDiff: GalaxiesDiff,
   depth: number,
   rec?: SolverRecorder,
-  onFiring?: (id: string) => void,
+  firings?: FiringTally,
 ): GalaxiesDiff {
   const ret = solverObvious(s, rec);
   if (ret === IMPOSSIBLE) return GalaxiesDiff.Impossible;
@@ -870,16 +871,8 @@ function solverStateInner(
   // `Math.max(diff, Normal)` lines were no-ops. `maxDiff` gates only the
   // recursion below, never the ladder, so there is no `maxTier` here.
   const { grade: diff, impossible } = runDeductionFixpoint({
-    techniques: onFiring
-      ? ladder.map((t) => ({
-          ...t,
-          run: () => {
-            const did = t.run();
-            if (did > 0) onFiring(t.id);
-            return did;
-          },
-        }))
-      : ladder,
+    techniques: ladder,
+    firings,
     baseGrade: GalaxiesDiff.Normal,
   });
   if (impossible) return GalaxiesDiff.Impossible;
@@ -898,9 +891,9 @@ function solverStateInner(
 export function solverState(
   s: GalaxiesState,
   maxDiff: GalaxiesDiff,
-  onFiring?: (id: string) => void,
+  firings?: FiringTally,
 ): GalaxiesDiff {
-  return solverStateInner(s, maxDiff, 0, undefined, onFiring);
+  return solverStateInner(s, maxDiff, 0, undefined, firings);
 }
 
 /**
@@ -954,23 +947,15 @@ export function galaxiesLadderLegacy(
  * so the two are comparable. */
 export function galaxiesLadderOnly(
   s: GalaxiesState,
-  onFiring?: (id: string) => void,
+  firings?: FiringTally,
 ): GalaxiesDiff {
   const ret = solverObvious(s, undefined);
   if (ret === IMPOSSIBLE) return GalaxiesDiff.Impossible;
 
   const ladder = galaxiesLadder(s, undefined);
   const { grade, impossible } = runDeductionFixpoint({
-    techniques: onFiring
-      ? ladder.map((t) => ({
-          ...t,
-          run: () => {
-            const did = t.run();
-            if (did > 0) onFiring(t.id);
-            return did;
-          },
-        }))
-      : ladder,
+    techniques: ladder,
+    firings,
     baseGrade: GalaxiesDiff.Normal,
   });
   return impossible ? GalaxiesDiff.Impossible : grade;

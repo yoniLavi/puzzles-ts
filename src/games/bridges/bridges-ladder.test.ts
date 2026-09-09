@@ -50,7 +50,7 @@ describeLadderEquivalence<BridgesState>({
   // carried (`difficulty < 3`) guarded a stage that does not exist.
   caps: [0, 1, 2, 3],
   cases,
-  viaRunner: (s, cap, onFiring) => solveFromScratch(s, cap, onFiring),
+  viaRunner: (s, cap, firings) => solveFromScratch(s, cap, firings),
   viaLegacy: (s, cap) => solveFromScratchLegacy(s, cap),
   // Everything the stages write: the bridge/mark bits per cell, the line counts,
   // and the per-direction possibility masks the counting stage narrows.

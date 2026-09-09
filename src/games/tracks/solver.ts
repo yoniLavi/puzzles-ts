@@ -32,6 +32,7 @@
  */
 import {
   type DeductionTechnique,
+  type FiringTally,
   runDeductionFixpoint,
 } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
@@ -570,7 +571,7 @@ function tracksSolveInit(b: Board): Dsf {
 }
 
 /**
- * @param onFiring test seam — called with a rung's id each time it fires.
+ * @param firings test seam — the runner tallies each rung's firings into it.
  * Unused in production and deliberately so: it exists because
  * `tracks-ladder.test.ts` has to prove its corpus reaches every rung, and a
  * ladder-equivalence test that could pass over boards needing only the easiest
@@ -580,22 +581,14 @@ function tracksSolveInit(b: Board): Dsf {
 export function tracksSolve(
   b: Board,
   diff: number,
-  onFiring?: (id: string) => void,
+  firings?: FiringTally,
 ): { ret: number; maxDiff: number } {
   const bridgeDsf = tracksSolveInit(b);
   const ladder = tracksLadder(b, bridgeDsf);
 
   const { grade: maxDiff } = runDeductionFixpoint({
-    techniques: onFiring
-      ? ladder.map((t) => ({
-          ...t,
-          run: () => {
-            const did = t.run();
-            if (did > 0) onFiring(t.id);
-            return did;
-          },
-        }))
-      : ladder,
+    techniques: ladder,
+    firings,
     maxTier: diff,
     baseGrade: DIFF_EASY,
     // The hand-written loop was `while (!b.impossible)`, tested at the top of

@@ -23,6 +23,7 @@
 
 import {
   type DeductionTechnique,
+  type FiringTally,
   runDeductionFixpoint,
 } from "../../engine/deduction-fixpoint.ts";
 import {
@@ -319,22 +320,14 @@ function seismicLadder(board: SeismicBoard): DeductionTechnique[] {
 export function solveGame(
   board: SeismicBoard,
   maxDiff: number,
-  onFiring?: (id: string) => void,
+  firings?: FiringTally,
 ): number {
   solverInit(board);
   const ladder = seismicLadder(board);
 
   const { grade: diff } = runDeductionFixpoint({
-    techniques: onFiring
-      ? ladder.map((t) => ({
-          ...t,
-          run: () => {
-            const did = t.run();
-            if (did > 0) onFiring(t.id);
-            return did;
-          },
-        }))
-      : ladder,
+    techniques: ladder,
+    firings,
     maxTier: maxDiff,
     baseGrade: DIFF_EASY,
     settled: () => validateGame(board) !== STATUS_UNFINISHED,

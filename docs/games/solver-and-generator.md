@@ -128,6 +128,15 @@ cannot pass for proof. A rung the corpus cannot reach is recorded with its
 reason — and checked against the C first, because an unreachable deduction is
 exactly the shape a porting bug takes.
 
+**The census costs the adopting game one optional parameter**, forwarded straight
+to `runDeductionFixpoint`'s `firings` sink; the runner does the counting. That is
+the whole of it — if you find yourself wrapping the ladder in a closure to
+observe firings, the runner already does it
+(`return-the-firing-tally-from-the-runner` deleted seven such wrappers). The
+parameter is production surface a test supplies, deliberately: a rung's
+reachability cannot be observed from the game's own results, which is this
+section's premise.
+
 ### Where the fixpoint does not fit
 
 **The ladder *shape* is near-universal; the bookkeeping wrapped around it is

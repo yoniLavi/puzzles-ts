@@ -19,6 +19,7 @@
  */
 import {
   type DeductionTechnique,
+  type FiringTally,
   runDeductionFixpoint,
 } from "../../engine/deduction-fixpoint.ts";
 import { deduceHintPlan as accumulateHintPlan } from "../../engine/hint-plan.ts";
@@ -367,7 +368,7 @@ function disjoint(state: SubsetsState, cube: Uint8Array): number {
 export function subsetsSolveGame(
   state: SubsetsState,
   maxdiff: number,
-  onFiring?: (id: string) => void,
+  firings?: FiringTally,
 ): SubsetsStatus {
   const s = state.w * state.h;
   const n2 = 1 << state.n;
@@ -406,16 +407,8 @@ export function subsetsSolveGame(
   ];
 
   runDeductionFixpoint({
-    techniques: onFiring
-      ? ladder.map((t) => ({
-          ...t,
-          run: () => {
-            const did = t.run();
-            if (did > 0) onFiring(t.id);
-            return did;
-          },
-        }))
-      : ladder,
+    techniques: ladder,
+    firings,
     // **`settled` carries the per-iteration prologue, and that is exact rather
     // than convenient.** The hand-written loop opened every pass by classifying
     // the board (returning if it was no longer unfinished) and then re-syncing
