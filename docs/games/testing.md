@@ -376,6 +376,15 @@ directory and 30% once its cases inside the cross-game guards are counted. The
 per-game `it` title is the join key; this is `AGENTS.md` § "A scan that keys on a
 name" aimed at a cost model.
 
+**Don't reach for "run only the affected tests".** It was measured
+(`measure-test-impact-selection`, 2026-09-09) and it does not work here.
+`vitest related` walks the static import graph, but 26 test files reach their
+subjects through `import.meta.glob(..., "?raw")` — reading game source as *text*,
+because a cross-game guard derives its population from what a game **is**. A
+file read as text forms no import edge, so a game change omits five glob-only
+guards and a `help/` change selects **nothing at all**. The rule that makes the
+guards impossible to forget is what makes them invisible to the graph.
+
 **And measure CPU, never wall.** Contention on a shared box inflates wall
 several-fold and unevenly — in that run `spokes-hint.test.ts` showed 5.2× and
 `touch-input.test.ts` 1.6×, so even the *ranking* distorts. `/usr/bin/time`'s
