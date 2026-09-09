@@ -6,7 +6,34 @@
  * *verdict* on every intermediate board, so the port reproduces C's deductions
  * — and their order — verbatim (docs/games/solver-and-generator.md § "Solver-gated generation"). Reused by `solve()` and
  * `findMistakes`.
+ *
+ * **The ladder runs on the shared `runDeductionFixpoint`**
+ * (`adopt-the-deduction-runner-where-it-rewires`, the first adoption). It was
+ * written out by hand as eight repetitions of `if (diff >= TIER &&
+ * technique(b)) { maxDiff = Math.max(maxDiff, TIER); continue; }`, which is that
+ * runner's signature transcribed — so adoption was a rewiring, not a
+ * restructuring. Three things made it exact, and each is worth checking before
+ * adopting the next game:
+ *
+ *  - **The tier guard skips, it does not stop.** Each `diff >= TIER` was an
+ *    independent guard with no `break`, and the runner likewise *skips* a rung
+ *    above `maxTier` and keeps going. A game that breaks out of its ladder on
+ *    the first over-cap rung is not this shape.
+ *  - **The grade means the same number.** `maxDiff` was bumped only inside a
+ *    fired branch, so it already meant *highest tier that fired*, which is what
+ *    the runner returns. A game that bumps its grade on *reaching* a tier means
+ *    "deepest tier reached" — a different number, and Boats' recorded reason for
+ *    staying out.
+ *  - **`b.impossible` is a board flag, not a `< 0` return.** The old loop tested
+ *    it at the top of each pass; `settled` is checked in exactly that place.
+ *
+ * Proved by `tracks-ladder.test.ts`, not by the differential — see its header
+ * for why the fixtures could not certify this on their own.
  */
+import {
+  type DeductionTechnique,
+  runDeductionFixpoint,
+} from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
 import {
@@ -494,11 +521,43 @@ function discountEdge(b: Board, x: number, y: number, d: number): void {
  * verdict (`-1` impossible, `0` non-converged, `1` uniquely solved) and the
  * maximum difficulty rung that fired (upstream `tracks_solve`).
  */
-export function tracksSolve(b: Board, diff: number): { ret: number; maxDiff: number } {
-  const { w, h } = b;
-  let maxDiff = DIFF_EASY;
-  b.impossible = false;
+/** The eight rungs, easiest first — the ladder `tracksSolve` runs.
+ *
+ * A factory rather than a constant because the rungs close over per-solve state:
+ * every one needs the board, and `check-bridge-parity` needs a scratch dsf that
+ * must not be shared between solves.
+ *
+ * **The rung ids are load-bearing beyond documentation**: `runDeductionFixpoint`
+ * names them when a step budget trips, and `tracks-ladder.test.ts` asserts which
+ * of them a corpus ever fires — which is how `check-single` was found to fire
+ * nowhere at all. */
+function tracksLadder(b: Board, bridgeDsf: Dsf): DeductionTechnique[] {
+  return [
+    { id: "update-flags", tier: DIFF_EASY, run: () => updateFlags(b) },
+    { id: "count-clues", tier: DIFF_EASY, run: () => countClues(b) },
+    { id: "check-loop", tier: DIFF_EASY, run: () => checkLoop(b) },
+    { id: "check-single", tier: DIFF_TRICKY, run: () => checkSingle(b) },
+    { id: "check-loose-ends", tier: DIFF_TRICKY, run: () => checkLooseEnds(b) },
+    { id: "check-neighbors", tier: DIFF_TRICKY, run: () => checkNeighbors(b, false) },
+    {
+      id: "check-neighbors-both-ways",
+      tier: DIFF_HARD,
+      run: () => checkNeighbors(b, true),
+    },
+    {
+      id: "check-bridge-parity",
+      tier: DIFF_HARD,
+      run: () => checkBridgeParity(b, bridgeDsf),
+    },
+  ];
+}
 
+/** The setup both `tracksSolve` and its equivalence oracle need: clear the
+ * impossible flag, discount the four outside edges, and hand back the scratch
+ * dsf the parity rung uses. */
+function tracksSolveInit(b: Board): Dsf {
+  const { w, h } = b;
+  b.impossible = false;
   for (let x = 0; x < w; x++) {
     discountEdge(b, x, 0, U);
     discountEdge(b, x, h - 1, D);
@@ -507,8 +566,66 @@ export function tracksSolve(b: Board, diff: number): { ret: number; maxDiff: num
     discountEdge(b, 0, y, L);
     discountEdge(b, w - 1, y, R);
   }
+  return new Dsf(w * h);
+}
 
-  const bridgeDsf = new Dsf(w * h);
+/**
+ * @param onFiring test seam — called with a rung's id each time it fires.
+ * Unused in production and deliberately so: it exists because
+ * `tracks-ladder.test.ts` has to prove its corpus reaches every rung, and a
+ * ladder-equivalence test that could pass over boards needing only the easiest
+ * rung would certify nothing. Costs one optional parameter and no work when
+ * absent.
+ */
+export function tracksSolve(
+  b: Board,
+  diff: number,
+  onFiring?: (id: string) => void,
+): { ret: number; maxDiff: number } {
+  const bridgeDsf = tracksSolveInit(b);
+  const ladder = tracksLadder(b, bridgeDsf);
+
+  const { grade: maxDiff } = runDeductionFixpoint({
+    techniques: onFiring
+      ? ladder.map((t) => ({
+          ...t,
+          run: () => {
+            const did = t.run();
+            if (did > 0) onFiring(t.id);
+            return did;
+          },
+        }))
+      : ladder,
+    maxTier: diff,
+    baseGrade: DIFF_EASY,
+    // The hand-written loop was `while (!b.impossible)`, tested at the top of
+    // every pass — which is exactly where `settled` is checked. A rung here
+    // never returns `< 0`; it raises the board's own flag instead, so the
+    // runner's `impossible` is always false and this function keeps deriving
+    // `ret` from `b.impossible` as it always did.
+    settled: () => b.impossible,
+  });
+
+  const ret = b.impossible ? -1 : checkCompletion(b, false) ? 1 : 0;
+  return { ret, maxDiff };
+}
+
+/**
+ * The hand-written ladder this solver ran until
+ * `adopt-the-deduction-runner-where-it-rewires`, kept **only** as the oracle
+ * `tracks-ladder.test.ts` proves the adoption against — the rungs are
+ * module-private, so the comparison has to live on this side of the file.
+ *
+ * Delete it when the adoption sweep finishes and the shape is no longer
+ * novel; until then it is what makes "the rewiring changed nothing" a checked
+ * claim rather than an assertion.
+ */
+export function tracksSolveLegacy(
+  b: Board,
+  diff: number,
+): { ret: number; maxDiff: number } {
+  let maxDiff = DIFF_EASY;
+  const bridgeDsf = tracksSolveInit(b);
 
   while (!b.impossible) {
     if (diff >= DIFF_EASY && updateFlags(b)) {
