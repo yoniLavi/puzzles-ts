@@ -26,9 +26,9 @@ test asserts, which belongs to the capability spec that test serves.
 ### Requirement: Continuous integration runs the full gate on push to main
 
 The repository SHALL provide a GitHub Actions workflow that, on every push to
-`main`, runs the same gate as the husky pre-commit hook (`npm run gate`:
-`tsc -b --noEmit` → `biome ci` → probe-anchor check → `vitest run` →
-`vite build`).
+`main`, runs the same gate as the husky pre-commit hook — `npm run gate`, whose
+steps are defined by `scripts/gate.sh` and are not restated here (see the
+gate requirement below for why).
 
 The gate SHALL require **no generated assets**. This reverses the original
 requirement, which stated there was "no valid asset-free CI tier (a no-asset job
@@ -71,15 +71,31 @@ hooks never installed could land breakage on `main` undetected).
 
 ### Requirement: The pre-commit gate minimizes wall-clock without dropping checks
 
-The pre-commit gate SHALL run all six checks (`tsc -b --noEmit`, biome,
-`npm run probe -- --verify`, the spelling guard, `vitest run`, `vite build`) and
-block a commit on any failure — with the single documentation-only exception
-scoped below — while being orchestrated to reduce wall-clock: the fast checks
-(`tsc`, then biome, then the probe-anchor check, then the spelling guard) run
-first as a fail-fast prefix, and the two heavy, mutually-independent checks
-(`vitest run` and `vite build`, which share no inputs or outputs) SHALL run
-**concurrently**, making the gate's wall-clock ~max(vitest, build) rather than
-their sum.
+The pre-commit gate SHALL run **every check `scripts/gate.sh` defines** and block
+a commit on any failure — with the single documentation-only exception scoped
+below — while being orchestrated to reduce wall-clock: the cheap checks run first
+as a fail-fast prefix, cheapest first, so a type, lint, formatting or guard
+failure costs seconds rather than the whole gate; and the two heavy,
+mutually-independent checks (`vitest run` and `vite build`, which share no inputs
+or outputs) SHALL run **concurrently**, making the gate's wall-clock
+~max(vitest, build) rather than their sum.
+
+**This requirement deliberately does not list the checks, and the reason is that
+it used to.** It read "SHALL run all six checks (`tsc -b --noEmit`, biome,
+`npm run probe -- --verify`, the spelling guard, `vitest run`, `vite build`)" —
+a bare count in the present tense, which `AGENTS.md` § "Method" calls a census
+nobody re-runs. By 2026-09-09 the gate ran eleven, the named compiler had been
+replaced by `tsgo` thirty-five days earlier, and four more prose copies of the
+same list elsewhere in the tree had each rotted differently. **The list has one
+executable definition (`scripts/gate.sh`) and one readable one (`AGENTS.md`
+§ "Git", which carries the per-step rationale); a spec states the gate's
+properties instead.**
+
+Membership is therefore normative *per check*: a guard belongs in the gate
+because its own capability requirement says so, and this requirement says only
+that the gate runs all of them, fails closed, and is ordered fast-first. That is
+also what stops a check being quietly dropped — deleting one now contradicts the
+requirement that introduced it, rather than a count in a neighbor's prose.
 
 The probe-anchor check (`scripts/feedback-probe.mjs --verify`, **0.02–0.03 s**
 user CPU measured over three runs — `npm run probe -- --verify` is ~0.2 s, which
@@ -178,7 +194,7 @@ by an environment toggle the hook sets, not by a second copy of the gate.
 
 #### Scenario: The independent heavy steps run concurrently
 
-- **WHEN** the pre-commit gate runs after `tsc` and biome pass
+- **WHEN** the pre-commit gate runs after its fail-fast prefix passes
 - **THEN** `vitest run` and `vite build` execute concurrently, regardless of
   machine load
 - **AND** the commit is rejected if either the tests or the production build
