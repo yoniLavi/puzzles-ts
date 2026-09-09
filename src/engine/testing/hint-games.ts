@@ -36,6 +36,7 @@
 import "../../games/index.ts";
 import type { Game, PresetMenu } from "../game.ts";
 import { getTsGame, registeredGameIds } from "../registry.ts";
+import { membersNotMentioning } from "./enrollment.ts";
 
 // biome-ignore lint/suspicious/noExplicitAny: a deliberately game-agnostic probe.
 export type AnyGame = Game<any, any, any, any, any, any>;
@@ -66,6 +67,35 @@ export const HINT_GAMES: [string, AnyGame][] = registeredGameIds()
  * healthy while the set it was drawn from is short.
  */
 export const REGISTERED_GAME_COUNT = registeredGameIds().length;
+
+/**
+ * The games whose hint **plans by searching** rather than by deducing — derived
+ * from each game's own comment-stripped source (it calls the shared slide
+ * planner), never declared. `enrollment.ts`'s third question; the marker
+ * carries its opening paren so importing the planner without calling it does
+ * not count.
+ *
+ * **Two guards read this for two different reasons, which is why it lives
+ * here.** `hint-resume.test.ts` reads it to excuse a member the walk's
+ * completion promise — a bounded search may honestly run out of reach.
+ * `hint-quality.test.ts` and `hint-resume.test.ts` both read it to bound what
+ * the *gate* walks, because a search is the one hint shape whose cost explodes
+ * with board size: the walk is quadratic in it twice over (one full search per
+ * move, and more moves on a bigger board). Measured 2026-09-09, the two members
+ * were **43% of the whole suite's test time** — Sixteen 30%, Netslide 13% —
+ * with Sixteen's single 5×5 resume walk the most expensive test in the
+ * collection.
+ *
+ * Deriving both from one scan rather than listing them twice is the point: a
+ * third game that calls the planner joins both concerns by *having* the
+ * mechanic, and `hint-resume.test.ts`'s `SEARCH_REACH` ledger then fails until
+ * someone writes down what covers its largest board.
+ */
+export const SEARCH_PLANNING_GAMES: readonly string[] = (() => {
+  const ids = HINT_GAMES.map(([id]) => id);
+  const without = new Set(membersNotMentioning(ids, "planSlides("));
+  return ids.filter((id) => !without.has(id));
+})();
 
 /** True when a step declares no board marks at all — `highlights` absent, or an
  * object whose every field is empty. The candidate-elimination games' populate

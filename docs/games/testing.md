@@ -342,6 +342,47 @@ it catches.** Three treatments, in order of how little they lose:
    refactoring round; a tier nobody runs is worse than a deleted test, because
    the file still reads as coverage.
 
+**Run the slow tier targeted, not whole.** `npm run test:slow` re-runs all
+~8,500 gate tests *as well*, with the widened seed budgets on top; the deferred
+tier itself is six tests in three files. Pass a path and the script forwards it
+to vitest — `npm run test:slow -- src/games/seismic`,
+`npm run test:slow -- src/engine/hint-resume.test.ts`. That is the form to reach
+for when a refactor moves a solver, a generator or a hint planner: run the slow
+tier for the games it could have moved, when you move them.
+
+### Where the cost actually is — measured 2026-09-09, so you need not re-derive it
+
+`retire-tests-that-do-not-earn-their-runtime` ranked all 301 test files. Two
+results are worth not rediscovering:
+
+- **The frozen differentials are not the expense.** 50 files, **10.1%** of suite
+  time; the heaviest single one is 11.5 s CPU. Keeping every one of them is
+  cheap, so the question "can we afford the differential corpus?" has an answer
+  and it is yes. They stay — see [The frozen differentials](#the-frozen-differentials)
+  for why they are worth keeping on the merits.
+- **The expense is search-based hints amplified by the cross-game guards.**
+  Attributing each guard's per-game case to the game it names: Sixteen **30%**,
+  Netslide **13%**, Spokes 8.5% — half the suite in three games. A hint that
+  *searches* pays for board size twice over (one full search per move, and more
+  moves to make), and the guards recompute a hint after every move. So the axis
+  to slice for those games is **board size**, and `SEARCH_PLANNING_GAMES`
+  ([`hint-games.ts`](../../src/engine/testing/hint-games.ts)) derives the
+  population from each game's own source rather than listing it.
+
+**Attribute cost per game, not per directory.** Ranking by file reports
+`hint-resume.test.ts` and `hint-quality.test.ts` as undifferentiated "engine"
+cost and hides which game makes them expensive — Sixteen reads as 17% by
+directory and 30% once its cases inside the cross-game guards are counted. The
+per-game `it` title is the join key; this is `AGENTS.md` § "A scan that keys on a
+name" aimed at a cost model.
+
+**And measure CPU, never wall.** Contention on a shared box inflates wall
+several-fold and unevenly — in that run `spokes-hint.test.ts` showed 5.2× and
+`touch-input.test.ts` 1.6×, so even the *ranking* distorts. `/usr/bin/time`'s
+`user + sys` on a single-file vitest run is the honest per-file figure
+(`build-pipeline` § "The commit gate's cost is proportional to what it
+protects").
+
 ## Break the code under a new test
 
 **Writing a test is not the same as the test working — flip the line it is

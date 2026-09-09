@@ -24,12 +24,12 @@ import { describe, expect, it } from "vitest";
 import { type DifficultyContract, difficultyTiers } from "./difficulty.ts";
 import { DEDUCTION_EXHAUSTED, SEARCH_OUT_OF_REACH } from "./hint-refusal.ts";
 import { randomNew } from "./random/index.ts";
-import { membersNotMentioning } from "./testing/enrollment.ts";
 import {
   type AnyGame,
   firstLeaf,
   HINT_GAMES,
   leafPresets,
+  SEARCH_PLANNING_GAMES,
 } from "./testing/hint-games.ts";
 import { SLOW_TESTS_ENABLED } from "./testing/slow.ts";
 
@@ -98,26 +98,17 @@ function solveByHints(
  * seeds it is given and could go red truthfully on a new one, which would be
  * the guard reporting the truth rather than a regression.
  *
- * **Derived from what the game is, never declared.** The mechanic is the shared
- * slide planner, so membership is "calls it" — read out of each game's own
- * comment-stripped source, which is `enrollment.ts`'s third question and cannot
- * drift from the game the way a roster does. `membersNotMentioning` answers the
- * negative, so the set is its complement.
- *
- * The marker carries its opening paren so importing the planner without calling
- * it does not count. Both call sites write `planSlides({`, and if a third ever
- * writes `planSlides<T>(` the vacuity floor below is what says so — a scan that
- * keys on a name finds only the games that were named that way (`AGENTS.md`
- * § "A scan that keys on a name").
+ * **Derived from what the game is, never declared** — the derivation lives in
+ * `testing/hint-games.ts` as `SEARCH_PLANNING_GAMES`, because a second guard
+ * needs the same population for a different reason (what the *gate* may afford
+ * to walk). Membership is "calls the shared slide planner", read out of each
+ * game's own comment-stripped source.
  */
-const BOUNDED_SEARCH_HINTS: readonly string[] = (() => {
-  const ids = HINT_GAMES.map(([id]) => id);
-  const without = new Set(membersNotMentioning(ids, "planSlides("));
-  return ids.filter((id) => !without.has(id));
-})();
+const BOUNDED_SEARCH_HINTS = SEARCH_PLANNING_GAMES;
 
 /**
- * Why each derived member is excused the walk's promise — one line per member,
+ * Why each derived member is excused the walk's promise, **and what covers the
+ * largest board the gate no longer walks for it** — one line per member,
  * asserted below to be exactly the derivation.
  *
  * The ledger is attached to the *members*, not to the enrollment: the guard
@@ -126,16 +117,31 @@ const BOUNDED_SEARCH_HINTS: readonly string[] = (() => {
  * empty derivation would silently restore the old behavior with every
  * assertion here still passing, so the equality is this sweep's vacuity guard
  * as well as its ledger.
+ *
+ * **The second sentence is load-bearing since
+ * `retire-tests-that-do-not-earn-their-runtime`.** These games' walk is sliced
+ * to the smallest preset in the gate (see `walkedPresets`), so each entry has to
+ * name the test that still walks a full-size board on every commit. A future
+ * third member joins the derivation by *having* the mechanic and fails the
+ * equality below until someone writes that sentence — which is the point of
+ * deriving the population and attaching the reason to the member
+ * (`AGENTS.md` § "Convention over configuration").
  */
 const SEARCH_REACH: Record<string, string> = {
   netslide:
     "Plans by searching for an arrangement that powers the grid. Has not been " +
     "seen refusing — its finish condition is weak, so its distances are short — " +
-    "but it is the same planner and the same bound.",
+    "but it is the same planner and the same bound. Largest board on every " +
+    "commit: netslide-reconstruct.test.ts walks EVERY preset (5x5 wrapping " +
+    "included) to completion on recomputed hints, with no aux at all.",
   sixteen:
     "Plans by searching for the finished board. Its tangled endgames are a " +
     "dozen moves out with a branching factor of 40, which no arrangement of " +
-    "this machinery reaches (`fix-sixteen-deep-local-minima`).",
+    "this machinery reaches (`fix-sixteen-deep-local-minima`). Largest board " +
+    "on every commit: sixteen.test.ts walks recomputed hints to solved on five " +
+    "hand-picked 5x5 boards — the tangles and swapped pairs the hint actually " +
+    "gave up on — which is strictly sharper evidence than one random 5x5, and " +
+    "was verified to fail when the tangle term is removed.",
 };
 
 /** Does this preset's tier promise that its boards may need search?
@@ -179,10 +185,33 @@ function permitsSearch(game: AnyGame, params: unknown): boolean {
  * convention `firstLeaf` already relies on, and taking both ends is the cheap
  * honest approximation of "cover the axis this game varies". It costs one extra
  * walk per untiered game.
+ *
+ * **The exception, and it is the whole reason this file is affordable: a game
+ * that plans by *searching* walks its smallest preset only.** Measured
+ * 2026-09-09 (`retire-tests-that-do-not-earn-their-runtime`), Sixteen's single
+ * 5×5 walk was the most expensive test in the collection and Netslide's 5×5 the
+ * third; between them the two members of `SEARCH_PLANNING_GAMES` were 43% of
+ * all test time. A search pays for board size twice over — one full search per
+ * move, and more moves to make — so for these two the last preset is not "one
+ * extra walk", it is most of the suite.
+ *
+ * **This is a deferral, not a retirement, and what still covers the large board
+ * is recorded per member in `SEARCH_REACH` above** — Sixteen's five hand-picked
+ * 5×5 endgames in `sixteen.test.ts`, Netslide's every-preset walk in
+ * `netslide-reconstruct.test.ts`, both on every commit. The hand-picked boards
+ * are sharper than a random one: they are the positions the hint actually gave
+ * up on, and removing the tangle term was verified to turn them red. The slow
+ * tier walks every preset for these games as for all others.
  */
-function walkedPresets(game: AnyGame): { title: string; params: unknown }[] {
+function walkedPresets(
+  id: string,
+  game: AnyGame,
+): { title: string; params: unknown }[] {
   const all = leafPresets(game.presets());
   if (SLOW_TESTS_ENABLED) return all;
+  // A searching hint's cost is superlinear in board size; its large boards are
+  // covered deterministically by the game's own file (see SEARCH_REACH).
+  if (SEARCH_PLANNING_GAMES.includes(id)) return all.slice(0, 1);
   const contract = game.difficulty as DifficultyContract<unknown> | undefined;
   if (!contract) {
     // First and last, de-duplicated for a game that offers only one preset.
@@ -323,7 +352,7 @@ describe("a hint can solve from any mid-game position", () => {
     // saturation. That is why nothing here is clock-gated — the assertion is on
     // the *result*. See docs/games/testing.md § "Seed-deterministic, never clock-gated".
     it(`${name}: following hints one move at a time always reaches solved`, () => {
-      const presets = walkedPresets(game);
+      const presets = walkedPresets(name, game);
       // Per-game vacuity: a presets menu that flattened to nothing would leave
       // this loop asserting nothing while reporting health.
       expect(presets.length, `${name}: no preset to walk`).toBeGreaterThan(0);
@@ -373,7 +402,9 @@ let walkedCases = 0;
 describe("the resume walk", () => {
   it("covered enough boards to mean something", () => {
     // The floor separates "working" from "enumerating nothing" and sits well
-    // below the gate slice's true count (76 walks over 30 games when written),
+    // below the gate slice's true count (74 walks over 30 games as of
+    // 2026-09-09, down from 76 when the two searching games stopped walking
+    // their largest preset here — see `walkedPresets`),
     // so it is not a ratchet a legitimate change has to bump.
     expect(walkedCases).toBeGreaterThan(40);
   });

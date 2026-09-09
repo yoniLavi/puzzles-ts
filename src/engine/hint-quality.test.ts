@@ -38,11 +38,14 @@ import { describe, expect, it } from "vitest";
 import { difficultyTiers } from "./difficulty.ts";
 import { randomNew } from "./random/index.ts";
 import {
+  type AnyGame,
   declaresNoMarks,
   firstLeaf,
   HINT_GAMES,
   leafPresets,
+  SEARCH_PLANNING_GAMES,
 } from "./testing/hint-games.ts";
+import { SLOW_TESTS_ENABLED } from "./testing/slow.ts";
 
 const SEEDS = ["hq-a", "hq-b", "hq-c"];
 
@@ -257,6 +260,36 @@ describe("hint narration form, cross-game", () => {
  * `fix-sixteen-endgame-stranding`. If you add a sweep over games, the question
  * to ask is what axis each game varies, not what axis you keyed on.)
  */
+/**
+ * The cases an **untiered** game contributes: its presets, which is the axis
+ * such a game actually varies (a sweep keyed on tier alone collapses them all
+ * to one and walks a single board — the blindness `hint-resume.test.ts` paid
+ * for first).
+ *
+ * **A game that plans by searching walks its three smallest presets in the
+ * gate.** The property under test here is the *wording* of an explanation, and
+ * a planner's narration vocabulary does not change with board size — but a
+ * search's cost does, steeply. Three is not arbitrary: it is what reaches every
+ * mode Netslide varies (its nine presets are three barrier/wrapping modes at
+ * each of three sizes, ordered smallest-first), and it keeps Sixteen's 3×3, 4×3
+ * and 4×4 while dropping the two boards that carry the search cost. The slow
+ * tier walks all of them.
+ *
+ * Measured 2026-09-09 (`retire-tests-that-do-not-earn-their-runtime`): the two
+ * members of `SEARCH_PLANNING_GAMES` were 62% of this file's test time.
+ */
+function untieredCases(
+  id: string,
+  game: AnyGame,
+): { label: string; params: unknown }[] {
+  const all = leafPresets(game.presets()).map((e) => ({
+    label: `preset "${e.title}"`,
+    params: e.params as unknown,
+  }));
+  if (SLOW_TESTS_ENABLED) return all;
+  return SEARCH_PLANNING_GAMES.includes(id) ? all.slice(0, 3) : all;
+}
+
 describe("no hint leaves a chain for the player to carry, at any tier", () => {
   for (const [name, game] of HINT_GAMES) {
     const contract = game.difficulty;
@@ -271,10 +304,7 @@ describe("no hint leaves a chain for the player to carry, at any tier", () => {
               label: `tier ${tier} ("${tierName}")`,
               params: contract.withTier(base, tier),
             }))
-          : leafPresets(game.presets()).map((e) => ({
-              label: `preset "${e.title}"`,
-              params: e.params,
-            }));
+          : untieredCases(name, game);
       let checked = 0;
       for (const { label, params } of cases) {
         if (game.validateParams(params, true)) continue; // refused at this size

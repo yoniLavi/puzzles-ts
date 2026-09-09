@@ -1,0 +1,38 @@
+total 3866.6 s;  attributed to a game 3595.5 s (93.0%)
+games seen: 57 of 58 directories
+
+game            seconds   share
+sixteen          1162.9   30.1% cum 30.1%
+netslide          518.6   13.4% cum 43.5%
+spokes            327.7    8.5% cum 52.0%
+salad             215.6    5.6% cum 57.5%
+galaxies          166.9    4.3% cum 61.9%
+slide             135.3    3.5% cum 65.4%
+sticks            130.2    3.4% cum 68.7%
+clusters           83.5    2.2% cum 70.9%
+solo               77.8    2.0% cum 72.9%
+bricks             73.0    1.9% cum 74.8%
+pattern            69.0    1.8% cum 76.6%
+boats              63.2    1.6% cum 78.2%
+inertia            59.8    1.5% cum 79.7%
+seismic            52.2    1.4% cum 81.1%
+palisade           48.3    1.2% cum 82.3%
+filling            47.9    1.2% cum 83.6%
+pearl              45.9    1.2% cum 84.8%
+lightup            44.3    1.1% cum 85.9%
+crossing           32.2    0.8% cum 86.8%
+dominosa           20.2    0.5% cum 87.3%
+
+heaviest files with no game attribution:
+    69.7 s  src/engine/difficulty-contract.test.ts
+    42.2 s  src/run-length-desc.test.ts
+    34.6 s  src/engine/touch-input.test.ts
+    27.1 s  src/engine/dsf.test.ts
+    16.6 s  src/engine/grid/grid-incenter.test.ts
+    13.5 s  src/engine/completion-vocabulary.test.ts
+    13.1 s  src/capability-surface.test.ts
+     6.9 s  src/engine/cursor-vocabulary.test.ts
+     6.4 s  src/engine/slide-planner.test.ts
+     5.9 s  src/engine/note-taking-cell.test.ts
+     5.2 s  src/engine/mark-all.test.ts
+     4.4 s  src/engine/grid/grid-geometry.test.ts

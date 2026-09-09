@@ -1,0 +1,6 @@
+category                              files    seconds   share
+per-game (non-differential)           138    1842.3   47.6%
+engine (incl. cross-game guards)       77    1561.6   40.4%
+differential                           50     391.5   10.1%
+app shell / build                      36      71.1    1.8%
+TOTAL                                 301    3866.6

@@ -5,10 +5,25 @@ discipline": *"I'm happy to retire any tests that aren't that useful for
 regression testing any more; many of these were just for the porting from C …
 remove any tests (particularly slow ones) that are costly for no good benefit."*
 
-**Readiness: NOT ready — task 0 is the measurement, and this change must not
-delete anything before it exists.** The one way to get this wrong is to retire
-by category ("it was a porting test") rather than by evidence, and the category
-is exactly where the strongest tests in the repo also live.
+**Readiness: measured 2026-09-09. See [`findings.md`](./findings.md).** The one
+way to get this wrong was to retire by category ("it was a porting test") rather
+than by evidence — and the measurement showed that would have been worse than
+merely risky, because **the expensive tests and the porting-era tests turned out
+to be close to disjoint.**
+
+> **What the measurement found, and where this proposal was wrong.** The
+> differentials this document spends most of its length worrying about are
+> **10.1% of suite time across 50 files**, the heaviest single one 11.5 s CPU —
+> so "can we afford to keep them?" has an answer, and it is yes, without any of
+> the agonizing below. Half the suite is **three games** whose hints plan by
+> *searching* (Sixteen 30%, Netslide 13%, Spokes 8.5%), amplified by cross-game
+> guards that recompute a full hint after every move. The three hunted shapes
+> below are real but were not where the cost was, and **nothing was deleted
+> outright**: the expensive tests were, with one exception, legitimate guards
+> whose assertions earn their keep but which did not earn being paid *at full
+> board size on every commit*. That is a deferral question, not a retirement
+> one. The `Why` section below is left as written, because what it got wrong is
+> the useful part of the record.
 
 ## Why
 
@@ -77,8 +92,11 @@ still covers the configuration.
 
 ## Impact
 
-- Affected specs: `repo-layout` or `ts-migration` (the retirement bar, once
-  task 0 says what it is). None until then.
+- Affected specs: **`build-pipeline`** — neither of the two guessed at here. It
+  already owns "The commit gate's cost is proportional to what it protects"
+  (`right-size-the-test-gate`), and that requirement covers *deferral* only; the
+  retirement bar, the measurement discipline and the slow tier's invocability
+  extend the same concern.
 - Affected code: test files and `__fixtures__` only. No production code.
 - Owner acceptance: not required for the retirements themselves — the directive
   is the authorization. **Except** where a retirement would leave a game's

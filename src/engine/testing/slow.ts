@@ -16,6 +16,29 @@
  * as a **once-per-refactoring-round** check — the point at which a solver's
  * verdict might actually have moved.
  *
+ * ## Run it targeted; the whole tier is not the unit of use
+ *
+ * **`npm run test:slow` re-runs the entire gate suite as well** — every one of
+ * its ~8,500 tests — *plus* the deferred cases, *plus* the widened seed budgets
+ * below, which multiply the heaviest files 3–7.5×. Measured 2026-09-09
+ * (`retire-tests-that-do-not-earn-their-runtime`): the tier itself is **six
+ * deferred tests** in three files, and everything else it costs is the gate
+ * being paid again. So the bare command is the wrong instrument for almost
+ * every question, and reaching for it is how a tier becomes one nobody invokes.
+ *
+ * **Pass a path.** The script forwards arguments to vitest, so the deferred
+ * work for the thing you are actually changing is one command:
+ *
+ * ```sh
+ * npm run test:slow -- src/games/seismic        # the deferred 7x7 fixtures
+ * npm run test:slow -- src/engine/hint-resume.test.ts   # every preset, not the gate slice
+ * npm run test:slow -- src/games/sixteen src/engine/hint-quality.test.ts
+ * ```
+ *
+ * That is the form to use when a refactor touches a solver, a generator or a
+ * hint planner: run the slow tier **for the games it could have moved**, at the
+ * moment you moved them, rather than promising yourself a whole-tier run later.
+ *
  * **What must never be marked slow:** the only fixture covering some
  * configuration. Deferring the largest board of a family whose every
  * mode/difficulty is checked elsewhere costs the gate nothing it was relying on;
