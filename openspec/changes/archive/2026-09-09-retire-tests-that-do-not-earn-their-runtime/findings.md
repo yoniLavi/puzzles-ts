@@ -1,5 +1,36 @@
 # Findings — what the suite costs, and what it buys
 
+> **CORRECTION, same day, and the interesting part is *why*.** Every absolute
+> second below is **~1.7× too high**. Two files that no change had touched
+> re-measured at 22.4 s and 14.8 s against the 40.5 s and 25.2 s recorded here,
+> and the true full-suite figure at the time was ~**482 s CPU / 123 s wall**,
+> not 715.8 s.
+>
+> **This document picked its instrument to escape contention and did not escape
+> it.** It reasons that wall clock measures the box and CPU measures the code —
+> true of *CPU* contention, and false here. The owner's box has **16 GB of RAM
+> and was 23.9 GB into swap with ~65 MB free**. The scarce resource was never
+> cores; it was memory. Under paging, `sys` time *is* page-fault time, so
+> `user + sys` quietly re-imports the very contention the switch to CPU was
+> meant to remove. Load average was a *proxy* for the real variable and a poor
+> one.
+>
+> That is the same error three times in one session, each time one level
+> deeper: summed wall duration (5× off), per-file CPU (1.7–1.8× off), and the
+> belief that "quiet box" meant low load rather than low memory pressure.
+> `docs/test-strength.md` §7 is about checking an instrument's *unit*; the unit
+> was right each time. **What went unchecked was which resource was scarce.**
+>
+> **What survives:** every *ratio* and every *share*, because each before/after
+> pair was measured under comparable conditions — the −67% and −33% per-file
+> cuts, the differentials' 10.1%, the per-game attribution, and therefore every
+> decision made here. **What does not:** the absolute seconds and the derived
+> 836.4 s before-total.
+>
+> Recoverable only because the conditions were recorded alongside the figures,
+> which `build-pipeline` now requires as a SHALL — extended to name memory
+> pressure, not just load.
+
 Measured **2026-09-09** on the owner's box (8 logical cores, deliberately busy —
 other users' jobs held load average between 40 and 108 throughout). Every
 *seconds* figure below is **CPU (`user + sys`)** from `/usr/bin/time` on a

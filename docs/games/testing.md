@@ -385,12 +385,20 @@ file read as text forms no import edge, so a game change omits five glob-only
 guards and a `help/` change selects **nothing at all**. The rule that makes the
 guards impossible to forget is what makes them invisible to the graph.
 
-**And measure CPU, never wall.** Contention on a shared box inflates wall
-several-fold and unevenly — in that run `spokes-hint.test.ts` showed 5.2× and
-`touch-input.test.ts` 1.6×, so even the *ranking* distorts. `/usr/bin/time`'s
-`user + sys` on a single-file vitest run is the honest per-file figure
-(`build-pipeline` § "The commit gate's cost is proportional to what it
-protects").
+**Measure CPU rather than wall — and check what the box is short of first.**
+Contention inflates wall several-fold and unevenly (5.2× on one file, 1.6× on
+another in the same run), so even the *ranking* distorts. `/usr/bin/time`'s
+`user + sys` is the better instrument but **not an immune one**: two untouched
+files re-measured at 22.4 s and 14.8 s against 40.5 s and 25.2 s — inflation of
+**1.7–1.8×**.
+
+The reason is worth carrying, because it caught three instruments in a row.
+**This box has 16 GB of RAM and sits ~24 GB into swap**, so the scarce resource
+is memory, not cores; under paging `sys` time *is* page-fault time, and
+`user + sys` therefore re-imports the contention that switching off wall clock
+was meant to escape. Record free memory and swap beside the load average, treat
+any figure taken under paging as an upper bound, and trust **ratios taken under
+comparable conditions** rather than absolute seconds.
 
 ## Break the code under a new test
 

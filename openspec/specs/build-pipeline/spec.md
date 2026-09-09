@@ -783,11 +783,37 @@ Sixteen is 17% of suite time by directory and **30%** once its cases inside
 account for 52% of all test time.
 
 Every cost figure SHALL be **CPU (`user + sys`)** from `/usr/bin/time` on a
-single-file run. Wall clock on a shared box measures the contention, and it does
-so *unevenly* — in the same run one file inflated 5.2× and another 1.6× — so a
-contended wall figure distorts the ranking, not merely the total. Summed
-per-test duration remains permissible for **locating** cost, and for nothing
-else.
+single-file run, **measured on a quiet box, with the load average stated**.
+Wall clock on a shared box measures the contention, and it does so *unevenly* —
+in the same run one file inflated 5.2× and another 1.6× — so a contended wall
+figure distorts the ranking, not merely the total. Summed per-test duration
+remains permissible for **locating** cost, and for nothing else.
+
+**CPU is the better instrument, not an immune one, and the reason names the
+resource that actually matters.** Corrected 2026-09-09 by re-measuring two files
+that no change had touched: `input-parity.test.ts` read 40.5 s under pressure
+and **22.4 s** without, `hint-ordinal.test.ts` 25.2 s and **14.8 s** — an
+inflation of **1.7–1.8×**, against wall clock's 5×.
+
+The cause is **memory, not cores**. The box has 16 GB of RAM and was 23.9 GB
+into swap with ~65 MB free; under paging, `sys` time *is* page-fault time, so
+`user + sys` re-imports the contention that switching away from wall clock was
+meant to remove. Load average is a proxy for the wrong variable.
+
+A cost measurement SHALL therefore record **free memory and swap in use**
+alongside the load average, and SHALL treat a figure taken under paging as an
+upper bound rather than a measurement. Three consequences, all learned by
+getting this wrong:
+
+- **A ratio between two figures taken under comparable conditions survives; an
+  absolute second does not.** The change that wrote this requirement had sound
+  per-file percentages and absolute totals ~1.7× high.
+- **Recording the conditions is what makes an error recoverable** rather than
+  merely suspected, which is why it is a SHALL and not advice.
+- **Ask which resource is scarce before choosing the instrument.** The unit was
+  correct at every step here (seconds of CPU); what went unexamined was whether
+  cores or memory were the constraint, and that is what made three successive
+  instruments wrong.
 
 #### Scenario: A suite-cost finding is reported
 

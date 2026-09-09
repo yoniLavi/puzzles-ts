@@ -193,6 +193,35 @@ if [ "${GATE_PRECOMMIT:-}" = "1" ]; then
   fi
 fi
 
+# --- 1e. Which tests can this commit have broken? (pre-commit hook only) ---
+#
+# `scripts/checks/select-tests.mjs` prints either `ALL` or a list of test files.
+# It unions TWO channels, because neither alone is sound here: the static import
+# graph (`vitest list --changed`), and every test whose `import.meta.glob`
+# pattern reaches a staged path. The second exists because this repo's
+# cross-game guards read game source as *text* — `AGENTS.md` requires a guard to
+# derive its population from what a game IS — and text reads form no import
+# edge. Measured: on a `help/` page the graph alone selects **nothing**, against
+# three guards that check exactly those files.
+#
+# **Hook only.** CI runs the whole suite on every push to `main`, which is what
+# makes a narrower per-commit run safe — the identical argument that already
+# scopes biome to staged files here and to the whole tree there. A selector bug
+# costs a slower feedback loop, never a broken `main`.
+#
+# The selector fails closed: any staged path it does not model, an empty result,
+# or any error at all yields `ALL`. `src/test-selection.test.ts` fails the build
+# if a test acquires a read channel the selector cannot see.
+selected=""
+if [ "${GATE_PRECOMMIT:-}" = "1" ]; then
+  selected=$(node scripts/checks/select-tests.mjs 2>/dev/null) || selected="ALL"
+  [ -n "$selected" ] || selected="ALL"
+  if [ "$selected" != "ALL" ]; then
+    echo "✓ running $(printf '%s\n' "$selected" | wc -l | tr -d ' ') of $(find src vite-plugins -name '*.test.ts' | wc -l | tr -d ' ') test files for this commit."
+    echo "  (CI runs all of them on push; \`npm run gate\` runs all of them here.)"
+  fi
+fi
+
 # --- 2. Heavy checks, concurrently. ---
 vitest_rc=0
 build_rc=0
@@ -204,7 +233,13 @@ trap 'rm -f "$build_log"' EXIT
 $NICE npx vite build >"$build_log" 2>&1 &
 build_pid=$!
 
-$NICE_TESTS npm run test:run || vitest_rc=$?
+if [ "$selected" = "ALL" ] || [ -z "$selected" ]; then
+  $NICE_TESTS npm run test:run || vitest_rc=$?
+else
+  # shellcheck disable=SC2086 # the list is newline-separated paths, no globs.
+  $NICE_TESTS npx vitest run --passWithNoTests $(printf '%s ' $selected) ||
+    vitest_rc=$?
+fi
 wait "$build_pid" || build_rc=$?
 if [ "$build_rc" -ne 0 ]; then
   echo ""
