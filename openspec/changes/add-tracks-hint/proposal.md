@@ -37,7 +37,8 @@ turn a solver into a narratable hint cheaply. **That sentence has never been
 tested, and this change is the test.**
 
 The control is measured and sitting in git.
-`characterize-the-hint-assessment-corpus`'s `audit.md` §2.2: **Galaxies** is the
+[`characterize-the-hint-assessment-corpus`'s `audit.md`](../archive/2026-09-09-characterize-the-hint-assessment-corpus/audit.md)
+§2.2: **Galaxies** is the
 same solver class (A1), and it received its hint on 2026-08-11, four weeks
 *before* it was wired to the runner. It cost **+1,138 lines of game code**, of
 which:

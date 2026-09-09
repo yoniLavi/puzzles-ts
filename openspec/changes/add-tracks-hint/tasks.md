@@ -6,7 +6,9 @@ the procedure; `AGENTS.md` § "Hint quality bar" is the bar.
 
 ## 0. Take the baseline before writing a line
 
-- [ ] 0.1 Re-read `characterize-the-hint-assessment-corpus/audit.md` §2.2. The
+- [ ] 0.1 Re-read
+      [`archive/2026-09-09-characterize-the-hint-assessment-corpus/audit.md`](../archive/2026-09-09-characterize-the-hint-assessment-corpus/audit.md)
+      §2.2. The
       control is Galaxies: **+1,138 game lines, of which +387 is the recording
       projection**. That is the number this change is measured against.
 - [ ] 0.2 Record the starting line counts of `src/games/tracks/*.ts` so the
