@@ -43,11 +43,12 @@ a future hint author would be narrating rungs nobody has established fire.
 
 1. Add `src/games/magnets/magnets-ladder.test.ts` declaring against
    `describeLadderEquivalence`, the way the other seven do.
-2. That requires the two things the harness needs and Magnets lacks: a
-   **firing seam** and a **hand-written oracle loop** (`magnetsSolveLegacy`) to
-   compare against. Recovering the pre-adoption loop from git history is the
-   cheap route — find the commit that introduced `runDeductionFixpoint` into
-   `src/games/magnets/solver.ts`.
+2. That requires the two things the harness needs and Magnets lacks: the
+   **tally parameter** (see above — one line each in two runner calls) and a
+   **hand-written oracle loop** (`magnetsSolveLegacy`) to compare against.
+   Recovering the pre-adoption loop from git history is the cheap route: Magnets
+   was wired to the runner on **2026-08-01** by `adopt-shared-deduction-fixpoint`
+   (`74037570`), so the loop is in that commit's parent.
 3. **Two call sites, so two ladders**, each certified at every cap its tier
    values allow. The harness takes one `rungs` list; whether that means two
    `describeLadderEquivalence` blocks or one is an implementation detail to
@@ -58,12 +59,14 @@ a future hint author would be narrating rungs nobody has established fire.
    C first, because an unreachable deduction is exactly the shape a porting bug
    takes.
 
-## Coordinate with the seam change
+## The seam is already the cheap shape
 
-`return-the-firing-tally-from-the-runner` deletes the seven `onFiring` seams by
-returning the tally from `runDeductionFixpoint` itself. **Do that one first if
-both are live** — otherwise this change adds an eighth seam only for it to be
-deleted, and the harness's `viaRunner` signature moves underneath it.
+**`return-the-firing-tally-from-the-runner` shipped first** (2026-09-09), so
+there is no seam to write: `runDeductionFixpoint` takes a `firings?: FiringTally`
+sink and does the counting, and an adopting game forwards it in one line. Magnets
+needs a `firings?: FiringTally` parameter on its solver entry point and
+`firings,` in each of its two runner calls. That is the whole cost, and it is why
+this change is smaller than it would have been a day earlier.
 
 ## Prove the guard fails before trusting it
 

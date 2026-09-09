@@ -5,11 +5,11 @@ started.
 
 ## 0. Order
 
-- [ ] 0.1 If `return-the-firing-tally-from-the-runner` is still open, **do it
-      first**. It deletes the seven `onFiring` seams by returning the tally from
-      the runner; adding an eighth seam here first is work that change then
-      undoes, and it moves `ladder-equivalence.ts`'s `viaRunner` signature
-      underneath this test.
+- [x] 0.1 **Settled** — `return-the-firing-tally-from-the-runner` shipped on
+      2026-09-09, so there is no seam to write and no ordering hazard left. The
+      runner owns the counting; Magnets forwards a `firings?: FiringTally` in one
+      line per runner call, and `ladder-equivalence.ts`'s `viaRunner` takes the
+      tally directly.
 
 ## 1. Recover the oracle
 
@@ -17,13 +17,17 @@ started.
       `runDeductionFixpoint` on **2026-08-01** by `adopt-shared-deduction-fixpoint`
       (`74037570`, *"audit the shared deduction runner, adopt Magnets, fix its
       claim"*). Take the hand-written loop from that commit's parent and export
-      it as `magnetsSolveLegacy`, the way the other seven do.
+      it as `magnetsSolveLegacy`, the way the other seven do. **Note the
+      2026-08-02 tree-wide move** (`retire src/native/`): the file was
+      `src/native/games/magnets/solver.ts` at that commit, and a `git log`
+      restricted to today's path is blind across the rename.
 - [ ] 1.2 Read that commit's message for the *"fix its claim"* half — whatever
       was corrected there is context the oracle must not re-break.
 
 ## 2. Declare the ladder
 
-- [ ] 2.1 Add the firing seam (or consume the runner's returned tally, per 0.1).
+- [ ] 2.1 Add a `firings?: FiringTally` parameter to the solver entry point and
+      forward it to both runner calls.
 - [ ] 2.2 Write `src/games/magnets/magnets-ladder.test.ts`. **Two runner call
       sites, so two ladders**: `force`/`neither` at the first;
       `force`, `neither`, `checkfull`, `oddlength`, `advancedfull`,

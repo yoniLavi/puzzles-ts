@@ -67,11 +67,14 @@ the more likely of the two — the runner's own header says its `run` returns a
 
 ## The obstacle this will hit, named in advance
 
-**The runner reports that a rung fired, not what it did.** `DeductionTechnique.run`
-returns a signed count; the `onFiring?: (id: string) => void` seam that all seven
-adopters carry reports the rung's **id**, and exists for
-`ladder-equivalence.ts`'s census, not for a hint. (`return-the-firing-tally-from-the-runner`
-folds that seam into the runner — still id-level.)
+**The runner reports that a rung fired, not what it did.**
+`DeductionTechnique.run` returns a signed count, and the runner's own header says
+it is *"oblivious"* to what a firing recorded. Since
+`return-the-firing-tally-from-the-runner` (2026-09-09) the runner counts firings
+itself into a caller-supplied `firings?: FiringTally` — but a tally is **counts
+keyed by rung id**, which is what `ladder-equivalence.ts`'s census needs and is
+nowhere near what a hint needs. Tracks' solver already carries that parameter;
+it will tell you `check-loop` fired eleven times and nothing about where or why.
 
 The tree's three most recent deductive hints — Clusters, Subsets, Undead — each
 answered this with a **parallel recorder**: a second implementation of the same
