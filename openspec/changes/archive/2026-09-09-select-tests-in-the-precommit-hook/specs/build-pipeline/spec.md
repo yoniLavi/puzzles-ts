@@ -1,5 +1,10 @@
 # build-pipeline — delta
 
+## RENAMED Requirements
+
+- FROM: `### Requirement: Import-graph test selection is measured unsound here, and is not adopted`
+- TO: `### Requirement: Import-graph selection alone is unsound here, and is used only in a union`
+
 ## MODIFIED Requirements
 
 ### Requirement: Import-graph selection alone is unsound here, and is used only in a union
