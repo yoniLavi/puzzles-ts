@@ -88,10 +88,10 @@ const APPROVED = new Set([
  */
 const EXCEPTIONS: Record<string, string> = {
   // --- a hint refusal that should differ, and why -------------------------
-  "The ball is dead — no move can be played from here. Undo to bring it back.":
+  "The ball is dead: no move can be played from here. Undo to bring it back.":
     "Inertia: not 'deduction ran out' but a board state with no legal move at " +
     "all. Naming the actual situation is the whole of the hint's value here.",
-  "No single move reduces the crossings — try moving a tangled vertex.":
+  "No single move reduces the crossings, so try moving a tangled vertex.":
     "Untangle, the game with genuinely nothing to deduce: its hint's whole " +
     "value is naming what the player can still try, which no shared message " +
     "could say for it.",

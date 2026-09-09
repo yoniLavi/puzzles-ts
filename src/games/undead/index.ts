@@ -490,18 +490,18 @@ function narrate(
       const path = common.paths[reason.path];
       const a = path.sightingsStart;
       const b = path.sightingsEnd;
-      return `Trace this sightline: a vampire shows before its first mirror, a ghost only after one, a zombie anywhere along it. No arrangement that shows exactly ${a} from one end and ${b} from the other leaves room for the ${list} in this cell — so we must cross out the ${list}.`;
+      return `Trace this sightline: a vampire shows before its first mirror, a ghost only after one, a zombie anywhere along it. No arrangement that shows exactly ${a} from one end and ${b} from the other leaves room for the ${list} in this cell, so we must cross out the ${list}.`;
     }
     case "total": {
       const name = monsterName(reason.monster);
-      return `Every ${name} is already placed, so no undecided cell can be one — we must cross out the ${name} here.`;
+      return `Every ${name} is already placed, so no undecided cell can be one; we must cross out the ${name} here.`;
     }
     case "onlyCells": {
       const name = monsterName(reason.monster);
-      return `The only cells that can still hold a ${name} are exactly enough for the ${name}s still to place — so this one can only be a ${name}.`;
+      return `The only cells that can still hold a ${name} are exactly enough for the ${name}s still to place, so this one can only be a ${name}.`;
     }
     case "single":
-      return `Only the ${list} is left uncrossed in this cell — so it can only be a ${list}.`;
+      return `Only the ${list} is left uncrossed in this cell, so it can only be a ${list}.`;
   }
 }
 

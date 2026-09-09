@@ -407,7 +407,7 @@ export function cleanObviousText(
   regions: string,
   cell = "cell",
 ): string {
-  return `Now clear the easy ones: in each ${cell}, cross out any ${noun} already ${placedVerb} in its ${regions} — the same cleanup the “fill all pencil marks” button does.`;
+  return `Now clear the easy ones: in each ${cell}, cross out any ${noun} already ${placedVerb} in its ${regions} (the same cleanup the “fill all pencil marks” button does).`;
 }
 
 /** The populate/mark-all opener step. It deliberately declares **no board

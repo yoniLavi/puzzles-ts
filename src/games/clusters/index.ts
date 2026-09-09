@@ -372,25 +372,25 @@ function narrate(d: ClustersDeduction): string {
       n === 1
         ? "cell 1 is then forced from it, and"
         : `cells 1 to ${n} are then forced from it, and by ${n}`;
-    return `Suppose this cell were ${t}: ${run} ${end} — impossible. So this cell must be ${f}.`;
+    return `Suppose this cell were ${t}: ${run} ${end}. That is impossible, so this cell must be ${f}.`;
   }
 
   if (at.cell === d.index) {
     if (at.kind === "surrounded") {
-      return `Every neighbor of this cell is ${f}. A ${t} tile here could never touch another ${t} tile — so it must be ${f}.`;
+      return `Every neighbor of this cell is ${f}. A ${t} tile here could never touch another ${t} tile, so it must be ${f}.`;
     }
     // reachTwo at the cell itself (an empty cell is never a dot). Count- and
     // edge-neutral: at a corner the board edge does part of the hemming, and
     // "at most one" stays honest when one open neighbor remains.
-    return `If this cell were ${t}, at most one neighbor could ever match it — and every plain tile must touch two of its color. So it must be ${f}.`;
+    return `If this cell were ${t}, at most one neighbor could ever match it, and every plain tile must touch two of its color. So it must be ${f}.`;
   }
   if (at.kind === "dotOvercount") {
-    return `A dot touches exactly one tile of its own color, and the ringed ${t} dot beside this cell already touches its one. A ${t} here would give it a second — so this cell must be ${f}.`;
+    return `A dot touches exactly one tile of its own color, and the ringed ${t} dot beside this cell already touches its one. A ${t} here would give it a second, so this cell must be ${f}.`;
   }
   if (at.kind === "surrounded") {
-    return `Painting this cell ${t} would seal its ringed ${f} neighbor off from every other ${f} tile — it could never join a cluster. So this cell must be ${f}.`;
+    return `Painting this cell ${t} would seal its ringed ${f} neighbor off from every other ${f} tile, so it could never join a cluster. This cell must be ${f}.`;
   }
-  return `If this cell were ${t}, its ringed ${f} neighbor could never touch two ${f} tiles — and every plain tile needs two of its color. So this cell must be ${f}.`;
+  return `If this cell were ${t}, its ringed ${f} neighbor could never touch two ${f} tiles, and every plain tile needs two of its color. So this cell must be ${f}.`;
 }
 
 function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlights {

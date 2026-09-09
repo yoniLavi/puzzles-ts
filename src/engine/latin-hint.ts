@@ -258,9 +258,9 @@ export function narrateLatinReason(
     case "single":
       return `Every other ${noun} has been ruled out in this ${cell}, so it can only be ${v(ns[0])}.`;
     case "hiddenSingle":
-      return `In this ${reason.line === "row" ? "row" : "column"}, ${v(reason.n)} can go in only this ${cell} — every other ${cell} in the ${reason.line === "row" ? "row" : "column"} has ruled it out — so it must be ${v(reason.n)}.`;
+      return `In this ${reason.line === "row" ? "row" : "column"}, ${v(reason.n)} can go in only this ${cell}, because every other ${cell} in the ${reason.line === "row" ? "row" : "column"} has ruled it out, so it must be ${v(reason.n)}.`;
     case "forcedSingle":
-      return `Working through this ${cell}'s row and column together, only ${v(reason.n)} can still go here — so it must be ${v(reason.n)}.`;
+      return `Working through this ${cell}'s row and column together, only ${v(reason.n)} can still go here, so it must be ${v(reason.n)}.`;
     case "dup": {
       const d = v(reason.n);
       return `There's already ${indefinite(d)} ${d} in this row and column, so we must cross out the ${d} from the other ${cells} they pass through.`;

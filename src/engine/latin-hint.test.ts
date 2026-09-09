@@ -184,10 +184,10 @@ describe("narrateLatinReason (shared row/column-game narration)", () => {
     expect(
       narrateLatinReason({ kind: "hiddenSingle", n: 2, line: "col", index: 1 }, []),
     ).toBe(
-      "In this column, 2 can go in only this cell — every other cell in the column has ruled it out — so it must be 2.",
+      "In this column, 2 can go in only this cell, because every other cell in the column has ruled it out, so it must be 2.",
     );
     expect(narrateLatinReason({ kind: "forcedSingle", n: 4 }, [])).toBe(
-      "Working through this cell's row and column together, only 4 can still go here — so it must be 4.",
+      "Working through this cell's row and column together, only 4 can still go here, so it must be 4.",
     );
     expect(narrateLatinReason({ kind: "dup", n: 1 }, [])).toBe(
       "There's already a 1 in this row and column, so we must cross out the 1 from the other cells they pass through.",

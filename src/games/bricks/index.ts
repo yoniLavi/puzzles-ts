@@ -380,7 +380,7 @@ function narrate(
   const clueVal = (i: number): number => state.grid[i] & NUM_MASK;
   switch (reason.kind) {
     case "three":
-      return "This cell sits next to the ringed shaded bricks — shading it would make three in a row, and no row may have three, so it must stay clear.";
+      return "This cell sits next to the ringed shaded bricks, and shading it would make three in a row, which no row may have, so it must stay clear.";
     case "unsupported":
       // A ringed cell below is an unshaded brick *or a clue* — `validateGravity`
       // masks a clue down to no color, so a clue supports nothing (seen live:
@@ -391,24 +391,24 @@ function narrate(
       // leave a cell with only one support, or — at the padded triangles — none
       // to ring, hence three arms.
       return evidence.length === 0
-        ? "Shading this cell would leave it with no shaded brick beneath it to rest on — so it must stay clear."
+        ? "Shading this cell would leave it with no shaded brick beneath it to rest on, so it must stay clear."
         : evidence.length === 1
-          ? "The ringed cell below this one is the only thing it could rest on, and it isn't a shaded brick — so this cell must stay clear."
-          : "The ringed cells below this one are the only things it could rest on, and neither is a shaded brick — so this cell must stay clear.";
+          ? "The ringed cell below this one is the only thing it could rest on, and it isn't a shaded brick, so this cell must stay clear."
+          : "The ringed cells below this one are the only things it could rest on, and neither is a shaded brick, so this cell must stay clear.";
     case "overcount": {
       const n = clueVal(reason.clue);
       // docs/games/hints.md § "Sanity-read at the degenerate extremes": "more
       // than its 0 shaded neighbors" came out of the running app on the opener
       // board and is nonsense — a 0 allows none at all.
       return n === 0
-        ? "The ringed 0 beside this cell allows no shaded neighbors at all — so this cell must stay clear."
-        : `Shading this cell would give the ringed ${n} beside it more than its ${n} shaded neighbor${n === 1 ? "" : "s"} — so it must stay clear.`;
+        ? "The ringed 0 beside this cell allows no shaded neighbors at all, so this cell must stay clear."
+        : `Shading this cell would give the ringed ${n} beside it more than its ${n} shaded neighbor${n === 1 ? "" : "s"}, so it must stay clear.`;
     }
     case "strandSupport":
-      return "The shaded brick above rests only on this cell — clearing it would leave that brick with nothing beneath it, so it must be shaded.";
+      return "The shaded brick above rests only on this cell, and clearing it would leave that brick with nothing beneath it, so it must be shaded.";
     case "undercount": {
       const n = clueVal(reason.clue);
-      return `The ringed ${n} beside this cell still needs more shaded neighbors, and this is one of the last cells that can supply one — clearing it would put ${n} out of reach, so it must be shaded.`;
+      return `The ringed ${n} beside this cell still needs more shaded neighbors, and this is one of the last cells that can supply one. Clearing it would put ${n} out of reach, so it must be shaded.`;
     }
     case "localBreak": {
       // The direct rung's *unclassified* case: one color placed, one validator
@@ -428,8 +428,8 @@ function narrate(
       const act = forced === "unshade" ? "Shading" : "Clearing";
       const end = forced === "unshade" ? "stay clear" : "be shaded";
       return evidence.length === 0
-        ? `${act} this cell would break the board — so it must ${end}.`
-        : `${act} this cell — the unringed one — would break the board where the rings are, so it must ${end}.`;
+        ? `${act} this cell would break the board, so it must ${end}.`
+        : `${act} this cell, the unringed one, would break the board where the rings are, so it must ${end}.`;
     }
   }
 }

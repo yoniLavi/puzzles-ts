@@ -268,7 +268,7 @@ describe("boats hint — narration", () => {
     ["centerForced", /middle segment has water/],
     ["isolated", /walled in by water on all four sides/],
     ["mustExtend", /can't stand alone/],
-    ["centerCount", /needs two — so it can't go that way/],
+    ["centerCount", /needs two, so it can't go that way/],
     ["growTooLong", /would make a boat of \d+/],
     ["runTooShort", /every \d+-boat is already placed/],
     ["onlyRunsLeft", /run[s]? can still hold the \d+-boat/],

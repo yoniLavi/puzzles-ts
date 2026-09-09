@@ -412,7 +412,7 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
   switch (reason.kind) {
     case "tooLong":
       return continues
-        ? `The ${reason.value} rules this square out too — a ${bad} line here would run its line to ${reason.size} squares. ${tail}`
+        ? `The ${reason.value} rules this square out too: a ${bad} line here would run its line to ${reason.size} squares. ${tail}`
         : `A ${bad} line here would run the ${reason.value}'s line to ${reason.size} squares, longer than its number allows. ${tail}`;
 
     case "unreachable": {
@@ -421,13 +421,13 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
       // they will not spot from the square being acted on (§2.2).
       const room = `${reason.max} square${reason.max === 1 ? "" : "s"}`;
       return continues
-        ? `The ${reason.value} rules this square out too — a ${bad} line here would leave it room for only ${room}. ${tail}`
+        ? `The ${reason.value} rules this square out too: a ${bad} line here would leave it room for only ${room}. ${tail}`
         : `The ${reason.value} still needs a longer line, and a ${bad} line here would leave it room for only ${room}. ${tail}`;
     }
 
     case "twoClues": {
       if (continues)
-        return `The same pair rules this square out too — a ${bad} line here would join them into one line. ${tail}`;
+        return `The same pair rules this square out too: a ${bad} line here would join them into one line. ${tail}`;
       const vals = reason.clues.map((c) => state.numbers[c]);
       const joined =
         vals.length !== 2
@@ -443,14 +443,14 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
       // yet, so the word would be false exactly where the rule is starkest
       // (§2.7 — re-read every clue narration at its degenerate value).
       if (continues)
-        return `The black ${reason.value} rules this square out too — a ${bad} line here would run into it. ${tail}`;
+        return `The black ${reason.value} rules this square out too: a ${bad} line here would run into it. ${tail}`;
       return reason.value === 0
         ? `The black 0 takes no lines at all, and a ${bad} line here would run straight into it. ${tail}`
         : `The black ${reason.value} already has ${reason.value} line${reason.value === 1 ? "" : "s"} running into it, and a ${bad} line here would make another. ${tail}`;
 
     case "starved":
       if (continues)
-        return `The black ${reason.value} rules this square out too — a ${bad} line here would close off another of its open sides. ${tail}`;
+        return `The black ${reason.value} rules this square out too: a ${bad} line here would close off another of its open sides. ${tail}`;
       return reason.value === 1
         ? `The black 1 has just one side left that a line could reach it from, and a ${bad} line here would close it off. ${tail}`
         : `The black ${reason.value} needs a line on each of its ${reason.value} remaining open sides, and a ${bad} line here would close one off. ${tail}`;

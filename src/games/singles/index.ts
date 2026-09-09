@@ -316,7 +316,7 @@ function narrate(
     }
     case "pair": {
       const n = numAt(reason.pair[0]);
-      return `These two ${n}s sit next to each other, so one of them stays white and uses it up — every other ${n} in the line must be shaded.`;
+      return `These two ${n}s sit next to each other, so one of them stays white and uses it up. Every other ${n} in the line must be shaded.`;
     }
     case "corner4": {
       // All four share a number, so a diagonal pair must be shaded (two
@@ -324,7 +324,7 @@ function narrate(
       // only neighbors are the two sides, so shading the side diagonal
       // would strand the corner white — the same box-in argument as corner3.
       const n = numAt(reason.block[0]);
-      return `This corner ${n} matches both its neighbors, so keeping it white would shade them both and box it in — the corner and the ${n} diagonally inside must both be shaded.`;
+      return `This corner ${n} matches both its neighbors, so keeping it white would shade them both and box it in, so the corner and the ${n} diagonally inside must both be shaded.`;
     }
     case "corner3": {
       // Branch A shades the corner itself; branch B shades the inner cell
@@ -333,8 +333,8 @@ function narrate(
       const m = numAt(reason.matched[1]);
       const t = numAt(targets[0]);
       return targets.some((tg) => sameCell(tg, reason.corner))
-        ? `This corner ${t} matches both its neighboring ${m}s; keeping it white would shade them both, leaving the corner boxed in — so the ${t} must be shaded.`
-        : `This inner ${t} matches the two ${m}s flanking the corner ${numAt(reason.corner)}; keeping it white would shade them both, leaving the corner boxed in — so the ${t} must be shaded.`;
+        ? `This corner ${t} matches both its neighboring ${m}s; keeping it white would shade them both, leaving the corner boxed in, so the ${t} must be shaded.`
+        : `This inner ${t} matches the two ${m}s flanking the corner ${numAt(reason.corner)}; keeping it white would shade them both, leaving the corner boxed in, so the ${t} must be shaded.`;
     }
     case "corner2": {
       // Indication-first (§1b): open on the spotted pattern — a touching pair
@@ -348,7 +348,7 @@ function narrate(
       const p = numAt(reason.pair[0]);
       const c = numAt(reason.corner);
       const t = numAt(targets[0]);
-      return `A touching pair of ${p}s sits at the corner; one of them must be shaded. Shading this ${t} would then force the ${p} beside the corner ${c} shaded as well, leaving the corner boxed in on both sides — so the ${t} must stay white.`;
+      return `A touching pair of ${p}s sits at the corner; one of them must be shaded. Shading this ${t} would then force the ${p} beside the corner ${c} shaded as well, leaving the corner boxed in on both sides, so the ${t} must stay white.`;
     }
     case "offset": {
       // quad = [A1, B1, A2, B2]; the A-pair (n) shares one line, the B-pair
@@ -367,7 +367,7 @@ function narrate(
           : `a pair of ${n}s in one ${line} and a pair of ${m}s in the next`;
       const forced =
         n === m ? `two of the ${n}s` : `one of the ${n}s and one of the ${m}s`;
-      return `There's ${pairs}, lined up so that shading either of these two squares would force ${forced} to be shaded next to each other — and shaded squares can't touch. So both must be white.`;
+      return `There's ${pairs}, lined up so that shading either of these two squares would force ${forced} to be shaded next to each other, and shaded squares can't touch. So both must be white.`;
     }
     case "adjBlack": {
       // The forced cells are a shaded square's neighbors — their values are
@@ -376,17 +376,17 @@ function narrate(
       // group can hold mixed/repeated values, so list them all.
       if (plural) {
         const list = joinNums(targets.map((t) => numAt(t)));
-        return `These squares — ${list} — touch a shaded square, and shaded squares can't be adjacent, so they must be white.`;
+        return `These squares (${list}) touch a shaded square, and shaded squares can't be adjacent, so they must be white.`;
       }
-      return `This ${numAt(targets[0])} touches a shaded square, and shaded squares can't be adjacent — so it must be white.`;
+      return `This ${numAt(targets[0])} touches a shaded square, and shaded squares can't be adjacent, so it must be white.`;
     }
     case "sameLine": {
       // The forced square(s) and the ringed white square all show the same
       // number — that duplicate is the whole reason — so name it.
       const t = numAt(targets[0]);
       return plural
-        ? `These ${t}s share a line with the ringed white ${t}, which already uses that number — so they must be shaded.`
-        : `This ${t} shares a line with the ringed white ${t}, which already uses that number — so this copy must be shaded.`;
+        ? `These ${t}s share a line with the ringed white ${t}, which already uses that number, so they must be shaded.`
+        : `This ${t} shares a line with the ringed white ${t}, which already uses that number, so this copy must be shaded.`;
     }
     case "boxedIn":
       return `This ${numAt(targets[0])} is the ringed white square's only unshaded neighbor left, so it must be white to avoid sealing that square off.`;

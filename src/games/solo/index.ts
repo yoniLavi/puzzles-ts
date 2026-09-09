@@ -525,16 +525,16 @@ function narrate(reason: SoloReason, ns: number[]): string {
       return `Every other number has been ruled out in this cell, so it can only be ${ns[0]}.`;
     case "hiddenSingle": {
       const r = regionName(reason.region);
-      return `In this ${r}, ${reason.n} can go in only this cell — every other cell in the ${r} has ruled it out — so it must be ${reason.n}.`;
+      return `In this ${r}, ${reason.n} can go in only this cell, because every other cell in the ${r} has ruled it out, so it must be ${reason.n}.`;
     }
     case "forcedSingle":
-      return `Working through this cell's row, column and block together, only ${reason.n} can still go here — so it must be ${reason.n}.`;
+      return `Working through this cell's row, column and block together, only ${reason.n} can still go here, so it must be ${reason.n}.`;
     case "dup":
-      return `A ${reason.n} is already placed in this cell, so it can't repeat in the same row, column or block — cross out the ${reason.n} from these cells.`;
+      return `A ${reason.n} is already placed in this cell, so it can't repeat in the same row, column or block. Cross out the ${reason.n} from these cells.`;
     case "intersect": {
       const cName = regionName(reason.confined);
       const tName = regionName(reason.target);
-      return `In this ${cName}, every cell that can still take ${reason.n} also lies in this ${tName} — so ${reason.n} must sit where they overlap, and is crossed out of the rest of the ${tName}.`;
+      return `In this ${cName}, every cell that can still take ${reason.n} also lies in this ${tName}, so ${reason.n} must sit where they overlap, and is crossed out of the rest of the ${tName}.`;
     }
     case "set":
       return reason.region
@@ -546,11 +546,11 @@ function narrate(reason: SoloReason, ns: number[]): string {
     case "forcing":
       return narrateForcingChain(reason, ns[0], SOLO_VOCAB, regionName(reason.shares));
     case "cageSingle":
-      return `The rest of this killer cage is filled in, and the one cell left must bring the cage to its total — so it can only be ${ns[0]}.`;
+      return `The rest of this killer cage is filled in, and the one cell left must bring the cage to its total, so it can only be ${ns[0]}.`;
     case "cageIntersect":
-      return `These cells must together total ${reason.clue} once the cages within their region are accounted for, and only this cell is left undetermined — so it must be ${ns[0]}.`;
+      return `These cells must together total ${reason.clue} once the cages within their region are accounted for, and only this cell is left undetermined, so it must be ${ns[0]}.`;
     case "cageMinMax":
-      return `This killer cage must total ${reason.clue}; the digits its other cells can still hold leave no room for ${joinNums(ns)} here — so cross out ${joinNums(ns)}.`;
+      return `This killer cage must total ${reason.clue}; the digits its other cells can still hold leave no room for ${joinNums(ns)} here, so cross out ${joinNums(ns)}.`;
     case "cageSums":
       return `No way to make this killer cage total ${reason.clue} uses ${joinNums(ns)} in this cell, so cross out ${joinNums(ns)}.`;
   }

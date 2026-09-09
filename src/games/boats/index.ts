@@ -391,14 +391,14 @@ function narrate(f: BoatsFiring): string {
       if (t.shape === SHIP_SINGLE)
         return "This given segment is a whole one-square boat, so all four squares beside it must be water.";
       if (ships === 0)
-        return `This segment is a boat's ${side.on} end, so nothing can sit ${side.behind} — that square must be water.`;
+        return `This segment is a boat's ${side.on} end, so nothing can sit ${side.behind}; that square must be water.`;
       if (waters === 0)
         return `This segment is a boat's ${side.on} end, so its boat must continue into the square ${side.into}.`;
-      return `This segment is a boat's ${side.on} end, so its boat must continue ${side.into} — and the square ${side.behind} must be water.`;
+      return `This segment is a boat's ${side.on} end, so its boat must continue ${side.into}, and the square ${side.behind} must be water.`;
     }
 
     case "neverTouch":
-      return `Boats never touch, not even at a corner — so the square${plural(waters)} diagonally beside this segment must be water.`;
+      return `Boats never touch, not even at a corner, so the square${plural(waters)} diagonally beside this segment must be water.`;
 
     case "lineSatisfied":
       // Read at both extremes (§2.7): "shows the 0 ships its number allows" is
@@ -417,46 +417,46 @@ function narrate(f: BoatsFiring): string {
 
     case "centerForced":
       return t.vertical
-        ? "This middle segment has water beside it, so its boat can't lie across — it must run up and down through here."
-        : "This middle segment has water above or below it, so its boat must lie across — through the squares either side.";
+        ? "This middle segment has water beside it, so its boat can't lie across; it must run up and down through here."
+        : "This middle segment has water above or below it, so its boat must lie across, through the squares either side.";
 
     case "isolated":
-      return "Every 1-boat is already placed, and this square is walled in by water on all four sides — so it must be water.";
+      return "Every 1-boat is already placed, and this square is walled in by water on all four sides, so it must be water.";
 
     case "mustExtend":
-      return "With every 1-boat already placed, this segment can't stand alone — and water blocks three sides, so its boat must continue here.";
+      return "With every 1-boat already placed, this segment can't stand alone, and water blocks three sides, so its boat must continue here.";
 
     case "centerCount": {
       const room = t.line.clue;
       const lie = t.vertical ? "lying across" : "standing up through";
-      return `${lineIntro(t.line)}${lineName(t.line)} has ${room === 0 ? "no room for another ship" : "room for only one more ship"}, but a boat ${lie} this middle segment needs two — so it can't go that way.`;
+      return `${lineIntro(t.line)}${lineName(t.line)} has ${room === 0 ? "no room for another ship" : "room for only one more ship"}, but a boat ${lie} this middle segment needs two, so it can't go that way.`;
     }
 
     case "growTooLong":
       return t.largest === 0
         ? "Every boat in the fleet has been found, so any square still free must be water."
-        : `Filling this square would make a boat of ${t.joined}, and the largest one still missing is ${t.largest} — so it must be water.`;
+        : `Filling this square would make a boat of ${t.joined}, and the largest one still missing is ${t.largest}, so it must be water.`;
 
     case "mustGrow":
-      return `Every ${t.length}-boat is already placed, so this unfinished boat can't stop at ${t.length} — it must continue into this square.`;
+      return `Every ${t.length}-boat is already placed, so this unfinished boat can't stop at ${t.length}; it must continue into this square.`;
 
     case "runTooShort":
-      return `Filling this run would make a boat of ${t.length}, but every ${t.length}-boat is already placed — so the free square must be water.`;
+      return `Filling this run would make a boat of ${t.length}, but every ${t.length}-boat is already placed, so the free square must be water.`;
 
     case "onlyRunsLeft":
       return t.runs === 1
-        ? `Only one run can still hold the ${t.size}-boat, so it must go there — and these squares are covered wherever it sits.`
-        : `Only ${t.runs} runs can still hold the ${t.runs} remaining ${t.size}-boats, so every one is used — these squares are covered either way.`;
+        ? `Only one run can still hold the ${t.size}-boat, so it must go there, and these squares are covered wherever it sits.`
+        : `Only ${t.runs} runs can still hold the ${t.runs} remaining ${t.size}-boats, so every one is used, and these squares are covered either way.`;
 
     case "sharedDiagonal": {
       const side = t.line.horizontal ? "above and below" : "either side of";
-      return `${lineIntro(t.line)}${lineName(t.line)} can take only ${t.room} more water square${plural(t.room)}, so one of these must be a boat segment — either way, the squares ${side} the middle one must be water.`;
+      return `${lineIntro(t.line)}${lineName(t.line)} can take only ${t.room} more water square${plural(t.room)}, so one of these must be a boat segment; either way, the squares ${side} the middle one must be water.`;
     }
 
     case "refuted":
       return t.trialShip
-        ? `If this square held a boat segment, ${breachClause(t.breach)} — so it must be water.`
-        : `If this square were water, ${breachClause(t.breach)} — so it must hold a boat segment.`;
+        ? `If this square held a boat segment, ${breachClause(t.breach)}, so it must be water.`
+        : `If this square were water, ${breachClause(t.breach)}, so it must hold a boat segment.`;
   }
 }
 

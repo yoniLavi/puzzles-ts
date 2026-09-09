@@ -112,7 +112,7 @@ describe("salad hint — the three signature techniques", () => {
     const texts = ["s1", "s2"].flatMap((s) => walk(LETTERS, s).texts);
     expect(
       texts.some((t) =>
-        /The empty-square mark is the only one left in this square — every letter has been ruled out here — so it must be empty\./.test(
+        /The empty-square mark is the only one left in this square, because every letter has been ruled out here, so it must be empty\./.test(
           t,
         ),
       ),
@@ -219,10 +219,10 @@ describe("salad hint — narration arms", () => {
 
   it("states what a forced marker rests on without overclaiming", () => {
     expect(narrate({ kind: "forcedCross" }, [], s)).toBe(
-      "Working through this square's row and column together, no letter can still go here — so it must be empty.",
+      "Working through this square's row and column together, no letter can still go here, so it must be empty.",
     );
     expect(narrate({ kind: "forcedCircle" }, [], s)).toBe(
-      "Working through this square's row and column together, this square cannot be one of the empty ones — so it holds a letter, even though we don't know which yet.",
+      "Working through this square's row and column together, this square cannot be one of the empty ones, so it must hold a letter, even though we don't know which yet.",
     );
   });
 

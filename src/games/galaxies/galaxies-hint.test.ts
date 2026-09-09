@@ -190,11 +190,11 @@ describe("each deduction is narrated in its own vocabulary", () => {
     ],
     [
       "a wall between two galaxies",
-      "These two cells point at different dots, so they belong to different galaxies — a wall must run between them.",
+      "These two cells point at different dots, so they belong to different galaxies, and a wall must run between them.",
     ],
     [
       "the only dot that could own a cell",
-      "Only one dot could ever own this cell — for any other, the cell across the dot from it would be off the board or on top of another dot. So it must belong to the ringed white dot.",
+      "Only one dot could ever own this cell: for any other, the cell across the dot from it would be off the board or on top of another dot. So it must belong to the ringed white dot.",
     ],
     [
       "the limit of a galaxy's reach",
@@ -206,13 +206,13 @@ describe("each deduction is narrated in its own vocabulary", () => {
     ],
     [
       "a wall mirrored off the board's edge",
-      "The two outlined cells are partners across the white dot, and one of them is up against the edge of the board — so the other must be walled off on the matching side.",
+      "The two outlined cells are partners across the white dot, and one of them is up against the edge of the board, so the other must be walled off on the matching side.",
     ],
     // Two ways out or three: the common shape of this rung. (One way out is a
     // fourth wording the scan never reaches — see the branch test below.)
     [
       "a cell hemmed in on some sides",
-      "Every way out of this cell leads into the outlined galaxy — its other sides are walled, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
+      "Every way out of this cell leads into the outlined galaxy (its other sides are walled), and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
     ],
     [
       "a cell with no walls but only one galaxy around it",
@@ -220,7 +220,7 @@ describe("each deduction is narrated in its own vocabulary", () => {
     ],
     [
       "a detached piece of a galaxy",
-      "The outlined cells belong to the ringed white dot but are cut off from it, and this is the only cell they can still grow through — so it must belong to the ringed dot too.",
+      "The outlined cells belong to the ringed white dot but are cut off from it, and this is the only cell they can still grow through, so it must belong to the ringed dot too.",
     ],
   ];
 
@@ -253,7 +253,7 @@ describe("each deduction is narrated in its own vocabulary", () => {
         openings: [{ x: 5, y: 3 }],
       }).replace("black dot", "white dot"),
     ).toBe(
-      "The only way out of this cell leads into the outlined galaxy — its other sides are walled, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
+      "The only way out of this cell leads into the outlined galaxy (its other sides are walled), and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
     );
   });
 });

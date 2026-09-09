@@ -350,10 +350,10 @@ function narrate(f: LightupFiring, hl: LightupHint): string {
         // frame's second mark unmentioned. A corridor of just this square
         // shows no second mark, and then the bare deictic is right.
         return hl.area.length === 0
-          ? "This square is still dark, and every square that could light it along its row and column is crossed out or already lit. Only its own bulb can light it — so this square must hold a bulb."
-          : "This square is still dark, and the other squares that could light it are marked: shaded where they are crossed out, ringed where they are already lit. None of them can hold a bulb, so only its own can light it — this square must hold a bulb.";
+          ? "This square is still dark, and every square that could light it along its row and column is crossed out or already lit. Only its own bulb can light it, so this square must hold a bulb."
+          : "This square is still dark, and the other squares that could light it are marked: shaded where they are crossed out, ringed where they are already lit. None of them can hold a bulb, so only its own can light it, and this square must hold a bulb.";
       }
-      return "The ringed square is still dark, and every square that could light it is crossed out or already lit — except this one. So this square must hold a bulb.";
+      return "The ringed square is still dark, and every square that could light it is crossed out or already lit, except this one. So this square must hold a bulb.";
     }
     case "clueSatisfied": {
       const { n } = f.reason;
@@ -364,15 +364,15 @@ function narrate(f: LightupFiring, hl: LightupHint): string {
       }
       const bulbs = n === 1 ? "its bulb (ringed)" : `all ${n} of its bulbs (ringed)`;
       return many
-        ? `The highlighted clue already has ${bulbs}. No more may sit beside it — so its remaining free neighbors must all be crossed out.`
-        : `The highlighted clue already has ${bulbs}. No more may sit beside it — so its remaining free neighbor must be crossed out.`;
+        ? `The highlighted clue already has ${bulbs}. No more may sit beside it, so its remaining free neighbors must all be crossed out.`
+        : `The highlighted clue already has ${bulbs}. No more may sit beside it, so its remaining free neighbor must be crossed out.`;
     }
     case "clueSaturated": {
       const { need } = f.reason;
       if (need === 1) {
-        return "The highlighted clue still needs 1 more bulb and has exactly 1 free neighbor left — so that neighbor must be a bulb.";
+        return "The highlighted clue still needs 1 more bulb and has exactly 1 free neighbor left, so that neighbor must be a bulb.";
       }
-      return `The highlighted clue still needs ${need} more bulbs and has exactly ${need} free neighbors left — so every one of them must be a bulb.`;
+      return `The highlighted clue still needs ${need} more bulbs and has exactly ${need} free neighbors left, so every one of them must be a bulb.`;
     }
     case "discountUnlit": {
       // "A bulb *here*" was the reported shape: three marks in view (blue
@@ -393,7 +393,7 @@ function narrate(f: LightupFiring, hl: LightupHint): string {
       const holders = f.reason.set.some((c) => sameCell(c, dark))
         ? `${shaded} or the ringed square itself`
         : shaded;
-      return `The ringed dark square still has to be lit, and only ${holders} could hold the bulb that lights it — so one of them must. This square reaches every one of them: a bulb here would leave each of them lit, or beside a clue already full. So this square must be crossed out.`;
+      return `The ringed dark square still has to be lit, and only ${holders} could hold the bulb that lights it, so one of them must. This square reaches every one of them: a bulb here would leave each of them lit, or beside a clue already full. So this square must be crossed out.`;
     }
     case "discountClue":
       return "To give the highlighted clue its bulbs, at least one of the shaded squares must hold one. This square reaches every one of them: a bulb here would leave each of them lit, or beside a clue already full. So this square must be crossed out.";

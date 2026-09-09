@@ -385,10 +385,10 @@ function narrateExclusion(ex: CollapseExclusion, n: number): string {
     return ` For instance, ${label} is already placed on the board (highlighted).`;
   if (b.kind === "arrow") {
     return b.mustContain
-      ? ` For instance, ${label} can't go here — the horseshoe to the highlighted cell needs ${lettersOf(b.letters, n)} present.`
-      : ` For instance, ${label} can't go here — the horseshoe to the highlighted cell won't allow ${lettersOf(b.letters, n)}.`;
+      ? ` For instance, ${label} can't go here: the horseshoe to the highlighted cell needs ${lettersOf(b.letters, n)} present.`
+      : ` For instance, ${label} can't go here: the horseshoe to the highlighted cell won't allow ${lettersOf(b.letters, n)}.`;
   }
-  return ` For instance, ${label} can't go here — with no horseshoe to the highlighted neighbor, neither set may contain the other, but ${label} would.`;
+  return ` For instance, ${label} can't go here: with no horseshoe to the highlighted neighbor, neither set may contain the other, but ${label} would.`;
 }
 
 /** The action a leg makes, lowercase: "mark A present" / "clear B". */
@@ -416,13 +416,13 @@ function legNarration(d: SubsetsDeduction, k: number): string {
     // name the highlighted cell explicitly, so the referent is never a bare
     // pronoun (owner 2026-07-21).
     return first
-      ? `The highlighted cell's set lies inside this one, and its ${L} is marked — so ${L} must be here too. ${capitalize(act)}.`
-      : `Still filling this cell — the highlighted cell's ${L} is marked too, so ${act} here.`;
+      ? `The highlighted cell's set lies inside this one, and its ${L} is marked, so ${L} must be here too. ${capitalize(act)}.`
+      : `Still filling this cell: the highlighted cell's ${L} is marked too, so ${act} here.`;
   }
   if (r.kind === "arrowMask") {
     return first
-      ? `This cell's set lies inside the highlighted cell's, which has no ${L} — so ${L} can't be here either. ${capitalize(act)}.`
-      : `Still filling this cell — the highlighted cell has no ${L} either, so ${act} here.`;
+      ? `This cell's set lies inside the highlighted cell's, which has no ${L}, so ${L} can't be here either. ${capitalize(act)}.`
+      : `Still filling this cell: the highlighted cell has no ${L} either, so ${act} here.`;
   }
 
   // Placement reasons — the referent is the highlighted set(s), named in full
@@ -439,7 +439,7 @@ function legNarration(d: SubsetsDeduction, k: number): string {
         : plural
           ? `none of ${ref} has ${L}`
           : `${ref} has no ${L} either`;
-    return `Still filling this cell — ${cont}, so ${act} here.`;
+    return `Still filling this cell: ${cont}, so ${act} here.`;
   }
 
   const hasClause =
@@ -459,7 +459,7 @@ function legNarration(d: SubsetsDeduction, k: number): string {
           : "Only the highlighted set can still go in this cell."
         : // singlePosition (deep cube fallback)
           "The highlighted set's other cells are all taken or blocked, so it must go here.";
-  return `${attn} ${capitalize(hasClause)} — so ${act}.`;
+  return `${attn} ${capitalize(hasClause)}, so ${act}.`;
 }
 
 function buildHighlights(

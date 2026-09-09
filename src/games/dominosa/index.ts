@@ -381,7 +381,7 @@ function narratePlace(
   const dom = dominoLabel(a, b, numbers);
   if (technique === "squareOnly")
     return `This square can pair with only the ${dom} domino, so it must go here.`;
-  return `The ${dom} domino has only one spot left where it fits — every other pairing is blocked — so it must go here.`;
+  return `The ${dom} domino has only one spot left where it fits, because every other pairing is blocked, so it must go here.`;
 }
 
 function narrateBarrier(
@@ -399,13 +399,13 @@ function narrateBarrier(
     case "mustOverlap":
       return "Every remaining spot for the outlined domino covers this pair, so no other domino can go here.";
     case "localDuplicate":
-      return `A ${dom} domino here would force a second ${dom} at the outlined square — but each domino is used once — so it can't.`;
+      return `A ${dom} domino here would force a second ${dom} at the outlined square, but each domino is used once, so it can't.`;
     case "localDuplicate2":
-      return `A ${dom} domino here would force both outlined squares to become ${dom} too — a duplicate — so it can't.`;
+      return `A ${dom} domino here would force both outlined squares to become ${dom} too, a duplicate, so it can't.`;
     case "parity":
-      return "A domino here would split the empty squares into two odd-sized regions, and an odd region can't be filled by dominoes — so this can't be a domino.";
+      return "A domino here would split the empty squares into two odd-sized regions, and an odd region can't be filled by dominoes, so this can't be a domino.";
     case "set":
-      return `The outlined squares can only hold one small set of dominoes between them, using up the ${dom} — so ${dom} can't sit here as well.`;
+      return `The outlined squares can only hold one small set of dominoes between them, using up the ${dom}, so ${dom} can't sit here as well.`;
   }
 }
 

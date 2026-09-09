@@ -369,7 +369,7 @@ function narrate(reason: HintReason, ns: number[], _w: number): string {
     case "cage":
       return `No way to make this cage ${cageGoal(reason.op, reason.value)} leaves room for ${joinNums(ns)} in this cell, so we must cross out ${joinNums(ns)}.`;
     case "cageLine":
-      return `This cage must ${cageGoal(reason.op, reason.value)}, and every way to fill it places a ${ns[0]} in this ${reason.horizontal ? "row" : "column"} — so the ${ns[0]} here must be crossed out.`;
+      return `This cage must ${cageGoal(reason.op, reason.value)}, and every way to fill it places a ${ns[0]} in this ${reason.horizontal ? "row" : "column"}, so the ${ns[0]} here must be crossed out.`;
     // The generic Latin arms (single / hiddenSingle / forcedSingle / dup / set /
     // forcing) read identically to Unequal's — narrated once, shared.
     default:

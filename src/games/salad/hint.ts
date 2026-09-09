@@ -179,7 +179,7 @@ export function narrate(
         reason.skipped === 0
           ? `, and this is the nearest square to it`
           : `, and the ${count(reason.skipped, "square")} between it and this one ${reason.skipped === 1 ? "is" : "are"} already marked empty`;
-      return `${lead}${gap} — so nothing but ${clue} can go here, and we must cross out ${list(ns)}.`;
+      return `${lead}${gap}, so nothing but ${clue} can go here, and we must cross out ${list(ns)}.`;
     }
     case "borderFar": {
       const { side, axis } = clueSide(reason.clue, order);
@@ -189,7 +189,7 @@ export function narrate(
           ? `${side === "top" ? "above" : "below"} this column`
           : `to the ${side} of this row`;
       if (reason.circleAt !== null) {
-        return `The clue ${where} sees ${clue} first, and the outlined square furthest from it already holds ${vocab.noun === "letter" ? "a letter" : "a number"} — so the ${clue} must sit somewhere in the outlined run. We must cross out the ${clue} past it.`;
+        return `The clue ${where} sees ${clue} first, and the outlined square furthest from it already holds ${vocab.noun === "letter" ? "a letter" : "a number"}, so the ${clue} must sit somewhere in the outlined run. We must cross out the ${clue} past it.`;
       }
       const bound =
         reason.reach === 0
@@ -224,11 +224,11 @@ export function narrate(
         : `We already know which ${count(nums, "square")} of this ${axis} hold its ${noun}s, so every other square in it must be empty.`;
     }
     case "crossNaked":
-      return `The empty-square mark is the only one left in this square — every ${noun} has been ruled out here — so it must be empty.`;
+      return `The empty-square mark is the only one left in this square, because every ${noun} has been ruled out here, so it must be empty.`;
     case "forcedCross":
-      return `Working through this square's row and column together, no ${noun} can still go here — so it must be empty.`;
+      return `Working through this square's row and column together, no ${noun} can still go here, so it must be empty.`;
     case "forcedCircle":
-      return `Working through this square's row and column together, this square cannot be one of the empty ones — so it holds a ${noun}, even though we don't know which yet.`;
+      return `Working through this square's row and column together, this square cannot be one of the empty ones, so it must hold a ${noun}, even though we don't know which yet.`;
     case "circleXNote":
       return `These squares are now known to hold a ${noun}, so we must cross out their empty-square marks.`;
     case "repeatFull": {
@@ -239,7 +239,7 @@ export function narrate(
           : reason.times === 2
             ? "both of its empty squares"
             : `all ${reason.times} of its empty squares`;
-      return `This ${axis} already has ${has}, so this square cannot be empty — we must cross out its empty-square mark.`;
+      return `This ${axis} already has ${has}, so this square cannot be empty; we must cross out its empty-square mark.`;
     }
     default:
       return narrateLatinReason(reason, ns, vocab);

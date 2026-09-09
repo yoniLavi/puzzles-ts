@@ -362,13 +362,13 @@ export interface SpokesHint {
 function narrate(f: SpokesFiring): string {
   switch (f.kind) {
     case "twoOnes":
-      return "Connecting two 1-hubs would strand them from the rest — so rule out this spoke.";
+      return "Connecting two 1-hubs would strand them from the rest, so rule out this spoke.";
     case "saturation":
       return f.forced.length === 1
-        ? "Only one free spoke left for this hub's count — so it must be a line."
-        : "Just enough free spokes left for this hub's count — so they must all be lines.";
+        ? "Only one free spoke left for this hub's count, so it must be a line."
+        : "Just enough free spokes left for this hub's count, so they must all be lines.";
     case "exhaustion":
-      return "This hub already has its lines, so the rest can't — rule them out.";
+      return "This hub already has its lines, so the rest can't. Rule them out.";
     case "contradiction": {
       const asLine = f.hypothesis?.state === SPOKE_LINE;
       const consequence =
@@ -378,8 +378,8 @@ function narrate(f: SpokesFiring): string {
             ? "force two diagonals to cross"
             : "strand the ringed hubs";
       return asLine
-        ? `Drawing this line would ${consequence} — so rule it out.`
-        : `Ruling this out would ${consequence} — so it must be a line.`;
+        ? `Drawing this line would ${consequence}, so rule it out.`
+        : `Ruling this out would ${consequence}, so it must be a line.`;
     }
   }
 }

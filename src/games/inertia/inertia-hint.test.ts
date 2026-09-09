@@ -366,7 +366,7 @@ describe("inertia hint is a nudge; only Solve is a commitment", () => {
     expect(res.ok).toBe(false);
     if (res.ok) return;
     expect(res.error).toContain("can no longer reach");
-    expect(res.error).toContain("undo");
+    expect(res.error).toMatch(/undo/i);
   });
 
   it("refuses when the board is solved", () => {

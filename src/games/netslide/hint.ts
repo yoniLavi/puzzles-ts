@@ -725,7 +725,7 @@ function narrateStep(
     // shared "(setting up)" marker, which is what tells the player the cell it is
     // being taken to is not the one it belongs in.
     explanation = arrivesHome
-      ? `Take this ${name} to ${where} — it belongs beside the source.`
+      ? `Take this ${name} to ${where}; it belongs beside the source.`
       : `This ${name} belongs beside the source: take it to ${where} ${HINT_SETTING_UP}.`;
   } else {
     explanation = `Working on the highlighted ${name}: take it to ${where}${tail}.`;

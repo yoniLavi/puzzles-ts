@@ -256,3 +256,84 @@ function gameCode(id: string): string[] {
 export function membersNotMentioning(ids: string[], marker: string): string[] {
   return ids.filter((id) => !gameCode(id).some((t) => t.includes(marker)));
 }
+
+/**
+ * Every line of `ids`' own **code** matching `re`, tagged with the game it came
+ * from — the affirmative counterpart to {@link membersNotMentioning}, which
+ * answers "who never writes this" rather than "where is it written".
+ *
+ * Comment-stripped for the same reason: a rule about what a game *says to a
+ * player* must not fire on a doc comment discussing it, and this file's own
+ * header is exactly the prose that would trip such a check.
+ *
+ * The caller gets a superset — every match anywhere in the code, not only in a
+ * narration string — and is expected to classify what it catches rather than
+ * narrow the pattern (`AGENTS.md` § "A scan that keys on a name"). Narrowing to
+ * "string literals inside `explain()`" is how a sweep comes to miss the arm
+ * that was written somewhere else.
+ */
+export function codeLinesMatching(
+  ids: string[],
+  re: RegExp,
+): { id: string; line: string }[] {
+  const out: { id: string; line: string }[] = [];
+  for (const id of ids) {
+    for (const text of gameCode(id)) {
+      for (const line of text.split("\n")) {
+        if (re.test(line)) out.push({ id, line: line.trim() });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * The engine's own shipped sources, by module path — **excluding `testing/`**,
+ * which is dev-only infrastructure by the repo's layout rather than by a list
+ * of filenames anyone has to maintain.
+ *
+ * A rule about what a game says to a player cannot stop at the game
+ * directories, because a family's narration is often written *once* in the
+ * engine and shared: `latin-hint.ts` narrates for the Latin games and
+ * `candidate-hint.ts` for the candidate-elimination ones, so a sweep over
+ * `games/**` alone reports a clean collection while the sentence every one of
+ * those games actually shows sits outside it. That is not hypothetical — it is
+ * how the em-dash rule's first cut passed the source scan and was caught only
+ * by the runtime sweep beside it.
+ */
+const engineSource = (() => {
+  // Root-anchored deliberately: a `../**/*.ts` glob from this file normalizes a
+  // sibling back to `./name.ts`, so a `/testing/` filter silently matched
+  // nothing and the exclusion below did not happen.
+  const modules = import.meta.glob<string>("/src/engine/**/*.ts", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  });
+  const out = new Map<string, string>();
+  for (const [path, text] of Object.entries(modules)) {
+    if (path.includes(".test.") || path.includes("/engine/testing/")) continue;
+    out.set(path.replace("/src/", ""), text);
+  }
+  return out;
+})();
+
+/** How many engine modules {@link engineCodeLinesMatching} scans — its vacuity
+ * number, owed for the same reason {@link SCANNED_SOURCE_FILES} is. */
+export const SCANNED_ENGINE_FILES = engineSource.size;
+
+/** Every line of the engine's shipped code matching `re`, tagged by module.
+ * The engine counterpart to {@link codeLinesMatching}, comment-stripped for the
+ * same reason. */
+export function engineCodeLinesMatching(re: RegExp): { id: string; line: string }[] {
+  const out: { id: string; line: string }[] = [];
+  for (const [path, text] of engineSource) {
+    const code = ts.transpileModule(text, {
+      compilerOptions: { removeComments: true, target: ts.ScriptTarget.ESNext },
+    }).outputText;
+    for (const line of code.split("\n")) {
+      if (re.test(line)) out.push({ id: path, line: line.trim() });
+    }
+  }
+  return out;
+}

@@ -348,7 +348,7 @@ export function deduceUntangleHintPlan(
   if (steps.length === 0) {
     return {
       ok: false,
-      error: "No single move reduces the crossings — try moving a tangled vertex.",
+      error: "No single move reduces the crossings, so try moving a tangled vertex.",
     };
   }
   return { ok: true, steps };

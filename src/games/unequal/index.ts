@@ -417,19 +417,19 @@ function narrate(reason: HintReason, ns: number[], o: number): string {
     case "greater":
       return reason.bound <= 1
         ? `The larger side of a greater-than sign can't hold the smallest number, so we must cross out ${joinNums(ns)}.`
-        : `The cell across this greater-than sign can be no less than ${reason.bound}, so this cell must be larger still — we must cross out ${joinNums(ns)}.`;
+        : `The cell across this greater-than sign can be no less than ${reason.bound}, so this cell must be larger still; we must cross out ${joinNums(ns)}.`;
     case "lesser":
       return reason.bound >= o
         ? `The smaller side of a greater-than sign can't hold the largest number, so we must cross out ${joinNums(ns)}.`
-        : `The cell across this greater-than sign can be no more than ${reason.bound}, so this cell must be smaller still — we must cross out ${joinNums(ns)}.`;
+        : `The cell across this greater-than sign can be no more than ${reason.bound}, so this cell must be smaller still; we must cross out ${joinNums(ns)}.`;
     case "adjacent":
       return reason.bar
-        ? `A bar joins this cell to the ${reason.v} beside it, so the two numbers must differ by exactly 1 — this cell can only be one away from ${reason.v}, so we must cross out ${joinNums(ns)}.`
-        : `There's no bar between this cell and the ${reason.v} beside it, so their numbers can't differ by 1 — this cell can't sit one away from ${reason.v}, so we must cross out ${joinNums(ns)}.`;
+        ? `A bar joins this cell to the ${reason.v} beside it, so the two numbers must differ by exactly 1; this cell can only be one away from ${reason.v}, so we must cross out ${joinNums(ns)}.`
+        : `There's no bar between this cell and the ${reason.v} beside it, so their numbers can't differ by 1; this cell can't sit one away from ${reason.v}, so we must cross out ${joinNums(ns)}.`;
     case "adjacentSet":
       return reason.bar
-        ? `Whatever the cell beside it turns out to be, the bar forces this cell to a value one away from it — and no number still open there leaves room for ${joinNums(ns)} here, so we must cross out ${joinNums(ns)}.`
-        : `With no bar to the cell beside it, this cell must avoid every value one step from it — and ${joinNums(ns)} would clash with a number still open there, so we must cross out ${joinNums(ns)}.`;
+        ? `Whatever the cell beside it turns out to be, the bar forces this cell to a value one away from it, and no number still open there leaves room for ${joinNums(ns)} here, so we must cross out ${joinNums(ns)}.`
+        : `With no bar to the cell beside it, this cell must avoid every value one step from it, and ${joinNums(ns)} would clash with a number still open there, so we must cross out ${joinNums(ns)}.`;
     // The generic Latin arms (single / hiddenSingle / forcedSingle / dup / set /
     // forcing) read identically to Keen's — narrated once, shared.
     default:

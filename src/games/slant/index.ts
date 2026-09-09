@@ -304,8 +304,8 @@ function narrate(firing: SlantFiring, leg: number): string {
   // several squares); keep them in the necessity voice.
   if (leg > 0) {
     return firing.technique === "clue-empty"
-      ? "The same clue forces this square too — it must slant away."
-      : "The same clue forces this square too — it must slant toward the clue.";
+      ? "The same clue forces this square too, so it must slant away."
+      : "The same clue forces this square too, so it must slant toward the clue.";
   }
   const m = firing.moves[0];
   switch (firing.technique) {
@@ -325,13 +325,13 @@ function narrate(firing: SlantFiring, leg: number): string {
       return `This ${c} clue already touches ${has}, so every other square around it must slant away.`;
     }
     case "loop":
-      return "Two corners of this square are already joined by a chain of diagonals. Slanting it one way would close that chain into a loop, which isn't allowed — so it must slant the other way.";
+      return "Two corners of this square are already joined by a chain of diagonals. Slanting it one way would close that chain into a loop, which isn't allowed, so it must slant the other way.";
     case "deadend":
-      return "These points are boxed in — each has just one diagonal left to place and neither reaches the grid's edge. Slanting this square that way would seal them into a closed loop, so it must slant the other way.";
+      return "These points are boxed in: each has just one diagonal left to place and neither reaches the grid's edge. Slanting this square that way would seal them into a closed loop, so it must slant the other way.";
     case "equiv":
       // The anchor shares this square's equivalence class, hence its slash
       // (m.v), so name it once.
-      return `This square is locked to the same slant as the ringed one — the clues around them leave no other pairing — so since that one is ${SLASH_WORD(m.v)}, this must be ${SLASH_WORD(m.v)} too.`;
+      return `This square is locked to the same slant as the ringed one, because the clues around them leave no other pairing, so since that one is ${SLASH_WORD(m.v)}, this must be ${SLASH_WORD(m.v)} too.`;
   }
 }
 

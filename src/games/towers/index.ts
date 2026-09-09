@@ -435,26 +435,26 @@ function narrate(reason: HintReason, n: number, continues = false): string {
   switch (reason.kind) {
     case "fullLine":
       return continues
-        ? `Continuing up the line — height ${n} can only sit here.`
-        : `Clue ${reason.clueVal} sees every tower in this line, so the heights must climb 1, 2, … straight up from the clue — height ${n} can only sit here.`;
+        ? `Continuing up the line, height ${n} can only sit here.`
+        : `Clue ${reason.clueVal} sees every tower in this line, so the heights must climb 1, 2, … straight up from the clue, so height ${n} can only sit here.`;
     case "tallestNearest":
-      return `Clue 1 sees just one tower, so the tallest must stand right next to the clue and hide the rest behind it — height ${n} can only sit here.`;
+      return `Clue 1 sees just one tower, so the tallest must stand right next to the clue and hide the rest behind it, so height ${n} can only sit here.`;
     case "facing":
-      return `These two clues face each other along this line and add up to one more than the grid, which pins the tallest tower to a single cell — height ${n} can only sit here.`;
+      return `These two clues face each other along this line and add up to one more than the grid, which pins the tallest tower to a single cell, so height ${n} can only sit here.`;
     case "lineFull":
-      return `Clue ${reason.clueVal} already sees all but one of its towers deeper in the line, so the cell nearest the clue must be tall enough to keep everything between it and them hidden — too tall for the shortest heights, so we must cross out the ${n}.`;
+      return `Clue ${reason.clueVal} already sees all but one of its towers deeper in the line, so the cell nearest the clue must be tall enough to keep everything between it and them hidden. That is too tall for the shortest heights, so we must cross out the ${n}.`;
     case "lowerBound":
-      return `Clue ${reason.clueVal} sees exactly ${reason.clueVal} towers along this line, so a tower of height ${n} this close to the clue would hide too many towers behind it — we must cross out the ${n}.`;
+      return `Clue ${reason.clueVal} sees exactly ${reason.clueVal} towers along this line, so a tower of height ${n} this close to the clue would hide too many towers behind it; we must cross out the ${n}.`;
     case "arrangement":
-      return `Trying every way clue ${reason.clueVal} can show exactly ${reason.clueVal} towers along this line, none of them puts a tower of height ${n} here — so we must cross out the ${n}.`;
+      return `Trying every way clue ${reason.clueVal} can show exactly ${reason.clueVal} towers along this line, none of them puts a tower of height ${n} here, so we must cross out the ${n}.`;
     case "dup":
       return `A tower of height ${reason.n} now sits in this row and column, so we must cross out the ${reason.n} from every other cell they pass through.`;
     case "single":
       return `Every other height has been ruled out in this cell, so it can only be ${n}.`;
     case "hiddenSingle":
-      return `In this ${reason.line === "row" ? "row" : "column"}, height ${n} can go in only this cell — every other cell in the ${reason.line === "row" ? "row" : "column"} has ruled it out — so it must be ${n}.`;
+      return `In this ${reason.line === "row" ? "row" : "column"}, height ${n} can go in only this cell, because every other cell in the ${reason.line === "row" ? "row" : "column"} has ruled it out, so it must be ${n}.`;
     case "forcedSingle":
-      return `Working through this cell's row and column together, only height ${n} can still go here — so it must be ${n}.`;
+      return `Working through this cell's row and column together, only height ${n} can still go here, so it must be ${n}.`;
     case "set":
       return `Another group of cells already accounts for a fixed set of heights that includes ${n}, so we must cross out the ${n} here.`;
     // The shared chain sentence, in Towers' own vocabulary. Towers keeps its

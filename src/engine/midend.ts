@@ -538,7 +538,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (next === undefined || next === null) {
       throw new Error(
         `${this.game.id}: executeMove returned no state for move ` +
-          `${JSON.stringify(move)} — the move is not one this build can play`,
+          `${JSON.stringify(move)}: the move is not one this build can play`,
       );
     }
     const prev = this.state;

@@ -369,9 +369,9 @@ function narrate(reason: HintReason): string {
     case "adjacency":
       return "No two black squares may touch. This cell sits right next to the ringed black square, so it must be white.";
     case "satisfied":
-      return `The highlighted ${reason.n} can already see exactly ${reason.n} white cells (outlined). That count is complete, so its line of sight must stop at this cell — the next one out past the outlined run — which must be black.`;
+      return `The highlighted ${reason.n} can already see exactly ${reason.n} white cells (outlined). That count is complete, so its line of sight must stop at this cell, the next one out past the outlined run, which must be black.`;
     case "overrun":
-      return `The highlighted ${reason.n} already sees the outlined white cells. Leaving this cell — the next one out past the outlined run — white would let it see more than ${reason.n}, so it must be black.`;
+      return `The highlighted ${reason.n} already sees the outlined white cells. Leaving this cell, the next one out past the outlined run, white would let it see more than ${reason.n}, so it must be black.`;
     case "reach":
       return `The highlighted ${reason.n} can't yet see ${reason.n} cells. The only way to reach ${reason.n} is to extend its line of sight along the outlined run as far as this cell, so this cell must be white.`;
     case "connect":

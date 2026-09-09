@@ -42,7 +42,7 @@ export const ALREADY_SOLVED = "This board is already solved.";
  * `findMistakes(state).length > 0` guard, never speculatively.
  */
 export const FIX_MISTAKES_FIRST =
-  "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.";
+  "Fix the highlighted mistakes first; a hint can't deduce from a wrong board.";
 
 /**
  * The board is inconsistent, but no individual entry can be proved wrong — so
@@ -52,7 +52,7 @@ export const FIX_MISTAKES_FIRST =
  * they are shown, only undo or clear what they are unsure of.
  */
 export const CONTRADICTION_UNLOCALIZED =
-  "These entries contradict each other — one of them must be wrong. Undo, or clear the ones you are unsure of.";
+  "These entries contradict each other, so one of them must be wrong. Undo, or clear the ones you are unsure of.";
 
 /**
  * Nothing further follows from what is on the board. The counterpart to

@@ -37,7 +37,7 @@ must clear:
 
 1. **Explain *why* the move is forced, not just *what* to do.** Narrate the
    actual deduction ("both edges border the same region, so they share a fate;
-   walling both exceeds clue 2 — so neither is a wall"). If a narration's
+   walling both exceeds clue 2, so neither is a wall"). If a narration's
    conclusion doesn't follow from its own stated premises, the deductive
    coupling is missing — surface it. A good hint *teaches the technique*.
 2. **One deduction firing = one journey.** A single deduction that forces
@@ -450,6 +450,34 @@ long, cut to the single premise the highlight doesn't already show.
 per step (longest shipped: 281, Undead's sightline teach). The ceiling catches
 the "rulebook bled into the step" class; terseness *below* it is still an
 editing judgment.
+
+### No em-dashes
+
+Use a comma, a semicolon, a colon or a sentence break instead (owner-directed
+2026-09-09). The em-dash was the collection's default connective before that
+call: **141 of them across 26 files**, almost all standing in for exactly those
+marks in front of a concluding `so …` clause, so the rewrite cost no reasoning
+anywhere. Parentheses are fine for a genuine aside (Galaxies' *"(its other
+sides are walled)"*).
+
+The one thing the rule must not buy is a **shorter** hint. Deleting the clause
+to lose the dash is the flattening this guide's § "Keep the narration terse"
+already warns about from the other direction — rewrite the sentence.
+
+**The en-dash is untouched**, because it is notation rather than punctuation:
+Dominosa's dominoes are `3–5`, and a sweep over both would convict a label for
+a connective's sin.
+
+**Guarded cross-game** (`hint-quality.test.ts` § "no hinting game writes an
+em-dash") by three nets, deliberately overlapping: the runtime narration sweep
+(sees what a player actually reads, but only the arms that fire), a scan of
+every hinting game's comment-stripped source, and the same scan over the
+engine's shipped code. The third exists because a family's narration is often
+written **once** in the engine — `latin-hint.ts`, `candidate-hint.ts`,
+`hint-refusal.ts` — so a sweep stopping at `games/**` reports a clean
+collection while the sentence those games actually show carries the character.
+That is not hypothetical: it is how this rule's first cut passed its own source
+scan and was caught only by the runtime sweep beside it.
 
 ### Conclude with the action the move makes
 

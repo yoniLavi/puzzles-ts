@@ -162,7 +162,7 @@ function narrate(
       return `Slide ${d}: ${sweep}, and it is the only direction that doesn't run you onto a mine.`;
     }
     if (only === "walls") {
-      return `Slide ${d}: ${sweep} — and walls block every other direction, so it is the only move the ball has.`;
+      return `Slide ${d}: ${sweep}, and walls block every other direction, so it is the only move the ball has.`;
     }
     return `Slide ${d}: ${sweep}, and ${stopClause(path)}.`;
   }
@@ -171,22 +171,22 @@ function narrate(
   const working = "Working on the marked gem";
 
   if (only === "mines") {
-    return `${working}: slide ${d} — every other direction you can set off in runs you onto a mine.`;
+    return `${working}: slide ${d}, because every other direction you can set off in runs you onto a mine.`;
   }
   if (only === "walls") {
-    return `${working}: slide ${d} — walls block every other direction, so it is the only move the ball has.`;
+    return `${working}: slide ${d}, because walls block every other direction, so it is the only move the ball has.`;
   }
 
   const grab = oneSlideGrab(before, goal);
   if (grab !== null) {
     const stranded = unreachableGems(slide(before, grab));
     if (stranded.length > 0) {
-      return `${working}: sliding ${DIR_NAMES[grab]} would sweep it up right now — but you don't choose where you stop, and it leaves the ball where ${gemsPhrase(stranded.length)} can never be reached again. Slide ${d} instead.`;
+      return `${working}: sliding ${DIR_NAMES[grab]} would sweep it up right now, but you don't choose where you stop, and it leaves the ball where ${gemsPhrase(stranded.length)} can never be reached again. Slide ${d} instead.`;
     }
     // The route declines a grab it could take. Which side the ball comes at a
     // gem from decides where it fetches up, so this is a real trade-off — but
     // we have not proved the grab is a trap, so we don't say it is.
-    return `${working}: slide ${d} — sweeping it up straight from here is possible, but the route comes at it from another side.`;
+    return `${working}: slide ${d}. Sweeping it up straight from here is possible, but the route comes at it from another side.`;
   }
 
   // "One more slide" is a promise about the *plan's own next move*, not about
@@ -331,7 +331,7 @@ export function hint(
     return {
       ok: false,
       error:
-        "The ball is dead — no move can be played from here. Undo to bring it back.",
+        "The ball is dead: no move can be played from here. Undo to bring it back.",
     };
   }
 
@@ -342,7 +342,7 @@ export function hint(
   if (stranded.length > 0) {
     return {
       ok: false,
-      error: `The ball can no longer reach ${gemsPhrase(stranded.length)} — undo to a position where it can.`,
+      error: `The ball can no longer reach ${gemsPhrase(stranded.length)}. Undo to a position where it can.`,
     };
   }
 

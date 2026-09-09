@@ -227,7 +227,7 @@ describe("crossing hint — techniques and narration", () => {
     const cross = texts.get("crossRuns") ?? "";
     expect(cross).toMatch(/^(Across|Down), this square can only be/);
     expect(cross).toMatch(/cannot take .* here, so it must be \d\.$/);
-    expect(cross.split(" — ")[0]).not.toMatch(/ and /);
+    expect(cross.split(", and the ")[0]).not.toMatch(/ and /);
   });
 
   it("keeps every narration terse enough to read in the banner", () => {

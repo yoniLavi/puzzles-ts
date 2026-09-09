@@ -514,7 +514,7 @@ function narrate(reason: NarratableReason, ns: number[], id: boolean): string {
         reason.prod === reason.a
           ? `${A}·${B} = ${A} shows ${B} is the identity`
           : `${A}·${B} = ${B} shows ${A} is the identity`;
-      return `${shows}, so its row and column are just the element labels — this cell must be ${ch(ns[0])}.`;
+      return `${shows}, so its row and column are just the element labels, and this cell must be ${ch(ns[0])}.`;
     }
     case "identityElim": {
       const E = ch(reason.elem);
@@ -522,7 +522,7 @@ function narrate(reason: NarratableReason, ns: number[], id: boolean): string {
       const product = reason.left
         ? `${E}·${O} = ${ch(reason.product)}`
         : `${O}·${E} = ${ch(reason.product)}`;
-      return `${product}, not ${O} — the identity leaves every element unchanged, so ${E} can't be the identity. Cross out its identity marks.`;
+      return `${product}, not ${O}. The identity leaves every element unchanged, so ${E} can't be the identity. Cross out its identity marks.`;
     }
     default:
       // The six generic arms, in element vocabulary. The shared `dup` arm picks

@@ -535,7 +535,7 @@ export function narrateCrossing(
       // run there are none, so that premise does no work (§2.4) and reads as
       // plainly false (§2.7) — the length is the whole argument there.
       if (firing.because === "length") {
-        return `This run is ${len} squares long, and only one number in the list is ${len} digits — so it must be ${num}.`;
+        return `This run is ${len} squares long, and only one number in the list is ${len} digits, so it must be ${num}.`;
       }
       if (firing.because === "used") {
         return `Every other ${len}-digit number is already on the board, so this run must be ${num}.`;
@@ -545,7 +545,7 @@ export function narrateCrossing(
     case "sharedDigit": {
       const way = wayOf(puzzle, firing.run);
       return firing.deep
-        ? `Every number that can still go in this ${way} run — once the crossing numbers rule the rest out — has a ${firing.digit} in this square, so it must be ${firing.digit}.`
+        ? `Every number that can still go in this ${way} run, once the crossing numbers rule the rest out, has a ${firing.digit} in this square, so it must be ${firing.digit}.`
         : `Every number that still fits this ${way} run has a ${firing.digit} in this square, so it must be ${firing.digit}.`;
     }
     case "crossRuns": {
@@ -562,7 +562,7 @@ export function narrateCrossing(
       const [near, far] = leadAcross ? ["Across", "down"] : ["Down", "across"];
       const small = leadAcross ? across : down;
       const rest = small.filter((d) => d !== firing.digit);
-      return `${near}, this square can only be ${joinOr(small)} — and the ${far} number through it cannot take ${joinOr(rest)} here, so it must be ${firing.digit}.`;
+      return `${near}, this square can only be ${joinOr(small)}, and the ${far} number through it cannot take ${joinOr(rest)} here, so it must be ${firing.digit}.`;
     }
     case "noteStrike": {
       const way = wayOf(puzzle, firing.run);
