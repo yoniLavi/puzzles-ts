@@ -254,6 +254,19 @@ assert it in a test so it fails when it drifts. A figure with a date and a
 change id attached is a *measurement* and stays; a bare count in the present
 tense is a claim, and it rots.
 
+**A number a proposal argues from is a claim, and the size of a thing is not
+the size of its ceremony.** `presentation.md` costed its whole design on "~80
+lines of identical bookkeeping per game wrapped around ~10 lines that are
+actually the game's". Measured 2026-09-09 across all 57 `redraw` bodies
+(`explore-the-tile-loop-inversion`): the medians are **20 lines of bookkeeping
+around 64 of the game's own** — inverted, and out by a factor of four. The 88
+was right; what was never checked is which side of it was which. So **before
+designing against a headline number, take it** — and take it against the
+population, not against the one file that suggested it. The same posture applies
+to a proposal's *deliverable list*: walk it item by item against what is already
+on disk, because three of this vision's directions were withdrawn on finding
+most of the block already served (`openspec/postmortems/`).
+
 **And a fact about the codebase rots exactly like a count — sometimes in
 hours.** A scaffolded change carried the constraint "this reaches no player,
 because `processKey`'s return value is discarded at both call sites", correct on
