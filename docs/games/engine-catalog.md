@@ -343,12 +343,26 @@ predicate and there will not be one.
 **Its header's list of known no-gos is as important as its call sites** — the
 ladder *shape* is near-universal; the bookkeeping wrapped around it is per-game
 and often decides which puzzles exist — and that list is **re-derived when the
-contract changes, never copied forward.** Nine call sites and two hatch cases
-(Loopy, Lightup) as of `re-derive-the-fixpoint-no-gos`, down from six no-gos:
-Unruly left when tiers became declarable, and Singles, Clusters and Spokes left
-when someone read their solvers instead of their recorded reasons. See
-[`solver-and-generator.md`](./solver-and-generator.md) before adopting or
-"fixing" a game that doesn't use it.
+contract changes, never copied forward.** Three hatch cases (Loopy, Lightup and
+Boats), down from six no-gos: Unruly left when tiers became declarable, and
+Singles, Clusters and Spokes left when someone read their solvers instead of
+their recorded reasons (`re-derive-the-fixpoint-no-gos`); Boats joined when
+`explore-the-deduction-engine-reach` read the remaining thirty and found its
+reason to be the sharpest in the tree — latching flags, a `diff` running maximum
+that a technique *reads*, and a grade meaning "deepest tier reached" rather than
+"highest tier that fired".
+
+**Sixteen call sites** as of `adopt-the-deduction-runner-where-it-rewires`
+(2026-09-09), which added seven at once — Tracks, Seismic, Subsets, Rome, Ascent,
+Galaxies and Bridges. **Do not quote that number without re-deriving it**: it is a
+comment-stripped scan for `runDeductionFixpoint` under `src/games/`, and five
+name-keyed counts of this population went wrong in one session, Loopy's and
+Boats' headers *explaining why they do not use the runner* among them.
+
+An adoption is proved by a **ladder-equivalence** test, not by the game's
+byte-match differential — see
+[`solver-and-generator.md`](./solver-and-generator.md) § "Proving an adoption",
+and read it before adopting or "fixing" a game that doesn't use this.
 
 ### `step-budget.ts` — the fixpoint non-termination guard
 

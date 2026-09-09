@@ -31,6 +31,32 @@ first task recorded that the figure "does not survive verification".
 Establishing the real list is the **first task of this change, not an assumption
 of it**.
 
+> **⚡ Most of that first task is now done, 2026-09-09** —
+> `explore-the-deduction-engine-reach` read **all 30 off-engine solvers** against
+> the deduction runner's own criterion and classified every one: ten fit, six
+> sweep the whole ladder before restarting, four have one or two rungs, three are
+> earned hatches (boats, loopy, lightup), and seven are not deduction ladders at
+> all (mines, net, rect, and the planners fifteen, flood, inertia, slide). Its
+> archived `tasks.md` carries the table. **Start from it rather than re-running
+> the sweep** — and note it keys on *shape*, comment-stripped, because five
+> name-keyed counts of this population went wrong in one session.
+>
+> **And five of the nineteen have moved since this was written.** Ascent,
+> Bridges, Rome, Seismic and Tracks now run on `runDeductionFixpoint`
+> (`adopt-the-deduction-runner-where-it-rewires`), which is the organ that
+> carries the hint recorder. That is not incidental to this change — **it is the
+> measurement this change exists to set up**. Those five are hintless games whose
+> deduction ladder is now declared, so what it costs to give one of them a hint
+> is the number that says whether the adoption bought anything. If the answer is
+> "the same as before", that closes `docs/framework-rdd/` for good; the seventh
+> and last end of the vision reported on the promise that the wiring gets easier,
+> and this is where that promise is tested.
+>
+> Two of the five carry a rung the corpus can never fire — Tracks'
+> `check-single`, Rome's `naked-pairs`. A hint cannot narrate a deduction that
+> never happens, so those are not defects to fix here, but they are worth knowing
+> before choosing a game: neither rung will appear in any hint.
+
 **What makes a corpus useful is spread, not size.** A framework contract
 assessed only against Latin-family games learns nothing about edge games; one
 assessed only on deduction ladders learns nothing about planners. The point of
@@ -87,7 +113,10 @@ change describes the corpus that exists behind it.
 - Affected specs: none. The deliverable is an `audit.md` plus a recommended
   order.
 - Affected code: none.
-- **Feeds directly into the `find`/`apply`/`narrate` exemplar choice**: that
-  change needs one game to co-develop against, and picking it from a
-  characterized corpus is the difference between an exemplar that tests the
-  contract and one that merely satisfies it.
+- ~~**Feeds directly into the `find`/`apply`/`narrate` exemplar choice**~~ —
+  **that is no longer where this feeds** (2026-09-09). The technique split is not
+  a queued change: `deduction.md` records it as an open question with a stated
+  bar it has not met, since the totality it promises already ships behaviorally
+  through `hint-resume.test.ts`'s widened walk. What this feeds instead is the
+  measurement above — writing a hint on one of the five newly-adopted hintless
+  games, which is the last unanswered question in the whole framework vision.
