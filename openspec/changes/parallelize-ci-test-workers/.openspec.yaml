@@ -1,0 +1,8 @@
+# No spec deltas: this is an application of `build-pipeline`'s existing rules,
+# not an extension of them. "A cost measurement is taken with its conditions
+# recorded" and "the gate's cost is proportional to what it protects" already
+# govern; what this change adds is a *number* and the reasoning behind it, and
+# both belong in `vitest.config.ts` next to the value they explain rather than
+# in a requirement nobody reads while tuning a pool size.
+schema: spec-driven
+skip_specs: true

@@ -1,6 +1,12 @@
 import { availableParallelism } from "node:os";
 import { defineConfig } from "vitest/config";
 
+/** How many checkouts the developer typically has open at once (owner,
+ * 2026-09-09). A dated environmental fact, not a tuning constant: if that stops
+ * being true the division below is wrong in a way no test can notice, so it is
+ * written down with who said it and when. */
+const CONCURRENT_REPOS = 4;
+
 /**
  * How many worker processes the suite may take.
  *
@@ -21,13 +27,55 @@ import { defineConfig } from "vitest/config";
  * its own: the box is shared, so a run can be starved by work this config has no
  * say over — hence the deliberately absurd ceiling below.)
  *
- * `VITEST_MAX_WORKERS` overrides it — set it to the core count in CI, where the
- * box is dedicated and wall clock is what matters.
+ * **The two-core reservation is for a human, so CI does not get it.** That
+ * sentence used to read "`VITEST_MAX_WORKERS` overrides it — set it to the core
+ * count in CI", which described an intention rather than a fact: nothing set it.
+ * `.github/workflows/ci.yml` passes three `VITE_*` variables and no more, so CI
+ * silently inherited a courtesy written for a developer's laptop and ran on a
+ * 4-core runner with **two** workers. Reading `CI` here is what makes the
+ * comment true, and it needs nobody to remember anything — a rule that depends
+ * on external cooperation is the shape this repo keeps refusing.
+ *
+ * **The local share is a quarter of the machine, and the unit is the MACHINE,
+ * not this suite.** Owner, 2026-09-09: *"this is one of ~4 repos I'm typically
+ * working on in parallel"*. Eight logical cores and 16 GB of RAM divided four
+ * ways is two workers and ~4 GB each; at the old `cores - 2` it was **24 worker
+ * processes and ~10.8 GB of module graph** competing for eight cores and 16 GB,
+ * which is why the box sits ~24 GB into swap.
+ *
+ * **This is deliberately not what a single-suite benchmark recommends, and the
+ * benchmark is recorded so the disagreement is visible rather than surprising.**
+ * Run alone, on the whole suite, in both orders to control for a settling box:
+ *
+ *     workers=4   117.6 s / 126.7 s
+ *     workers=6    96.7 s /  96.7 s
+ *
+ * Six was identical to a tenth of a second across two runs an hour apart, and
+ * four was 21–31% slower even going first on the quieter box. So *this suite in
+ * isolation* is throughput-bound and wants every core it can get. That figure
+ * answers a question nobody here is asking: the suite is never alone. Optimizing
+ * one tenant's latency on a shared box is how the box ends up thrashing, and a
+ * measurement that holds the other three tenants at zero cannot see it.
+ *
+ * Two things soften the local cost. `isolate: false` below means a worker's
+ * module graph is paid once and reused across files, so the marginal worker is a
+ * whole extra graph rather than a slice of one — which is exactly the term that
+ * multiplies by four here. And the pre-commit hook no longer runs the whole
+ * suite anyway (`scripts/checks/select-tests.mjs`), so the common case is ~47
+ * files rather than 302.
+ *
+ * `VITEST_MAX_WORKERS` overrides, and is the right tool when the box *is* free
+ * and you want the 96.7 s number back.
  */
 function maxWorkers(): number {
   const override = Number(process.env["VITEST_MAX_WORKERS"]);
   if (Number.isInteger(override) && override > 0) return override;
-  return Math.max(2, availableParallelism() - 2);
+  const cores = availableParallelism();
+  // A dedicated runner has no developer to leave room for, and no sibling repo
+  // to share with — it gets the machine.
+  if (process.env["CI"]) return Math.max(2, cores);
+  // One repo's share of a machine that typically has about four in flight.
+  return Math.max(2, Math.floor(cores / CONCURRENT_REPOS));
 }
 
 export default defineConfig({
