@@ -16,6 +16,16 @@ renames falsifies the record. This is the same asymmetry as "A change that moves
 or deletes a path updates the unarchived changes that name it", for the same
 reason.
 
+**`openspec/specs/` is out of scope on a measurement, not on a principle.** The
+same key covers it, so the question was taken: the specs cite 31 kebab tokens
+across 71 files and **15 do not resolve, none of them a change id** — preference
+keys, DOM element and event names, a web component. Widening would nearly triple
+the ledger with product vocabulary and catch nothing. The ratio is the reason and
+it generalizes: a **spec** describes the product's own kebab-cased vocabulary,
+while `docs/` and `AGENTS.md` narrate the project's history and so are where
+change ids are named. A scan SHALL be widened only where the same measurement
+comes back the other way.
+
 **Why this is guarded rather than left to care.** A prose citation cannot survive
 the one mutation this workflow performs most often — a change being renamed or
 withdrawn — and nothing else in the tree notices. Measured: the guard was

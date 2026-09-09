@@ -129,6 +129,19 @@ node scripts/checks/spelling.mjs
 # has to be ahead of the shortcut and cannot be a vitest file.
 node scripts/checks/engine-catalog.mjs
 
+# --- 1b-iii. A change id cited in prose still resolves. ~0s. ---
+#
+# A prose citation cannot survive a change being renamed or withdrawn, and
+# nothing else in the tree notices. This was declined on 2026-09-04 on the
+# measurement that no dead citation existed; one was created 46 minutes later by
+# a rename, in the same commit that wrote the replacing sentence, and stood five
+# days. The decline named its own revisit condition and it fired.
+#
+# Here, with the two guards above, for the same three reasons: it reads `docs/`,
+# a rename is a documentation-only commit, and `src/gate-scope.test.ts` forbids
+# a vitest file from reading that root at all.
+node scripts/checks/change-citations.mjs
+
 # --- 1c. The specs and every open change parse and validate. ~1s. ---
 #
 # This is the tool's own check, deliberately, and it replaces a hand-written one.

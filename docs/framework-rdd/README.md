@@ -80,8 +80,30 @@ revisiting if a dead citation ever does appear.*
 > the correction ran in the direction that makes a guard look *more* worthwhile,
 > not less.
 >
-> **So the revisit condition has fired**, and what to build is scoped in
-> `guard-change-id-citations` rather than argued here.
+> **✅ The revisit condition fired, and the guard is built** —
+> `guard-change-id-citations`, 2026-09-09.
+> `scripts/checks/change-citations.mjs` runs in the gate's fast prefix (0.06 s,
+> beside the spelling and catalog guards, ahead of the documentation-only
+> shortcut) and fails a commit on a cited id that resolves to no open change, no
+> archive entry — dated or bare — and no postmortem.
+>
+> **The decline's objection was right and is what shaped the guard.** An
+> allowlist that grows with the docs *is* the cost, so the non-ids are a **ledger
+> asserted exactly equal to the unresolved set**, with a reason per entry: it
+> fails when an entry starts resolving and when one stops being cited, not only
+> when a new dead citation appears. Six entries today — the five non-ids above,
+> plus `census-the-hintless-logic-games` itself, which stays dead on purpose
+> because this passage is the worked example and leaves the ledger when this
+> passage does.
+>
+> **And the objection was measured where it is real: `openspec/specs/` is not
+> scanned.** The same key covers it, so the question was taken rather than
+> assumed — the specs cite 31 kebab tokens and **15 do not resolve, not one of
+> them a change id**: preference keys (no-of-balls, snap-to-grid), DOM names
+> (status-bar-change), a web component (wa-button-group). Widening would
+> nearly triple the ledger with product vocabulary and catch nothing. A spec
+> describes what the product *is*; `docs/` and `AGENTS.md` narrate what the
+> project *did*, which is why only the second names changes.
 
 **A change may exist before it is ready, but it must say so.** The pieces that
 have shipped were small, independently valuable, and provable against frozen

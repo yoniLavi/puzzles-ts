@@ -90,9 +90,14 @@ its first run gets switched off, which is worse than not building it.
   track later renames would falsify the record. This is the existing asymmetry in
   repo-layout § "A change that moves or deletes a path updates the unarchived
   changes that name it", and it runs the same way here.
-- **It does not check spec files for dead ids by a different rule.** Specs are in
-  scope only if the same scan covers them; a second keying is a second instrument
-  to keep honest.
+- **It does not scan `openspec/specs/` — measured, not assumed.** The same key
+  covers them, so the question was taken: the specs cite 31 kebab tokens across
+  71 files and **15 do not resolve, none of them a change id** — preference keys,
+  DOM element and event names, a web component. Widening would nearly triple the
+  ledger with product vocabulary and catch nothing, which is the decline's own
+  objection arriving in the one place it is real. The ratio (6 of 85 against 15
+  of 31) is structural: a spec describes what the product *is*, `docs/` and
+  `AGENTS.md` narrate what the project *did*.
 
 ## Impact
 
