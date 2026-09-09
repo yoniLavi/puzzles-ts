@@ -19,12 +19,14 @@
  * of them are not built under `games/`.
  *
  * **What a game may still differ on.** The bar is whether we can say what a game
- * would legitimately want to do differently, and there are three real answers:
+ * would legitimately want to do differently, and there are four real answers:
  * a game whose board can be *inconsistent without any single cell being
  * provably wrong* needs {@link CONTRADICTION_UNLOCALIZED}, because
  * {@link FIX_MISTAKES_FIRST} promises a highlight that will not appear; a
  * **non-deductive** game must not say "deduced" at all
- * ({@link NO_MOVE_WORTH_MAKING}); and a game with a genuinely game-shaped dead
+ * ({@link NO_MOVE_WORTH_MAKING}); a game whose hint is a bounded **search** has
+ * a reach rather than a deduction, and past it can only say so
+ * ({@link SEARCH_OUT_OF_REACH}); and a game with a genuinely game-shaped dead
  * end says so in its own words (Inertia's dead ball). Everything else is
  * spelling, and `hint-refusal.test.ts` holds it to this list.
  */
@@ -85,8 +87,48 @@ export const DEDUCTION_EXHAUSTED =
 
 /** The non-deductive counterpart to {@link DEDUCTION_EXHAUSTED}: a game that
  * walks a player toward a solution rather than teaching a technique has no
- * deduction to run out of, so it must not claim one. */
+ * deduction to run out of, so it must not claim one.
+ *
+ * **It is a claim about the board, and only a game that can check it may say
+ * it.** Every remaining call site is a construction that cannot come back empty
+ * on an unsolved board — Fifteen's row-by-row placement, Flood's solver,
+ * Inertia's tour — so the message is a backstop that states the truth if it
+ * ever fires. A game whose hint is a bounded *search* is in the opposite
+ * position: an empty result there says only that it did not find one, which is
+ * {@link SEARCH_OUT_OF_REACH}. Sixteen said this sentence for two years on
+ * boards where most moves got the player closer. */
 export const NO_MOVE_WORTH_MAKING = "No move here would get you closer.";
+
+/**
+ * A hint that *searches* has a **reach**, and this board is past it.
+ *
+ * The counterpart to {@link DEDUCTION_EXHAUSTED} for a game with nothing to
+ * deduce. A deductive game's hint is complete for its tier or the tier admits
+ * search, and either way it can say something true about the position. A game
+ * like Sixteen has neither: its hint plans by searching ahead a bounded number
+ * of moves, and past that bound the only true thing to say is that it did not
+ * find a way — never {@link NO_MOVE_WORTH_MAKING}, which asserts something
+ * about the board that the search never established.
+ *
+ * The distinction is not a nicety. Sixteen's tangled endgames are solvable
+ * boards a dozen moves from home on which every single slide looks worse, and
+ * the player meeting them had followed thirty hints to get there; being told
+ * that no move would help is both false and a reason to stop playing.
+ *
+ * **So it says what to do instead, in the two ways that work.** Playing on
+ * changes the board, and a board the search could not reach is often one move
+ * from one it can; revealing the answer ends the game but is honest about doing
+ * so. The control it names is the rail's `Show solution…` — deliberately not
+ * `Auto-solve for me`, which is *continuous hinting* and would refuse for the
+ * same reason the hint just did. Naming it would have been advice that cannot
+ * work, on the one screen a player has just been let down on.
+ *
+ * `hint-resume.test.ts` accepts this as an honest end to its walk, but only
+ * from a game whose hint really is a bounded search — derived from the game's
+ * own source, not from a roster.
+ */
+export const SEARCH_OUT_OF_REACH =
+  "I can't find a way home from here: this position is further ahead than the hint can search. Play a few moves of your own and ask again, or take the answer from Show solution.";
 
 /** The puzzle itself cannot be reasoned about — not a statement about anything
  * the player did. Kept apart from the refusals above because no action of

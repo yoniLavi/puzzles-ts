@@ -22,8 +22,9 @@
  */
 import { describe, expect, it } from "vitest";
 import { type DifficultyContract, difficultyTiers } from "./difficulty.ts";
-import { DEDUCTION_EXHAUSTED } from "./hint-refusal.ts";
+import { DEDUCTION_EXHAUSTED, SEARCH_OUT_OF_REACH } from "./hint-refusal.ts";
 import { randomNew } from "./random/index.ts";
+import { membersNotMentioning } from "./testing/enrollment.ts";
 import {
   type AnyGame,
   firstLeaf,
@@ -48,6 +49,7 @@ function solveByHints(
   params: unknown,
   seed: string,
   permitsSearch: boolean,
+  boundedSearch: boolean,
 ): number {
   const { desc, aux } = game.newDesc(params, randomNew(seed));
   let state = game.newState(params, desc);
@@ -59,6 +61,14 @@ function solveByHints(
     const res = game.hint?.(state, aux);
     if (!res) throw new Error(`${seed}: game has no hint() method`);
     if (!res.ok) {
+      if (boundedSearch) {
+        if (res.error !== SEARCH_OUT_OF_REACH) {
+          throw new Error(
+            `${seed}: a hint that plans by searching ran out after ${moves} moves and said "${res.error}" — the only honest thing past its reach is the collection's one wording for that`,
+          );
+        }
+        return moves;
+      }
       if (!permitsSearch) {
         throw new Error(`${seed}: hint gave up after ${moves} moves: "${res.error}"`);
       }
@@ -73,6 +83,60 @@ function solveByHints(
   }
   throw new Error(`${seed}: did not converge within ${cap} moves (loop?)`);
 }
+
+/**
+ * The games whose hint **plans by searching ahead a bounded number of moves**,
+ * rather than by deducing.
+ *
+ * They are the one population this walk's central promise cannot hold. A
+ * deductive hint is either complete for its tier or its tier says out loud that
+ * search may be needed, so on a sound board it always has something true to
+ * say. A searching hint has a *reach* instead: past it there is no honest
+ * answer but "I did not find one", and no budget makes that go away — Sixteen's
+ * tangled 5×5 endgames are a dozen moves from home with a branching factor of
+ * 40, and each further ply costs about 40×. Such a game passes this walk on the
+ * seeds it is given and could go red truthfully on a new one, which would be
+ * the guard reporting the truth rather than a regression.
+ *
+ * **Derived from what the game is, never declared.** The mechanic is the shared
+ * slide planner, so membership is "calls it" — read out of each game's own
+ * comment-stripped source, which is `enrollment.ts`'s third question and cannot
+ * drift from the game the way a roster does. `membersNotMentioning` answers the
+ * negative, so the set is its complement.
+ *
+ * The marker carries its opening paren so importing the planner without calling
+ * it does not count. Both call sites write `planSlides({`, and if a third ever
+ * writes `planSlides<T>(` the vacuity floor below is what says so — a scan that
+ * keys on a name finds only the games that were named that way (`AGENTS.md`
+ * § "A scan that keys on a name").
+ */
+const BOUNDED_SEARCH_HINTS: readonly string[] = (() => {
+  const ids = HINT_GAMES.map(([id]) => id);
+  const without = new Set(membersNotMentioning(ids, "planSlides("));
+  return ids.filter((id) => !without.has(id));
+})();
+
+/**
+ * Why each derived member is excused the walk's promise — one line per member,
+ * asserted below to be exactly the derivation.
+ *
+ * The ledger is attached to the *members*, not to the enrollment: the guard
+ * still works out who by reading the games, and this only records what a source
+ * scan cannot see, which is whether the reach is a real limit or a bug. An
+ * empty derivation would silently restore the old behavior with every
+ * assertion here still passing, so the equality is this sweep's vacuity guard
+ * as well as its ledger.
+ */
+const SEARCH_REACH: Record<string, string> = {
+  netslide:
+    "Plans by searching for an arrangement that powers the grid. Has not been " +
+    "seen refusing — its finish condition is weak, so its distances are short — " +
+    "but it is the same planner and the same bound.",
+  sixteen:
+    "Plans by searching for the finished board. Its tangled endgames are a " +
+    "dozen moves out with a branching factor of 40, which no arrangement of " +
+    "this machinery reaches (`fix-sixteen-deep-local-minima`).",
+};
 
 /** Does this preset's tier promise that its boards may need search?
  *
@@ -245,6 +309,12 @@ describe("a Latin-family placement never falsely claims a naked single", () => {
   }
 });
 
+describe("the games excused the walk's promise are derived, and each is accounted for", () => {
+  it("every game that plans by searching has a ledger entry, and nothing else does", () => {
+    expect(BOUNDED_SEARCH_HINTS).toEqual(Object.keys(SEARCH_REACH).sort());
+  });
+});
+
 describe("a hint can solve from any mid-game position", () => {
   for (const [name, game] of HINT_GAMES) {
     // Heavy, fixed-seed work (re-solve by following hints move-by-move across
@@ -259,6 +329,7 @@ describe("a hint can solve from any mid-game position", () => {
       expect(presets.length, `${name}: no preset to walk`).toBeGreaterThan(0);
       for (const { title, params } of presets) {
         const search = permitsSearch(game, params);
+        const bounded = BOUNDED_SEARCH_HINTS.includes(name);
         // **This walk buys breadth over presets; the seed count is not the dial
         // to turn, and that was priced rather than assumed.** One seed either
         // way: the slow tier widens the *presets* (209 cases, ~2 min), the gate
@@ -285,7 +356,7 @@ describe("a hint can solve from any mid-game position", () => {
         const seeds = SEEDS.slice(0, 1);
         for (const seed of seeds) {
           expect(() =>
-            solveByHints(game, params, `${name}-${title}-${seed}`, search),
+            solveByHints(game, params, `${name}-${title}-${seed}`, search, bounded),
           ).not.toThrow();
           walkedCases++;
         }

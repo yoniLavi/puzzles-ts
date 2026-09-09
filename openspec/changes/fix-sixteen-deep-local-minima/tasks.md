@@ -1,77 +1,80 @@
 # fix-sixteen-deep-local-minima — tasks
 
-## 0. What is already established — do not re-derive it
+## 0. What was already established — not re-derived
 
 - [x] 0.1 **A reproduction, checked directly rather than read off a browser.**
       5×5, tiles
       `1,2,3,4,5,6,8,7,9,10,15,12,13,14,11,16,17,19,18,20,22,21,23,24,25` — four
-      swapped pairs, eight tiles out of place. `sixteenGame.hint()` refuses in
-      3.2 s, having run the deep search and failed.
+      swapped pairs. `sixteenGame.hint()` refused in 3.2 s, re-confirmed at the
+      start of this session, having run the deep search and failed.
 - [x] 0.2 **Reach and cost** are in `fix-sixteen-endgame-stranding`'s tasks: the
-      state-bounded search reaches 8 at this size, the deep search 9, and each
-      further ply costs about 40×. Thirteen is not reachable by any arrangement
-      of the same machinery.
-- [x] 0.3 **A constructive solver cannot be the answer**, and this is the finding
-      worth carrying: `hint-resume.test.ts` applies a plan's *first* move and
-      recomputes, so a maneuver whose potential falls only at its end is walked
-      into the middle and abandoned. Only per-move-monotone mechanisms survive
-      that walk; a commutator is not one.
-- [x] 0.4 **The refusal is false.** `NO_MOVE_WORTH_MAKING` — "No move here would
-      get you closer." — is untrue on a board where plenty of moves get you
-      closer and the hint merely cannot find one.
-- [x] 0.5 **How rare this is, relative to what was fixed.** On the forty 5×5
-      census seeds the previous change took stranding from 5 to **0**, and the
-      board in 0.1 came from a browser-dealt game outside that sample. So the
-      remaining class is rarer than the one removed — rare enough that a
-      forty-game walk missed it and forty minutes of play found it. Do not
-      re-measure the rate by walking seeds: it costs about an hour and was killed
-      for memory three times out of four. Use the board in 0.1.
+      state-bounded search reaches 8 at this size, the deep search 9, each
+      further ply about 40×. Thirteen is not reachable by any arrangement of the
+      same machinery. **Still true, and no longer the relevant question.**
+- [x] 0.3 **A constructive solver cannot be the answer**: the walk applies a
+      plan's first move and recomputes, so a maneuver whose potential falls only
+      at its end is abandoned mid-way. Still true.
+- [x] 0.4 **The refusal was false.** `NO_MOVE_WORTH_MAKING` claims something
+      about the board that no search here establishes.
+- [x] 0.5 **Rarity**: the previous change took 5×5 stranding from 5-in-40 to 0,
+      and this board came from play outside that sample. Not re-measured by
+      walking seeds (about an hour, killed for memory three times in four); the
+      named board is the instrument instead.
 
-## 1. Decide the shape
+## 1. The shape
 
-- [ ] 1.1 **Complete or bounded-and-honest?** This is a scope decision, not an
-      implementation one, and it belongs to the owner. Completeness needs a
-      per-move-monotone potential computable at distance 13+ with a branching
-      factor of 40 — research-shaped, no guarantee.
-- [ ] 1.2 Whichever way it goes, **do the honest refusal anyway**: a
-      search-driven hint that has run out of reach should say so, and point at
-      Auto-solve. It is cheap and it is true, which the current sentence is not.
+- [x] 1.1 **Complete *and* honest, and completeness turned out to be cheap.**
+      The fork assumed reaching further was the only route to completeness. It
+      was not: the search is steered by a measure blind to permutation cycles,
+      and counting them escapes the minimum with the budget already there. So
+      there was no scope decision to put to the owner — the measurement removed
+      it.
+- [x] 1.2 The honest refusal shipped as well, because the reach is real and a
+      board past it must still say something true.
 
-## 1b. The framework question it opens
+## 1b. The framework question
 
-- [ ] 1b.1 **Decide what the cross-game guarantee means for a game that
-      searches.** `hint-resume.test.ts` says a hint never gives up on a solvable
-      board; a deductive game can meet that, a search-driven one has a *reach*
-      instead. Sixteen passes today because the sampled seeds miss the deep
-      minima — a new seed could turn the guard red truthfully.
-- [ ] 1b.2 If an honest out-of-reach refusal is to be allowed, it needs the
-      treatment the tiered exemption got: **one wording**, and a way for the
-      guard to tell it from a broken hint — **derived from what the game is**,
-      not from a roster (`AGENTS.md` § "A game joins a shared mechanic by
-      *having* it").
+- [x] 1b.1 **What the cross-game guarantee means for a game that searches**: it
+      has a *reach*, not a deduction, and past it may refuse. Recorded in the
+      `ts-engine` delta.
+- [x] 1b.2 **One wording, and a derived population.** `SEARCH_OUT_OF_REACH`; the
+      walk derives its members by reading which games call `planSlides(` in
+      their own comment-stripped source, and carries a one-line-per-member
+      ledger the derivation asserts exactly. Verified failing: with the marker
+      broken the ledger test reports `expected [] to deeply equal [netslide,
+      sixteen]`; with a wrong wording planted in Sixteen the walk reports the
+      new message rather than the old "hint gave up".
 
-## 2. If bounded
+## 2. Honest refusal
 
-- [ ] 2.1 Wording. Player-facing, so the owner's.
-- [ ] 2.2 Decide whether `NO_MOVE_WORTH_MAKING` splits. It currently serves two
-      different claims — "nothing here is worth doing" and "I could not find
-      anything" — and only the first is a statement about the board. Its doc
-      comment reasons carefully about what a game may legitimately differ on;
-      this is a case that reasoning did not anticipate, so read it before
-      changing it.
-- [ ] 2.3 Say what the reach *is*, somewhere a player can find it, or decide
-      deliberately not to.
+- [x] 2.1 Wording — names `Show solution…`, **not** `Auto-solve for me`, which
+      is continuous hinting and refuses wherever a single hint does. Pointing at
+      it would have been advice that cannot work, on the one screen a player has
+      just been let down on.
+- [x] 2.2 `NO_MOVE_WORTH_MAKING` does **not** split; it narrows. Its remaining
+      callers (Fifteen, Flood, Inertia) are constructions that cannot return
+      empty on an unsolved board, so there the sentence is a backstop that
+      states the truth. A bounded search is the opposite case, and that is the
+      new constant. Both doc comments say which is which.
+- [x] 2.3 The reach is stated where a player meets it: `help/features.md`
+      § Hints now teaches three refusals rather than two, and names the two
+      puzzles it applies to.
 
-## 3. If complete
+## 3. Completeness
 
-- [ ] 3.1 A potential that falls on every move. A pattern database driving IDA\*
-      is the candidate; measure the reach it buys before designing around it, the
-      way `fix-sixteen-endgame-stranding` priced its own candidates.
-- [ ] 3.2 Guard it against the board in 0.1 and against the shapes
-      `fix-sixteen-endgame-stranding` pinned.
+- [x] 3.1 The measure counts **tangles** — non-trivial cycles of the tile
+      permutation — priced at `TANGLE_COST` (4) each, only past the
+      `TANGLES_IN_REACH` (2) the exact searches unwind on their own.
+      Weights 2 to 8 all escape the named board; 4 is the one whose plan reaches
+      the finished board rather than merely a better one.
+- [x] 3.2 Guarded against the board in 0.1 and against three- and five-tangle
+      boards, by **walking recomputed hints to solved** rather than by asserting
+      a plan length — the first arrangement of this fix returned plans and never
+      solved. `fix-sixteen-endgame-stranding`'s two boards still get their
+      complete nine-move plans, asserted by its own guard, unchanged.
 
 ## 4. Close
 
-- [ ] 4.1 `npm run gate`.
-- [ ] 4.2 Run the app: play 5×5 through to a finish, or to an honest refusal.
-- [ ] 4.3 Owner acceptance.
+- [x] 4.1 `npm run gate`.
+- [x] 4.2 Run the app: 5×5 played through to a finish following hints.
+- [ ] 4.3 Owner acceptance — the refusal wording and the help paragraph.

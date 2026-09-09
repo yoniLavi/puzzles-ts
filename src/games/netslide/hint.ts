@@ -23,7 +23,7 @@
  */
 
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
-import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
+import { ALREADY_SOLVED, SEARCH_OUT_OF_REACH } from "../../engine/hint-refusal.ts";
 import { HINT_SETTING_UP } from "../../engine/hint-vocab.ts";
 import {
   planSlides,
@@ -424,8 +424,14 @@ export function hint(
     },
   });
 
+  // The planner came back with nothing, which says the searches ran out of
+  // reach — never that the board has no better move. Netslide has not been seen
+  // here (its finish condition is any arrangement that powers the grid, so its
+  // distances are short), but the sentence has to be true if it ever is: this
+  // is the same empty plan Sixteen meets on its tangled endgames, and the
+  // refusal that used to stand here claimed something neither game checks.
   if (plan.moves.length === 0) {
-    return { ok: false, error: NO_MOVE_WORTH_MAKING };
+    return { ok: false, error: SEARCH_OUT_OF_REACH };
   }
 
   return { ok: true, steps: narratePlan(s, target, plan.moves) };

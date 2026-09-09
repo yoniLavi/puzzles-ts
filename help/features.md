@@ -108,8 +108,8 @@ color alone.
 
 ### When there's no hint to give {#hint-refusals}
 
-Two quite different things stop a hint, and they call for opposite responses, so
-it's worth knowing which one you're looking at.
+Three quite different things stop a hint, and they call for different responses,
+so it's worth knowing which one you're looking at.
 
 * **There's a mistake on the board.** A hint won't reason from a position that
   already contradicts the clues, because everything it deduced from there would
@@ -123,7 +123,14 @@ it's worth knowing which one you're looking at.
   the answer from ::show-solution:: *Show solution…*, at the foot of the
   *Help me play* group.
 
-The hint says which of the two has happened. It never guesses on your behalf and
+* **The hint can't see that far.** In the two puzzles where a hint plans a route
+  home rather than teaching a technique — *Sixteen* and *Netslide* — it works by
+  searching ahead a limited number of moves. From a badly tangled position the
+  way home is longer than it can search, and the honest answer is that it didn't
+  find one. This is *not* a claim that no move would help: play a few moves of
+  your own and ask again, or take the answer from *Show solution…*.
+
+The hint says which of these has happened. It never guesses on your behalf and
 then presents the guess as a deduction: a guess that happens to come off is not
 a technique, and teaching you one would be the point.
 

@@ -1,20 +1,18 @@
 # fix-sixteen-deep-local-minima
 
-**Readiness: the problem is understood and the two obvious answers are both
-ruled out by measurement.** This is not a "turn the budget up" change, and it is
-not a "write a proper solver" change either — the second was tried on paper and
-fails for a reason worth reading before proposing it again. What it needs first
-is a decision about whether Sixteen's hint should be *complete* or *honest*.
+**The change was scoped as a decision and turned out to be a measurement.** It
+was written as a fork — make Sixteen's hint *complete*, or make it *honest* —
+with the first ruled research-shaped and the second the owner's to word. Both
+halves shipped, and the reason the first was affordable is that the premise
+underneath the fork was wrong: the problem was never that the search could not
+reach far enough.
 
 ## Why
 
-`fix-sixteen-endgame-stranding` removed the stranding class that sat **nine**
-moves from finished — one or two pairs of tiles in each other's cells, which
-accounted for 5 of 40 walked 5×5 games and 12 of 40 walked 5×4 ones. It did that
-by reaching one ply further than the state-bounded search could.
-
-**Deeper local minima remain.** Playing 5×5 in the browser and following hints,
-the board reached this position at move 33 and the hint gave up:
+`fix-sixteen-endgame-stranding` removed the stranding class **nine** moves from
+finished — one or two pairs of tiles in each other's cells. Deeper ones
+remained. Playing 5×5 in the browser and following hints, the board reached this
+position at move 33 and the hint gave up:
 
 ```
  1  2  3  4  5
@@ -24,89 +22,88 @@ the board reached this position at move 33 and the hint gave up:
 22 21 23 24 25
 ```
 
-**Four** swapped pairs — eight tiles out of place, every slide making the picture
-worse, and far beyond nine moves from home. Checked directly, not inferred from
-the browser: `hint()` refuses on it in 3.2 s, having run the deep search and
-failed.
+Four swapped pairs, eight tiles out of place, every slide making the picture
+worse. Checked directly rather than read off a browser: `hint()` refused on it
+in 3.2 s, having run the deep search and failed.
 
-**And the refusal it gives is not true.** `NO_MOVE_WORTH_MAKING` says "No move
-here would get you closer." On that board plenty of moves get you closer — the
-hint simply cannot find one. That is the hint quality bar's first rule ("claim
-only what you have checked") broken by a shared constant, which makes it a
-question about the constant as much as about Sixteen.
+**And the refusal was not true.** `NO_MOVE_WORTH_MAKING` — "No move here would
+get you closer." — says something about the *board*. On that board plenty of
+moves got the player closer; the hint merely could not find one. That is the
+hint quality bar's first rule broken by a shared constant, on a player who had
+followed thirty-three hints to arrive there.
 
-## Why the obvious answers do not work
+## What was wrong with the framing
 
-- **A bigger search.** Each extra ply costs about 40× at this board size. Nine
-  moves already needs a kept 835 k-board database and a five-ply walk (~4 s);
-  thirteen is out of reach by any arrangement of the same machinery.
-- **A constructive solver** — place tiles by commutator, the way a person solves
-  it. This is the natural answer and it **cannot be used as a hint here**:
-  `hint-resume.test.ts` applies only a plan's *first* move and recomputes, so a
-  maneuver whose potential falls only at the *end* of it is walked into the
-  middle and abandoned, and the next recompute starts a different maneuver from a
-  worse board. Only mechanisms that are monotone **per move** survive that walk,
-  and a commutator is not.
+The proposal priced two answers and ruled both out: a bigger search (each ply
+costs ~40×, thirteen is unreachable) and a constructive solver (a commutator is
+not monotone per move, so `hint-resume.test.ts` walks it into the middle of a
+maneuver and abandons it). Both of those hold. What neither of them questioned
+is **the measure the search is steered by**.
 
-That leaves a real question rather than an implementation task.
+The heuristic is "total distance the tiles must travel". It is blind to a
+*tangle* — a non-trivial cycle of the permutation — pricing two tiles in each
+other's cells at the two squares it looks like when they are nine moves apart.
+So a tangled board is a strict local minimum, and the fallback search cannot
+climb out of one however long it is given. Counting the tangles costs one O(n)
+pass and the same 6000-node fallback then walks straight out.
 
-## Two directions, and they are not the same kind of thing
+**The named board now solves in sixteen recomputed hints.** So do boards of
+three and five tangles. The one- and two-tangle endgames are untouched, and
+still get the deep search's complete nine-move plans.
 
-1. **Make it complete.** Find a potential that falls on every single move and is
-   computable — a pattern database strong enough to drive IDA\* to the true
-   shortest path at distance 13+, or some other per-move-monotone measure. This
-   is a research-shaped task with no guarantee of success, and the branching
-   factor is 40.
-2. **Make it honest.** Accept that the hint has a reach, and say so when it is
-   exceeded: a refusal that tells the player the truth ("I can't see a way home
-   from here") and points at Auto-solve, instead of a sentence that is false.
-   Cheap, and strictly better than what ships today.
+## What it cost to get right, which is the part worth reading
 
-**These are not alternatives so much as an order.** (2) is worth doing whether or
-not (1) is ever attempted, and it is the part with player-facing wording in it,
-which makes it the owner's call.
+- **A last-resort second measure ping-pongs.** The first arrangement kept the
+  travel measure and reached for the tangle-aware one only where travel was
+  helpless. Consecutive recomputes then steered by *different* measures: out of
+  the tangle, back into it, 400 moves without solving. `docs/games/hints.md`
+  § "Recompute-stable plans" now carries this one level down — the measure has
+  to be as stable as the plan.
+- **Sharpening a measure moves every gate that reads it.** The deep search is
+  gated on "the fallback found nothing better than standing still", which is a
+  statement about the measure. Sharpen it everywhere and that gate stops
+  opening: the 5×4 one-pair board dropped from a complete nine-move plan to a
+  five-move partial one — a regression inside a change meant to be pure gain. So
+  tangles are priced only past the two the exact searches can unwind themselves,
+  and every board they own is measured exactly as before.
+- **An obvious test board was unsolvable.** Three swapped pairs on a 5×5 is an
+  *odd* permutation, and every slide on an odd-sided square board is even — so
+  it is unreachable, and it convicted the hint of a defect it did not have. Two
+  of the boards measured here were built that way before it was noticed.
 
-## The framework question underneath it
+## The framework half, which is the durable part
 
-**The collection's strongest hint guarantee may not be attainable by a
-search-driven game, and nothing currently says so.** `hint-resume.test.ts`
-asserts that a hint never gives up on a solvable board, and treats a refusal from
-an untiered game as a failure. A *deductive* game can meet that: its deduction is
-either complete for the tier or the tier is honest about permitting search — and
-the walk already accepts `DEDUCTION_EXHAUSTED` on exactly those tiers, with one
-wording, which is the shape of an honest exemption.
+**The collection's strongest hint guarantee is not attainable by a game that
+searches, and nothing said so.** `hint-resume.test.ts` asserts a hint never
+gives up on a solvable board. A deductive game can meet it — its deduction is
+complete for the tier, or the tier's name promises search. A searching game has
+a **reach**, and past it the only honest answer is "I did not find one".
 
-A game that *searches* has a **reach** instead, and past it there is no honest
-answer but "I could not find one". Sixteen passes the walk today because the
-sampled seeds avoid the deep minima; a new seed could turn it red at any time,
-and that would be the guard reporting the truth rather than a regression.
+So the collection gains `SEARCH_OUT_OF_REACH`, and the walk gains an exemption
+for exactly the games that plan by searching — **derived from their own source**
+(they call the shared slide planner), with a per-member ledger, never a roster.
+Netslide gets the same wording on the same code path: it has not been seen
+refusing, but the sentence has to be true if it ever does.
 
-So the question is not only "how deep can Sixteen search" but **what the
-guarantee means for a game that searches** — and if the answer is that such a
-game may refuse when out of reach, then it needs the same treatment the tiered
-exemption got: one wording, and a way for the guard to tell an honest
-out-of-reach refusal from a broken hint. Deriving that from what the game already
-*is* rather than from a roster is the part worth thinking about, and
-`AGENTS.md` § "A game joins a shared mechanic by *having* it" is the constraint.
+The wording deliberately does not name Auto-solve, which is *continuous
+hinting* and would refuse for the same reason the hint just did. It names
+`Show solution…`.
 
 ## What Changes
 
-- Decide whether Sixteen's hint is to be complete or bounded-and-honest.
-- If bounded: a wording that is true when a search-driven hint runs out of reach,
-  and the question of whether `NO_MOVE_WORTH_MAKING` should be split — it
-  currently serves both "nothing here is worth doing" and "I could not find
-  anything", which are different claims.
-- If complete: a mechanism that is monotone per move, measured against the
-  boards this change names.
+- Sixteen's hint measure counts tangles past the two the exact searches reach.
+- `SEARCH_OUT_OF_REACH` replaces `NO_MOVE_WORTH_MAKING` in Sixteen and Netslide;
+  the constant's own doc says which remaining callers may keep the old one and
+  why (they are constructions that cannot come back empty).
+- `hint-resume.test.ts` accepts it from the derived searching games, and rejects
+  anything else from them.
+- `help/features.md` § Hints teaches three refusals rather than two.
 
 ## Impact
 
-- Affected specs: `sixteen`, and `ts-engine` if the refusal vocabulary changes
-  (that constant is shared, and its doc comment reasons about what a game may
-  legitimately differ on).
-- Affected code: `src/games/sixteen/`, `src/engine/hint-refusal.ts`.
-- **Do not re-measure from scratch**: `fix-sixteen-endgame-stranding`'s tasks
-  carry the reach, cost and shape numbers, and the board above is a fixed
-  reproduction.
-- Owner acceptance: **yes**, twice over — a player reads the wording, and the
-  completeness question is a scope decision.
+- Affected specs: `sixteen`, `ts-engine`.
+- Affected code: `src/games/sixteen/index.ts`, `src/games/netslide/hint.ts`,
+  `src/engine/hint-refusal.ts`, `src/engine/hint-resume.test.ts`,
+  `src/engine/hint-refusal.test.ts`, `help/features.md`,
+  `docs/games/hints.md`.
+- Owner acceptance: the refusal wording is player-facing.

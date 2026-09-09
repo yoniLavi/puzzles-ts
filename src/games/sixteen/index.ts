@@ -7,7 +7,7 @@ import type {
   UiUpdate,
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
-import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
+import { ALREADY_SOLVED, SEARCH_OUT_OF_REACH } from "../../engine/hint-refusal.ts";
 import { HINT_SETTING_UP, workingOn } from "../../engine/hint-vocab.ts";
 import {
   CURSOR_SELECT,
@@ -29,6 +29,7 @@ import { registerGame } from "../../engine/registry.ts";
 import {
   planSlides,
   type SlideMove,
+  type SlidePuzzle,
   slidePieces,
   toroidalDist,
 } from "../../engine/slide-planner.ts";
@@ -403,6 +404,40 @@ function statusbarText(state: SixteenState, _ui: SixteenUi): string {
 
 // --- hint heuristic ----------------------------------------------------
 
+/**
+ * What one **tangle too many** is worth to the hint's measure of a board, over
+ * and above the distance its tiles have to travel. See {@link TANGLES_IN_REACH}
+ * for what "too many" means, and the measure itself for what a tangle is.
+ *
+ * Four, because a slide that breaks a tangle open costs about that much travel:
+ * anything at or above it makes untangling read as progress rather than as
+ * damage, which is the whole job. The exact value matters much less than the
+ * sign — measured on the four-tangle board this exists for, weights from 2 to 8
+ * all escape it, and 4 is the one that escapes it with a plan that reaches the
+ * finished board rather than merely a better one.
+ */
+const TANGLE_COST = 4;
+
+/**
+ * How many tangles the searches above the heuristic can unwind on their own.
+ *
+ * **This is the number that keeps the two measures the same board-for-board
+ * wherever it matters.** A tangle is about four and a half moves — a pair of
+ * tiles in each other's cells is nine moves from home, measured — so the deep
+ * search's nine-move reach is exactly two of them. On any board at or under
+ * that, the exact searches give a genuinely shortest plan and the heuristic is
+ * not consulted at all; pricing tangles there would only change which board the
+ * *fallback* prefers, and it would do one thing worse: the deep search's gate
+ * is "the fallback found nothing better than standing still", so a measure that
+ * escapes a two-tangle endgame stops that gate from ever opening and turns a
+ * complete nine-move plan into a five-move partial one. Measured, on the 5×4
+ * one-pair board, when this term was priced from the first tangle.
+ *
+ * So the measure differs from plain travel **only past the point where nothing
+ * else can help**, which is also the only place it was ever needed.
+ */
+const TANGLES_IN_REACH = 2;
+
 /** Sixteen's own move for a planned slide. The planner's `delta` already means
  * "how far a tile travels", which is Sixteen's sense too, so only the axis
  * spelling differs. */
@@ -456,20 +491,53 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
         toroidalDist(cell % w, (tile - 1) % w, w);
     }
   }
+  /**
+   * How far this board is from finished: how far the tiles have to travel, plus
+   * what travel alone cannot see — the **tangles** the board is tied in.
+   *
+   * A tangle is a non-trivial cycle of the tile permutation: two tiles in each
+   * other's cells, three rotating among themselves. Travel prices one at the
+   * couple of cells it looks like and it is really nine moves, because nothing
+   * short of taking other tiles out and putting them back unwinds it. That is
+   * why a tangled board is a *strict local minimum* of travel alone — every
+   * slide makes the picture worse — and why a hint steered by travel alone
+   * cannot leave one. Four tangles is thirteen-odd moves from home, twice what
+   * the exact search stores and four plies past what the deep one walks, and
+   * that is the board the hint used to give up on.
+   *
+   * Counting them is the escape. The measure is not a distance and is not
+   * trying to be: the searches that need a true distance do not consult a
+   * heuristic at all, and this one only has to make untangling read as progress.
+   * Past {@link TANGLES_IN_REACH} it does, and at or under it this is plain
+   * travel — see that constant for why the difference has to stop there.
+   */
+  const cycleSeen = new Uint8Array(n);
   const heuristic = (board: Int32Array): number => {
     let total = 0;
     for (let cell = 0; cell < n; cell++)
       total += distTable[cell * stride + board[cell]];
-    return total;
+    cycleSeen.fill(0);
+    let tangles = 0;
+    for (let cell = 0; cell < n; cell++) {
+      if (cycleSeen[cell] || board[cell] - 1 === cell) continue;
+      let at = cell;
+      let length = 0;
+      while (!cycleSeen[at]) {
+        cycleSeen[at] = 1;
+        at = board[at] - 1;
+        length++;
+      }
+      if (length > 1) tangles++;
+    }
+    return total + TANGLE_COST * Math.max(0, tangles - TANGLES_IN_REACH);
   };
 
   const last = state.lastMove;
-  const plan = planSlides({
+  const puzzle: Omit<SlidePuzzle, "heuristic"> = {
     w,
     h,
     start: tiles,
     goal,
-    heuristic,
     moves,
     // The heuristic search only ever runs on boards the exact search below
     // could not reach, which are the ones far from finished. One budget, not the
@@ -521,11 +589,24 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     // Without this the hint gave up on about one 5×5 game in five, four tiles
     // from home, on a board that was perfectly solvable.
     deepSearch: { forwardDepth: 5, databaseDepth: 4 },
-  });
+  };
+
+  const plan = planSlides({ ...puzzle, heuristic });
 
   const path = plan.moves;
   if (path.length === 0) {
-    return { ok: false, error: NO_MOVE_WORTH_MAKING };
+    // **Everything above has run out of reach**, which is the only thing this
+    // says. It used to say "No move here would get you closer", which is a
+    // claim about the board that nothing here ever checked — and on the board
+    // that prompted this it was flatly untrue: plenty of moves got the player
+    // closer, and they had followed thirty-three hints to arrive at it.
+    //
+    // A hint that plans by searching has a *reach*, and no arrangement of this
+    // machinery extends it much: each further ply costs about 40×. So past it
+    // the truthful answer is that we did not find a way, and the player is told
+    // what does still work. `hint-resume.test.ts` accepts this as an honest end
+    // to its walk, for the games it derives as planning by search.
+    return { ok: false, error: SEARCH_OUT_OF_REACH };
   }
 
   // Narrate each step against the simulated board it applies to: the

@@ -613,6 +613,65 @@ describe("Sixteen hint", () => {
     }
   });
 
+  it("finds the way home from the tangled boards the searches cannot reach", () => {
+    // **The board the hint gave up on, and the class around it.** A *tangle* is
+    // a non-trivial cycle of the tile permutation — two tiles in each other's
+    // cells, three rotating among themselves. Travel distance prices one at the
+    // couple of squares it looks like and it is really nine moves, so a board
+    // made of several is a strict local minimum a dozen moves from finished:
+    // past the exact search (eight), past the deep search (nine), and unclimbable
+    // by a fallback steered by travel alone. `hint()` refused on the first board
+    // below in 3.2 s, saying "No move here would get you closer" about a
+    // position the player had reached by following thirty-three of its hints.
+    //
+    // **The assertion is the walk, not the plan.** What a player experiences is
+    // one recomputed hint at a time, and a plan that comes back is worth nothing
+    // if the next recompute sends the board back where it came from — which is
+    // exactly what the first fix for this did, for 400 moves without solving
+    // (the sharper measure ran only where the blunt one was stuck, so
+    // consecutive recomputes steered by different measures). Walking to solved
+    // is what says the measure is stable, and no assertion on a single plan can.
+    //
+    // **Every board here is an *even* permutation, and that is load-bearing.**
+    // On a 5×5 board every slide is a 5-cycle, so odd permutations are
+    // unreachable and unsolvable: a three-swap board built as an obvious test
+    // case looks exactly like this class and can never be finished, which is a
+    // way to convict the hint of a defect it does not have.
+    const cases: { label: string; desc: string; maxMoves: number }[] = [
+      {
+        label: "four tangles — the board the hint refused on",
+        desc: "1,2,3,4,5,6,8,7,9,10,15,12,13,14,11,16,17,19,18,20,22,21,23,24,25",
+        maxMoves: 40,
+      },
+      {
+        label: "three tangles — two swaps and a 3-cycle",
+        desc: "1,2,3,4,5,6,8,7,9,10,15,12,13,14,11,16,17,20,18,19,21,22,23,24,25",
+        maxMoves: 40,
+      },
+      {
+        label: "five tangles — the refused board plus a 3-cycle",
+        desc: "3,1,2,4,5,6,8,7,9,10,15,12,13,14,11,16,17,19,18,20,22,21,23,24,25",
+        maxMoves: 60,
+      },
+    ];
+
+    for (const { label, desc, maxMoves } of cases) {
+      let state = newState({ w: 5, h: 5, movetarget: 0 }, desc);
+      let moves = 0;
+      for (; moves < maxMoves; moves++) {
+        if (state.completed > 0) break;
+        const res = sixteenGame.hint?.(state);
+        expect(res?.ok, `${label}: the hint gave up after ${moves} moves`).toBe(true);
+        if (!res?.ok) return;
+        state = executeMove(state, res.steps[0].move);
+      }
+      expect(
+        state.completed,
+        `${label}: following recomputed hints did not finish in ${maxMoves} moves`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
   it("recomputing after every move still lands on the same board, one move nearer", () => {
     // The property the plan above only *displays*: a player who re-asks after
     // every move gets a fresh search each time, and those searches must agree

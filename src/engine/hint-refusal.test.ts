@@ -37,6 +37,7 @@ import {
   FIX_MISTAKES_FIRST,
   NO_MOVE_WORTH_MAKING,
   PUZZLE_NOT_REASONABLE,
+  SEARCH_OUT_OF_REACH,
 } from "./hint-refusal.ts";
 
 /** Every non-test source file in the games tree, as raw text. Read through Vite
@@ -73,6 +74,7 @@ const APPROVED = new Set([
   FIX_MISTAKES_FIRST,
   NO_MOVE_WORTH_MAKING,
   PUZZLE_NOT_REASONABLE,
+  SEARCH_OUT_OF_REACH,
 ]);
 
 /**

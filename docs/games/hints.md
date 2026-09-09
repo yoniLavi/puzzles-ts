@@ -693,7 +693,8 @@ clue's line").
 **Never write a refusal message.** Import it from
 [`src/engine/hint-refusal.ts`](../../src/engine/hint-refusal.ts):
 `ALREADY_SOLVED`, `FIX_MISTAKES_FIRST`, `DEDUCTION_EXHAUSTED`,
-`CONTRADICTION_UNLOCALIZED`, `NO_MOVE_WORTH_MAKING` and friends.
+`CONTRADICTION_UNLOCALIZED`, `NO_MOVE_WORTH_MAKING`, `SEARCH_OUT_OF_REACH` and
+friends.
 
 **And never write the *opening* either.** The two refusals every deductive hint
 owes are `commonHintRefusal(completed, mistakeCount)`:
@@ -748,6 +749,23 @@ search-permitting tier.
 The reason this is a rule: `help/features.md` §Hints teaches "there is a mistake
 on the board" and "deduction has run out" as a pair, because they call for
 opposite responses. That is unteachable if the wording changes between games.
+
+**A hint that *searches* has a reach, and past it says so** —
+`SEARCH_OUT_OF_REACH`, not `NO_MOVE_WORTH_MAKING`. The distinction is what each
+sentence claims. "No move here would get you closer" is a statement about the
+**board**, and only a game that checked it may say it; the games that do are
+constructions that cannot come back empty on an unsolved board (Fifteen's
+placement, Flood's solver, Inertia's tour), where it is a backstop. A bounded
+search coming back empty has established nothing about the board — only about
+itself — and Sixteen spent two years saying the first sentence on tangled
+endgames where most moves *did* get the player closer, reached by following
+thirty-odd of its own hints.
+
+This is the one place the walk's central promise is relaxed, so it is derived
+rather than declared: `hint-resume.test.ts` reads which games call the shared
+slide planner out of their own source and accepts this refusal from exactly
+those, with a per-member ledger saying why each has a reach. A deductive game
+emitting it fails, and so does a searching game emitting anything else.
 
 **Pick the mistake message by whether anything will actually be highlighted.**
 `FIX_MISTAKES_FIRST` promises a highlight, so emit it only under a
@@ -1851,6 +1869,44 @@ generalize from getting it wrong:
   fine) and never its 5×5 (cycled for ever). An untiered game is now sliced by
   size instead, first preset and last. When you add a hint, ask which axis your
   game varies and check that the slice covers it.
+- **One measure, on every board.** Where a plan is steered by a measure of the
+  board, there must be exactly *one* such measure in play, because the walk
+  applies a plan's first move and recomputes. Two measures that take turns
+  ping-pong as surely as two plans do, and the alternation can be introduced by
+  something that reads like a pure addition: Sixteen's tangle term (below) was
+  first written as a *last resort* — the ordinary measure first, the sharper one
+  only where the ordinary one was helpless. Each recompute then swapped which
+  measure was steering, the board went out of the tangle and straight back into
+  it, and the walk ran 400 moves without solving. Making the sharper measure the
+  only measure solved the same board in sixteen. This is § "Recompute-stable
+  plans" applied one level down: the *measure* has to be as stable as the plan.
+
+**The tangle term, and what generalizes from it.** A hint that plans by
+searching gets steered by a heuristic, and a heuristic has local minima the
+searches above it cannot always reach past. Sixteen's is the worked example:
+"total distance the tiles must travel" prices two tiles in each other's cells at
+the two squares it looks like, and it is really nine moves — so a board made of
+four such tangles is a strict local minimum thirteen-odd moves from home, and
+the hint refused on it. The escape was not a deeper search (each further ply
+costs about 40× at a branching factor of 40) but **counting the structure the
+measure was blind to**: non-trivial cycles of the tile permutation, priced above
+what a slide out of one costs.
+
+Two things to take from it if you meet the same shape:
+
+- **Sharpening a measure moves every gate that reads it.** Sixteen's deep search
+  is gated on "the fallback found nothing better than standing still", which is a
+  statement *about the measure*. A sharper measure escapes the endgames that gate
+  exists for, so the gate stopped opening and a complete nine-move plan became a
+  five-move partial one — a regression in the change that was meant to be pure
+  gain. The fix is to make the sharper measure differ from the blunt one **only
+  where nothing else can help**: Sixteen prices tangles only past the number the
+  exact searches can unwind on their own, so every board those searches own is
+  measured exactly as before.
+- **The escape is the game's own knowledge, and belongs to the game.** Netslide
+  shares the whole planner and cannot have this term — its wire tiles are
+  interchangeable, so "tiles in each other's cells" means nothing there. That is
+  the AGENTS.md test for a real per-game decision, answered.
 
 ### Read one plan out loud
 
