@@ -112,8 +112,20 @@ already running on every board.
       stranded game needs; typical worst is ~1.5 s.
 
       **That sample was not wide enough, and the app said so** — see the finding
-      below. Read 116/116 as "the shape this change targets is gone", not as "the
-      hint never strands".
+      below. Read it as "the shape this change targets is gone", not as "the hint
+      never strands".
+
+      **The comparable number, measured afterwards on the census's own forty 5×5
+      seeds: 5 stranded → 0.** All five that stranded before (#1, #23, #26, #28,
+      #39) now walk to solved, in 45, 47, 41, 54 and 40 moves. That is the claim
+      this change is entitled to: it converts the boards it was aimed at, every
+      one of them. It is *not* a claim that no board strands — the app found one
+      that does, on a shape four times deeper.
+
+      Three attempts at that measurement were killed for system memory before one
+      finished; it is a forty-game walk with a deep search in most of them. If it
+      needs repeating, walk the five seeds above rather than all forty — they are
+      the ones that carry the signal, and they cost a tenth as much.
 - [x] 4.2 `npm run gate` green (301 files, 8502 tests).
 - [x] 4.3 **Ran the app.** Five 5×4 games followed to "COMPLETED!" — 5×4 is the
       preset that stranded 12 of 40 before. A 5×5 game then stranded, on a deeper

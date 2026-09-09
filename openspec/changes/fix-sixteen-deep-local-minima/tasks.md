@@ -19,6 +19,13 @@
 - [x] 0.4 **The refusal is false.** `NO_MOVE_WORTH_MAKING` — "No move here would
       get you closer." — is untrue on a board where plenty of moves get you
       closer and the hint merely cannot find one.
+- [x] 0.5 **How rare this is, relative to what was fixed.** On the forty 5×5
+      census seeds the previous change took stranding from 5 to **0**, and the
+      board in 0.1 came from a browser-dealt game outside that sample. So the
+      remaining class is rarer than the one removed — rare enough that a
+      forty-game walk missed it and forty minutes of play found it. Do not
+      re-measure the rate by walking seeds: it costs about an hour and was killed
+      for memory three times out of four. Use the board in 0.1.
 
 ## 1. Decide the shape
 
