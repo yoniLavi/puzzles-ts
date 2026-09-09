@@ -27,8 +27,13 @@
       section, "Proving an adoption: the fixtures are not enough".
 - [x] 3.2 `deduction-fixpoint.ts`'s header: sixteen call sites, and the standing
       instruction to re-derive the list by a **comment-stripped** scan.
-- [ ] 3.3 The hint result — deferred to the first hint written on an adopter,
-      which is the measurement, not this change.
+- [x] 3.3 The hint result is **handed to
+      `characterize-the-hint-assessment-corpus`, not answered here**, and that is
+      the honest split: "what does a hint cost now?" is measured by writing one,
+      which is a change of its own. Five of the seven adopters ship no hint
+      (tracks, rome, seismic, ascent, bridges) and are now on the runner that
+      carries the recorder — so they are the corpus that answers it, and if the
+      answer is "the same as before", that closes `docs/framework-rdd/` for good.
 
 ## Findings
 

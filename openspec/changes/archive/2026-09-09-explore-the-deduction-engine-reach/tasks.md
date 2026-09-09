@@ -8,19 +8,23 @@
 - [x] 0.4 Measure the bookkeeping the runner would own, per game, with a median.
 - [x] 0.5 Check what already ships.
 - [x] 0.6 Apply the falsifier.
-- [ ] 0.7 The narrower alternative — see § Findings; it is `adopt-the-deduction-
-      runner-where-it-rewires`, not yet scaffolded.
+- [x] 0.7 The narrower alternative — there is **none**, and that is itself the
+      result. Every previous exploration in this vision found a mechanic-keyed
+      module hiding behind a declaration; this one found the opposite.
 
 ## 1. Report
 
-- [ ] 1.1 Findings written below.
-- [ ] 1.2 Update `docs/framework-rdd/deduction.md` in place with the verdict.
-- [ ] 1.3 Say in the README whether the vision has now reported in full.
+- [x] 1.1 Findings written below.
+- [x] 1.2 `docs/framework-rdd/deduction.md` carries the verdict banner.
+- [x] 1.3 `docs/framework-rdd/README.md` says the vision has reported in full,
+      and that this end's answer is the only one that is neither "shipped
+      differently" nor "withdrawn".
 
 ## 2. Next
 
-- [ ] 2.1 Scaffold the adoption change the sweep found, and rewrite or withdraw
-      this one.
+- [x] 2.1 Rescoped rather than promoted or withdrawn:
+      `adopt-the-deduction-runner-where-it-rewires`, scaffolded and **done** —
+      all seven games adopted, 16 → 23 of 46 call sites.
 
 ## Findings
 

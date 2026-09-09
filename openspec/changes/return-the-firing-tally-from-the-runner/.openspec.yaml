@@ -1,0 +1,4 @@
+# No deltas: the returned tally is additive and no spec describes the runner's
+# return shape. What changes is that seven games stop carrying a test seam.
+schema: spec-driven
+skip_specs: true
