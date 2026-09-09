@@ -22,6 +22,10 @@
  */
 
 import {
+  type DeductionTechnique,
+  runDeductionFixpoint,
+} from "../../engine/deduction-fixpoint.ts";
+import {
   areaBits,
   DIFF_EASY,
   DIFF_HARD,
@@ -299,7 +303,67 @@ export function validateGame(board: SeismicBoard): number {
  * Mutates `board` into whatever the solver could establish — callers that need
  * the original back (the generator's clue-stripping loop) snapshot it first.
  */
-export function solveGame(board: SeismicBoard, maxDiff: number): number {
+/** The three rungs, easiest first — the ladder {@link solveGame} runs.
+ *
+ * A factory because every rung closes over the board; the ids are what
+ * `runDeductionFixpoint` names when a step budget trips and what
+ * `seismic-ladder.test.ts` takes its firing census over. */
+function seismicLadder(board: SeismicBoard): DeductionTechnique[] {
+  return [
+    { id: "marks", tier: DIFF_EASY, run: () => solverMarks(board) },
+    { id: "areas", tier: DIFF_EASY, run: () => solverAreas(board) },
+    { id: "attempt", tier: DIFF_HARD, run: () => solverAttempt(board) },
+  ];
+}
+
+export function solveGame(
+  board: SeismicBoard,
+  maxDiff: number,
+  onFiring?: (id: string) => void,
+): number {
+  solverInit(board);
+  const ladder = seismicLadder(board);
+
+  const { grade: diff } = runDeductionFixpoint({
+    techniques: onFiring
+      ? ladder.map((t) => ({
+          ...t,
+          run: () => {
+            const did = t.run();
+            if (did > 0) onFiring(t.id);
+            return did;
+          },
+        }))
+      : ladder,
+    maxTier: maxDiff,
+    baseGrade: DIFF_EASY,
+    settled: () => validateGame(board) !== STATUS_UNFINISHED,
+  });
+
+  if (validateGame(board) !== STATUS_COMPLETE) return SOLVE_FAILED;
+  return diff;
+}
+
+/**
+ * The hand-written ladder this solver ran until
+ * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
+ * `seismic-ladder.test.ts` proves the adoption against (the rungs are
+ * module-private, so the comparison lives on this side of the file).
+ *
+ * **Its grade bookkeeping is the interesting part, and it is why this game
+ * needed an argument rather than a transcription.** `diff = Math.max(diff,
+ * DIFF_HARD)` sits *before* the Hard rung, so it bumps on **reaching** the tier
+ * rather than on firing it — literally the distinction that keeps Boats out of
+ * the runner, whose grade means "highest tier that fired". Here the two
+ * coincide, and the reason is that reaching the bump and not firing is
+ * unreachable-with-a-grade: the loop's first line breaks out unless the board is
+ * `UNFINISHED`, so a pass that reaches the bump has an unfinished board; if
+ * `solverAttempt` then returns 0 the loop breaks with the board unchanged and
+ * still unfinished, and `solveGame` returns {@link SOLVE_FAILED} — discarding
+ * `diff` entirely. Every path that *returns* a grade of `DIFF_HARD` fired the
+ * Hard rung at least once.
+ */
+export function solveGameLegacy(board: SeismicBoard, maxDiff: number): number {
   let diff = DIFF_EASY;
 
   solverInit(board);

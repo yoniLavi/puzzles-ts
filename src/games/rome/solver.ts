@@ -41,9 +41,14 @@
  *   the shared {@link Dsf} reproduces `dsf.c`'s tie-break exactly, which is
  *   what makes this quirk portable rather than a divergence.
  */
+import {
+  type DeductionTechnique,
+  runDeductionFixpoint,
+} from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import {
   DESC_ERRORS,
+  DIFF_EASY,
   DIFF_NORMAL,
   DIFF_TRICKY,
   EMPTY,
@@ -504,7 +509,11 @@ function solverOpposites(board: RomeBoard): number {
  * `5·cells` decreases every iteration. The explicit cap turns a porting
  * divergence into a loud throw instead of a hung worker.
  */
-export function romeSolve(board: RomeBoard, maxdiff: number): number {
+export function romeSolve(
+  board: RomeBoard,
+  maxdiff: number,
+  onFiring?: (id: string) => void,
+): number {
   const { w, h, grid, pencil } = board;
   const s = w * h;
   const scratch = newValidateScratch(s);
@@ -514,6 +523,90 @@ export function romeSolve(board: RomeBoard, maxdiff: number): number {
     pencil[i] = grid[i] === EMPTY ? FM_ARROWMASK : grid[i] & FM_ARROWMASK;
   }
   // Candidates that would point off the grid are impossible from the start.
+  for (let x = 0; x < w; x++) {
+    pencil[x] &= ~FM_UP;
+    pencil[(h - 1) * w + x] &= ~FM_DOWN;
+  }
+  for (let y = 0; y < h; y++) {
+    pencil[y * w] &= ~FM_LEFT;
+    pencil[y * w + (w - 1)] &= ~FM_RIGHT;
+  }
+
+  const members = regionMembers(board);
+  const singles = new Int32Array(s);
+  const doubles = new Int32Array(s);
+  const maxIterations = 5 * s + 16;
+  let status = STATUS_INCOMPLETE;
+  let iteration = 0;
+
+  const ladder: DeductionTechnique[] = [
+    { id: "single", tier: DIFF_EASY, run: () => solverSingle(board) },
+    { id: "doubles", tier: DIFF_EASY, run: () => solverDoubles(board, sets) },
+    { id: "loops", tier: DIFF_EASY, run: () => solverLoops(board, dsf) },
+    {
+      id: "find-4-position",
+      tier: DIFF_NORMAL,
+      run: () => find4Position(board, singles, doubles),
+    },
+    { id: "naked-pairs", tier: DIFF_NORMAL, run: () => nakedPairs(board, members) },
+    { id: "expand", tier: DIFF_NORMAL, run: () => solverExpand(board, dsf) },
+    { id: "opposites", tier: DIFF_TRICKY, run: () => solverOpposites(board) },
+  ];
+
+  runDeductionFixpoint({
+    techniques: onFiring
+      ? ladder.map((t) => ({
+          ...t,
+          run: () => {
+            const did = t.run();
+            if (did > 0) onFiring(t.id);
+            return did;
+          },
+        }))
+      : ladder,
+    // **The tier gates were mid-ladder `break`s and this is a `maxTier` skip,
+    // and the two agree only because the ladder is tier-sorted.** Breaking on
+    // the first over-cap rung abandons everything after it; skipping abandons
+    // only the rungs that are themselves over-cap. Identical here because tiers
+    // ascend down the ladder — and *not* identical for a game whose ladder puts
+    // a cheap rung after an expensive one, which the runner deliberately still
+    // runs. Check the ordering before copying this.
+    maxTier: maxdiff,
+    // **Rome's own non-convergence guard, kept rather than replaced.** It ran at
+    // the top of every iteration, which is where `settled` runs; the shared
+    // `stepBudget` would have been the tidier home but it is documented as the
+    // recording path's guard, and this is the byte-match-critical solve path
+    // whose throw message and limit are part of its behavior. Moving it is a
+    // separate decision from adopting the loop.
+    settled: () => {
+      if (iteration++ > maxIterations) {
+        throw new Error("rome: solver did not converge");
+      }
+      status = validateGame(board, false, scratch);
+      return status !== STATUS_INCOMPLETE;
+    },
+  });
+
+  return status;
+}
+
+/**
+ * The hand-written ladder this solver ran until
+ * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
+ * `rome-ladder.test.ts` proves the adoption against.
+ *
+ * Rome returns a *status*, not a tier, so the runner's grade is unused here —
+ * what it takes is the loop, the tier cap and the named rungs.
+ */
+export function romeSolveLegacy(board: RomeBoard, maxdiff: number): number {
+  const { w, h, grid, pencil } = board;
+  const s = w * h;
+  const scratch = newValidateScratch(s);
+  const { dsf, sets } = scratch;
+
+  for (let i = 0; i < s; i++) {
+    pencil[i] = grid[i] === EMPTY ? FM_ARROWMASK : grid[i] & FM_ARROWMASK;
+  }
   for (let x = 0; x < w; x++) {
     pencil[x] &= ~FM_UP;
     pencil[(h - 1) * w + x] &= ~FM_DOWN;

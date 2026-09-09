@@ -17,12 +17,17 @@
  * that upstream wrote, commented out and never compiled. Adding above rather
  * than editing in place is why that change kept the oracle intact.
  */
+import {
+  type DeductionTechnique,
+  runDeductionFixpoint,
+} from "../../engine/deduction-fixpoint.ts";
 import { deduceHintPlan as accumulateHintPlan } from "../../engine/hint-plan.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import {
   ADJTHAN,
   ALL_BITS,
   cloneState,
+  DIFF_EASY,
   DIFF_TRICKY,
   type SubsetsMistake,
   type SubsetsState,
@@ -359,7 +364,96 @@ function disjoint(state: SubsetsState, cube: Uint8Array): number {
  * so a board solvable at Easy is solvable at Tricky. Required, not defaulted:
  * an implicit cap is how a caller silently measures the wrong tier.
  */
-export function subsetsSolveGame(state: SubsetsState, maxdiff: number): SubsetsStatus {
+export function subsetsSolveGame(
+  state: SubsetsState,
+  maxdiff: number,
+  onFiring?: (id: string) => void,
+): SubsetsStatus {
+  const s = state.w * state.h;
+  const n2 = 1 << state.n;
+  const counts = new Int32Array(s);
+  const cube = new Uint8Array(s * n2).fill(1);
+
+  for (let i = 0; i < s; i++) {
+    if (state.immutable[i]) continue;
+    state.known[i] = 0;
+    state.mask[i] = ALL_BITS(state.n);
+  }
+
+  // The verdict the loop stopped on. `settled` owns the classification because
+  // it runs exactly where the hand-written loop's prologue ran — see below.
+  let status: SubsetsStatus = "unfinished";
+
+  const ladder: DeductionTechnique[] = [
+    { id: "arrows", tier: DIFF_EASY, run: () => applyArrows(state) },
+    { id: "disjoint", tier: DIFF_EASY, run: () => disjoint(state, cube) },
+    { id: "bits-from-cube", tier: DIFF_EASY, run: () => bitsFromCube(state, cube) },
+    {
+      id: "single-position",
+      tier: DIFF_EASY,
+      run: () => solveSinglePosition(state, counts, cube),
+    },
+    // **The cap is an argument, not a tier**, which is the guards-itself
+    // convention rather than a new option on the runner: this rung runs at every
+    // tier and does *more* at Tricky (its head half is Easy's shipped strength).
+    // Declaring it `tier: DIFF_TRICKY` would be wrong — it would stop running at
+    // Easy, where upstream runs it.
+    {
+      id: "arrows-advanced",
+      tier: DIFF_EASY,
+      run: () => applyArrowsAdvanced(state, cube, maxdiff >= DIFF_TRICKY),
+    },
+  ];
+
+  runDeductionFixpoint({
+    techniques: onFiring
+      ? ladder.map((t) => ({
+          ...t,
+          run: () => {
+            const did = t.run();
+            if (did > 0) onFiring(t.id);
+            return did;
+          },
+        }))
+      : ladder,
+    // **`settled` carries the per-iteration prologue, and that is exact rather
+    // than convenient.** The hand-written loop opened every pass by classifying
+    // the board (returning if it was no longer unfinished) and then re-syncing
+    // the candidate cube; `settled` is called at the top of every iteration,
+    // before any rung, which is precisely that position. The alternative — a
+    // rung at position 0 that always returns `0`, the Singles precedent — works
+    // too but would put a never-firing entry in the ladder, and the firing
+    // census would then have to excuse it.
+    settled: () => {
+      status = subsetsValidate(state, null, counts);
+      if (status !== "unfinished") return true;
+      syncCube(state, cube);
+      cubeSingleCount(state, counts, cube);
+      return false;
+    },
+  });
+
+  return status;
+}
+
+/**
+ * The hand-written ladder this solver ran until
+ * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
+ * `subsets-ladder.test.ts` proves the adoption against.
+ *
+ * **What adoption bought here is smaller than for the other adopters, and worth
+ * saying so.** Subsets uses neither of the runner's two graded features: it
+ * returns a *verdict*, not a tier, so there is no grade; and its difficulty is a
+ * boolean handed to one rung rather than a cap over the ladder, so `maxTier` is
+ * unused. What it gets is the loop, the restart discipline, named rungs in the
+ * step-budget's non-termination message, and the firing census the equivalence
+ * test takes. That is real but modest, and it is the honest reason this game
+ * sits low on the adoption list rather than high.
+ */
+export function subsetsSolveGameLegacy(
+  state: SubsetsState,
+  maxdiff: number,
+): SubsetsStatus {
   const s = state.w * state.h;
   const n2 = 1 << state.n;
   const counts = new Int32Array(s);
