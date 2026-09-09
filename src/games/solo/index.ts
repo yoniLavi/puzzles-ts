@@ -364,10 +364,23 @@ function isComplete(state: SoloState): boolean {
 function solve(orig: SoloState, _curr: SoloState, aux?: string): SolveResult<SoloMove> {
   const cr = orig.cr;
   if (aux) {
-    // aux is an "S<digit><digit>…" encoded full solution (encode_solve_move).
-    const grid: number[] = [];
-    for (let i = 0; i < cr * cr; i++) grid[i] = aux.charCodeAt(i + 1) - 48;
-    return { ok: true, move: { type: "solve", grid } };
+    // aux is `encodeSolveMove`'s "S<n>,<n>,…" — comma-separated, because a cell
+    // reaches 16 at 4x4 and no single character can carry that. It is NOT
+    // upstream's one-character-per-cell form, and reading it that way decoded
+    // every separator as `,` − `0` = −4: half of every generated board, the
+    // fixed clues included. It survived because `aux` exists only on a board the
+    // midend *generated* — the New game button and any `params#seed` id — while
+    // every test dealt from a `params:desc` id, where `aux` is absent and the
+    // re-derivation below runs instead.
+    const parts = aux.slice(1).split(",");
+    if (parts.length === cr * cr) {
+      const grid = parts.map(Number);
+      if (grid.every((v) => Number.isInteger(v) && v >= 1 && v <= cr)) {
+        return { ok: true, move: { type: "solve", grid } };
+      }
+    }
+    // A malformed aux is not worth failing on: the givens re-derivation below
+    // reaches the same answer from the puzzle itself.
   }
   // Re-derive from the givens only.
   const fromGivens = givensOnly(orig);

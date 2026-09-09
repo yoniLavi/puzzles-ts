@@ -11,6 +11,41 @@ ladder of techniques. This document is the contract; it is deliberately the
 longest of the set because it is where the collection's hardest-won rules
 concentrate.
 
+> **📏 MEASURED 2026-09-09 (`explore-the-deduction-engine-reach`), and the
+> answer is *reach*, not design.** With presentation withdrawn, this was the
+> vision's last part with substance left, so all 30 off-engine solvers were
+> read against the runner's own criterion — *name a promise it makes that your
+> loop must break*.
+>
+> **16 of the 46 games with a `solver.ts` use a shared deduction organ; 30 do
+> not, and 28 of those had never been asked.** Ten fit — **seven of them
+> (tracks, rome, seismic, ascent, subsets, galaxies, bridges) need only
+> rewiring**, their techniques already being separate functions. Tracks writes
+> `if (diff >= TIER && technique(b)) { maxDiff = Math.max(maxDiff, TIER);
+> continue; }` eight times, which is this runner's signature transcribed by
+> hand, and ships no hint. Six more sweep every technique before restarting and
+> would change deduction order on a solver-gated generator; four have one rung
+> and nothing to share; three are earned hatches (Boats joins Loopy and
+> Lightup); seven are not deduction ladders at all.
+>
+> **The line count is small and it is the wrong measure.** The driver a game
+> would hand over has a median of **21 lines**. That would have withdrawn this
+> the way it withdrew the tile renderer — except that lines were the
+> *presentation* end's argument and never this one's. This document's own claim
+> is that the framework "makes the wiring impossible to get wrong", and **two
+> instances of exactly that wiring drift surfaced in four days**: Undead's
+> `solveAtCap` disagreeing with its generator (`assert-that-tiers-bind`), and
+> Solo's `solve` and `findMistakes` — two hand-wired consumers of one solver —
+> where `solve` corrupted every generated board for sixteen presets with the
+> whole suite green (`fix-solo-solve-from-aux`).
+>
+> **So the verdict is rescope: adopt the seven, one at a time, on
+> `re-derive-the-fixpoint-no-gos`'s bar — no new option on the runner, every
+> frozen fixture byte-unchanged — and judge it by what a hint then costs**, not
+> by lines removed. Five of the seven are hintless, which makes them
+> `characterize-the-hint-assessment-corpus`'s corpus and the honest test of
+> whether this end's argument is true.
+
 ## The Technique contract
 
 A technique is one named deduction a player could learn, with everything the

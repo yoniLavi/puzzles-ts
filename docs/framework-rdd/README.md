@@ -311,10 +311,28 @@ argument; the record is
 the exploration found instead is `widen-the-mistake-overlay-coverage-key`.
 
 **So every part of this vision has now reported.** Two rows shipped as helpers,
-four directions were withdrawn with postmortems, one completed. Hints for the
-deliberately held-back games
-(`characterize-the-hint-assessment-corpus`) sit *after* the declarations, because
-they validate a framework and there needs to be more of one to validate.
+four directions were withdrawn with postmortems, one completed — and on
+2026-09-09 **the deduction end was measured too**
+(`explore-the-deduction-engine-reach`), which was the last part with substance
+left. Its answer is the only one in the set that is neither "shipped
+differently" nor "withdrawn": **the shared thing already exists and is already
+correct; it has simply never been wired to two thirds of its population.**
+Sixteen of the 46 games with a solver use it; seven more fit by rewiring alone,
+and one of them writes the runner's exact signature out eight times by hand.
+
+**The line saving is 21 lines a game and that is the wrong measure** — it would
+have withdrawn this end the way it withdrew the tile renderer, and lines were
+never this end's argument. What is: two instances of the wiring drift this
+document predicts surfaced in four days, in Undead and in Solo, neither found by
+a framework and one of them a Solve that corrupted every generated board. See
+[`deduction.md`](./deduction.md)'s banner.
+
+**Which is why hints stop being "after the declarations" and become the
+measurement.** Five of the seven adoptable games are hintless, so
+`characterize-the-hint-assessment-corpus`'s corpus is exactly the population
+this adoption would serve — and what a hint costs *after* adoption is the honest
+test of whether this end's argument is true. If it does not get cheaper, that
+closes the vision for good.
 
 ## What the framework is for
 

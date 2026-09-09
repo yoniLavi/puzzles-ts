@@ -1,0 +1,4 @@
+# No deltas: the runner's contract does not change — that is this change's first
+# rule. What changes is how many games are wired to it.
+schema: spec-driven
+skip_specs: true

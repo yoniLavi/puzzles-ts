@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
+import { leafPresets } from "../../engine/testing/hint-games.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import cReference from "./__fixtures__/solo-c-reference.json" with { type: "json" };
 import { soloGame } from "./index.ts";
@@ -87,6 +88,36 @@ describe("solo solve", () => {
     const s = getState(me);
     expect(s.completed).toBe(true);
     expect(checkValid(s.cr, s.blocks, s.killerData, s.xtype, s.grid)).toBe(true);
+  });
+
+  // **The case above cannot fail on the bug this one exists for.** It deals from
+  // a `params:desc` id, where the midend holds no `aux`, so `solve` takes the
+  // re-derive-from-givens path. `aux` exists only on a board the midend
+  // *generated* — the New game button, and any `params#seed` id — and that path
+  // decoded `encodeSolveMove`'s comma-separated payload one character per cell,
+  // turning every separator into `,` − `0` = −4. Half of every generated board,
+  // the fixed clues included, and the move sets `completed` regardless, so the
+  // app reported a solved puzzle over a corrupt grid. Every Solo test dealt from
+  // a desc id, which is why sixteen presets shipped it.
+  it("solve fills a valid grid on a *generated* board, where aux is present", () => {
+    for (const preset of leafPresets(soloGame.presets())) {
+      const me = new Midend(soloGame);
+      const id = `${soloGame.encodeParams(preset.params, true)}#solve-aux`;
+      expect(
+        me.newGameFromId(id),
+        `${preset.title}: could not deal ${id}`,
+      ).toBeUndefined();
+      expect(me.solve(), `${preset.title}: solve refused`).toBeUndefined();
+      const s = getState(me);
+      expect(
+        [...s.grid].every((v) => v >= 1 && v <= s.cr),
+        `${preset.title}: solved grid holds a value outside 1..${s.cr}`,
+      ).toBe(true);
+      expect(
+        checkValid(s.cr, s.blocks, s.killerData, s.xtype, s.grid),
+        `${preset.title}: solved grid does not satisfy the puzzle`,
+      ).toBe(true);
+    }
   });
 });
 

@@ -1,0 +1,4 @@
+# No deltas: a defect fix. `solve` was already required to produce the puzzle's
+# solution; nothing about that requirement changes. What changes is that it does.
+schema: spec-driven
+skip_specs: true

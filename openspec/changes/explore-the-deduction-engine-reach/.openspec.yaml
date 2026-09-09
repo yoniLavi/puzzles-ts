@@ -1,0 +1,11 @@
+# No spec deltas: this change's deliverable is a measurement and a go/no-go on
+# how far the shared deduction engine should reach. Writing a requirement now
+# would be the "instrument before the finding" error the exploration exists to
+# avoid — and it is the error `explore-the-tile-loop-inversion` was withdrawn
+# for having been made once already, in the same vision.
+#
+# If the sweep carries it, this change is rewritten as a ready one and carries
+# the deltas then; if it does not, the record is a postmortem under
+# `openspec/postmortems/` and the deduction end has reported like the rest.
+schema: spec-driven
+skip_specs: true

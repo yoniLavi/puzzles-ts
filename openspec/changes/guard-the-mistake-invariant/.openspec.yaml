@@ -1,0 +1,6 @@
+# No deltas: a cross-game guard. The invariant it asserts is already normative
+# — a mistake is a divergence from the solution, so a board with no divergence
+# has none — and every game already intends it. What is new is that something
+# checks.
+schema: spec-driven
+skip_specs: true
