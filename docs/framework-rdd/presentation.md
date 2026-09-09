@@ -4,24 +4,38 @@
 > Authored by `rewrite-game-dev-docs` (2026-08-07). Current truth:
 > [`docs/games/`](../games/README.md). See the [vision README](./README.md).
 
-> **This is the vision's one remaining unfalsified claim** (2026-09-09). Every
-> other part has reported: the definition end shipped twice as helpers and was
-> withdrawn three times, `re-express-the-collection` archived done on 2026-09-06,
-> and the deduction end's generator projection was measured on 2026-09-08 and
-> found a near-zero correctness case. Presentation is the only claim left with
-> real money on it and **no measurement against the tree**.
+> **⛔ WITHDRAWN, 2026-09-09.** The vision's last unfalsified claim has
+> reported, and it is falsified. `explore-the-tile-loop-inversion` read all 57
+> `redraw` bodies and classified them line by line; the number below that nobody
+> had taken — *~80 lines of identical bookkeeping per game wrapped around ~10
+> lines that are actually the game's* — **is wrong by about a factor of four,
+> and it is inverted**. The medians are **20 lines of bookkeeping around 64
+> lines of the game's own**; no game in the collection reaches 80, the largest
+> being Subsets at 64 by a deliberately generous instrument and ~29 read by
+> hand. Two of the change's three falsifier clauses fired: the bookkeeping
+> median is under 30, and **the defect this was to kill by construction does not
+> exist** — all 38 games whose `redraw` takes a `mistakes` parameter route it
+> into the diff key correctly, and a game that folds the overlay bit into its
+> packed key *cannot* have the bug in the first place. The clause that did
+> **not** fire is the axis: 31 of 57 games do have a clean one-tile repaint
+> unit. It is the value of serving them that fails, not the fit.
 >
-> **`explore-the-tile-loop-inversion` is the change that will test it** — not
-> ready, an `/opsx:explore` as task 0, and it may withdraw this document the way
-> rows 3–5 of the README were withdrawn. Its first job is the number below that
-> nobody has taken: *~80 lines of identical bookkeeping per game*. Three things
-> already say it is not 80 — part of the benefit ships today (`OverlaySidecar`
-> in 19 games, `border-grid-render.ts`, `raised-bevel.ts`, the shared thick-rect
-> outline, and `hint-overlay.test.ts`, a **derived** paint-twice guard that
-> already asserts the hint overlay survives the cache for every hinting game);
-> see [`guarantees.md`](./guarantees.md) § "What every game gets asserted, per
-> capability" for what is and is not watched. **Read the exploration's verdict
-> before building anything described below.**
+> This document is kept for the argument only; nothing below is a direction the
+> project is heading in. The full record and the measurements are
+> [`openspec/postmortems/2026-09-09-tile-loop-inversion-withdrawal.md`](../../openspec/postmortems/2026-09-09-tile-loop-inversion-withdrawal.md);
+> what the exploration found instead is `widen-the-mistake-overlay-coverage-key`.
+>
+> **Two corrections to the text below, so it is not read as fact.** Inertia is
+> named as an escape hatch for "full-board repaints" and has an entirely
+> ordinary per-tile cache; the game that genuinely repaints its whole canvas
+> every frame is **Loopy**, which this document never mentions. And a good share
+> of the deliverable list already ships — `OverlaySidecar` (19 games), the
+> midend's animation scheduling and `winFlash` (36), the blitter API (8), the
+> shared coordinate pair (`unify-the-board-origin`, 31), `draw.ts` (32),
+> `hint-mark.ts` (24) — plus `hint-overlay.test.ts`, a **derived** paint-twice
+> guard that already asserts the hint overlay survives the cache for every
+> hinting game; see [`guarantees.md`](./guarantees.md) § "What every game gets
+> asserted, per capability" for what is and is not watched.
 
 ## This is not the scene graph, and the difference is the design
 

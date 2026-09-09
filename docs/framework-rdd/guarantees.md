@@ -171,8 +171,15 @@ asserting the size of the population it sweeps**).
 >
 > This does not make the row true; a framework-owned plane would be *in the diff
 > key by construction*, which is stronger than any of the above. It does mean the
-> claim's remaining value has to be argued against what already ships, which is
-> what `explore-the-tile-loop-inversion` exists to measure.
+> claim's remaining value has to be argued against what already ships — which
+> `explore-the-tile-loop-inversion` measured, and the argument lost
+> (`openspec/postmortems/2026-09-09-tile-loop-inversion-withdrawal.md`). **"In
+> the diff key by construction" turned out to describe most of the collection
+> already**: a game that folds its overlay bit into the packed key cannot omit
+> it, and all 38 games whose `redraw` takes a `mistakes` parameter route it
+> correctly. The mistake ledger's "17 today" is also an over-count — at least
+> six of the seventeen already have a paint-twice test written in a spelling the
+> coverage key does not see (`widen-the-mistake-overlay-coverage-key`).
 
 Per-game tests do not disappear — they shrink to what is actually per-game:
 the technique logic's own unit tests, the narration wording assertions, and

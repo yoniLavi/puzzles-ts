@@ -121,6 +121,23 @@ overlay erases it. Exemplars: `towers.test.ts` ("highlights a mistake even
 when the cell was already drawn"), `galaxies.test.ts` ("recolors a flagged
 wall on a board that was already drawn").
 
+**Assert the settled frame paints nothing, first.** The overlay frame's op
+count only means something against a frame that emitted zero — otherwise a game
+that repaints unconditionally (Loopy repaints its whole canvas every frame)
+passes the test while proving nothing about its cache. Warm, redraw once more,
+assert *that* frame is empty, and only then turn the overlay on.
+
+**The bug is only expressible where the overlay is handed to the painter
+*beside* the key.** A game that folds its overlay bit into the packed tile value
+— `if (mistakeSet.has(i)) f |= DS_MISTAKE` — cannot omit it from the diff test,
+because the key *is* the diff test. The class lives in the sidecar games and in
+hand-packed side channels (Galaxies' wall mask), which is where the stale clause
+has to be. Measured 2026-09-09 across all 57 games
+(`openspec/postmortems/2026-09-09-tile-loop-inversion-withdrawal.md`): all 38
+whose `redraw` takes a `mistakes` parameter route it correctly, so the class has
+no live instance today — but it shipped twice before, and a new game reaching
+for a sidecar is reaching for the one shape that can still get it wrong.
+
 ## Drag previews and blitters
 
 ### A simulated-release preview lives in `moves.ts`

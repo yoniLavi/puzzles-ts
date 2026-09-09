@@ -1,0 +1,5 @@
+# No deltas: this corrects a test-coverage guard's key. It asserts nothing new
+# about behavior — what changes is which games the guard believes are already
+# covered, and the answer was wrong for at least six of them.
+schema: spec-driven
+skip_specs: true

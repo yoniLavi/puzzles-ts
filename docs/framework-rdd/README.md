@@ -296,11 +296,23 @@ part that rotted; the column was.
 > this vision is what `openspec list` says remains, which is the only place that
 > answer has ever been safe to keep.
 
-Presentation is **held**, and it is the vision's one remaining unfalsified
-claim: the scene-graph postmortem's bar is real downstream pressure, and none
-exists yet. `explore-the-tile-loop-inversion` is the change that will test it —
-not ready, an `/opsx:explore` as task 0, and it may withdraw itself the way rows
-3–5 did. Hints for the deliberately held-back games
+**Presentation has now reported too, and it is withdrawn** (2026-09-09).
+`explore-the-tile-loop-inversion` read all 57 `redraw` bodies and found its
+headline number inverted: the medians are 20 lines of framework-ownable
+bookkeeping around 64 lines of the game's own, not 80 around 10, and no game in
+the collection reaches 80. The defect the inversion was to kill by construction
+has zero live instances, and is structurally impossible in any game that folds
+its overlay bit into the packed key. The scene-graph postmortem's bar — real
+downstream pressure — was never even reached; the claim failed on its own
+arithmetic first.
+[`presentation.md`](./presentation.md) is struck through and kept for the
+argument; the record is
+`openspec/postmortems/2026-09-09-tile-loop-inversion-withdrawal.md`, and what
+the exploration found instead is `widen-the-mistake-overlay-coverage-key`.
+
+**So every part of this vision has now reported.** Two rows shipped as helpers,
+four directions were withdrawn with postmortems, one completed. Hints for the
+deliberately held-back games
 (`characterize-the-hint-assessment-corpus`) sit *after* the declarations, because
 they validate a framework and there needs to be more of one to validate.
 
