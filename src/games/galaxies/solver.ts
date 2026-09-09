@@ -9,6 +9,10 @@
  * `solve` pass none, so their path is byte-identical by construction and the
  * frozen differential is the guard.
  */
+import {
+  type DeductionTechnique,
+  runDeductionFixpoint,
+} from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import {
   addAssoc,
@@ -812,17 +816,110 @@ function solverRecurse(
   return diff;
 }
 
+/**
+ * The four rungs, all at one tier — the ladder {@link solverStateInner} runs.
+ *
+ * **They already return the runner's exact convention**: `IMPOSSIBLE` is `-1`,
+ * `PROGRESS` is `1`, `NOTHING` is `0`, so adoption needed no mapping layer at
+ * all. And **the recorder passes straight through**, which is what made this
+ * game safe to adopt: `runDeductionFixpoint` is oblivious to a rung's side
+ * effects, so each rung still takes `rec` and still records exactly the firings
+ * the hint narrates. Not one word of Galaxies' hint moved
+ * (`adopt-the-deduction-runner-where-it-rewires` task 2.5: if the shared
+ * recorder could not have carried it, Galaxies would have stayed out).
+ */
+function galaxiesLadder(s: GalaxiesState, rec?: SolverRecorder): DeductionTechnique[] {
+  return [
+    {
+      id: "lines-opposite",
+      tier: GalaxiesDiff.Normal,
+      run: () => solverLinesOpposite(s, rec),
+    },
+    {
+      id: "spaces-oneposs",
+      tier: GalaxiesDiff.Normal,
+      run: () => solverSpacesOneposs(s, rec),
+    },
+    {
+      id: "expand-dots",
+      tier: GalaxiesDiff.Normal,
+      run: () => solverExpandDots(s, rec),
+    },
+    {
+      id: "extend-exclaves",
+      tier: GalaxiesDiff.Normal,
+      run: () => solverExtendExclaves(s, rec),
+    },
+  ];
+}
+
 function solverStateInner(
   s: GalaxiesState,
   maxDiff: GalaxiesDiff,
   depth: number,
+  rec?: SolverRecorder,
+  onFiring?: (id: string) => void,
+): GalaxiesDiff {
+  const ret = solverObvious(s, rec);
+  if (ret === IMPOSSIBLE) return GalaxiesDiff.Impossible;
+
+  const ladder = galaxiesLadder(s, rec);
+  // **`GalaxiesDiff` is not a tier ladder** — `Normal` is 0 and `Impossible`
+  // and `Ambiguous` are sentinels *above* it, not harder tiers. Every rung is
+  // Normal, so the grade is a constant and the old loop's four
+  // `Math.max(diff, Normal)` lines were no-ops. `maxDiff` gates only the
+  // recursion below, never the ladder, so there is no `maxTier` here.
+  const { grade: diff, impossible } = runDeductionFixpoint({
+    techniques: onFiring
+      ? ladder.map((t) => ({
+          ...t,
+          run: () => {
+            const did = t.run();
+            if (did > 0) onFiring(t.id);
+            return did;
+          },
+        }))
+      : ladder,
+    baseGrade: GalaxiesDiff.Normal,
+  });
+  if (impossible) return GalaxiesDiff.Impossible;
+
+  const { complete } = checkComplete(s, false);
+  if (complete) return diff;
+  if (maxDiff >= GalaxiesDiff.Unreasonable) {
+    return solverRecurse(s, maxDiff, depth);
+  }
+  return GalaxiesDiff.Unfinished;
+}
+
+/** Run the difficulty-graded solver on `s` (mutated in place).
+ * Returns the *minimum* difficulty at which the puzzle is uniquely
+ * solvable, or `Ambiguous` / `Impossible` / `Unfinished`. */
+export function solverState(
+  s: GalaxiesState,
+  maxDiff: GalaxiesDiff,
+  onFiring?: (id: string) => void,
+): GalaxiesDiff {
+  return solverStateInner(s, maxDiff, 0, undefined, onFiring);
+}
+
+/**
+ * The hand-written ladder this solver ran until
+ * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
+ * `galaxies-ladder.test.ts` proves the adoption against.
+ *
+ * It stops at the ladder rather than continuing into `solverRecurse`, because
+ * the recursion is not what was re-plumbed and calling it here would compare
+ * two identical code paths at great expense.
+ */
+export function galaxiesLadderLegacy(
+  s: GalaxiesState,
   rec?: SolverRecorder,
 ): GalaxiesDiff {
   let ret = solverObvious(s, rec);
   if (ret === IMPOSSIBLE) return GalaxiesDiff.Impossible;
 
   let diff = GalaxiesDiff.Normal;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     ret = solverLinesOpposite(s, rec);
     if (ret === IMPOSSIBLE) return GalaxiesDiff.Impossible;
@@ -850,20 +947,33 @@ function solverStateInner(
     }
     break;
   }
-
-  const { complete } = checkComplete(s, false);
-  if (complete) return diff;
-  if (maxDiff >= GalaxiesDiff.Unreasonable) {
-    return solverRecurse(s, maxDiff, depth);
-  }
-  return GalaxiesDiff.Unfinished;
+  return diff;
 }
 
-/** Run the difficulty-graded solver on `s` (mutated in place).
- * Returns the *minimum* difficulty at which the puzzle is uniquely
- * solvable, or `Ambiguous` / `Impossible` / `Unfinished`. */
-export function solverState(s: GalaxiesState, maxDiff: GalaxiesDiff): GalaxiesDiff {
-  return solverStateInner(s, maxDiff, 0);
+/** The adopted ladder alone, stopping where {@link galaxiesLadderLegacy} does,
+ * so the two are comparable. */
+export function galaxiesLadderOnly(
+  s: GalaxiesState,
+  onFiring?: (id: string) => void,
+): GalaxiesDiff {
+  const ret = solverObvious(s, undefined);
+  if (ret === IMPOSSIBLE) return GalaxiesDiff.Impossible;
+
+  const ladder = galaxiesLadder(s, undefined);
+  const { grade, impossible } = runDeductionFixpoint({
+    techniques: onFiring
+      ? ladder.map((t) => ({
+          ...t,
+          run: () => {
+            const did = t.run();
+            if (did > 0) onFiring(t.id);
+            return did;
+          },
+        }))
+      : ladder,
+    baseGrade: GalaxiesDiff.Normal,
+  });
+  return impossible ? GalaxiesDiff.Impossible : grade;
 }
 
 // --- the hint's two entry points into these rules --------------------

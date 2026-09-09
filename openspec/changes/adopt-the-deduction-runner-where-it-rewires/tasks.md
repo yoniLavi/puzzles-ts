@@ -1,109 +1,116 @@
 # adopt-the-deduction-runner-where-it-rewires — tasks
 
-Seven games, one commit each, the same three checks every time. The order is by
-how exactly each already writes the runner's shape, so the exemplar is the
-easiest and the argument gets harder as it goes — if the bar is going to break,
-it should break where the reasoning is visible rather than on game seven.
-
 ## 1. Tracks — the exemplar
 
-- [x] 1.1 The eight rungs declared as `{ id, tier, run }`, ids stable and
-      greppable, in `tracksLadder`.
-- [x] 1.2 Grade confirmed to mean the same number: `maxDiff` was bumped only
-      inside a fired branch, so it already meant *highest tier that fired*.
-      Recorded at the site, with the contrast to Boats' "deepest tier reached".
-- [x] 1.3 `tracks-differential.test.ts` byte-unchanged and the whole Tracks suite
-      green.
-- [x] 1.4 **Proved the wiring is live** — and this is where the change earned its
-      keep. See § Findings: the differential *does* catch a mis-declared tier
-      (eight cases red), but **cannot catch a deleted rung**, because one rung
-      fires nowhere. So the adoption is proved by a new equivalence test rather
-      than by the fixtures alone.
-- [x] 1.5 `tracks-ladder.test.ts`: the old loop kept as `tracksSolveLegacy`, and
-      the two required to agree on verdict, grade **and final board state**, over
-      20 boards × 3 caps, with a firing census asserted against a named
-      shortfall.
+- [x] 1.1 Eight rungs declared as `{ id, tier, run }` in `tracksLadder`.
+- [x] 1.2 Grade confirmed to mean the same number.
+- [x] 1.3 Differential byte-unchanged, whole suite green.
+- [x] 1.4 Proved the wiring is live — and found the fixtures cannot certify it.
+- [x] 1.5 `tracks-ladder.test.ts`, the equivalence oracle.
 
 ## 2. The remaining six
 
-Same checks each, **plus 1.5** — the equivalence oracle is now part of the bar,
-because Tracks showed a byte-match differential can pass over a rewiring it
-cannot see.
-
-- [ ] 2.1 **Seismic** (3 rungs). Its `diff = Math.max(diff, DIFF_HARD)` sits
-      *before* the only Hard technique, so it reads as "deepest tier reached";
-      show that not firing there ends the solve, which makes the two gradings
-      the same number.
-- [ ] 2.2 **Subsets** (5 rungs) — cap already passed *into* a rung
-      (`applyArrowsAdvanced(..., maxdiff >= DIFF_TRICKY)`), which is the
-      guards-itself convention rather than a new runner option.
-- [ ] 2.3 **Rome** (7 rungs) — carries its own iteration guard; check it against
-      the shared step budget rather than keeping both.
-- [ ] 2.4 **Ascent** (9 rungs) — takes a cap and returns no grade, so only the
-      solve projection is in scope; `solverOverlap` is conditionally available
-      (`diff >= HARD || mode === MODE_EDGES`) and guards itself.
-- [ ] 2.5 **Galaxies** (4 rungs, one tier) — already threads a `SolverRecorder`
-      for its hint. Adoption must not lose a word of that hint's narration; if
-      the shared recorder cannot carry it, **Galaxies stays out** and the reason
-      is recorded.
-- [ ] 2.6 **Bridges** (3 stages) — stages sweep all islands before restarting,
-      which is the runner's contract at the *ladder* level but worth confirming
-      does not change order within a stage.
+- [x] 2.1 **Seismic** (3 rungs). Grade coincidence shown, not assumed.
+- [x] 2.2 **Subsets** (5 rungs). Prologue in `settled`; cap stays an argument.
+- [x] 2.3 **Rome** (7 rungs). Iteration guard kept in `settled`, not folded into
+      the shared step budget — that budget is documented as the *recording*
+      path's, and this is the byte-match-critical solve path whose throw is part
+      of its behavior. Moving it is a separate decision.
+- [x] 2.4 **Ascent** (10 rungs). Two rungs guard themselves.
+- [x] 2.5 **Galaxies** (4 rungs). The recorder survives untouched, so the hint
+      keeps every word; `galaxies-hint.test.ts` is unchanged and green.
+- [x] 2.6 **Bridges** (3 stages). Sweep-then-report confirmed legal.
 
 ## 3. Report
 
-- [ ] 3.1 Update `docs/games/solver-and-generator.md` § "The deduction fixpoint"
-      with the new call-site count and any game that fell out with its reason.
-- [ ] 3.2 Update `deduction-fixpoint.ts`'s header — it lists its call sites by
-      name and the list has changed.
-- [ ] 3.3 State the *hint* result, which is the point: after adoption, what does
-      it cost to give one of the five hintless adopters a hint?
+- [x] 3.1 `docs/games/solver-and-generator.md`: four new exemplar rows and a new
+      section, "Proving an adoption: the fixtures are not enough".
+- [x] 3.2 `deduction-fixpoint.ts`'s header: sixteen call sites, and the standing
+      instruction to re-derive the list by a **comment-stripped** scan.
+- [ ] 3.3 The hint result — deferred to the first hint written on an adopter,
+      which is the measurement, not this change.
 
 ## Findings
 
-### Tracks adopted, and the fixtures could not certify it
+### The reach
 
-The rewiring is exact: 20 generated boards × 3 caps, and the runner-driven
-ladder agrees with the hand-written loop on verdict, grade **and every bit of
-the final board**. That is a stronger statement than the differential makes,
-which compares a generated desc against a C recording and never looks at the
-solver's working state.
+**16 → 23 of the 46 games with a solver**, counted comment-stripped. The seven
+are Tracks, Seismic, Subsets, Rome, Ascent, Galaxies and Bridges.
 
-**The differential is not weak — it has one blind rung, and so does everything
-else.** Asked to fail, it does: mis-declare `check-neighbors-both-ways` as
-Tricky and eight of its cases go red immediately. But **delete `check-single`
-entirely — from the new ladder or the old loop — and all 39 Tracks tests stay
-green.**
+### The bar held, and no rung needed a new runner option
 
-The reason is not the tests. **That rung fires nowhere.** Measured over 324
-solves spanning 36 shape/tier/single-ones combinations: `update-flags` 6275,
-`count-clues` 1673, `check-neighbors` 501, `check-loop` 329, `check-loose-ends`
-78, `check-neighbors-both-ways` 35, `check-bridge-parity` 20 — and
-`check-single` **zero**.
+Rule 1 was *no new option on the runner*, and nothing came close to breaking it
+— including the two cases that looked most like they would:
 
-**Checked against the C before drawing any conclusion**, because "an unreachable
-deduction" is exactly the kind of finding that turns out to be a porting bug.
-`tracks.c`'s `solve_check_single_sub` is reproduced line for line, both guards
-included (`ctrack != target-1`, `nperp > 0 || n1edge != 1`). It is upstream's
-narrowest rule — a line with one square left to fill and nowhere perpendicular
-to run — and the boards this generator produces never reach it. Recorded in
-`tracks-ladder.test.ts`'s `UNREACHED` as a live shortfall with its reason, not
-as an exemption.
+- **Ascent's `single-number-simple` runs at Tricky and *not* at Hard.** That is
+  availability **non-monotone in the cap**, which no `tier` can express, because
+  `maxTier` includes every rung at or below it by construction. It guards itself
+  and returns `0`. This is the sharpest evidence yet for the runner's refusal to
+  grow a `when` predicate: a predicate here would have to encode "at this tier
+  but not that one", and would be indistinguishable from the `0`.
+- **Subsets' per-iteration prologue** went into `settled`, which runs in exactly
+  the position the prologue did. The Singles precedent — a rung at position 0
+  that always returns `0` — also works, but would put a never-firing entry in
+  the firing census.
 
-### What this changes about the bar for the remaining six
+Two smaller notes worth carrying: **a mid-ladder tier `break` and a `maxTier`
+skip agree only when the ladder is tier-sorted** (Rome and Bridges both are; a
+game with a cheap rung after an expensive one would diverge, and the runner
+deliberately still runs it). And **a rung may sweep a whole population before
+reporting** — Bridges' stages walk every island first — because "return after
+first firing" is a statement about the *ladder*, not about a rung's internals.
+The shape that genuinely breaks it is a pass that must sweep the whole ladder
+before restarting, which is Lightup's.
 
-The proposal's rule 2 was *every frozen fixture byte-unchanged*. Tracks shows
-that is **necessary and not sufficient**: a fixture corpus certifies only the
-rungs it fires, and it cannot tell you which those are. So each remaining
-adoption ships its own equivalence test against the legacy loop, with a firing
-census. That is one extra file per game and it is the difference between
-proving the rewiring and hoping.
+### What adoption bought, honestly, per game
 
-### A smaller thing worth carrying
+Not the same thing everywhere, and worth recording so the next reader does not
+assume uniformity:
 
-`tracksSolve` gained an optional `onFiring` callback purely as a test seam. It is
-three lines and no work when absent, but it is per-game surface added for a
-test — and `runDeductionFixpoint` already counts firings internally for its
-budget attribution. **If a second game wants the same census, return the tally
-from the runner instead** and delete both seams. Not done here because this
-change's own first rule is that the runner's contract does not move.
+| game | grade used? | cap used? | what it got |
+| --- | --- | --- | --- |
+| tracks | yes | yes | the whole contract |
+| seismic | yes | yes | the whole contract |
+| rome | no (returns a status) | yes | loop, cap, named rungs |
+| ascent | no (returns void) | yes | loop, cap, named rungs |
+| bridges | no (returns a verdict) | yes | loop, cap, named rungs |
+| galaxies | trivially (one tier) | no | loop, named rungs |
+| subsets | no | no (a boolean into one rung) | loop, named rungs |
+
+**So the line saving was the wrong measure in both directions.** Four of the
+seven use neither graded feature; what they gain is the loop, the restart
+discipline, the step budget's non-termination attribution by rung name, and the
+firing census. Subsets is the thinnest case and says so at the site.
+
+### The census earned its place twice
+
+It exists so an equivalence test cannot pass over boards that need only the
+easiest rung. It found two rungs that fire **nowhere**:
+
+- **Tracks `check-single`** — 324 solves, every other rung firing, that one
+  zero. Checked against `tracks.c`: reproduced line for line, both guards
+  included. Upstream's narrowest rule, and this generator's boards never reach
+  it.
+- **Rome `naked-pairs`** — and this one is worse: instrumented *inside the rung*
+  and run through generation, **2,896 calls across 36 board generations, zero
+  firings**, so it is dead on the clue-stripping path that decides which puzzles
+  exist. `rome.c` is puzzles-unreleased and not in the sibling clone, so the C
+  could not be read — but Rome's differential is a byte-match against recorded C
+  descs and passes, and a rung wrongly dead here while live in C would diverge
+  those descs.
+
+  **One live consequence, filed rather than fixed**: that rung's own comment says
+  its faithfully-reproduced scan-order quirk (`k < c`, the union-by-size root
+  rather than the minimum) "changes which puzzles exist". On this evidence it
+  changes nothing, because the rung never reaches the loop the quirk is in.
+  Either a board exists that fires it, or the comment is wrong — and either way
+  that is a Rome question, not an adoption question.
+
+### The thing I would do differently next
+
+Each adopted solver gained an optional `onFiring` callback purely as a test
+seam. Seven of them now. `runDeductionFixpoint` already counts firings
+internally for its budget attribution, so **returning the tally from the runner
+would delete all seven seams** — and with seven instances the pattern is no
+longer speculative. Not done here because rule 1 of this change is that the
+runner's contract does not move; it is the obvious first change *after* it.

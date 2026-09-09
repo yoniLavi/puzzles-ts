@@ -103,6 +103,30 @@ Converged call sites to read as exemplars, easiest first:
 | a non-firing technique in position 0 used as a per-iteration pre-pass, and a flag mapped onto the `-1` arm | [`singles/solver.ts`](../../src/games/singles/solver.ts) (`solveSpecific`) |
 | a ladder that is **not** a tier prefix, a clamped cap, and an accumulator threaded through `settled` | [`spokes/solver.ts`](../../src/games/spokes/solver.ts) (`spokesSolve`) |
 | a hint-only recording ladder | [`pattern/solver.ts`](../../src/games/pattern/solver.ts) |
+| a rung whose availability is **non-monotone in the cap** (runs at Tricky, *not* at Hard) — no `tier` can say that, so it guards itself | [`ascent/solver.ts`](../../src/games/ascent/solver.ts) (`ascentLadder`) |
+| a per-iteration **prologue** carried by `settled` rather than by a never-firing rung | [`subsets/solver.ts`](../../src/games/subsets/solver.ts) (`subsetsSolveGame`) |
+| a rung that **sweeps a whole population before reporting** — legal, because the runner's "return after first firing" is about the *ladder* | [`bridges/solver.ts`](../../src/games/bridges/solver.ts) (`Solver.ladder`) |
+| a recorder threaded through the rungs, untouched by adoption, so an explained hint survives it | [`galaxies/solver.ts`](../../src/games/galaxies/solver.ts) (`galaxiesLadder`) |
+
+### Proving an adoption: the fixtures are not enough
+
+**A byte-match differential certifies only the rungs it fires, and cannot tell
+you which those are.** Tracks' passed its adoption of this runner and could not
+have failed it: deleting one of its eight rungs outright — from the new ladder
+*or* the hand-written loop it replaced — left all 39 of its tests green, because
+that rung fires on no board its generator produces (measured: 324 solves, every
+other rung firing, that one zero).
+
+So a game adopting the runner keeps its hand-written loop as an oracle and ships
+a **ladder-equivalence** test —
+[`engine/testing/ladder-equivalence.ts`](../../src/engine/testing/ladder-equivalence.ts)
+— asserting three things the fixtures do not: the two agree on verdict, grade
+**and full board state** (so a ladder reaching the same answer by different
+deductions fails); at **every cap** (the cap is what selects rungs); and with a
+**firing census**, so agreement over boards that only need the easiest rung
+cannot pass for proof. A rung the corpus cannot reach is recorded with its
+reason — and checked against the C first, because an unreachable deduction is
+exactly the shape a porting bug takes.
 
 ### Where the fixpoint does not fit
 

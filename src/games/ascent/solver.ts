@@ -15,9 +15,14 @@
  */
 
 import {
+  type DeductionTechnique,
+  runDeductionFixpoint,
+} from "../../engine/deduction-fixpoint.ts";
+import {
   type AscentMovement,
   CELL_MULTIPLE,
   CELL_NONE,
+  DIFF_EASY,
   DIFF_HARD,
   DIFF_NORMAL,
   DIFF_TRICKY,
@@ -454,7 +459,12 @@ function solverEdges(sc: SolverScratch): void {
 }
 
 /** Run the tiered deductive fixpoint over `puzzle` into `sc.grid`. */
-export function ascentSolve(puzzle: Int16Array, diff: number, sc: SolverScratch): void {
+export function ascentSolve(
+  puzzle: Int16Array,
+  diff: number,
+  sc: SolverScratch,
+  onFiring?: (id: string) => void,
+): void {
   const s = sc.w * sc.h;
 
   if (puzzle !== sc.grid) sc.grid.set(puzzle);
@@ -482,6 +492,104 @@ export function ascentSolve(puzzle: Int16Array, diff: number, sc: SolverScratch)
    * `solverRemoveEndpoints` stop firing on every board after the first. That
    * quirk weakens the solver and is baked into which boards the generator
    * ships, so reproducing it is byte-match critical (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3). */
+  solverRemoveBlocks(sc);
+
+  const ladder = ascentLadder(sc, diff);
+  runDeductionFixpoint({
+    techniques: onFiring
+      ? ladder.map((t) => ({
+          ...t,
+          run: () => {
+            const did = t.run();
+            if (did > 0) onFiring(t.id);
+            return did;
+          },
+        }))
+      : ladder,
+    // The gates were mid-ladder `break`s; the runner skips over-cap rungs
+    // instead, which agrees because this ladder is tier-sorted.
+    maxTier: diff,
+  });
+}
+
+/**
+ * The nine rungs, easiest first. Ascent returns no grade — `diff` is purely a
+ * cap — so the runner's grading is unused here and only its loop and cap are.
+ *
+ * **Two rungs cannot be expressed as a tier and guard themselves instead**,
+ * which is the convention `re-derive-the-fixpoint-no-gos` established rather
+ * than a new option on the runner:
+ *
+ *  - **`overlap` runs at Hard *or* in Edges mode at any difficulty.** Declaring
+ *    it `tier: DIFF_HARD` would take it away from an Edges board at Normal,
+ *    where upstream runs it. It is declared at the tier of the block it sits in
+ *    and tests the disjunction itself.
+ *  - **`single-number-simple` runs at Tricky and *not* at Hard** — availability
+ *    that is **non-monotone in the cap**, which no `tier` can say, because
+ *    `maxTier` includes every rung at or below it by construction. Declared at
+ *    Tricky so a lower cap skips it, and self-guarded against Hard, where its
+ *    thorough sibling replaces it.
+ *
+ * The second is the sharpest example in the collection of why the runner has no
+ * `when` predicate: a predicate would be indistinguishable from returning `0`
+ * and would exist only to document.
+ */
+function ascentLadder(sc: SolverScratch, diff: number): DeductionTechnique[] {
+  return [
+    { id: "single-position", tier: DIFF_EASY, run: () => solverSinglePosition(sc) },
+    { id: "proximity-simple", tier: DIFF_EASY, run: () => solverProximitySimple(sc) },
+    { id: "update-path", tier: DIFF_NORMAL, run: () => solverUpdatePath(sc) },
+    { id: "adjacent-path", tier: DIFF_NORMAL, run: () => solverAdjacentPath(sc) },
+    { id: "remove-endpoints", tier: DIFF_NORMAL, run: () => solverRemoveEndpoints(sc) },
+    { id: "remove-path", tier: DIFF_NORMAL, run: () => solverRemovePath(sc) },
+    { id: "proximity-full", tier: DIFF_NORMAL, run: () => solverProximityFull(sc) },
+    {
+      id: "overlap",
+      tier: DIFF_NORMAL,
+      run: () => (diff >= DIFF_HARD || sc.mode === MODE_EDGES ? solverOverlap(sc) : 0),
+    },
+    {
+      id: "single-number-simple",
+      tier: DIFF_TRICKY,
+      run: () => (diff < DIFF_HARD ? solverSingleNumber(sc, true) : 0),
+    },
+    {
+      id: "single-number-full",
+      tier: DIFF_HARD,
+      run: () => solverSingleNumber(sc, false),
+    },
+  ];
+}
+
+/**
+ * The hand-written ladder this solver ran until
+ * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
+ * `ascent-ladder.test.ts` proves the adoption against.
+ */
+export function ascentSolveLegacy(
+  puzzle: Int16Array,
+  diff: number,
+  sc: SolverScratch,
+): void {
+  const s = sc.w * sc.h;
+
+  if (puzzle !== sc.grid) sc.grid.set(puzzle);
+  updatePositions(sc.positions, sc.grid, s);
+  sc.marks.fill(0, 0, s * s);
+
+  for (let n = 0; n < s; n++) {
+    const i = sc.positions[n];
+    if (i >= 0) {
+      sc.marks[i * s + n] = 1;
+      continue;
+    }
+    for (let ii = 0; ii < s; ii++) {
+      if (sc.grid[ii] === NUMBER_EMPTY) sc.marks[ii * s + n] = 1;
+    }
+  }
+
+  solverEdges(sc);
+  solverInitializePath(sc);
   solverRemoveBlocks(sc);
 
   while (true) {

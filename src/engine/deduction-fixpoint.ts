@@ -66,19 +66,33 @@
  *
  * The **techniques stay per-game** (a nonogram overlap is nothing like a sudoku
  * hidden single); only this loop, the tier cap, the recorder-gated budget, the
- * grade bookkeeping and the non-termination attribution live here. Nine call
- * sites: `engine/latin.ts` (`latinSolverTop`, and through it the **six** games
- * that call `latinSolver` — Group, Keen, Mathrax, Salad, Towers, Unequal; this
- * said "eleven" until `derive-difficulty-from-the-technique-ladder` counted
- * them, because ten more games import `engine/latin.ts` for `latinGenerate`,
+ * grade bookkeeping and the non-termination attribution live here.
+ *
+ * **Sixteen call sites, of which seven arrived at once**
+ * (`adopt-the-deduction-runner-where-it-rewires`, 2026-09-09). The earlier nine
+ * are `engine/latin.ts` (`latinSolverTop`, and through it the **six** games that
+ * call `latinSolver` — Group, Keen, Mathrax, Salad, Towers, Unequal; this said
+ * "eleven" until `derive-difficulty-from-the-technique-ladder` counted them,
+ * because ten more games import `engine/latin.ts` for `latinGenerate`,
  * `matching`, `latinVerdict` or the repeat types, and Solo hand-rolls its own
- * `mainloop`), `games/filling/solver.ts` (`FillingSolver.run`),
- * `games/undead/solver.ts` (`recordUndeadDeductions`),
- * `games/pattern/solver.ts` (`deduceHintPlan`), `games/magnets/solver.ts`
- * (`solve`, `solveUnnumbered`), `games/unruly/solver.ts` (`solveGame`),
- * `games/singles/solver.ts` (`solveSpecific`),
- * `games/clusters/solver.ts` (`solveGame`) and
- * `games/spokes/solver.ts` (`spokesSolve`).
+ * `mainloop`), plus Filling, Undead, Pattern, Magnets, Unruly, Singles,
+ * Clusters and Spokes. The seven added are **Tracks, Seismic, Subsets, Rome,
+ * Ascent, Galaxies and Bridges** — every game whose hand-written loop already
+ * wrote this runner's shape, found by reading all 30 off-engine solvers
+ * (`explore-the-deduction-engine-reach`).
+ *
+ * **Write the query, not its answer**: the live list is a comment-stripped scan
+ * for `runDeductionFixpoint` under `src/games/`, because five name-keyed counts
+ * of this population went wrong in one session — Loopy's and Boats' headers
+ * *explain why they do not use this runner* and a plain grep counted them in.
+ *
+ * **Each of the seven ships a ladder-equivalence test**
+ * (`engine/testing/ladder-equivalence.ts`), and the reason is worth knowing
+ * before adopting an eighth: Tracks' byte-match differential passed the
+ * adoption and could not have failed it. Deleting one of its eight rungs
+ * entirely left all 39 of its tests green, because that rung fires on no board
+ * its generator produces. A fixture corpus certifies only the rungs it fires and
+ * cannot tell you which those are.
  */
 import { type StepBudget, StepBudgetExceeded } from "./step-budget.ts";
 

@@ -16,6 +16,10 @@
  * root is never observed (only same-group and group-count queries), so the
  * shared union-by-size `Dsf` is safe here without root-identity discipline.
  */
+import {
+  type DeductionTechnique,
+  runDeductionFixpoint,
+} from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
 import {
@@ -416,7 +420,84 @@ class Solver {
 
   // --- Driver (C solve_sub) ---
 
-  solveSub(difficulty: number): number {
+  /**
+   * The three stages as ladder rungs.
+   *
+   * **A "rung" here sweeps every island before reporting**, which is the
+   * runner's contract at the *ladder* level rather than a violation of it: the
+   * runner restarts the ladder the moment a rung reports progress, and a rung is
+   * free to do as much work as it likes before it does. The distinction that
+   * would matter — a pass that must sweep the whole ladder before restarting —
+   * is Lightup's, and it is why Lightup stays out.
+   *
+   * `!ok` is a contradiction, which is the runner's `< 0`; the caller turns that
+   * back into the `0` that `solveSub` has always returned.
+   */
+  private ladder(): DeductionTechnique[] {
+    const st = this.st;
+    const sweep = (
+      run: (is: Island) => { ok: boolean; didsth: boolean },
+      skip?: (is: Island) => boolean,
+    ): number => {
+      let didsth = false;
+      for (const is of st.islands) {
+        if (skip?.(is)) continue;
+        const r = run(is);
+        if (!r.ok) return -1;
+        if (r.didsth) didsth = true;
+      }
+      return didsth ? 1 : 0;
+    };
+    return [
+      {
+        id: "stage1-arithmetic",
+        tier: 0,
+        run: () => sweep((is) => this.solveIslandStage1(is)),
+      },
+      {
+        id: "stage2-counting",
+        tier: 1,
+        // CONTINUE_IF_FULL: a marked-complete island is skipped, as upstream.
+        run: () =>
+          sweep(
+            (is) => this.solveIslandStage2(is),
+            (is) => (st.gridAt(is.x, is.y) & G_MARK) !== 0,
+          ),
+      },
+      {
+        id: "stage3-connectivity",
+        tier: 2,
+        run: () => sweep((is) => this.solveIslandStage3(is)),
+      },
+    ];
+  }
+
+  solveSub(difficulty: number, onFiring?: (id: string) => void): number {
+    const ladder = this.ladder();
+    const { impossible } = runDeductionFixpoint({
+      techniques: onFiring
+        ? ladder.map((t) => ({
+            ...t,
+            run: () => {
+              const did = t.run();
+              if (did > 0) onFiring(t.id);
+              return did;
+            },
+          }))
+        : ladder,
+      // The gates were `difficulty < 1` / `< 2` / `< 3` after each stage, and
+      // the ladder is tier-sorted, so a `maxTier` skip agrees with them. The
+      // trailing `difficulty < 3` guarded a fourth stage that does not exist.
+      maxTier: difficulty,
+    });
+    if (impossible) return 0;
+    return this.mapCheck() ? 1 : 0;
+  }
+
+  /** The hand-written loop this solver ran until
+   * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
+   * `bridges-ladder.test.ts` proves the adoption against. */
+  solveSubLegacy(difficulty: number): number {
     const st = this.st;
     while (true) {
       let didsth = false;
@@ -458,12 +539,29 @@ class Solver {
  * state must be a working copy the caller is happy to have overwritten.
  * Returns 1 if fully solved, 0 otherwise.
  */
-export function solveFromScratch(state: BridgesState, difficulty: number): number {
+export function solveFromScratch(
+  state: BridgesState,
+  difficulty: number,
+  onFiring?: (id: string) => void,
+): number {
   state.mapClear();
   const solver = new Solver(state);
   solver.mapGroup();
   state.mapUpdatePossibles();
-  return solver.solveSub(difficulty);
+  return solver.solveSub(difficulty, onFiring);
+}
+
+/** {@link solveFromScratch} through the hand-written loop — the oracle
+ * `bridges-ladder.test.ts` proves the adoption against. */
+export function solveFromScratchLegacy(
+  state: BridgesState,
+  difficulty: number,
+): number {
+  state.mapClear();
+  const solver = new Solver(state);
+  solver.mapGroup();
+  state.mapUpdatePossibles();
+  return solver.solveSubLegacy(difficulty);
 }
 
 /**
