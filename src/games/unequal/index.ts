@@ -34,12 +34,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  cleanObviousText,
-  joinNums,
-  narrateLatinReason,
-  populateText,
-} from "../../engine/hint-text.ts";
+import { narrateLatinReason } from "../../engine/hint-text.ts";
 import { clearKey } from "../../engine/key-labels.ts";
 import { latinVerdict } from "../../engine/latin.ts";
 import {
@@ -86,6 +81,7 @@ import type {
   Size,
 } from "../../engine/types.ts";
 import { newUnequalDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -402,36 +398,20 @@ function findMistakes(state: UnequalState): readonly UnequalMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-const POPULATE_TEXT = populateText("number");
-
-const CLEAN_OBVIOUS_TEXT = cleanObviousText("number", "standing", "row or column");
-
-/** Join a value list for narration: `[3]`→"3", `[1,2]`→"1 and 2",
- * `[1,2,3]`→"1, 2 and 3". */
 /** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the narration"): indication → reasoning →
  * necessity-voice conclusion. `ns` is the struck value list (a placement passes
- * its single height); `o` is the grid order. Two-mode aware; phrasing reads
- * correctly at the value extremes (§2.7 — the differ-by-1 clue says "one away from
- * N", never "N−1 or N+1"; a trivial inequality bound becomes "the smallest/largest
- * number" rather than the vacuous "no less than 1"). */
+ * its single height); `o` is the grid order. Two-mode aware. The words, and how
+ * they read at the value extremes, are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(reason: HintReason, ns: number[], o: number): string {
   switch (reason.kind) {
     case "greater":
-      return reason.bound <= 1
-        ? `The larger side of a greater-than sign can't hold the smallest number, so we must cross out ${joinNums(ns)}.`
-        : `The cell across this greater-than sign is at least ${reason.bound}, so this one must be larger; we must cross out ${joinNums(ns)}.`;
+      return say.greater(reason.bound, ns);
     case "lesser":
-      return reason.bound >= o
-        ? `The smaller side of a greater-than sign can't hold the largest number, so we must cross out ${joinNums(ns)}.`
-        : `The cell across this greater-than sign is at most ${reason.bound}, so this one must be smaller; we must cross out ${joinNums(ns)}.`;
+      return say.lesser(reason.bound, o, ns);
     case "adjacent":
-      return reason.bar
-        ? `A bar joins this cell to the ${reason.v} beside it, so the two numbers must differ by exactly 1; this cell can only be one away from ${reason.v}, so we must cross out ${joinNums(ns)}.`
-        : `There's no bar between this cell and the ${reason.v} beside it, so their numbers can't differ by 1; this cell can't sit one away from ${reason.v}, so we must cross out ${joinNums(ns)}.`;
+      return say.adjacent(reason.bar, reason.v, ns);
     case "adjacentSet":
-      return reason.bar
-        ? `Whatever the cell beside it turns out to be, the bar forces this cell to a value one away from it, and no number still open there leaves room for ${joinNums(ns)} here, so we must cross out ${joinNums(ns)}.`
-        : `With no bar to the cell beside it, this cell must avoid every value one step from it, and ${joinNums(ns)} would clash with a number still open there, so we must cross out ${joinNums(ns)}.`;
+      return say.adjacentSet(reason.bar, ns);
     // The generic Latin arms (single / hiddenSingle / forcedSingle / dup / set /
     // forcing) read identically to Keen's — narrated once, shared.
     default:
@@ -582,7 +562,7 @@ function buildSteps(
     wPen,
     o,
     steps,
-    POPULATE_TEXT,
+    say.populate,
   );
   // The obvious-candidate cleanup is emitted once, right after notes first exist
   // (just populated, or already present on a pre-noted board) — see step 3.
@@ -651,7 +631,7 @@ function buildSteps(
           wPen,
           o,
           (x, y) => rowColRegions(x, y, o),
-          CLEAN_OBVIOUS_TEXT,
+          say.cleanObvious,
         )
       ) {
         lastStrikeGroup = Number.NaN;

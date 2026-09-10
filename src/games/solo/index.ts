@@ -34,13 +34,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  cleanObviousText,
-  joinNums,
-  type LatinVocab,
-  narrateForcingChain,
-  populateText,
-} from "../../engine/hint-text.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import {
   classifyPlacementInRegions,
@@ -78,6 +71,7 @@ import type {
   Size,
 } from "../../engine/types.ts";
 import { newSoloDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -430,12 +424,6 @@ function findMistakes(state: SoloState): readonly SoloMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-const POPULATE_TEXT = populateText("number");
-
-const CLEAN_OBVIOUS_TEXT = cleanObviousText("number", "placed", "row, column or block");
-
-/** Join a value list for narration: `[3]`→"3", `[1,2]`→"1 and 2",
- * `[1,2,3]`→"1, 2 and 3". */
 /** A region's cells (reading order) — for evidence shading. */
 function regionCells(region: SoloRegion, state: SoloState): { x: number; y: number }[] {
   const cr = state.cr;
@@ -465,21 +453,6 @@ function regionCells(region: SoloRegion, state: SoloState): { x: number; y: numb
       break;
   }
   return out;
-}
-
-/** The reader-facing name of a region. */
-function regionName(region: SoloRegion): string {
-  switch (region.kind) {
-    case "row":
-      return "row";
-    case "col":
-      return "column";
-    case "block":
-      return "block";
-    case "diag0":
-    case "diag1":
-      return "diagonal";
-  }
 }
 
 /** The uniqueness regions of cell `(x, y)`, in narration-preference order (row,
@@ -537,44 +510,29 @@ function soloPlacementReason(
 function narrate(reason: SoloReason, ns: number[]): string {
   switch (reason.kind) {
     case "single":
-      return `Every other number has been ruled out in this cell, so it can only be ${ns[0]}.`;
-    case "hiddenSingle": {
-      const r = regionName(reason.region);
-      return `In this ${r}, ${reason.n} can go in only this cell, because every other cell in the ${r} has ruled it out, so it must be ${reason.n}.`;
-    }
+      return say.single(ns[0]);
+    case "hiddenSingle":
+      return say.hiddenSingle(reason.region, reason.n);
     case "forcedSingle":
-      return `Working through this cell's row, column and block together, only ${reason.n} can still go here, so it must be ${reason.n}.`;
+      return say.forcedSingle(reason.n);
     case "dup":
-      return `A ${reason.n} is already placed in this cell, so it can't repeat in its row, column or block: cross out the ${reason.n} from these cells.`;
-    case "intersect": {
-      const cName = regionName(reason.confined);
-      const tName = regionName(reason.target);
-      return `In this ${cName}, every cell that can still take ${reason.n} also lies in this ${tName}, so ${reason.n} must sit where they overlap, and is crossed out of the rest of the ${tName}.`;
-    }
+      return say.dup(reason.n);
+    case "intersect":
+      return say.intersect(reason.confined, reason.target, reason.n);
     case "set":
-      return reason.region
-        ? `Another group of cells in this ${regionName(reason.region)} already accounts for a fixed set of numbers that includes ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`
-        : `A locked pattern of cells across these lines already accounts for ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`;
-    // The shared chain sentence, with Solo's own region vocabulary — its chain
-    // hops through blocks and diagonals as well as lines, so the region that
-    // ties the conclusion back to the origin is named rather than assumed.
+      return say.set(reason.region, ns);
     case "forcing":
-      return narrateForcingChain(reason, ns[0], SOLO_VOCAB, regionName(reason.shares));
+      return say.forcing(reason, ns[0], reason.shares);
     case "cageSingle":
-      return `The rest of this killer cage is filled in, and the one cell left must bring the cage to its total, so it can only be ${ns[0]}.`;
+      return say.cageSingle(ns[0]);
     case "cageIntersect":
-      return `These cells must together total ${reason.clue} once the cages within their region are accounted for, and only this cell is left undetermined, so it must be ${ns[0]}.`;
+      return say.cageIntersect(reason.clue, ns[0]);
     case "cageMinMax":
-      return `This killer cage must total ${reason.clue}; the digits its other cells can still hold leave no room for ${joinNums(ns)} here, so cross out ${joinNums(ns)}.`;
+      return say.cageMinMax(reason.clue, ns);
     case "cageSums":
-      return `No way to make this killer cage total ${reason.clue} uses ${joinNums(ns)} in this cell, so cross out ${joinNums(ns)}.`;
+      return say.cageSums(reason.clue, ns);
   }
 }
-
-/** Solo's values are plain numbers — the one word the shared chain sentence
- * needs from it. Solo keeps its own `narrate` because other arms name a
- * different region set per arm, which this one takes as a parameter. */
-const SOLO_VOCAB: LatinVocab = { noun: "number", value: (n) => String(n) };
 
 /** The deduction's evidence cells to shade `COL_HINT_CELL`. */
 function reasonArea(reason: SoloReason, state: SoloState): OrderedCell[] {
@@ -737,7 +695,7 @@ function buildSteps(
     wPen,
     cr,
     steps,
-    POPULATE_TEXT,
+    say.populate,
   );
   // The obvious-candidate cleanup is emitted once, right after notes first exist
   // (just populated, or already present on a pre-noted board) — see step 3.
@@ -789,7 +747,7 @@ function buildSteps(
           wPen,
           cr,
           (x, y) => regionsOf(state, x, y),
-          CLEAN_OBVIOUS_TEXT,
+          say.cleanObvious,
         )
       ) {
         continue;

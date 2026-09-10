@@ -50,12 +50,7 @@ import {
 } from "../../engine/candidate-hint.ts";
 import type { DeductionRecord } from "../../engine/deduction-record.ts";
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
-import {
-  cleanObviousText,
-  joinWith,
-  type LatinVocab,
-  narrateLatinReason,
-} from "../../engine/hint-text.ts";
+import { narrateLatinReason } from "../../engine/hint-text.ts";
 import type { LatinRepeatReason } from "../../engine/latin.ts";
 import {
   type ForcingLink,
@@ -67,13 +62,13 @@ import {
 } from "../../engine/latin-hint.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
+import { saladVocab, say } from "./hint-text.ts";
 import { type BorderReason, findMistakes, recordSaladDeductions } from "./solver.ts";
 import {
   borderScanFor,
   CIRCLE,
   CROSS,
   clueSide,
-  GAMEMODE_LETTERS,
   latinholesCheck,
   needsPencilFill,
   type SaladBoard,
@@ -131,42 +126,13 @@ export interface SaladHint extends CandidateHighlights {
 
 type SaladOp = DeductionRecord & { reason: SaladReason };
 
-// --- vocabulary ------------------------------------------------------------
-
-/** `A`, `B`, … in ABC End View; `1`, `2`, … in Number Ball. */
-export function symbolChar(mode: number, n: number): string {
-  return String.fromCharCode((mode === GAMEMODE_LETTERS ? 64 : 48) + n);
-}
-
-/** Salad's value vocabulary for the shared generic-Latin narration arms — the
- * one place its two modes differ in words rather than logic. */
-function saladVocab(mode: number): LatinVocab {
-  return {
-    noun: mode === GAMEMODE_LETTERS ? "letter" : "number",
-    value: (n) => symbolChar(mode, n),
-    cell: "square",
-  };
-}
-
-/** `1 square` / `3 squares`. */
-function count(k: number, one: string, many = `${one}s`): string {
-  return `${k} ${k === 1 ? one : many}`;
-}
-
-/** A border clue named by where the player sees it, as a sentence opener. */
-function clueName(side: string): string {
-  if (side === "top") return "This column's top clue";
-  if (side === "bottom") return "This column's bottom clue";
-  return side === "left" ? "This row's left-hand clue" : "This row's right-hand clue";
-}
-
 // --- narration -------------------------------------------------------------
 
 /**
  * Narrate *why* a step is forced (docs/games/hints.md § "Writing the narration"): lead with the indication,
  * give the reasoning, conclude in the necessity voice. `ns` is the value list the
  * step acts on — the placed symbol for a placement, the struck candidates for a
- * strike.
+ * strike. The words are [`hint-text.ts`](./hint-text.ts)'s.
  */
 export function narrate(
   reason: SaladReason,
@@ -174,80 +140,43 @@ export function narrate(
   state: { mode: number; order: number; nums: number },
 ): string {
   const { mode, order, nums } = state;
-  const vocab = saladVocab(mode);
-  const noun = vocab.noun;
-  const sym = (n: number): string => symbolChar(mode, n);
-  const list = (xs: number[]): string => joinWith(xs.map(sym));
-
+  const text = say(mode);
   switch (reason.kind) {
-    case "borderNear": {
-      const { side } = clueSide(reason.clue, order);
-      const clue = sym(reason.clueVal);
-      const lead = `${clueName(side)} sees ${clue} first`;
-      const gap =
-        reason.skipped === 0
-          ? ` and this square is nearest to it`
-          : `, and the ${count(reason.skipped, "square")} between ${reason.skipped === 1 ? "is" : "are"} marked empty`;
-      return `${lead}${gap}, so only ${clue} can go here: cross out ${list(ns)}.`;
-    }
+    case "borderNear":
+      return text.borderNear(
+        clueSide(reason.clue, order).side,
+        reason.clueVal,
+        reason.skipped,
+        ns,
+      );
     case "borderFar": {
       const { side, axis } = clueSide(reason.clue, order);
-      const clue = sym(reason.clueVal);
-      if (reason.circleAt !== null) {
-        return `${clueName(side)} sees ${clue} first, and the outlined square furthest from it already holds ${vocab.noun === "letter" ? "a letter" : "a number"}, so the ${clue} must sit somewhere in the outlined run. We must cross out the ${clue} past it.`;
-      }
-      const bound =
-        reason.reach === 0
-          ? `must be in the square nearest the clue`
-          : `must be within the first ${count(reason.reach + 1, "square")} from the clue`;
-      const tighten =
-        reason.tightenedBy > 0
-          ? ` and ${reason.tightenedBy === 1 ? "one of them is" : `${reason.tightenedBy} of them are`} already marked further along`
-          : ``;
-      return `${clueName(side)} sees ${clue} first, so every square before its ${clue} must be empty. This ${axis} has room for only ${count(reason.holes, "empty square")}${tighten}, so the ${clue} ${bound}. We must cross out the ${clue} beyond that.`;
+      return text.borderFar({
+        side,
+        axis,
+        clueVal: reason.clueVal,
+        blocked: reason.circleAt !== null,
+        reach: reason.reach,
+        holes: reason.holes,
+        tightenedBy: reason.tightenedBy,
+      });
     }
-    case "countHolesDone": {
-      const axis = reason.line === "row" ? "row" : "column";
-      const k = order - nums;
-      // Reads correctly at the degenerate extreme too (§2.7): `nums = order − 1`
-      // leaves exactly one empty square per line.
-      const has =
-        k === 1
-          ? "its one empty square"
-          : k === 2
-            ? "both of its empty squares"
-            : `all ${k} of its empty squares`;
-      return `This ${axis} already has ${has}, so every other square in it must hold a ${noun}.`;
-    }
-    case "countLettersDone": {
-      const axis = reason.line === "row" ? "row" : "column";
-      // The two halves of one firing: either the line's symbols are all written
-      // in, or we merely know *which* squares hold them (a line of balls). Each
-      // claims only what it has (§2.6).
-      return reason.allPlaced
-        ? `All ${count(nums, noun)} of this ${axis} are already placed, so every other square in it must be empty.`
-        : `We already know which ${count(nums, "square")} of this ${axis} hold its ${noun}s, so every other square in it must be empty.`;
-    }
+    case "countHolesDone":
+      return text.countHolesDone(reason.line, order - nums);
+    case "countLettersDone":
+      return text.countLettersDone(reason.line, reason.allPlaced, nums);
     case "crossNaked":
-      return `Every ${noun} is ruled out here, so the empty-square mark is the only one left: this square must be empty.`;
+      return text.crossNaked;
     case "forcedCross":
-      return `Working through this square's row and column together, no ${noun} can still go here, so it must be empty.`;
+      return text.forcedCross;
     case "forcedCircle":
-      return `Working through this square's row and column together, this square cannot be one of the empty ones, so it must hold a ${noun}, even though we don't know which yet.`;
+      return text.forcedCircle;
     case "circleXNote":
-      return `These squares are now known to hold a ${noun}, so we must cross out their empty-square marks.`;
-    case "repeatFull": {
-      const axis = reason.line === "row" ? "row" : "column";
-      const has =
-        reason.times === 1
-          ? "its one empty square"
-          : reason.times === 2
-            ? "both of its empty squares"
-            : `all ${reason.times} of its empty squares`;
-      return `This ${axis} already has ${has}, so this square cannot be empty; we must cross out its empty-square mark.`;
-    }
+      return text.circleXNote;
+    case "repeatFull":
+      return text.repeatFull(reason.line, reason.times);
     default:
-      return narrateLatinReason(reason, ns, vocab);
+      return narrateLatinReason(reason, ns, saladVocab(mode));
   }
 }
 
@@ -601,7 +530,7 @@ function buildSteps(
   const w = startWorking(state);
   const enc = saladNotes(nums);
   const b: Builder = { steps, w, o, nums, state, enc };
-  const vocab = saladVocab(state.mode);
+  const text = say(state.mode);
   const regionsOf = saladRegions(o);
   const board = (): SaladBoard => ({
     order: o,
@@ -640,10 +569,7 @@ function buildSteps(
       }
     }
     steps.push(
-      populateStep<SaladMove, SaladHint>(
-        { type: "pencilAll" },
-        `Start by penciling every candidate ${vocab.noun} into each empty square that has none yet, so there is something to cross out.`,
-      ),
+      populateStep<SaladMove, SaladHint>({ type: "pencilAll" }, text.populate),
     );
     populated = true;
   };
@@ -697,7 +623,7 @@ function buildSteps(
           w.pencil,
           o,
           regionsOf,
-          cleanObviousText(vocab.noun, "placed", "row or column", "square"),
+          text.cleanObvious,
           { enc, adapter: saladCandidateMoves },
         )
       ) {

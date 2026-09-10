@@ -35,12 +35,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  cleanObviousText,
-  type LatinVocab,
-  narrateLatinReason,
-  populateText,
-} from "../../engine/hint-text.ts";
+import { narrateLatinReason } from "../../engine/hint-text.ts";
 import { clearKey } from "../../engine/key-labels.ts";
 import { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE, latinVerdict } from "../../engine/latin.ts";
 import {
@@ -72,6 +67,7 @@ import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { Color, ConfigValues, KeyLabel, Point, Size } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
+import { groupVocab, say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -475,21 +471,10 @@ function findMistakes(state: GroupState): readonly GroupMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-const POPULATE_TEXT = populateText("element");
-const CLEAN_OBVIOUS_TEXT = cleanObviousText("element", "placed", "row or column");
-
 /** The reasons a hint step narrates: the Group-specific deductions, the generic
  * Latin reasons, and the naked/hidden/forced classification a placement's `single`
  * reason is re-derived into. */
 type NarratableReason = HintReason | SingleReason;
-
-/** Group's value vocabulary for the shared generic-Latin narration arms: its
- * values are the elements `a`–`z`, not digits (`share-latin-reason-narration`
- * extended by `add-salad-hint` design D5 — Group was the copy that proved one
- * vocabulary parameter enough). */
-function groupVocab(id: boolean): LatinVocab {
-  return { noun: "element", value: (n) => toChar(n, id) };
-}
 
 /** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the narration"): indication → reasoning →
  * necessity-voice conclusion, every cell named by the element letter it shows.
@@ -497,35 +482,35 @@ function groupVocab(id: boolean): LatinVocab {
  * strike its struck values). The six generic Latin arms are delegated to
  * `narrateLatinReason` under {@link groupVocab}; only Group's own three
  * techniques are spelled out here. `identityFill`'s *first-leg* text lives here;
- * its continuation legs are narrated in {@link emitIdentityFillJourney}. */
+ * its continuation legs are narrated in {@link emitIdentityFillJourney}. The
+ * words are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(reason: NarratableReason, ns: number[], id: boolean): string {
   const ch = (n: number): string => toChar(n, id);
   switch (reason.kind) {
-    case "associativity": {
-      const A = ch(reason.a);
-      const B = ch(reason.b);
-      const C = ch(reason.c);
-      const known = reason.knownLeft ? `(${A}·${B})·${C}` : `${A}·(${B}·${C})`;
-      const forced = reason.knownLeft ? `${A}·(${B}·${C})` : `(${A}·${B})·${C}`;
-      return `You've filled ${A}·${B} = ${ch(reason.ab)}, ${B}·${C} = ${ch(reason.bc)} and ${known} = ${ch(reason.v)}. Because (${A}·${B})·${C} = ${A}·(${B}·${C}) in any group, ${forced} must also be ${ch(reason.v)}.`;
-    }
-    case "identityFill": {
-      const A = ch(reason.a);
-      const B = ch(reason.b);
-      const shows =
-        reason.prod === reason.a
-          ? `${A}·${B} = ${A} shows ${B} is the identity`
-          : `${A}·${B} = ${B} shows ${A} is the identity`;
-      return `${shows}, so its row and column are just the element labels, and this cell must be ${ch(ns[0])}.`;
-    }
-    case "identityElim": {
-      const E = ch(reason.elem);
-      const O = ch(reason.other);
-      const product = reason.left
-        ? `${E}·${O} = ${ch(reason.product)}`
-        : `${O}·${E} = ${ch(reason.product)}`;
-      return `${product}, not ${O}. The identity leaves every element unchanged, so ${E} can't be the identity. Cross out its identity marks.`;
-    }
+    case "associativity":
+      return say.associativity({
+        A: ch(reason.a),
+        B: ch(reason.b),
+        C: ch(reason.c),
+        ab: ch(reason.ab),
+        bc: ch(reason.bc),
+        v: ch(reason.v),
+        knownLeft: reason.knownLeft,
+      });
+    case "identityFill":
+      return say.identityFill(
+        ch(reason.a),
+        ch(reason.b),
+        reason.prod === reason.a,
+        ch(ns[0]),
+      );
+    case "identityElim":
+      return say.identityElim(
+        ch(reason.elem),
+        ch(reason.other),
+        ch(reason.product),
+        reason.left,
+      );
     default:
       // The six generic arms, in element vocabulary. The shared `dup` arm picks
       // "a"/"an" by the rendered value, which is what Group's local copy dodged
@@ -627,9 +612,7 @@ function emitIdentityFillJourney(
     const area =
       reason.kind === "identityFill" ? [{ x: reason.viaX, y: reason.viaY }] : [];
     const explanation =
-      i === 0
-        ? narrate(reason, [op.n], id)
-        : `The identity's row and column are just the element labels, so this cell must be ${toChar(op.n, id)}.`;
+      i === 0 ? narrate(reason, [op.n], id) : say.identityFillNext(toChar(op.n, id));
     steps.push({
       move: { type: "set", cells: [{ x: op.x, y: op.y }], n: op.n },
       explanation,
@@ -684,7 +667,7 @@ function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
     wPen,
     w,
     steps,
-    POPULATE_TEXT,
+    say.populate,
   );
   let cleaned = false;
   let ops = recordGroupDeductions(wGrid, w, maxdiff);
@@ -741,7 +724,7 @@ function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
           wPen,
           w,
           (x, y) => rowColRegions(x, y, w),
-          CLEAN_OBVIOUS_TEXT,
+          say.cleanObvious,
         )
       )
         continue;

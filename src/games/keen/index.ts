@@ -34,12 +34,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  cleanObviousText,
-  joinNums,
-  narrateLatinReason,
-  populateText,
-} from "../../engine/hint-text.ts";
+import { narrateLatinReason } from "../../engine/hint-text.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import { latinVerdict } from "../../engine/latin.ts";
 import {
@@ -80,6 +75,7 @@ import type {
   Size,
 } from "../../engine/types.ts";
 import { newKeenDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -101,10 +97,6 @@ import {
   solveKeen,
 } from "./solver.ts";
 import {
-  C_ADD,
-  C_DIV,
-  C_MUL,
-  C_SUB,
   checkErrors,
   cloneState,
   DIFF_EXTREME,
@@ -338,40 +330,17 @@ function findMistakes(state: KeenState): readonly KeenMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-const POPULATE_TEXT = populateText("number");
-
-const CLEAN_OBVIOUS_TEXT = cleanObviousText("number", "standing", "row or column");
-
-/** The cage's arithmetic goal as a verb phrase, read off its packed clue — the
- * indication a cage deduction leads with (docs/games/hints.md § "Lead with the indication"). Reads across the
- * whole operation set: `sum to 15`, `multiply to 72`, `differ by 3`,
- * `have a ratio of 2`. */
-function cageGoal(op: number, value: number): string {
-  switch (op) {
-    case C_ADD:
-      return `sum to ${value}`;
-    case C_MUL:
-      return `multiply to ${value}`;
-    case C_SUB:
-      return `differ by ${value}`;
-    case C_DIV:
-      return `have a ratio of ${value}`;
-    default:
-      return `total ${value}`;
-  }
-}
-
 /** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the narration"): indication → reasoning →
  * necessity-voice conclusion. `ns` is the struck value list (a placement passes
  * its single digit); `w` is the grid order. Cage deductions name the cage by its
  * clue; the generic Latin techniques carry no clean local area (the struck notes
- * carry the premise). */
+ * carry the premise). The words are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(reason: HintReason, ns: number[], _w: number): string {
   switch (reason.kind) {
     case "cage":
-      return `No way to make this cage ${cageGoal(reason.op, reason.value)} leaves room for ${joinNums(ns)} in this cell, so we must cross out ${joinNums(ns)}.`;
+      return say.cage(reason.op, reason.value, ns);
     case "cageLine":
-      return `This cage must ${cageGoal(reason.op, reason.value)}, and every way to fill it places a ${ns[0]} in this ${reason.horizontal ? "row" : "column"}, so the ${ns[0]} here must be crossed out.`;
+      return say.cageLine(reason.op, reason.value, ns[0], reason.horizontal);
     // The generic Latin arms (single / hiddenSingle / forcedSingle / dup / set /
     // forcing) read identically to Unequal's — narrated once, shared.
     default:
@@ -504,7 +473,7 @@ function buildSteps(
     wPen,
     w,
     steps,
-    POPULATE_TEXT,
+    say.populate,
   );
   // The obvious-candidate cleanup is emitted once, right after notes first exist
   // (just populated, or already present on a pre-noted board) — see step 3.
@@ -556,7 +525,7 @@ function buildSteps(
           wPen,
           w,
           (x, y) => rowColRegions(x, y, w),
-          CLEAN_OBVIOUS_TEXT,
+          say.cleanObvious,
         )
       ) {
         continue;

@@ -34,12 +34,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import {
-  cleanObviousText,
-  type LatinVocab,
-  narrateForcingChain,
-  populateText,
-} from "../../engine/hint-text.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import { latinVerdict } from "../../engine/latin.ts";
 import {
@@ -86,6 +80,7 @@ import type {
   Size,
 } from "../../engine/types.ts";
 import { newTowersDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -424,60 +419,40 @@ function findMistakes(state: TowersState): readonly TowersMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-const POPULATE_TEXT = populateText("height");
-
-const CLEAN_OBVIOUS_TEXT = cleanObviousText("height", "standing", "row or column");
-
 /** Narrate *why* a firing is forced, per the technique that fired — leading
  * with the spotted indication, then the reasoning, then a necessity-voice
  * conclusion (docs/games/hints.md § "Writing the narration"). `n` is the placed height for a placement;
  * `continues` (a journey continuation leg) gets a terser line that doesn't
- * restate the premise the journey's first leg already gave. */
+ * restate the premise the journey's first leg already gave. The words are
+ * [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(reason: HintReason, n: number, continues = false): string {
   switch (reason.kind) {
     case "fullLine":
-      return continues
-        ? `Continuing up the line, height ${n} can only sit here.`
-        : `Clue ${reason.clueVal} sees every tower in this line, so heights must climb 1, 2, … from the clue: height ${n} can only sit here.`;
+      return say.fullLine(reason.clueVal, n, continues);
     case "tallestNearest":
-      return `Clue 1 sees just one tower, so the tallest must stand next to it, hiding the rest: height ${n} can only sit here.`;
+      return say.tallestNearest(n);
     case "facing":
-      return `These facing clues sum to one more than the grid size, pinning the tallest tower: height ${n} can only sit here.`;
+      return say.facing(n);
     case "lineFull":
-      return `Clue ${reason.clueVal} already sees all but one of its towers deeper in the line, so the cell nearest the clue must be tall enough to keep everything between it and them hidden. That is too tall for the shortest heights, so we must cross out the ${n}.`;
+      return say.lineFull(reason.clueVal, n);
     case "lowerBound":
-      // "height N", never "a N": the article trap (docs/games/hints.md § "Name a
-      // square by its value").
-      return `Clue ${reason.clueVal} sees exactly ${reason.clueVal} towers, so height ${n} this close would hide too many behind it; we must cross out the ${n}.`;
+      return say.lowerBound(reason.clueVal, n);
     case "arrangement":
-      return `No way for clue ${reason.clueVal} to show exactly ${reason.clueVal} towers puts height ${n} here, so we must cross out the ${n}.`;
+      return say.arrangement(reason.clueVal, n);
     case "dup":
-      return `A tower of height ${reason.n} now sits in this row and column, so we must cross out the ${reason.n} from every other cell they pass through.`;
+      return say.dup(reason.n);
     case "single":
-      return `Every other height has been ruled out in this cell, so it can only be ${n}.`;
+      return say.single(n);
     case "hiddenSingle":
-      return `In this ${reason.line === "row" ? "row" : "column"}, height ${n} can go in only this cell, since every other cell in the ${reason.line === "row" ? "row" : "column"} rules it out, so it must be ${n}.`;
+      return say.hiddenSingle(reason.line, n);
     case "forcedSingle":
-      return `Working through this cell's row and column together, only height ${n} can still go here, so it must be ${n}.`;
+      return say.forcedSingle(n);
     case "set":
-      return `Another group of cells already accounts for a fixed set of heights that includes ${n}, so we must cross out the ${n} here.`;
-    // The shared chain sentence, in Towers' own vocabulary. Towers keeps its
-    // own `narrate` because other arms need the value qualified ("height 5"),
-    // which this one does not — "two heights left" contextualizes the bare
-    // numbers, and the numbered cells carry the chain.
+      return say.set(n);
     case "forcing":
-      return narrateForcingChain(
-        reason,
-        n,
-        TOWERS_VOCAB,
-        reason.shares === "row" ? "row" : "column",
-      );
+      return say.forcing(reason, n, reason.shares);
   }
 }
-
-/** Towers speaks of heights, not numbers — the one word the shared chain
- * sentence needs from it. */
-const TOWERS_VOCAB: LatinVocab = { noun: "height", value: (h) => String(h) };
 
 /** The deduction's evidence area to shade: a Towers clue technique shows the
  * driving clue cell(s) *and* the whole line of sight they reason along, so the
@@ -673,7 +648,7 @@ function buildSteps(
     wPen,
     w,
     steps,
-    POPULATE_TEXT,
+    say.populate,
   );
   // The obvious-candidate cleanup is emitted once, right after notes first exist
   // (just populated, or already present on a pre-noted board) — see step 3.
@@ -761,7 +736,7 @@ function buildSteps(
           wPen,
           w,
           (x, y) => rowColRegions(x, y, w),
-          CLEAN_OBVIOUS_TEXT,
+          say.cleanObvious,
         )
       ) {
         lastStrikeGroup = -1;
