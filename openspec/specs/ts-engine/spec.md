@@ -1495,7 +1495,7 @@ timing keeps its own. Delegation SHALL be behavior-preserving.
 
 ### Requirement: A shared narrator for generic Latin deduction reasons
 
-When adopted, the shared Latin-hint module (`src/engine/latin-hint.ts`) SHALL
+When adopted, the shared hint-text module (`src/engine/hint-text.ts`) SHALL
 provide a `narrateLatinReason(reason, ns)` that renders the *generic* Latin deduction
 reasons whose narration is identical across the **row/column** Latin games (`single`,
 `hiddenSingle`, `forcedSingle`, `dup`, `set`, `forcing`). A row/column game (Keen, Unequal)
@@ -5118,3 +5118,29 @@ declaration to such a derivation in a test.
 - **WHEN** a firing is hidden but changes nothing, so the loop would ask for it
   again for ever
 - **THEN** the step budget throws, exactly as it does for a shown one
+
+### Requirement: A game's hint sentences SHALL live in one text module per game
+
+Every game whose hint speaks SHALL keep every sentence it speaks, and every word inside
+one, in `src/games/<id>/hint-text.ts`, exported as `say`; sentences several games speak
+word for word SHALL live in `src/engine/hint-text.ts`. A game's narration SHALL decide
+only which sentence a step speaks and with what values, passing values as the board means
+them (counts, axes, directions, the deduction's own record) and never words, and a text
+module SHALL NOT read the board. Refusal messages are outside this requirement: they are
+held to one list by `src/engine/hint-refusal.ts` and its guard. A hint that speaks no
+words has no text module.
+
+The population SHALL be derived, not declared: a cross-game test finds the games whose
+hint speaks and asserts that each has a text module and that no text module belongs to a
+game whose hint does not speak.
+
+#### Scenario: A new game's hint speaks
+
+- **WHEN** a game gains a `hint()` whose steps carry narration and no `hint-text.ts`
+- **THEN** the cross-game guard fails, naming the game
+
+#### Scenario: Rewording a sentence
+
+- **WHEN** a sentence's wording changes
+- **THEN** the change touches the game's `hint-text.ts`, or the engine's for a sentence
+  several games share, and not the code that decides which sentence fires
