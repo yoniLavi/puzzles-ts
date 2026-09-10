@@ -21,8 +21,8 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
+import { say } from "./hint-text.ts";
 import {
-  COLOR_NAMES,
   colors,
   computeSize,
   type FloodDrawState,
@@ -195,7 +195,7 @@ function hint(state: FloodState): HintResult<FloodMove> {
   for (const color of moves) {
     steps.push({
       move: { type: "fill", color },
-      explanation: `Fill with ${COLOR_NAMES[color] ?? `color ${color}`}`,
+      explanation: say.fill(color),
     });
   }
   return { ok: true, steps };

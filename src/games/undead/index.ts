@@ -61,6 +61,7 @@ import type {
   Size,
 } from "../../engine/types.ts";
 import { newUndeadDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -421,26 +422,8 @@ function findMistakes(state: UndeadState): readonly UndeadMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-const POPULATE_TEXT =
-  "Start by penciling every monster into each empty cell, so there is something to cross out.";
-
 const isSingleton = (v: number): boolean =>
   v === MON_GHOST || v === MON_VAMPIRE || v === MON_ZOMBIE;
-
-/** Singular monster name for a single bit. */
-function monsterName(bit: number): string {
-  return bit === MON_GHOST ? "ghost" : bit === MON_VAMPIRE ? "vampire" : "zombie";
-}
-
-/** Human list of the monsters in a bitmask: "ghost", "ghost or vampire",
- * "ghost, vampire or zombie". */
-function joinMonsters(bits: number): string {
-  const names: string[] = [];
-  for (const b of [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE])
-    if (bits & b) names.push(monsterName(b));
-  if (names.length <= 1) return names[0] ?? "";
-  return `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
-}
 
 /** Monster index → interior (1-based) grid coordinates, matching `redraw`/
  * `findMistakes`. */
@@ -472,39 +455,27 @@ function pathCells(
   return cells;
 }
 
-/** Narrate *why* a firing is forced — leading with the spotted indication, then
- * the reasoning, then a necessity-voice conclusion (docs/games/hints.md § "Writing the narration"). `bits`
- * is the struck candidate mask (an elimination) or the single placed monster (a
- * placement); `continues` gets a terser continuation-leg line. */
+/** Narrate *why* a firing is forced. `bits` is the struck candidate mask (an
+ * elimination) or the single placed monster (a placement); `continues` gets a
+ * terser continuation-leg line. The words are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(
   common: UndeadState["common"],
   reason: UndeadReason,
   bits: number,
   continues: boolean,
 ): string {
-  const list = joinMonsters(bits);
   switch (reason.kind) {
     case "sightline": {
-      if (continues)
-        return `The same sightline rules the ${list} out of this cell too.`;
+      if (continues) return say.sightlineNext(bits);
       const path = common.paths[reason.path];
-      const a = path.sightingsStart;
-      const b = path.sightingsEnd;
-      // Which monster shows where is the game's rule, and the help teaches it
-      // (help/games/undead.md); the step says only what this sightline's two
-      // clues decide (docs/games/hints.md § "Rules belong in the help").
-      return `This sightline's ${a} and ${b} leave no room for a ${list} here, so we must cross out the ${list}.`;
+      return say.sightline(path.sightingsStart, path.sightingsEnd, bits);
     }
-    case "total": {
-      const name = monsterName(reason.monster);
-      return `Every ${name} is already placed, so no undecided cell can be one; we must cross out the ${name} here.`;
-    }
-    case "onlyCells": {
-      const name = monsterName(reason.monster);
-      return `Exactly as many cells can still hold a ${name} as there are ${name}s left to place, so this one can only be a ${name}.`;
-    }
+    case "total":
+      return say.total(reason.monster);
+    case "onlyCells":
+      return say.onlyCells(reason.monster);
     case "single":
-      return `Only the ${list} is left uncrossed in this cell, so it can only be a ${list}.`;
+      return say.single(bits);
   }
 }
 
@@ -681,7 +652,7 @@ function buildSteps(state: UndeadState): HintStep<UndeadMove, UndeadHint>[] {
     }
     steps.push({
       move: { type: "markAll" },
-      explanation: POPULATE_TEXT,
+      explanation: say.populate,
       highlights: { area: [], targets: [], marks: [] },
     });
     populated = true;

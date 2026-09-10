@@ -32,6 +32,7 @@
 
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
 import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
+import { gemsPhrase, say } from "./hint-text.ts";
 import { solveRoute, unreachableGems } from "./solver.ts";
 import {
   type InertiaMove,
@@ -54,17 +55,6 @@ export interface InertiaHintHighlights {
 }
 
 type Step = HintStep<InertiaMove, InertiaHintHighlights>;
-
-const DIR_NAMES = [
-  "north",
-  "north-east",
-  "east",
-  "south-east",
-  "south",
-  "south-west",
-  "west",
-  "north-west",
-] as const;
 
 // --- the claims we are allowed to make -------------------------------
 
@@ -103,19 +93,6 @@ function oneSlideGrab(s: InertiaState, goal: number): number | null {
 
 // --- narration -------------------------------------------------------
 
-const NUMBER_WORDS = ["no", "a", "two", "three", "four", "five", "six"] as const;
-
-const gemsPhrase = (n: number): string =>
-  n === 1 ? "a gem" : `${NUMBER_WORDS[n] ?? n} gems`;
-
-/** What brings the ball to a halt — the rule the whole game turns on, so the
- * collecting narration always names it. */
-function stopClause(path: SlidePath): string {
-  return path.stopper === "stop"
-    ? "the stop square at the end catches you"
-    : "the wall at the end brings you up short";
-}
-
 /**
  * One move, narrated against the gem its leg is going for. Every branch states
  * something this function has verified:
@@ -147,55 +124,28 @@ function narrate(
   /** How many moves of this leg are left, counting this one. */
   toGoal: number,
 ): string {
-  const d = DIR_NAMES[dir];
   const only = onlyMove(before, dir);
 
+  // The leg's payoff. The goal is the *last* gem on the path, so any others are
+  // swept up on the way to it.
   if (path.gems.length > 0) {
-    // The leg's payoff. The goal is the *last* gem on the path, so any others
-    // are swept up on the way to it.
-    const extras = path.gems.length - 1;
-    const sweep = extras
-      ? `it sweeps up ${gemsPhrase(extras)} and then the marked gem`
-      : "it sweeps up the marked gem";
-
-    if (only === "mines") {
-      return `Slide ${d}: ${sweep}, the only direction that doesn't run you onto a mine.`;
-    }
-    if (only === "walls") {
-      return `Slide ${d}: ${sweep}, and walls block every other direction.`;
-    }
-    return `Slide ${d}: ${sweep}, and ${stopClause(path)}.`;
+    return say.collect(dir, path.gems.length - 1, only, path.stopper);
   }
-
-  // A move that collects nothing: say what it is *for*.
-  const working = "Working on the marked gem";
-
-  if (only === "mines") {
-    return `${working}: slide ${d}, because every other direction you can set off in runs you onto a mine.`;
-  }
-  if (only === "walls") {
-    return `${working}: slide ${d}, because walls block every other direction.`;
-  }
+  if (only) return say.forced(dir, only);
 
   const grab = oneSlideGrab(before, goal);
   if (grab !== null) {
     const stranded = unreachableGems(slide(before, grab));
-    if (stranded.length > 0) {
-      return `Sliding ${DIR_NAMES[grab]} grabs the marked gem, but you don't choose where you stop, and it strands ${gemsPhrase(stranded.length)}: slide ${d} instead.`;
-    }
-    // The route declines a grab it could take. Which side the ball comes at a
-    // gem from decides where it fetches up, so this is a real trade-off — but
-    // we have not proved the grab is a trap, so we don't say it is.
-    return `${working}: slide ${d}. Sweeping it up straight from here is possible, but the route comes at it from another side.`;
+    return stranded.length > 0
+      ? say.strands(grab, stranded.length, dir)
+      : say.declined(dir);
   }
 
   // "One more slide" is a promise about the *plan's own next move*, not about
   // some slide existing: the route may reach the gem from a side no single
   // slide from here can, and a promise it then breaks reads as a hint that has
   // lost the plot.
-  return toGoal === 2
-    ? `${working}: no slide from here reaches it. Slide ${d}, and one more slide sweeps it up.`
-    : `${working}: no slide from here reaches it. Slide ${d} to work the ball round toward it.`;
+  return say.positioning(dir, toGoal === 2);
 }
 
 // --- planning: the nearest gem the ball can safely take ---------------

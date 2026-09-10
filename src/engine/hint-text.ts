@@ -5,8 +5,9 @@
  * A game's own sentences live in its `hint-text.ts`; these are the ones several
  * games speak word for word, so a wording pass on them lands once: the generic
  * Latin arms (Keen, Unequal, Group, Salad), the forcing chain (those four plus
- * Towers and Solo), the candidate games' two setup steps, and the helpers that
- * join a list or choose "a" or "an". Which sentence a step speaks is decided by
+ * Towers and Solo), the candidate games' two setup steps, the sliding-tile
+ * games' "Working on tile N:" prefix, and the helpers that join a list or
+ * choose "a" or "an". Which sentence a step speaks is decided by
  * the deduction (`latin-hint.ts`, `candidate-hint.ts` and each game's hint);
  * nothing here decides anything.
  */
@@ -40,6 +41,28 @@ function indefinite(s: string): string {
 
 /** Sentence-initial form of a vocabulary's cell word. */
 const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+
+// --- the sliding-tile games' goal prefix -------------------------------------
+//
+// Shared "goal: tactic" vocabulary for the sliding-tile games (Fifteen, Sixteen,
+// Netslide), aligned with the project hint quality bar (the Palisade exemplar:
+// explain *why* a move matters, not just what to do). Every step names the tile
+// it is working toward home ("Working on tile N:") and then states the tactic —
+// so the player always sees the goal behind a move, even when the tile being
+// slid is only clearing the way. A move that lands its tile in the solved cell
+// is a **home** move; one that only repositions toward a later home is a
+// **staging** move (marked with `HINT_SETTING_UP`).
+
+/** The shared "goal" prefix naming the tile a step works toward home,
+ * e.g. `Working on tile 3: `. Both games build their narration from it so
+ * the hints read as one voice. */
+export function workingOn(tile: number): string {
+  return `Working on tile ${tile}: `;
+}
+
+/** Shared marker appended to a staging move (one that does not yet land
+ * its tile in its final spot). */
+export const HINT_SETTING_UP = "(setting up)";
 
 // --- the candidate games' setup steps ---------------------------------------
 

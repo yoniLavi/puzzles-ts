@@ -481,6 +481,44 @@ premise**, in order of how often each applied:
   shipping "must be a 8"; Range's "sees all N of its cells" needed a branch for
   a 1.
 
+### The sentences live in one file per game
+
+**Every sentence a game's hint speaks, and every word inside one, is in
+`src/games/<id>/hint-text.ts`, exported as `say`** — a plain string for a fixed
+sentence, a typed function for one that takes values. The deduction decides
+*which* sentence and *with what values* (the game's `narrate`); the text file
+decides only how it reads. So a wording pass edits one file, a reviewer reads a
+game's whole voice in one place, and an i18n layer, if one ever comes, has a
+seam to replace. Sentences several games speak word for word are the engine's
+`hint-text.ts` (the generic Latin arms, the forcing chain, the candidate
+games' two setup steps, the sliding-tile "Working on tile N:" prefix, and the
+list joiners). Exemplar: `src/games/tracks/hint-text.ts`. A hint that speaks
+no words (Untangle's) has no text file.
+
+- **Values arrive as the board means them, never as words.** An axis, a count,
+  a direction constant, a monster bitmask: the plural, "both" at two, "a"/"an",
+  and the name of a direction are the text file's choices, because they are the
+  language's. A conclusion the deduction computes — Tracks' crossing parity
+  deciding "carry track" or "be blocked" — arrives as a boolean, so no rule of
+  the game hides in the text.
+- **No entry reads the board.** An entry may take the deduction's own record
+  where every value is already in it (Boats' techniques, Clusters' deduction);
+  a value that has to be looked up (Singles' numbers, Dominosa's, Galaxies' dot
+  colors) is looked up in `narrate` and passed in.
+- **A game whose voice depends on a mode takes the mode.** Salad's `say` is a
+  function of the mode, returning its sentences in letters or numbers.
+- **Wording comments move with the wording.** Why a sentence says "no way
+  across it" belongs beside it; why the arm fires stays with `narrate`.
+- **Refusals are not hint text in this sense.** They are held to one list by
+  `engine/hint-refusal.ts` and its test, which reads every
+  `{ ok: false, error: <literal> }` in the tree; moving one into `say` would
+  quietly take it out of that guard.
+- **Moving a sentence is not rewording it.** `extract-hint-strings` moved the
+  collection's text with a census of every step spoken across every tier
+  (16,059 steps across 31 games, byte-identical before and after) and a diff
+  check that every literal on a removed line reappears on an added one. Do the
+  same for any bulk move; a reword is its own commit.
+
 ### No em-dashes
 
 Use a comma, a semicolon, a colon or a sentence break instead (owner-directed
@@ -2054,8 +2092,8 @@ carry it. Re-deriving it per step makes the banner flip-flop — "tile 8" →
 "tile 7" → "tile 8" — and read as though the hint has lost the plot.
 Fifteen's `index.ts` carries the scar in a comment; Inertia holds the gem its
 leg is going for. The shared sliding-tile vocabulary
-([`engine/hint-vocab.ts`](../../src/engine/hint-vocab.ts) `workingOn` +
-`HINT_SETTING_UP`) keeps Fifteen and Sixteen reading as one voice.
+([`engine/hint-text.ts`](../../src/engine/hint-text.ts) `workingOn` +
+`HINT_SETTING_UP`) keeps Fifteen, Sixteen and Netslide reading as one voice.
 
 When the game has no *name* for the goal — Inertia's gems are anonymous — the
 board must carry the reference: mark it, and say "the marked gem". Watch the

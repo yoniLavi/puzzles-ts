@@ -7,7 +7,6 @@ import type {
   UiUpdate,
 } from "../../engine/game.ts";
 import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
-import { workingOn } from "../../engine/hint-vocab.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -20,6 +19,7 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Point } from "../../engine/types.ts";
+import { say } from "./hint-text.ts";
 import {
   ANIM_TIME,
   colors,
@@ -215,25 +215,22 @@ function narrateFifteenStep(
   goal: number,
   dest: { x: number; y: number },
 ): string {
-  const prefix = workingOn(goal);
   const w = board.w;
   const landsAtOwnHome = board.gapPos === tile - 1;
 
   if (tile === goal) {
-    if (landsAtOwnHome) return `${prefix}slide it into place`;
+    if (landsAtOwnHome) return say.goalHome(goal);
     // The goal sits at `dest` before the slide and at the old gap after it.
     const hx = (goal - 1) % w;
     const hy = Math.floor((goal - 1) / w);
     const distBefore = Math.abs(dest.x - hx) + Math.abs(dest.y - hy);
     const distAfter =
       Math.abs((board.gapPos % w) - hx) + Math.abs(Math.floor(board.gapPos / w) - hy);
-    return distAfter < distBefore
-      ? `${prefix}slide it closer`
-      : `${prefix}reposition it`;
+    return distAfter < distBefore ? say.goalCloser(goal) : say.goalReposition(goal);
   }
 
-  if (landsAtOwnHome) return `${prefix}slide tile ${tile} into place`;
-  return `${prefix}slide tile ${tile} out of the way`;
+  if (landsAtOwnHome) return say.tileHome(goal, tile);
+  return say.outOfWay(goal, tile);
 }
 
 /** Compute the *whole* greedy solution as a hint plan: one narrated

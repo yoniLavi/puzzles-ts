@@ -1,6 +1,6 @@
 # extract-hint-strings
 
-**Readiness: scaffolded, not started.** Proposed by the owner (2026-09-10),
+**Readiness: done, 2026-09-10** (`tasks.md` says how it was checked). Proposed by the owner (2026-09-10),
 during `cap-hint-narration-length`: *"extract hint strings into separate files,
 to ease maintenance and potentially later add i18n"*. Sequenced after that
 change's rewrite landed (2c5d8edb, ~100 sentences across 24 games), since

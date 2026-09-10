@@ -8,7 +8,6 @@ import type {
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { ALREADY_SOLVED, SEARCH_OUT_OF_REACH } from "../../engine/hint-refusal.ts";
-import { HINT_SETTING_UP, workingOn } from "../../engine/hint-vocab.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -34,6 +33,7 @@ import {
   toroidalDist,
 } from "../../engine/slide-planner.ts";
 import type { Point } from "../../engine/types.ts";
+import { type Line, say } from "./hint-text.ts";
 import {
   ANIM_TIME,
   colors,
@@ -731,12 +731,13 @@ function narrateStep(
   const landC = move.axis === "row" ? (curC + move.delta + w) % w : curC;
   const targetPos = landR * w + landC;
 
-  // Goal:tactic narration. The prefix names the tile being worked toward
-  // home; the tactic states the destination line this move sends it to.
-  // A continuation leg ("then to …") repeats neither the verb nor the why
-  // — leg 0 of its journey already carried both and is still on screen.
-  const firstDest = move.axis === "row" ? `column ${landC + 1}` : `row ${landR + 1}`;
-  let tactic = continuesPrevious ? `then to ${firstDest}` : `move it to ${firstDest}`;
+  // Goal:tactic narration: the tile being worked toward home, the line this
+  // move sends it to, and the line the next move continues it along, if any.
+  const first: Line =
+    move.axis === "row"
+      ? { axis: "column", n: landC + 1 }
+      : { axis: "row", n: landR + 1 };
+  let second: Line | null = null;
 
   let ultimatePos: number | undefined;
 
@@ -749,27 +750,27 @@ function narrateStep(
       const ult = ultR * w + ultC;
       if (ult !== targetPos && ult !== currentIdx) {
         ultimatePos = ult;
-        const secondDest =
-          move.axis === "row" ? `row ${ultR + 1}` : `column ${ultC + 1}`;
-        tactic += `, then ${secondDest}`;
+        second =
+          move.axis === "row"
+            ? { axis: "row", n: ultR + 1 }
+            : { axis: "column", n: ultC + 1 };
       }
     }
   }
 
-  // Explain *why* the move matters (per the hint quality bar): a move
-  // that lands the narrated tile in its solved cell (index tile-1) is a
-  // **home** move; one that leaves it out of place is a **staging** move.
-  // The why attaches to the journey's *end* — for a previewed two-leg
-  // journey use the ultimate landing cell, so a first leg that merely
-  // stages but whose second leg homes the tile reads as a home move. A
-  // continuation leg carries no why (leg 0 of its journey already did).
-  let suffix = "";
-  if (!continuesPrevious) {
-    const finalPos = ultimatePos ?? targetPos;
-    suffix = finalPos === bestTile - 1 ? ", its final spot" : ` ${HINT_SETTING_UP}`;
-  }
-
-  const explanation = `${workingOn(bestTile)}${tactic}${suffix}`;
+  // Why the move matters (per the hint quality bar): a move that lands the
+  // narrated tile in its solved cell (index tile-1) is a **home** move; one
+  // that leaves it out of place is a **staging** move. The why attaches to the
+  // journey's *end* — for a previewed two-leg journey use the ultimate landing
+  // cell, so a first leg that merely stages but whose second leg homes the
+  // tile reads as a home move.
+  const explanation = say.step({
+    tile: bestTile,
+    continues: continuesPrevious,
+    first,
+    second,
+    home: (ultimatePos ?? targetPos) === bestTile - 1,
+  });
 
   // Normalize the returned delta to the in-grid direction of travel
   // (same permutation mod w/h) so the slide animation glides the tile

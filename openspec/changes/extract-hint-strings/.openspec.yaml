@@ -1,8 +1,0 @@
-# Required for `skip_specs` to be honored (see openspec/config.yaml).
-schema: spec-driven
-
-# No delta yet, for a reason specific to this change: its requirement depends on
-# the catalog form task 1.2 chooses, and writing it now would publish an answer
-# the work is meant to find. The `ts-engine` delta lands with task 3.2, and this
-# marker is deleted with it.
-skip_specs: true

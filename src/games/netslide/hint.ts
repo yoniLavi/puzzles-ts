@@ -24,24 +24,15 @@
 
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
 import { ALREADY_SOLVED, SEARCH_OUT_OF_REACH } from "../../engine/hint-refusal.ts";
-import { HINT_SETTING_UP } from "../../engine/hint-vocab.ts";
 import {
   planSlides,
   type SlideMove,
   slidePieces,
   toroidalDist,
 } from "../../engine/slide-planner.ts";
+import { type Line, say } from "./hint-text.ts";
 import { reconstructSolution } from "./reconstruct.ts";
-import {
-  D,
-  isComplete,
-  L,
-  type NetslideMove,
-  type NetslideState,
-  R,
-  U,
-  wireCount,
-} from "./state.ts";
+import { isComplete, type NetslideMove, type NetslideState } from "./state.ts";
 
 /** What the renderer marks for the displayed step. Netslide's tiles have no
  * names — there is no "tile 8" to say — so the board carries the reference: the
@@ -441,17 +432,6 @@ export function hint(
  * Narration.
  */
 
-/** A tile's name is its shape, which is the one thing about it the player can
- * see. There is no "tile 8" in Netslide, so the shape names the *kind* and the
- * board's highlight says *which one*. */
-function tileName(mask: number): string {
-  const wires = wireCount(mask);
-  if (wires === 1) return "loose end";
-  if (wires === 3) return "T-piece";
-  if (wires === 4) return "cross";
-  return mask === (L | R) || mask === (U | D) ? "straight" : "corner";
-}
-
 /** Which tile a step is about, and what the slide does to it. */
 interface Focus {
   /** The label — i.e. the cell the tile started the plan in. */
@@ -644,29 +624,10 @@ function less(a: [number, number, number], b: [number, number, number]): boolean
 }
 
 /**
- * One step's sentence.
- *
- * Every clause is a claim, so every clause is checked — and every clause has to
- * earn the width it takes on the hint bar. Two things are worth saying about the
- * tile being placed:
- *
- * - it sits on a line that **cannot be slid**, so only the perpendicular line can
- *   shift it — a single degree of freedom, and the game's whole technique;
- * - or its destination is a cell the finished board wants its wires in, which is
- *   just stated, plainly.
- *
- * What is *not* said: that the source can never move. That is a **rule of the
- * game**, not a deduction about this move — the board already shows it (no arrows
- * are drawn beside the source's row or column) and it belongs in the help text.
- * Saying it every step made the commonest sentence 1.8× the length of the rest and
- * taught nothing the second time.
- *
- * Lines are named by **number** ("row 3 never slides"), never as "the center":
- * `cx` is `⌊w/2⌋`, so on an even-sized board the source is visibly off-center and
- * the player can see the claim is false.
- *
- * The move itself is *not* forced by logic — Netslide is a movement game — so
- * the conclusion is an imperative, never a modal of necessity.
+ * One step's sentence: which one, and with what values. Every clause is a
+ * claim, so every clause is checked here before it is said; the words, and why
+ * each clause earns its width on the hint bar, are
+ * [`hint-text.ts`](./hint-text.ts)'s.
  */
 function narrateStep(
   s: NetslideState,
@@ -676,26 +637,25 @@ function narrateStep(
 ): HintStep<NetslideMove, NetslideHint> {
   const { w, cx, cy } = s;
   const move = toNetslideMove(m);
-  const name = tileName(s.tiles[focus.label]);
+  const mask = s.tiles[focus.label];
 
   const landRow = Math.floor(focus.landing / w);
   const landCol = focus.landing % w;
-  const where = m.axis === "row" ? `column ${landCol + 1}` : `row ${landRow + 1}`;
+  const to: Line =
+    m.axis === "row"
+      ? { axis: "column", n: landCol + 1 }
+      : { axis: "row", n: landRow + 1 };
 
   // "Where it belongs" is a claim, so it is only made when the finished board
   // really does want this tile's wires in the cell the slide is delivering it to.
   // A plan that ran out of budget can leave a tile somewhere that merely helps,
   // and there the honest thing to say is that it is being set up.
   const arrivesHome = focus.arrives && focus.belongs;
-  const tail = arrivesHome ? ", where it belongs" : ` ${HINT_SETTING_UP}`;
 
-  // A continuation leg neither re-introduces the tile nor re-explains the why:
-  // leg one of this journey carried both, and it is still on screen.
   if (continuesPrevious) {
-    const legTail = arrivesHome ? ", where it belongs" : "";
     return {
       move,
-      explanation: `Now on to ${where}${legTail}.`,
+      explanation: say.next(to, arrivesHome),
       highlights: highlightsFor(s, move, focus),
       continuesPrevious: true,
     };
@@ -710,25 +670,13 @@ function narrateStep(
   // player can count it.
   let explanation: string;
   if (row === cy && m.axis === "col") {
-    explanation = `Row ${cy + 1} never slides, so only a column move can shift this ${name}: take it to ${where}${tail}.`;
+    explanation = say.rowFixed(cy + 1, mask, to, arrivesHome);
   } else if (col === cx && m.axis === "row") {
-    explanation = `Column ${cx + 1} never slides, so only a row move can shift this ${name}: take it to ${where}${tail}.`;
+    explanation = say.colFixed(cx + 1, mask, to, arrivesHome);
   } else if (focus.belongs && isBesideSource(focus.destination, w, cx, cy)) {
-    // Stated, not argued: the network grows outward from the source, so a tile
-    // that belongs against it is worth naming — but *why* the source is fixed is a
-    // rule of the game, and the help text is where rules live.
-    //
-    // The consequence still has to be said, and "belongs beside the source" is
-    // itself the arrival marker: appending `tail`'s ", where it belongs" would say
-    // "belongs" twice in one sentence. So the arriving leg leads with the
-    // imperative and closes on the arrival; a leg still on its way keeps the
-    // shared "(setting up)" marker, which is what tells the player the cell it is
-    // being taken to is not the one it belongs in.
-    explanation = arrivesHome
-      ? `Take this ${name} to ${where}; it belongs beside the source.`
-      : `This ${name} belongs beside the source: take it to ${where} ${HINT_SETTING_UP}.`;
+    explanation = say.besideSource(mask, to, arrivesHome);
   } else {
-    explanation = `Working on the highlighted ${name}: take it to ${where}${tail}.`;
+    explanation = say.working(mask, to, arrivesHome);
   }
 
   return { move, explanation, highlights: highlightsFor(s, move, focus) };

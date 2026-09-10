@@ -443,14 +443,11 @@ The engine's half of the hint-text convention (a game's own sentences are its
 `hint-text.ts`): `narrateLatinReason` for the row/column games whose
 generic-arm wording is verbatim-identical (normative rule: the `ts-engine`
 "shared narrator" requirement), `narrateForcingChain`, the candidate games'
-`populateText`/`cleanObviousText`, the `LatinVocab` a value is spoken in, and
-the English list joiners `joinNums`/`joinWith`. Nothing in it decides which
-sentence fires. See [`hints.md`](./hints.md) § "Keep the narration terse".
-
-### `hint-vocab.ts` — sliding-tile goal vocabulary
-
-`workingOn(tile)` + `HINT_SETTING_UP`: the shared "goal: tactic" prefix so
-Fifteen's and Sixteen's hints read as one voice.
+`populateText`/`cleanObviousText`, the `LatinVocab` a value is spoken in, the
+sliding-tile games' `workingOn(tile)` + `HINT_SETTING_UP` (so Fifteen, Sixteen
+and Netslide read as one voice), and the English list joiners
+`joinNums`/`joinWith`. Nothing in it decides which sentence fires. See
+[`hints.md`](./hints.md) § "The sentences live in one file per game".
 
 ### `slide-planner.ts` — sliding-permutation search
 
