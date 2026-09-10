@@ -128,6 +128,19 @@ cannot pass for proof. A rung the corpus cannot reach is recorded with its
 reason — and checked against the C first, because an unreachable deduction is
 exactly the shape a porting bug takes.
 
+**Size the corpus by planting, once per upper-tier rung.** Fifteen Magnets
+boards passed every equivalence check and then stayed green with
+`advancedfull` mis-tiered to Easy, while the byte-match caught the same plant
+on one fixture in twenty: a mis-tiered rung shows only at a cap that excludes
+it, on a board where it is the first rung of its tier to fire from the lower
+tier's stall, and no board in the corpus was one
+(`certify-the-magnets-ladder`). The cap walk is the mechanism; only a plant
+per Tricky rung tells you the boards reach it. And an `unreached` entry can be
+**structural** rather than a corpus shortfall — Magnets' `neither` is
+foreclosed by the primitive beneath it, in the C exactly as in the port
+([`magnets-ladder.test.ts`](../../src/games/magnets/magnets-ladder.test.ts)
+argues it) — in which case "empty is the goal" is a diagnosis, not a target.
+
 **The census costs the adopting game one optional parameter**, forwarded straight
 to `runDeductionFixpoint`'s `firings` sink; the runner does the counting. That is
 the whole of it — if you find yourself wrapping the ladder in a closure to

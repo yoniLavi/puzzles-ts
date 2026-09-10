@@ -10,7 +10,10 @@
  * machinery), started empty from a board's clues; it never touches game state.
  * Return codes: −1 impossible, 0 ambiguous/unfinished, 1 solved.
  */
-import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
+import {
+  type FiringTally,
+  runDeductionFixpoint,
+} from "../../engine/deduction-fixpoint.ts";
 import {
   COLUMN,
   DIFF_EASY,
@@ -513,26 +516,102 @@ export class MagnetsSolver {
    * whether every cell is set (1), not (0), or a contradiction arose (−1).
    * Used by the generator's `layDominoes` while placing dominoes, before the
    * clue counts exist. */
-  solveUnnumbered(): number {
+  solveUnnumbered(firings?: FiringTally): number {
+    // `firings` is the test seam `magnets-ladder.test.ts` reads the census
+    // through; the runner does the counting.
     const { impossible } = runDeductionFixpoint({
       techniques: [
         { id: "force", tier: DIFF_EASY, run: () => this.force() },
         { id: "neither", tier: DIFF_EASY, run: () => this.neither() },
       ],
+      firings,
     });
     if (impossible) return -1;
+    return this.allSet();
+  }
+
+  /** The loop `solveUnnumbered` ran before it adopted the shared runner, kept
+   * verbatim as the oracle `magnets-ladder.test.ts` certifies the runner
+   * against (`engine/testing/ladder-equivalence.ts` says why a differential
+   * alone cannot). Not for production use. */
+  solveUnnumberedLegacy(): number {
+    while (true) {
+      let ret = this.force();
+      if (ret > 0) continue;
+      if (ret < 0) return -1;
+      ret = this.neither();
+      if (ret > 0) continue;
+      if (ret < 0) return -1;
+      break;
+    }
+    return this.allSet();
+  }
+
+  /** 1 when every cell is set, else 0 — the unnumbered solve's verdict. */
+  private allSet(): number {
     for (let i = 0; i < this.wh; i++) {
       if (!(this.flags[i] & GS_SET)) return 0;
     }
     return 1;
   }
 
-  /** Run the graded solver at `diff` (DIFF_EASY / DIFF_TRICKY or higher).
-   * Returns −1 impossible, 0 ambiguous/unfinished, 1 solved. */
-  solve(diff: number): number {
+  /** The loop `solve` ran before it adopted the shared runner, kept verbatim
+   * as the oracle `magnets-ladder.test.ts` certifies the runner against —
+   * including upstream's `if (diff < DIFF_TRICKY) break;` in the middle of the
+   * ladder, which is what the runner's tier cap replaced. Not for production
+   * use. */
+  solveLegacy(diff: number): number {
     this.clearflags();
     if (this.startflags() < 0) return -1;
 
+    while (true) {
+      let ret = this.force();
+      if (ret > 0) continue;
+      if (ret < 0) return -1;
+
+      ret = this.neither();
+      if (ret > 0) continue;
+      if (ret < 0) return -1;
+
+      ret = this.rowcols(this.checkfull);
+      if (ret < 0) return -1;
+      if (ret > 0) continue;
+
+      ret = this.rowcols(this.oddlength);
+      if (ret < 0) return -1;
+      if (ret > 0) continue;
+
+      if (diff < DIFF_TRICKY) break;
+
+      ret = this.rowcols(this.advancedfull);
+      if (ret < 0) return -1;
+      if (ret > 0) continue;
+
+      ret = this.rowcols(this.nonneutral);
+      if (ret < 0) return -1;
+      if (ret > 0) continue;
+
+      ret = this.rowcols(this.countdominoesNeutral);
+      if (ret < 0) return -1;
+      if (ret > 0) continue;
+
+      ret = this.rowcols(this.countdominoesNonneutral);
+      if (ret < 0) return -1;
+      if (ret > 0) continue;
+
+      break;
+    }
+    return this.checkCompletion();
+  }
+
+  /** Run the graded solver at `diff` (DIFF_EASY / DIFF_TRICKY or higher).
+   * Returns −1 impossible, 0 ambiguous/unfinished, 1 solved. */
+  solve(diff: number, firings?: FiringTally): number {
+    this.clearflags();
+    if (this.startflags() < 0) return -1;
+
+    // `firings` is the test seam `magnets-ladder.test.ts` reads the census
+    // through; the runner does the counting.
     // The shared ordered technique ladder (`engine/deduction-fixpoint.ts`): try
     // the techniques easiest-first and restart from the top the moment one
     // fires. Upstream's `if (diff < DIFF_TRICKY) break;` sat in the MIDDLE of
@@ -567,6 +646,7 @@ export class MagnetsSolver {
         },
       ],
       maxTier: diff,
+      firings,
     });
     if (impossible) return -1;
     return this.checkCompletion();
