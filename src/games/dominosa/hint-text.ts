@@ -6,6 +6,7 @@
  * board); this file decides only how it reads.
  */
 
+import { indefinite } from "../../engine/hint-text.ts";
 import type { BarrierTechnique, PlaceTechnique } from "./solver.ts";
 
 /** The domino two numbers make, lowest first: "2–5". */
@@ -34,9 +35,9 @@ export const say = {
       case "mustOverlap":
         return "Every remaining spot for the outlined domino covers this pair, so no other domino can go here.";
       case "localDuplicate":
-        return `A ${dom} domino here would force a second ${dom} at the outlined square, but each domino is used once, so it can't.`;
+        return `${indefinite(dom, true)} ${dom} domino here would force a second ${dom} at the outlined square, but each domino is used once, so it can't.`;
       case "localDuplicate2":
-        return `A ${dom} domino here would force both outlined squares to become ${dom} too, a duplicate, so it can't.`;
+        return `${indefinite(dom, true)} ${dom} domino here would force both outlined squares to become ${dom} too, a duplicate, so it can't.`;
       case "parity":
         return "A domino here would split the empty squares into odd-sized regions, which dominoes can't fill, so this can't be a domino.";
       case "set":

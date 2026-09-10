@@ -15,6 +15,7 @@
  * find false (§2.4).
  */
 
+import { indefinite } from "../../engine/hint-text.ts";
 import type { CrossingFiring } from "./hint-solver.ts";
 
 type F<K extends CrossingFiring["technique"]> = Extract<
@@ -57,8 +58,8 @@ export const say = {
 
   sharedDigit: (f: F<"sharedDigit">, horizontal: boolean): string =>
     f.deep
-      ? `Every number that can still go in this ${way(horizontal)} run, once the crossing numbers rule the rest out, has a ${f.digit} in this square, so it must be ${f.digit}.`
-      : `Every number that still fits this ${way(horizontal)} run has a ${f.digit} in this square, so it must be ${f.digit}.`,
+      ? `Every number that can still go in this ${way(horizontal)} run, once the crossing numbers rule the rest out, has ${indefinite(String(f.digit))} ${f.digit} in this square, so it must be ${f.digit}.`
+      : `Every number that still fits this ${way(horizontal)} run has ${indefinite(String(f.digit))} ${f.digit} in this square, so it must be ${f.digit}.`,
 
   crossRuns: (f: F<"crossRuns">): string => {
     // Lead with whichever run is the *tighter* constraint and let the other
@@ -80,7 +81,7 @@ export const say = {
   noteStrike: (f: F<"noteStrike">, horizontal: boolean): string => {
     const ds = joinOr(f.digits);
     return f.digits.length === 1
-      ? `No number that still fits this ${way(horizontal)} run puts a ${ds} in this square, so rule it out.`
+      ? `No number that still fits this ${way(horizontal)} run puts ${indefinite(ds)} ${ds} in this square, so rule it out.`
       : `No number that still fits this ${way(horizontal)} run puts ${ds} in this square, so rule them out.`;
   },
 };

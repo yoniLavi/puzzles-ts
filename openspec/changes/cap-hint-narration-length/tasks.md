@@ -39,6 +39,12 @@
 - [x] 4.3 `openspec validate --all --strict`, then the gate: green in
       2c5d8edb (8,744 tests). The gate's probe anchor caught the moved
       `populateText` line, which is now re-anchored on its new wording.
+- [x] 4.3a The article trap, found by `extract-hint-strings` once every
+      sentence sat in one file: six sentences said "a 8" at an 8 — Keen's
+      cage line, Solo's `dup`, Crossing's two shared-digit arms and its
+      one-digit note strike, Dominosa's two duplicate-domino arms. Each now
+      picks "a"/"an" by the value through the engine's `indefinite`, as the
+      shared `dup` arm already did.
 - [ ] 4.4 Owner acceptance: the wording is player-visible in 24 games. Not
       archived until then. The owner has chosen (2026-09-10) to review it
       **after `extract-hint-strings`**, reading each game's sentences in one

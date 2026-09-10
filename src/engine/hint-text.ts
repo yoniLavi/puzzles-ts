@@ -34,9 +34,10 @@ export function joinWith(parts: string[]): string {
 /** "a" or "an" for `s` — chosen by how the *word* is pronounced, so a letter
  * value ("an A", "a B") and a digit ("a 6", "an 8") both read correctly. The
  * `dup` arm below says "There's already a …", which without this reads "a A" /
- * "a 8". */
-function indefinite(s: string): string {
-  return /^(?:[aefhilmnorsx]|8|11|18)/i.test(s) ? "an" : "a";
+ * "a 8". `capital` gives the form that opens a sentence. */
+export function indefinite(s: string, capital = false): string {
+  const a = /^(?:[aefhilmnorsx]|8|11|18)/i.test(s) ? "an" : "a";
+  return capital ? `${a.charAt(0).toUpperCase()}${a.slice(1)}` : a;
 }
 
 /** Sentence-initial form of a vocabulary's cell word. */

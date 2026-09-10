@@ -7,7 +7,12 @@
  * `narrate`); this file decides only how it reads.
  */
 
-import { cleanObviousText, joinNums, populateText } from "../../engine/hint-text.ts";
+import {
+  cleanObviousText,
+  indefinite,
+  joinNums,
+  populateText,
+} from "../../engine/hint-text.ts";
 import { C_ADD, C_DIV, C_MUL, C_SUB } from "./state.ts";
 
 /** The cage's arithmetic goal as a verb phrase, read off its packed clue — the
@@ -42,5 +47,5 @@ export const say = {
   /** Every way to fill the cage places `n` in this row (`horizontal`) or
    * column. */
   cageLine: (op: number, value: number, n: number, horizontal: boolean): string =>
-    `This cage must ${cageGoal(op, value)}, and every way to fill it places a ${n} in this ${horizontal ? "row" : "column"}, so the ${n} here must be crossed out.`,
+    `This cage must ${cageGoal(op, value)}, and every way to fill it places ${indefinite(String(n))} ${n} in this ${horizontal ? "row" : "column"}, so the ${n} here must be crossed out.`,
 };

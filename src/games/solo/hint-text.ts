@@ -13,6 +13,7 @@
 
 import {
   cleanObviousText,
+  indefinite,
   joinNums,
   type LatinVocab,
   narrateForcingChain,
@@ -58,7 +59,7 @@ export const say = {
     `Working through this cell's row, column and block together, only ${n} can still go here, so it must be ${n}.`,
 
   dup: (n: number): string =>
-    `A ${n} is already placed in this cell, so it can't repeat in its row, column or block: cross out the ${n} from these cells.`,
+    `${indefinite(String(n), true)} ${n} is already placed in this cell, so it can't repeat in its row, column or block: cross out the ${n} from these cells.`,
 
   /** Every cell of `confined` that can take `n` also lies in `target`. */
   intersect: (confined: SoloRegion, target: SoloRegion, n: number): string => {
