@@ -20,14 +20,26 @@
 
 ## 1. Coalesce
 
-- [ ] 1.1 Ignore a Hint press while a hint request is in flight.
-- [ ] 1.2 **Keep the show/apply rhythm intact** — first press shows and arms,
-      second applies. A press dropped while the *show* is computing is right
-      (there is nothing armed to apply yet) but must not leave
-      `_hintArmedToApply` disagreeing with what the player sees.
-      `puzzle-screen.test.ts` covers the rhythm; extend it rather than trusting
-      it.
-- [ ] 1.3 Auto-Hint runs its own loop — check it does not race the new flag.
+Done 2026-09-10; the mechanical half, ahead of the design half below.
+
+- [x] 1.1 `Puzzle.hint()` drops a press while one is in flight
+      (`_hintInFlight`, `src/puzzle/puzzle.ts`). Nothing is queued.
+- [x] 1.2 **Rhythm intact.** The rhythm's tests are in
+      `puzzle-hint-stepper.test.ts` (not `puzzle-screen.test.ts`, which never
+      covered it); two new cases drive a deferred worker stub, one per beat:
+      presses during a slow *show* are dropped and the show still arms; presses
+      during a slow *apply* are dropped and the next press shows. Both go red
+      in milliseconds with the guard bypassed — and were first written so a
+      regression *hung* instead (the file's test timeout is an hour), which is
+      why the dropped presses are asserted before they are awaited.
+- [x] 1.3 One race found and closed: Auto-Hint started *while a show was
+      computing* would have been armed behind — the show's answer landing after
+      `startAutoHint` set `_hintArmedToApply`, so the next manual press applied
+      a step the loop was already applying. The show now arms only if Auto-Hint
+      is not active; third test case.
+- [x] 1.4 Run in Chrome on Sixteen 4×4: six Hint keypresses as fast as the
+      CLI sends them, one applied move, the app responsive. Task 3.2's 5×5
+      endgame check stays with the owner's acceptance of §2.
 
 ## 2. Say that it is thinking
 

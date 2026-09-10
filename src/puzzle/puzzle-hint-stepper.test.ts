@@ -129,3 +129,89 @@ describe("Hint button stepper", () => {
     expect(calls).toEqual(["show", "apply", "show"]);
   });
 });
+
+/** A worker whose `hint`/`executeHint` do not answer until the test says so —
+ * the shape of a Sixteen endgame search, where a press costs seconds. */
+function makeSlowPuzzle() {
+  // One gate per worker call, answered oldest first, after a macrotask so a
+  // call reached through `enqueueInput`'s promise chain has been made.
+  const pending: (() => void)[] = [];
+  const gate = () =>
+    new Promise<void>((resolve) => {
+      pending.push(resolve);
+    });
+  const base = makePuzzle({
+    hint: vi.fn(async () => {
+      base.calls.push("show");
+      await gate();
+      return undefined;
+    }),
+    executeHint: vi.fn(async () => {
+      base.calls.push("apply");
+      await gate();
+      return undefined;
+    }),
+  });
+  const release = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    pending.shift()?.();
+  };
+  return { ...base, release };
+}
+
+describe("Hint presses coalesce while one is in flight (coalesce-hint-requests)", () => {
+  it("presses during a slow show are dropped, and the show still arms", async () => {
+    const { puzzle, calls, release } = makeSlowPuzzle();
+    const first = puzzle.hint();
+    // Dropped: nothing to apply yet, nothing queued. Asserted before awaiting
+    // them, so a regression to queuing fails here rather than hanging on a
+    // gate nothing releases (the file's test timeout is an hour).
+    const dropped = [puzzle.hint(), puzzle.hint()];
+    expect(calls).toEqual(["show"]);
+    expect(puzzle.hintArmedToApply).toBe(false);
+    await release();
+    await first;
+    expect(await Promise.all(dropped)).toEqual([undefined, undefined]);
+    expect(puzzle.hintArmedToApply).toBe(true);
+    // The next press is the apply — the rhythm survived the dropped presses.
+    const apply = puzzle.hint();
+    await release();
+    await apply;
+    expect(calls).toEqual(["show", "apply"]);
+  });
+
+  it("presses during a slow apply are dropped, and the next press shows", async () => {
+    const { puzzle, calls, release } = makeSlowPuzzle();
+    const show = puzzle.hint();
+    await release();
+    await show;
+    const apply = puzzle.hint(); // disarms on the way in
+    const dropped = puzzle.hint();
+    // The apply reaches the worker through `enqueueInput`, a tick later.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(calls).toEqual(["show", "apply"]);
+    await release();
+    await apply;
+    expect(await dropped).toBeUndefined();
+    const next = puzzle.hint();
+    await release();
+    await next;
+    expect(calls).toEqual(["show", "apply", "show"]);
+  });
+
+  it("a show that lands after Auto-Hint started does not arm behind it", async () => {
+    const { puzzle, calls, release, workerPuzzle } = makeSlowPuzzle();
+    // Auto-Hint asks for the move's animation length after each apply.
+    (
+      workerPuzzle as unknown as { currentAnimationMs: () => Promise<number> }
+    ).currentAnimationMs = async () => 0;
+    const show = puzzle.hint();
+    puzzle.startAutoHint(); // its loop's first apply is now in flight too
+    await release(); // answers the show, oldest first
+    await show;
+    expect(puzzle.hintArmedToApply).toBe(false);
+    puzzle.stopAutoHint();
+    await release(); // lets the loop's apply finish
+    expect(calls.slice(0, 2)).toEqual(["show", "apply"]);
+  });
+});

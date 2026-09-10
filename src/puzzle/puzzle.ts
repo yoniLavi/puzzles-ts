@@ -288,6 +288,20 @@ export class Puzzle {
    */
   private _hintArmedToApply = signal(false);
 
+  /**
+   * True while a Hint press is being answered by the worker. A further press
+   * meanwhile is **dropped**, not queued: `hint()` does not go through
+   * `enqueueInput`, so each press used to start another worker round-trip and
+   * Comlink ran them one after another — eighty presses on a Sixteen 5×5
+   * endgame, where one hint costs ~3–4 s, left the app looking frozen for
+   * minutes while it worked through a self-inflicted backlog
+   * (`coalesce-hint-requests`). Dropping is right in both beats: during a
+   * *show* nothing is armed yet, and during an *apply* the step was disarmed
+   * on the way in, so the press after the answer lands does what the player
+   * would expect from a fresh press.
+   */
+  private _hintInFlight = false;
+
   /** Whether the next Hint press applies the step on display rather than
    * showing a new one — the stepper's second beat. */
   public get hintArmedToApply(): boolean {
@@ -441,6 +455,16 @@ export class Puzzle {
   }
 
   public async hint(): Promise<string | undefined> {
+    if (this._hintInFlight) return undefined;
+    this._hintInFlight = true;
+    try {
+      return await this.hintOnce();
+    } finally {
+      this._hintInFlight = false;
+    }
+  }
+
+  private async hintOnce(): Promise<string | undefined> {
     if (this.hintArmedToApply) {
       // Second press with nothing done in between: apply this one step in slow
       // motion and stop — `executeHint(true)` hides the plan on settle rather
@@ -470,7 +494,10 @@ export class Puzzle {
       this.setAutoHintMessage(err, true);
       return err;
     }
-    this._hintArmedToApply.set(true);
+    // Auto-Hint may have been started while the show was computing; it owns
+    // the plan now, and arming behind it would make the next manual press
+    // apply a step Auto-Hint is already applying.
+    if (!this._autoHintActive.get()) this._hintArmedToApply.set(true);
     return undefined;
   }
 
