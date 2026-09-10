@@ -353,19 +353,23 @@ header {
   animation-timeline: scroll();
   animation-range: 0 var(--scroll-range-end);
 
-  .logo {
+  /* Written through the inner part, so these sit at or above the specificity
+   * of the layout rules for the same elements above (Biome's
+   * noDescendingSpecificity). The properties never overlap, so this changes
+   * nothing rendered. */
+  [part="header-inner"] .logo {
     animation: scroll-logo var(--scroll-animation-options);
     animation-timeline: scroll();
     animation-range: 0 var(--scroll-range-end);
   }
 
-  .title h1 {
+  [part="header-inner"] .title h1 {
     animation: scroll-h1 var(--scroll-animation-options);
     animation-timeline: scroll();
     animation-range: 0 var(--scroll-range-end);
   }
 
-  .subtitle {
+  [part="header-inner"] .subtitle {
     animation: scroll-subtitle var(--scroll-animation-options);
     animation-timeline: scroll();
     animation-range: 0 var(--scroll-range-end);

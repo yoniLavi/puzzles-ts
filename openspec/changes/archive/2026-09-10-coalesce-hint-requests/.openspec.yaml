@@ -1,0 +1,6 @@
+# `schema` is required for this file to be valid change metadata at all.
+schema: spec-driven
+
+# Task 2 has its answer (design.md), so the delta under specs/ts-engine/ records
+# it: presses in flight are dropped, a slow hint says "Thinking…" after 300 ms,
+# and it is not cancellable.

@@ -206,7 +206,14 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
                 // solution", so "Next" was doing no work the group did not
                 // already do. The armed word stays a full phrase, because it
                 // is the state a player has not seen before.
-                label: this.puzzle.hintArmedToApply ? "Apply the hint" : "Hint",
+                //
+                // A third word for a press that is still being answered
+                // (`Puzzle.hintPending`): the button is not dead, it is working.
+                label: this.puzzle.hintPending
+                  ? "Thinking…"
+                  : this.puzzle.hintArmedToApply
+                    ? "Apply the hint"
+                    : "Hint",
                 disabled: this.solved,
               })}
               ${this.renderHintExplanation()}

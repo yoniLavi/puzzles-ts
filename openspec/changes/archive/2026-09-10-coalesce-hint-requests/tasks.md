@@ -43,16 +43,27 @@ Done 2026-09-10; the mechanical half, ahead of the design half below.
 
 ## 2. Say that it is thinking
 
-- [ ] 2.1 Decide what a pending hint looks like: a transient banner, a pending
-      state on the Hint control, or something else. **This is the part that wants
-      the owner**, not the flag above.
-- [ ] 2.2 Only after a few hundred milliseconds, so an ordinary fast hint does
-      not flicker.
-- [ ] 2.3 Consider whether a slow hint should be cancellable, and say why if not.
+Owner asked for the recommendation and its implementation (2026-09-10).
+
+- [x] 2.1 **Both the Hint control and the banner say "Thinking…"**, driven by
+      one signal (`Puzzle.hintPending`), reverting when the answer lands
+      (`design.md` D2). Labels in `rail.ts` and `puzzle-screen.ts`.
+- [x] 2.2 `HINT_PENDING_MS` = 300 ms, exported and read by the tests. Fake-timer
+      cases: labeled at the delay and not one millisecond before, never for a
+      fast answer, cleared on a successful show, and a late refusal's own
+      message wins.
+- [x] 2.3 **Not cancellable**, and why (`design.md` D3): the search is
+      synchronous in the worker, an interrupt is a per-game obligation, and the
+      longest case is seconds once or twice a game.
 
 ## 3. Close
 
-- [ ] 3.1 `npm run gate`.
-- [ ] 3.2 Run the app: press Hint repeatedly on a Sixteen 5×5 endgame and confirm
-      it stays responsive and says what it is doing.
-- [ ] 3.3 Owner acceptance — it is entirely about how the app feels.
+- [x] 3.1 The commit's gate.
+- [x] 3.2 Run in Chrome on Sixteen **7×7** (a fresh board's first hint there
+      crosses the delay; a 5×5 endgame is not reachable deterministically from
+      the CLI): a 40 ms poll of the chrome's labels through the shadow trees
+      recorded Hint → Thinking… → Apply the hint → Hint across two presses,
+      with the app responsive throughout. Earlier, six rapid presses on 4×4
+      applied one move.
+- [x] 3.3 Implemented at the owner's request; the feel is theirs to judge on
+      the deployed build. Archived on the code's evidence.

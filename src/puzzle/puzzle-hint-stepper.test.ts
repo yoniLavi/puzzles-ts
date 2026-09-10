@@ -6,9 +6,9 @@
 // intervening user action also disarms. These tests drive Puzzle's
 // orchestration directly against a stub worker — the logic lives entirely in
 // Puzzle, no midend/worker needed.
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PuzzleStaticAttributes } from "../engine/types.ts";
-import { Puzzle } from "./puzzle.ts";
+import { HINT_PENDING_MESSAGE, HINT_PENDING_MS, Puzzle } from "./puzzle.ts";
 import type { RemoteWorkerPuzzle } from "./worker.ts";
 
 const ATTRS: PuzzleStaticAttributes = {
@@ -140,11 +140,12 @@ function makeSlowPuzzle() {
     new Promise<void>((resolve) => {
       pending.push(resolve);
     });
+  let hintError: string | undefined;
   const base = makePuzzle({
     hint: vi.fn(async () => {
       base.calls.push("show");
       await gate();
-      return undefined;
+      return hintError;
     }),
     executeHint: vi.fn(async () => {
       base.calls.push("apply");
@@ -156,7 +157,13 @@ function makeSlowPuzzle() {
     await new Promise((resolve) => setTimeout(resolve, 0));
     pending.shift()?.();
   };
-  return { ...base, release };
+  return {
+    ...base,
+    release,
+    setHintError: (e: string | undefined) => {
+      hintError = e;
+    },
+  };
 }
 
 describe("Hint presses coalesce while one is in flight (coalesce-hint-requests)", () => {
@@ -213,5 +220,62 @@ describe("Hint presses coalesce while one is in flight (coalesce-hint-requests)"
     puzzle.stopAutoHint();
     await release(); // lets the loop's apply finish
     expect(calls.slice(0, 2)).toEqual(["show", "apply"]);
+  });
+});
+
+describe("a slow hint says it is thinking (coalesce-hint-requests)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** `release` waits a macrotask, so drive it under fake timers explicitly. */
+  const releaseUnderFakeTimers = async (release: () => Promise<void>) => {
+    const done = release();
+    await vi.advanceTimersByTimeAsync(0);
+    await done;
+  };
+
+  it("labels a press unanswered for HINT_PENDING_MS, and clears when it lands", async () => {
+    const { puzzle, release } = makeSlowPuzzle();
+    const show = puzzle.hint();
+    await vi.advanceTimersByTimeAsync(HINT_PENDING_MS - 1);
+    expect(puzzle.hintPending).toBe(false);
+    expect(puzzle.autoHintMessage).toBe("");
+    await vi.advanceTimersByTimeAsync(1);
+    expect(puzzle.hintPending).toBe(true);
+    expect(puzzle.autoHintMessage).toBe(HINT_PENDING_MESSAGE);
+    await releaseUnderFakeTimers(release);
+    await show;
+    // The show succeeded: nothing else replaced the message, so it is taken
+    // down rather than left under the explanation; and the press armed.
+    expect(puzzle.hintPending).toBe(false);
+    expect(puzzle.autoHintMessage).toBe("");
+    expect(puzzle.hintArmedToApply).toBe(true);
+  });
+
+  it("never labels a hint that answers in time", async () => {
+    const { puzzle, release } = makeSlowPuzzle();
+    const show = puzzle.hint();
+    await vi.advanceTimersByTimeAsync(HINT_PENDING_MS / 2);
+    await releaseUnderFakeTimers(release);
+    await show;
+    await vi.advanceTimersByTimeAsync(HINT_PENDING_MS * 2);
+    expect(puzzle.hintPending).toBe(false);
+    expect(puzzle.autoHintMessage).toBe("");
+  });
+
+  it("a refusal that lands late replaces the label rather than being wiped by it", async () => {
+    const { puzzle, release, setHintError } = makeSlowPuzzle();
+    setHintError("Fix the highlighted mistakes first");
+    const show = puzzle.hint();
+    await vi.advanceTimersByTimeAsync(HINT_PENDING_MS);
+    expect(puzzle.autoHintMessage).toBe(HINT_PENDING_MESSAGE);
+    await releaseUnderFakeTimers(release);
+    await show;
+    expect(puzzle.hintPending).toBe(false);
+    expect(puzzle.autoHintMessage).toBe("Fix the highlighted mistakes first");
   });
 });

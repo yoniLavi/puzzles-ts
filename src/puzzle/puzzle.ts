@@ -43,6 +43,16 @@ if (sentryWebWorkerIntegration) {
 const AUTO_HINT_STEP_MS = 1000;
 
 /**
+ * How long a Hint press may go unanswered before the app says it is thinking
+ * (`Puzzle.hintPending`). Short enough that a slow search is labeled for
+ * nearly all of its length, long enough that an ordinary hint never flickers.
+ */
+export const HINT_PENDING_MS = 300;
+
+/** The banner's wording for a pending hint; the Hint control says it too. */
+export const HINT_PENDING_MESSAGE = "Thinking…";
+
+/**
  * Public API to the puzzle engine running in a worker.
  *
  * Exposes reactive properties for puzzle state, and async methods that proxy
@@ -302,10 +312,32 @@ export class Puzzle {
    */
   private _hintInFlight = false;
 
+  /**
+   * True once a Hint press has been in flight for `HINT_PENDING_MS` and is
+   * still unanswered. The chrome reads it — the Hint control says "Thinking…"
+   * and the banner says the same — so a slow hint reads as work in progress
+   * rather than a dead button. A **signal** for the same reason
+   * `_hintArmedToApply` is one: the label has to change at the moment it
+   * matters, not on the next unrelated re-render.
+   *
+   * Delayed, so an ordinary hint (tens of milliseconds) never flickers; the
+   * delay is short enough that a Sixteen endgame search (~3–4 s) is labeled
+   * for nearly all of its length. Not cancellable, deliberately: the search
+   * runs synchronously inside the worker, so interrupting it would need every
+   * game's search to poll a flag, and the longest case is a few seconds once or
+   * twice a game — making the wait legible is the whole fix.
+   */
+  private _hintPending = signal(false);
+
   /** Whether the next Hint press applies the step on display rather than
    * showing a new one — the stepper's second beat. */
   public get hintArmedToApply(): boolean {
     return this._hintArmedToApply.get();
+  }
+
+  /** Whether a Hint press has been waiting on the worker long enough to say so. */
+  public get hintPending(): boolean {
+    return this._hintPending.get();
   }
 
   /** Called by every intervening user action so a subsequent Hint press shows
@@ -457,10 +489,24 @@ export class Puzzle {
   public async hint(): Promise<string | undefined> {
     if (this._hintInFlight) return undefined;
     this._hintInFlight = true;
+    const pendingTimer = setTimeout(() => {
+      this._hintPending.set(true);
+      this.setAutoHintMessage(HINT_PENDING_MESSAGE);
+    }, HINT_PENDING_MS);
     try {
       return await this.hintOnce();
     } finally {
+      clearTimeout(pendingTimer);
       this._hintInFlight = false;
+      if (this._hintPending.get()) {
+        this._hintPending.set(false);
+        // A refusal or "Hint applied" has replaced the message by now; a
+        // successful show has not, so take it down rather than let it sit
+        // under the explanation and reappear when that is hidden.
+        if (this._autoHintMessage.get() === HINT_PENDING_MESSAGE) {
+          this.setAutoHintMessage("");
+        }
+      }
     }
   }
 

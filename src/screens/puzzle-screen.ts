@@ -282,7 +282,13 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
                   ?disabled=${puzzle.status === "solved"}
               >
                 <wa-icon name="hint"></wa-icon>
-                <span>${puzzle.hintArmedToApply ? "Apply the hint" : "Hint"}</span>
+                <span>${
+                  puzzle.hintPending
+                    ? "Thinking…"
+                    : puzzle.hintArmedToApply
+                      ? "Apply the hint"
+                      : "Hint"
+                }</span>
               </button>`
             : nothing
         }
