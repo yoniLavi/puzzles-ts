@@ -19,6 +19,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  digitOf,
   type GridCursor,
   hideCursor,
   isEraseKey,
@@ -784,13 +785,14 @@ export function interpretAscentMove(
   if (isCursorSelect(button)) finishTyping = true;
 
   /* Typing a number */
-  if (button >= 0x30 && button <= 0x39 && ui.cursor.visible) {
+  const digit = digitOf(button);
+  if (digit !== null && ui.cursor.visible) {
     const i = ui.cursor.y * w + ui.cursor.x;
     if (state.immutable[i]) return null;
     if (ui.typingCell === CELL_NONE && state.grid[i] !== NUMBER_EMPTY) return null;
     let num = ui.typingNumber;
     num *= 10;
-    num += button - 0x30;
+    num += digit;
     uiClear(ui);
     ui.typingCell = i;
     if (num < 1000) ui.typingNumber = num;

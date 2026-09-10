@@ -34,6 +34,15 @@
  * actual export list, so a helper added there is guarded the day it lands —
  * nobody has to remember this test exists.
  *
+ * ## 3. No game may read a digit key by hand
+ *
+ * The one fact §2 could not see, because it was never given a name to shadow:
+ * *which codes are the digit keys*. Twenty games had spelled it as a literal —
+ * `48..57`, `0x30..0x39`, `button - 48`, `case 49:`, `const KEY_0 = 48` — so a
+ * scan keyed on a helper's name found none of them. This one keys on the codes,
+ * under whatever name the game gives the button, and `pointer.ts`'s `digitOf`
+ * is the one place the range is written.
+ *
  * See docs/games/input.md § "The numeric keypad never arrives".
  */
 
@@ -228,9 +237,9 @@ describe("no game tests a button this frontend cannot send", () => {
   it("finds the comparisons it claims to check", () => {
     // The second half of the vacuity guard, and the one that matters more: the
     // codes above are useless if nothing is scanned against them. Games do
-    // compare buttons to numeric literals — mostly digits — and if that stops
-    // being true this regex has gone stale rather than the collection having
-    // become clean.
+    // compare buttons to numeric literals — letter keys, since the digits moved
+    // to `digitOf` — and if that stops being true this regex has gone stale
+    // rather than the collection having become clean.
     const hits = sources.flatMap((f) => [...f.text.matchAll(COMPARISON)]);
     expect(hits.length).toBeGreaterThan(10);
   });
@@ -279,13 +288,21 @@ describe("no game tests a button this frontend cannot send", () => {
       /switch\s*\(\s*(?:button|btn|raw|rawButton|key)\s*\)/.test(f.text),
     );
     expect(subjects.length).toBeGreaterThanOrEqual(5);
-    // Three numeric labels survive the fix that motivated this scan — Unruly's
-    // `'0'`, `'1'`, `'2'`, which are printable and therefore fine. The floor is
-    // what is actually there rather than a round number, because a floor set
-    // above the population is a test that fails for being right.
-    expect(sources.flatMap((f) => switchCases(f.text)).length).toBeGreaterThanOrEqual(
-      3,
-    );
+    // No numeric label is left in the population — the last three were Unruly's
+    // `'0'`, `'1'`, `'2'`, retired by `digitOf` — so the scanner is proved on a
+    // planted switch instead of on a floor the collection would have to fail to
+    // keep. A nested block precedes the label so the depth walk is exercised.
+    const planted = [
+      "switch (button) {",
+      "  case CURSOR_SELECT: {",
+      "    if (x) { y(); }",
+      "    break;",
+      "  }",
+      "  case 8:",
+      "    return EMPTY;",
+      "}",
+    ].join("\n");
+    expect(switchCases(planted)).toEqual([{ line: 6, code: 8, src: "case 8:" }]);
   });
 
   it("writes the named buttons by name, not as magic numbers", () => {
@@ -352,10 +369,11 @@ describe("no game tests a button this frontend cannot send", () => {
     // *only* route to an input — which is what Inertia's diagonals were.
     for (const { path, text } of sources) {
       if (!/MOD_NUM_KEYPAD\s*\|/.test(text)) continue;
-      // The bare form of the same key must be accepted somewhere in the file.
+      // The bare form of the same key must be accepted somewhere in the file:
+      // a named cursor key, or `digitOf`, which looks through the keypad bit and
+      // so is a bare-key route by construction.
       expect(
-        /button === (?:CURSOR_|0x3|4[89]|5[0-7])/.test(text) ||
-          /DIGIT_DIRECTIONS|fromCharCode/.test(text),
+        /button === CURSOR_/.test(text) || /\bdigitOf\(/.test(text),
         `${path} binds MOD_NUM_KEYPAD with no bare-key route`,
       ).toBe(true);
     }
@@ -392,5 +410,125 @@ describe("no game privately restates what engine/pointer.ts owns", () => {
     // not wrong today; it is wrong the day the shared one changes, silently, in
     // whichever games kept theirs.
     expect(shadows).toEqual([]);
+  });
+});
+
+/** `'0'`..`'9'` as a game would spell them: decimal or hex. */
+const DIGIT_CODE = String.raw`(?:0x3[0-9]|4[89]|5[0-7])`;
+
+/**
+ * Every name a game gives the button `interpretMove` receives, read from the
+ * signatures themselves — the fifth parameter of each `function interpretMove(`
+ * — plus the spellings the scans above have always keyed on. Derived, so a
+ * game that names it something new is covered the day it registers.
+ *
+ * The blind spot, stated: a local helper that receives the button under yet
+ * another name. Unequal's `c2n(c, order)` sat in exactly that spot, and the
+ * ledger of such helpers is the parameter list of every function the button is
+ * ever passed to, which a regex cannot follow. What it can do is refuse the
+ * shape at the site that matters most, which is where every one of the twenty
+ * copies was.
+ */
+function buttonNames(sources: { text: string }[]): Set<string> {
+  const names = new Set(["button", "btn", "raw", "rawButton", "key"]);
+  for (const { text } of sources) {
+    for (const m of text.matchAll(/function interpretMove\(([^)]*)\)/g)) {
+      const fifth = m[1].split(",")[4]?.trim().split(":")[0].trim();
+      if (fifth) names.add(fifth);
+    }
+  }
+  return names;
+}
+
+/**
+ * Every place `text` reads a digit key by hand: a button-named identifier
+ * compared with, or offset by, a digit code (`button >= 48`, `btn - 0x30`,
+ * `key === 49`, `button <= 0x30 + n`); a numeric `case` in a `switch` on the
+ * button; and a game-local constant holding a digit code that is then compared
+ * against the button — the `const KEY_ZERO = 48` shape.
+ *
+ * `MOD_NUM_KEYPAD | 0x37` is not one of these and is not matched: a
+ * parenthesis follows the operator, not a literal. The numpad as a direction
+ * pad is a different fact from "which key is a digit", and stays where it is.
+ */
+function digitParsers(text: string, names: Set<string>): string[] {
+  const id = `(?:${[...names].join("|")})`;
+  const direct = new RegExp(
+    String.raw`\b${id}\s*(?:[=!]==?|[<>]=?|-)\s*${DIGIT_CODE}\b`,
+    "g",
+  );
+  const hits: string[] = [];
+  const lines = text.split("\n");
+  lines.forEach((line, i) => {
+    if (direct.test(line)) hits.push(`${i + 1}  ${line.trim()}`);
+    direct.lastIndex = 0;
+    const named = new RegExp(String.raw`^const (\w+)\s*=\s*${DIGIT_CODE}\s*;`).exec(
+      line,
+    );
+    if (named) {
+      const used = new RegExp(
+        String.raw`\b${id}\s*===?\s*${named[1]}\b|case ${named[1]}\s*:`,
+      );
+      if (used.test(text)) hits.push(`${i + 1}  ${line.trim()}`);
+    }
+  });
+  for (const { line, code, src } of switchCases(text)) {
+    if (code >= 0x30 && code <= 0x39) hits.push(`${line}  ${src}`);
+  }
+  return hits;
+}
+
+describe("no game reads a digit key by hand", () => {
+  const sources = gameSources();
+  const names = buttonNames(sources);
+
+  it("derives a plausible set of button names", () => {
+    // Vacuity: an empty set would build a regex matching nothing. The two
+    // spellings the collection actually uses for the parameter must be found by
+    // the derivation, not only by the seed list.
+    expect(names.size).toBeGreaterThanOrEqual(5);
+    const derived = buttonNames(
+      sources.filter((f) => /function interpretMove\(/.test(f.text)),
+    );
+    expect(
+      sources.filter((f) => /function interpretMove\(/.test(f.text)).length,
+    ).toBeGreaterThan(50);
+    expect(derived).toContain("rawButton");
+  });
+
+  it("finds each shape it claims to find", () => {
+    // The scanner is proved on planted copies of the five shapes the sweep
+    // removed, so an edit to the regex that stops matching one fails here
+    // rather than passing over a clean-looking collection.
+    const planted = [
+      "if (button >= 48 && button <= 57 && button - 48 <= w) n = button - 48;",
+      "if (btn >= 0x30 && btn <= 0x39) number = btn === 0x30 ? 16 : btn - 0x30;",
+      "if (button >= 0x31 && button <= 0x30 + ncolors) go();",
+      "switch (button) {\n  case 49:\n    return ONE;\n}",
+      "const KEY_ZERO = 48;\nif (rawButton === KEY_ZERO) return null;",
+    ];
+    for (const snippet of planted) {
+      expect(digitParsers(snippet, names), snippet).not.toEqual([]);
+    }
+    // …and stays quiet on the shapes that legitimately remain.
+    for (const snippet of [
+      "if (button === (MOD_NUM_KEYPAD | 0x37)) dir = UpLeft;",
+      "const digit = digitOf(button);",
+      "if (button >= 97 && button <= 105) return button - 97; // a-i",
+    ]) {
+      expect(digitParsers(snippet, names), snippet).toEqual([]);
+    }
+  });
+
+  it("finds none in the collection", () => {
+    const hits: string[] = [];
+    for (const { path, text } of sources) {
+      for (const hit of digitParsers(text, names)) hits.push(`${path}:${hit}`);
+    }
+    // Twenty games read the digit keys by hand before `digitOf` (measured
+    // 2026-09-10): thirteen entering a number, Unequal through its codec, five
+    // binding a command to a digit, and Inertia's compass. Each keeps its own
+    // bound and its own meaning for `0`; only the range moved.
+    expect(hits).toEqual([]);
   });
 });

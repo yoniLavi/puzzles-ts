@@ -38,6 +38,7 @@ import {
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -186,10 +187,10 @@ function interpretMove(
   // Digit entry / clear. `CURSOR_SELECT2` is the space bar; `isEraseKey` is
   // backspace/delete (upstream binds only `'\b'`, which this frontend never
   // sends — see `engine/pointer.ts`).
-  const isDigit = button >= 49 && button <= 57; // '1'..'9'
-  const isClear = button === CURSOR_SELECT2 || isEraseKey(button) || button === 48;
-  if (ui.cursor.visible && (isDigit || isClear)) {
-    const c = isDigit ? button - 48 : 0;
+  // `0` clears, like the erase keys.
+  const isClear = button === CURSOR_SELECT2 || isEraseKey(button);
+  const c = isClear ? 0 : digitOf(button);
+  if (ui.cursor.visible && c !== null) {
     const i = ui.cursor.y * o + ui.cursor.x;
 
     if (c > o) return null;

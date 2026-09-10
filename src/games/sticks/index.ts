@@ -33,6 +33,7 @@ import {
   CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -294,21 +295,22 @@ function interpretMove(
   }
 
   // --- keyboard place-one at the cursor ------------------------------------
+  const digit = digitOf(button);
   if (
     ui.cursor.visible &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
       isEraseKey(button) ||
-      button === 48 /* '0' */ ||
-      button === 49 /* '1' */ ||
-      button === 50) /* '2' */
+      digit === 0 ||
+      digit === 1 ||
+      digit === 2)
   ) {
     const i = ui.cursor.y * w + ui.cursor.x;
     if (grid[i] & F_BLOCK) return null;
     const old = grid[i];
     let line: SticksLine = "none";
-    if (button === 48 || button === 50) line = "hor";
-    else if (button === 49) line = "ver";
+    if (digit === 0 || digit === 2) line = "hor";
+    else if (digit === 1) line = "ver";
     else if (button === CURSOR_SELECT2)
       line = old === 0 ? "hor" : old & F_HOR ? "ver" : "none";
     else if (button === CURSOR_SELECT)

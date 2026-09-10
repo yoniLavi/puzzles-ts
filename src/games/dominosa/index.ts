@@ -31,10 +31,10 @@ import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
-  MOD_NUM_KEYPAD,
   newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
@@ -209,9 +209,8 @@ function interpretMove(
   }
 
   // Digit keys toggle a value highlight.
-  const key = button & ~MOD_NUM_KEYPAD;
-  if (key >= 48 && key <= 57) {
-    const num = key - 48;
+  const num = digitOf(button);
+  if (num !== null) {
     if (num > state.params.n) return null;
     if (!toggleHighlight(ui, num)) return null;
     return UI_UPDATE;

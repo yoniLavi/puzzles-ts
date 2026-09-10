@@ -35,6 +35,7 @@ import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -214,22 +215,21 @@ function interpretMove(
   }
 
   // --- keyboard place-one at the cursor ---
+  const digit = digitOf(button);
   if (
     ui.cursor.visible &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
       isEraseKey(button) ||
-      button === 48 /* '0' */ ||
-      button === 49 /* '1' */ ||
-      button === 50) /* '2' */
+      (digit !== null && digit <= 2))
   ) {
     const i = hy * w + hx;
     if (grid[i] & F_SINGLE) return null; // given
     const old = grid[i];
     let fill: ClustersFill;
-    if (button === 48 || button === 50)
+    if (digit === 0 || digit === 2)
       fill = F_COLOR_0; // '0'/'2' → red
-    else if (button === 49)
+    else if (digit === 1)
       fill = F_COLOR_1; // '1' → blue
     else if (button === CURSOR_SELECT2)
       fill = old === 0 ? F_COLOR_0 : old & F_COLOR_0 ? F_COLOR_1 : 0; // cycle red→blue→clear

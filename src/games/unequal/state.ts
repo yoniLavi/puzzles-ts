@@ -1,6 +1,6 @@
 import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
-import { newCursor } from "../../engine/pointer.ts";
+import { digitOf, newCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Unequal — the state/codec parts of
  * `unequal.c`.
@@ -185,10 +185,10 @@ export function n2c(n: number, order: number): string {
 export function c2n(c: number, order: number): number {
   if (c < 0 || c > 0xff) return -1;
   if (c === 32 || c === 8) return 0; // space / backspace
-  if (order < 10) {
-    if (c >= 48 && c <= 57) return c - 48;
-  } else {
-    if (c >= 48 && c <= 57) return c - 48 + 1;
+  // Above order 9 the digits shift up by one: `'0'` is 1 and `'9'` is 10.
+  const digit = digitOf(c);
+  if (digit !== null) return order < 10 ? digit : digit + 1;
+  if (order >= 10) {
     if (c >= 65 && c <= 90) return c - 65 + 11;
     if (c >= 97 && c <= 122) return c - 97 + 11;
   }

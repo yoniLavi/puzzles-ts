@@ -36,10 +36,11 @@ not "is this the same text" but *"would a change here have to happen in every
 copy at once?"* — [`note-taking-cell.ts`](../../src/engine/note-taking-cell.ts)'s
 header applies it, after [`border-grid.ts`](../../src/engine/border-grid.ts). A
 fact splits cleanly from the answers beside it: which button codes are digit
-keys is one fact, while the bound a game puts on them and whether `0` clears or
-means ten are the game's own (`share-the-digit-key-fact`). "It would touch a lot
-of files" measures how much an extraction is worth; it is never an argument
-against one.
+keys is one fact (`digitOf` in [`pointer.ts`](../../src/engine/pointer.ts)),
+while the bound a game puts on them and whether `0` clears or means ten are the
+game's own and stay beside each call (`share-the-digit-key-fact`). "It would
+touch a lot of files" measures how much an extraction is worth; it is never an
+argument against one.
 
 **Before proposing an extraction, measure — and read what the measurement is
 actually counting.** A duplication tool counts *text*, and three quite different
@@ -509,7 +510,12 @@ everything else is spelling, and `hint-refusal.test.ts` holds it to the list.
 ### `pointer.ts` — button codes and cursor helpers
 
 Button constants, `stripModifiers(button)` (never redeclare `MOD_MASK`),
-`isEraseKey`/`isCancelKey` and the `BACKSPACE`/`DELETE`/`ESCAPE` codes.
+`isEraseKey`/`isCancelKey` and the `BACKSPACE`/`DELETE`/`ESCAPE` codes, and
+`digitOf(button)` — the digit `0`–`9` a key stands for, or `null`, looking
+through the modifier bits so a numpad digit is that digit. The **bound** and
+the **meaning of `0`** are the game's own and stay beside the call: Seismic
+caps at the region size and clears on `0`, Guess reads `0` as the tenth color,
+Bridges as sixteen, Ascent as one more typed digit.
 
 **The keyboard cursor lives here too, and every game holds one.** `GridCursor`
 (`x`, `y`, `visible`) under `ui.cursor`, built by `newCursor(x?, y?, visible?)`
@@ -523,7 +529,10 @@ button exists: `emittable-keys.test.ts` enforces that from `pointer.ts`'s own
 export list — which is how nine games' private `moveCursor` (four of them
 byte-identical) were found the day the shared one landed — and
 `cursor-vocabulary.test.ts` fails the build for a cursor held under any other
-field, finding it structurally rather than by name. A non-trivial *traversal*
+field, finding it structurally rather than by name. The digit range is guarded
+by its **codes**, not by a name: a `48`, `0x39` or `button - 48` against the
+button, a numeric `case` in a `switch` on it, or a local `const KEY_0 = 48`
+compared against it, all fail the same test. A non-trivial *traversal*
 (half-grid, lock modes, corner-skipping) still keeps its own logic, and so does
 whatever a game does *while* the cursor moves; only the noun is shared.
 Discipline: [`input.md`](./input.md).

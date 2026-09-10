@@ -24,6 +24,7 @@ import { digitKeys } from "../../engine/key-labels.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   ESCAPE,
   gridCursorMove,
   isCursorMove,
@@ -157,10 +158,8 @@ function interpretMove(
   }
 
   // A digit (an erase key ≡ '0') fills the selection, or the cursor cell.
-  let key = button;
-  if (isEraseKey(key)) key = 48; // '0'
-  if (key < 48 || key > 57) return null; // not a digit → unused
-  const value = key - 48;
+  const value = isEraseKey(button) ? 0 : digitOf(button);
+  if (value === null) return null; // not a digit → unused
   if (value > (w === 2 && h === 2 ? 3 : Math.max(w, h))) return null;
   ui.keydragging = false;
 

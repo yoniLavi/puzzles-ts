@@ -38,6 +38,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  digitOf,
   isEraseKey,
   isMouseDown,
   isMouseDrag,
@@ -100,11 +101,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-// Bare-key char codes.
-const KEY_0 = 48;
-const KEY_1 = 49;
-const KEY_2 = 50;
 
 // Numpad-flagged keys (the web frontend sets MOD_NUM_KEYPAD for the numpad).
 const NK = (ch: number): number => MOD_NUM_KEYPAD | ch;
@@ -262,22 +258,23 @@ function interpretMove(
   }
 
   // --- keyboard place-one at the cursor ------------------------------------
+  // Numpad 1–4 and 6–9 were spent on movement above; any other digit key,
+  // numpad or not, reads as its digit here.
+  const digit = digitOf(button);
   if (
     ui.cursor.visible &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
       isEraseKey(button) ||
-      button === KEY_0 ||
-      button === KEY_1 ||
-      button === KEY_2)
+      (digit !== null && digit <= 2))
   ) {
     const i = ui.cursor.y * w + ui.cursor.x;
     const old = grid[i] & COL_MASK;
     if (!old) return null; // a clue or bound cell — nothing to set
 
     let to: "shade" | "unshade" | "empty" = "empty";
-    if (button === KEY_0 || button === KEY_2) to = "unshade";
-    else if (button === KEY_1) to = "shade";
+    if (digit === 0 || digit === 2) to = "unshade";
+    else if (digit === 1) to = "shade";
     else if (button === CURSOR_SELECT)
       to = old === F_EMPTY ? "shade" : old === F_SHADE ? "unshade" : "empty";
     else if (button === CURSOR_SELECT2)

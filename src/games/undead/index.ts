@@ -44,6 +44,7 @@ import {
   CURSOR_SELECT2,
   CURSOR_UP,
   DELETE,
+  digitOf,
   isCursorMove,
   isEraseKey,
   LEFT_BUTTON,
@@ -141,10 +142,6 @@ const KEY_A = 65;
 const KEY_a = 97;
 const KEY_M = 77;
 const KEY_m = 109;
-const KEY_1 = 49;
-const KEY_2 = 50;
-const KEY_3 = 51;
-const KEY_0 = 48;
 
 function presets(): PresetMenu<UndeadParams> {
   return {
@@ -170,6 +167,8 @@ function interpretMove(
   const ts = ds.tilesize;
   const b = Math.floor(ts / 4);
   const button = stripModifiers(rawButton);
+  // `1`, `2`, `3` place the three monsters in menu order; `0` clears.
+  const digit = digitOf(button);
   const gx = Math.trunc((point.x - b - 1) / ts);
   const gy = Math.trunc((point.y - b - 2) / ts) - 1;
 
@@ -210,17 +209,17 @@ function interpretMove(
         releaseHighlightAfterEntry(ui);
         return { type: "set", cell: xi, monster };
       };
-      if (button === KEY_G || button === KEY_g || button === KEY_1 || ccLocal === 0)
+      if (button === KEY_G || button === KEY_g || digit === 1 || ccLocal === 0)
         return place(MON_GHOST);
-      if (button === KEY_V || button === KEY_v || button === KEY_2 || ccLocal === 1)
+      if (button === KEY_V || button === KEY_v || digit === 2 || ccLocal === 1)
         return place(MON_VAMPIRE);
-      if (button === KEY_Z || button === KEY_z || button === KEY_3 || ccLocal === 2)
+      if (button === KEY_Z || button === KEY_z || digit === 3 || ccLocal === 2)
         return place(MON_ZOMBIE);
       if (
         button === KEY_E ||
         button === KEY_e ||
         button === CURSOR_SELECT2 ||
-        button === KEY_0 ||
+        digit === 0 ||
         isEraseKey(button) ||
         ccLocal === DELETE
       ) {
@@ -258,17 +257,17 @@ function interpretMove(
     const xi = xinfo[ui.cursor.x + ui.cursor.y * stride];
     if (xi >= 0 && !common.fixed[xi]) {
       let move: UndeadMove | null = null;
-      if (button === KEY_G || button === KEY_g || button === KEY_1 || cc === 0)
+      if (button === KEY_G || button === KEY_g || digit === 1 || cc === 0)
         move = { type: "pencil", cell: xi, monster: MON_GHOST };
-      else if (button === KEY_V || button === KEY_v || button === KEY_2 || cc === 1)
+      else if (button === KEY_V || button === KEY_v || digit === 2 || cc === 1)
         move = { type: "pencil", cell: xi, monster: MON_VAMPIRE };
-      else if (button === KEY_Z || button === KEY_z || button === KEY_3 || cc === 2)
+      else if (button === KEY_Z || button === KEY_z || digit === 3 || cc === 2)
         move = { type: "pencil", cell: xi, monster: MON_ZOMBIE };
       else if (
         button === KEY_E ||
         button === KEY_e ||
         button === CURSOR_SELECT2 ||
-        button === KEY_0 ||
+        digit === 0 ||
         isEraseKey(button)
       ) {
         if (state.pencil[xi] === 0) return noOpEntryResult(ui);

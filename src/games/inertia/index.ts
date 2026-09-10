@@ -30,13 +30,13 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  digitOf,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
-  stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -124,23 +124,23 @@ function executeMove(s: InertiaState, m: InertiaMove): InertiaState {
 /**
  * Digit key → direction: the number pad's own layout is the compass.
  *
- * Upstream accepts these only with the `MOD_NUM_KEYPAD` bit set, but this web
- * frontend never sets it — a number-pad `7` arrives as the plain character
- * `'7'` (`puzzle-view-interactive.ts` maps any single character to its char
- * code). Taking the bare digits too is therefore not a divergence for
- * divergence's sake: without it the four **diagonal** moves are unreachable
+ * Upstream accepts these only with the `MOD_NUM_KEYPAD` bit set. This frontend
+ * does set that bit — but only a numpad with Num Lock on produces a digit at
+ * all, and a laptop may have no numpad (docs/games/input.md § "The numeric
+ * keypad never arrives"). So the bare digits are accepted too, which `digitOf`
+ * gives for free: without them the four **diagonal** moves are unreachable
  * from the keyboard altogether, and a keyboard-only player simply cannot play
  * the game. Inertia binds no other digit, so this can't collide with anything.
  */
-const DIGIT_DIRECTIONS: Readonly<Record<string, number>> = {
-  "8": 0,
-  "9": 1,
-  "6": 2,
-  "3": 3,
-  "2": 4,
-  "1": 5,
-  "4": 6,
-  "7": 7,
+const DIGIT_DIRECTIONS: Readonly<Record<number, number>> = {
+  8: 0,
+  9: 1,
+  6: 2,
+  3: 3,
+  2: 4,
+  1: 5,
+  4: 6,
+  7: 7,
 };
 
 /** The octant a point falls in, seen from the ball. `dx`/`dy` are measured from
@@ -244,7 +244,8 @@ function interpretMove(
     if (s.route && s.routePos < s.route.length) dir = s.route[s.routePos];
   } else {
     // A digit, with or without the number-pad modifier (see DIGIT_DIRECTIONS).
-    dir = DIGIT_DIRECTIONS[String.fromCharCode(stripModifiers(button))] ?? -1;
+    const digit = digitOf(button);
+    dir = digit === null ? -1 : (DIGIT_DIRECTIONS[digit] ?? -1);
   }
 
   if (dir < 0) return null;

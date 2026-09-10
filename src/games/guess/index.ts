@@ -17,6 +17,7 @@ import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   isCursorMove,
   isEraseKey,
   LEFT_BUTTON,
@@ -326,13 +327,12 @@ function interpretMove(
     setPeg(params, ui, ui.cursor.x, ui.cursor.y + 1);
     return UI_UPDATE;
   }
-  if (
-    ((button >= 0x31 && button <= 0x30 + ncolors) ||
-      (button === 0x30 && ncolors === 10)) &&
-    ui.cursor.x < npegs
-  ) {
+  // A digit picks a color; `0` is the tenth, which only a ten-color game has.
+  const digit = digitOf(button);
+  const color = digit === 0 ? 10 : digit;
+  if (color !== null && color <= ncolors && ui.cursor.x < npegs) {
     ui.cursor.visible = true;
-    setPeg(params, ui, ui.cursor.x, button === 0x30 ? 10 : button - 0x30);
+    setPeg(params, ui, ui.cursor.x, color);
     if (ui.cursor.x + 1 < npegs + (ui.markable ? 1 : 0)) ui.cursor.x++;
     return UI_UPDATE;
   }

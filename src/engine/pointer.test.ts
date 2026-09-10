@@ -6,6 +6,7 @@ import {
   CURSOR_SELECT,
   CURSOR_UP,
   cursorDelta,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   isMouseDown,
@@ -113,5 +114,25 @@ describe("gridCursorMove", () => {
 
   it("returns null for a non-cursor button", () => {
     expect(gridCursorMove(LEFT_BUTTON, 1, 1, 4, 4)).toBeNull();
+  });
+});
+
+describe("digitOf", () => {
+  it("reads every digit key as its digit, 0 included", () => {
+    for (let d = 0; d <= 9; d++) expect(digitOf("0".charCodeAt(0) + d)).toBe(d);
+  });
+
+  it("looks through the modifier bits, so a numpad digit is that digit", () => {
+    expect(digitOf(MOD_NUM_KEYPAD | "7".charCodeAt(0))).toBe(7);
+    expect(digitOf(MOD_CTRL | MOD_SHFT | "3".charCodeAt(0))).toBe(3);
+  });
+
+  it("is null for the characters on either side, letters and named buttons", () => {
+    expect(digitOf("0".charCodeAt(0) - 1)).toBeNull(); // '/'
+    expect(digitOf("9".charCodeAt(0) + 1)).toBeNull(); // ':'
+    expect(digitOf("a".charCodeAt(0))).toBeNull();
+    expect(digitOf(CURSOR_SELECT)).toBeNull();
+    expect(digitOf(LEFT_BUTTON)).toBeNull();
+    expect(digitOf(MOD_NUM_KEYPAD)).toBeNull();
   });
 });

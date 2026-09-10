@@ -1,6 +1,0 @@
-# Required for `skip_specs` to be honored (see openspec/config.yaml).
-schema: spec-driven
-
-# No delta yet: the helper's contract is a pointer.ts detail until task 1.2 decides
-# its shape, and an input behavior spec does not change.
-skip_specs: true

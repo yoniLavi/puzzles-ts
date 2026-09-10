@@ -36,6 +36,7 @@ import {
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -158,10 +159,10 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  const isDigit = button >= 0x31 && button <= 0x39; // '1'..'9'
-  const isClear = button === CURSOR_SELECT2 || isEraseKey(button) || button === 0x30;
-  if (ui.cursor.visible && (isDigit || isClear)) {
-    const n = isDigit ? button - 0x30 : 0;
+  // `0` clears, like the erase keys.
+  const isClear = button === CURSOR_SELECT2 || isEraseKey(button);
+  const n = isClear ? 0 : digitOf(button);
+  if (ui.cursor.visible && n !== null) {
     const i = ui.cursor.y * w + ui.cursor.x;
 
     // Entry is capped at the cell's region size — the interface simply refuses a

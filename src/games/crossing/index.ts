@@ -44,6 +44,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -105,8 +106,6 @@ import {
   validateParams,
 } from "./state.ts";
 
-const KEY_ZERO = 48;
-
 function presets(): PresetMenu<CrossingParams> {
   return {
     title: "Crossing",
@@ -120,9 +119,9 @@ function presets(): PresetMenu<CrossingParams> {
 /** The digit a key enters, `null` for "clear", or `undefined` for "not an entry
  * key". Upstream binds `1`–`9`, Backspace, `0` and the secondary select. */
 function keyDigit(button: number): number | null | undefined {
-  if (button >= 49 && button <= 57) return button - 48; // '1'-'9'
-  if (button === CURSOR_SELECT2 || isEraseKey(button) || button === KEY_ZERO)
-    return null;
+  const digit = digitOf(button);
+  if (digit !== null && digit >= 1) return digit; // '1'-'9'
+  if (button === CURSOR_SELECT2 || isEraseKey(button) || digit === 0) return null;
   return undefined;
 }
 

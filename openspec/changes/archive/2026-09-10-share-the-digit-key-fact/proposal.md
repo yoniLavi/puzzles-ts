@@ -1,9 +1,11 @@
 # share-the-digit-key-fact
 
-**Readiness: scaffolded, not started.** Carried out of the framework vision's input
-survey when `retire-the-framework-vision` deleted it: the one surveyed item that
-never shipped and had no other home. Measured 2026-09-10; re-measure before
-adopting.
+**Implemented 2026-09-10** — see `design.md` for what the re-measure below
+found (five games missing, one named in error) and `tasks.md` for the result.
+Carried out of the framework vision's input survey when
+`retire-the-framework-vision` deleted it: the one surveyed item that never
+shipped and had no other home. The table below is the proposal's original grep,
+kept as the record of what a name-keyed scan missed.
 
 ## Why
 

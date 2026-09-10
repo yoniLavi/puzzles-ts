@@ -25,6 +25,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   DELETE,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -81,12 +82,10 @@ function newUi(_state: UnrulyState): UnrulyUi {
 /** The cell value a key/click decided to set (upstream's `c`), or `null`
  * for "no change requested". */
 function decideValue(button: number, current: Cell): Cell | null {
+  const digit = digitOf(button);
+  if (digit === 1) return ONE;
+  if (digit === 0 || digit === 2) return ZERO;
   switch (button) {
-    case 49: // '1'
-      return ONE;
-    case 48: // '0'
-    case 50: // '2'
-      return ZERO;
     // Both erase codes, spelled out because a `case` cannot call `isEraseKey`.
     // The gate in `interpretMove` calls it, so `DELETE` (127) passed the gate,
     // reached here and fell straight through to `default` — the erase key read
@@ -155,14 +154,13 @@ function interpretMove(
   }
 
   // Placement: a marking key while the cursor is shown, or any mouse click.
+  const digit = digitOf(button);
   const isKeyPlace =
     ui.cursor.visible &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
       isEraseKey(button) ||
-      button === 48 ||
-      button === 49 ||
-      button === 50);
+      (digit !== null && digit <= 2));
 
   if (isKeyPlace || isMouse) {
     const i = hy * w2 + hx;

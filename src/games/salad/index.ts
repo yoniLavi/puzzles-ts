@@ -37,6 +37,7 @@ import {
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -124,8 +125,9 @@ function isClearKey(button: number): boolean {
 /** The symbol a key stands for, or `null` when it names none. Upstream accepts
  * the digits, `a-i` and `A-I` regardless of mode, and treats `'0'` as a clear. */
 function symbolFor(button: number): number | "clear" | null {
-  if (button === 48) return "clear"; // '0'
-  if (button >= 49 && button <= 57) return button - 48; // '1'..'9'
+  const digit = digitOf(button);
+  if (digit === 0) return "clear";
+  if (digit !== null) return digit; // '1'..'9'
   if (button >= 97 && button <= 105) return button - 96; // 'a'..'i'
   if (button >= 65 && button <= 73) return button - 64; // 'A'..'I'
   return null;

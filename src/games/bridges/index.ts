@@ -25,6 +25,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
@@ -378,13 +379,11 @@ function interpretMove(
   }
 
   // Digit / hex letter: jump the cursor to the nearest island with that clue.
-  if (
-    (btn >= 0x30 && btn <= 0x39) ||
-    (btn >= 0x61 && btn <= 0x66) ||
-    (btn >= 0x41 && btn <= 0x46)
-  ) {
+  // `0` stands for sixteen, the largest clue an island can carry.
+  const digit = digitOf(btn);
+  if (digit !== null || (btn >= 0x61 && btn <= 0x66) || (btn >= 0x41 && btn <= 0x46)) {
     let number: number;
-    if (btn >= 0x30 && btn <= 0x39) number = btn === 0x30 ? 16 : btn - 0x30;
+    if (digit !== null) number = digit === 0 ? 16 : digit;
     else if (btn >= 0x61 && btn <= 0x66) number = 10 + btn - 0x61;
     else number = 10 + btn - 0x41;
 

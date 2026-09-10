@@ -54,6 +54,7 @@ import {
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   isCursorMove,
   isEraseKey,
   moveCursor,
@@ -225,7 +226,8 @@ function interpretMove(
 
   // A digit key (1..9 then a..z / A..Z for orders > 9), or a clear.
   let n = -1;
-  if (button >= 48 && button <= 57 && button - 48 <= cr) n = button - 48;
+  const digit = digitOf(button);
+  if (digit !== null && digit <= cr) n = digit;
   else if (button >= 97 && button <= 122 && button - 97 + 10 <= cr)
     n = button - 97 + 10;
   else if (button >= 65 && button <= 90 && button - 65 + 10 <= cr) n = button - 65 + 10;

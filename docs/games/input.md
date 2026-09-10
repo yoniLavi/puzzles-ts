@@ -143,6 +143,23 @@ meanings tests them in separate branches. Escape reaches games as 27 whenever no
 pointer gesture is in flight (`app-shell` spec, "Escape reaches the puzzle when
 there is no gesture to cancel").
 
+**The digit keys are the same fact, and `digitOf(button)` answers it** — the
+digit `0`–`9` a key stands for, or `null`, looking through the modifier bits so
+a numpad digit with Num Lock on *is* that digit. Twenty games had each spelled
+the range by hand (measured 2026-09-10), two ways and disagreeing over whether
+it began at `0`. What stays with the game is everything that is genuinely about
+the puzzle: the **bound** (`n <= w`, the cell's region size) and the **meaning
+of `0`** — a clear in Seismic, Mathrax and Crossing, the tenth color in Guess,
+sixteen in Bridges, one more typed digit in Ascent — so each is written beside
+the call, in the game's own words. A command bound to a digit is the same call
+(`digit === 1` places Undead's ghost). The one thing to resolve *before* asking
+is a numpad digit that means something else — Ascent, Bricks, Cube and Twiddle
+use the keypad as a direction pad, and each consumes `MOD_NUM_KEYPAD | '7'`
+first. Guarded by the code-keyed scan in
+[`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts): a `48`, a
+`0x39`, a `button - 48`, a numeric `case`, or a local `const KEY_0 = 48` against
+the button all fail it.
+
 Two things generalize past keys here, and both cost this project real defects:
 
 - **The repair belonged one layer down.** The dead bindings were in the games,
@@ -777,6 +794,8 @@ and Undead.
       keypad was a route to an input.
 - [ ] No control code compared bare — including inside a `switch (button)`.
       `isEraseKey` / `isCancelKey`, or both `case` labels.
+- [ ] No digit code spelled out — `digitOf(button)`, with the bound and the
+      meaning of `0` written beside it in the game's own terms.
 - [ ] Press-and-drag gestures survive a 350 ms hold — declare
       `ignoresSecondaryButton` if the secondary button means nothing to you, else
       fold to primary or key the drag off the button class.

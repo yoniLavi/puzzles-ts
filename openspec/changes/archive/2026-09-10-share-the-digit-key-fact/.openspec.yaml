@@ -1,0 +1,6 @@
+# `schema` is required for this file to be valid change metadata at all.
+schema: spec-driven
+
+# Task 1.2 decided the helper's shape, and the delta under specs/ts-engine/
+# states it: one digit-key reader, a code-keyed guard, the bound and the
+# meaning of `0` staying with the game.

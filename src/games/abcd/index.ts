@@ -32,6 +32,7 @@ import {
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  digitOf,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -86,7 +87,6 @@ export interface AbcdMistake {
   y: number;
 }
 
-const KEY_ZERO = 48;
 const KEY_M = 77;
 const KEY_m = 109;
 
@@ -111,9 +111,9 @@ function inGrid(p: AbcdParams, x: number, y: number): boolean {
 function keyLetter(button: number, n: number): number | null | undefined {
   if (button >= 97 && button <= 105 && button - 97 < n) return button - 97; // a-i
   if (button >= 65 && button <= 73 && button - 65 < n) return button - 65; // A-I
-  if (button >= 49 && button <= 57 && button - 49 < n) return button - 49; // 1-9
-  if (button === CURSOR_SELECT2 || isEraseKey(button) || button === KEY_ZERO)
-    return null;
+  const digit = digitOf(button);
+  if (digit !== null && digit >= 1 && digit - 1 < n) return digit - 1; // 1-9
+  if (button === CURSOR_SELECT2 || isEraseKey(button) || digit === 0) return null;
   return undefined;
 }
 

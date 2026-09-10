@@ -1,0 +1,6 @@
+# Required for `skip_specs` to be honored (see openspec/config.yaml).
+schema: spec-driven
+
+# No delta yet: task 1.2 decides which shared form each shape takes, and the
+# requirement follows that decision rather than preceding it.
+skip_specs: true

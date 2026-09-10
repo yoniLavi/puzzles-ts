@@ -87,6 +87,37 @@ export function isCancelKey(button: number): boolean {
   return button === ESCAPE || isEraseKey(button);
 }
 
+// --- the digit keys ------------------------------------------------
+
+/**
+ * **"Which digit is this key?"** — `0`–`9` for a digit key, `null` for anything
+ * else.
+ *
+ * One frontend fact, answered here so no game spells the character range
+ * again. Measured 2026-09-10, every game that reads a digit key had written it
+ * by hand — two ways (`48..57` and `0x30..0x39`), disagreeing about whether it
+ * began at `0` or at `1`, with the subtraction repeated at every use. A scan
+ * keyed on a helper name would have missed most of them, which is why the
+ * guard in `emittable-keys.test.ts` keys on the literal codes instead.
+ *
+ * What this deliberately does **not** answer is the game's own half of the
+ * question: the **bound** (`<= w`, `< n`, the cell's region size) and the
+ * **meaning of `0`** — a clear in Seismic and Crossing, ten in Guess, sixteen in
+ * Bridges, one more typed digit in Ascent. Those differ between games for
+ * reasons about the puzzle, so each game keeps them beside its call.
+ *
+ * Modifier bits are looked through, because a numpad digit with Num Lock on
+ * arrives as `MOD_NUM_KEYPAD | '7'` and *is* a press of 7 — the keypad is a
+ * convenience route to the same digit, never a different key
+ * (docs/games/input.md § "The numeric keypad never arrives"). A game that gives
+ * the **numpad's** digits another meaning — Ascent, Bricks, Cube and Twiddle use
+ * them as a direction pad — resolves those before asking, as each already does.
+ */
+export function digitOf(button: number): number | null {
+  const base = stripModifiers(button);
+  return base >= 0x30 && base <= 0x39 ? base - 0x30 : null;
+}
+
 // --- keyboard modifier masks (upstream puzzles.h) ------------------
 
 /** Set by the frontend on a press/drag/release that came from a finger or a
