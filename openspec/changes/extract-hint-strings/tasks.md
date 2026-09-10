@@ -1,7 +1,8 @@
 # extract-hint-strings — tasks
 
-Not started. Read `proposal.md` first; do this after `cap-hint-narration-length`
-is archived.
+Read `proposal.md` first. `cap-hint-narration-length`'s wording is committed
+and its owner acceptance waits on this change, so this is a pure move: no
+sentence changes.
 
 ## 1. Decide the shape
 

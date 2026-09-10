@@ -104,3 +104,6 @@ change exists to take is [`findings.md`](./findings.md).
 - [x] 5.2 `help/games/tracks.md` gains a **Hints** section: the three action
       shapes, the evidence marks, and the recolored clue.
 - [x] 5.3 `openspec validate --all --strict`, then the gate.
+- [x] 5.4 Owner acceptance, 2026-09-10, after a playtest whose one finding
+      (a step about sides the player had already closed) became
+      `show-only-informative-hint-steps`.

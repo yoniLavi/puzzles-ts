@@ -40,4 +40,6 @@
       2c5d8edb (8,744 tests). The gate's probe anchor caught the moved
       `populateText` line, which is now re-anchored on its new wording.
 - [ ] 4.4 Owner acceptance: the wording is player-visible in 24 games. Not
-      archived until then.
+      archived until then. The owner has chosen (2026-09-10) to review it
+      **after `extract-hint-strings`**, reading each game's sentences in one
+      place rather than across its deduction code.

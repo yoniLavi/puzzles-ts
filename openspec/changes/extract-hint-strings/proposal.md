@@ -2,9 +2,12 @@
 
 **Readiness: scaffolded, not started.** Proposed by the owner (2026-09-10),
 during `cap-hint-narration-length`: *"extract hint strings into separate files,
-to ease maintenance and potentially later add i18n"*. Sequenced **after** that
-change lands — it rewrote ~100 sentences across 24 games, and extracting first
-would have doubled the churn.
+to ease maintenance and potentially later add i18n"*. Sequenced after that
+change's rewrite landed (2c5d8edb, ~100 sentences across 24 games), since
+extracting first would have doubled the churn, and **before its acceptance**:
+the owner chose (2026-09-10) to review the new wording from the extracted
+files. So this change moves sentences and must not reword one; the wording
+under review is the wording that was committed.
 
 ## Why
 

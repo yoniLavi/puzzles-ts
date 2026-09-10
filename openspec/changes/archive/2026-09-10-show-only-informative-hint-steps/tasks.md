@@ -50,4 +50,6 @@
       carry track", where it used to open on the redundant premise about the
       given pieces; marking the square beyond the entrance piece's free side
       empty, the reported shape, no longer produces a step about that side.
-- [ ] 5.3 `openspec validate --all --strict`, then the gate.
+- [x] 5.3 `openspec validate --all --strict`, then the gate: green in
+      4154ee9f.
+- [x] 5.4 Owner acceptance, 2026-09-10.
