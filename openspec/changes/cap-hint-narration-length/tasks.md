@@ -36,5 +36,8 @@
       cells" reads wrong, and Tracks' clue-is-met arm had the same shape. Both
       now say "both" at 2, as Salad's line counts already did, and Tracks'
       narrate test pins it.
-- [ ] 4.3 `openspec validate --all --strict`, then the gate. Owner acceptance:
-      the wording is player-visible in 24 games.
+- [x] 4.3 `openspec validate --all --strict`, then the gate: green in
+      2c5d8edb (8,744 tests). The gate's probe anchor caught the moved
+      `populateText` line, which is now re-anchored on its new wording.
+- [ ] 4.4 Owner acceptance: the wording is player-visible in 24 games. Not
+      archived until then.
