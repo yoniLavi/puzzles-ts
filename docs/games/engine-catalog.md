@@ -28,6 +28,19 @@ Galaxies-local until Mosaic; `obfuscate` was Guess-local until Black Box;
 `divvy` was Solo-local until Palisade. Keep a genuinely single-consumer helper
 local to its game — the rule is a trigger, not a mandate to pre-abstract.
 
+**What decides whether something is shared at all**: *a shared helper is right
+when the thing shared is a fact; a module owning a mechanic is right when the
+thing shared is a shape; and something stays per-game only when we can say what a
+game would legitimately want to do differently.* The test for the first two is
+not "is this the same text" but *"would a change here have to happen in every
+copy at once?"* — [`note-taking-cell.ts`](../../src/engine/note-taking-cell.ts)'s
+header applies it, after [`border-grid.ts`](../../src/engine/border-grid.ts). A
+fact splits cleanly from the answers beside it: which button codes are digit
+keys is one fact, while the bound a game puts on them and whether `0` clears or
+means ten are the game's own (`share-the-digit-key-fact`). "It would touch a lot
+of files" measures how much an extraction is worth; it is never an argument
+against one.
+
 **Before proposing an extraction, measure — and read what the measurement is
 actually counting.** A duplication tool counts *text*, and three quite different
 things look identical to it. Measured across `src/games` on 2026-09-05: 982

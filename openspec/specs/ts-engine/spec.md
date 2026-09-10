@@ -3814,12 +3814,12 @@ reason.
 
 A game's tier list SHALL NOT be derived from its declared deduction techniques,
 and a change proposing to do so SHALL be answered with this requirement rather
-than by re-surveying the games. `docs/framework-rdd/game-definition.md` proposed
-the projection — *"if your techniques carry tiers … there is no hand-written
-`DifficultyContract`; it is a projection of the technique ladder"* — and
-`declare-deduction-techniques` appeared to supply the lever by giving every
-technique a declared `tier`. It does not, for three independent reasons, each
-sufficient on its own.
+than by re-surveying the games. The framework vision (`docs/framework-rdd/`,
+retired by `retire-the-framework-vision`) proposed the projection — *"if your
+techniques carry tiers … there is no hand-written `DifficultyContract`; it is a
+projection of the technique ladder"* — and `declare-deduction-techniques` appeared
+to supply the lever by giving every technique a declared `tier`. It does not, for
+three independent reasons, each sufficient on its own.
 
 **A ladder declares tier *indices*; a tier list is *names*.**
 `DeductionTechnique.tier` is a `number`. "Easy" and "Unreasonable" are strings a
@@ -4563,10 +4563,11 @@ tiered game, **282 boards needed exactly the tier their preset claimed**, with
 all three exceptions in one game and contradicting that game's own spec. The 39
 hand-written generators comply; what was missing was a guard, not a driver.
 
-`docs/framework-rdd/deduction.md` argues the opposite — that a framework-owned
+The framework vision (`docs/framework-rdd/`, retired by
+`retire-the-framework-vision`) argued the opposite — that a framework-owned
 strip/accept loop would make guess-free generation *"not a policy to comply with
-but the only thing the driver can do"*. That argument is fiction and this
-requirement records why it is also unnecessary: the compliance it promises
+but the only thing the driver can do"*. That argument was fiction, and this
+requirement records why it is also unnecessary: the compliance it promised
 already exists, and the 39 migrations it would cost buy a property one derived
 sweep now asserts.
 

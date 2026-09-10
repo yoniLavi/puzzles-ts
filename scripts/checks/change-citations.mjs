@@ -110,10 +110,6 @@ const NOT_A_LIVE_CHANGE = {
   "prefers-color-scheme": "a CSS media feature",
   "pre-ts-pivot": "a git tag bracketing the C in history",
   "puzzle-key-unhandled": "a DOM event `view-interactive.ts` raises",
-  "census-the-hintless-logic-games":
-    "DELIBERATELY DEAD — the renamed id, cited once in " +
-    "docs/framework-rdd/README.md as this guard's own worked example. It " +
-    "leaves this ledger when that passage does, not before.",
 };
 
 /** Below these, the input is broken rather than the tree clean. */

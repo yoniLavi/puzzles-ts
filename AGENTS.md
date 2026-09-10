@@ -62,7 +62,7 @@ and no change id attached.
 - [`docs/games/engine-catalog.md`](docs/games/engine-catalog.md) — the shared-helper reference: what exists, when to reach for it, byte-match sensitivities.
 - [`docs/test-strength.md`](docs/test-strength.md) — **assessing** tests rather than writing them: the five-minute mutation probe, `npm run probe` (the committed corpus of it), coverage vs strength vs *feedback*, the boundary with the differentials, when full mutation testing is worth its cost, and the instrument traps that make an assessment lie. Not game-specific — it applies to the engine and the app shell too, which is why it sits outside `docs/games/`. **Read its §7 before quoting any number out of it**: eight instruments in this repo's recent history measured the wrong unit, and the most consequential pair reached a proposal and a spec before anyone checked them.
 
-**Treat these as a live wiki, not frozen docs.** Every time you hit something the guide didn't tell you, get wrong because it was missing, or learn a better pattern, **update the guide in the same change** — that is part of "done," not a separate chore. Keep them link-only to the specs (state a normative rule briefly + link it; point at an exemplar file rather than pasting code that rots) so they can go stale but never silently contradict a spec. Cite guide sections by **file + heading name** (`docs/games/rendering.md § "Overlay sidecars"`), never by position — and if you rename a cited heading, repoint every citation in the same change (repo-layout spec, "Developer guides live under docs/ and link to specs"). The section pointers below ("TS port style", "Hint quality bar") are entry points into these guides. Separately, [`docs/framework-rdd/`](docs/framework-rdd/README.md) is **design fiction** — the target framework written readme-first — and it must never be cited as though it described shipped behavior. Parts of it *have* since shipped, so it is no longer uniformly false: what shipped is marked in place and, per the repo-layout spec, the shipped form always lives in the real guides and specs. **Read the shipped form there; read the fiction only for the argument.** [`docs/framework-rdd/README.md`](docs/framework-rdd/README.md) § "Where this stands" says how the vision is being turned into work, and why "what remains" is a question for `openspec list` rather than for a status column in a doc.
+**Treat these as a live wiki, not frozen docs.** Every time you hit something the guide didn't tell you, get wrong because it was missing, or learn a better pattern, **update the guide in the same change** — that is part of "done," not a separate chore. Keep them link-only to the specs (state a normative rule briefly + link it; point at an exemplar file rather than pasting code that rots) so they can go stale but never silently contradict a spec. Cite guide sections by **file + heading name** (`docs/games/rendering.md § "Overlay sidecars"`), never by position — and if you rename a cited heading, repoint every citation in the same change (repo-layout spec, "Developer guides live under docs/ and link to specs"). The section pointers below ("TS port style", "Hint quality bar") are entry points into these guides.
 
 ## Goal
 
@@ -72,6 +72,17 @@ the *point*, not a fidelity regression** — quick-save, mistake-checking,
 explained hints and per-game gameplay aids are why this fork exists. Order work
 so that value lands early, and judge a game by whether it plays correctly, not by
 whether it reproduces a recorded corpus.
+
+**The ambition sets the scale every shared-layer decision is weighed at**
+(owner, 2026-08-07): **dozens to hundreds of new games** — a free, ad-free,
+offline reimplementation of the micropayment puzzle games on the app stores.
+Path and Numgame are the first two greenfield games, not the last. At two games a
+shared layer's fixed cost dominates and extracting one helper at a time wins; at
+dozens the per-game marginal cost dominates, and every concern turned from
+hand-built into derived compounds. The fork's divergences — explained hints,
+mistake checking, honest difficulty, endless generation, offline play — are
+exactly what sets it apart from the games being reimplemented, and the shared
+layer is what makes each one a per-game freebie instead of a per-game project.
 
 ### Convention over configuration: one obvious way, and no unnecessary decisions
 
@@ -255,17 +266,17 @@ change id attached is a *measurement* and stays; a bare count in the present
 tense is a claim, and it rots.
 
 **A number a proposal argues from is a claim, and the size of a thing is not
-the size of its ceremony.** `presentation.md` costed its whole design on "~80
-lines of identical bookkeeping per game wrapped around ~10 lines that are
-actually the game's". Measured 2026-09-09 across all 57 `redraw` bodies
-(`explore-the-tile-loop-inversion`): the medians are **20 lines of bookkeeping
-around 64 of the game's own** — inverted, and out by a factor of four. The 88
-was right; what was never checked is which side of it was which. So **before
-designing against a headline number, take it** — and take it against the
-population, not against the one file that suggested it. The same posture applies
-to a proposal's *deliverable list*: walk it item by item against what is already
-on disk, because three of this vision's directions were withdrawn on finding
-most of the block already served (`openspec/postmortems/`).
+the size of its ceremony.** The framework vision's tile-loop design costed its
+whole case on "~80 lines of identical bookkeeping per game wrapped around ~10
+lines that are actually the game's". Measured 2026-09-09 across all 57 `redraw`
+bodies (`explore-the-tile-loop-inversion`): the medians are **20 lines of
+bookkeeping around 64 of the game's own** — inverted, and out by a factor of
+four. The 88 was right; what was never checked is which side of it was which. So
+**before designing against a headline number, take it** — and take it against
+the population, not against the one file that suggested it. The same posture
+applies to a proposal's *deliverable list*: walk it item by item against what is
+already on disk, because three of that vision's directions were withdrawn on
+finding most of the block already served (`openspec/postmortems/`).
 
 **And a fact about the codebase rots exactly like a count — sometimes in
 hours.** A scaffolded change carried the constraint "this reaches no player,

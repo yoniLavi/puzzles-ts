@@ -137,6 +137,38 @@ parameter is production surface a test supplies, deliberately: a rung's
 reachability cannot be observed from the game's own results, which is this
 section's premise.
 
+### What the runner does not carry: the record
+
+**The runner carries the loop — the ordered pass, the cap, the restart, the
+grade, the budget — and not the record.** A technique's `run` returns a number
+and the runner is oblivious to what the firing recorded; each hinting game
+threads its own recorder through its rungs. That cost scales with the
+**premises** the rungs hold, not with the rungs, and adopting the runner does not
+reduce it (measured by `add-tracks-hint`).
+
+**That is why a technique is not split into `find` / `apply` / `narrate`**, the
+recurring proposal for making a technique that fires without narrating fail to
+compile. It splits at the rung, and narration splits *below* the rung: one Tracks
+rung, `update-flags`, holds five local rules, so a `find` returning one firing
+would either break it into five techniques — changing what a tier means, and the
+grade with it — or leave the per-premise early return exactly where it is
+([`hints.md`](./hints.md) § "A rung is not a premise, so return per premise").
+Towers was the first game to need that return and Tracks the second. If there is
+a move left at this end, it is *grade these premises together, narrate them
+apart*.
+
+**A proposal for the split has to say what it buys beyond the hint walk**, which
+already delivers its promise behaviorally: `hint-resume.test.ts` walks each
+game's own hints to a solved board — every preset, in the slow tier — so a
+firing nothing can narrate fails the walk. A compile-time guarantee is genuinely
+stronger, since it holds for the board nobody generated; the open question
+(recorded 2026-09-09) is whether that margin is worth changing the contract every
+technique implements. The standard of evidence is the one that withdrew the
+gesture table
+([postmortem](../../openspec/postmortems/2026-09-05-gesture-table-withdrawal.md)):
+its benefit had already shipped, derived from behavior, and the declaration
+would only have re-declared it.
+
 ### Where the fixpoint does not fit
 
 **The ladder *shape* is near-universal; the bookkeeping wrapped around it is
@@ -179,14 +211,21 @@ dissolvable: the adoption needs **no new option on the runner**, and the game's
 byte-match differential passes untouched. That is the test Unruly, Singles,
 Clusters and Spokes met, and the two above do not.
 
+**Tell** that you need the hatch and not a redesign: you can name the promise
+your loop must break, and it is one of the two in the table. **Tell** that you
+don't: your loop merely *looks* different. A cost accumulated across firings, a
+flag standing in for a `-1` return, a pre-pass at the top of each iteration, a
+verdict richer than a boolean — each reads as structural and each has adopted,
+because a technique can hold state and guard itself (the exemplar table above
+names where). Spokes' accumulator was once listed as a hatch case and turned out
+to be an early-out, not a grade. **Read the loop, not the reason somebody
+recorded for it.**
+
 #### What a bespoke loop still owes
 
 A bespoke loop is part of the design, not a failure of it. Three obligations,
 stated per game rather than assumed, and normative here — the `ts-engine`
-"shared deduction-fixpoint scaffold" requirement carries them. (The idea came
-from [`docs/framework-rdd/deduction.md`](../framework-rdd/deduction.md) §
-"Escape hatches carry obligations", which is design fiction and describes
-nothing on its own; this table is the shipped form.)
+"shared deduction-fixpoint scaffold" requirement carries them.
 
 | Obligation | Loopy | Lightup |
 | --- | --- | --- |
