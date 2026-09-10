@@ -75,7 +75,9 @@
       two arms over 120 that no preset reaches, are shortened: Palisade states
       the bound without the side-counting behind it, and Boats folds the hidden
       number into the sentence instead of opening with it.
-- [ ] 4.4 Owner acceptance: the wording is player-visible in 24 games. Not
-      archived until then. The owner has chosen (2026-09-10) to review it
+- [x] 4.4 Owner acceptance: the wording is player-visible in 24 games.
+      Accepted 2026-09-10 on the strength of an agent review of every
+      hint-text file (4.5) rather than a reading of each sentence, with the
+      owner's three decisions (4.7), fixes in 34b6208b. The owner has chosen (2026-09-10) to review it
       **after `extract-hint-strings`**, reading each game's sentences in one
       place rather than across its deduction code.
