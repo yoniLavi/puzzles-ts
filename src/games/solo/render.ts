@@ -220,7 +220,7 @@ function markBand(ds: SoloDrawState, x: number, y: number): MarkBand {
 
 // --- digit glyph (upstream: '1'..'9' then 'a'.. for orders > 9) -------------
 
-function digitChar(n: number): string {
+export function digitChar(n: number): string {
   // n is 1-based; upstream prints '0'+n, rolling into 'a' past '9'.
   return n <= 9 ? String(n) : String.fromCharCode("a".charCodeAt(0) + (n - 10));
 }

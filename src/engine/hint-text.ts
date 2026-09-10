@@ -40,6 +40,17 @@ export function indefinite(s: string, capital = false): string {
   return capital ? `${a.charAt(0).toUpperCase()}${a.slice(1)}` : a;
 }
 
+/** {@link joinWith} for **alternatives**: "1 or 2", "1, 2 or 3". A list of
+ * candidates, or a list under a negation ("no room for …"), means "any one of
+ * these", which "and" would turn into "all of them at once". */
+export function joinOr(parts: readonly (string | number)[]): string {
+  if (parts.length <= 1) return `${parts[0] ?? ""}`;
+  return `${parts.slice(0, -1).join(", ")} or ${parts[parts.length - 1]}`;
+}
+
+/** Each value once, in order. */
+const distinct = (ns: number[]): number[] => [...new Set(ns)].sort((a, b) => a - b);
+
 /** Sentence-initial form of a vocabulary's cell word. */
 const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -165,7 +176,9 @@ export function narrateLatinReason(
       return `There's already ${indefinite(d)} ${d} in this row and column, so we must cross out the ${d} from the other ${cells} they pass through.`;
     }
     case "set":
-      return `Another group of ${cells} already accounts for ${list(ns)} between them, so we must cross out ${list(ns)} here.`;
+      // One strike per cell can repeat a value, and the order is the solver's:
+      // name each value once, smallest first.
+      return `Other ${cells} already account for ${list(distinct(ns))} between them, so we must cross out ${list(distinct(ns))} here.`;
     case "forcing":
       return narrateForcingChain(
         reason,
@@ -227,11 +240,14 @@ export function narrateForcingChain(
   struck: number,
   vocab: LatinVocab,
   region: string,
+  /** How the last link lines up with this cell; a row/column game's chain
+   * always ends in line with it, Solo's can end in its block or diagonal. */
+  lastTie?: string,
 ): string {
   const v = vocab.value;
   const cell = vocab.cell ?? "cell";
   const last = reason.chain.length;
   const other = v(reason.chain[0].n);
   const s = v(struck);
-  return `${cap(cell)} 1 is ${s} or ${other}, and every numbered ${cell} has just two ${vocab.noun}s left, so each forces the next. If ${cell} 1 is ${s}, this ${cell}'s ${region} already has it; if ${other}, ${cell} ${last} is driven to ${s}, in line with this ${cell}. Either way, cross out ${s} here.`;
+  return `${cap(cell)} 1 is ${s} or ${other}, and every numbered ${cell} has just two ${vocab.noun}s left, so each forces the next. If ${cell} 1 is ${s}, this ${cell}'s ${region} already has it; if ${other}, ${cell} ${last} is driven to ${s}, ${lastTie ?? `in line with this ${cell}`}. Either way, cross out ${s} here.`;
 }

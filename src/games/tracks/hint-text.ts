@@ -74,12 +74,12 @@ export const say = {
   wouldStrandTrack:
     "Joining here would link A's run to B's and finish the track, stranding the outlined track; this side must be blocked.",
 
-  /** The highlighted line wants `target` and would be left with `laid`. */
-  wouldFinishEarly: (axis: Axis, target: number, laid: number): string =>
-    `Joining here would link A's run to B's and finish the track, but the highlighted ${axis} clue wants ${target} and has ${laid}; this side must be blocked.`,
+  /** Finishing here would leave the highlighted line's clue unmet. */
+  wouldFinishEarly: (axis: Axis): string =>
+    `Joining A's run to B's here would finish the track with the highlighted ${axis} clue short, so this side must be blocked.`,
 
   looseEndsFill: (axis: Axis, target: number): string =>
-    `The outlined squares already fill this ${axis}'s clue of ${target}, so this loose end can't carry on along it: that side must be blocked.`,
+    `The outlined squares fill this ${axis}'s clue of ${target}, so this loose end can't run along it: that side must be blocked.`,
 
   // "No way across it": every unfinished square has a side blocked across the
   // line, which is what the outlined squares and their bars show.
@@ -89,14 +89,14 @@ export const say = {
   /** Track here would carry on toward `dir`, which the line can afford once:
    * this square empties and the next fills. */
   sharedFateBoth: (axis: Axis, dir: number): string =>
-    `Track here would have to carry on ${onward(dir)}, and this ${axis} has one track square and one empty left, so this must therefore be empty, and the next must carry track.`,
+    `Track here would run on ${onward(dir)}; this ${axis} has one track and one empty left: this must be empty, the next track.`,
 
   sharedFateFills: (axis: Axis, dir: number): string =>
-    `Track here would have to carry on ${onward(dir)}, but this ${axis} has room for one more track square, so this must be empty.`,
+    `Track here would carry on ${onward(dir)}, but this ${axis} has room for one more track square, so this must be empty.`,
 
   /** No track here means none in the neighbor toward `behind` either. */
   sharedFateEmpties: (axis: Axis, behind: number): string =>
-    `No track here would mean none ${towards(behind)} either, and this ${axis} can spare just one more empty, so this must carry track.`,
+    `No track here means none ${towards(behind)} either, but this ${axis} can spare just one more empty, so this must carry track.`,
 
   // "Every entry needs an exit" is the parity argument in the player's terms:
   // the track begins and ends off the board, so it crosses any closed block's

@@ -22,14 +22,14 @@ export const say = {
         }, so ${these(many)} must be black.`,
 
   unreachable: (orient: Orient, many: boolean): string =>
-    `No run can reach ${these(many)} in this ${orient}, so ${they(many)} must stay white.`,
+    `No run can reach ${these(many)} in this ${orient}, so ${they(many)} must be white.`,
 
   lineEmpty: (orient: Orient, many: boolean): string =>
-    `This ${orient} has no clues, so ${these(many)} must stay white.`,
+    `This ${orient} has no clues, so ${these(many)} must be white.`,
 
   /** Every fit of the line's runs agrees these cells are `black`, or white. */
   intersection: (orient: Orient, black: boolean, many: boolean): string =>
     black
       ? `Whichever way this ${orient}'s runs fit, ${these(many)} must be black.`
-      : `Whichever way this ${orient}'s runs fit, ${these(many)} must stay white.`,
+      : `Whichever way this ${orient}'s runs fit, ${these(many)} must be white.`,
 };

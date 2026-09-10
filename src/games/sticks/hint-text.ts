@@ -57,7 +57,7 @@ export const say = {
   twoClues: (vals: number[], to: To, clue: number, continues: boolean): string => {
     const { bad, tail } = frame(to, clue);
     if (continues)
-      return `The same pair rules this square out too: a ${bad} line would join them into one line. ${tail}`;
+      return `The same numbers rule this square out too: a ${bad} line would join them into one line. ${tail}`;
     const joined =
       vals.length !== 2
         ? `put ${vals.length} numbers on one line`
@@ -92,6 +92,6 @@ export const say = {
       return `The black ${reason.value} rules this square out too: a ${bad} line would close another open side. ${tail}`;
     return reason.value === 1
       ? `The black 1 has one open side left, and a ${bad} line here would close it off. ${tail}`
-      : `The black ${reason.value} needs all ${reason.value} of its open sides, and a ${bad} line here would close one. ${tail}`;
+      : `The black ${reason.value} needs ${reason.value === 2 ? "both" : `all ${reason.value}`} of its open sides, and a ${bad} line here would close one. ${tail}`;
   },
 };

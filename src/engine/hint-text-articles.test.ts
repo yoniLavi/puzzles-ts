@@ -48,7 +48,7 @@ describe("a number after an article gets the article it is pronounced with", () 
         true,
       );
     expect(shared(8, false)).toContain("has an 8 in this square");
-    expect(shared(8, true)).toContain("has an 8 in this square");
+    expect(shared(8, true)).toContain("has an 8 here");
     expect(shared(3, false)).toContain("has a 3 in this square");
     const strike = (digits: number[]) =>
       crossing.noteStrike({ technique: "noteStrike", digits } as NoteStrike, false);
@@ -58,7 +58,6 @@ describe("a number after an article gets the article it is pronounced with", () 
 
   it("Dominosa's duplicate dominoes", () => {
     expect(dominosa.barrier("localDuplicate", 8, 8)).toMatch(/^An 8–8 domino here/);
-    expect(dominosa.barrier("localDuplicate2", 9, 8)).toMatch(/^An 8–9 domino here/);
     expect(dominosa.barrier("localDuplicate", 1, 8)).toMatch(/^A 1–8 domino here/);
   });
 });

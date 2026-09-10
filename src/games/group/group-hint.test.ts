@@ -85,7 +85,7 @@ describe("group hint — recorded deductions", () => {
     }
     expect(text).toBeDefined();
     // "…Because (a·b)·c = a·(b·c) in any group, <fourth> must also be <v>."
-    expect(text).toMatch(/You've filled .+·.+ = .+, .+·.+ = .+ and/);
+    expect(text).toMatch(/The grid shows .+·.+ = .+, .+·.+ = .+ and/);
     expect(text).toMatch(/Because \(.+·.+\)·.+ = .+·\(.+·.+\) in any group/);
     expect(text).toMatch(/must also be [a-z]\./);
   });

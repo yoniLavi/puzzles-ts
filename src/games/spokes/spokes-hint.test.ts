@@ -180,7 +180,7 @@ describe("narration states the premise, in the necessity voice", () => {
     expect(found).not.toBeNull();
     if (!found) return;
     const text = hintSteps(found.state)[0].explanation;
-    expect(text).toMatch(/already has its lines/);
+    expect(text).toMatch(/already has all its lines/);
     expect(text).toMatch(/[Rr]ule them out/);
     expect(text.length).toBeLessThan(120);
   });

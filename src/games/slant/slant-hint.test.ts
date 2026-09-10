@@ -132,7 +132,7 @@ describe("slant hint", () => {
       for (const step of res.steps) {
         const e = step.explanation;
         if (/already joined by a chain/.test(e)) seen.add("loop");
-        if (/boxed in/.test(e)) seen.add("deadend");
+        if (/one way out each/.test(e)) seen.add("deadend");
         if (/locked to the same slant/.test(e)) {
           seen.add("equiv");
           expect((step.highlights as SlantHint).ref).toBeDefined();

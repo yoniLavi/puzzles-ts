@@ -45,6 +45,36 @@
       one-digit note strike, Dominosa's two duplicate-domino arms. Each now
       picks "a"/"an" by the value through the engine's `indefinite`, as the
       shared `dup` arm already did.
+- [x] 4.5 The owner-requested review (2026-09-10): four review agents read all
+      30 text files against the guide, the help pages and the call sites, and
+      every finding was re-checked against the solver before it was acted on.
+      About 25 clear defects fixed. False claims: Unruly's `unique`,
+      Dominosa's `localDuplicate2` and `mustOverlap`, Unequal's no-bar
+      adjacency, the chain's "in line with" when Solo's last link shares only
+      a block or diagonal, Boats' board edge and "ships" for boat squares and
+      its center count's room, Range's cut vertex, Slant's dead end, Group's
+      "You've filled" on givens, Undead's zero total. Degenerate values: "1
+      neighbors", "all 2 of", "cells 1 to 2", "the 1 square", "All 2 letters",
+      Palisade's clue 0. Grammar: Inertia's dangling appositive, "and" under
+      a negation (now "or", through the engine's `joinOr`). Glyphs: Solo and
+      Unequal now print a value as the board draws it past 9. A duplicate list
+      ("e, e, a, d, h and h") from the shared set arm. Galaxies' and Undead's
+      help pages. Periods for Fifteen, Sixteen and Flood, one voice with
+      Netslide and Inertia.
+- [x] 4.6 The walk measured the wrong population: every tier of the easiest
+      preset only, so Adjacent, Killer, X and Number Ball never spoke in it.
+      It now also walks every preset once, and the twenty-odd sentences it had
+      never heard over 120 were shortened (Solo and Group joined the chain's
+      entry, which they had always needed).
+- [x] 4.7 Owner decisions, 2026-09-10. Light Up says "can't hold a bulb" where
+      it said "crossed out", a mark the game draws as a dot, and "ruled out"
+      for squares the player has marked. The shared set arm says "Other cells"
+      where it said "Another group of cells", which collided with Group's own
+      name for its table; Group's letters stay bare, as the board draws them.
+      Palisade's general region bound and Boats' hidden-number sentences, the
+      two arms over 120 that no preset reaches, are shortened: Palisade states
+      the bound without the side-counting behind it, and Boats folds the hidden
+      number into the sentence instead of opening with it.
 - [ ] 4.4 Owner acceptance: the wording is player-visible in 24 games. Not
       archived until then. The owner has chosen (2026-09-10) to review it
       **after `extract-hint-strings`**, reading each game's sentences in one

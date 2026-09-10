@@ -430,8 +430,8 @@ describe("every narratable premise the corpus reaches is reached", () => {
       "would close a loop", // wouldCloseLoop
       "stranding the outlined track", // wouldStrandTrack
       "this loose end must run straight on", // looseEndSpans
-      "Track here would have to carry on", // sharedFate, fill arm
-      "No track here would mean none", // sharedFate, empty arm
+      "Track here would carry on", // sharedFate, fill arm
+      "No track here means none", // sharedFate, empty arm
       "enters the outlined block it must leave", // crossingParity
     ]) {
       expect(all, `no step ever said "${marker}"`).toContain(marker);
@@ -537,8 +537,8 @@ describe("narration reads correctly at the degenerate extremes", () => {
       empties: true,
       ev,
     });
-    expect(both).toContain("must therefore be empty");
-    expect(both).toContain("must carry track");
+    expect(both).toContain("this must be empty, the next track");
+    expect(both).toContain("the next track");
   });
 });
 

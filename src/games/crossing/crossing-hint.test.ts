@@ -226,7 +226,7 @@ describe("crossing hint — techniques and narration", () => {
     // "and" (which would read as "both at once", the opposite of the claim).
     const cross = texts.get("crossRuns") ?? "";
     expect(cross).toMatch(/^(Across|Down), this square can only be/);
-    expect(cross).toMatch(/cannot take .* here, so it must be \d\.$/);
+    expect(cross).toMatch(/rules out all but (\d), so it must be \1\.$/);
     expect(cross.split(", and the ")[0]).not.toMatch(/ and /);
   });
 

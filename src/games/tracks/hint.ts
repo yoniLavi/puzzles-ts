@@ -135,8 +135,7 @@ export function narrate(b: Board, reason: TracksReason): string {
     case "wouldStrandTrack":
       return say.wouldStrandTrack;
     case "wouldFinishEarly": {
-      const { axis, target } = lineOf(b, reason.unmet);
-      return say.wouldFinishEarly(axis, target, reason.ev.cells.length);
+      return say.wouldFinishEarly(lineOf(b, reason.unmet).axis);
     }
     case "looseEndsFill": {
       const { axis, target } = lineOf(b, reason.line);

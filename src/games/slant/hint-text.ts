@@ -37,7 +37,7 @@ export const say = {
   loop: "Two corners of this square are already joined by a chain of diagonals, so it must slant the other way to avoid a loop.",
 
   deadend:
-    "These points are boxed in with one diagonal each; linking them here would seal a loop, so this must slant the other way.",
+    "These points have one way out each; linking them here would seal a loop, so this square must slant the other way.",
 
   // The anchor shares this square's equivalence class, hence its slash (`v`),
   // so name it once.

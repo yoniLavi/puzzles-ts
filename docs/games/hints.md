@@ -448,8 +448,9 @@ long, cut to the single premise the highlight doesn't already show.
 
 **Guarded cross-game: 120 characters per step** (`hint-quality.test.ts`
 § "hint narration stays readable at a glance", owner-chosen 2026-09-10 from a
-measured census — median 84, p75 110, p90 147). It walks every tier of every
-hinting game into the middle game, because long sentences are the ones spoken
+measured census — median 84, p75 110, p90 147). It walks every tier and every
+preset of every hinting game into the middle game (a preset can pick a mode,
+Adjacent or Killer or Number Ball, that no tier reaches), because long sentences are the ones spoken
 once more of the board is decided; the easiest preset's opening plan, where the
 old 300 ceiling was checked, is exactly where they are not.
 

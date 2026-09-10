@@ -19,7 +19,8 @@ export const say = {
       ? "Only one free spoke left for this hub's count, so it must be a line."
       : "Just enough free spokes left for this hub's count, so they must all be lines.",
 
-  exhaustion: "This hub already has its lines, so the rest can't. Rule them out.",
+  exhaustion:
+    "This hub already has all its lines, so none of its other spokes can be one. Rule them out.",
 
   /** The trial (a line when `asLine`, else a mark) breaks the board in the
    * way `breakKind` names. */

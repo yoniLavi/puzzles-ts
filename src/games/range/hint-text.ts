@@ -54,5 +54,5 @@ export const say = {
   // black-target sentence to write: a cut vertex of the white region is
   // forced *white*, never black.
   connect:
-    "Painting this cell black would cut the outlined cells around it off from the other white cells, so it must stay white.",
+    "Painting this cell black would cut some of the outlined cells around it off from the rest, so it must stay white.",
 };

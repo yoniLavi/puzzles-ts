@@ -19,7 +19,7 @@ export const say = {
   place: (technique: PlaceTechnique, a: number, b: number): string => {
     const dom = domino(a, b);
     if (technique === "squareOnly")
-      return `This square can pair with only the ${dom} domino, so it must go here.`;
+      return `The outlined square has only one neighbor left to pair with, so the ${dom} domino must go here.`;
     return `The ${dom} domino has only one spot left where it fits, because every other pairing is blocked, so it must go here.`;
   },
 
@@ -33,13 +33,13 @@ export const say = {
       case "squareSingleDomino":
         return `The outlined square can only be part of the ${dom} domino, so ${dom} can't sit here instead.`;
       case "mustOverlap":
-        return "Every remaining spot for the outlined domino covers this pair, so no other domino can go here.";
+        return "Every remaining spot for the outlined domino overlaps this pair, so no other domino can go here.";
       case "localDuplicate":
         return `${indefinite(dom, true)} ${dom} domino here would force a second ${dom} at the outlined square, but each domino is used once, so it can't.`;
       case "localDuplicate2":
-        return `${indefinite(dom, true)} ${dom} domino here would force both outlined squares to become ${dom} too, a duplicate, so it can't.`;
+        return "A domino here would leave both outlined squares needing one and the same domino, a duplicate, so it can't.";
       case "parity":
-        return "A domino here would split the empty squares into odd-sized regions, which dominoes can't fill, so this can't be a domino.";
+        return "A domino here would split the empty squares into odd-sized regions, which dominoes can't fill, so it can't go here.";
       case "set":
         return `The outlined squares can only hold one set of dominoes, which uses the ${dom}, so ${dom} can't sit here as well.`;
     }

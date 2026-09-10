@@ -13,16 +13,6 @@
 
 type EdgeKind = "wall" | "nowall";
 
-/** How many *further* sides a clue leaves open once the edge to its
- * neighbor is known open: its `clue` walls then all sit on its other three
- * sides, so `3 - clue` sides still lead into the same region. Clamped at
- * zero because `k === 1` admits a clue of 4, for which the premise is
- * vacuous rather than negative. */
-function otherOpenSides(clue: number): string {
-  const n = Math.max(0, 3 - clue);
-  return n === 0 ? "no other side" : n === 1 ? "1 other side" : `${n} other sides`;
-}
-
 export const say = {
   /** A later leg of a multi-edge firing: short and kind-specific, because the
    * first leg already gave the full reason and is still on screen. */
@@ -47,16 +37,22 @@ export const say = {
     if (c === 3 && d === 3) {
       return `Two 3s each keep just one side open, and it has to be the one they share, so their region would be exactly 2 cells. Regions here hold ${k}, so the edge between them must be a wall.`;
     }
-    const counts =
-      c === d
-        ? `These clues each leave ${otherOpenSides(c)} open`
-        : `Clue ${c} leaves ${otherOpenSides(c)} open and clue ${d} leaves ${otherOpenSides(d)} open`;
-    return `${counts}, so a shared region would need at least ${8 - c - d} cells. Regions here hold ${k}, so the edge between them must be a wall.`;
+    // The side-counting behind the bound is left to the outlined clues: the
+    // owner chose the shorter sentence (2026-09-10) for an arm that fires only
+    // on small-region boards. The two-3s arm above keeps its count, because
+    // there the bound is exact and the count is the whole argument.
+    return `These clues would need a shared region of at least ${8 - c - d} cells, but regions here hold ${k}, so the edge between them must be a wall.`;
   },
 
   /** Clue `c` is met, or can only be met, by its remaining edges; `multi`
    * when the firing sets several. */
   numberExhausted: (c: number, kind: EdgeKind, multi: boolean): string => {
+    // A 0 has no walls to have "all" of: say what it allows instead.
+    if (c === 0) {
+      return multi
+        ? "Clue 0 allows no walls, so none of its remaining edges can be walls. Clear them."
+        : "Clue 0 allows no walls, so this edge can't be one.";
+    }
     if (multi) {
       return kind === "wall"
         ? `Clue ${c} reaches its count only if every remaining edge is a wall, so draw them all.`

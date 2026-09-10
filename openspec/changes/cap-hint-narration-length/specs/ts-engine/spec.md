@@ -5,8 +5,8 @@
 ### Requirement: Hint narration SHALL be short enough to read at a glance
 
 Every hint step's narration SHALL be at most 120 characters. The check SHALL
-cover every hinting game at every tier (every preset, for a game without
-tiers) and SHALL walk each board's plans into the middle of the game rather
+cover every hinting game at every tier and on every preset, since a mode a
+preset selects can speak sentences no tier reaches, and SHALL walk each board's plans into the middle of the game rather
 than reading only the opening plan, because the sentences that need room are
 the ones spoken once more of the board is decided.
 

@@ -67,7 +67,9 @@ export function say(mode: number) {
       const gap =
         skipped === 0
           ? ` and this square is nearest to it`
-          : `, and the ${count(skipped, "square")} between ${skipped === 1 ? "is" : "are"} marked empty`;
+          : skipped === 1
+            ? ", and the square between is marked empty"
+            : `, and the ${count(skipped, "square")} between are marked empty`;
       return `${lead}${gap}, so only ${clue} can go here: cross out ${list(ns)}.`;
     },
 
@@ -120,17 +122,22 @@ export function say(mode: number) {
       // in, or we merely know *which* squares hold them (a line of balls). Each
       // claims only what it has (§2.6).
       return allPlaced
-        ? `All ${count(nums, noun)} of this ${axis} are already placed, so every other square in it must be empty.`
-        : `We already know which ${count(nums, "square")} of this ${axis} hold its ${noun}s, so every other square in it must be empty.`;
+        ? `${nums === 1 ? `The one ${noun}` : nums === 2 ? `Both ${noun}s` : `All ${count(nums, noun)}`} of this ${axis} ${nums === 1 ? "is" : "are"} already placed, so every other square in it must be empty.`
+        : `We already know which ${nums === 1 ? "square" : count(nums, "square")} of this ${axis} ${nums === 1 ? `holds its ${noun}` : `hold its ${noun}s`}, so every other square in it must be empty.`;
     },
 
     crossNaked: `Every ${noun} is ruled out here, so the empty-square mark is the only one left: this square must be empty.`,
 
     forcedCross: `Working through this square's row and column together, no ${noun} can still go here, so it must be empty.`,
 
-    forcedCircle: `Working through this square's row and column together, this square cannot be one of the empty ones, so it must hold a ${noun}, even though we don't know which yet.`,
+    forcedCircle: `Working through this square's row and column together, it can't be empty: it must hold a ${noun}, though not yet which.`,
 
-    circleXNote: `These squares are now known to hold a ${noun}, so we must cross out their empty-square marks.`,
+    /** The squares just settled as holding a symbol, `count` of them, keep no
+     * empty-square mark. */
+    circleXNote: (count: number): string =>
+      count === 1
+        ? `This square is now known to hold a ${noun}, so we must cross out its empty-square mark.`
+        : `These squares are now known to hold a ${noun}, so we must cross out their empty-square marks.`,
 
     /** This line already has all `times` of its empty squares, so this one
      * cannot be empty. */

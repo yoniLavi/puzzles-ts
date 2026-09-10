@@ -198,9 +198,7 @@ describe("inertia hint narration", () => {
     const step = firstStep(stateOf(["wwww", "wSmw", "wmgw", "wwww"]));
     // Only NE... no: the gem is south-east, the mines east and south.
     expect(step.explanation).toContain("Slide south-east");
-    expect(step.explanation).toContain(
-      "the only direction that doesn't run you onto a mine",
-    );
+    expect(step.explanation).toContain("the only way that doesn't run you onto a mine");
   });
 
   it("says walls, not mines, when walls are what block every other way", () => {
@@ -306,7 +304,7 @@ describe("inertia hint narration", () => {
 
     const step = firstStep(s);
     expect(step.explanation).toContain("Sliding east grabs the marked gem");
-    expect(step.explanation).toContain("you don't choose where you stop");
+    expect(step.explanation).toContain("you can't pick where you stop");
     // "strands" is the proved claim (`unreachableGems`): a gem the ball can
     // never reach again.
     expect(step.explanation).toContain("it strands a gem");

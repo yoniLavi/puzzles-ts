@@ -158,7 +158,7 @@ export type BoatsTechnique =
   | { kind: "mustExtend" }
   // --- Normal ---
   /** A center segment's line cannot take the two more ships that direction needs. */
-  | { kind: "centerCount"; line: BoatsLine; vertical: boolean }
+  | { kind: "centerCount"; line: BoatsLine; vertical: boolean; room: number }
   /** Filling a square would join runs into a boat longer than any left. */
   | { kind: "growTooLong"; joined: number; largest: number }
   /** Every boat of this length is placed, so an unfinished one must be longer. */
@@ -553,7 +553,12 @@ function findCenterCount(ctx: Ctx): BoatsFiring | null {
       ) {
         const f = firing(
           ctx,
-          { kind: "centerCount", line: lineOf(ctx, true, y), vertical: true },
+          {
+            kind: "centerCount",
+            line: lineOf(ctx, true, y),
+            vertical: true,
+            room: b.borderClues[y + b.w] - shipCounts[y + b.w],
+          },
           [{ x: x + 1, y, ship: false }],
           [{ x, y }, ...lineCells(b, true, y)],
         );
@@ -562,7 +567,12 @@ function findCenterCount(ctx: Ctx): BoatsFiring | null {
       if (b.borderClues[x] !== NO_CLUE && b.borderClues[x] - shipCounts[x] < 2) {
         const f = firing(
           ctx,
-          { kind: "centerCount", line: lineOf(ctx, false, x), vertical: false },
+          {
+            kind: "centerCount",
+            line: lineOf(ctx, false, x),
+            vertical: false,
+            room: b.borderClues[x] - shipCounts[x],
+          },
           [{ x, y: y + 1, ship: false }],
           [{ x, y }, ...lineCells(b, false, x)],
         );

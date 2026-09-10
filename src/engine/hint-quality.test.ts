@@ -19,8 +19,9 @@
  *  - **Narration stays readable at a glance** (§2.5): a limit every step is
  *    held to, with a ledger for the few sentences that genuinely need more
  *    room, and a hard ceiling even they cannot pass. Checked across every
- *    tier and into the middle of the game, in its own block, because the
- *    first preset's opening plan is where the long sentences never are.
+ *    tier and every preset, and into the middle of the game, in its own
+ *    block, because the first preset's opening plan is where the long
+ *    sentences never are.
  *  - **No step asks the player to carry a chain it never lays out**
  *    (`audit-guessing-tier-names`): a bounded chain is a legitimate
  *    *Tactic* and may be narrated — but with the chain **shown on the
@@ -86,7 +87,7 @@ const MAX_NARRATION_CHARS = 300;
  */
 const LONG_NARRATIONS: { games: string[]; match: RegExp; why: string }[] = [
   {
-    games: ["keen", "salad", "towers", "unequal"],
+    games: ["group", "keen", "salad", "solo", "towers", "unequal"],
     match: /has just two \w+s left, so each forces the next/,
     why:
       "The Latin chain Tactic (`latin-hint.ts`). ts-engine requires a narrated " +
@@ -500,12 +501,53 @@ describe("no hint leaves a chain for the player to carry, at any tier", () => {
  * spoken deeper in the game. A shallow walk turns a live ledger entry into a
  * false "delete me", which is the rot the check exists to stop.
  *
+ * **And as wide as the modes a player can pick.** The first walk took every
+ * tier of each game's *easiest preset* only, and a review of the text files
+ * (2026-09-10) found thirty-odd sentences over the limit that it never heard:
+ * Unequal's Adjacent mode, Solo's Killer and X, Salad's Number Ball are each
+ * reached by a preset and by no tier of the first one. So every leaf preset is
+ * walked too, on one seed, beside the tiers' three; the search-planning games
+ * keep their sliced preset list, which is what their cost is sliced for.
+ *
  * Cost, 2026-09-10: 43 s of test time for this block, measured at load
  * average 19–41 with 34% memory free — an upper bound, not a cost. The same
  * walk as a standalone census measured 16 s. Spokes, Palisade, Crossing and
  * Sticks hold most of it; slicing those four is the lever if it ever matters.
+ * Walking every preset on every seed measured 103 s as a census against 49 s
+ * for the tiers alone (load 12, swap 22 GB used: upper bounds both); one seed
+ * per extra preset is the middle of that.
  */
 const LINT_ROUNDS = 30;
+
+/** The boards the length walk plays: every tier of the first preset on every
+ * seed, then every other preset once. Deduplicated by params, since a tier of
+ * the first preset is often a preset too. */
+function lintCases(
+  id: string,
+  game: AnyGame,
+): { label: string; params: unknown; seeds: readonly string[] }[] {
+  const out: { label: string; params: unknown; seeds: readonly string[] }[] = [];
+  const seen = new Set<string>();
+  const add = (label: string, params: unknown, seeds: readonly string[]): void => {
+    const key = JSON.stringify(params);
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ label, params, seeds });
+  };
+  const contract = game.difficulty;
+  const tiers = difficultyTiers(game);
+  if (contract && tiers) {
+    const base = firstLeaf(game.presets());
+    for (const [tier, tierName] of tiers.entries()) {
+      add(`tier ${tier} ("${tierName}")`, contract.withTier(base, tier), SEEDS);
+    }
+  }
+  // A tiered game already plays three seeds of each tier, so its other presets
+  // play once; an untiered game's presets are all it has, so they keep all three.
+  const extra = contract && tiers ? SEEDS.slice(0, 1) : SEEDS;
+  for (const c of untieredCases(id, game)) add(c.label, c.params, extra);
+  return out;
+}
 
 /** Ledger entries that matched a step over the limit, by index. Filled by the
  * per-game cases, read by the last one. */
@@ -514,20 +556,10 @@ let linted = 0;
 
 describe("hint narration stays readable at a glance", () => {
   for (const [name, game] of HINT_GAMES) {
-    const contract = game.difficulty;
-    const tiers = difficultyTiers(game);
     it(`${name}: every step within ${NARRATION_LIMIT} characters, or ledgered`, () => {
-      const base = firstLeaf(game.presets());
-      const cases: { label: string; params: unknown }[] =
-        contract && tiers
-          ? tiers.map((tierName, tier) => ({
-              label: `tier ${tier} ("${tierName}")`,
-              params: contract.withTier(base, tier),
-            }))
-          : untieredCases(name, game);
-      for (const { label, params } of cases) {
+      for (const { label, params, seeds } of lintCases(name, game)) {
         if (game.validateParams(params, true)) continue;
-        for (const seed of SEEDS) {
+        for (const seed of seeds) {
           let desc: string;
           let aux: string | undefined;
           try {

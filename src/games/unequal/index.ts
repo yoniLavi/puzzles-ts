@@ -81,7 +81,7 @@ import type {
   Size,
 } from "../../engine/types.ts";
 import { newUnequalDesc } from "./generator.ts";
-import { say } from "./hint-text.ts";
+import { say, unequalVocab } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -405,17 +405,17 @@ function findMistakes(state: UnequalState): readonly UnequalMistake[] {
 function narrate(reason: HintReason, ns: number[], o: number): string {
   switch (reason.kind) {
     case "greater":
-      return say.greater(reason.bound, ns);
+      return say.greater(reason.bound, ns, o);
     case "lesser":
       return say.lesser(reason.bound, o, ns);
     case "adjacent":
-      return say.adjacent(reason.bar, reason.v, ns);
+      return say.adjacent(reason.bar, reason.v, ns, o);
     case "adjacentSet":
-      return say.adjacentSet(reason.bar, ns);
+      return say.adjacentSet(reason.bar, ns, o);
     // The generic Latin arms (single / hiddenSingle / forcedSingle / dup / set /
     // forcing) read identically to Keen's — narrated once, shared.
     default:
-      return narrateLatinReason(reason, ns);
+      return narrateLatinReason(reason, ns, unequalVocab(o));
   }
 }
 

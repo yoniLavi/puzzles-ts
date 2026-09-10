@@ -304,7 +304,7 @@ describe("Fifteen hint", () => {
     // Like Sixteen, the plan is the whole solution, not a single step.
     expect(result.steps.length).toBeGreaterThan(1);
     expect(result.steps[0].explanation).toMatch(
-      /^Working on tile \d+: (slide it into place|slide it closer|reposition it|slide tile \d+ into place|slide tile \d+ out of the way)$/,
+      /^Working on tile \d+: (slide it into place|slide it closer|reposition it|slide tile \d+ into place|slide tile \d+ out of the way)\.$/,
     );
     // Following every step reaches the solved board.
     for (const step of result.steps) state = executeMove(state, step.move);
@@ -384,13 +384,13 @@ describe("Fifteen hint", () => {
     let homedEight = false;
     for (const step of result.steps) {
       expect(step.explanation.startsWith("Working on tile 8:")).toBe(true);
-      if (step.explanation === "Working on tile 8: slide tile 7 into place") {
+      if (step.explanation === "Working on tile 8: slide tile 7 into place.") {
         sawSevenRestored = true;
       }
       board = executeMove(board, step.move);
       if (board.tiles[7] === 8) {
         // 8 is home; this step closed the goal — narrated as placing 8.
-        expect(step.explanation).toBe("Working on tile 8: slide it into place");
+        expect(step.explanation).toBe("Working on tile 8: slide it into place.");
         homedEight = true;
         break;
       }

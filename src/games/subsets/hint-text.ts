@@ -62,7 +62,7 @@ export const say = {
       // name the highlighted cell explicitly, so the referent is never a bare
       // pronoun (owner 2026-07-21).
       return first
-        ? `The highlighted cell's set lies inside this one, and its ${L} is marked, so ${L} must be here too. ${capitalize(act)}.`
+        ? `The highlighted cell's set lies inside this one and has ${L} marked, so ${L} must be here too. ${capitalize(act)}.`
         : `Still filling this cell: the highlighted cell's ${L} is marked too, so ${act} here.`;
     }
     if (r.kind === "arrowMask") {

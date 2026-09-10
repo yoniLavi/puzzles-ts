@@ -42,7 +42,7 @@ export const say = {
     const { A, B, C } = p;
     const known = p.knownLeft ? `(${A}·${B})·${C}` : `${A}·(${B}·${C})`;
     const forced = p.knownLeft ? `${A}·(${B}·${C})` : `(${A}·${B})·${C}`;
-    return `You've filled ${A}·${B} = ${p.ab}, ${B}·${C} = ${p.bc} and ${known} = ${p.v}. Because (${A}·${B})·${C} = ${A}·(${B}·${C}) in any group, ${forced} must also be ${p.v}.`;
+    return `The grid shows ${A}·${B} = ${p.ab}, ${B}·${C} = ${p.bc} and ${known} = ${p.v}. Because (${A}·${B})·${C} = ${A}·(${B}·${C}) in any group, ${forced} must also be ${p.v}.`;
   },
 
   /** `A·B` came out as `A` (`productIsA`) or as `B`, which reveals the other

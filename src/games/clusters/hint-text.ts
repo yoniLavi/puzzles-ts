@@ -66,7 +66,9 @@ export const say = {
     const run =
       n === 1
         ? "cell 1 is then forced from it, and"
-        : `cells 1 to ${n} are then forced from it, and by ${n}`;
+        : n === 2
+          ? "cells 1 and 2 are then forced from it, and by 2"
+          : `cells 1 to ${n} are then forced from it, and by ${n}`;
     return `Suppose this cell were ${t}: ${run} ${end}, so this cell must be ${f}.`;
   },
 

@@ -17,8 +17,8 @@ export const say = {
    * squares that could are marked. */
   forcedLightSelf: (corridor: boolean): string =>
     corridor
-      ? "Nothing else can light this dark square: the shaded squares are crossed out, the ringed ones lit. It must hold a bulb."
-      : "Nothing else can light this dark square: every square that could is crossed out or already lit. It must hold a bulb.",
+      ? "Nothing else can light this dark square: the shaded squares are ruled out, the ringed ones lit. It must hold a bulb."
+      : "Nothing else can light this dark square: every square that could is ruled out or already lit. It must hold a bulb.",
 
   forcedLightOther:
     "The ringed square is still dark and only this square can still light it, so this one must hold a bulb.",
@@ -27,13 +27,18 @@ export const say = {
   clueSatisfied: (n: number, many: boolean): string => {
     if (n === 0) {
       return many
-        ? "The highlighted clue is 0: no bulb may sit beside it. So its free neighbors must all be crossed out."
-        : "The highlighted clue is 0: no bulb may sit beside it. So its free neighbor must be crossed out.";
+        ? "The highlighted clue is 0: no bulb may sit beside it. So its free neighbors can't hold a bulb."
+        : "The highlighted clue is 0: no bulb may sit beside it. So its free neighbor can't hold a bulb.";
     }
-    const bulbs = n === 1 ? "its bulb (ringed)" : `all ${n} of its bulbs (ringed)`;
+    const bulbs =
+      n === 1
+        ? "its bulb (ringed)"
+        : n === 2
+          ? "both its bulbs (ringed)"
+          : `all ${n} of its bulbs (ringed)`;
     return many
-      ? `The highlighted clue already has ${bulbs}, so its other free neighbors must all be crossed out.`
-      : `The highlighted clue already has ${bulbs}, so its other free neighbor must be crossed out.`;
+      ? `The highlighted clue already has ${bulbs}, so its other free neighbors can't hold a bulb.`
+      : `The highlighted clue already has ${bulbs}, so its other free neighbor can't hold a bulb.`;
   },
 
   /** The clue still needs `need` bulbs and has exactly that many free
@@ -69,9 +74,9 @@ export const say = {
   discountUnlit: (shaded: number, ringedInSet: boolean): string => {
     const squares = shaded === 1 ? "the shaded square" : "the shaded squares";
     const holders = ringedInSet ? `${squares} or the ringed square itself` : squares;
-    return `One of ${holders} must light the ringed square, and a bulb here would leave each of them lit or beside a full clue, so this square must be crossed out.`;
+    return `${shaded === 1 && ringedInSet ? "Either the shaded square or the ringed square itself" : `One of ${holders}`} must light the ringed square, and a bulb here would leave each of them lit or beside a full clue, so this square can't hold a bulb.`;
   },
 
   discountClue:
-    "The highlighted clue needs a bulb in one of the shaded squares, and a bulb here would leave each of them lit or beside a full clue, so this square must be crossed out.",
+    "The highlighted clue needs a bulb in one of the shaded squares, and a bulb here would leave each of them lit or beside a full clue, so this square can't hold a bulb.",
 };

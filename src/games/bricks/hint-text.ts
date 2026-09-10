@@ -56,7 +56,7 @@ export const say = {
 
   /** Clearing this cell leaves the ringed clue `n` unreachable. */
   undercount: (n: number): string =>
-    `The ringed ${n} beside this cell can't reach ${n} shaded neighbors without it, so this cell must be shaded.`,
+    `The ringed ${n} beside this cell can't reach ${n} shaded neighbor${n === 1 ? "" : "s"} without it, so this cell must be shaded.`,
 
   // The direct rung's *unclassified* case: one color placed, one validator
   // call, the board breaks — but at a cell none of the four named arms

@@ -266,9 +266,12 @@ describe("boats hint — narration", () => {
     ["lineForced", /still needs .* and has (just|only) .* free square/],
     ["allWaterPlaced", /Every square of water .* is already marked/],
     ["centerForced", /middle segment has water/],
-    ["isolated", /walled in by water on all four sides/],
-    ["mustExtend", /can't stand alone/],
-    ["centerCount", /needs two, so it can't go that way/],
+    ["isolated", /water or the board's edge surrounds this square/],
+    ["mustExtend", /closes three sides/],
+    [
+      "centerCount",
+      /so a boat can't run (?:across|up and down) through this middle segment/,
+    ],
     ["growTooLong", /would make a boat of \d+/],
     ["runTooShort", /every \d+-boat is already placed/],
     ["onlyRunsLeft", /run[s]? can still hold the \d+-boat/],
@@ -297,7 +300,7 @@ describe("boats hint — narration", () => {
     // A "so it is forced" with no named rule is exactly the un-narrated step
     // the spec forbids.
     expect(step?.explanation).toMatch(
-      /(touching corner to corner|could no longer reach its \d+|complete a boat the fleet has no room for|more boat squares than the whole fleet|too little open water|given segment's own shape|could no longer be placed legally)/,
+      /(touching corner to corner|could no longer reach its \d+|complete a boat the fleet has no room for|more boat squares than the whole fleet|rest of the fleet would no longer fit|given segment's own shape|could no longer be placed legally)/,
     );
   });
 

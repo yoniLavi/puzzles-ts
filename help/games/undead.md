@@ -6,7 +6,8 @@ how many monsters must be visible along your line of sight if you look
 directly into the grid from that position, along a row or column.
 Zombies are always visible; ghosts are only visible when reflected in
 at least one mirror; vampires are only visible when not reflected in
-any mirror.
+any mirror. The counts at the top of the grid say how many ghosts,
+vampires and zombies it holds in all.
 
 To place a monster, click in a square to select it, then
 click the desired monster at the top or type the

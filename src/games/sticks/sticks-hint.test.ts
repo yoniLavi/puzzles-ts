@@ -55,7 +55,7 @@ const PHRASE: Record<SticksReason["kind"], RegExp> = {
   unreachable: /needs a longer line/,
   twoClues: /(?:into|on) one line\./,
   overConnected: /already has its \d+ lines?|takes no lines/,
-  starved: /needs all \d+ of its open sides|has one open side left/,
+  starved: /needs (?:all \d+|both) of its open sides|has one open side left/,
 };
 
 /** The first fixed seed whose opening plan contains each kind. Scanned once. */
@@ -226,7 +226,7 @@ describe("sticks hint — grouping", () => {
       expect(r.steps[0].continuesPrevious).toBe(false);
       for (const s of r.steps) {
         if (s.continuesPrevious)
-          expect(s.explanation).toMatch(/rules this square out too|same pair/);
+          expect(s.explanation).toMatch(/rules this square out too|same numbers/);
       }
     }
   });

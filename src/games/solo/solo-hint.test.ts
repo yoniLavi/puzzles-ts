@@ -396,7 +396,8 @@ function strikeFrame(p: SoloParams, pred: (s: string) => boolean): string {
 
 describe("solo hint render", () => {
   it("a deductive elimination shades the evidence and strikes the candidate", () => {
-    const pred = (e: string) => /where they overlap|already accounts for/.test(e);
+    const pred = (e: string) =>
+      /crossed out of the rest of it|already accounts? for/.test(e);
     const id = strikeFrame(ADV, pred);
     const { recording, hint } = renderScenario({
       game: soloGame,

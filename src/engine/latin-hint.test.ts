@@ -193,7 +193,7 @@ describe("narrateLatinReason (shared row/column-game narration)", () => {
       "There's already a 1 in this row and column, so we must cross out the 1 from the other cells they pass through.",
     );
     expect(narrateLatinReason({ kind: "set" }, [2, 3])).toBe(
-      "Another group of cells already accounts for 2 and 3 between them, so we must cross out 2 and 3 here.",
+      "Other cells already account for 2 and 3 between them, so we must cross out 2 and 3 here.",
     );
     // A forcing chain concludes from *both* branches of the origin's two
     // candidates, so both are stated; the links between are numbered on the

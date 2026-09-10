@@ -10,7 +10,7 @@
 import {
   cleanObviousText,
   indefinite,
-  joinNums,
+  joinOr,
   populateText,
 } from "../../engine/hint-text.ts";
 import { C_ADD, C_DIV, C_MUL, C_SUB } from "./state.ts";
@@ -42,7 +42,7 @@ export const say = {
   /** No way to fill the cage (operator `op`, target `value`) leaves room for
    * `ns` in this cell. */
   cage: (op: number, value: number, ns: number[]): string =>
-    `No way to make this cage ${cageGoal(op, value)} leaves room for ${joinNums(ns)} in this cell, so we must cross out ${joinNums(ns)}.`,
+    `No way to make this cage ${cageGoal(op, value)} puts ${joinOr(ns)} in this cell, so ${ns.length === 1 ? "it" : "they"} must be crossed out.`,
 
   /** Every way to fill the cage places `n` in this row (`horizontal`) or
    * column. */

@@ -81,7 +81,12 @@ export type SoloReason =
    * case split (`walk-tactic-hint-chains`). Solo's chain hops through blocks and
    * diagonals as well as lines, so unlike `latin.ts`'s it names a whole
    * {@link SoloRegion}. */
-  | { kind: "forcing"; chain: ForcingLink[]; shares: SoloRegion }
+  | {
+      kind: "forcing";
+      chain: ForcingLink[];
+      shares: SoloRegion;
+      lastShares: SoloRegion;
+    }
   /** A *hidden* single — digit `n` fits only one cell of `region`. */
   | { kind: "hiddenSingle"; n: number; region: SoloRegion }
   /** A placement forced by deeper deductions the working notes don't reflect. */
@@ -637,6 +642,10 @@ class SolverUsage {
                         n: number[c],
                       })),
                       shares: this.sharedRegion(x, y, xt, yt),
+                      // And the region the last link shares with it: any of
+                      // row, column, block or diagonal, since the walk steps
+                      // through all four.
+                      lastShares: this.sharedRegion(xx, yy, xt, yt),
                     },
                     group: this.group,
                   });

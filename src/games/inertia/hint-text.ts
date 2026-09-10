@@ -58,7 +58,7 @@ export const say = {
       ? `it sweeps up ${gemsPhrase(extras)} and then the marked gem`
       : "it sweeps up the marked gem";
     if (only === "mines") {
-      return `Slide ${d}: ${sweep}, the only direction that doesn't run you onto a mine.`;
+      return `Slide ${d}, the only way that doesn't run you onto a mine: ${sweep}.`;
     }
     if (only === "walls") {
       return `Slide ${d}: ${sweep}, and walls block every other direction.`;
@@ -75,13 +75,13 @@ export const say = {
 
   /** Sliding `grab` would take the gem but strand `stranded` others. */
   strands: (grab: number, stranded: number, dir: number): string =>
-    `Sliding ${DIR_NAMES[grab]} grabs the marked gem, but you don't choose where you stop, and it strands ${gemsPhrase(stranded)}: slide ${DIR_NAMES[dir]} instead.`,
+    `Sliding ${DIR_NAMES[grab]} grabs the marked gem, but you can't pick where you stop and it strands ${gemsPhrase(stranded)}: slide ${DIR_NAMES[dir]}.`,
 
   // The route declines a grab it could take. Which side the ball comes at a
   // gem from decides where it fetches up, so this is a real trade-off — but we
   // have not proved the grab is a trap, so we don't say it is.
   declined: (dir: number): string =>
-    `${working}: slide ${DIR_NAMES[dir]}. Sweeping it up straight from here is possible, but the route comes at it from another side.`,
+    `${working}: slide ${DIR_NAMES[dir]}. You could grab it from here, but the route comes at it from another side.`,
 
   /** No slide reaches the gem yet; `oneMore` when the plan's next slide does. */
   positioning: (dir: number, oneMore: boolean): string =>

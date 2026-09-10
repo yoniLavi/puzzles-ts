@@ -15,7 +15,7 @@
  * find false (§2.4).
  */
 
-import { indefinite } from "../../engine/hint-text.ts";
+import { indefinite, joinOr } from "../../engine/hint-text.ts";
 import type { CrossingFiring } from "./hint-solver.ts";
 
 type F<K extends CrossingFiring["technique"]> = Extract<
@@ -25,13 +25,6 @@ type F<K extends CrossingFiring["technique"]> = Extract<
 
 /** "across"/"down", the two words the board's own color wash already teaches. */
 const way = (horizontal: boolean): string => (horizontal ? "across" : "down");
-
-/** `joinNums` for **alternatives**: a list of candidate digits is "2 or 6", not
- * "2 and 6" — which would read as "both at once", the opposite of the claim. */
-function joinOr(ns: number[]): string {
-  if (ns.length <= 1) return `${ns[0] ?? ""}`;
-  return `${ns.slice(0, -1).join(", ")} or ${ns[ns.length - 1]}`;
-}
 
 export const say = {
   /** The run (`horizontal`, `len` squares) can only be `num`. */
@@ -58,7 +51,7 @@ export const say = {
 
   sharedDigit: (f: F<"sharedDigit">, horizontal: boolean): string =>
     f.deep
-      ? `Every number that can still go in this ${way(horizontal)} run, once the crossing numbers rule the rest out, has ${indefinite(String(f.digit))} ${f.digit} in this square, so it must be ${f.digit}.`
+      ? `Once the crossing numbers rule the rest out, every number left for this ${way(horizontal)} run has ${indefinite(String(f.digit))} ${f.digit} here, so it must be ${f.digit}.`
       : `Every number that still fits this ${way(horizontal)} run has ${indefinite(String(f.digit))} ${f.digit} in this square, so it must be ${f.digit}.`,
 
   crossRuns: (f: F<"crossRuns">): string => {
@@ -74,8 +67,7 @@ export const say = {
       down.length < 2 || (across.length >= 2 && across.length <= down.length);
     const [near, far] = leadAcross ? ["Across", "down"] : ["Down", "across"];
     const small = leadAcross ? across : down;
-    const rest = small.filter((d) => d !== f.digit);
-    return `${near}, this square can only be ${joinOr(small)}, and the ${far} number cannot take ${joinOr(rest)} here, so it must be ${f.digit}.`;
+    return `${near}, this square can only be ${joinOr(small)}, and the ${far} number rules out all but ${f.digit}, so it must be ${f.digit}.`;
   },
 
   noteStrike: (f: F<"noteStrike">, horizontal: boolean): string => {

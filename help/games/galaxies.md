@@ -34,13 +34,15 @@ an arrow, or to start and finish a drag.
 
 **Hint** explains the next step rather than simply making it. Most of
 what it says is about the arrows: the square whose dot the deduction
-settles is filled in the hint's color, and the dot itself is ringed in
-the same color. The square opposite the dot — which gets its arrow at
-the same time, as always — is only outlined, since it comes along rather
-than being what the hint is telling you about. Squares the argument
-reasons *from* — how far a galaxy can still stretch, the piece that has
-been cut off from its dot, the partner across a dot — are shaded in a
-second color, so you can see the reason as well as read it.
+settles is outlined twice in the hint's color, and the dot itself is
+ringed in the same color. The square opposite the dot — which gets its
+arrow at the same time, as always — is outlined once, since it comes
+along rather than being what the hint is telling you about. Squares the
+argument reasons *from* — how far a galaxy can still stretch, the piece
+that has been cut off from its dot, the partner across a dot — are
+outlined in a second color, so you can see the reason as well as read
+it. None of these marks is a fill: a square's color is the dot it
+belongs to, which is exactly what the hint is reasoning about.
 
 One of the things it looks for is the same thing the drag rings show
 you: when only one dot could possibly own a square — every other dot

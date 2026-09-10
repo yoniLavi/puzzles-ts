@@ -124,7 +124,7 @@ describe("salad hint — the three signature techniques", () => {
     // The standing bar: no "just because" fallback (docs/games/solver-and-generator.md § "Guess-free generation"). Every
     // narration must match one of the arms the game knows how to say.
     const KNOWN =
-      /(sees [A-C1-9] first|empty squares?, so every other|so every other square in it must be empty|empty-square mark is the only one left|no (letter|number) can still go here|cannot be one of the empty ones|cross out their empty-square marks|ruled out in this square|can go in only this square|together, only|There's already|already accounts for|Following a chain|Start by penciling|Now clear the easy ones)/;
+      /(sees [A-C1-9] first|empty squares?, so every other|so every other square in it must be empty|empty-square mark is the only one left|no (letter|number) can still go here|can't be empty: it must hold|cross out (?:their|its) empty-square marks?|ruled out in this square|can go in only this square|together, only|There's already|already accounts? for|Following a chain|Start by penciling|Now clear the easy ones)/;
     for (const p of [LETTERS, NUMBERS, { ...LETTERS, diff: DIFF_HARD }]) {
       for (const t of walk(p, "bar-1").texts) {
         expect(t, `unnamed technique: ${t}`).toMatch(KNOWN);
@@ -223,7 +223,7 @@ describe("salad hint — narration arms", () => {
       "Working through this square's row and column together, no letter can still go here, so it must be empty.",
     );
     expect(narrate({ kind: "forcedCircle" }, [], s)).toBe(
-      "Working through this square's row and column together, this square cannot be one of the empty ones, so it must hold a letter, even though we don't know which yet.",
+      "Working through this square's row and column together, it can't be empty: it must hold a letter, though not yet which.",
     );
   });
 

@@ -47,7 +47,7 @@ function breachClause(breach: BoatsBreach): string {
     case "fleetTotal":
       return breach.tooMany
         ? "there would be more boat squares than the whole fleet has"
-        : "too little open water would be left to fit the rest of the fleet";
+        : "the rest of the fleet would no longer fit";
     case "clue":
       return "a given segment's own shape would be contradicted";
     case "unfinishable":
@@ -83,13 +83,19 @@ export const say = {
   // nonsense, and a 0 line is the common case worth its own sentence.
   lineSatisfied: (t: T<"lineSatisfied">): string =>
     t.line.clue === 0
-      ? `${lineIntro(t.line)}${lineName(t.line)}'s number is 0, so every square in it must be water.`
-      : `${lineIntro(t.line)}${lineName(t.line)} already shows the ${t.line.clue} ship${plural(t.line.clue)} its number allows, so every remaining square in it must be water.`,
+      ? `${lineName(t.line)}'s ${t.line.deduced ? "hidden number can only be" : "number is"} 0, so every square in it must be water.`
+      : t.line.deduced
+        ? `${lineName(t.line)}'s hidden number can only be ${t.line.clue}, and it already has that many boat squares, so the rest must be water.`
+        : `${lineName(t.line)} already has the ${t.line.clue} boat square${plural(t.line.clue)} its number allows, so every remaining square in it must be water.`,
 
   lineForced: (t: T<"lineForced">, ships: number): string =>
     ships === 1
-      ? `${lineIntro(t.line)}${lineName(t.line)} still needs one more ship and has just one free square left, so that square must hold a boat segment.`
-      : `${lineIntro(t.line)}${lineName(t.line)} still needs ${ships} more ships and has only ${ships} free squares left, so every one of them must hold a boat segment.`,
+      ? t.line.deduced
+        ? `${lineName(t.line)}'s hidden number can only be ${t.line.clue}, so its one free square must hold a boat segment.`
+        : `${lineName(t.line)} still needs one more boat square and has just one free square left, so that square must hold a boat segment.`
+      : t.line.deduced
+        ? `${lineName(t.line)}'s hidden number can only be ${t.line.clue}, so all ${ships} of its free squares must hold boat segments.`
+        : `${lineName(t.line)} still needs ${ships} more boat squares and has only ${ships} free squares left, so each must hold a boat segment.`,
 
   allWaterPlaced:
     "Every square of water the puzzle has room for is already marked, so every square still free must hold a boat segment.",
@@ -100,15 +106,17 @@ export const say = {
       : "This middle segment has water above or below it, so its boat must lie across, through the squares either side.",
 
   isolated:
-    "Every 1-boat is already placed, and this square is walled in by water on all four sides, so it must be water.",
+    "Every 1-boat is already placed, and water or the board's edge surrounds this square, so it must be water.",
 
   mustExtend:
-    "With every 1-boat already placed, this segment can't stand alone, and water blocks three sides, so its boat must continue here.",
+    "Every 1-boat is placed, and water or the edge closes three sides, so this segment's boat must continue here.",
 
   centerCount: (t: T<"centerCount">): string => {
-    const room = t.line.clue;
-    const lie = t.vertical ? "lying across" : "standing up through";
-    return `${lineIntro(t.line)}${lineName(t.line)} has ${room === 0 ? "no room for another ship" : "room for only one more ship"}, but a boat ${lie} this middle segment needs two, so it can't go that way.`;
+    const way = t.vertical ? "across" : "up and down";
+    const room = t.room === 0 ? "no more boat squares" : "only one more boat square";
+    return t.line.deduced
+      ? `${lineName(t.line)}'s hidden number, ${t.line.clue}, leaves room for ${room}, so a boat can't run ${way} through here.`
+      : `${lineName(t.line)} has room for ${room}, so a boat can't run ${way} through this middle segment.`;
   },
 
   growTooLong: (t: T<"growTooLong">): string =>

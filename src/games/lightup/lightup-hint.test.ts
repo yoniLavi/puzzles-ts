@@ -113,7 +113,7 @@ describe("narration", () => {
       const steps = planSteps(freshState(params, seed));
       for (const step of steps) {
         expect(step.explanation).toMatch(
-          /must (hold a bulb|be a bulb|be crossed out|all be crossed out)/,
+          /must (hold a bulb|be a bulb)|can't hold a bulb/,
         );
         const hl = step.highlights;
         if (!hl) throw new Error("step without highlights");

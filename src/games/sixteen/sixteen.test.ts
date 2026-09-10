@@ -820,14 +820,14 @@ describe("Sixteen hint", () => {
     // Tile 7's journey ends at index 1 (its home is index 6), so the
     // first leg carries the "(setting up)" why for the whole journey.
     expect(step1.explanation).toBe(
-      "Working on tile 7: move it to row 1, then column 2 (setting up)",
+      "Working on tile 7: move it to row 1, then column 2 (setting up).",
     );
     expect(hl1.ultimatePos).toBe(1);
 
     // (b) journey continuity: the second leg narrates tile 7's journey
     // and is flagged so the midend keeps it displayed when leg 1
     // completes (the journey was presented as one hint).
-    expect(step2.explanation).toBe("Working on tile 7: then to column 2");
+    expect(step2.explanation).toBe("Working on tile 7: then to column 2.");
     expect(hl2.tile).toBe(7);
     expect(hl2.targetPos).toBe(1);
     expect(step2.continuesPrevious).toBe(true);

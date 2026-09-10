@@ -8,5 +8,5 @@ import { COLOR_NAMES } from "./render.ts";
 
 export const say = {
   fill: (color: number): string =>
-    `Fill with ${COLOR_NAMES[color] ?? `color ${color}`}`,
+    `Fill with ${COLOR_NAMES[color] ?? `color ${color}`}.`,
 };

@@ -17,12 +17,12 @@ function monsterName(bit: number): string {
 
 /** Human list of the monsters in a bitmask: "ghost", "ghost or vampire",
  * "ghost, vampire or zombie". */
-function joinMonsters(bits: number): string {
+function joinMonsters(bits: number, conj: "or" | "and" = "or"): string {
   const names: string[] = [];
   for (const b of [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE])
     if (bits & b) names.push(monsterName(b));
   if (names.length <= 1) return names[0] ?? "";
-  return `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
+  return `${names.slice(0, -1).join(", ")} ${conj} ${names[names.length - 1]}`;
 }
 
 export const say = {
@@ -33,20 +33,22 @@ export const say = {
 
   /** A later cell of the same sightline firing. */
   sightlineNext: (bits: number): string =>
-    `The same sightline rules the ${joinMonsters(bits)} out of this cell too.`,
+    `The same sightline rules the ${joinMonsters(bits, "and")} out of this cell too.`,
 
   // Which monster shows where is the game's rule, and the help teaches it
   // (help/games/undead.md); the step says only what this sightline's two
   // clues decide (docs/games/hints.md § "Rules belong in the help").
   /** The sightline's clues `a` and `b` leave no room for `bits` here. */
   sightline: (a: number, b: number, bits: number): string => {
-    const list = joinMonsters(bits);
-    return `This sightline's ${a} and ${b} leave no room for a ${list} here, so we must cross out the ${list}.`;
+    const kinds = [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE].filter((m) => bits & m).length;
+    const them =
+      kinds === 1 ? `the ${joinMonsters(bits)}` : kinds === 2 ? "both" : "all three";
+    return `This sightline's ${a} and ${b} leave no room for a ${joinMonsters(bits)} here, so we must cross out ${them}.`;
   },
 
   total: (monster: number): string => {
     const name = monsterName(monster);
-    return `Every ${name} is already placed, so no undecided cell can be one; we must cross out the ${name} here.`;
+    return `No ${name}s are left to place, so no undecided cell can be one; we must cross out the ${name} here.`;
   },
 
   onlyCells: (monster: number): string => {

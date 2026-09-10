@@ -101,7 +101,7 @@ export type SaladReason =
   | { kind: "forcedCircle" }
   /** Tidy-up leg: squares just settled as holding a symbol keep no
    * "might be empty" mark. */
-  | { kind: "circleXNote" }
+  | { kind: "circleXNote"; count: number }
   | SingleReason
   | { kind: "dup"; n: number; px: number; py: number }
   | { kind: "set" }
@@ -172,7 +172,7 @@ export function narrate(
     case "forcedCircle":
       return text.forcedCircle;
     case "circleXNote":
-      return text.circleXNote;
+      return text.circleXNote(reason.count);
     case "repeatFull":
       return text.repeatFull(reason.line, reason.times);
     default:
@@ -510,7 +510,8 @@ function pushMarkers(b: Builder, f: MarkerFiring): void {
     if (f.mark === "cross") w.pencil[i] = 0;
     else if (w.pencil[i] & xbit) tidy.push({ x: c.x, y: c.y, n: nums + 1 });
   });
-  if (tidy.length > 0) pushStrike(b, tidy, { kind: "circleXNote" }, true);
+  if (tidy.length > 0)
+    pushStrike(b, tidy, { kind: "circleXNote", count: tidy.length }, true);
 }
 
 /**

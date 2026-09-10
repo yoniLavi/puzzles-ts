@@ -407,14 +407,14 @@ function hiddenSingleFrame(p: KeenParams): string {
 
 describe("keen hint render", () => {
   it("a cage elimination shades the cage and strikes the candidate", () => {
-    const id = cageStrikeFrame(NORMAL, (e) => /leaves room for/.test(e));
+    const id = cageStrikeFrame(NORMAL, (e) => /No way to make this cage/.test(e));
     const { recording, hint } = renderScenario({
       game: keenGame,
       id,
       defaultBackground: DEFAULT_BACKGROUND,
       moves: [{ type: "pencilAll" }],
       showHint: true,
-      hintUntil: (s) => /leaves room for/.test(s.explanation),
+      hintUntil: (s) => /No way to make this cage/.test(s.explanation),
     });
     expect(hint?.explanation).toMatch(/this cage/);
     // The cage's cells are shaded COL_HINT_CELL evidence.

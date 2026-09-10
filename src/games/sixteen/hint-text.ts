@@ -43,6 +43,6 @@ export const say = {
       : p.home
         ? ", its final spot"
         : ` ${HINT_SETTING_UP}`;
-    return `${workingOn(p.tile)}${tactic}${suffix}`;
+    return `${workingOn(p.tile)}${tactic}${suffix}.`;
   },
 };

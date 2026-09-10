@@ -522,7 +522,7 @@ function narrate(reason: SoloReason, ns: number[]): string {
     case "set":
       return say.set(reason.region, ns);
     case "forcing":
-      return say.forcing(reason, ns[0], reason.shares);
+      return say.forcing(reason, ns[0], reason.shares, reason.lastShares);
     case "cageSingle":
       return say.cageSingle(ns[0]);
     case "cageIntersect":

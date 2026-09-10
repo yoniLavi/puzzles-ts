@@ -259,21 +259,21 @@ describe("Sixteen midend integration — hint persistence", () => {
     };
     expect(h.m.hint()).toBeUndefined();
     expect(banner()).toBe(
-      "Working on tile 6: move it to column 4, then row 2 (setting up)",
+      "Working on tile 6: move it to column 4, then row 2 (setting up).",
     );
 
     // Leg 1: slide row 0 left by 1 (cursor at (0,0), shift+left).
     h.m.processInput(0, 0, CURSOR_SELECT);
     h.m.processInput(0, 0, 0x2000 | CURSOR_LEFT);
     // The journey continues: leg 2 is displayed without a new request.
-    expect(banner()).toBe("Working on tile 6: then to row 2, then column 5");
+    expect(banner()).toBe("Working on tile 6: then to row 2, then column 5.");
 
     // Leg 2: slide column 3 down by 1 (cursor right ×3, shift+down).
     h.m.processInput(0, 0, CURSOR_RIGHT);
     h.m.processInput(0, 0, CURSOR_RIGHT);
     h.m.processInput(0, 0, CURSOR_RIGHT);
     h.m.processInput(0, 0, 0x2000 | CURSOR_DOWN);
-    expect(banner()).toBe("Working on tile 6: then to column 5");
+    expect(banner()).toBe("Working on tile 6: then to column 5.");
 
     // Leg 3 ends the journey: slide row 1 right by 1.
     h.m.processInput(0, 0, CURSOR_DOWN);
