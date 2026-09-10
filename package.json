@@ -69,7 +69,7 @@
     "vite": "^8.2.0",
     "vite-plugin-pwa": "^1.2.0",
     "vite-plugin-sitemap": "^0.8.2",
-    "vitest": "^4.1.6",
+    "vitest": "^4.1.11",
     "workbox-core": "^7.3.0",
     "workbox-precaching": "^7.3.0",
     "workbox-window": "^7.3.0"
