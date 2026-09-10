@@ -434,10 +434,18 @@ walk is deliberately *not* shared — see
 
 Re-derives whether a recorded `single` is **naked**, **hidden**, or **forced**
 from the working board, so no Latin game narrates "every other number has been
-ruled out in this cell" at a cell visibly holding several candidates. Includes
-`narrateLatinReason` for the row/column games whose generic-arm wording is
-verbatim-identical (normative rule: the `ts-engine` "shared narrator"
-requirement).
+ruled out in this cell" at a cell visibly holding several candidates. The
+sentences it classifies for are `hint-text.ts`'s.
+
+### `hint-text.ts` — the sentences several games share
+
+The engine's half of the hint-text convention (a game's own sentences are its
+`hint-text.ts`): `narrateLatinReason` for the row/column games whose
+generic-arm wording is verbatim-identical (normative rule: the `ts-engine`
+"shared narrator" requirement), `narrateForcingChain`, the candidate games'
+`populateText`/`cleanObviousText`, the `LatinVocab` a value is spoken in, and
+the English list joiners `joinNums`/`joinWith`. Nothing in it decides which
+sentence fires. See [`hints.md`](./hints.md) § "Keep the narration terse".
 
 ### `hint-vocab.ts` — sliding-tile goal vocabulary
 

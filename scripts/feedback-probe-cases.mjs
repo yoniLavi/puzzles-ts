@@ -752,12 +752,6 @@ export const MODULES = [
         replace: "  const autoClean = ui?.autoPencil ?? true;",
       },
       {
-        within: "joinNums",
-        why: "a two-value list narrates as “1, 2” with no “and”",
-        find: "  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;",
-        replace: "  if (ns.length === 2) return `${ns[0]}, ${ns[1]}`;",
-      },
-      {
         within: "nakedSingle",
         why: "a cell with two candidates left is announced as a forced single",
         find: "    if ((pencil[i] & (pencil[i] - 1)) !== 0) continue; // more than one bit set",
@@ -915,6 +909,22 @@ export const MODULES = [
         find: "  return adapter ?? (typeKeyedCandidateMoves as unknown as CandidateMoveAdapter<M>);",
         replace:
           "  return typeKeyedCandidateMoves as unknown as CandidateMoveAdapter<M>;",
+      },
+    ],
+  },
+
+  {
+    // The sentences several games speak word for word, moved out of
+    // `candidate-hint.ts` and `latin-hint.ts` by `extract-hint-strings`. Its own
+    // tests are the engine hint suites that pin those sentences, so both cases
+    // keep asking the files they asked before the move.
+    module: "src/engine/hint-text.ts",
+    cases: [
+      {
+        within: "joinNums",
+        why: "a two-value list narrates as “1, 2” with no “and”",
+        find: "  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;",
+        replace: "  if (ns.length === 2) return `${ns[0]}, ${ns[1]}`;",
       },
       {
         within: "populateText",

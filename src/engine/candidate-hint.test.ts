@@ -6,11 +6,9 @@ import {
   type CandidateMove,
   type CandidateMoveAdapter,
   candidateHint,
-  cleanObviousText,
   emitObviousCleanStep,
   findRegionDuplicate,
   firstUnreflectedPlaceIndex,
-  joinNums,
   keepCandidateHintTrack,
   lazyPopulate,
   type Mark,
@@ -19,12 +17,12 @@ import {
   nextStrike,
   obviousCandidateMarks,
   populateStep,
-  populateText,
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "./candidate-hint.ts";
 import type { HintStep } from "./game.ts";
 import { ALREADY_SOLVED, DEDUCTION_EXHAUSTED } from "./hint-refusal.ts";
+import { cleanObviousText, joinNums, populateText } from "./hint-text.ts";
 import type { DeductionRecord } from "./latin.ts";
 import { rowColRegions } from "./latin-hint.ts";
 

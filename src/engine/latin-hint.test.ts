@@ -4,11 +4,11 @@
  * (the generic `latin.ts` solver records all three under one `single` reason).
  */
 import { describe, expect, it } from "vitest";
+import { narrateLatinReason } from "./hint-text.ts";
 import {
   classifyPlacement,
   classifyPlacementInRegions,
   hiddenSingleLine,
-  narrateLatinReason,
   singlePlacementReason,
 } from "./latin-hint.ts";
 

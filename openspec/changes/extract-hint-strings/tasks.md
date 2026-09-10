@@ -6,15 +6,29 @@ sentence changes.
 
 ## 1. Decide the shape
 
-- [ ] 1.1 Derive the population by shape, not by name: every function a
+- [x] 1.1 Derive the population by shape, not by name: every function a
       `hint()` narration flows through, engine modules included. A scan keyed
       on `narrate` will miss games whose narration is named otherwise
       (`AGENTS.md` § "A scan that keys on a name").
-- [ ] 1.2 Pick the catalog form (typed per-game modules recommended) and show
+      Keyed on what a step *is* rather than what code is called: a census
+      reads `step.explanation` from every `hint()` the registry declares, every
+      tier (or every preset, untiered), three seeds, thirty plans deep. 2026-09-10:
+      **31 games, 16,059 steps, 2,382 distinct sentences, 32 refusals.** The
+      source side, a sentence-literal grep, adds the two engine modules
+      (`latin-hint.ts`, `candidate-hint.ts`); `hint-refusal.ts` is already one
+      file of strings and stays as it is.
+- [x] 1.2 Pick the catalog form (typed per-game modules recommended) and show
       that it expresses the hardest arms without loss: Salad's border clues,
       the Latin chain, Light Up's quantified discount, Singles' offset.
-- [ ] 1.3 Pilot on one game end to end, and measure the diff against a pure
-      move.
+      Typed modules: `src/games/<id>/hint-text.ts` exporting `say`, a string
+      per fixed sentence and a typed function per templated one, taking values
+      as the board means them (an axis, a count, a direction) and choosing
+      every word itself. All four hard cases are "values in, sentence out"
+      already; none needs anything a function cannot say.
+- [x] 1.3 Pilot on one game end to end, and measure the diff against a pure
+      move. Tracks: +136 −86 over two files, all 374 census steps byte-identical,
+      and all 58 literal runs on removed lines re-added (a scratch diff check,
+      shown to fail on a one-word change before it was trusted).
 
 ## 2. Make the length guard static
 

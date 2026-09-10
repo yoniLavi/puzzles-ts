@@ -38,7 +38,6 @@ import {
   type CandidateMoveAdapter,
   type Cell,
   candidateHint,
-  cleanObviousText,
   emitObviousCleanStep,
   keepCandidateHintTrack,
   type Mark,
@@ -51,14 +50,17 @@ import {
 } from "../../engine/candidate-hint.ts";
 import type { DeductionRecord } from "../../engine/deduction-record.ts";
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
+import {
+  cleanObviousText,
+  joinWith,
+  type LatinVocab,
+  narrateLatinReason,
+} from "../../engine/hint-text.ts";
 import type { LatinRepeatReason } from "../../engine/latin.ts";
 import {
   type ForcingLink,
   forcingChainArea,
   hiddenSingleLine,
-  joinWith,
-  type LatinVocab,
-  narrateLatinReason,
   rowColRegions,
   type SingleReason,
   singlePlacementReason,

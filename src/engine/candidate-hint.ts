@@ -145,14 +145,6 @@ export function candidateHint<State extends { completed: boolean }, Move, Hint>(
   return { ok: true, steps };
 }
 
-/** Join a value list for narration: `[3]`→"3", `[1,2]`→"1 and 2",
- * `[1,2,3]`→"1, 2 and 3". */
-export function joinNums(ns: number[]): string {
-  if (ns.length <= 1) return `${ns[0] ?? ""}`;
-  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;
-  return `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`;
-}
-
 /** A naked single in the working notes: the first empty cell whose pencil set has
  * exactly one candidate. On a mistake-free board that lone candidate is the
  * solution, so placing it is sound — and it is the move a human makes next, so the
@@ -385,33 +377,6 @@ export function obviousCandidateMarks(
     for (let n = 1; n <= values; n++) if (removable & bit(n)) marks.push({ x, y, n });
   }
   return marks;
-}
-
-/** Narration for the populate opener — shared verbatim across the candidate
- * games modulo the game's own noun ("number", "height", …). Undead's opener
- * ("penciling every monster into…") is structurally different and stays
- * game-local. */
-export function populateText(noun: string, cell = "cell"): string {
-  return `Start by penciling every candidate ${noun} into each empty ${cell}, so there is something to cross out.`;
-}
-
-/** Narration for the obvious-cleanup step, parameterized by the game's noun,
- * its placement verb ("standing", "placed"), its region phrase ("row or
- * column", "row, column or block") — and what it calls a board position, which
- * defaults to "cell" but is Salad's "square" (see {@link populateText}: the two
- * setup strings and the generic narration arms must agree, or one game's hints
- * read in two vocabularies). */
-export function cleanObviousText(
-  noun: string,
-  placedVerb: string,
-  regions: string,
-  cell = "cell",
-): string {
-  // The "fill all pencil marks" button does this same cleanup, and the help
-  // says so (help/features.md); repeating it on every such step was the
-  // rulebook-in-the-step shape docs/games/hints.md § "Rules belong in the help"
-  // retires.
-  return `Now clear the easy ones: cross out any ${noun} already ${placedVerb} in each ${cell}'s ${regions}.`;
 }
 
 /** The populate/mark-all opener step. It deliberately declares **no board

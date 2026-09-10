@@ -2515,7 +2515,7 @@ strings — is `candidateHint(state, ui, findMistakes, buildSteps)`; every
 candidate game's `hint` is a one-line call to it. (b) The *generic Latin
 reason* narration arms (`single` / `hiddenSingle` / `forcedSingle` / `dup` /
 `set` / `forcing`) read byte-identically across the **row/column** Latin
-games, so `narrateLatinReason(reason, ns)` in `latin-hint.ts` owns them; Keen
+games, so `narrateLatinReason(reason, ns)` in `hint-text.ts` owns them; Keen
 and Unequal narrate their game-specific arms then
 `default: return narrateLatinReason(reason, ns)`. **Solo and Towers keep
 their own `narrate`** — Solo's generic arms name "row, column **and block**",

@@ -13,15 +13,12 @@ import { assertNever } from "../../engine/assert-never.ts";
 import {
   adaptiveMarkAllMove,
   candidateHint,
-  cleanObviousText,
   emitObviousCleanStep,
   firstUnreflectedPlaceIndex,
-  joinNums,
   keepCandidateHintTrack,
   lazyPopulate,
   nakedSingle,
   nextPlace,
-  populateText,
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
@@ -37,12 +34,17 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import {
+  cleanObviousText,
+  joinNums,
+  narrateLatinReason,
+  populateText,
+} from "../../engine/hint-text.ts";
 import { clearKey } from "../../engine/key-labels.ts";
 import { latinVerdict } from "../../engine/latin.ts";
 import {
   forcingChainArea,
   hiddenSingleLine,
-  narrateLatinReason,
   rowColRegions,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";

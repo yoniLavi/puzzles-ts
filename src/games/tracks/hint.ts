@@ -23,6 +23,7 @@ import {
   PUZZLE_NOT_REASONABLE,
 } from "../../engine/hint-refusal.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
+import { type Axis, say } from "./hint-text.ts";
 import { type TracksFiring, type TracksReason, tracksRecordingPass } from "./solver.ts";
 import {
   type Board,
@@ -91,28 +92,14 @@ export interface TracksHighlights {
   clues: number[];
 }
 
-// --- naming things the player can see -------------------------------------
-
-/** Where a neighbor sits, as in "none above" / "none to the left". */
-function towards(dir: number): string {
-  if (dir === U) return "above";
-  if (dir === D) return "below";
-  return dir === L ? "to the left" : "to the right";
-}
-
-/** Which way a track carries on, as in "carry on upward". */
-function onward(dir: number): string {
-  if (dir === U) return "upward";
-  if (dir === D) return "downward";
-  return dir === L ? "to the left" : "to the right";
-}
+// --- narration ------------------------------------------------------------
 
 /** Read a line's clue index back into orientation, length and target. */
 function lineOf(b: Board, line: number) {
   const isCol = line < b.w;
   return {
     isCol,
-    axis: isCol ? "column" : "row",
+    axis: (isCol ? "column" : "row") as Axis,
     /** How many squares the line holds. */
     len: isCol ? b.h : b.w,
     /** How many of them carry track. */
@@ -120,14 +107,9 @@ function lineOf(b: Board, line: number) {
   };
 }
 
-const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
-
-// --- narration ------------------------------------------------------------
-
 /**
- * One sentence per premise, in the arc the guide asks for: **indication**
- * (the board pattern that fired it) then **reasoning** then **conclusion** in
- * the necessity voice.
+ * Which sentence a firing speaks, and with what values: the deduction's half of
+ * the narration. The words are [`hint-text.ts`](./hint-text.ts)'s.
  *
  * Seven rungs are represented here and the eighth, `check-single`, is not: it
  * fires on no board this generator produces, so narrating it would be prose
@@ -137,88 +119,45 @@ const plural = (n: number, one: string, many: string): string => (n === 1 ? one 
 export function narrate(b: Board, reason: TracksReason): string {
   switch (reason.kind) {
     case "onlyOneSideLeft":
-      return reason.open === 0
-        ? "Every side of this square is blocked, so no track can reach it: it must be empty."
-        : "Only one side of this square is still open, and track needs two, so it must be empty.";
-
+      return say.onlyOneSideLeft(reason.open);
     case "bothSidesLeft":
-      return "This square carries a track with only two of its sides still open, so there's only one way for it to go.";
-
+      return say.bothSidesLeft;
     case "clueFull": {
       const { axis, target } = lineOf(b, reason.line);
-      if (target === 0) {
-        return `This ${axis}'s clue is 0, so no track can run along it at all: every square in it must be empty.`;
-      }
-      const has =
-        target === 1
-          ? "the one track square its clue allows"
-          : target === 2
-            ? "both of the track squares its clue allows"
-            : `all ${target} of the track squares its clue allows`;
-      return `This ${axis} already has ${has}, so every other square in it must be empty.`;
+      return say.clueFull(axis, target);
     }
-
     case "clueExact": {
       const { axis, target, len } = lineOf(b, reason.line);
-      const room = len - target;
-      if (room === 0) {
-        return `This ${axis}'s clue is ${target} and it is ${len} squares long, so every square in it must carry track.`;
-      }
-      const marked = plural(room, "it is already marked", "they are already marked");
-      return `This ${axis} can leave only ${room} ${plural(room, "square", "squares")} empty and ${marked}, so every other square in it must carry track.`;
+      return say.clueExact(axis, target, len);
     }
-
     case "wouldCloseLoop":
-      return "The outlined track already joins these two squares, so linking them here would close a loop; this side must be blocked.";
-
+      return say.wouldCloseLoop;
     case "wouldStrandTrack":
-      return "Joining here would link A's run to B's and finish the track, stranding the outlined track; this side must be blocked.";
-
+      return say.wouldStrandTrack;
     case "wouldFinishEarly": {
       const { axis, target } = lineOf(b, reason.unmet);
-      const laid = reason.ev.cells.length;
-      return `Joining here would link A's run to B's and finish the track, but the highlighted ${axis} clue wants ${target} and has ${laid}; this side must be blocked.`;
+      return say.wouldFinishEarly(axis, target, reason.ev.cells.length);
     }
-
     case "looseEndsFill": {
       const { axis, target } = lineOf(b, reason.line);
-      return `The outlined squares already fill this ${axis}'s clue of ${target}, so this loose end can't carry on along it: that side must be blocked.`;
+      return say.looseEndsFill(axis, target);
     }
-
-    case "looseEndSpans": {
-      const { axis } = lineOf(b, reason.line);
-      // "No way across it": every unfinished square has a side blocked across
-      // the line, which is what the outlined squares and their bars show.
-      return `With two track squares left in this ${axis} and no way across it, this loose end must run straight on.`;
-    }
-
+    case "looseEndSpans":
+      return say.looseEndSpans(lineOf(b, reason.line).axis);
     case "sharedFate": {
       const { axis } = lineOf(b, reason.line);
-      const there = onward(reason.dir);
-      if (reason.fills && reason.empties) {
-        return `Track here would have to carry on ${there}, and this ${axis} has one track square and one empty left, so this must therefore be empty, and the next must carry track.`;
-      }
-      if (reason.fills) {
-        return `Track here would have to carry on ${there}, but this ${axis} has room for one more track square, so this must be empty.`;
-      }
-      const back = towards(
-        reason.dir === U ? D : reason.dir === D ? U : reason.dir === L ? R : L,
+      const { dir } = reason;
+      if (reason.fills && reason.empties) return say.sharedFateBoth(axis, dir);
+      if (reason.fills) return say.sharedFateFills(axis, dir);
+      return say.sharedFateEmpties(
+        axis,
+        dir === U ? D : dir === D ? U : dir === L ? R : L,
       );
-      return `No track here would mean none ${back} either, and this ${axis} can spare just one more empty, so this must carry track.`;
     }
-
-    case "crossingParity": {
-      const { crossings } = reason;
-      // "Every entry needs an exit" is the parity argument in the player's
-      // terms: the track begins and ends off the board, so it crosses any
-      // closed block's border an even number of times.
-      const marked =
-        crossings === 0
-          ? "none marked yet"
-          : `${crossings} ${plural(crossings, "crossing", "crossings")} marked`;
-      const verdict = crossings % 2 === 1 ? "carry track" : "be blocked";
-      return `Every time the track enters the outlined block it must leave; with ${marked}, this last side must ${verdict}.`;
-    }
+    case "crossingParity":
+      // The track crosses a closed block's border an even number of times, so
+      // an odd count so far means the last side must carry it.
+      return say.crossingParity(reason.crossings, reason.crossings % 2 === 1);
   }
 }
 

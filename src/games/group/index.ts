@@ -14,7 +14,6 @@ import {
   adaptiveMarkAllMove,
   type CandidateMoveAdapter,
   candidateHint,
-  cleanObviousText,
   emitObviousCleanStep,
   firstUnreflectedPlaceIndex,
   keepCandidateHintTrack,
@@ -22,7 +21,6 @@ import {
   nakedSingle,
   nextPlace,
   nextStrike,
-  populateText,
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
@@ -37,13 +35,17 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import {
+  cleanObviousText,
+  type LatinVocab,
+  narrateLatinReason,
+  populateText,
+} from "../../engine/hint-text.ts";
 import { clearKey } from "../../engine/key-labels.ts";
 import { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE, latinVerdict } from "../../engine/latin.ts";
 import {
   forcingChainArea,
   hiddenSingleLine,
-  type LatinVocab,
-  narrateLatinReason,
   rowColRegions,
   type SingleReason,
   singlePlacementReason,
