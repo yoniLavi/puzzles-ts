@@ -53,12 +53,12 @@ describe("Tracks render scenarios", () => {
     });
     expect(hint?.explanation.length).toBeGreaterThan(20);
 
-    // The opening firing blocks two sides of a given piece, so its action mark
-    // is the game's own edge cross recolored — a *line*, not a rect. Asserting
-    // "some op carries the action color" rather than "some rect does" is the
-    // point: a rect-only check would read as healthy on a frame whose whole
-    // hint is drawn in lines (docs/games/hints.md § "Echo the move's shape in
-    // the hint color").
+    // Tracks draws two of its three action shapes as *lines* — the rail stubs
+    // for a side that must carry track and the cross for one that must be
+    // blocked — so a step on sides can paint its whole action without a rect.
+    // Hence "some op carries the action color", not "some rect does": a
+    // rect-only check would read as healthy on exactly that frame
+    // (docs/games/hints.md § "Echo the move's shape in the hint color").
     expect(
       recording.ops.some((o) => "color" in o && o.color === COL_HINT),
       "the hint painted nothing in the action color",

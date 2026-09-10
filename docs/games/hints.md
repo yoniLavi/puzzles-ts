@@ -586,6 +586,65 @@ inherits two smells (owner-flagged on Spokes):
 The distinction from cognitive load: that's about a single hint being too much
 to *read*; this is about the *plan* offering moves not worth reading at all.
 
+### Show only what the board does not already say
+
+**A step must tell the player something their board does not already show.**
+The rule above found its first instance in Spokes and its second in Galaxies,
+each hand-built; Tracks shipped without it and the owner's first playtest found
+it at once — *"The track already enters and leaves this square, so … both must
+be blocked"*, about two sides the player had closed off themselves by marking
+the squares beyond them empty. Measured, that one premise was **a third of every
+plan (671 of 2,059 steps) and redundant every single time it fired.** Three
+games needing the same filter is the layer below being wrong, so it lives there
+now: [`deduceHintPlan`](../../src/engine/hint-plan.ts)'s `showable(board,
+firing)`.
+
+A firing that is not showable **still advances the working board** — it is a
+real deduction and later firings may rest on it — but it becomes no step, and
+the plan cap counts shown steps only, so a run of hidden firings can never turn
+into a refusal (Galaxies' shipped bug, now closed structurally rather than by a
+second cap each game has to remember). The result's `hidden` count is what a
+test reads to prove its corpus exercised the hook at all.
+
+**How to decide what is evident: ask the game's own move legality.** Both
+adopters do, from opposite directions, which is the cheapest honest source
+there is — the UI already encodes what the board decides:
+
+- **Galaxies** hides a firing whose move the game would **refuse** — an arrow
+  inside a region the player has already closed correctly. Sound, and nothing
+  the player could do with it.
+- **Tracks** hides a firing whose **contrary** move the game would refuse —
+  track on a side of a square marked empty, a third side on a finished piece,
+  "no track" on a square showing a rail. If the player cannot make the opposite
+  choice, their board has already made this one.
+
+Two obligations the loop cannot check for you:
+
+- **Hide only what the player can already see.** A later step may cite a hidden
+  firing's conclusion as a premise — Tracks' "only one side of this square is
+  still open" often counts a side that was blocked by a hidden firing. That is
+  honest because the player sees the empty square beside it; it would be a lie
+  if the hidden firing were a real deduction.
+- **Never hide a change the win condition needs**, or following the plan never
+  finishes. `hint-resume.test.ts` catches this one for you.
+
+**Declare where you must, and hold the declaration to a derivation.** Tracks'
+rules that restate the board declare no reason, and a firing with none is
+hidden; `tracks-hint.test.ts` then asserts every such firing is evident by the
+legality test, judged on the board *before* it landed (after, the op's own flag
+makes the contrary look illegal and everything reads as evident), and that the
+production predicate and the legality test agree on every firing in the corpus.
+That is the `canMarkAll` shape from [`testing.md`](./testing.md) § "How a
+cross-game guard finds its population": a flag the code needs synchronously,
+kept honest by a derivation it cannot drift from.
+
+**Not every filter is this shape (Spokes).** Spokes trims *within* a firing — an
+exhaustion firing keeps the rule-outs that reach a hub still needing lines and
+drops the rest — and never applies what it drops, because a mark between two
+finished hubs is never load-bearing. There is nothing to advance, so it filters
+at find time and does not use `showable`. Reach for the hook when the hidden
+firing must still move the board.
+
 ## Engine mechanics
 
 The `Game` hooks and the `Midend` lifecycle are in
@@ -690,11 +749,11 @@ one rung fires" loop beside the runner's:
   narrate* is the same kind of reason as Undead's contradiction and Spokes'
   spent budget. It is checked at the top of an iteration, so the ladder always
   finishes the rung it is in.
-- **`beforeTechnique`** clears the standing reason, which is what makes *a rung
-  that declares no reason narrates nothing* a checked property rather than a
-  hope. Give the recorder a `silent` tally keyed by rung id and assert its keys:
-  Tracks' is exactly `["update-flags"]`, which is also what would catch its
-  never-firing `check-single` rung if that ever changed.
+- **`beforeTechnique`** clears the standing reason, so a rung that declares
+  none comes back with a `null` reason instead of borrowing the previous
+  rung's. Record **every** change as a firing, reason or not, and let the plan
+  loop decide what is worth showing (§ "Show only what the board does not
+  already say") — the recorder should never have to know.
 
 Wrap the two in a `next()` closure and hand it to `deduceHintPlan`. Exemplar:
 `tracksRecordingPass` in [`tracks/solver.ts`](../../src/games/tracks/solver.ts).
@@ -706,8 +765,9 @@ the expensive part.
 ### A rung is not a premise, so return per premise
 
 **One `DeductionTechnique` routinely holds several separate teachable rules, and
-the runner cannot see inside one.** Tracks has 8 rungs and **12** narratable
-premises; `update-flags` alone holds five local rules. A rung that scans the
+the runner cannot see inside one.** Tracks has 8 rungs and **11** narrated
+premises; `update-flags` alone holds five local rules, two of them taught and
+three hidden because the board already shows them. A rung that scans the
 whole grid therefore fires many *independent* deductions in a single `run()`,
 and left alone they all land in one hint step — the exact defect § "Group one
 firing into one step" records from Towers, one level up.
@@ -762,8 +822,9 @@ The shape that works (`tracks-hint.test.ts`):
   narration guard walks *fired* steps, so it has never seen them either.
 
 Do not delete an unreachable arm whose deduction is byte-matched to upstream:
-the deduction stays either way, and without a reason it would start changing the
-player's board *silently* instead.
+the deduction stays either way, and without a reason its firing would be hidden
+from the player instead of taught — which the guards in § "Show only what the
+board does not already say" would then catch, since its conclusion is real.
 
 **A solver that *wipes the board* cannot be replayed as-is (Boats).** A
 recording solver written to run from empty is not automatically resumable;

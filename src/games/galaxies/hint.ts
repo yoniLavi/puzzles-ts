@@ -13,7 +13,7 @@
  *    wall the hint asks for follows from associations already made, so the
  *    plan teaches the reasoning and then cashes it in.
  */
-import { deduceHintPlan } from "../../engine/hint-plan.ts";
+import { deduceHintPlan, type HintPlanResult } from "../../engine/hint-plan.ts";
 import type { HintStep } from "../../engine/index.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { GalaxiesMove } from "./index.ts";
@@ -89,16 +89,13 @@ export interface GalaxiesHint {
  * never be shown. Counting firings let those eat the entire budget on a 15x15
  * (twenty of them in a row, measured on the reported board) and the hint
  * reported "No further move can be deduced" on a board with plenty left.
+ *
+ * That is now `deduceHintPlan`'s own rule — its cap counts shown steps once a
+ * `showable` is given — so this game no longer keeps a second, firing-counting
+ * cap beside it. Termination needs none: every firing decides a cell or a wall,
+ * and the step budget still catches one that does not.
  */
 const PLAN_CAP = 20;
-
-/**
- * Hard bound on firings per call, so a board whose deduction runs a long way
- * before yielding anything showable still terminates promptly. Generous: a
- * 15x15 has 225 cells, and every firing decides at least one cell or wall, so
- * an honest plan cannot approach this.
- */
-const FIRING_CAP = 600;
 
 const EMPTY: Omit<GalaxiesHint, "targets"> = {
   focus: null,
@@ -237,27 +234,27 @@ function planned(s: GalaxiesState, firing: GalaxiesFiring): Planned {
   }
 }
 
-/** Deduce as far as the plan cap allows, from the player's own board. */
-export function galaxiesHintPlan(state: GalaxiesState): Planned[] {
+/** Deduce as far as the plan cap allows, from the player's own board. `plan`
+ * holds only showable firings; `hidden` counts the ones that advanced the
+ * board without being shown. */
+export function galaxiesHintPlan(
+  state: GalaxiesState,
+): HintPlanResult<Planned, string> {
   const board = cloneState(state);
-  let showable = 0;
-  return deduceHintPlan<GalaxiesState, Planned, "solved" | "unfinished">({
+  return deduceHintPlan<GalaxiesState, Planned, string>({
     board,
     status: (b) => (checkComplete(b, false).complete ? "solved" : "unfinished"),
     incomplete: "unfinished",
     // The rungs mutate as they detect, so there is no `apply` — re-applying a
     // firing that has already been made would be wrong, not just redundant.
     next: (b) => {
-      if (showable >= PLAN_CAP) return null;
       const firing = nextPlanFiring(b);
-      if (!firing) return null;
-      const p = planned(b, firing);
-      if (p.showable) showable++;
-      return p;
+      return firing ? planned(b, firing) : null;
     },
-    planCap: FIRING_CAP,
+    showable: (_b, p) => p.showable,
+    planCap: PLAN_CAP,
     budget: stepBudget("galaxies hint"),
-  }).plan;
+  });
 }
 
 // --- narration --------------------------------------------------------
@@ -480,13 +477,11 @@ export function moveOf(firing: GalaxiesFiring): GalaxiesMove {
 export function galaxiesHintSteps(
   state: GalaxiesState,
 ): HintStep<GalaxiesMove, GalaxiesHint>[] {
-  return galaxiesHintPlan(state)
-    .filter((p) => p.showable)
-    .map((p) => ({
-      move: moveOf(p.firing),
-      explanation: narrate(state, p.firing),
-      highlights: highlightsOf(p.firing),
-    }));
+  return galaxiesHintPlan(state).plan.map((p) => ({
+    move: moveOf(p.firing),
+    explanation: narrate(state, p.firing),
+    highlights: highlightsOf(p.firing),
+  }));
 }
 
 // --- following the plan -----------------------------------------------

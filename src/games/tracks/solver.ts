@@ -99,17 +99,17 @@ const evEdge = (w: number, x: number, y: number, d: number): number =>
  * projection rather than the rung id its `FiringTally` already reports.
  *
  * One variant per narratable **premise**, not one per rung: `update-flags` is a
- * single technique holding three separate teachable rules, plus two that only
- * restate what the board already draws and so record nothing.
- * `check-single` has no variant because it fires on no board this generator
- * produces (`tracks-ladder.test.ts`'s `unreached` ledger); it stays in the
- * ladder and changes the board silently, and `tracks-hint.test.ts` asserts that
- * it never does.
+ * single technique holding two teachable rules and three that only restate what
+ * the board already draws. Those three, and `check-single` (which fires on no
+ * board this generator produces — `tracks-ladder.test.ts`'s `unreached`
+ * ledger), declare no reason: their firings come back with a `null` one and the
+ * plan hides them. `tracks-hint.test.ts` holds every such firing to being
+ * evident on the player's board, so the list of reason-less rules is a
+ * declaration checked against a derivation rather than a roster that can rot.
  */
 export type TracksReason = { ev: TracksEvidence } & (
   | { kind: "onlyOneSideLeft"; x: number; y: number; open: number }
   | { kind: "bothSidesLeft"; x: number; y: number }
-  | { kind: "trackComplete"; x: number; y: number }
   | { kind: "clueFull"; line: number }
   | { kind: "clueExact"; line: number }
   | { kind: "wouldCloseLoop"; x: number; y: number; dir: number }
@@ -129,9 +129,10 @@ export type TracksReason = { ev: TracksEvidence } & (
   | { kind: "crossingParity"; x: number; y: number; dir: number; crossings: number }
 );
 
-/** One narratable firing: the premise, and the flag changes it forced. */
+/** One firing: the flag changes it forced, and the premise that forced them —
+ * `null` for a rule that restates what the board already shows. */
 export interface TracksFiring {
-  reason: TracksReason;
+  reason: TracksReason | null;
   ops: TracksOp[];
 }
 
@@ -156,8 +157,9 @@ export interface TracksFiring {
 // --- primitive flag setters (upstream solve_set_sflag / solve_set_eflag) ---
 
 /**
- * Note the change `b.rec` is watching for, or, when no reason is standing,
- * count it as silent.
+ * Record a change for the firing `b.rec` is collecting — every change, whether
+ * or not a premise is standing; what is worth showing is decided later, by the
+ * plan loop.
  *
  * **This is the whole of the recording projection's plumbing** — every one of
  * the eight rungs changes the board through {@link setSflag} or
@@ -165,13 +167,7 @@ export interface TracksFiring {
  * these two calls. Only the *why* is per-rung work.
  */
 function note(b: Board, op: TracksOp): void {
-  const rec = b.rec;
-  if (!rec) return;
-  if (rec.reason === null) {
-    rec.silent.set(rec.rung, (rec.silent.get(rec.rung) ?? 0) + 1);
-    return;
-  }
-  rec.ops.push(op);
+  b.rec?.ops.push(op);
 }
 
 function setSflag(b: Board, x: number, y: number, f: number): number {
@@ -211,29 +207,34 @@ function sidesWith(b: Board, x: number, y: number, eflag: number): number[] {
 }
 
 /**
- * Five local rules at one square, of which **three are narratable and two only
+ * Five local rules at one square, of which **two are narratable and three only
  * restate what the board already draws**:
  *
- *  - *A blocked square's four sides are blocked* adds four edge crosses around
- *    a square that is already showing its own cross, and
+ *  - *a blocked square's four sides are blocked* adds four edge crosses around
+ *    a square already showing its own cross;
  *  - *a square with a track side is a track square* changes nothing on screen
- *    at all: `s2dFlags` already sets `DS_TRACK` from the edge count.
+ *    at all: `s2dFlags` already sets `DS_TRACK` from the edge count;
+ *  - *a finished piece's other two sides are blocked* — the player can see the
+ *    piece is finished. This one was narrated until the owner's first playtest,
+ *    where it was a third of every plan and redundant every single time it
+ *    fired (671 of 671, measured).
  *
- * Both are real and both are needed by the deduction, so they run; neither
- * claims a reason, so neither becomes a hint step
- * (docs/games/hints.md § "Hint the move that advances the goal": a move can be
- * genuinely forced and still advance nothing). The player's board therefore
- * carries less bookkeeping than the plan's, which is safe here precisely
- * because those two facts are *derivable by eye* from what the player can see.
+ * All three are real and needed by the deduction, so they run; none claims a
+ * reason, so each comes back as a firing the plan hides (docs/games/hints.md
+ * § "Show only what the board does not already say"). Each returns on its own
+ * on the recording path, like every narrated premise, so a hidden firing never
+ * shares a step with a shown one.
  */
 function updateFlags(b: Board): number {
   const { w, h } = b;
   let did = 0;
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
-      // A NOTRACK square's four edges are all NOTRACK. (Silent: see above.)
+      // A NOTRACK square's four edges are all NOTRACK. (No reason: see above.)
       if (b.sflags[y * w + x] & S_NOTRACK) {
+        const before = did;
         for (let i = 0; i < 4; i++) did += setEflag(b, x, y, 1 << i, E_NOTRACK);
+        if (b.rec && did > before) return did;
       }
       // 3+ NOTRACK edges → the square is NOTRACK.
       if (sECount(b, x, y, E_NOTRACK) >= 3) {
@@ -252,8 +253,12 @@ function updateFlags(b: Board): number {
         if (rec && did > before) return did;
         if (rec) rec.reason = null;
       }
-      // Any TRACK edge → the square is TRACK. (Silent: see above.)
-      if (sECount(b, x, y, E_TRACK) > 0) did += setSflag(b, x, y, S_TRACK);
+      // Any TRACK edge → the square is TRACK. (No reason: see above.)
+      if (sECount(b, x, y, E_TRACK) > 0) {
+        const before = did;
+        did += setSflag(b, x, y, S_TRACK);
+        if (b.rec && did > before) return did;
+      }
       // TRACK square with 2 NOTRACK edges → the other two are TRACK.
       if (
         b.sflags[y * w + x] & S_TRACK &&
@@ -288,25 +293,15 @@ function updateFlags(b: Board): number {
         sECount(b, x, y, E_TRACK) === 2 &&
         sECount(b, x, y, E_NOTRACK) < 2
       ) {
+        // (No reason: see above.)
         const before = did;
-        const rec = b.rec;
-        if (rec) {
-          rec.reason = {
-            kind: "trackComplete",
-            x,
-            y,
-            // The two sides the track uses, for the reason above.
-            ev: { cells: [], edges: sidesWith(b, x, y, E_TRACK), clues: [] },
-          };
-        }
         for (let i = 0; i < 4; i++) {
           const d = 1 << i;
           if (!(sEFlags(b, x, y, d) & (E_TRACK | E_NOTRACK))) {
             did += setEflag(b, x, y, d, E_NOTRACK);
           }
         }
-        if (rec && did > before) return did;
-        if (rec) rec.reason = null;
+        if (b.rec && did > before) return did;
       }
     }
   }
@@ -1037,8 +1032,12 @@ export function tracksSolve(
  *    another such reason: *stop, this pass has a firing to narrate*. Checked at
  *    the top of an iteration, so the ladder always finishes the rung it is in.
  *  - **`beforeTechnique`** — `latinSolverTop` bumps a group id here; Tracks
- *    clears the standing reason, which is what makes "a rung that declares no
- *    reason narrates nothing" true rather than hopeful.
+ *    clears the standing reason, so a rung that declares none comes back with
+ *    `null` rather than the previous rung's premise.
+ *
+ * **Every change is a firing, including the ones nobody should be shown.**
+ * Deciding what is worth a step is the plan loop's job (`deduceHintPlan`'s
+ * `showable`), not the recorder's, so the recorder never has to know.
  *
  * The returned closure ignores its argument so it can be handed straight to
  * `deduceHintPlan`'s `next(board)`; the board it walks is the one passed here,
@@ -1048,39 +1047,30 @@ export function tracksRecordingPass(
   b: Board,
   cap: number,
   budget: StepBudget,
-): { next: () => TracksFiring | null; silent: ReadonlyMap<string, number> } {
+): () => TracksFiring | null {
   // Init *before* the recorder is attached, deliberately: it blocks the four
   // outer borders, which are not a deduction and are not something the player
   // could mark even if they were (`uiCanFlipEdge` needs both squares in grid).
   const bridgeDsf = tracksSolveInit(b);
   const ladder = tracksLadder(b, bridgeDsf);
-  const rec: TracksRecorder = {
-    reason: null,
-    rung: "",
-    ops: [],
-    silent: new Map(),
-  };
+  const rec: TracksRecorder = { reason: null, ops: [] };
   b.rec = rec;
 
-  return {
-    silent: rec.silent,
-    next: (): TracksFiring | null => {
-      rec.ops = [];
-      rec.reason = null;
-      runDeductionFixpoint({
-        techniques: ladder,
-        maxTier: cap,
-        baseGrade: DIFF_EASY,
-        budget,
-        beforeTechnique: (t) => {
-          rec.rung = t.id;
-          rec.reason = null;
-        },
-        settled: () => b.impossible || rec.ops.length > 0,
-      });
-      if (b.impossible || rec.ops.length === 0) return null;
-      return { reason: rec.reason as TracksReason, ops: rec.ops };
-    },
+  return (): TracksFiring | null => {
+    rec.ops = [];
+    rec.reason = null;
+    runDeductionFixpoint({
+      techniques: ladder,
+      maxTier: cap,
+      baseGrade: DIFF_EASY,
+      budget,
+      beforeTechnique: () => {
+        rec.reason = null;
+      },
+      settled: () => b.impossible || rec.ops.length > 0,
+    });
+    if (b.impossible || rec.ops.length === 0) return null;
+    return { reason: rec.reason as TracksReason | null, ops: rec.ops };
   };
 }
 

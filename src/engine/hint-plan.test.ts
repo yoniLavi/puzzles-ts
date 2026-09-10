@@ -95,6 +95,54 @@ describe("deduceHintPlan", () => {
     expect(working).toEqual(["x", "x"]);
   });
 
+  describe("a firing that is not showable", () => {
+    // Odd cells are "evident": decided, but not worth a step.
+    const odd = (_b: Toy, i: number) => i % 2 === 0;
+
+    it("advances the board but is no step, and is counted", () => {
+      const board: Toy = [null, null, null, null];
+      const {
+        status: st,
+        plan,
+        hidden,
+      } = deduceHintPlan(spec(board, { showable: odd }));
+      expect(plan).toEqual([0, 2]);
+      expect(hidden).toBe(2);
+      // Hidden firings still decided their cells — later ones may rest on them.
+      expect(board).toEqual(["x", "x", "x", "x"]);
+      expect(st).toBe("done");
+    });
+
+    it("does not spend the plan cap: the cap counts shown steps", () => {
+      // Galaxies' shipped bug, closed structurally: three hidden firings ahead
+      // of the only showable one must not exhaust a cap of 1.
+      const board: Toy = [null, null, null, null, null];
+      const { plan, hidden } = deduceHintPlan(
+        spec(board, { showable: (_b: Toy, i: number) => i === 3, planCap: 1 }),
+      );
+      expect(plan).toEqual([3]);
+      expect(hidden).toBe(3);
+    });
+
+    it("still ticks the budget, so a hidden rule that changes nothing throws", () => {
+      const board: Toy = [null];
+      expect(() =>
+        deduceHintPlan(
+          spec(board, {
+            apply: () => {},
+            showable: () => false,
+            budget: stepBudget("toy", 50),
+          }),
+        ),
+      ).toThrow(StepBudgetExceeded);
+    });
+
+    it("reports zero hidden when every firing is shown", () => {
+      const { hidden } = deduceHintPlan(spec([null, null]));
+      expect(hidden).toBe(0);
+    });
+  });
+
   it("skips `apply` when the rungs apply as they detect", () => {
     // Subsets' shape: `next` writes the deduction itself.
     const board: Toy = [null, null];

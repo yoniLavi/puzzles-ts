@@ -42,7 +42,39 @@ export interface HintPlanSpec<Board, Firing, Status> {
    * all, so re-applying would be wrong, not merely redundant).
    */
   apply?(board: Board, firing: Firing): void;
-  /** Hard cap on plan length — a UX bound, not a correctness one. */
+  /**
+   * Whether a firing is worth putting in front of the player. Omit it and every
+   * firing is a step.
+   *
+   * **A firing that is not showable still advances the working board** — it is
+   * a real deduction and later firings may rest on it — but it becomes no step.
+   * That is the whole mechanism, and it carries two obligations the loop cannot
+   * check for you:
+   *
+   * - **Hide only what the player can already see.** A later step may cite a
+   *   hidden firing's conclusion as a premise. That is fine when the player's
+   *   own board already shows it (Tracks: a blocked side beside a square they
+   *   have marked empty) and a lie when it does not.
+   * - **Never hide a change the win condition needs**, or following the plan
+   *   never finishes the board. `hint-resume.test.ts` catches that one.
+   *
+   * It is judged *after* the firing is applied (by `apply`, or by a `next` that
+   * applies as it detects), so it must read only facts the firing itself cannot
+   * have created.
+   *
+   * Two games derive it from move legality, from opposite directions. Galaxies
+   * hides a firing whose move the game would **refuse** (an arrow drawn inside a
+   * closed region); Tracks hides one whose **contrary** move the game would
+   * refuse, because then the player's board has already decided it. Both are
+   * docs/games/hints.md § "Show only what the board does not already say".
+   */
+  showable?(board: Board, firing: Firing): boolean;
+  /**
+   * Hard cap on plan length — a UX bound, not a correctness one. It counts
+   * **shown** steps: a cap on firings silently becomes a refusal when a run of
+   * hidden ones spends it (Galaxies shipped exactly that, and the hint told a
+   * player "no further move" with a hundred left).
+   */
   planCap?: number;
   /** Non-termination guard, ticked once per iteration (docs/games/hints.md § "The step budget"). */
   budget?: StepBudget;
@@ -55,8 +87,14 @@ export interface HintPlanResult<Firing, Status> {
    * whatever the board reached.
    */
   status: Status;
-  /** The firings in deduction order — the hint's steps, before narration. */
+  /** The shown firings in deduction order — the hint's steps, before narration. */
   plan: Firing[];
+  /**
+   * How many firings advanced the board without being shown. The number a
+   * test needs to prove its corpus exercised {@link HintPlanSpec.showable} at
+   * all — a guard over hidden firings that saw none proves nothing.
+   */
+  hidden: number;
 }
 
 export function deduceHintPlan<Board, Firing, Status>(
@@ -64,21 +102,28 @@ export function deduceHintPlan<Board, Firing, Status>(
 ): HintPlanResult<Firing, Status> {
   const { board, planCap, budget } = spec;
   const plan: Firing[] = [];
+  let hidden = 0;
 
   for (;;) {
+    // Ticked for hidden firings too, so a run of them that never ends still
+    // throws rather than hanging.
     budget?.tick();
 
     const status = spec.status(board);
-    if (status !== spec.incomplete) return { status, plan };
+    if (status !== spec.incomplete) return { status, plan, hidden };
     if (planCap !== undefined && plan.length >= planCap)
-      return { status: spec.incomplete, plan };
+      return { status: spec.incomplete, plan, hidden };
 
     // `== null`, not `!firing`: `Firing` is generic, so a falsy-but-real firing
     // (a cell index of 0, an empty string) must not read as "deduction exhausted".
     const firing = spec.next(board);
-    if (firing == null) return { status: spec.incomplete, plan };
+    if (firing == null) return { status: spec.incomplete, plan, hidden };
 
     spec.apply?.(board, firing);
+    if (spec.showable && !spec.showable(board, firing)) {
+      hidden++;
+      continue;
+    }
     plan.push(firing);
   }
 }

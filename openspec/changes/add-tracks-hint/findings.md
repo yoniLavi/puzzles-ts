@@ -119,13 +119,21 @@ read a sentence no board produces. That is `tracks-ladder.test.ts`'s `unreached`
 ledger applied one level finer, and it is a pattern the next hint should copy:
 **a corpus census over reasons, with a ledger for what it cannot reach.**
 
-**Two of `update-flags`' five rules are player-invisible and are deliberately not
-narrated.** *"A square with a track side is a track square"* changes nothing on
-screen at all (`s2dFlags` already derives it from the edge count), and *"a blocked
-square's four sides are blocked"* adds four edge crosses around a square already
-showing its own cross. Both run; neither claims a reason; a `silent` tally on the
-recorder counts what they change, and `tracks-hint.test.ts` asserts the tally's
-keys are exactly `["update-flags"]` — which is also what would catch
-`check-single` if it ever started firing. This is
-`docs/games/hints.md` § "Hint the move that advances the goal" (Spokes' "drop the
-useless-but-forced move") reaching a second game.
+**Three of `update-flags`' five rules only restate what the board already draws,
+and are not narrated.** *"A square with a track side is a track square"* changes
+nothing on screen (`s2dFlags` already derives it from the edge count), *"a
+blocked square's four sides are blocked"* adds four crosses around a square
+already showing its own, and *"a finished piece's other two sides are blocked"*
+tells the player what the drawn piece already does.
+
+**The third was narrated when this change first shipped, and the owner's first
+playtest found it at once** (2026-09-10): it was a third of every plan — 671 of
+2,059 steps — and redundant every one of the 671 times it fired. This section
+had called the rules in question "two", which is the measurement that should
+have been taken and was not. The fix went to the layer below rather than into
+this game: `show-only-informative-hint-steps` gives the shared plan loop a
+`showable` hook, and Tracks now hides a firing that declares no reason or whose
+every change the game would refuse the player the contrary of, with guards
+holding that to move legality. The `silent` tally this section first described
+was retired with it. The line counts in §1 and the premise count in §3 are as
+measured when this change first shipped.

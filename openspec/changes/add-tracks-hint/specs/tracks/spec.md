@@ -24,12 +24,16 @@ MAY carry several ops when one premise forces them all, and `hintKeepTrack`
 SHALL then verdict `"onTrack"` and shrink the step in place until the last of
 them is placed.
 
-A rung that declares no reason SHALL change the board without producing a step,
-and the recorder SHALL tally such changes by rung id so the set of silent rungs
-is asserted rather than assumed. Two rules of `update-flags` are silent by
-design — *a square with a track side is a track square*, which `s2dFlags`
-already derives, and *a blocked square's four sides are blocked*, which restates
-the cross the square already draws.
+Every change a rung makes SHALL be recorded, and the plan SHALL hide — apply to
+its working board, but not show — a firing that declares no reason or whose
+every change the player's board already decides, through the shared plan loop's
+`showable` hook. A change is already decided when the game would refuse the
+player its contrary: track on a side of a square marked empty or of the rim,
+track as a third side of a finished piece, or "no track" on a square showing a
+rail. Three rules of `update-flags` declare no reason for exactly that cause —
+*a square with a track side is a track square*, *a blocked square's four sides
+are blocked*, and *a finished piece's other two sides are blocked* — and every
+reason-less firing SHALL be evident by that test.
 
 #### Scenario: A hint explains a clue that is already met
 
@@ -38,6 +42,12 @@ the cross the square already draws.
 - **THEN** the step's narration names that count, its move marks every other
   square in the line empty, and its evidence is exactly the clue's own track
   squares with the clue's digit recolored
+
+#### Scenario: A finished piece's sides are never a step
+
+- **WHEN** a finished piece's two free sides border squares the player has
+  marked empty and a hint is requested
+- **THEN** no step in the plan asks for either side to be blocked
 
 #### Scenario: A hint runs from the player's own marks
 

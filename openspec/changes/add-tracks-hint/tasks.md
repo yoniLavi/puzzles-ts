@@ -36,17 +36,21 @@ change exists to take is [`findings.md`](./findings.md).
       in Tracks, blocking a side *is* how a player narrows the board, and the
       order is the tier order, so reordering would also decouple the plan from
       the grade. What was taken from Spokes instead is the other half of that
-      section: **two of `update-flags`' five rules advance nothing the board does
-      not already show, and are applied without being narrated**
-      (`findings.md` §4).
+      section: **three of `update-flags`' five rules advance nothing the board
+      does not already show, and are applied without being shown**
+      (`findings.md` §4). This first said two; the owner's playtest found the
+      third, and `show-only-informative-hint-steps` moved the filter into the
+      shared plan loop.
 
 ## 2. Narration — seven rungs, and not the eighth
 
 - [x] 2.1 One sentence per **premise**, which turned out to be twelve rather than
       seven: a rung holds several teachable rules (`findings.md` §3).
-- [x] 2.2 Nothing for `check-single`. It stays in the hint's ladder and changes
-      the board silently; `tracks-hint.test.ts` asserts the silent-rung tally's
-      keys are exactly `["update-flags"]`, so it cannot start firing unnoticed.
+- [x] 2.2 Nothing for `check-single`. It stays in the hint's ladder and declares
+      no reason, so a firing of it would be hidden; `tracks-hint.test.ts` holds
+      every reason-less firing to being evident, which its real conclusions are
+      not, so it cannot start firing unnoticed. (This first used a silent-rung
+      tally; `show-only-informative-hint-steps` replaced it.)
 - [x] 2.3 One firing = one step, with a multi-op move where one premise forces
       several squares (the Filling shape), and `hintKeepTrack` shrinking the step
       in place as the player places them one at a time. No em-dashes.

@@ -14,29 +14,47 @@
  *    No cross-game guard can see this: they replay a plan through
  *    `executeMove`, which would throw rather than fail an assertion, and only
  *    on the seed that reached it.
- *  - **the silent rungs are exactly the two that are meant to be silent**, so
- *    `check-single` cannot start deciding squares the player is never told
- *    about without this going red.
+ *  - **what the plan hides is exactly what the player's board already says.**
+ *    The production predicate reads board facts; these guards hold it to the
+ *    game's own move legality, judged on the board *before* each firing landed,
+ *    so the two derivations are independent. It is also what would catch
+ *    `check-single` if it ever started firing: its conclusions are real, and a
+ *    reason-less firing that is not evident fails here.
  */
 
 import { describe, expect, it } from "vitest";
 import { ALREADY_SOLVED, FIX_MISTAKES_FIRST } from "../../engine/hint-refusal.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
-import { narrate, type TracksHighlights } from "./hint.ts";
+import { evident, narrate, type TracksHighlights } from "./hint.ts";
 import { tracksGame } from "./index.ts";
 import { uiCanFlipEdge, uiCanFlipSquare } from "./moves.ts";
-import { type TracksReason, tracksRecordingPass, tracksSolve } from "./solver.ts";
 import {
+  type TracksFiring,
+  type TracksReason,
+  tracksRecordingPass,
+  tracksSolve,
+} from "./solver.ts";
+import {
+  type Board,
+  D,
   DIFF_EASY,
   DIFF_HARD,
   DIFF_TRICKY,
+  DX,
+  DY,
   E_TRACK,
+  inGrid,
+  R,
+  S_TRACK,
   sEDirs,
+  sEFlags,
   stateToBoard,
   type TracksMove,
+  type TracksOp,
   type TracksParams,
   type TracksState,
+  U,
 } from "./state.ts";
 
 const SHAPES: TracksParams[] = [
@@ -102,30 +120,154 @@ describe("every move a Tracks hint asks for is one the player may make", () => {
   }
 });
 
-describe("only the two rungs meant to be silent change the board unnarrated", () => {
-  it("is exactly update-flags, across every tier", () => {
-    const seen = new Set<string>();
-    let firings = 0;
+/**
+ * Would the game refuse the player the *opposite* of this op, on the board
+ * before it landed? The derivation the production `evident` is held to: it
+ * asks `uiCanFlipSquare` / `uiCanFlipEdge` directly rather than reading board
+ * facts, so the two are independent. Judged *before*, because after the op
+ * lands its own flag is what makes the contrary illegal, and every block would
+ * read as evident.
+ */
+function contraryRefused(before: Board, op: TracksOp): boolean {
+  return op.kind === "square"
+    ? !uiCanFlipSquare(before, op.x, op.y, op.track)
+    : !uiCanFlipEdge(before, op.x, op.y, op.dir ?? 0, op.track);
+}
+
+/** Every firing the recording pass makes on a fresh board, each with the board
+ * as it stood before the firing and as it stands straight after. */
+function* recordedFirings(
+  params: TracksParams,
+  seed: string,
+): Generator<{ f: TracksFiring; before: Board; after: Board }> {
+  const { desc } = tracksGame.newDesc(params, randomNew(seed));
+  const board = stateToBoard(tracksGame.newState(params, desc));
+  const next = tracksRecordingPass(board, params.diff, stepBudget("probe"));
+  for (;;) {
+    const before: Board = { ...board, sflags: Int32Array.from(board.sflags) };
+    const f = next();
+    if (!f) return;
+    // Consumed before the next `next()` call, so `after` is this firing's board.
+    yield { f, before, after: board };
+  }
+}
+
+describe("what the plan hides is exactly what the board already says", () => {
+  it("every firing with no premise is one the player's board already decides", () => {
+    // The declaration, held to the derivation. The reason-less rules are a
+    // list somebody wrote; this is what makes it impossible for the list to
+    // hide a real deduction — including `check-single`, whose conclusions are
+    // real, should it ever start firing.
+    let reasonless = 0;
     for (const params of SHAPES) {
       for (const seed of SEEDS) {
-        const { desc } = tracksGame.newDesc(
+        for (const { f, before } of recordedFirings(
           params,
-          randomNew(`silent-${params.w}-${params.diff}-${seed}`),
-        );
-        const board = stateToBoard(tracksGame.newState(params, desc));
-        const pass = tracksRecordingPass(board, params.diff, stepBudget("probe"));
-        while (pass.next()) firings++;
-        for (const id of pass.silent.keys()) seen.add(id);
+          `hide-${params.w}-${params.diff}-${seed}`,
+        )) {
+          if (f.reason !== null) continue;
+          reasonless++;
+          for (const op of f.ops) {
+            expect(
+              contraryRefused(before, op),
+              `${JSON.stringify(op)} was hidden but the player could have chosen otherwise`,
+            ).toBe(true);
+          }
+        }
       }
     }
-    // Vacuity: a pass that fired nothing would agree with any expectation here.
-    expect(firings).toBeGreaterThan(200);
-    // `update-flags` holds two rules that only restate what the board already
-    // draws. `check-single` is the one that must never appear: it fires on no
-    // board this generator produces (`tracks-ladder.test.ts`'s `unreached`
-    // ledger), and if that ever stops being true it would be silently deciding
-    // squares rather than teaching them.
-    expect([...seen].sort()).toEqual(["update-flags"]);
+    expect(
+      reasonless,
+      "no reason-less firing; the guard proves nothing",
+    ).toBeGreaterThan(100);
+  });
+
+  it("the production predicate and the legality test agree on every firing", () => {
+    let firings = 0;
+    let evidentSeen = 0;
+    for (const params of SHAPES) {
+      for (const seed of SEEDS) {
+        for (const { f, before, after } of recordedFirings(
+          params,
+          `agree-${params.w}-${params.diff}-${seed}`,
+        )) {
+          firings++;
+          const byFacts = f.ops.every((op) => evident(after, op));
+          const byLegality = f.ops.every((op) => contraryRefused(before, op));
+          if (byLegality) evidentSeen++;
+          expect(byFacts, `${JSON.stringify(f.ops)}`).toBe(byLegality);
+        }
+      }
+    }
+    // Both classes, or agreement is vacuous on one side.
+    expect(evidentSeen).toBeGreaterThan(50);
+    expect(firings - evidentSeen).toBeGreaterThan(50);
+  });
+
+  it("no step a player is shown is one their board already decides", () => {
+    // The owner's first playtest finding, as a guard over what reaches the
+    // screen: a step asking for two sides the player had already closed off.
+    // Every op, not just the step as a whole, so a step cannot smuggle a
+    // redundant op in beside a real one.
+    let shown = 0;
+    for (const params of SHAPES) {
+      for (const seed of SEEDS) {
+        const { steps } = walk(params, `shown-${params.w}-${params.diff}-${seed}`);
+        for (const { step, before } of steps) {
+          shown++;
+          const b = stateToBoard(before);
+          for (const op of step.move.ops) {
+            expect(
+              contraryRefused(b, op),
+              `"${step.explanation}" asks for ${JSON.stringify(op)}, which the board already decides`,
+            ).toBe(false);
+          }
+        }
+      }
+    }
+    expect(shown).toBeGreaterThan(200);
+  });
+
+  it("the reported board: a finished piece beside squares marked empty gets no step about its sides", () => {
+    // Reconstructed from the report. The entrance's piece is given; the player
+    // marks the squares beyond its two free sides empty; the hint asked them
+    // to block those two sides.
+    let checked = 0;
+    for (let s = 0; s < 40 && checked < 3; s++) {
+      const params = SHAPES[1];
+      const { desc } = tracksGame.newDesc(params, randomNew(`reported-${s}`));
+      const fresh = tracksGame.newState(params, desc);
+      const solution = stateToBoard(fresh);
+      if (tracksSolve(solution, DIFF_HARD).ret !== 1) continue;
+      const b = stateToBoard(fresh);
+      const ax = 0;
+      const ay = b.rowS;
+      const beyond: TracksOp[] = [];
+      for (const d of [U, D, R]) {
+        if (sEFlags(b, ax, ay, d) & E_TRACK) continue; // the piece's own side
+        const nx = ax + DX(d);
+        const ny = ay + DY(d);
+        if (!inGrid(b, nx, ny) || solution.sflags[ny * b.w + nx] & S_TRACK) continue;
+        beyond.push({ kind: "square", x: nx, y: ny, track: false, set: true });
+      }
+      if (beyond.length < 2) continue;
+      const res = tracksGame.hint?.(tracksGame.executeMove(fresh, { ops: beyond }));
+      if (!res?.ok) continue;
+      checked++;
+      for (const step of res.steps) {
+        for (const op of step.move.ops) {
+          if (op.kind !== "edge" || op.track) continue;
+          const d = op.dir ?? 0;
+          const touches =
+            (op.x === ax && op.y === ay) ||
+            (op.x + DX(d) === ax && op.y + DY(d) === ay);
+          expect(touches, `"${step.explanation}" blocks a side of the entrance`).toBe(
+            false,
+          );
+        }
+      }
+    }
+    expect(checked, "no seed reproduced the reported shape").toBeGreaterThan(0);
   });
 });
 
@@ -194,9 +336,9 @@ describe("the picture holds exactly the number the sentence states", () => {
  *
  * **None of the three is deleted, and the reason is the same each time**: the
  * deduction itself is upstream's and cannot go (the generator is byte-matched
- * against it), so an arm without a reason would not vanish, it would start
- * changing the player's board *silently* — which the silent-rung guard above
- * would then catch. What they lose by being unreachable is the corpus's check
+ * against it), so an arm without a reason would not vanish, it would be hidden
+ * from the player instead of taught — which the first guard in "what the plan
+ * hides" would then catch. What they lose by being unreachable is the corpus's check
  * on their wording, and § "reads correctly at the degenerate extremes" below is
  * where that is bought back: `narrate` is called on a hand-built reason, which
  * is the only instrument that can read a sentence no board produces.
@@ -221,7 +363,6 @@ describe("every narratable premise the corpus reaches is reached", () => {
   const ALL_KINDS: Record<TracksReason["kind"], true> = {
     onlyOneSideLeft: true,
     bothSidesLeft: true,
-    trackComplete: true,
     clueFull: true,
     clueExact: true,
     wouldCloseLoop: true,
@@ -243,12 +384,12 @@ describe("every narratable premise the corpus reaches is reached", () => {
           randomNew(`cover-${params.w}-${params.diff}-${seed}`),
         );
         const board = stateToBoard(tracksGame.newState(params, desc));
-        const pass = tracksRecordingPass(board, params.diff, stepBudget("cover"));
+        const next = tracksRecordingPass(board, params.diff, stepBudget("cover"));
         for (;;) {
-          const f = pass.next();
+          const f = next();
           if (!f) break;
           firings++;
-          seen.add(f.reason.kind);
+          if (f.reason) seen.add(f.reason.kind);
         }
       }
     }
@@ -282,7 +423,6 @@ describe("every narratable premise the corpus reaches is reached", () => {
     expect(sentences.size).toBeGreaterThanOrEqual(12);
     const all = [...sentences].join("\n");
     for (const marker of [
-      "already enters and leaves", // trackComplete
       "only two of its sides are still open", // bothSidesLeft
       "only one side of this square is still open", // onlyOneSideLeft
       "the track squares its clue allows", // clueFull

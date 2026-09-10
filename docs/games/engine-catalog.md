@@ -413,6 +413,15 @@ loop is shared — every rung order, reason type and narration string stays in
 its game. Takes both a `planCap` (UX bound) and a `StepBudget`
 (non-termination bound) because they answer different questions.
 
+`showable(board, firing)` hides a firing that is not worth a step: it still
+advances the working board, but the plan never shows it, and the cap counts
+**shown** steps so a run of hidden firings cannot turn into a refusal. Reach for
+it whenever a sound deduction can land somewhere the player's board already
+decides (Tracks) or somewhere the game would refuse the move (Galaxies); the
+result's `hidden` count is what a test reads to prove it saw any. Hide only what
+the player can already see — a later step may cite it. See
+[`hints.md`](./hints.md) § "Show only what the board does not already say".
+
 ### `candidate-hint.ts` — candidate-elimination plan plumbing
 
 The shared mechanics for pencil-notes games (naked-single finder,

@@ -164,23 +164,19 @@ export interface Board {
 }
 
 /**
- * What the recording path collects for **one firing**.
+ * What the recording path collects for **one firing**: the flag changes it
+ * made, and the premise that forced them.
  *
- * The driver clears it before each rung attempt; a setter appends to `ops` only
- * when it actually changes a flag *and* a reason is standing, so a rung that
- * declares no reason changes the board without claiming a hint step
- * (`silent` counts those, and `tracks-hint.test.ts` asserts exactly which rungs
- * appear in it).
+ * Every change is recorded. One made with no premise standing comes back as a
+ * firing with a `null` reason, and the plan hides it (`deduceHintPlan`'s
+ * `showable`); `tracks-hint.test.ts` holds every such firing to being evident
+ * on the player's board, so hiding one never hides something they needed told.
  */
 export interface TracksRecorder {
-  /** The premise the rung is currently acting on; `null` between attempts. */
+  /** The premise the rung is acting on; `null` when it declares none. */
   reason: unknown;
-  /** The rung being attempted, for {@link silent}'s attribution. */
-  rung: string;
   /** The flag changes this firing made, in the order it made them. */
   ops: TracksOp[];
-  /** Changes made with no reason standing, by rung id. */
-  silent: Map<string, number>;
 }
 
 export function blankBoard(w: number, h: number): Board {

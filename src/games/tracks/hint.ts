@@ -28,12 +28,17 @@ import {
   type Board,
   checkCompletion,
   D,
+  DX,
+  DY,
+  E_TRACK,
+  inGrid,
   L,
   R,
   S_NOTRACK,
   S_NOTRACK_SHIFT,
   S_TRACK,
   S_TRACK_SHIFT,
+  sECount,
   stateToBoard,
   type TracksMove,
   type TracksOp,
@@ -134,9 +139,6 @@ export function narrate(b: Board, reason: TracksReason): string {
     case "bothSidesLeft":
       return "This square carries track, and only two of its sides are still open, so the track must run in through one of them and out through the other.";
 
-    case "trackComplete":
-      return "The track already enters and leaves this square, so it can use neither of its other two sides: both must be blocked.";
-
     case "clueFull": {
       const { axis, target } = lineOf(b, reason.line);
       if (target === 0) {
@@ -212,9 +214,13 @@ export function narrate(b: Board, reason: TracksReason): string {
 
 // --- highlights from a firing ---------------------------------------------
 
-function highlightsOf(b: Board, firing: TracksFiring): TracksHighlights {
+function highlightsOf(
+  b: Board,
+  reason: TracksReason,
+  firing: TracksFiring,
+): TracksHighlights {
   const { w } = b;
-  const { ev } = firing.reason;
+  const { ev } = reason;
   return {
     targets: firing.ops
       .filter((o) => o.kind === "square")
@@ -245,19 +251,61 @@ function highlightsOf(b: Board, firing: TracksFiring): TracksHighlights {
  * so a correct partial board stays soluble there too. It is also what stops an
  * Easy board being handed a parity argument it never needed.
  */
+/**
+ * Does the player's board already decide this change? True when the **contrary**
+ * move is one the game would refuse them: track on a side of a square they have
+ * marked empty (or of the board's rim), track as a third side of a finished
+ * piece, or "no track" on a square that already shows a rail. Those are
+ * `uiCanFlipEdge` / `uiCanFlipSquare`'s own refusals, read as board facts so the
+ * answer does not depend on the op having been applied yet.
+ *
+ * It reads only facts no firing's own ops can create — an edge block creates no
+ * empty square and no rail, and marking a track square creates no rail — which
+ * is the condition `showable` is judged under (it runs after the firing lands).
+ */
+export function evident(b: Board, op: TracksOp): boolean {
+  if (op.kind === "square") return op.track && sECount(b, op.x, op.y, E_TRACK) > 0;
+  if (op.track) return false;
+  const d = op.dir ?? 0;
+  const closed = (x: number, y: number): boolean =>
+    !inGrid(b, x, y) ||
+    (b.sflags[y * b.w + x] & S_NOTRACK) !== 0 ||
+    sECount(b, x, y, E_TRACK) === 2;
+  return closed(op.x, op.y) || closed(op.x + DX(d), op.y + DY(d));
+}
+
+/**
+ * A step is worth showing when it has a premise to narrate and tells the player
+ * something their board does not already say (docs/games/hints.md § "Show only
+ * what the board does not already say").
+ *
+ * Both halves are needed. The reason check alone was the first cut, and it let
+ * through the owner's first playtest finding: `trackComplete` — blocking the
+ * two free sides of a finished piece — was narrated, fired on sides the player
+ * had already closed off by marking the squares beyond them empty, and was a
+ * third of every plan (671 of 2,059 steps measured, every one of them evident).
+ * The board check alone would narrate `null`. Together, the rules with no reason
+ * are the ones the board shows, and a narrated rule that happens to land on an
+ * already-decided side is hidden too, wherever the scan order puts it.
+ */
+function showable(b: Board, f: TracksFiring): boolean {
+  return f.reason !== null && !f.ops.every((op) => evident(b, op));
+}
+
 export function tracksHint(
   state: TracksState,
 ):
   | { ok: true; steps: HintStep<TracksMove, TracksHighlights>[] }
   | { ok: false; error: string } {
   const board = stateToBoard(state);
-  const pass = tracksRecordingPass(board, state.diff, stepBudget("tracks hint"));
+  const next = tracksRecordingPass(board, state.diff, stepBudget("tracks hint"));
   const { plan } = deduceHintPlan<Board, TracksFiring, string>({
     board,
     status: (bd) =>
       bd.impossible ? "broken" : checkCompletion(bd, false) ? "done" : "open",
     incomplete: "open",
-    next: pass.next,
+    next,
+    showable,
     planCap: PLAN_CAP,
   });
 
@@ -274,11 +322,18 @@ export function tracksHint(
   const shape = stateToBoard(state);
   return {
     ok: true,
-    steps: plan.map((firing) => ({
-      move: { ops: firing.ops },
-      explanation: narrate(shape, firing.reason),
-      highlights: highlightsOf(shape, firing),
-    })),
+    steps: plan.map((firing) => {
+      // `showable` admits only firings with a premise, so this cannot happen;
+      // if it ever does the plan has lost track of what it told the player,
+      // and that should reach Sentry rather than render a blank sentence.
+      const { reason } = firing;
+      if (!reason) throw new Error("tracks hint: a step with no premise was shown");
+      return {
+        move: { ops: firing.ops },
+        explanation: narrate(shape, reason),
+        highlights: highlightsOf(shape, reason, firing),
+      };
+    }),
   };
 }
 
