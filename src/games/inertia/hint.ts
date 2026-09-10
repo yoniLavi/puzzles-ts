@@ -159,10 +159,10 @@ function narrate(
       : "it sweeps up the marked gem";
 
     if (only === "mines") {
-      return `Slide ${d}: ${sweep}, and it is the only direction that doesn't run you onto a mine.`;
+      return `Slide ${d}: ${sweep}, the only direction that doesn't run you onto a mine.`;
     }
     if (only === "walls") {
-      return `Slide ${d}: ${sweep}, and walls block every other direction, so it is the only move the ball has.`;
+      return `Slide ${d}: ${sweep}, and walls block every other direction.`;
     }
     return `Slide ${d}: ${sweep}, and ${stopClause(path)}.`;
   }
@@ -174,14 +174,14 @@ function narrate(
     return `${working}: slide ${d}, because every other direction you can set off in runs you onto a mine.`;
   }
   if (only === "walls") {
-    return `${working}: slide ${d}, because walls block every other direction, so it is the only move the ball has.`;
+    return `${working}: slide ${d}, because walls block every other direction.`;
   }
 
   const grab = oneSlideGrab(before, goal);
   if (grab !== null) {
     const stranded = unreachableGems(slide(before, grab));
     if (stranded.length > 0) {
-      return `${working}: sliding ${DIR_NAMES[grab]} would sweep it up right now, but you don't choose where you stop, and it leaves the ball where ${gemsPhrase(stranded.length)} can never be reached again. Slide ${d} instead.`;
+      return `Sliding ${DIR_NAMES[grab]} grabs the marked gem, but you don't choose where you stop, and it strands ${gemsPhrase(stranded.length)}: slide ${d} instead.`;
     }
     // The route declines a grab it could take. Which side the ball comes at a
     // gem from decides where it fetches up, so this is a real trade-off — but

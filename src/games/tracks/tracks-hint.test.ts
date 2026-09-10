@@ -3,7 +3,7 @@
  * only this game can check.
  *
  * The cross-game guards already cover narration *form* (necessity voice, the
- * 300-char ceiling, no em-dash), plan purity, no-op-free plans and the overlay
+ * length limit, no em-dash), plan purity, no-op-free plans and the overlay
  * reaching the render cache — Tracks joined all six by declaring `hint()`
  * (`engine/testing/hint-games.ts`). What is left here is per-game:
  *
@@ -305,14 +305,14 @@ describe("the picture holds exactly the number the sentence states", () => {
       const params = SHAPES[2];
       const { steps } = walk(params, `parity-${seed}`);
       for (const { step } of steps) {
-        const m = step.explanation.match(/^The track starts and ends outside/);
+        const m = step.explanation.match(
+          /^Every time the track enters the outlined block/,
+        );
         if (!m) continue;
         checked++;
-        const said = /No crossing of it is marked/.test(step.explanation)
+        const said = /with none marked yet/.test(step.explanation)
           ? 0
-          : /One crossing of it is marked/.test(step.explanation)
-            ? 1
-            : Number(step.explanation.match(/(\d+) crossings of it are marked/)?.[1]);
+          : Number(step.explanation.match(/with (\d+) crossings? marked/)?.[1]);
         expect(step.highlights?.areaEdges.length, step.explanation).toBe(said);
         expect(step.highlights?.area.length).toBeGreaterThan(0);
       }
@@ -423,16 +423,16 @@ describe("every narratable premise the corpus reaches is reached", () => {
     expect(sentences.size).toBeGreaterThanOrEqual(12);
     const all = [...sentences].join("\n");
     for (const marker of [
-      "only two of its sides are still open", // bothSidesLeft
-      "only one side of this square is still open", // onlyOneSideLeft
+      "with only two of its sides still open", // bothSidesLeft
+      "Only one side of this square is still open", // onlyOneSideLeft
       "the track squares its clue allows", // clueFull
       "can leave only", // clueExact
       "would close a loop", // wouldCloseLoop
-      "left stranded off the end", // wouldStrandTrack
-      "must therefore run straight on", // looseEndSpans
-      "carrying on into the one", // sharedFate, fill arm
-      "an empty here would leave that one empty too", // sharedFate, empty arm
-      "cross that block's border an even number of times", // crossingParity
+      "stranding the outlined track", // wouldStrandTrack
+      "this loose end must run straight on", // looseEndSpans
+      "Track here would have to carry on", // sharedFate, fill arm
+      "No track here would mean none", // sharedFate, empty arm
+      "enters the outlined block it must leave", // crossingParity
     ]) {
       expect(all, `no step ever said "${marker}"`).toContain(marker);
     }
@@ -454,8 +454,8 @@ describe("narration reads correctly at the degenerate extremes", () => {
     expect(say({ kind: "onlyOneSideLeft", x: 0, y: 0, open: 0, ev })).toContain(
       "Every side of this square is blocked",
     );
-    expect(say({ kind: "onlyOneSideLeft", x: 0, y: 0, open: 1, ev })).toContain(
-      "only one side",
+    expect(say({ kind: "onlyOneSideLeft", x: 0, y: 0, open: 1, ev })).toMatch(
+      /only one side/i,
     );
   });
 
@@ -469,6 +469,11 @@ describe("narration reads correctly at the degenerate extremes", () => {
     expect(narrate(b0, { kind: "clueFull", line: 0, ev })).toContain(
       "the one track square its clue allows",
     );
+    // Found reading the running app: "all 2 of" is grammatical and reads wrong.
+    b0.numbers[0] = 2;
+    expect(narrate(b0, { kind: "clueFull", line: 0, ev })).toContain(
+      "both of the track squares its clue allows",
+    );
   });
 
   it("a line with no room to be empty is not asked to leave 0 squares empty", () => {
@@ -481,11 +486,12 @@ describe("narration reads correctly at the degenerate extremes", () => {
 
   it("a parity step with nothing marked yet does not say it crosses 0 times", () => {
     const s = say({ kind: "crossingParity", x: 0, y: 0, dir: 8, crossings: 0, ev });
-    expect(s).toContain("No crossing of it is marked yet");
+    expect(s).toContain("with none marked yet");
+    expect(s).not.toMatch(/\b0 crossings?\b/);
     expect(s).toContain("must be blocked");
     expect(
       say({ kind: "crossingParity", x: 0, y: 0, dir: 8, crossings: 1, ev }),
-    ).toContain("One crossing of it is marked");
+    ).toContain("with 1 crossing marked");
   });
 
   // The three arms the census above ledgers as unreachable. A sentence no board

@@ -392,7 +392,7 @@ export function obviousCandidateMarks(
  * ("penciling every monster into…") is structurally different and stays
  * game-local. */
 export function populateText(noun: string, cell = "cell"): string {
-  return `Start by penciling in every candidate ${noun} in each empty ${cell}, so the eliminations that follow have something to cross out.`;
+  return `Start by penciling every candidate ${noun} into each empty ${cell}, so there is something to cross out.`;
 }
 
 /** Narration for the obvious-cleanup step, parameterized by the game's noun,
@@ -407,7 +407,11 @@ export function cleanObviousText(
   regions: string,
   cell = "cell",
 ): string {
-  return `Now clear the easy ones: in each ${cell}, cross out any ${noun} already ${placedVerb} in its ${regions} (the same cleanup the “fill all pencil marks” button does).`;
+  // The "fill all pencil marks" button does this same cleanup, and the help
+  // says so (help/features.md); repeating it on every such step was the
+  // rulebook-in-the-step shape docs/games/hints.md § "Rules belong in the help"
+  // retires.
+  return `Now clear the easy ones: cross out any ${noun} already ${placedVerb} in each ${cell}'s ${regions}.`;
 }
 
 /** The populate/mark-all opener step. It deliberately declares **no board

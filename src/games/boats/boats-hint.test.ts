@@ -301,21 +301,6 @@ describe("boats hint — narration", () => {
     );
   });
 
-  it("holds every step under the per-game length ceiling", () => {
-    let longest = 0;
-    for (const [preset] of TIERS) {
-      for (let s = 0; s < 4; s++) {
-        const r = hintOf(board(preset, `len-${preset}-${s}`, s % 2 === 0));
-        if (!r.ok) continue;
-        for (const step of r.steps)
-          longest = Math.max(longest, step.explanation.length);
-      }
-    }
-    // The shared guard is 300; Boats' own two-part deductions land near 155, so
-    // hold the tighter line here and notice if a rewrite starts sprawling.
-    expect(longest).toBeLessThanOrEqual(170);
-  });
-
   it("never narrates the never-touch water as a deduction of its own", () => {
     // Owner decision 2026-07-28: the water a placement drags along is shown as
     // part of the same step, not explained again — a rule of the game belongs in

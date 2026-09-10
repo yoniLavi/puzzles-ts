@@ -51,11 +51,11 @@ const KINDS = [
 /** Phrases only one narration branch ever utters — a loose predicate stops a
  * `hintUntil` walk on the wrong frame (§8). */
 const PHRASE: Record<SticksReason["kind"], RegExp> = {
-  tooLong: /longer than its number allows/,
-  unreachable: /leave it room for only/,
-  twoClues: /may carry only one number/,
-  overConnected: /running into it|takes no lines at all/,
-  starved: /remaining open sides|side left that a line could reach/,
+  tooLong: /too long for it/,
+  unreachable: /needs a longer line/,
+  twoClues: /(?:into|on) one line\./,
+  overConnected: /already has its \d+ lines?|takes no lines/,
+  starved: /needs all \d+ of its open sides|has one open side left/,
 };
 
 /** The first fixed seed whose opening plan contains each kind. Scanned once. */
@@ -126,9 +126,9 @@ describe("sticks hint — narration", () => {
     for (let seed = 0; seed < 6; seed++) {
       for (const s of stepsFor(seed)) {
         const forced = /must be (horizontal|vertical)\.$/.exec(s.explanation)?.[1];
-        const ruledOut = /[Aa] (horizontal|vertical) line here/.exec(
-          s.explanation,
-        )?.[1];
+        // "here" is optional: a continuation leg drops it, since the opening
+        // leg already located the move.
+        const ruledOut = /[Aa] (horizontal|vertical) line\b/.exec(s.explanation)?.[1];
         expect(ruledOut, s.explanation).toBeDefined();
         expect(ruledOut, s.explanation).not.toBe(forced);
       }

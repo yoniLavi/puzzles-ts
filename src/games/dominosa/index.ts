@@ -403,9 +403,9 @@ function narrateBarrier(
     case "localDuplicate2":
       return `A ${dom} domino here would force both outlined squares to become ${dom} too, a duplicate, so it can't.`;
     case "parity":
-      return "A domino here would split the empty squares into two odd-sized regions, and an odd region can't be filled by dominoes, so this can't be a domino.";
+      return "A domino here would split the empty squares into odd-sized regions, which dominoes can't fill, so this can't be a domino.";
     case "set":
-      return `The outlined squares can only hold one small set of dominoes between them, using up the ${dom}, so ${dom} can't sit here as well.`;
+      return `The outlined squares can only hold one set of dominoes, which uses the ${dom}, so ${dom} can't sit here as well.`;
   }
 }
 

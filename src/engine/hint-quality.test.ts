@@ -16,10 +16,11 @@
  *    openers (procedure, not deduction) and each game's declared idioms
  *    (owner-endorsed phrasings whose necessity is carried by the words
  *    themselves — e.g. Filling's "fits exactly into").
- *  - **Narration stays terse** (§2.5): a hard length ceiling. The
- *    longest shipped narration is Undead's 281-char sightline teach; the
- *    cap catches the "rulebook bled into the step" class (Netslide,
- *    `d1f37b8`) without constraining anything that shipped.
+ *  - **Narration stays readable at a glance** (§2.5): a limit every step is
+ *    held to, with a ledger for the few sentences that genuinely need more
+ *    room, and a hard ceiling even they cannot pass. Checked across every
+ *    tier and into the middle of the game, in its own block, because the
+ *    first preset's opening plan is where the long sentences never are.
  *  - **No step asks the player to carry a chain it never lays out**
  *    (`audit-guessing-tier-names`): a bounded chain is a legitimate
  *    *Tactic* and may be narrated — but with the chain **shown on the
@@ -55,8 +56,129 @@ import { SLOW_TESTS_ENABLED } from "./testing/slow.ts";
 
 const SEEDS = ["hq-a", "hq-b", "hq-c"];
 
-/** Hard ceiling on one step's narration. Longest shipped today: 281. */
+/**
+ * How long a step may be — short enough to read at a glance (owner,
+ * 2026-09-10: *"a character limit as a linter, and a way to override it for a
+ * few particularly complex hints"*).
+ *
+ * Measured before it was set, over 15,132 steps in 30 games: median 84, p75
+ * 110, p90 147. 120 is the line Netslide and Spokes had each already drawn for
+ * themselves, and it flags the 139-character Tracks sentence the owner
+ * shortened by hand when asking for this — a limit that would not have caught
+ * the sentence that prompted it would not be the one asked for.
+ */
+const NARRATION_LIMIT = 120;
+
+/** The hard ceiling: what a ledgered sentence is held to instead. */
 const MAX_NARRATION_CHARS = 300;
+
+/**
+ * The override: sentences allowed past {@link NARRATION_LIMIT}, one entry per
+ * sentence *template*, each saying why it needs the room.
+ *
+ * **Asserted in both directions**, the `NARRATES_MOVES` shape: a step over the
+ * limit that no entry matches fails, and an entry that matches nothing over the
+ * limit fails too — so shortening a sentence means deleting its entry rather
+ * than leaving an exemption behind that silently stops guarding anything.
+ *
+ * `games` names every game the template reaches, because some are written once
+ * in the engine and spoken by several games.
+ */
+const LONG_NARRATIONS: { games: string[]; match: RegExp; why: string }[] = [
+  {
+    games: ["keen", "salad", "towers", "unequal"],
+    match: /has just two \w+s left, so each forces the next/,
+    why:
+      "The Latin chain Tactic (`latin-hint.ts`). ts-engine requires a narrated " +
+      "chain to name both ends, cite its links by position and say when the " +
+      "conclusion rests on a case split, and that is three clauses.",
+  },
+  {
+    games: ["singles"],
+    match: /^There's a pair of \d+s in one (?:column|row)/,
+    why:
+      'The owner-endorsed indication-first offset narration (hints.md § "Lead ' +
+      'with the indication"): its opener alone, the pattern the player learns ' +
+      "to spot, is 65 characters.",
+  },
+  {
+    games: ["lightup"],
+    match: /would leave each of them lit or beside a full clue/,
+    why:
+      "Two premises and a quantifier: one of a set must light the ringed square " +
+      "or fill the clue, and a bulb here disqualifies every member. The reach " +
+      "relation is also the deixis tie: the driving clue is never adjacent to or " +
+      "in line with the target (lightup/index.ts, measured).",
+  },
+  {
+    games: ["palisade"],
+    match: /so they share a fate: both walls or both open/,
+    why:
+      "The collection's hint exemplar, quoted verbatim in AGENTS.md § \"Hint " +
+      'quality bar" and owner-endorsed: the "share a fate" premise and its ' +
+      "gloss are what made the conclusion follow.",
+  },
+  {
+    games: ["palisade"],
+    match: /^Two 3s each keep just one side open/,
+    why:
+      "A proof by contradiction over two clues at once: opening their shared " +
+      "edge would spend each 3's only open side and seal a region of the wrong " +
+      "size, and each of those clauses carries weight.",
+  },
+  {
+    games: ["boats"],
+    match: /so one of these must be a boat segment; either way/,
+    why:
+      "A two-case argument: the line's water budget forces a boat segment into " +
+      "one of the marked squares, and the conclusion holds whichever it is, " +
+      "which the sentence has to say to be true.",
+  },
+  {
+    games: ["subsets"],
+    match: / For instance, /,
+    why:
+      "The owner's 2026-07-21 enhancement (subsets/index.ts, narrateExclusion): " +
+      "a collapse names one competitor set and the visible rule that blocks it, " +
+      "a second sentence on purpose.",
+  },
+  {
+    games: ["salad"],
+    match: /^This (?:row|column)'s [\w-]+ clue sees \S+ first/,
+    why:
+      "Salad's border-clue deductions carry two premises each: the symbol the " +
+      "clue sees first, and either the line's empty-square budget or the marked " +
+      "gap before this square. The strike list follows, so the long cases are " +
+      "the ones where the budget or the gap has to be counted out.",
+  },
+  {
+    games: ["clusters"],
+    match: /^Suppose this cell were (?:red|blue):/,
+    why:
+      "A Tactic chain. ts-engine requires the narration to name both ends and " +
+      'cite the links by their numbers on the board, and "from it" is the ' +
+      "deixis tie clusters-hint.test.ts checks.",
+  },
+  {
+    games: ["towers"],
+    match: /already sees all but one of its towers/,
+    why:
+      "The line-full rule strikes the shortest heights from the cell nearest the " +
+      "clue without placing anything, and the guide records a first cut that " +
+      "implied a placement: the wording that stops that misreading needs both " +
+      'sentences (hints.md § "Conclude with the action the move makes").',
+  },
+  {
+    games: ["singles"],
+    match:
+      /^(?:A touching pair of \d+s sits at the corner|This (?:corner|inner) \d+ matches)/,
+    why:
+      'The owner-directed corner family (hints.md § "Name a square by its ' +
+      'value": concrete values read far clearer): each arm is a proof by ' +
+      "contradiction whose links are values the player can check, and the " +
+      "box-in step is the one a shorter sentence would drop.",
+  },
+];
 
 /** The shared necessity vocabulary a deductive conclusion draws from.
  *
@@ -237,11 +359,8 @@ describe("hint narration form, cross-game", () => {
             `${at} — shows nothing: no words, no board marks`,
           ).toBe(true);
 
-          // §2.5 — terse; the rulebook belongs in the help.
-          expect(
-            step.explanation.length,
-            `${at} — narration over ${MAX_NARRATION_CHARS} chars`,
-          ).toBeLessThanOrEqual(MAX_NARRATION_CHARS);
+          // §2.5 — length is checked in "hint narration stays readable at a
+          // glance" below, across every tier and into the middle game.
 
           // §2.1 — a deduction concludes in the necessity voice.
           if (DEDUCTIVE.has(name) && !MECHANICAL.test(step.explanation)) {
@@ -367,6 +486,105 @@ describe("no hint leaves a chain for the player to carry, at any tier", () => {
       expect(checked, `${name}: nothing produced a hint to check`).toBeGreaterThan(0);
     });
   }
+});
+
+/**
+ * How many plans each board is walked through. The opening plan alone is
+ * where long sentences are rarest: a firing that needs more room to explain
+ * usually needs more of the board decided first.
+ *
+ * **As deep as the census that set the limit, not shallower.** The first cut
+ * walked eight plans to save time, and the ledger's own two-way check caught
+ * it: Light Up's two discount arms fired nowhere in eight plans, so their
+ * entry matched nothing and read as dead while the sentences were still being
+ * spoken deeper in the game. A shallow walk turns a live ledger entry into a
+ * false "delete me", which is the rot the check exists to stop.
+ *
+ * Cost, 2026-09-10: 43 s of test time for this block, measured at load
+ * average 19–41 with 34% memory free — an upper bound, not a cost. The same
+ * walk as a standalone census measured 16 s. Spokes, Palisade, Crossing and
+ * Sticks hold most of it; slicing those four is the lever if it ever matters.
+ */
+const LINT_ROUNDS = 30;
+
+/** Ledger entries that matched a step over the limit, by index. Filled by the
+ * per-game cases, read by the last one. */
+const ledgerUsed = new Set<number>();
+let linted = 0;
+
+describe("hint narration stays readable at a glance", () => {
+  for (const [name, game] of HINT_GAMES) {
+    const contract = game.difficulty;
+    const tiers = difficultyTiers(game);
+    it(`${name}: every step within ${NARRATION_LIMIT} characters, or ledgered`, () => {
+      const base = firstLeaf(game.presets());
+      const cases: { label: string; params: unknown }[] =
+        contract && tiers
+          ? tiers.map((tierName, tier) => ({
+              label: `tier ${tier} ("${tierName}")`,
+              params: contract.withTier(base, tier),
+            }))
+          : untieredCases(name, game);
+      for (const { label, params } of cases) {
+        if (game.validateParams(params, true)) continue;
+        for (const seed of SEEDS) {
+          let desc: string;
+          let aux: string | undefined;
+          try {
+            ({ desc, aux } = game.newDesc(
+              params,
+              randomNew(`${name}-${label}-${seed}`),
+            ));
+          } catch {
+            continue;
+          }
+          let state = game.newState(params, desc);
+          for (let round = 0; round < LINT_ROUNDS; round++) {
+            if (game.status(state) === "solved") break;
+            const res = game.hint?.(state, aux);
+            if (!res?.ok) break;
+            for (const step of res.steps) {
+              const text = step.explanation;
+              linted++;
+              expect(
+                text.length,
+                `${name} ${label}/${seed}: "${text}" is over the hard ceiling of ${MAX_NARRATION_CHARS}`,
+              ).toBeLessThanOrEqual(MAX_NARRATION_CHARS);
+              if (text.length <= NARRATION_LIMIT) continue;
+              const entry = LONG_NARRATIONS.findIndex(
+                (e) => e.games.includes(name) && e.match.test(text),
+              );
+              expect(
+                entry,
+                `${name} ${label}/${seed}: "${text}" is ${text.length} characters, over ${NARRATION_LIMIT}. Shorten it, or add it to LONG_NARRATIONS with the reason it needs the room.`,
+              ).toBeGreaterThanOrEqual(0);
+              ledgerUsed.add(entry);
+            }
+            // Walk on through the whole plan, not just its first step: the
+            // aim is the sentences deeper in the game, cheaply.
+            for (const step of res.steps) state = game.executeMove(state, step.move);
+          }
+        }
+      }
+    });
+  }
+
+  it("ledgers only sentences that still need the room", () => {
+    // Registered last, so it runs after every per-game case has filled
+    // `ledgerUsed`. Vacuity first: an unpopulated walk would find every entry
+    // "unused" for the wrong reason.
+    expect(linted, "the length walk looked at almost nothing").toBeGreaterThan(2000);
+    const hinting = new Set(HINT_GAMES.map(([id]) => id));
+    LONG_NARRATIONS.forEach((e, i) => {
+      for (const g of e.games)
+        expect(hinting.has(g), `${g} ships no hint()`).toBe(true);
+      expect(e.why.length, `${e.match} states no reason`).toBeGreaterThan(60);
+      expect(
+        ledgerUsed.has(i),
+        `${e.match} matched nothing over ${NARRATION_LIMIT}: the sentence got shorter, so delete the entry`,
+      ).toBe(true);
+    });
+  });
 });
 
 /**

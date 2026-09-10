@@ -543,7 +543,7 @@ function narrate(reason: SoloReason, ns: number[]): string {
     case "forcedSingle":
       return `Working through this cell's row, column and block together, only ${reason.n} can still go here, so it must be ${reason.n}.`;
     case "dup":
-      return `A ${reason.n} is already placed in this cell, so it can't repeat in the same row, column or block. Cross out the ${reason.n} from these cells.`;
+      return `A ${reason.n} is already placed in this cell, so it can't repeat in its row, column or block: cross out the ${reason.n} from these cells.`;
     case "intersect": {
       const cName = regionName(reason.confined);
       const tName = regionName(reason.target);

@@ -412,8 +412,8 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
   switch (reason.kind) {
     case "tooLong":
       return continues
-        ? `The ${reason.value} rules this square out too: a ${bad} line here would run its line to ${reason.size} squares. ${tail}`
-        : `A ${bad} line here would run the ${reason.value}'s line to ${reason.size} squares, longer than its number allows. ${tail}`;
+        ? `The ${reason.value} rules this square out too: a ${bad} line would run its line to ${reason.size} squares. ${tail}`
+        : `A ${bad} line here would run the ${reason.value}'s line to ${reason.size} squares, too long for it. ${tail}`;
 
     case "unreachable": {
       // Leads with the clue, not with the ruled-out move: the signal a player
@@ -421,13 +421,13 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
       // they will not spot from the square being acted on (§2.2).
       const room = `${reason.max} square${reason.max === 1 ? "" : "s"}`;
       return continues
-        ? `The ${reason.value} rules this square out too: a ${bad} line here would leave it room for only ${room}. ${tail}`
-        : `The ${reason.value} still needs a longer line, and a ${bad} line here would leave it room for only ${room}. ${tail}`;
+        ? `The ${reason.value} rules this square out too: a ${bad} line would leave it only ${room}. ${tail}`
+        : `The ${reason.value} needs a longer line, and a ${bad} line here would leave it only ${room}. ${tail}`;
     }
 
     case "twoClues": {
       if (continues)
-        return `The same pair rules this square out too: a ${bad} line here would join them into one line. ${tail}`;
+        return `The same pair rules this square out too: a ${bad} line would join them into one line. ${tail}`;
       const vals = reason.clues.map((c) => state.numbers[c]);
       const joined =
         vals.length !== 2
@@ -435,7 +435,9 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
           : vals[0] === vals[1]
             ? `join two ${vals[0]}s into one line`
             : `join the ${vals[0]} and the ${vals[1]} into one line`;
-      return `A ${bad} line here would ${joined}, and a line may carry only one number. ${tail}`;
+      // One number per line is the rule, and the help teaches it
+      // (docs/games/hints.md § "Rules belong in the help").
+      return `A ${bad} line here would ${joined}. ${tail}`;
     }
 
     case "overConnected":
@@ -445,15 +447,15 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
       if (continues)
         return `The black ${reason.value} rules this square out too: a ${bad} line here would run into it. ${tail}`;
       return reason.value === 0
-        ? `The black 0 takes no lines at all, and a ${bad} line here would run straight into it. ${tail}`
-        : `The black ${reason.value} already has ${reason.value} line${reason.value === 1 ? "" : "s"} running into it, and a ${bad} line here would make another. ${tail}`;
+        ? `The black 0 takes no lines, and a ${bad} line here would run straight into it. ${tail}`
+        : `The black ${reason.value} already has its ${reason.value} line${reason.value === 1 ? "" : "s"}, and a ${bad} line here would add another. ${tail}`;
 
     case "starved":
       if (continues)
-        return `The black ${reason.value} rules this square out too: a ${bad} line here would close off another of its open sides. ${tail}`;
+        return `The black ${reason.value} rules this square out too: a ${bad} line would close another open side. ${tail}`;
       return reason.value === 1
-        ? `The black 1 has just one side left that a line could reach it from, and a ${bad} line here would close it off. ${tail}`
-        : `The black ${reason.value} needs a line on each of its ${reason.value} remaining open sides, and a ${bad} line here would close one off. ${tail}`;
+        ? `The black 1 has one open side left, and a ${bad} line here would close it off. ${tail}`
+        : `The black ${reason.value} needs all ${reason.value} of its open sides, and a ${bad} line here would close one. ${tail}`;
   }
 }
 

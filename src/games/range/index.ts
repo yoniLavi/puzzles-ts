@@ -368,17 +368,28 @@ function narrate(reason: HintReason): string {
   switch (reason.kind) {
     case "adjacency":
       return "No two black squares may touch. This cell sits right next to the ringed black square, so it must be white.";
-    case "satisfied":
-      return `The highlighted ${reason.n} can already see exactly ${reason.n} white cells (outlined). That count is complete, so its line of sight must stop at this cell, the next one out past the outlined run, which must be black.`;
+    case "satisfied": {
+      // Read at the small extremes (docs/games/hints.md § "Sanity-read at the
+      // degenerate extremes"): a 1 sees only its own cell, and "all 2 of" reads
+      // wrong where "both" is the word — Salad's line counts say it the same way.
+      const n = reason.n;
+      const seen =
+        n === 1
+          ? "its one white cell"
+          : n === 2
+            ? "both of its white cells"
+            : `all ${n} of its white cells`;
+      return `The highlighted ${n} already sees ${seen} (outlined), so the cell just past ${n === 1 ? "it" : "them"} must be black.`;
+    }
     case "overrun":
-      return `The highlighted ${reason.n} already sees the outlined white cells. Leaving this cell, the next one out past the outlined run, white would let it see more than ${reason.n}, so it must be black.`;
+      return `White here, just past the outlined cells, would let the highlighted ${reason.n} see more than ${reason.n}, so this cell must be black.`;
     case "reach":
-      return `The highlighted ${reason.n} can't yet see ${reason.n} cells. The only way to reach ${reason.n} is to extend its line of sight along the outlined run as far as this cell, so this cell must be white.`;
+      return `To see ${reason.n} cells, the highlighted ${reason.n} must look along the outlined run as far as this cell, so this cell must be white.`;
     case "connect":
       // Both `ruleConnectedness` call sites record WHITE, so there is no
       // black-target branch to write: a cut vertex of the white region is
       // forced *white*, never black.
-      return "Every white cell must join one connected group. Painting this cell black would cut the outlined cells around it off from the rest, so it must stay white.";
+      return "Painting this cell black would cut the outlined cells around it off from the other white cells, so it must stay white.";
   }
 }
 

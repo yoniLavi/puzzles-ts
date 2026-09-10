@@ -815,17 +815,17 @@ describe("the shared setup narration", () => {
     // game's hints read in two vocabularies (Salad says "square", the Latin
     // family says "cell").
     const fill = populateText("letter", "square");
-    expect(fill).toContain("in each empty square");
+    expect(fill).toContain("into each empty square");
     expect(fill).not.toContain("cell");
 
     const clean = cleanObviousText("letter", "standing", "row or column", "square");
-    expect(clean).toContain("in each square");
+    expect(clean).toContain("each square's");
     expect(clean).not.toContain("cell");
-    expect(clean).toContain("already standing in its row or column");
+    expect(clean).toContain("already standing in each square's row or column");
 
-    expect(populateText("number")).toContain("in each empty cell");
+    expect(populateText("number")).toContain("into each empty cell");
     expect(cleanObviousText("number", "placed", "row, column or block")).toContain(
-      "in each cell",
+      "each cell's row, column or block",
     );
   });
 });

@@ -417,11 +417,11 @@ function narrate(reason: HintReason, ns: number[], o: number): string {
     case "greater":
       return reason.bound <= 1
         ? `The larger side of a greater-than sign can't hold the smallest number, so we must cross out ${joinNums(ns)}.`
-        : `The cell across this greater-than sign can be no less than ${reason.bound}, so this cell must be larger still; we must cross out ${joinNums(ns)}.`;
+        : `The cell across this greater-than sign is at least ${reason.bound}, so this one must be larger; we must cross out ${joinNums(ns)}.`;
     case "lesser":
       return reason.bound >= o
         ? `The smaller side of a greater-than sign can't hold the largest number, so we must cross out ${joinNums(ns)}.`
-        : `The cell across this greater-than sign can be no more than ${reason.bound}, so this cell must be smaller still; we must cross out ${joinNums(ns)}.`;
+        : `The cell across this greater-than sign is at most ${reason.bound}, so this one must be smaller; we must cross out ${joinNums(ns)}.`;
     case "adjacent":
       return reason.bar
         ? `A bar joins this cell to the ${reason.v} beside it, so the two numbers must differ by exactly 1; this cell can only be one away from ${reason.v}, so we must cross out ${joinNums(ns)}.`

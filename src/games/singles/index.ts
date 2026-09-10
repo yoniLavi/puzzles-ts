@@ -316,7 +316,7 @@ function narrate(
     }
     case "pair": {
       const n = numAt(reason.pair[0]);
-      return `These two ${n}s sit next to each other, so one of them stays white and uses it up. Every other ${n} in the line must be shaded.`;
+      return `These two ${n}s touch, so one of them stays white and uses it up: every other ${n} in the line must be shaded.`;
     }
     case "corner4": {
       // All four share a number, so a diagonal pair must be shaded (two
@@ -324,7 +324,7 @@ function narrate(
       // only neighbors are the two sides, so shading the side diagonal
       // would strand the corner white — the same box-in argument as corner3.
       const n = numAt(reason.block[0]);
-      return `This corner ${n} matches both its neighbors, so keeping it white would shade them both and box it in, so the corner and the ${n} diagonally inside must both be shaded.`;
+      return `This corner ${n} matches both its neighbors; keeping it white would shade both and box it in, so it and the ${n} diagonally inside must be shaded.`;
     }
     case "corner3": {
       // Branch A shades the corner itself; branch B shades the inner cell
@@ -333,8 +333,8 @@ function narrate(
       const m = numAt(reason.matched[1]);
       const t = numAt(targets[0]);
       return targets.some((tg) => sameCell(tg, reason.corner))
-        ? `This corner ${t} matches both its neighboring ${m}s; keeping it white would shade them both, leaving the corner boxed in, so the ${t} must be shaded.`
-        : `This inner ${t} matches the two ${m}s flanking the corner ${numAt(reason.corner)}; keeping it white would shade them both, leaving the corner boxed in, so the ${t} must be shaded.`;
+        ? `This corner ${t} matches both neighboring ${m}s; keeping it white would shade both and box it in, so the ${t} must be shaded.`
+        : `This inner ${t} matches the two ${m}s flanking the corner ${numAt(reason.corner)}; keeping it white would shade both and box the corner in, so the ${t} must be shaded.`;
     }
     case "corner2": {
       // Indication-first (§1b): open on the spotted pattern — a touching pair

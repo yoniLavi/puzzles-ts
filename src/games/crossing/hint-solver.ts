@@ -562,7 +562,7 @@ export function narrateCrossing(
       const [near, far] = leadAcross ? ["Across", "down"] : ["Down", "across"];
       const small = leadAcross ? across : down;
       const rest = small.filter((d) => d !== firing.digit);
-      return `${near}, this square can only be ${joinOr(small)}, and the ${far} number through it cannot take ${joinOr(rest)} here, so it must be ${firing.digit}.`;
+      return `${near}, this square can only be ${joinOr(small)}, and the ${far} number cannot take ${joinOr(rest)} here, so it must be ${firing.digit}.`;
     }
     case "noteStrike": {
       const way = wayOf(puzzle, firing.run);

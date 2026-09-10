@@ -446,10 +446,40 @@ carries the premise) and on implied values ("the region of N" already tells
 the player to write N). **Don't repeat the number.** When a narration feels
 long, cut to the single premise the highlight doesn't already show.
 
-**Guarded cross-game** (`hint-quality.test.ts`): a hard 300-character ceiling
-per step (longest shipped: 281, Undead's sightline teach). The ceiling catches
-the "rulebook bled into the step" class; terseness *below* it is still an
-editing judgment.
+**Guarded cross-game: 120 characters per step** (`hint-quality.test.ts`
+§ "hint narration stays readable at a glance", owner-chosen 2026-09-10 from a
+measured census — median 84, p75 110, p90 147). It walks every tier of every
+hinting game into the middle game, because long sentences are the ones spoken
+once more of the board is decided; the easiest preset's opening plan, where the
+old 300 ceiling was checked, is exactly where they are not.
+
+**A sentence that genuinely needs more room goes in the ledger**
+(`LONG_NARRATIONS`), one entry per template with its reason, held to 300
+instead. The ledger is asserted both ways — an unlisted long step fails, and so
+does an entry that matches nothing long — so shortening a sentence means
+deleting its entry. What earned a place when the limit was introduced is worth
+knowing before you add one: chain Tactics whose form the spec mandates (name
+both ends, cite links, state the case split), owner-endorsed exemplar wording,
+two-premise deductions, and an owner-requested second sentence.
+
+**How the pass that introduced it shortened ~100 sentences without losing a
+premise**, in order of how often each applied:
+
+- **Move the rule to the help.** The longest shipped narration, Undead's 280
+  characters, was mostly a restatement of which monster shows before a mirror;
+  the step now says only what this sightline's two clues decide (§ "Rules
+  belong in the help"). Check the help actually teaches the rule before cutting
+  it — every cut in that pass was checked.
+- **Let the picture carry what it shows.** "(its other sides are walled)" beside
+  a cell whose walls are drawn; "the next one out past the outlined run" where
+  "just past them" points at the same outline.
+- **Keep every per-game guard's intent when its pinned words move.** Range and
+  Bricks key their deixis gates on relational ties, Sticks detects each kind by
+  a phrase only that kind says, Light Up's necessity check wants "must be a
+  bulb": each rewrite kept or re-keyed the tie rather than dropping it.
+- **Re-read the degenerate extremes while you are in there.** Filling had been
+  shipping "must be a 8"; Range's "sees all N of its cells" needed a branch for
+  a 1.
 
 ### No em-dashes
 

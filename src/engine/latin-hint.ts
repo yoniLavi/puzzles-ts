@@ -258,7 +258,7 @@ export function narrateLatinReason(
     case "single":
       return `Every other ${noun} has been ruled out in this ${cell}, so it can only be ${v(ns[0])}.`;
     case "hiddenSingle":
-      return `In this ${reason.line === "row" ? "row" : "column"}, ${v(reason.n)} can go in only this ${cell}, because every other ${cell} in the ${reason.line === "row" ? "row" : "column"} has ruled it out, so it must be ${v(reason.n)}.`;
+      return `In this ${reason.line === "row" ? "row" : "column"}, ${v(reason.n)} can go in only this ${cell}, since every other ${cell} in the ${reason.line === "row" ? "row" : "column"} rules it out, so it must be ${v(reason.n)}.`;
     case "forcedSingle":
       return `Working through this ${cell}'s row and column together, only ${v(reason.n)} can still go here, so it must be ${v(reason.n)}.`;
     case "dup": {
@@ -266,7 +266,7 @@ export function narrateLatinReason(
       return `There's already ${indefinite(d)} ${d} in this row and column, so we must cross out the ${d} from the other ${cells} they pass through.`;
     }
     case "set":
-      return `Another group of ${cells} already accounts for a fixed set of ${noun}s that includes ${list(ns)}, so we must cross out ${list(ns)} here.`;
+      return `Another group of ${cells} already accounts for ${list(ns)} between them, so we must cross out ${list(ns)} here.`;
     case "forcing":
       return narrateForcingChain(
         reason,

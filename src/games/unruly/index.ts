@@ -222,14 +222,14 @@ function narrate(reason: HintReason): string {
   switch (reason.kind) {
     case "threes": {
       const c = colorName(reason.color);
-      return `Two of these three cells are already ${c}; a third ${c} would make three in a row, which isn't allowed, so this cell must be ${colorName(reason.color === ONE ? ZERO : ONE)}.`;
+      return `Two of these three cells are already ${c}, so a third would make three in a row: this cell must be ${colorName(reason.color === ONE ? ZERO : ONE)}.`;
     }
     case "complete":
       return `This ${line} already holds all of its ${colorName(reason.full)} cells, so every remaining cell in it must be ${colorName(reason.fill)}.`;
     case "unique":
-      return `A full ${line} already matches this one everywhere it is filled except this cell; making this cell ${colorName(reason.fill === ONE ? ZERO : ONE)} would make the two ${line}s identical, which the unique-rows variant forbids, so it must be ${colorName(reason.fill)}.`;
+      return `A full ${line} matches this one everywhere but this cell, so making it ${colorName(reason.fill === ONE ? ZERO : ONE)} would make them identical: it must be ${colorName(reason.fill)}.`;
     case "nearcomplete":
-      return `Only one ${colorName(reason.fill === ONE ? ZERO : ONE)} cell is left to place in this ${line}; anywhere but the ringed cells would force three ${colorName(reason.fill)} in a row, so every other empty cell must be ${colorName(reason.fill)}.`;
+      return `The last ${colorName(reason.fill === ONE ? ZERO : ONE)} in this ${line} can only go in a ringed cell without forcing three ${colorName(reason.fill)}s, so the rest must be ${colorName(reason.fill)}.`;
   }
 }
 

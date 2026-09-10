@@ -200,7 +200,7 @@ describe("hint", () => {
         expect(step.explanation).toMatch(/^Suppose this cell were (red|blue):/);
         expect(hl.chain.length).toBe(d.reason.steps.length);
       } else if (kind === "dotOvercount") {
-        expect(step.explanation).toContain("dot touches exactly one tile");
+        expect(step.explanation).toMatch(/already touches its one (?:red|blue) tile/);
         expect(hl.danger).toBeDefined();
       } else if (kind === "surrounded" && d.reason.at.cell !== d.index) {
         expect(step.explanation).toContain("seal");

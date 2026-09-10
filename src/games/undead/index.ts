@@ -422,7 +422,7 @@ function findMistakes(state: UndeadState): readonly UndeadMistake[] {
 // --- hint ------------------------------------------------------------------
 
 const POPULATE_TEXT =
-  "Start by penciling every monster into each empty cell, so the eliminations that follow have something to cross out.";
+  "Start by penciling every monster into each empty cell, so there is something to cross out.";
 
 const isSingleton = (v: number): boolean =>
   v === MON_GHOST || v === MON_VAMPIRE || v === MON_ZOMBIE;
@@ -490,7 +490,10 @@ function narrate(
       const path = common.paths[reason.path];
       const a = path.sightingsStart;
       const b = path.sightingsEnd;
-      return `Trace this sightline: a vampire shows before its first mirror, a ghost only after one, a zombie anywhere along it. No arrangement that shows exactly ${a} from one end and ${b} from the other leaves room for the ${list} in this cell, so we must cross out the ${list}.`;
+      // Which monster shows where is the game's rule, and the help teaches it
+      // (help/games/undead.md); the step says only what this sightline's two
+      // clues decide (docs/games/hints.md § "Rules belong in the help").
+      return `This sightline's ${a} and ${b} leave no room for a ${list} here, so we must cross out the ${list}.`;
     }
     case "total": {
       const name = monsterName(reason.monster);
@@ -498,7 +501,7 @@ function narrate(
     }
     case "onlyCells": {
       const name = monsterName(reason.monster);
-      return `The only cells that can still hold a ${name} are exactly enough for the ${name}s still to place, so this one can only be a ${name}.`;
+      return `Exactly as many cells can still hold a ${name} as there are ${name}s left to place, so this one can only be a ${name}.`;
     }
     case "single":
       return `Only the ${list} is left uncrossed in this cell, so it can only be a ${list}.`;

@@ -151,6 +151,13 @@ function count(k: number, one: string, many = `${one}s`): string {
   return `${k} ${k === 1 ? one : many}`;
 }
 
+/** A border clue named by where the player sees it, as a sentence opener. */
+function clueName(side: string): string {
+  if (side === "top") return "This column's top clue";
+  if (side === "bottom") return "This column's bottom clue";
+  return side === "left" ? "This row's left-hand clue" : "This row's right-hand clue";
+}
+
 // --- narration -------------------------------------------------------------
 
 /**
@@ -174,22 +181,18 @@ export function narrate(
     case "borderNear": {
       const { side } = clueSide(reason.clue, order);
       const clue = sym(reason.clueVal);
-      const lead = `The clue ${side === "top" || side === "bottom" ? `${side === "top" ? "above" : "below"} this column` : `to the ${side} of this row`} sees ${clue} first`;
+      const lead = `${clueName(side)} sees ${clue} first`;
       const gap =
         reason.skipped === 0
-          ? `, and this is the nearest square to it`
-          : `, and the ${count(reason.skipped, "square")} between it and this one ${reason.skipped === 1 ? "is" : "are"} already marked empty`;
-      return `${lead}${gap}, so nothing but ${clue} can go here, and we must cross out ${list(ns)}.`;
+          ? ` and this square is nearest to it`
+          : `, and the ${count(reason.skipped, "square")} between ${reason.skipped === 1 ? "is" : "are"} marked empty`;
+      return `${lead}${gap}, so only ${clue} can go here: cross out ${list(ns)}.`;
     }
     case "borderFar": {
       const { side, axis } = clueSide(reason.clue, order);
       const clue = sym(reason.clueVal);
-      const where =
-        side === "top" || side === "bottom"
-          ? `${side === "top" ? "above" : "below"} this column`
-          : `to the ${side} of this row`;
       if (reason.circleAt !== null) {
-        return `The clue ${where} sees ${clue} first, and the outlined square furthest from it already holds ${vocab.noun === "letter" ? "a letter" : "a number"}, so the ${clue} must sit somewhere in the outlined run. We must cross out the ${clue} past it.`;
+        return `${clueName(side)} sees ${clue} first, and the outlined square furthest from it already holds ${vocab.noun === "letter" ? "a letter" : "a number"}, so the ${clue} must sit somewhere in the outlined run. We must cross out the ${clue} past it.`;
       }
       const bound =
         reason.reach === 0
@@ -199,7 +202,7 @@ export function narrate(
         reason.tightenedBy > 0
           ? ` and ${reason.tightenedBy === 1 ? "one of them is" : `${reason.tightenedBy} of them are`} already marked further along`
           : ``;
-      return `The clue ${where} sees ${clue} first, so every square before its ${clue} must be empty. This ${axis} has room for only ${count(reason.holes, "empty square")}${tighten}, so the ${clue} ${bound}. We must cross out the ${clue} beyond that.`;
+      return `${clueName(side)} sees ${clue} first, so every square before its ${clue} must be empty. This ${axis} has room for only ${count(reason.holes, "empty square")}${tighten}, so the ${clue} ${bound}. We must cross out the ${clue} beyond that.`;
     }
     case "countHolesDone": {
       const axis = reason.line === "row" ? "row" : "column";
@@ -224,7 +227,7 @@ export function narrate(
         : `We already know which ${count(nums, "square")} of this ${axis} hold its ${noun}s, so every other square in it must be empty.`;
     }
     case "crossNaked":
-      return `The empty-square mark is the only one left in this square, because every ${noun} has been ruled out here, so it must be empty.`;
+      return `Every ${noun} is ruled out here, so the empty-square mark is the only one left: this square must be empty.`;
     case "forcedCross":
       return `Working through this square's row and column together, no ${noun} can still go here, so it must be empty.`;
     case "forcedCircle":
@@ -637,7 +640,7 @@ function buildSteps(
     steps.push(
       populateStep<SaladMove, SaladHint>(
         { type: "pencilAll" },
-        `Start by penciling in every candidate ${vocab.noun} in each empty square that hasn't any yet, so the eliminations that follow have something to cross out.`,
+        `Start by penciling every candidate ${vocab.noun} into each empty square that has none yet, so there is something to cross out.`,
       ),
     );
     populated = true;

@@ -98,7 +98,7 @@ describe("hint", () => {
     // name, which `docs/games/hints.md` § "Two marks on the board" forbids as
     // scheme-relative and invisible to a color-blind reader.
     const TIE =
-      /right next to the ringed black square|the next one out past the outlined run|along the outlined run as far as this cell|the outlined cells around it/;
+      /right next to the ringed black square|just past (?:it|them|the outlined cells)|along the outlined run as far as this cell|the outlined cells around it/;
     const kinds = new Set<string>();
     let checked = 0;
     for (const seed of ["range-hint-plan", "range-evidence-2", "range-evidence-3"]) {

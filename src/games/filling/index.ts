@@ -247,7 +247,8 @@ function narrate(reason: FillingHintReason, count: number): string {
     case "lonely":
       return "No neighboring region can grow to include this square, so it can only be a 1.";
     case "bitmap":
-      return `No other number can go here, because each would touch an equal number or leave a region short of its size, so it must be a ${reason.n}.`;
+      // "be N", not "be a N": the article trap ("a 8").
+      return `No other number can go here: each would touch an equal number or leave a region short of its size, so it must be ${reason.n}.`;
   }
 }
 

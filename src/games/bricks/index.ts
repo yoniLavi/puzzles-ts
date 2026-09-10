@@ -380,7 +380,7 @@ function narrate(
   const clueVal = (i: number): number => state.grid[i] & NUM_MASK;
   switch (reason.kind) {
     case "three":
-      return "This cell sits next to the ringed shaded bricks, and shading it would make three in a row, which no row may have, so it must stay clear.";
+      return "Shading this cell, next to the ringed shaded bricks, would make three in a row, so it must stay clear.";
     case "unsupported":
       // A ringed cell below is an unshaded brick *or a clue* — `validateGravity`
       // masks a clue down to no color, so a clue supports nothing (seen live:
@@ -393,8 +393,8 @@ function narrate(
       return evidence.length === 0
         ? "Shading this cell would leave it with no shaded brick beneath it to rest on, so it must stay clear."
         : evidence.length === 1
-          ? "The ringed cell below this one is the only thing it could rest on, and it isn't a shaded brick, so this cell must stay clear."
-          : "The ringed cells below this one are the only things it could rest on, and neither is a shaded brick, so this cell must stay clear.";
+          ? "The ringed cell below this one is all it could rest on, and it isn't a shaded brick, so this cell must stay clear."
+          : "The ringed cells below this one are all it could rest on, and neither is a shaded brick, so this cell must stay clear.";
     case "overcount": {
       const n = clueVal(reason.clue);
       // docs/games/hints.md § "Sanity-read at the degenerate extremes": "more
@@ -405,10 +405,10 @@ function narrate(
         : `Shading this cell would give the ringed ${n} beside it more than its ${n} shaded neighbor${n === 1 ? "" : "s"}, so it must stay clear.`;
     }
     case "strandSupport":
-      return "The shaded brick above rests only on this cell, and clearing it would leave that brick with nothing beneath it, so it must be shaded.";
+      return "The shaded brick above rests only on this cell, so clearing it would leave that brick unsupported: it must be shaded.";
     case "undercount": {
       const n = clueVal(reason.clue);
-      return `The ringed ${n} beside this cell still needs more shaded neighbors, and this is one of the last cells that can supply one. Clearing it would put ${n} out of reach, so it must be shaded.`;
+      return `The ringed ${n} beside this cell can't reach ${n} shaded neighbors without it, so this cell must be shaded.`;
     }
     case "localBreak": {
       // The direct rung's *unclassified* case: one color placed, one validator

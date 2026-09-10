@@ -186,12 +186,10 @@ describe("undead hint plan", () => {
         } else if (step.move.type === "set") {
           expect(/can only be/.test(e), e).toBe(true);
         }
-        // sightline counts are phrased "exactly N ... and N", never "only N"
-        if (/Trace this sightline/.test(e)) {
-          expect(
-            /shows exactly \d+ from one end and \d+ from the other/.test(e),
-            e,
-          ).toBe(true);
+        // a sightline strike names both of its clues, and never "only N"
+        if (/^This sightline's/.test(e)) {
+          expect(/^This sightline's \d+ and \d+ leave no room/.test(e), e).toBe(true);
+          expect(/\bonly \d+/.test(e), e).toBe(false);
         }
       }
     }
@@ -359,7 +357,7 @@ describe("undead hint render (tier 2.5)", () => {
       id: "5x5dn#hint-render",
       showHint: true,
       hintUntil: (s) =>
-        s.move.type === "pencilStrike" && /Trace this sightline/.test(s.explanation),
+        s.move.type === "pencilStrike" && /^This sightline's/.test(s.explanation),
       defaultBackground: DEFAULT_BACKGROUND,
     });
     expect(hint).toBeDefined();

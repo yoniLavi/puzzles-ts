@@ -199,7 +199,7 @@ describe("inertia hint narration", () => {
     // Only NE... no: the gem is south-east, the mines east and south.
     expect(step.explanation).toContain("Slide south-east");
     expect(step.explanation).toContain(
-      "it is the only direction that doesn't run you onto a mine",
+      "the only direction that doesn't run you onto a mine",
     );
   });
 
@@ -305,9 +305,11 @@ describe("inertia hint narration", () => {
     expect(s.py).toBe(2);
 
     const step = firstStep(s);
-    expect(step.explanation).toContain("sliding east would sweep it up right now");
+    expect(step.explanation).toContain("Sliding east grabs the marked gem");
     expect(step.explanation).toContain("you don't choose where you stop");
-    expect(step.explanation).toContain("a gem can never be reached again");
+    // "strands" is the proved claim (`unreachableGems`): a gem the ball can
+    // never reach again.
+    expect(step.explanation).toContain("it strands a gem");
     // And the move it actually suggests is the safe approach.
     expect(step.move).toEqual({ type: "move", dir: N });
   });

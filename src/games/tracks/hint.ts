@@ -93,11 +93,18 @@ export interface TracksHighlights {
 
 // --- naming things the player can see -------------------------------------
 
-/** The word for the direction from one square to its neighbor. */
+/** Where a neighbor sits, as in "none above" / "none to the left". */
 function towards(dir: number): string {
   if (dir === U) return "above";
   if (dir === D) return "below";
-  return dir === L ? "to its left" : "to its right";
+  return dir === L ? "to the left" : "to the right";
+}
+
+/** Which way a track carries on, as in "carry on upward". */
+function onward(dir: number): string {
+  if (dir === U) return "upward";
+  if (dir === D) return "downward";
+  return dir === L ? "to the left" : "to the right";
 }
 
 /** Read a line's clue index back into orientation, length and target. */
@@ -110,8 +117,6 @@ function lineOf(b: Board, line: number) {
     len: isCol ? b.h : b.w,
     /** How many of them carry track. */
     target: b.numbers[line],
-    /** Being crossed straight through, in that line's terms. */
-    across: isCol ? "from side to side" : "from top to bottom",
   };
 }
 
@@ -134,10 +139,10 @@ export function narrate(b: Board, reason: TracksReason): string {
     case "onlyOneSideLeft":
       return reason.open === 0
         ? "Every side of this square is blocked, so no track can reach it: it must be empty."
-        : "Track has to enter a square by one side and leave by another, and only one side of this square is still open, so it must be empty.";
+        : "Only one side of this square is still open, and track needs two, so it must be empty.";
 
     case "bothSidesLeft":
-      return "This square carries track, and only two of its sides are still open, so the track must run in through one of them and out through the other.";
+      return "This square carries a track with only two of its sides still open, so there's only one way for it to go.";
 
     case "clueFull": {
       const { axis, target } = lineOf(b, reason.line);
@@ -147,7 +152,9 @@ export function narrate(b: Board, reason: TracksReason): string {
       const has =
         target === 1
           ? "the one track square its clue allows"
-          : `all ${target} of the track squares its clue allows`;
+          : target === 2
+            ? "both of the track squares its clue allows"
+            : `all ${target} of the track squares its clue allows`;
       return `This ${axis} already has ${has}, so every other square in it must be empty.`;
     }
 
@@ -162,52 +169,55 @@ export function narrate(b: Board, reason: TracksReason): string {
     }
 
     case "wouldCloseLoop":
-      return "These two squares are already linked by the outlined track running round the other way, so joining them here would close a loop; the track has to run from A to B instead, so this side must be blocked.";
+      return "The outlined track already joins these two squares, so linking them here would close a loop; this side must be blocked.";
 
     case "wouldStrandTrack":
-      return "Joining these two squares would link the run from A to the run from B and finish the track, but the outlined track would be left stranded off the end of it. So this side must be blocked.";
+      return "Joining here would link A's run to B's and finish the track, stranding the outlined track; this side must be blocked.";
 
     case "wouldFinishEarly": {
       const { axis, target } = lineOf(b, reason.unmet);
       const laid = reason.ev.cells.length;
-      return `Joining these two squares would link the run from A to the run from B and finish the track, but the highlighted ${axis} clue asks for ${target} track ${plural(target, "square", "squares")} and only ${laid} are laid. So this side must be blocked.`;
+      return `Joining here would link A's run to B's and finish the track, but the highlighted ${axis} clue wants ${target} and has ${laid}; this side must be blocked.`;
     }
 
     case "looseEndsFill": {
       const { axis, target } = lineOf(b, reason.line);
-      return `The outlined squares already account for this ${axis}'s whole clue of ${target}, so no other square in it can take track. Carrying this loose end on along the ${axis} would need one, so that side must be blocked.`;
+      return `The outlined squares already fill this ${axis}'s clue of ${target}, so this loose end can't carry on along it: that side must be blocked.`;
     }
 
     case "looseEndSpans": {
-      const { axis, across } = lineOf(b, reason.line);
-      return `Only two squares in this ${axis} have still to take track, and every unfinished square in it is blocked on one side, so none can be crossed ${across}. This loose end must therefore run straight on, so both its ${axis} sides must carry track.`;
+      const { axis } = lineOf(b, reason.line);
+      // "No way across it": every unfinished square has a side blocked across
+      // the line, which is what the outlined squares and their bars show.
+      return `With two track squares left in this ${axis} and no way across it, this loose end must run straight on.`;
     }
 
     case "sharedFate": {
       const { axis } = lineOf(b, reason.line);
-      const there = towards(reason.dir);
+      const there = onward(reason.dir);
       if (reason.fills && reason.empties) {
-        return `Only two squares in this ${axis} are still undecided, and track can pass through this one only by carrying on into the square ${there}, so the two share a fate. This one must therefore be empty, and the one ${there} must carry track.`;
+        return `Track here would have to carry on ${there}, and this ${axis} has one track square and one empty left, so this must therefore be empty, and the next must carry track.`;
       }
       if (reason.fills) {
-        return `This ${axis} has room for just one more track square, and track can pass through this square only by carrying on into the one ${there}, which would take two. So this square must be empty.`;
+        return `Track here would have to carry on ${there}, but this ${axis} has room for one more track square, so this must be empty.`;
       }
       const back = towards(
         reason.dir === U ? D : reason.dir === D ? U : reason.dir === L ? R : L,
       );
-      return `This ${axis} has room for just one more empty square, and track can pass through the square ${back} only by carrying on into this one, so an empty here would leave that one empty too. This square must carry track.`;
+      return `No track here would mean none ${back} either, and this ${axis} can spare just one more empty, so this must carry track.`;
     }
 
     case "crossingParity": {
       const { crossings } = reason;
+      // "Every entry needs an exit" is the parity argument in the player's
+      // terms: the track begins and ends off the board, so it crosses any
+      // closed block's border an even number of times.
       const marked =
         crossings === 0
-          ? "No crossing of it is marked yet"
-          : crossings === 1
-            ? "One crossing of it is marked"
-            : `${crossings} crossings of it are marked`;
+          ? "none marked yet"
+          : `${crossings} ${plural(crossings, "crossing", "crossings")} marked`;
       const verdict = crossings % 2 === 1 ? "carry track" : "be blocked";
-      return `The track starts and ends outside the outlined block, so it must cross that block's border an even number of times. ${marked}, and this side is the last crossing still undecided, so it must ${verdict}.`;
+      return `Every time the track enters the outlined block it must leave; with ${marked}, this last side must ${verdict}.`;
     }
   }
 }

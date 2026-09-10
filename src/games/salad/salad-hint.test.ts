@@ -78,7 +78,7 @@ describe("salad hint — the three signature techniques", () => {
     // Near the clue: the first square that could hold anything must hold the
     // clue's symbol, so every other symbol is crossed out of it.
     expect(
-      texts.some((t) => /sees [A-C] first.*so nothing but [A-C] can go here/.test(t)),
+      texts.some((t) => /sees [A-C] first.*so only [A-C] can go here/.test(t)),
     ).toBe(true);
     // Past its reach: bounded by how many empty squares the line may hold.
     expect(
@@ -112,7 +112,7 @@ describe("salad hint — the three signature techniques", () => {
     const texts = ["s1", "s2"].flatMap((s) => walk(LETTERS, s).texts);
     expect(
       texts.some((t) =>
-        /The empty-square mark is the only one left in this square, because every letter has been ruled out here, so it must be empty\./.test(
+        /Every letter is ruled out here, so the empty-square mark is the only one left: this square must be empty\./.test(
           t,
         ),
       ),
@@ -123,7 +123,7 @@ describe("salad hint — the three signature techniques", () => {
     // The standing bar: no "just because" fallback (docs/games/solver-and-generator.md § "Guess-free generation"). Every
     // narration must match one of the arms the game knows how to say.
     const KNOWN =
-      /(sees [A-C1-9] first|empty squares?, so every other|so every other square in it must be empty|empty-square mark is the only one left|no (letter|number) can still go here|cannot be one of the empty ones|cross out their empty-square marks|ruled out in this square|can go in only this square|together, only|There's already|fixed set of|Following a chain|Start by penciling|Now clear the easy ones)/;
+      /(sees [A-C1-9] first|empty squares?, so every other|so every other square in it must be empty|empty-square mark is the only one left|no (letter|number) can still go here|cannot be one of the empty ones|cross out their empty-square marks|ruled out in this square|can go in only this square|together, only|There's already|already accounts for|Following a chain|Start by penciling|Now clear the easy ones)/;
     for (const p of [LETTERS, NUMBERS, { ...LETTERS, diff: DIFF_HARD }]) {
       for (const t of walk(p, "bar-1").texts) {
         expect(t, `unnamed technique: ${t}`).toMatch(KNOWN);
