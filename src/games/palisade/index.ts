@@ -32,6 +32,7 @@ import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusa
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
+import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -136,24 +137,12 @@ function findMistakes(state: PalisadeState): readonly PalisadeMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-/** How many *further* sides a clue leaves open once the edge to its
- * neighbor is known open: its `clue` walls then all sit on its other three
- * sides, so `3 - clue` sides still lead into the same region. Clamped at
- * zero because `k === 1` admits a clue of 4, for which the premise is
- * vacuous rather than negative. */
-function otherOpenSides(clue: number): string {
-  const n = Math.max(0, 3 - clue);
-  return n === 0 ? "no other side" : n === 1 ? "1 other side" : `${n} other sides`;
-}
-
-/** Narrate one leg of a deduction, phrased as advice (the move has *not*
- * been applied yet: "must be a wall" / "can't be a wall", never "is a
- * wall" / "has none"). `leg`/`groupSize` describe the firing this edge
- * belongs to: a multi-edge deduction (`equivalentEdges` pair,
+/** Narrate one leg of a deduction. `leg`/`groupSize` describe the firing this
+ * edge belongs to: a multi-edge deduction (`equivalentEdges` pair,
  * `numberExhausted` sweep) narrates the coupling on its first leg and a
  * short continuation on the rest. The referenced cells/edges are
- * highlighted alongside (see `buildStep`), so "both highlighted edges"
- * and "the same region" have a visible referent. */
+ * highlighted alongside (see `buildStep`). The words, and why each reads as
+ * it does, are [`hint-text.ts`](./hint-text.ts)'s. */
 function explain(
   fe: ForcedEdge,
   clues: Int8Array,
@@ -163,80 +152,25 @@ function explain(
   groupSize: number,
 ): string {
   const c = clues[fe.y * w + fe.x];
-
-  // Continuation legs of a multi-edge firing: short and kind-specific
-  // (the first leg already gave the full reason, still on screen).
-  if (leg > 0) {
-    return fe.kind === "wall"
-      ? "…and this edge must be a wall too."
-      : "…and this edge can't be a wall either.";
-  }
+  if (leg > 0) return say.continuation(fe.kind);
 
   const multi = groupSize > 1;
   switch (fe.rule) {
-    // Upstream's `solver_connected_clues_versus_region_size`, whose bound
-    // the narration has to *show* rather than assert: if the shared edge
-    // were open, each clue's walls would all sit on its other three sides,
-    // leaving `3 - clue` sides leading further into the same region. Two
-    // orthogonally adjacent cells share no common orthogonal neighbor, so
-    // those two sets are disjoint and the region holds at least
-    // `2 + (3 - c) + (3 - d) = 8 - c - d` cells.
     case "cluesVersusRegionSize": {
-      const j = (fe.y + DY[fe.dir]) * w + (fe.x + DX[fe.dir]);
-      const d = clues[j];
-      // Two 3s are the case where the bound is *exact* rather than a
-      // minimum: each keeps one side open and it has to be the shared one,
-      // so the region would be those two cells and nothing else. `8-3-3`
-      // never exceeds `k`, so the general arm below cannot reach this.
-      if (c === 3 && d === 3) {
-        return `Two 3s each keep just one side open, and it has to be the one they share, so their region would be exactly 2 cells. Regions here hold ${k}, so the edge between them must be a wall.`;
-      }
-      const counts =
-        c === d
-          ? `These clues each leave ${otherOpenSides(c)} open`
-          : `Clue ${c} leaves ${otherOpenSides(c)} open and clue ${d} leaves ${otherOpenSides(d)} open`;
-      return `${counts}, so a shared region would need at least ${8 - c - d} cells. Regions here hold ${k}, so the edge between them must be a wall.`;
+      // The clue on the other side of the edge.
+      const d = clues[(fe.y + DY[fe.dir]) * w + (fe.x + DX[fe.dir])];
+      return say.cluesVersusRegionSize(c, d, k);
     }
     case "numberExhausted":
-      if (multi) {
-        return fe.kind === "wall"
-          ? `Clue ${c} reaches its count only if every remaining edge is a wall, so draw them all.`
-          : `Clue ${c} already has all its walls, so its remaining edges can't be walls. Clear them.`;
-      }
-      return fe.kind === "wall"
-        ? `Clue ${c} needs all its remaining edges to be walls, so this one must be a wall.`
-        : `Clue ${c} already has all its walls, so this edge can't be one.`;
-    // Both region-size rules carry their evidence cells, so the narration
-    // states the sizes it is comparing rather than "the target size".
-    case "notTooBig": {
-      const joined = fe.cells?.length;
-      return joined === undefined
-        ? `Joining these two regions would leave more than the ${k} cells a region holds, so this edge must be a wall.`
-        : `Joining these two regions would make ${joined} cells, but a region here holds ${k}, so this edge must be a wall.`;
-    }
-    case "notTooSmall": {
-      const size = fe.cells?.length;
-      return size === undefined
-        ? `This region is short of its ${k} cells and has just one way left to grow, so this edge can't be a wall.`
-        : `This region has ${size} of its ${k} cells and just one way left to grow, so this edge can't be a wall.`;
-    }
+      return say.numberExhausted(c, fe.kind, multi);
+    case "notTooBig":
+      return say.notTooBig(fe.cells?.length, k);
+    case "notTooSmall":
+      return say.notTooSmall(fe.cells?.length, k);
     case "noDanglingEdges":
-      return "A wall can't stop in mid-air at this corner, so this edge must be a wall.";
+      return say.noDanglingEdges;
     case "equivalentEdges":
-      // The crux: both highlighted edges border the same connected region,
-      // so the clue cell is either inside all of it (both edges open) or
-      // walled off from all of it (both walled), and it can't do one of
-      // each. That coupling is what makes the clue's count force the
-      // edges; an earlier narration omitted it and read as a non-sequitur.
-      if (multi) {
-        return fe.kind === "wall"
-          ? `Both edges border the same region, so they share a fate: both walls or both open. Leaving both open would leave clue ${c} short of walls, so both must be walls.`
-          : `Both edges border the same region, so they share a fate: both walls or both open. Walling both would exceed clue ${c}, so neither can be a wall.`;
-      }
-      // Rare post-dedup singleton (the partner edge was already shown).
-      return fe.kind === "wall"
-        ? `This edge borders a region clue ${c} can't fully open, so it must be a wall.`
-        : `This edge borders a region clue ${c} can't wall off, so it can't be a wall.`;
+      return say.equivalentEdges(c, fe.kind, multi);
   }
 }
 

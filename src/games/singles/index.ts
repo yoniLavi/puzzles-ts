@@ -38,6 +38,7 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import { newSinglesDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   border,
   colors,
@@ -285,113 +286,51 @@ const opValue = (op: number): "black" | "circle" =>
 
 const sameCell = (a: Cell, b: Cell): boolean => a.x === b.x && a.y === b.y;
 
-/** Join a list of cell values into readable prose ("3", "3 and 5",
- * "3, 5 and 2"). Used when a firing forces several squares of differing
- * values so the narration can name each instead of "these squares". */
-function joinNums(ns: number[]): string {
-  if (ns.length <= 1) return `${ns[0] ?? ""}`;
-  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;
-  return `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`;
-}
-
-/** Narrate *why* the grouped firing forces its cell(s), referencing the
- * highlighted evidence so the words and the picture agree. The corner
- * deductions name the actual numbers involved (owner-directed: concrete
- * values read far clearer than "this square / its other neighbor"). */
+/** Narrate *why* the grouped firing forces its cell(s), reading each number the
+ * sentence names off the board. The words are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(
   reason: SinglesReason,
   targets: { x: number; y: number }[],
   state: SinglesState,
 ): string {
-  const plural = targets.length > 1;
   const numAt = (c: Cell): number => state.nums[c.y * state.w + c.x];
   switch (reason.kind) {
-    case "sandwich": {
-      // Indication-first (§1b): name the spotted pattern (two equal numbers
-      // one square apart) before the deduction — and name the *values* (the
-      // square's locator), not "two matching numbers".
-      const n = numAt(reason.ends[0]);
-      const b = numAt(targets[0]);
-      return `Two ${n}s sit one square apart here; one of them must be shaded, so the ${b} between them must be white.`;
-    }
-    case "pair": {
-      const n = numAt(reason.pair[0]);
-      return `These two ${n}s touch, so one of them stays white and uses it up: every other ${n} in the line must be shaded.`;
-    }
-    case "corner4": {
-      // All four share a number, so a diagonal pair must be shaded (two
-      // shaded cells, never adjacent). At a *grid* corner the corner cell's
-      // only neighbors are the two sides, so shading the side diagonal
-      // would strand the corner white — the same box-in argument as corner3.
-      const n = numAt(reason.block[0]);
-      return `This corner ${n} matches both its neighbors; keeping it white would shade both and box it in, so it and the ${n} diagonally inside must be shaded.`;
-    }
+    case "sandwich":
+      return say.sandwich(numAt(reason.ends[0]), numAt(targets[0]));
+    case "pair":
+      return say.pair(numAt(reason.pair[0]));
+    case "corner4":
+      return say.corner4(numAt(reason.block[0]));
     case "corner3": {
-      // Branch A shades the corner itself; branch B shades the inner cell
-      // to save the (separately highlighted) corner. Name the referent
-      // explicitly ("the corner") so it never reads as the matching number.
+      // Branch A shades the corner itself; branch B the inner cell, to save
+      // the (separately highlighted) corner.
       const m = numAt(reason.matched[1]);
       const t = numAt(targets[0]);
       return targets.some((tg) => sameCell(tg, reason.corner))
-        ? `This corner ${t} matches both neighboring ${m}s; keeping it white would shade both and box it in, so the ${t} must be shaded.`
-        : `This inner ${t} matches the two ${m}s flanking the corner ${numAt(reason.corner)}; keeping it white would shade both and box the corner in, so the ${t} must be shaded.`;
+        ? say.corner3Corner(t, m)
+        : say.corner3Inner(t, m, numAt(reason.corner));
     }
-    case "corner2": {
-      // Indication-first (§1b): open on the spotted pattern — a touching pair
-      // of equal numbers at a grid corner — then run the proof-by-contradiction
-      // arc with concrete numbers: the move we rule out (shading the target) →
-      // its consequence (the corner's neighbor shaded, the corner boxed in) →
-      // the deduction. ("at the corner" is robust to either sub-case: the pair
-      // is (corner, side) or (side, inner), so it always sits in the corner
-      // block; "the ${p} beside the corner ${c}" names the side member either
-      // way, and c may equal p when the corner is itself part of the pair.)
-      const p = numAt(reason.pair[0]);
-      const c = numAt(reason.corner);
-      const t = numAt(targets[0]);
-      return `A touching pair of ${p}s sits at the corner; one of them must be shaded. Shading this ${t} would then force the ${p} beside the corner ${c} shaded as well, leaving the corner boxed in on both sides, so the ${t} must stay white.`;
-    }
-    case "offset": {
-      // quad = [A1, B1, A2, B2]; the A-pair (n) shares one line, the B-pair
-      // (m) the next. Lead with the *indication* (§1b) — the spotted pattern,
-      // a pair of n in one line and a pair of m in the next — so the player
-      // learns to recognize it, then give the consequence. The pairs can sit
-      // ANYWHERE along those lines, so never say "overlap"/"between them";
-      // "lined up so that" + the highlight carry the exact arrangement.
-      // (Article-free — "one of the Ns" sidesteps "a 4" vs "an 8".)
-      const n = numAt(reason.quad[0]);
-      const m = numAt(reason.quad[1]);
-      const line = reason.quad[0].x === reason.quad[2].x ? "column" : "row";
-      const pairs =
-        n === m
-          ? `a pair of ${n}s in one ${line} and another pair in the next`
-          : `a pair of ${n}s in one ${line} and a pair of ${m}s in the next`;
-      const forced =
-        n === m ? `two of the ${n}s` : `one of the ${n}s and one of the ${m}s`;
-      return `There's ${pairs}, lined up so that shading either of these two squares would force ${forced} to be shaded next to each other, and shaded squares can't touch. So both must be white.`;
-    }
-    case "adjBlack": {
-      // The forced cells are a shaded square's neighbors — their values are
-      // unrelated to the deduction (it's pure adjacency), but still name them
-      // so the player knows which squares without hunting the highlight. The
-      // group can hold mixed/repeated values, so list them all.
-      if (plural) {
-        const list = joinNums(targets.map((t) => numAt(t)));
-        return `These squares (${list}) touch a shaded square, and shaded squares can't be adjacent, so they must be white.`;
-      }
-      return `This ${numAt(targets[0])} touches a shaded square, and shaded squares can't be adjacent, so it must be white.`;
-    }
-    case "sameLine": {
-      // The forced square(s) and the ringed white square all show the same
-      // number — that duplicate is the whole reason — so name it.
-      const t = numAt(targets[0]);
-      return plural
-        ? `These ${t}s share a line with the ringed white ${t}, which already uses that number, so they must be shaded.`
-        : `This ${t} shares a line with the ringed white ${t}, which already uses that number, so this copy must be shaded.`;
-    }
+    case "corner2":
+      return say.corner2(
+        numAt(reason.pair[0]),
+        numAt(reason.corner),
+        numAt(targets[0]),
+      );
+    case "offset":
+      // quad = [A1, B1, A2, B2]: the A-pair shares one line, the B-pair the next.
+      return say.offset(
+        numAt(reason.quad[0]),
+        numAt(reason.quad[1]),
+        reason.quad[0].x === reason.quad[2].x ? "column" : "row",
+      );
+    case "adjBlack":
+      return say.adjBlack(targets.map((t) => numAt(t)));
+    case "sameLine":
+      return say.sameLine(numAt(targets[0]), targets.length > 1);
     case "boxedIn":
-      return `This ${numAt(targets[0])} is the ringed white square's only unshaded neighbor left, so it must be white to avoid sealing that square off.`;
+      return say.boxedIn(numAt(targets[0]));
     case "split":
-      return `Shading this ${numAt(targets[0])} would split the white region in two, so it must be white to keep it connected.`;
+      return say.split(numAt(targets[0]));
   }
 }
 
