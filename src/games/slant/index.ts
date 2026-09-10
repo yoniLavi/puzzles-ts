@@ -37,6 +37,7 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   border,
   colors,
@@ -228,8 +229,6 @@ export interface SlantHint {
   clue?: { x: number; y: number };
 }
 
-const SLASH_WORD = (v: number): string => (v < 0 ? "a backslash" : "a forward slash");
-
 /** The up-to-four square indices around a clue vertex, geometrically. */
 function clueNeighborSquares(
   cx: number,
@@ -297,41 +296,21 @@ function componentSquares(
   return out;
 }
 
-/** Narrate why this leg's move is forced (§2: indication-first, necessity
- * voice, terse; the honest locked-slant voice for equivalence — D3). */
+/** Narrate why this leg's move is forced. The words are
+ * [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(firing: SlantFiring, leg: number): string {
-  // Continuation legs belong to a clue firing (only clue firings force
-  // several squares); keep them in the necessity voice.
-  if (leg > 0) {
-    return firing.technique === "clue-empty"
-      ? "The same clue forces this square too, so it must slant away."
-      : "The same clue forces this square too, so it must slant toward the clue.";
-  }
-  const m = firing.moves[0];
+  if (leg > 0) return say.continuation(firing.technique === "clue-empty");
   switch (firing.technique) {
-    case "clue-fill": {
-      const c = firing.clue?.c ?? 0;
-      if (c === 4) {
-        return "A 4 clue must be touched by all four diagonals, so this square must slant toward it.";
-      }
-      return `This ${c} clue still needs a line for every empty square left around it, so each one must slant toward it.`;
-    }
-    case "clue-empty": {
-      const c = firing.clue?.c ?? 0;
-      if (c === 0) {
-        return "A 0 clue is touched by no diagonals, so every square around it must slant away.";
-      }
-      const has = c === 1 ? "its one diagonal" : `its ${c} diagonals`;
-      return `This ${c} clue already touches ${has}, so every other square around it must slant away.`;
-    }
+    case "clue-fill":
+      return say.clueFill(firing.clue?.c ?? 0);
+    case "clue-empty":
+      return say.clueEmpty(firing.clue?.c ?? 0);
     case "loop":
-      return "Two corners of this square are already joined by a chain of diagonals, so it must slant the other way to avoid a loop.";
+      return say.loop;
     case "deadend":
-      return "These points are boxed in with one diagonal each; linking them here would seal a loop, so this must slant the other way.";
+      return say.deadend;
     case "equiv":
-      // The anchor shares this square's equivalence class, hence its slash
-      // (m.v), so name it once.
-      return `This square is locked to the same slant as the ringed one by the clues around them, so it must be ${SLASH_WORD(m.v)} too.`;
+      return say.equiv(firing.moves[0].v);
   }
 }
 

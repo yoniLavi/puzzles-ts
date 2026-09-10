@@ -48,6 +48,7 @@ import type {
   Size,
 } from "../../engine/types.ts";
 import { newDominosaDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   border,
   colors,
@@ -365,25 +366,19 @@ export interface DominosaHint {
 
 const edgeKey = (a: number, b: number): string => (a < b ? `${a}-${b}` : `${b}-${a}`);
 
-/** The domino value shown across an edge/pair (lo–hi). */
-function dominoLabel(a: number, b: number, numbers: Int32Array): string {
-  const na = numbers[a];
-  const nb = numbers[b];
-  return na <= nb ? `${na}–${nb}` : `${nb}–${na}`;
-}
-
+/** A placement of the domino on squares `a` and `b`, named by the two numbers
+ * it shows. The words are [`hint-text.ts`](./hint-text.ts)'s. */
 function narratePlace(
   technique: PlaceTechnique,
   a: number,
   b: number,
   numbers: Int32Array,
 ): string {
-  const dom = dominoLabel(a, b, numbers);
-  if (technique === "squareOnly")
-    return `This square can pair with only the ${dom} domino, so it must go here.`;
-  return `The ${dom} domino has only one spot left where it fits, because every other pairing is blocked, so it must go here.`;
+  return say.place(technique, numbers[a], numbers[b]);
 }
 
+/** A barrier between squares `a` and `b`; a later barrier of the same firing
+ * (`continues`) does not repeat the reason. */
 function narrateBarrier(
   technique: BarrierTechnique,
   a: number,
@@ -391,22 +386,7 @@ function narrateBarrier(
   numbers: Int32Array,
   continues: boolean,
 ): string {
-  if (continues) return "This spot can't hold a domino for the same reason.";
-  const dom = dominoLabel(a, b, numbers);
-  switch (technique) {
-    case "squareSingleDomino":
-      return `The outlined square can only be part of the ${dom} domino, so ${dom} can't sit here instead.`;
-    case "mustOverlap":
-      return "Every remaining spot for the outlined domino covers this pair, so no other domino can go here.";
-    case "localDuplicate":
-      return `A ${dom} domino here would force a second ${dom} at the outlined square, but each domino is used once, so it can't.`;
-    case "localDuplicate2":
-      return `A ${dom} domino here would force both outlined squares to become ${dom} too, a duplicate, so it can't.`;
-    case "parity":
-      return "A domino here would split the empty squares into odd-sized regions, which dominoes can't fill, so this can't be a domino.";
-    case "set":
-      return `The outlined squares can only hold one set of dominoes, which uses the ${dom}, so ${dom} can't sit here as well.`;
-  }
+  return continues ? say.barrierNext : say.barrier(technique, numbers[a], numbers[b]);
 }
 
 function hint(state: DominosaState): HintResult<DominosaMove, DominosaHint> {

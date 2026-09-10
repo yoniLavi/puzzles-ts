@@ -54,6 +54,7 @@
 
 import { deduceHintPlan } from "../../engine/hint-plan.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
+import { say } from "./hint-text.ts";
 import {
   type CrossingPuzzle,
   type CrossingState,
@@ -498,78 +499,31 @@ export function deduceCrossingPlan(state: CrossingState): CrossingPlan {
 const lengthOf = (puzzle: CrossingPuzzle, r: number): number =>
   puzzle.runs[r].cells.length;
 
-/** "across"/"down", the two words the board's own color wash already teaches. */
-const wayOf = (puzzle: CrossingPuzzle, r: number): string =>
-  puzzle.runs[r].horizontal ? "across" : "down";
-
-/** `joinNums` for **alternatives**: a list of candidate digits is "2 or 6", not
- * "2 and 6" — which would read as "both at once", the opposite of the claim. */
-function joinOr(ns: number[]): string {
-  if (ns.length <= 1) return `${ns[0] ?? ""}`;
-  return `${ns.slice(0, -1).join(", ")} or ${ns[ns.length - 1]}`;
-}
+/** Whether a run lies across (else down). */
+const isAcross = (puzzle: CrossingPuzzle, r: number): boolean =>
+  puzzle.runs[r].horizontal;
 
 /**
- * One firing, in one sentence: the indication (the pattern to learn to spot),
- * then the premise, then the forced action in the necessity voice (§2.1–§2.6).
- *
- * The two `deep` variants exist because the premise is *half off the board*.
- * "Only one number still fits" is directly checkable when it holds against the
- * digits already entered — the clue list is literally coloring that scan
- * already. When it holds only after the crossing numbers have ruled the others
- * out, saying so plainly beats asserting something the player would check and
- * find false (§2.4).
+ * One firing, in one sentence: which one, with the run's length, direction and
+ * number read off the puzzle. The words are [`hint-text.ts`](./hint-text.ts)'s.
  */
 export function narrateCrossing(
   puzzle: CrossingPuzzle,
   firing: CrossingFiring,
 ): string {
   switch (firing.technique) {
-    case "onlyNumber": {
-      const num = puzzle.numbers[firing.number];
-      const len = lengthOf(puzzle, firing.run);
-      if (firing.deep) {
-        return `Once the crossing numbers rule the others out, only one number is left for this ${wayOf(puzzle, firing.run)} run, so it must be ${num}.`;
-      }
-      // The fresh-board opener says nothing about entered digits: on an empty
-      // run there are none, so that premise does no work (§2.4) and reads as
-      // plainly false (§2.7) — the length is the whole argument there.
-      if (firing.because === "length") {
-        return `This run is ${len} squares long, and only one number in the list is ${len} digits, so it must be ${num}.`;
-      }
-      if (firing.because === "used") {
-        return `Every other ${len}-digit number is already on the board, so this run must be ${num}.`;
-      }
-      return `Only one ${len}-digit number left matches the digits already in this run, so it must be ${num}.`;
-    }
-    case "sharedDigit": {
-      const way = wayOf(puzzle, firing.run);
-      return firing.deep
-        ? `Every number that can still go in this ${way} run, once the crossing numbers rule the rest out, has a ${firing.digit} in this square, so it must be ${firing.digit}.`
-        : `Every number that still fits this ${way} run has a ${firing.digit} in this square, so it must be ${firing.digit}.`;
-    }
-    case "crossRuns": {
-      // Lead with whichever run is the *tighter* constraint and let the other
-      // knock out the rest: listing both sets in full is the same proof, but
-      // one of them routinely runs to six digits and reads as noise (§2.5).
-      // Only a set of two or more can be led with — a singleton would leave
-      // "cannot take  here" — and the earlier rung guarantees one exists (a
-      // run that pinned the square on its own is a `sharedDigit`, not this).
-      const across = firing.acrossDigits;
-      const down = firing.downDigits;
-      const leadAcross =
-        down.length < 2 || (across.length >= 2 && across.length <= down.length);
-      const [near, far] = leadAcross ? ["Across", "down"] : ["Down", "across"];
-      const small = leadAcross ? across : down;
-      const rest = small.filter((d) => d !== firing.digit);
-      return `${near}, this square can only be ${joinOr(small)}, and the ${far} number cannot take ${joinOr(rest)} here, so it must be ${firing.digit}.`;
-    }
-    case "noteStrike": {
-      const way = wayOf(puzzle, firing.run);
-      const ds = joinOr(firing.digits);
-      return firing.digits.length === 1
-        ? `No number that still fits this ${way} run puts a ${ds} in this square, so rule it out.`
-        : `No number that still fits this ${way} run puts ${ds} in this square, so rule them out.`;
-    }
+    case "onlyNumber":
+      return say.onlyNumber(
+        firing,
+        isAcross(puzzle, firing.run),
+        lengthOf(puzzle, firing.run),
+        puzzle.numbers[firing.number],
+      );
+    case "sharedDigit":
+      return say.sharedDigit(firing, isAcross(puzzle, firing.run));
+    case "crossRuns":
+      return say.crossRuns(firing);
+    case "noteStrike":
+      return say.noteStrike(firing, isAcross(puzzle, firing.run));
   }
 }

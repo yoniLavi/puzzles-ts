@@ -37,6 +37,7 @@ import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, KeyLabel, Point, Size } from "../../engine/types.ts";
 import { newFillingDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -225,30 +226,20 @@ export interface FillingHint {
   area: number[];
 }
 
-/** Narrate *why* the squares are forced, per the technique that fired,
- * referencing the shaded evidence so the words and the picture agree. Kept
- * terse and number-light — the value is read off "the region of N" (or "a 1"),
- * so the target cells need no digit drawn in them. `count` is how many squares
- * the step forces (singular vs plural wording). */
+/** Narrate *why* the squares are forced, per the technique that fired. `count`
+ * is how many squares the step forces (singular vs plural wording). The words
+ * are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(reason: FillingHintReason, count: number): string {
   const many = count > 1;
   switch (reason.kind) {
     case "growth":
-      if (reason.exact) {
-        return many
-          ? `The outlined region of ${reason.n} fits exactly into these squares.`
-          : `The outlined region of ${reason.n} fits exactly into this last square.`;
-      }
-      return many
-        ? `The outlined region of ${reason.n} can't fully grow without these squares.`
-        : `The outlined region of ${reason.n} can't fully grow without this square.`;
+      return say.growth(reason.n, reason.exact, many);
     case "blocked":
-      return `The outlined region of ${reason.n} has only this one empty square to grow into.`;
+      return say.blocked(reason.n);
     case "lonely":
-      return "No neighboring region can grow to include this square, so it can only be a 1.";
+      return say.lonely;
     case "bitmap":
-      // "be N", not "be a N": the article trap ("a 8").
-      return `No other number can go here: each would touch an equal number or leave a region short of its size, so it must be ${reason.n}.`;
+      return say.bitmap(reason.n);
   }
 }
 

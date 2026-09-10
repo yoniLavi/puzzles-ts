@@ -54,6 +54,7 @@ import { registerGame } from "../../engine/registry.ts";
 import { SYMMETRY_CHOICES } from "../../engine/symmetric-blacks.ts";
 import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
 import { newSticksDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   border,
   colors,
@@ -389,73 +390,31 @@ function evidenceOf(reason: SticksReason, target: number): number[] {
   }
 }
 
-const ORIENT = { hor: "horizontal", ver: "vertical" } as const;
-
 /**
- * Narrate *why* the square can only take one orientation: the clue that the
- * other orientation would break, and how it would break it.
- *
- * `continues` is a later leg of the same firing — the same clue and the same
- * rule ruling out a further square — so it says so and drops the premise the
- * opening leg has already taught, while keeping its own numbers and the
- * necessity modal (§5.6b, Slant's leg convention).
+ * Narrate *why* the square can only take one orientation, reading the clue
+ * numbers the sentence names off the board. `continues` is a later leg of the
+ * same firing. The words are [`hint-text.ts`](./hint-text.ts)'s.
  */
 function narrate(firing: SticksFiring, state: SticksState, continues: boolean): string {
   const { reason, to } = firing;
-  const bad = ORIENT[to === "hor" ? "ver" : "hor"];
-  // A square shows a number only when it carries a clue of its own; otherwise
-  // there is no value to name it by and the clue in the sentence locates it.
+  // The square's own clue, or -1: what the closing sentence names it by.
   const clue = state.numbers[firing.index];
-  const here = clue === -1 ? "this square" : `this ${clue}`;
-  const tail = `So ${here} must be ${ORIENT[to]}.`;
-
   switch (reason.kind) {
     case "tooLong":
-      return continues
-        ? `The ${reason.value} rules this square out too: a ${bad} line would run its line to ${reason.size} squares. ${tail}`
-        : `A ${bad} line here would run the ${reason.value}'s line to ${reason.size} squares, too long for it. ${tail}`;
-
-    case "unreachable": {
-      // Leads with the clue, not with the ruled-out move: the signal a player
-      // has to learn to look for here is a number running out of room, which
-      // they will not spot from the square being acted on (§2.2).
-      const room = `${reason.max} square${reason.max === 1 ? "" : "s"}`;
-      return continues
-        ? `The ${reason.value} rules this square out too: a ${bad} line would leave it only ${room}. ${tail}`
-        : `The ${reason.value} needs a longer line, and a ${bad} line here would leave it only ${room}. ${tail}`;
-    }
-
-    case "twoClues": {
-      if (continues)
-        return `The same pair rules this square out too: a ${bad} line would join them into one line. ${tail}`;
-      const vals = reason.clues.map((c) => state.numbers[c]);
-      const joined =
-        vals.length !== 2
-          ? `put ${vals.length} numbers on one line`
-          : vals[0] === vals[1]
-            ? `join two ${vals[0]}s into one line`
-            : `join the ${vals[0]} and the ${vals[1]} into one line`;
-      // One number per line is the rule, and the help teaches it
-      // (docs/games/hints.md § "Rules belong in the help").
-      return `A ${bad} line here would ${joined}. ${tail}`;
-    }
-
+      return say.tooLong(reason, to, clue, continues);
+    case "unreachable":
+      return say.unreachable(reason, to, clue, continues);
+    case "twoClues":
+      return say.twoClues(
+        reason.clues.map((c) => state.numbers[c]),
+        to,
+        clue,
+        continues,
+      );
     case "overConnected":
-      // No "as well" on the continuation: at a black 0 nothing runs into it
-      // yet, so the word would be false exactly where the rule is starkest
-      // (§2.7 — re-read every clue narration at its degenerate value).
-      if (continues)
-        return `The black ${reason.value} rules this square out too: a ${bad} line here would run into it. ${tail}`;
-      return reason.value === 0
-        ? `The black 0 takes no lines, and a ${bad} line here would run straight into it. ${tail}`
-        : `The black ${reason.value} already has its ${reason.value} line${reason.value === 1 ? "" : "s"}, and a ${bad} line here would add another. ${tail}`;
-
+      return say.overConnected(reason, to, clue, continues);
     case "starved":
-      if (continues)
-        return `The black ${reason.value} rules this square out too: a ${bad} line would close another open side. ${tail}`;
-      return reason.value === 1
-        ? `The black 1 has one open side left, and a ${bad} line here would close it off. ${tail}`
-        : `The black ${reason.value} needs all ${reason.value} of its open sides, and a ${bad} line here would close one. ${tail}`;
+      return say.starved(reason, to, clue, continues);
   }
 }
 

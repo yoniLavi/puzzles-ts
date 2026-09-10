@@ -38,6 +38,7 @@ import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import { type Cell, DIFF_NAMES, EMPTY, ONE, ZERO } from "./constants.ts";
 import { newDesc, solvableAt } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   border,
   colors,
@@ -200,8 +201,6 @@ export interface UnrulyHint {
   ring: number[];
 }
 
-const colorName = (c: number): string => (c === ONE ? "black" : "white");
-
 /** Every cell index of a row (`horizontal`) or column. */
 function lineCells(
   line: number,
@@ -215,21 +214,18 @@ function lineCells(
   return out;
 }
 
-/** Narrate *why* the move is forced, per the deduction technique, so the
- * words match the highlighted evidence — the fork's explain-why bar. */
+/** Narrate *why* the move is forced, per the deduction technique. The words
+ * are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(reason: HintReason): string {
-  const line = reason.kind === "threes" ? "" : reason.horizontal ? "row" : "column";
   switch (reason.kind) {
-    case "threes": {
-      const c = colorName(reason.color);
-      return `Two of these three cells are already ${c}, so a third would make three in a row: this cell must be ${colorName(reason.color === ONE ? ZERO : ONE)}.`;
-    }
+    case "threes":
+      return say.threes(reason);
     case "complete":
-      return `This ${line} already holds all of its ${colorName(reason.full)} cells, so every remaining cell in it must be ${colorName(reason.fill)}.`;
+      return say.complete(reason);
     case "unique":
-      return `A full ${line} matches this one everywhere but this cell, so making it ${colorName(reason.fill === ONE ? ZERO : ONE)} would make them identical: it must be ${colorName(reason.fill)}.`;
+      return say.unique(reason);
     case "nearcomplete":
-      return `The last ${colorName(reason.fill === ONE ? ZERO : ONE)} in this ${line} can only go in a ringed cell without forcing three ${colorName(reason.fill)}s, so the rest must be ${colorName(reason.fill)}.`;
+      return say.nearcomplete(reason);
   }
 }
 

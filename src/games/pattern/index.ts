@@ -40,6 +40,7 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import { newPatternDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -271,8 +272,8 @@ export interface PatternHint {
   whiteRefs: number[];
 }
 
-/** Narrate *why* the cells are forced — lead with the indication (the spotted
- * pattern), conclude in the necessity voice, terse. */
+/** Narrate *why* the cells are forced. The words are
+ * [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(
   reason: PatternHintReason,
   count: number,
@@ -281,23 +282,15 @@ function narrate(
 ): string {
   const orient = line < w ? "column" : "row";
   const many = count > 1;
-  const these = many ? "these cells" : "this cell";
-  const they = many ? "they" : "it";
   switch (reason.kind) {
     case "overlap":
-      return reason.slack === 0
-        ? `This ${orient}'s run of ${reason.run} has nowhere to slide, so ${these} must be black.`
-        : `This ${orient}'s run of ${reason.run} can slide only ${reason.slack} cell${
-            reason.slack > 1 ? "s" : ""
-          }, so ${these} must be black.`;
+      return say.overlap(orient, reason.run, reason.slack, many);
     case "unreachable":
-      return `No run can reach ${these} in this ${orient}, so ${they} must stay white.`;
+      return say.unreachable(orient, many);
     case "lineEmpty":
-      return `This ${orient} has no clues, so ${these} must stay white.`;
+      return say.lineEmpty(orient, many);
     case "intersection":
-      return reason.black
-        ? `Whichever way this ${orient}'s runs fit, ${these} must be black.`
-        : `Whichever way this ${orient}'s runs fit, ${these} must stay white.`;
+      return say.intersection(orient, reason.black, many);
   }
 }
 

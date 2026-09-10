@@ -55,6 +55,7 @@ import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { ConfigValues, GameStatus, Point, Size } from "../../engine/types.ts";
 import { newSpokesDesc } from "./generator.ts";
+import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
@@ -362,34 +363,19 @@ export interface SpokesHint {
 function narrate(f: SpokesFiring): string {
   switch (f.kind) {
     case "twoOnes":
-      return "Connecting two 1-hubs would strand them from the rest, so rule out this spoke.";
+      return say.twoOnes;
     case "saturation":
-      return f.forced.length === 1
-        ? "Only one free spoke left for this hub's count, so it must be a line."
-        : "Just enough free spokes left for this hub's count, so they must all be lines.";
+      return say.saturation(f.forced.length);
     case "exhaustion":
-      return "This hub already has its lines, so the rest can't. Rule them out.";
-    case "contradiction": {
-      const asLine = f.hypothesis?.state === SPOKE_LINE;
-      const consequence =
-        f.breakKind === "overfilled"
-          ? "over-fill the ringed hub"
-          : f.breakKind === "crossing"
-            ? "force two diagonals to cross"
-            : "strand the ringed hubs";
-      return asLine
-        ? `Drawing this line would ${consequence}, so rule it out.`
-        : `Ruling this out would ${consequence}, so it must be a line.`;
-    }
+      return say.exhaustion;
+    case "contradiction":
+      return say.contradiction(f.hypothesis?.state === SPOKE_LINE, f.breakKind);
   }
 }
 
-/** The short continuation narration for legs 2+ of a multi-spoke firing — still
- * necessity-voiced (the hint quality bar), and reading as "same deduction". */
+/** The short continuation narration for legs 2+ of a multi-spoke firing. */
 function continuation(f: SpokesFiring): string {
-  return f.kind === "saturation"
-    ? "And this one must be a line too."
-    : "And rule this one out too.";
+  return say.continuation(f.kind === "saturation");
 }
 
 /** All of a firing's forced spokes, as highlight geometry — the renderer draws

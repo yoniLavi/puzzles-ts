@@ -13,9 +13,11 @@
  *    wall the hint asks for follows from associations already made, so the
  *    plan teaches the reasoning and then cashes it in.
  */
+
 import { deduceHintPlan, type HintPlanResult } from "../../engine/hint-plan.ts";
 import type { HintStep } from "../../engine/index.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
+import { say } from "./hint-text.ts";
 import type { GalaxiesMove } from "./index.ts";
 import { okToAddAssocWithOpposite, reachableFromDot } from "./moves.ts";
 import { type GalaxiesFiring, type Pos, RUNGS } from "./solver.ts";
@@ -265,66 +267,33 @@ function atBoardEdge(s: GalaxiesState, wall: Pos): boolean {
   return wall.x === 0 || wall.y === 0 || wall.x === s.sx - 1 || wall.y === s.sy - 1;
 }
 
-function dotWord(s: GalaxiesState, dot: Pos): string {
-  return s.flags[idx(s, dot.x, dot.y)] & F_DOT_BLACK ? "black dot" : "white dot";
+function isBlack(s: GalaxiesState, dot: Pos): boolean {
+  return (s.flags[idx(s, dot.x, dot.y)] & F_DOT_BLACK) !== 0;
 }
 
+/** Which sentence a firing speaks, and with what values. The words are
+ * [`hint-text.ts`](./hint-text.ts)'s. */
 export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
   switch (firing.kind) {
-    case "dotTile": {
-      const n = firing.tiles.length;
-      const cells =
-        n === 1 ? "this cell" : n === 2 ? "both these cells" : `these ${n} cells`;
-      // Named by where it is, not by a ring: the dot is *on* the cells being
-      // filled, so a ring would be the hint's color on the hint's color.
-      const where =
-        n === 2 ? "between them" : n === 4 ? "at their shared corner" : "they touch";
-      return `A galaxy covers the cells its dot sits on, so ${cells} must belong to the ${dotWord(s, firing.dot)} ${where}.`;
-    }
-    case "separate": {
-      // A cell that *holds* its own dot draws no arrow — there is nothing to
-      // point at from inside itself — so "point at different dots" would send
-      // the player looking for an arrow that is not there. Both cells are
-      // still visibly settled: one shows an arrow, the other shows the dot.
-      const points = firing.tiles.every(
-        (t, n) => t.x !== firing.dots[n].x || t.y !== firing.dots[n].y,
+    case "dotTile":
+      return say.dotTile(firing.tiles.length, isBlack(s, firing.dot));
+    case "separate":
+      // Whether both cells draw arrows: a cell that holds its own dot does not.
+      return say.separate(
+        firing.tiles.every(
+          (t, n) => t.x !== firing.dots[n].x || t.y !== firing.dots[n].y,
+        ),
       );
-      const verb = points ? "point at" : "go with";
-      return `These two cells ${verb} different dots, so they belong to different galaxies, and a wall must run between them.`;
-    }
-    case "mirrorWall": {
-      const dot = dotWord(s, firing.dot);
-      // The mirrored wall is very often the board's own rim, and calling that
-      // "the marked wall" would have the player hunting for a wall they are
-      // already looking at the edge of.
-      // "Outlined" for a **cell**, "ringed" for a **dot**: both marks are rings
-      // now, so the noun is what keeps them apart and the words follow it.
-      return atBoardEdge(s, firing.from)
-        ? `The outlined cells are partners across the ${dot}; one meets the board's edge, so the other must be walled to match.`
-        : `The outlined cells are partners across the ${dot}, so the marked wall beside one must be matched beside the other.`;
-    }
-    case "enclosed": {
-      const lead =
-        firing.openings.length === 1
-          ? "The only way out of this cell leads"
-          : "Every way out of this cell leads";
-      // Its walled sides are drawn on the board, and "every way out" already
-      // excludes them; that a galaxy is connected is the rule, and the help
-      // teaches it (docs/games/hints.md § "Rules belong in the help").
-      return `${lead} into the outlined galaxy, so this cell must belong to the ringed ${dotWord(s, firing.dot)}.`;
-    }
+    case "mirrorWall":
+      return say.mirrorWall(isBlack(s, firing.dot), atBoardEdge(s, firing.from));
+    case "enclosed":
+      return say.enclosed(firing.openings.length, isBlack(s, firing.dot));
     case "soleOwner":
-      // The claim *is* this rung's own condition, so it is checkable by the
-      // player with the gesture they already have: drag from the cell and
-      // count the rings.
-      return `Only the ringed ${dotWord(s, firing.dot)} can own this cell: for any other dot, its partner cell is off the board or on a dot.`;
+      return say.soleOwner(isBlack(s, firing.dot));
     case "onlyReach":
-      // "shows how far", not "is everywhere": the acted-on cell carries the
-      // action mark rather than the evidence one, so the outlined set is the
-      // reach minus one square and an absolute claim would be a shade off true.
-      return `No other galaxy can reach this cell, so it must belong to the ringed ${dotWord(s, firing.dot)}, whose reach the outline shows.`;
+      return say.onlyReach(isBlack(s, firing.dot));
     case "exclave":
-      return "The outlined cells are cut off from their ringed dot, and this is their only way back, so it must be that dot's too.";
+      return say.exclave;
   }
 }
 

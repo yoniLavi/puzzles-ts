@@ -39,6 +39,7 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
+import { say } from "./hint-text.ts";
 import {
   border,
   colors,
@@ -342,54 +343,21 @@ function nonBlackNeighbors(
   return out;
 }
 
-/** Narrate *why* the move is forced, per the deduction rule, referencing
- * the highlighted evidence so the words and the picture agree.
- *
- * **Every Range step shows a second mark** — a shaded area, or (for
- * `adjacency`) a ringed black premise — so no branch may leave "this cell"
- * bare: with two marks in view a bare deictic points at neither
- * (`disambiguate-hint-deixis`). The tie is the relation the rule itself
- * guarantees, never a color name:
- *
- * - `satisfied` / `overrun` place the target at `1 + rl[RUN_WHITE][j]` steps
- *   from the clue — that is, the **first cell past the shaded run** in one of
- *   the clue's four directions (past the clue itself where the run is empty,
- *   and the clue is shaded too).
- * - `reach` walks outward from the clue and `buildHighlights` shades the whole
- *   path behind the target, so the target is the run's **far end**.
- * - `connect` shades exactly the target's own non-black neighbors, so they are
- *   the cells **around it**.
- *
- * The three clue rules say *"the highlighted N"* rather than *"clue N"* for the
- * same reason in the other direction: a clue lies inside its own shaded line of
- * sight, and that run can hold a second clue of the same value, so the digit is
- * marked and the sentence points at the mark (see `RangeHint.clue`). */
+/** Narrate *why* the move is forced, per the deduction rule. The words, and
+ * the deixis ties each carries to the highlighted evidence, are
+ * [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(reason: HintReason): string {
   switch (reason.kind) {
     case "adjacency":
-      return "No two black squares may touch. This cell sits right next to the ringed black square, so it must be white.";
-    case "satisfied": {
-      // Read at the small extremes (docs/games/hints.md § "Sanity-read at the
-      // degenerate extremes"): a 1 sees only its own cell, and "all 2 of" reads
-      // wrong where "both" is the word — Salad's line counts say it the same way.
-      const n = reason.n;
-      const seen =
-        n === 1
-          ? "its one white cell"
-          : n === 2
-            ? "both of its white cells"
-            : `all ${n} of its white cells`;
-      return `The highlighted ${n} already sees ${seen} (outlined), so the cell just past ${n === 1 ? "it" : "them"} must be black.`;
-    }
+      return say.adjacency;
+    case "satisfied":
+      return say.satisfied(reason.n);
     case "overrun":
-      return `White here, just past the outlined cells, would let the highlighted ${reason.n} see more than ${reason.n}, so this cell must be black.`;
+      return say.overrun(reason.n);
     case "reach":
-      return `To see ${reason.n} cells, the highlighted ${reason.n} must look along the outlined run as far as this cell, so this cell must be white.`;
+      return say.reach(reason.n);
     case "connect":
-      // Both `ruleConnectedness` call sites record WHITE, so there is no
-      // black-target branch to write: a cut vertex of the white region is
-      // forced *white*, never black.
-      return "Painting this cell black would cut the outlined cells around it off from the other white cells, so it must stay white.";
+      return say.connect;
   }
 }
 
