@@ -72,9 +72,9 @@ export enum SaveType {
   User = 0,
   Auto = 1,
   /** The single one-action quick-save slot per puzzle (one record per
-   * puzzleId, constant filename). New enum value, no schema bump —
-   * it is just data under the existing `[puzzleId+saveType+filename]`
-   * and `[saveType+puzzleId+timestamp]` indexes. */
+   * puzzleId, constant filename). No schema bump: it is data under the
+   * existing `[puzzleId+saveType+filename]` and
+   * `[saveType+puzzleId+timestamp]` indexes. */
   Quick = 2,
 }
 
@@ -93,7 +93,8 @@ export interface SavedGameMetadata {
 
 export interface SavedGameRecord extends SavedGameMetadata {
   saveType: SaveType; // IndexedDB can't index boolean, so use a number
-  // data was originally stored as Blob; changed for Safari private browsing mode
+  // Blob only in records written by earlier versions: Safari private browsing
+  // mode cannot store one in IndexedDB, so new saves are bytes.
   data: Uint8Array<ArrayBuffer> | Blob;
   checkpoints?: readonly number[];
 }

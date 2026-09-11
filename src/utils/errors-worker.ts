@@ -7,7 +7,6 @@ import {
   workerUnhandledErrorMessageType,
 } from "./errors-shared.ts";
 
-// Construct a WorkerUnhandledErrorMessage
 const workerUnhandledErrorMessage = (
   message: string,
   error?: Error,

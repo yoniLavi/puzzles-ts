@@ -1,22 +1,12 @@
 /**
- * One puzzle in the catalog, as a **list row**.
+ * One puzzle in the catalog, as a **list row** — icon, name and objective on
+ * the same line, in a dense two-column list: ~26 games per desktop screen and
+ * twelve on a phone.
  *
- * This was a 64px-icon card in a `minmax(16rem, 1fr)` grid — about twelve games
- * per screen, so browsing all 57 meant scrolling three times. The Index
- * direction (`design-front-page-and-chrome` design.md §2, §4.2) trades the card
- * for a dense two-column list: 32px icon, name, objective on the same line, ~26
- * games per desktop screen and twelve on a phone.
- *
- * **The element keeps its name and its event.** `catalog-card` is what
- * `home-screen.ts` renders and `favorite-change` is what it listens for; only
- * the drawing changed, so nothing above had to learn a new vocabulary. The
- * `srcset` pair and the lazy `loading`/opacity fade are unchanged — the icons
- * are the committed 64/128 PNGs either way.
- *
- * **`Experimental` stopped being a rubber stamp.** The stamp was positioned
- * absolutely against a 64px icon and rotated; at 32px there is nowhere to put
- * it and nothing to rotate against, so it is a small label on the name line,
- * which also stops it covering the icon it used to sit on.
+ * `catalog-card` is what `home-screen.ts` renders and `favorite-change` is what
+ * it listens for, so both are the app's vocabulary rather than this file's. The
+ * `srcset` pair and the lazy `loading`/opacity fade serve the committed 64/128
+ * PNGs.
  */
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -168,10 +158,9 @@ export class CatalogCard extends LitElement {
 
       [part="base"] {
         width: 100%;
-        /* Fill the grid cell, so every rule in a row lands on the same line.
-         * The host stretches (grid's default), but without this the row's own
-         * box stayed content-height and its bottom border rose with it —
-         * leaving the list ruled raggedly, one step per card. */
+        /* Fill the grid cell, so every rule in a row lands on the same line:
+         * the host stretches (grid's default), but the row's own box is
+         * content-height, and its bottom border rises with it. */
         height: 100%;
         min-height: var(--app-row-list);
 
@@ -253,17 +242,15 @@ export class CatalogCard extends LitElement {
         color: var(--app-color-text-quiet);
         line-height: var(--wa-line-height-condensed);
 
-        /* **Wrapped, not clipped.** A single clipped line ended in an ellipsis
-         * for most of the catalog once the columns got narrower, and an
-         * objective cut off mid-sentence is worse than no objective: it reads
-         * as a defect and it teaches nothing.
+        /* **Wrapped, not clipped.** An objective cut off mid-sentence is worse
+         * than no objective: it reads as a defect and it teaches nothing.
          *
          * Three lines rather than two, measured rather than chosen: at the
          * narrowest track the grid produces (~344px, the two-column band around
-         * 768px) two lines still clipped six of the 57, and three clips none of
-         * them at any width. It is a *maximum* — the median objective is 57
-         * characters and still takes one or two — so the extra line costs
-         * nothing on the rows that do not need it. */
+         * 768px) two lines clip six of the 57, and three clips none of them at
+         * any width. It is a *maximum* — the median objective is 57 characters
+         * and takes one or two — so the extra line costs nothing on the rows
+         * that do not need it. */
         display: -webkit-box;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 3;

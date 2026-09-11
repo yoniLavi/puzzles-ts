@@ -56,11 +56,9 @@ export function installErrorHandlers() {
   // loaded before the deploy names files that no longer exist, and the next
   // lazy import fails with "Failed to fetch dynamically imported module".
   //
-  // It reached a player on the day the custom domain went live: the About
-  // dialog would not open, and the rejection fell through to the handler below,
-  // which showed a crash dialog. That is the wrong report. The page is stale,
-  // not broken, and nothing is wrong with the app — so recover rather than
-  // accuse. A reload fetches HTML naming files that exist.
+  // The page is stale, not broken, so recover rather than accuse: falling
+  // through to the handler below shows a crash dialog, which is the wrong
+  // report. A reload fetches HTML naming files that exist.
   //
   // Reloading is safe because it is not lossy: the puzzle screen autosaves to
   // IndexedDB after every move and restores on load, so a player is returned to

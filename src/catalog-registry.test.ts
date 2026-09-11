@@ -10,15 +10,8 @@ beforeAll(registerAllGames);
 
 /**
  * The catalog and the runtime registry are the two lists of games, and they
- * must be the same list.
- *
- * There used to be a third — `TS_PORTED_PUZZLE_IDS`, a hand-maintained set of
- * the games served by the native engine, which fed a "TS" badge on unported
- * games' neighbors. `retire-c-engine` removed both the badge and the last
- * unported game, at which point that set was necessarily the whole catalog:
- * a third list to keep in lockstep that could only ever say "all of them".
- * It is gone, and adding a game is now two edits (`catalog-data.ts` and
- * `index.ts`) with this test holding them together.
+ * must be the same list. Adding a game is two edits (`catalog-data.ts` and
+ * `index.ts`), and this test holds them together.
  */
 describe("catalog and registry", () => {
   it("registers a game for every cataloged puzzle", () => {

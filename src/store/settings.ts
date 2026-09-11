@@ -196,11 +196,6 @@ class Settings {
     this._commonSettings.set(key, value);
   };
 
-  // private resetCommonSetting<K extends keyof CommonSettings>(key: K) {
-  //   // Use undefined as tombstone until next merge with existing DB record
-  //   this._commonSettings.set(key, undefined);
-  // }
-
   //
   // PWAManager-only reactive settings
   //
@@ -218,13 +213,12 @@ class Settings {
   //
 
   @commonSetting({
-    // Follow the system by default (owner, 2026-09-07). Dark mode is no longer
-    // experimental — it is the scheme the chrome's direction was chosen on —
-    // and defaulting to light flashed a white page at every player whose OS is
-    // dark. `color-scheme-init.ts` carries the same default, because it runs
-    // before this store exists and would otherwise paint the wrong one first.
-    // (The `setCallback` mirror below stays; replacing it with an effect in
-    // color-scheme.ts is still worth doing, and is unrelated to the default.)
+    // Follow the system by default: defaulting to light flashes a white page
+    // at every player whose OS is dark. `color-scheme-init.ts` carries the
+    // same default, because it runs before this store exists and would
+    // otherwise paint the wrong one first.
+    // TODO: replace the `setCallback` mirror below with an effect in
+    //   color-scheme.ts.
     default: "system",
     setCallback: (value) => {
       try {
@@ -301,11 +295,10 @@ class Settings {
    * (`src/puzzle/shortcuts.ts`). The preference is for a player who would
    * rather no bare letter ever meant anything at the app level.
    *
-   * (`statusbarPlacement` was here. The rail gives the status line one home, so
-   * `start` / `end` stopped denoting anything and the key was dropped — owner's
-   * call, `design-front-page-and-chrome` design.md §4.9 item 2. A stored value
-   * is simply never read; `CommonSettings` no longer declares the field, so
-   * `getCommonSettings` returns it and nothing asks.)
+   * (No `statusbarPlacement`: the rail gives the status line one home, so
+   * `start` / `end` denote nothing. `CommonSettings` does not declare the
+   * field, so a stored value comes back from `getCommonSettings` and nothing
+   * asks for it.)
    */
   @commonSetting({ default: true })
   declare oneKeyShortcuts: boolean;

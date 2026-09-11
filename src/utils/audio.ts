@@ -39,9 +39,7 @@ async function getAudioContext() {
 // Can't ramp exponentially down to or up from 0, so just get close.
 const zeroGain = 0.001;
 
-// const C5 = 523.251; // Hz
 const G5 = 783.99; // Hz
-// const C6 = 1046.5; // Hz
 
 /**
  * Play a "click" audio sound.

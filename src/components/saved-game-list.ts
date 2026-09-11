@@ -25,8 +25,6 @@ export type SavedGameListEvent = CustomEvent<SavedGameListEventDetail>;
 interface SavedGameListColumn {
   name: string;
   field: keyof SavedGameMetadata;
-  // Width?
-  // Default sortOrder?
 }
 
 const dateFormat = new Intl.DateTimeFormat(undefined, {

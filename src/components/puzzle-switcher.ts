@@ -1,12 +1,11 @@
 /**
  * **The quick-switch** — type a few letters, jump to any of the 57 games.
  *
- * This replaces the `Other puzzles` menu, which was a 57-item dropdown: a
- * second, worse copy of the home screen, wordless at phone widths, and the item
- * that made the puzzle screen's app bar overflow at 390px. The owner chose
- * *replace*, not remove (`design-front-page-and-chrome` design.md §4.9 item 1):
- * a type-to-filter jump on `Ctrl/Cmd+K`, which serves an experienced player
- * better than a dropdown ever did and works from the home screen too.
+ * It replaces the `Other puzzles` menu — a 57-item dropdown, wordless at phone
+ * widths, which overflowed the puzzle screen's app bar at 390px. The owner
+ * chose *replace*, not remove: a type-to-filter jump on `Ctrl/Cmd+K`, which
+ * serves an experienced player better than a dropdown can and works from the
+ * home screen too.
  *
  * **And a `Switch puzzle…` row in `More…` opens the same thing**, so a touch
  * player keeps the capability the menu provided. A keyboard-only affordance
@@ -60,10 +59,7 @@ export class PuzzleSwitcher extends LitElement {
    * cannot answer the same query differently.
    *
    * No game is ever excluded: this is a jump, not a catalog, and refusing to go
-   * somewhere the player named would just be baffling. (There is nothing left
-   * to exclude *for*, either — the catalog's `unfinished` flag and the
-   * preference that hid those games are both retired — but the reason above is
-   * the durable one and would hold whatever the catalog grew.) */
+   * somewhere the player named would just be baffling. */
   private get hits(): readonly string[] {
     return puzzleIds.filter((puzzleId) => matchesQuery(puzzleId, this.search));
   }

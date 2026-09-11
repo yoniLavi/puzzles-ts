@@ -147,13 +147,10 @@ export class HelpViewer extends LitElement {
   private updateSrc() {
     this.baseUrl = new URL(this.src, window.location.href);
     // Derives the base by dropping the last path segment, which is only correct
-    // because every served help page is flat (`/help/<name>`). The one nested
-    // namespace was the halibut manual at `/help/manual/*`, and starting there
-    // computed a basePath of `/help/manual`, so `isOffsite` treated the rest of
-    // the help tree as external. The manual is gone
-    // (`retire-the-upstream-help-tree`), so the case is currently unreachable —
-    // but adding any nested help page brings it back. The fix then is a
-    // `base="/help"` attribute rather than a derivation.
+    // because every served help page is flat (`/help/<name>`). Starting from a
+    // nested page would compute a basePath of that page's directory, so
+    // `isOffsite` would treat the rest of the help tree as external; the fix
+    // then is a `base="/help"` attribute rather than a derivation.
     this.basePath = this.baseUrl.pathname.replace(/\/[^/]*$/, "");
     this.history = [this.baseUrl];
     this.historyIndex = 0;

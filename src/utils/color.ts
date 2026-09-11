@@ -96,37 +96,19 @@ function invertLightness([l, c, h]: OKLCH, bgl: number): OKLCH {
  * Adjusts chromatic colors for dark mode: invert lightness exactly as a gray is
  * inverted, then restore the apparent colorfulness that inverting costs.
  *
- * WHY INVERT RATHER THAN COMPRESS. This used to compress lightness into a fixed
- * band (`[bgl + 0.15, 0.8]`) without reference to the background at all, while
- * grays went through {@link invertLightness}, which is relative to it. A color
- * that was a subtle tint OF THE BOARD therefore became a bright patch ON it: in
- * Slide, the floor inverted to L 0.20 while the "slightly green floor" compressed
- * to L 0.78 — two colors 0.089 apart in light mode landing 0.427 apart in dark.
- * Measured across the collection, 150 colors in 45 of 57 games broke that way,
- * every one in the same direction.
+ * WHY INVERT RATHER THAN COMPRESS. Compressing lightness into a fixed band
+ * without reference to the background, while grays go through
+ * {@link invertLightness}, which is relative to it, turns a color that was a
+ * subtle tint OF THE BOARD into a bright patch ON it: measured across the
+ * collection, 150 colors in 45 of 57 games broke that way, every one in the
+ * same direction, and text landed darker than the fills it is drawn on.
  *
- * The old comment here said the compression was a compromise between colors used
- * as text (which want lightness) and colors used as fills (which want darkness),
- * and that "knowing the intended use of the color could improve the results
- * significantly". It turns out the intended use does not have to be known,
- * because THE LIGHT PALETTE ALREADY ENCODES IT IN THE LIGHTNESS: text and thin
- * lines are dark on light paper, large fills are pale on it. Inverting therefore
- * sends text light and fills dark, which is the right answer for both from one
- * rule. Against a 0.2 background:
+ * The intended use of a color does not have to be known, because THE LIGHT
+ * PALETTE ALREADY ENCODES IT IN THE LIGHTNESS: text and thin lines are dark on
+ * light paper, large fills are pale on it. Inverting therefore sends text light
+ * and fills dark, which is the right answer for both from one rule.
  *
- * | color                          | light L | old L | new L |
- * | ------------------------------ | ------- | ----- | ----- |
- * | Slide target zone (large fill) |    0.92 | 0.769 | 0.310 |
- * | Flood tile (large fill)        |    0.87 | 0.753 | 0.356 |
- * | error red (mark)               |    0.63 | 0.661 | 0.561 |
- * | Solo killer outline (thin)     |    0.45 | 0.588 | 0.696 |
- * | ABCD border letters (text)     |    0.35 | 0.544 | 0.767 |
- *
- * The old rule squashed all five into 0.54–0.77 — text and giant fills within
- * 0.23 of each other, with text DARKER than the fills it is drawn on. This one
- * spreads them and puts them in the right order.
- *
- * This is now the FALLBACK, for colors that are a game's own. A color that comes
+ * This is the FALLBACK, for colors that are a game's own. A color that comes
  * from a shared role in `engine/color/palette.ts` carries an authored value per
  * scheme and never reaches here — see `hand-author-dark-palette`.
  */

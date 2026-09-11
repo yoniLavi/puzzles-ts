@@ -82,8 +82,7 @@ const defaultIcons: IconMap = {
   "back-to-catalog": boxesIcon,
   // The quick-save pair reads as one pair: a bookmark you *place* (with the
   // check that says it was verified first) and the same bookmark you go *back*
-  // to. They were a bookmark and an upload arrow, which is what let them live
-  // on two different surfaces without looking related.
+  // to. They sit on two different surfaces, so they have to look related.
   "check-and-save": bookmarkCheckIcon,
   "back-to-last-save": bookmarkIcon,
   "check-only": searchCheckIcon,
@@ -134,7 +133,7 @@ const defaultIcons: IconMap = {
   "offsite-link": externalLinkIcon,
   // puzzle-keys
   "key-clear": deleteIcon,
-  "key-marks": squarePenIcon, // or maybe rectangle-ellipsis?
+  "key-marks": squarePenIcon,
   "key-hints": wandIcon,
   "mouse-left-button": mouseLeftButtonIcon,
   "mouse-right-button": mouseRightButtonIcon,
@@ -171,28 +170,17 @@ registerIconLibrary("default", {
 
 // Web Awesome's built-in system icons (Font Awesome 7) are visually much
 // heavier than Lucide. Replace a few key ones with Lucide versions, falling
-// back to the built-in ones for all others.
+// back to the built-in ones for all others. (A replacement for "star" would
+// have to supply both the "regular" and the "solid" variant.)
 // biome-ignore format: leave all keys as strings
 const systemIcons: IconMap = {
   "check": checkIcon,
   "chevron-down": chevronDownIcon,
   "chevron-left": chevronLeftIcon,
   "chevron-right": chevronRightIcon,
-  // "circle": circleIcon,
-  // "eyedropper": pipetteIcon,
-  // "grip-vertical": gripVerticalIcon,
-  // "indeterminate": minusIcon,
-  // "minus": minusIcon,
-  // "pause": pauseIcon,
-  // "play": playIcon,
-  // "star": starIcon, // NOTE: star must support "regular" and "solid" variants
-  // "user": userRoundIcon,
   "xmark": xIcon,
   "circle-question": circleQuestionMarkIcon,
   "circle-xmark": circleXIcon,
-  // "copy": filesIcon,
-  // "eye": eyeIcon,
-  // "eye-slash": eyeOffIcon,
 } as const;
 
 const systemLibrary = getIconLibrary("system");

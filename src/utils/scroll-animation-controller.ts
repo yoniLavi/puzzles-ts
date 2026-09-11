@@ -86,7 +86,6 @@ export class ScrollAnimationController implements ReactiveController {
   }
 
   private update = () => {
-    // (A lot of this could probably be cached somehow)
     if (!this.scrollContainer) {
       if (!import.meta.env.PROD) {
         throw new Error("Missing scrollContainer");

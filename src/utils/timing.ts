@@ -26,7 +26,7 @@ export const debounce = <T extends (...args: unknown[]) => unknown>(
   return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
     const later = () => {
       timeoutId = undefined;
-      func.apply(this, args); // Apply with the captured context and arguments
+      func.apply(this, args);
     };
     clearTimeout(timeoutId);
     timeoutId = setTimeout(later, delayMs);
@@ -43,7 +43,6 @@ export const debounced =
     const cache = new WeakMap<object, (...args: unknown[]) => void>();
 
     descriptor.get = function (this: object) {
-      // Lazily create a debounced wrapper per instance
       let fn = cache.get(this);
       if (!fn) {
         fn = debounce(originalMethod.bind(this), delayMs);

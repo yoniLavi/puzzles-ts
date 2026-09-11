@@ -15,9 +15,6 @@ const ignoreErrors: (string | RegExp)[] = [
 
 export function initSentry() {
   if (import.meta.env.VITE_SENTRY_DSN) {
-    // This list used to be seeded with `wasmIntegration()` to symbolicate
-    // frames from the puzzle wasm; with the C engine retired there is no wasm
-    // to symbolicate, so the third-party filter is all that remains.
     const integrations = import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID
       ? [
           Sentry.thirdPartyErrorFilterIntegration({

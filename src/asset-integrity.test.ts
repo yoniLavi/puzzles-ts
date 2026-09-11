@@ -7,8 +7,8 @@
  * 1. `new URL(<path>, import.meta.url)` references whose path no longer
  *    resolves to a real file/directory after the source file moves. Vite
  *    and the browser fail this silently (the only signal is a runtime 404
- *    on the eventual fetch), and components like catalog-card used to
- *    mask it behind a fallback icon. Caught here at test time instead.
+ *    on the eventual fetch), and a component's fallback icon can mask even
+ *    that. Caught here at test time instead.
  *
  * 2. A puzzle present in the catalog without its corresponding generated
  *    icon PNGs in src/assets/icons/. Same masking risk, same fix: assert
@@ -95,10 +95,8 @@ describe("new URL(..., import.meta.url) references resolve", () => {
 
   it("finds references to scan (sanity)", () => {
     // Keeps the sweep below from passing vacuously if the regex or the
-    // module glob breaks. The bound was 2 (catalog-card.ts's per-puzzle icons
-    // and worker.ts's `<puzzleId>.wasm`) until `retire-c-engine` deleted the
-    // wasm load and the About dialog's `dependencies.json` fetch, leaving the
-    // icons as the only such reference in the app.
+    // module glob breaks. catalog-card.ts's per-puzzle icons are the only
+    // such reference in the app today, hence the bound of 1.
     expect(refs.length).toBeGreaterThanOrEqual(1);
   });
 

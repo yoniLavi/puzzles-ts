@@ -66,9 +66,9 @@ export function preventDoubleTapZoomOnButtons(event: MouseEvent) {
   }
 }
 
-const doubleTapZoomExemptTagNames = new Set(["button", "wa-button"]);
+const doubleTapZoomTagNames = new Set(["button", "wa-button"]);
 const shouldPreventDoubleTapZoom = (target: EventTarget) =>
   target instanceof Element &&
-  doubleTapZoomExemptTagNames.has(target.localName) &&
+  doubleTapZoomTagNames.has(target.localName) &&
   // Must not prevent default on <wa-button href=...>
   (!("href" in target) || !target.href);

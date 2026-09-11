@@ -195,10 +195,9 @@ class SavedGames {
       // log contains a move this build no longer plays, which the midend now
       // refuses rather than half-applying.
       //
-      // Before this, ANY restore error threw, so a single unplayable autosave
-      // bricked that puzzle's page on every visit — the player could not even
-      // start a new game to get out of it, because the crash happened during
-      // startup. Dropping it means the next visit just deals a fresh board.
+      // Throwing instead would brick that puzzle's page on every visit: the
+      // crash happens during startup, so the player cannot even start a new
+      // game to get out of it. Dropping it deals a fresh board next visit.
       const isUnplayable =
         error.includes("pre-pivot C-format") ||
         error.includes("not a recognized TS save envelope") ||
@@ -366,9 +365,8 @@ class SavedGames {
     const timestamp = Date.now();
     const status = puzzle.status;
     const gameId = puzzle.currentGameId ?? "";
+    // Bytes, not a Blob: Safari private browsing mode cannot store one.
     const data: Uint8Array<ArrayBuffer> = await puzzle.saveGame();
-    // (Earlier versions converted data to a Blob, which is both unnecessary
-    // and not supported in IndexedDB by Safari private browsing mode.)
     const checkpoints = [...puzzle.checkpoints];
     await db.savedGames.put({
       puzzleId,
