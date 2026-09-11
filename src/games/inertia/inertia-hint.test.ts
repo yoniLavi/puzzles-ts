@@ -24,7 +24,6 @@ import {
 
 const N = 0;
 const E = 2;
-
 const S = 4;
 
 /** A hand-built board. Rows are desc characters, so a test reads like the board
@@ -114,8 +113,8 @@ describe("inertia hint plan", () => {
       for (const step of res.steps) {
         const goal = (step.highlights as InertiaHintHighlights).goal;
         // Within a leg the goal never budges: it is derived once, from the
-        // plan, and carried (design D2). Re-deriving it per step from the
-        // ball's position would make the banner flip-flop.
+        // plan, and carried. Re-deriving it per step from the ball's position
+        // would make the banner flip-flop.
         if (legGoal !== null) {
           expect(goal, `${seed}: the subgoal changed under the player's feet`).toBe(
             legGoal,
@@ -196,7 +195,7 @@ describe("inertia hint narration", () => {
     // The ball has three ways out; two are mines. That is a genuine necessity
     // claim, and the skill the game punishes you for lacking.
     const step = firstStep(stateOf(["wwww", "wSmw", "wmgw", "wwww"]));
-    // Only NE... no: the gem is south-east, the mines east and south.
+    // The gem is south-east; the mines are east and south.
     expect(step.explanation).toContain("Slide south-east");
     expect(step.explanation).toContain("the only way that doesn't run you onto a mine");
   });
@@ -409,10 +408,7 @@ describe("inertia hint tracking", () => {
 
   it("keeps the plan when the player follows it — no recompute, so the subgoal holds", () => {
     // Without `hintKeepTrack` the midend drops the plan on *every* player move,
-    // including one that faithfully follows the hint. The next hint would then
-    // re-run `solveRoute`, whose fresh heuristic tour is no guaranteed suffix of
-    // the old one and may reach for a different gem — the very flip-flop the
-    // stable subgoal exists to prevent.
+    // including one that faithfully follows the hint (see `hintKeepTrack`).
     const { m, computed } = counting();
     expect(m.hint()).toBeUndefined();
     expect(computed()).toBe(1);

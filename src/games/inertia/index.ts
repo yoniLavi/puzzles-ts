@@ -38,9 +38,8 @@ import {
   RIGHT_DRAG,
   RIGHT_RELEASE,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { GameStatus, Point } from "../../engine/types.ts";
 import { newInertiaDesc } from "./generator.ts";
 import { hint, hintKeepTrack } from "./hint.ts";
 import {
@@ -124,13 +123,12 @@ function executeMove(s: InertiaState, m: InertiaMove): InertiaState {
 /**
  * Digit key → direction: the number pad's own layout is the compass.
  *
- * Upstream accepts these only with the `MOD_NUM_KEYPAD` bit set. This frontend
- * does set that bit — but only a numpad with Num Lock on produces a digit at
- * all, and a laptop may have no numpad (docs/games/input.md § "The numeric
- * keypad never arrives"). So the bare digits are accepted too, which `digitOf`
- * gives for free: without them the four **diagonal** moves are unreachable
- * from the keyboard altogether, and a keyboard-only player simply cannot play
- * the game. Inertia binds no other digit, so this can't collide with anything.
+ * Upstream accepts these only with the `MOD_NUM_KEYPAD` bit set, but a numpad
+ * produces a digit only with Num Lock on, and a laptop may have no numpad
+ * (docs/games/input.md § "The numeric keypad never arrives"). So `digitOf`
+ * takes the bare digits too: without them the four **diagonal** moves are
+ * unreachable from the keyboard. Inertia binds no other digit, so nothing
+ * collides.
  */
 const DIGIT_DIRECTIONS: Readonly<Record<number, number>> = {
   8: 0,
@@ -143,9 +141,8 @@ const DIGIT_DIRECTIONS: Readonly<Record<number, number>> = {
   7: 7,
 };
 
-/** The octant a point falls in, seen from the ball. `dx`/`dy` are measured from
- * the ball; taken as (dx, -dy) rather than (dy, dx) so the compass comes out the
- * right way round. */
+/** The octant (0 = north, then clockwise) of an offset `dx`/`dy` from the ball:
+ * `atan2(dx, -dy)` measures the angle clockwise from north. */
 function octantFrom(dx: number, dy: number): number {
   const angle = (Math.atan2(dx, -dy) + Math.PI / 8) / (Math.PI / 4);
   return Math.floor(angle + 16) & 7;
@@ -173,13 +170,10 @@ function aimedDirection(s: InertiaState, ts: number, p: Point): number {
 /**
  * Inertia has no use for a secondary button — so take it as the primary one.
  *
- * This is not tidiness, it is what makes the swipe work with a finger. On touch,
- * a press that stays put for `holdTime` (350ms) is delivered as a **right**
- * button, because the frontend reads it as a long-press
- * (`detectSecondaryButton`). And "hold the ball, then drag where you want to go"
- * is *precisely* a press that stays put for a moment — so the gesture would die
- * exactly when the player paused to aim. Folding right onto left makes it work
- * whichever the long-press detector decides it saw.
+ * This is what makes the swipe work with a finger: on touch, a press that stays
+ * put for `holdTime` (350ms) arrives as a **right** button
+ * (`detectSecondaryButton`), and "hold the ball, then drag" is exactly such a
+ * press — so without this the gesture would die when the player paused to aim.
  */
 function asPrimary(button: number): number {
   if (button === RIGHT_BUTTON) return LEFT_BUTTON;
@@ -205,17 +199,15 @@ function interpretMove(
 
     if (cx === s.px && cy === s.py) {
       // Pressing *on* the ball begins a swipe: hold it, drag out the way you
-      // want to go, and let go. The alternative to hunting for a cell in the
-      // right octant — which is the only way upstream lets you aim with a
-      // pointer, and is fiddly with a finger.
+      // want to go, and let go. Upstream's only pointer aim is clicking a cell
+      // in the right octant, which is fiddly with a finger.
       if (s.dead) return null;
       ui.aiming = true;
       ui.aimDir = -1;
       return UI_UPDATE;
     }
 
-    // Clicking away from the ball means "go that way" — we take the octant the
-    // click falls in.
+    // Clicking away from the ball: go toward the octant the click falls in.
     dir = octantFrom(cx - s.px, cy - s.py);
   } else if (button === LEFT_DRAG && ui.aiming) {
     const aimed = aimedDirection(s, ts, p);
@@ -248,11 +240,8 @@ function interpretMove(
     dir = digit === null ? -1 : (DIGIT_DIRECTIONS[digit] ?? -1);
   }
 
-  if (dir < 0) return null;
-
-  // A wall in the way, or a dead ball, and the move simply cannot happen.
+  if (dir < 0 || s.dead) return null;
   if (s.board.at(s.px + DX[dir], s.py + DY[dir]) === WALL) return null;
-  if (s.dead) return null;
 
   ui.justMadeMove = true;
   return { type: "move", dir };
@@ -297,14 +286,12 @@ export const inertiaGame: Game<
       submenu: PRESETS.map((p) => ({ title: `${p.w}x${p.h}`, params: { ...p } })),
     };
   },
-  encodeParams: (p: InertiaParams, _full: boolean): string => encodeParams(p),
+  encodeParams,
   decodeParams,
-  validateParams: (p: InertiaParams, _full: boolean): string | null =>
-    validateParams(p),
+  validateParams,
   paramConfig: dimensionParamConfig<InertiaParams>(),
 
-  newDesc: (p: InertiaParams, rng: RandomState): { desc: string } =>
-    newInertiaDesc(p, rng),
+  newDesc: newInertiaDesc,
   validateDesc,
   newState,
   newUi: (): InertiaUi => ({
@@ -346,15 +333,13 @@ export const inertiaGame: Game<
   textFormat,
   statusbarText,
 
-  // The hint is deliberately *not* Solve under another name: it installs no
-  // route and never sets `cheated`, so asking for a nudge doesn't brand the
-  // game auto-solved (`hint.ts`, design D1).
+  // A nudge, not Solve: it installs no route and never sets `cheated`.
   hint,
   hintKeepTrack,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: InertiaParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

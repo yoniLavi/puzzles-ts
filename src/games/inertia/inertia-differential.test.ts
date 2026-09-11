@@ -1,30 +1,23 @@
 /**
  * Inertia differential — the frozen C-reference check (docs/games/testing.md § "Fixture lifecycle", gated).
  *
- * The fixtures in `__fixtures__/inertia-c-reference.json` were recorded from the
- * C build by `puzzles/auxiliary/inertia-trace.c`. The two halves of the game get
- * two quite different bars, and the difference is the point:
+ * The fixtures in `__fixtures__/inertia-c-reference.json` were recorded from
+ * upstream's C. The two halves of the game get two different bars:
  *
  * 1. **The desc is byte-matched.** The generator's only RNG draws are `shuffle`
  *    calls and `random.ts` is bit-identical to `random.c`, so a faithful
- *    generator reproduces the C board exactly for the same seed (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
- *    That is a real, cheap check on the generator *and* on the gem-candidate
- *    search it gates on, so it stays.
+ *    generator reproduces the C board for the same seed
+ *    (docs/games/testing.md § "Byte-match: fidelity where there is a right answer")
+ *    — a cheap check on the generator and the gem-candidate search it gates on.
  *
- * 2. **The route is not.** `solve_game` is deterministic, so an exactly faithful
- *    port would reproduce C's route too — and the original port did, which is
- *    how it caught a bug. But a route is a *traveling-salesman tour*: there is
- *    no right answer to match, only better and worse answers, and byte-matching
- *    one pins the port to C's in-place `memmove` splicing (see the tour history
- *    in `solver.ts`). The byte-parity scope doctrine (docs/games/solver-and-generator.md § "Divergence and what it costs") puts the
- *    generator/solver/codec under fidelity and everything else under "write it
- *    well", and an approximate optimizer is squarely the latter.
- *
- *    So the route is checked on what actually matters — it is **legal** (every
- *    move is a real slide, and it never touches a mine), it **collects every
- *    gem**, and it is **no longer than the route C found**. That is a stronger
- *    guarantee than byte-equality, which would have been satisfied by faithfully
- *    reproducing a *bad* route.
+ * 2. **The route is not.** A route is a traveling-salesman tour: there is no
+ *    right answer to match, only better and worse ones, and byte-matching one
+ *    would pin the port to C's in-place `memmove` splicing
+ *    (docs/games/solver-and-generator.md § "Divergence and what it costs").
+ *    So the route is checked on what matters: it is **legal** (every move a
+ *    real slide, never onto a mine), it **collects every gem**, and it is **no
+ *    longer than C's** — stronger than byte-equality, which a faithfully
+ *    reproduced *bad* route would satisfy.
  */
 
 import { describe, expect, it } from "vitest";

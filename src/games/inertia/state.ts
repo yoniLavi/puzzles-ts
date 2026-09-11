@@ -3,9 +3,8 @@
  *
  * The board is a grid of five cell kinds; a single ball slides in one of
  * eight directions until something stops it, collecting gems and dying on
- * mines. The state is immutable: `executeMove` (in `index.ts`) builds a new
- * one, and a clone shares the installed route by reference (GC replaces
- * upstream's refcount on `struct soln`).
+ * mines. The state is immutable, and a clone shares the installed route by
+ * reference (where upstream refcounts its `struct soln`).
  */
 
 import { parseDimensions } from "../../engine/params.ts";
@@ -88,8 +87,8 @@ export type InertiaMove =
   | { type: "route"; route: readonly number[] };
 
 export interface InertiaUi {
-  /** Running tally of self-inflicted deaths. Lives on the Ui (not the state)
-   * so undo/redo cannot rewind or re-count it — see design D5. */
+  /** Running tally of self-inflicted deaths. Lives on the Ui, not the state,
+   * so undo/redo cannot rewind or re-count it. */
   deaths: number;
   /** Set by `interpretMove`, consumed by `changedState`: distinguishes "the
    * player just made this move" from a replay/undo/redo, so only a fresh

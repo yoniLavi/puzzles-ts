@@ -1,13 +1,11 @@
 /**
  * Inertia's renderer.
  *
- * The board is a plain per-tile cache (cell value OR'd with the flash bits, in
- * an `Int32Array` — docs/games/rendering.md § "The tile cache and the diff key"). The ball is a *sprite*: it is drawn over
- * whatever tile it happens to be over, so the tile beneath it is saved into a
- * blitter first and restored at the top of the next frame. That also means the
- * route arrow, which is drawn on the ball, can never go stale — it is repainted
- * every frame and so is not subject to the §3.2 "overlay must be in the diff
- * key" trap.
+ * The board is a plain per-tile cache: cell value OR'd with the flash and hint
+ * bits (docs/games/rendering.md § "The tile cache and the diff key"). The ball
+ * is a *sprite*, drawn after saving the tile beneath it into a blitter that is
+ * restored at the top of the next frame — so the arrows drawn on the ball are
+ * repainted every frame and need no place in the diff key.
  *
  * A move animates the ball sliding along its path; gems disappear as it reaches
  * them, rather than all at once when the move lands.
@@ -55,18 +53,16 @@ export const COL_MINE = 6;
 export const COL_GEM = 7;
 export const COL_WALL = 8;
 export const COL_HINT = 9;
-/** Appended past the C enum: the arrow the player is aiming with a swipe — the
- * aim drag's preview, "let go and you go this way". The route arrow (`COL_HINT`)
- * means "the solver says go this way"; only one of the two is ever drawn, since
- * aiming replaces the route arrow until the swipe is released. */
+/** Appended past the C enum: the swipe's aim arrow, "let go and you go this
+ * way". While a swipe is held it replaces the route arrow (`COL_HINT`, "the
+ * solver says go this way"). */
 export const COL_AIM = 10;
 /** Appended: the ring round the gem a hint is going for. The hint's two roles
- * get two colors, each with a cue of its own (docs/games/hints.md § "The element-type color legend") — the
- * direction is a blue *arrow* (`COL_HINT`, the route arrow's own shape and
- * color: both mean "the solver says go this way"), and the subgoal gem is a
- * violet *ring*. Appending past the C enum is safe: the app addresses Inertia's
- * palette by number only through `paletteSwaps`, which pair indices 2 and 3 (the
- * 3D bevel), and Inertia has no dark-mode `paletteOverrides` at all. */
+ * get two cues (docs/games/hints.md § "The element-type color legend"): the
+ * direction is the route arrow's blue *arrow*, the subgoal gem a violet *ring*.
+ * Appending past the C enum is safe: the app addresses Inertia's palette by
+ * number only through `paletteSwaps`, which pair indices 2 and 3 (the 3D
+ * bevel), and Inertia has no dark-mode `paletteOverrides` at all. */
 export const COL_HINT_GOAL = 11;
 /** Appended: the solved flash's tile fill. Its own slot because `COL_HIGHLIGHT`
  * is also the wall bevel and the mine's glint, which do not flash. */
@@ -87,8 +83,8 @@ export function colors(defaultBackground: Color): Color[] {
   ret[COL_WALL] = wallColor(background, highlight);
   ret[COL_HINT] = HINT_ACTION;
   ret[COL_AIM] = DRAG_ADD;
-  // A third hint cue, the subgoal: neither the action (the blue arrow) nor
-  // evidence, so no hint role names it; purple is the hue the board has not spent.
+  // The subgoal is neither action nor evidence, so no hint role names it;
+  // purple is the hue the board has not spent.
   ret[COL_HINT_GOAL] = PURPLE;
   ret[COL_FLASH] = FLASH;
 
@@ -99,12 +95,10 @@ export function colors(defaultBackground: Color): Color[] {
 
 export const PREFERRED_TILE_SIZE = 32;
 
-/** The web build compiles with `NARROW_BORDERS` (see `webapp.cmake`), so the
- * border is one pixel, not a whole tile — docs/games/rendering.md § "The tile cache and the diff key". */
+/** Upstream's `NARROW_BORDERS` layout: the border is one pixel, not a tile. */
 export const BORDER = 1;
 
 const coord = (pos: number, ts: number): number => coordE(pos, ts, BORDER);
-const highlightWidth = raisedBevelWidth;
 
 export function computeSize(p: InertiaParams, ts: number): Size {
   return { w: 2 * BORDER + 1 + p.w * ts, h: 2 * BORDER + 1 + p.h * ts };
@@ -140,8 +134,8 @@ export function newDrawState(s: InertiaState): InertiaDrawState {
     started: false,
     tileSize: PREFERRED_TILE_SIZE,
     grid: new Int32Array(s.params.w * s.params.h).fill(UNDRAWN),
-    // The blitter can't be allocated until we know the tile size *and* have a
-    // GameDrawing, so `redraw` does it lazily (the Pegs pattern).
+    // The blitter needs the tile size *and* a GameDrawing, so `redraw`
+    // allocates it lazily.
     playerBackground: null,
     playerBgSaved: false,
     pbgX: -1,
@@ -164,7 +158,7 @@ function drawTile(dr: GameDrawing, ts: number, x: number, y: number, v: number):
   const bg =
     v & FLASH_DEAD ? COL_DEAD_PLAYER : v & FLASH_WIN ? COL_FLASH : COL_BACKGROUND;
   const cell = v & ~(FLASH_DEAD | FLASH_WIN | HINT_GOAL);
-  const hw = highlightWidth(ts);
+  const hw = raisedBevelWidth(ts);
 
   dr.clip({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 });
   dr.drawRect({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 }, bg);

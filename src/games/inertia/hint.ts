@@ -2,24 +2,21 @@
  * Inertia's hint.
  *
  * Inertia is a movement game, so its hint belongs to the **non-deductive
- * family** (docs/games/hints.md § "Non-deductive (heuristic) hints"): no move is *forced* by logic, and a narration
- * claiming otherwise would be a fabrication. But it has far more to say than
- * Untangle's wordless suggestion, because every move here has a concrete
- * consequence the player can be taught — and the one beginners get wrong is
- * precisely the one a hint can say out loud: **you do not choose where you
- * stop.**
+ * family** (docs/games/hints.md § "Non-deductive (heuristic) hints"): no move
+ * is *forced* by logic, and a narration claiming otherwise would be a
+ * fabrication. But every move here has a concrete consequence the player can be
+ * taught — and the one beginners get wrong is precisely the one a hint can say
+ * out loud: **you do not choose where you stop.**
  *
  * Three things shape it.
  *
  * 1. **The plan goes for the nearest gem the ball can take without stranding
- *    itself** (`nextLeg`), rather than following `solveRoute`'s tour. Not a
- *    style choice: a hint recomputed from scratch after every player move has to
- *    be *stable*, and the tour is a heuristic that can send the ball north-east
- *    and then, one move later, tell it to come back south-west, for ever.
+ *    itself** (`nextLeg`), rather than following `solveRoute`'s tour, because a
+ *    hint recomputed after every player move has to be *stable* (see `nextLeg`).
  *
  * 2. **The gem is the subgoal, and it is held stable across the leg that works
- *    toward it** (the Fifteen lesson, design D2). Re-deriving the goal per step
- *    makes the banner flip-flop and read as though it has lost the plot.
+ *    toward it** (the Fifteen lesson). Re-deriving the goal per step makes the
+ *    banner flip-flop and read as though it has lost the plot.
  *
  * 3. **Nothing overclaims.** Every narration branch states only what this file
  *    has actually checked — see `narrate`.
@@ -27,7 +24,7 @@
  * And the hint is a *nudge*, which is its whole reason for existing: Solve hands
  * out a route too, but sets `cheated`, so the status bar reads "Auto-solver
  * used." for the rest of the game. Nothing here installs a route or touches that
- * flag (design D1).
+ * flag.
  */
 
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
@@ -65,9 +62,8 @@ type Step = HintStep<InertiaMove, InertiaHintHighlights>;
  * game punishes you for lacking.
  *
  * The two are told apart because saying "every other way runs you onto a mine"
- * about a ball hemmed in by walls would be a lie of the kind
- * docs/games/hints.md § "Sanity-read at the degenerate extremes" asks you to catch by reading a narration at its
- * degenerate extremes.
+ * about a ball hemmed in by walls would be a lie
+ * (docs/games/hints.md § "Sanity-read at the degenerate extremes").
  */
 function onlyMove(s: InertiaState, dir: number): "mines" | "walls" | null {
   const others = legalDirections(s.board, s.px, s.py).filter((d) => d !== dir);
@@ -225,16 +221,13 @@ function walkLeg(s: InertiaState, dirs: readonly number[]): Leg {
  * The leg to play next: the **nearest gem the ball can take without stranding
  * itself**, reached by the shortest walk to it.
  *
- * "Nearest" is not a stylistic choice — it is what makes the hint *stable*, and
- * an unstable hint is worse than none. A plan is recomputed from scratch
- * whenever the player goes their own way, and `solveRoute`'s tour is a
- * heuristic: two runs from adjacent positions can disagree about which gem to
- * fetch first, so the ball gets sent north-east, then told to come back
- * south-west, for ever. (That is not hypothetical — it is what this hint did
- * before, and what `hint-resume.test.ts` caught.) Going for the *nearest* safe
- * gem cannot do it: each move of the walk strictly shortens the distance to a
- * gem that is still safe, so the distance falls by one every move and a gem is
- * always collected within it.
+ * "Nearest" is what makes the hint *stable*, and an unstable hint is worse than
+ * none. A plan is recomputed from scratch whenever the player goes their own
+ * way, and `solveRoute`'s tour is a heuristic: two runs from adjacent positions
+ * can disagree about which gem to fetch first, sending the ball north-east,
+ * then back south-west, for ever (`hint-resume.test.ts` guards this). Going for
+ * the *nearest* safe gem cannot: each move of the walk shortens the distance to
+ * a gem that is still safe by one, so a gem is always collected within it.
  *
  * "Without stranding itself" is the other half, and it is the game's own lesson:
  * grabbing the nearest gem is what a beginner does, and it loses — you do not
@@ -323,9 +316,8 @@ export function hint(
           leg.goal,
           leg.dirs.length - i,
         ),
-        // The goal is carried across every step of the leg, not re-derived per
-        // step from where the ball is standing (design D2) — the gem the plan is
-        // going for does not change just because the ball has moved.
+        // The goal is carried across every step of the leg, not re-derived
+        // from where the ball is standing.
         highlights: { goal: leg.goal, dir },
       });
     });

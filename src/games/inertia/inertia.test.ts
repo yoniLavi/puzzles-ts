@@ -121,8 +121,7 @@ describe("inertia params and desc codec", () => {
   });
 
   it("puts the ball on the start square, and treats that square as a stop", () => {
-    // The ball starts at (1,0). Sliding east it should return to its start and
-    // be caught there by the stop the start square left behind.
+    // The ball starts at (1,0), and the square under it becomes a stop.
     const { params, desc } = board(["bSbg", "wwww"]);
     const s = newState(params, desc);
     expect([s.px, s.py]).toEqual([1, 0]);
@@ -269,8 +268,8 @@ describe("inertia input", () => {
   });
 
   it("takes the bare digits too, so the diagonals are keyboard-reachable", () => {
-    // The web frontend never sets MOD_NUM_KEYPAD (it maps any single character
-    // to its char code), so without this the diagonals would be mouse-only.
+    // A numpad produces a digit only with Num Lock on, and a laptop may have no
+    // numpad at all, so without this the diagonals could be mouse-only.
     const { params, desc } = board(["bbbbb", "bbbbb", "bbSbg", "bbbbb", "bbbbb"]);
     const s = newState(params, desc);
     for (const [k, dir] of [
@@ -738,7 +737,7 @@ describe("inertia rendering", () => {
     expect(arrows(idle, COL_AIM)).toBe(0);
 
     // Holding the ball, aimed east: an arrow appears — and in COL_AIM, not the
-    // COL_HINT yellow the solver's route arrow uses. They mean different things.
+    // COL_HINT the solver's route arrow uses. They mean different things.
     const aiming = paint({ ...ui(), aiming: true, aimDir: E });
     expect(arrows(aiming, COL_AIM)).toBe(1);
     expect(arrows(aiming, COL_HINT)).toBe(0);
