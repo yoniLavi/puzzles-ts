@@ -1,16 +1,12 @@
+/**
+ * Bridges' board model, from upstream's `bridges.c`: a grid of `G_*` flag words,
+ * the per-cell line/possible/max counts, and an island list with each island's
+ * orthogonal neighbors (`points`). Upstream's refcounted `solver_state` (two
+ * dsfs) is not part of the state; the solver builds its own dsf on demand.
+ */
 import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
-/**
- * Types and pure state helpers for Bridges (Hashiwokakero).
- *
- * Faithful port of the data model in `puzzles/bridges.c`: a flat grid of `G_*`
- * flag words plus the per-cell line/possible/max counts, and an island list
- * with orthogonal-neighbor adjacency (`surrounds`). The C keeps the five count
- * arrays as slices of one `wha` block; here they are five typed arrays. The
- * refcounted `solver_state` (two dsfs) is *not* part of the logical state — the
- * solver creates its own dsf on demand — so it is omitted here.
- */
 
 // --- Grid flag bits (bridges.c lines 127-142) ---
 export const G_ISLAND = 0x0001;
@@ -22,7 +18,6 @@ export const G_MARKH = 0x0010;
 export const G_MARK = G_MARKV | G_MARKH;
 export const G_NOLINEV = 0x0020;
 export const G_NOLINEH = 0x0040;
-export const G_NOLINE = G_NOLINEV | G_NOLINEH;
 export const G_WARN = 0x0080;
 export const G_SWEEP = 0x1000;
 
@@ -38,7 +33,7 @@ export interface BridgesParams {
   /** Expansion factor, percentage (generation). */
   expansion: number;
   allowloops: boolean;
-  /** 0 = Easy, 1 = Medium, 2 = Hard. */
+  /** Tier index into {@link DIFFICULTY_NAMES}. */
   difficulty: number;
 }
 
@@ -64,68 +59,26 @@ export interface Island {
   nislands: number;
 }
 
-/** Presets: 7/10/15 square × Easy/Medium/Hard, all maxb 2, 30% islands, 10% expansion, loops allowed. */
-export const BRIDGES_PRESETS: BridgesParams[] = [
-  { w: 7, h: 7, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 0 },
-  { w: 7, h: 7, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 1 },
-  { w: 7, h: 7, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 2 },
-  {
-    w: 10,
-    h: 10,
-    maxb: 2,
-    islands: 30,
-    expansion: 10,
-    allowloops: true,
-    difficulty: 0,
-  },
-  {
-    w: 10,
-    h: 10,
-    maxb: 2,
-    islands: 30,
-    expansion: 10,
-    allowloops: true,
-    difficulty: 1,
-  },
-  {
-    w: 10,
-    h: 10,
-    maxb: 2,
-    islands: 30,
-    expansion: 10,
-    allowloops: true,
-    difficulty: 2,
-  },
-  {
-    w: 15,
-    h: 15,
-    maxb: 2,
-    islands: 30,
-    expansion: 10,
-    allowloops: true,
-    difficulty: 0,
-  },
-  {
-    w: 15,
-    h: 15,
-    maxb: 2,
-    islands: 30,
-    expansion: 10,
-    allowloops: true,
-    difficulty: 1,
-  },
-  {
-    w: 15,
-    h: 15,
-    maxb: 2,
-    islands: 30,
-    expansion: 10,
-    allowloops: true,
-    difficulty: 2,
-  },
-];
-
 export const DIFFICULTY_NAMES: readonly string[] = tierNames(3);
+
+/** A square board of this size at every tier. */
+const presetsOfSize = (size: number): BridgesParams[] =>
+  DIFFICULTY_NAMES.map((_, difficulty) => ({
+    w: size,
+    h: size,
+    maxb: 2,
+    islands: 30,
+    expansion: 10,
+    allowloops: true,
+    difficulty,
+  }));
+
+/** Square 7, 10 and 15 boards at every tier, as upstream ships them. */
+export const BRIDGES_PRESETS: BridgesParams[] = [
+  ...presetsOfSize(7),
+  ...presetsOfSize(10),
+  ...presetsOfSize(15),
+];
 
 export function defaultParams(): BridgesParams {
   return { ...BRIDGES_PRESETS[0] };
@@ -133,16 +86,14 @@ export function defaultParams(): BridgesParams {
 
 // --- Params codec (bridges.c decode_params/encode_params/validate_params) ---
 
-/** Reads a leading non-negative integer, advancing the cursor. Returns [value, nextIndex]. */
+/** Reads a leading non-negative integer (0 if none). Returns [value, nextIndex]. */
 function eatNum(s: string, i: number): [number, number] {
   let n = 0;
-  let seen = false;
   while (i < s.length && s[i] >= "0" && s[i] <= "9") {
     n = n * 10 + (s.charCodeAt(i) - 48);
     i++;
-    seen = true;
   }
-  return [seen ? n : 0, i];
+  return [n, i];
 }
 
 export function decodeParams(s: string): BridgesParams {
@@ -166,7 +117,6 @@ export function decodeParams(s: string): BridgesParams {
     i++;
     [p.maxb, i] = eatNum(s, i);
   }
-  p.allowloops = true;
   if (s[i] === "L") {
     i++;
     p.allowloops = false;
@@ -189,7 +139,7 @@ export function encodeParams(p: BridgesParams, full: boolean): string {
 
 export function validateParams(p: BridgesParams, full: boolean): string | null {
   if (p.w < 3 || p.h < 3) return "Width and height must be at least 3";
-  if (p.h > 0 && p.w > Math.floor(0x7fffffff / p.h))
+  if (p.w > Math.floor(0x7fffffff / p.h))
     return "Width times height must not be unreasonably large";
   if (p.maxb < 1 || p.maxb > MAX_BRIDGES) return "Too many bridges.";
   if (full) {
@@ -226,21 +176,18 @@ export interface BridgesUi {
   nlines: number;
   cursor: GridCursor;
   showHints: boolean;
-  /** Fork aid: auto-gray an island whose bridge-count is met (purely visual —
-   * does NOT lock its bridges, unlike a manual mark). Default on. */
+  /** Fork aid: gray an island once its bridge count is met. Purely visual:
+   * unlike a manual mark, it does not lock the island's bridges. */
   autoMark: boolean;
 }
 
-/** Highlight returned by findMistakes: a wrongly-placed bridge span. */
+/** A wrongly-placed bridge from findMistakes, by its two island endpoints. */
 export interface BridgesMistake {
-  /** The two island endpoints of the offending bridge. */
   x1: number;
   y1: number;
   x2: number;
   y2: number;
 }
-
-const min = Math.min;
 
 /**
  * The Bridges board. Mutable during generation/solving; treated as immutable by
@@ -435,37 +382,22 @@ export class BridgesState {
    * `isMax` writes into maxv/maxh instead.
    */
   islandJoin(i1: Island, i2: Island, n: number, isMax: boolean): void {
-    const w = this.w;
-    if (i1.x === i2.x) {
-      const x = i1.x;
-      const s = i1.y < i2.y ? i1.y + 1 : i2.y + 1;
-      const e = i1.y < i2.y ? i2.y - 1 : i1.y - 1;
-      for (let y = s; y <= e; y++) {
-        const c = y * w + x;
-        if (isMax) this.maxv[c] = n;
-        else if (n < 0) this.grid[c] ^= G_NOLINEV;
-        else if (n === 0) this.grid[c] &= ~G_LINEV;
-        else {
-          this.grid[c] |= G_LINEV;
-          this.lines[c] = n;
-        }
+    const dx = Math.sign(i2.x - i1.x);
+    const dy = Math.sign(i2.y - i1.y);
+    if (dx && dy) throw new Error("islandJoin: islands not orthogonal");
+    const line = dx ? G_LINEH : G_LINEV;
+    const noline = dx ? G_NOLINEH : G_NOLINEV;
+    const max = dx ? this.maxh : this.maxv;
+    const len = Math.abs(i2.x - i1.x) + Math.abs(i2.y - i1.y);
+    for (let k = 1; k < len; k++) {
+      const c = this.idx(i1.x + k * dx, i1.y + k * dy);
+      if (isMax) max[c] = n;
+      else if (n < 0) this.grid[c] ^= noline;
+      else if (n === 0) this.grid[c] &= ~line;
+      else {
+        this.grid[c] |= line;
+        this.lines[c] = n;
       }
-    } else if (i1.y === i2.y) {
-      const y = i1.y;
-      const s = i1.x < i2.x ? i1.x + 1 : i2.x + 1;
-      const e = i1.x < i2.x ? i2.x - 1 : i1.x - 1;
-      for (let x = s; x <= e; x++) {
-        const c = y * w + x;
-        if (isMax) this.maxh[c] = n;
-        else if (n < 0) this.grid[c] ^= G_NOLINEH;
-        else if (n === 0) this.grid[c] &= ~G_LINEH;
-        else {
-          this.grid[c] |= G_LINEH;
-          this.lines[c] = n;
-        }
-      }
-    } else {
-      throw new Error("islandJoin: islands not orthogonal");
     }
   }
 
@@ -491,11 +423,11 @@ export class BridgesState {
       const mline = pt.dx ? G_MARKH : G_MARKV;
       if (this.gridAt(pt.x, pt.y) & mline) return 0;
     }
-    let poss = this.possibles(pt.dx, pt.x, pt.y);
-    poss = min(poss, missing);
-    const curr = this.gridCount(pt.x, pt.y, gline);
-    poss = min(poss, this.maximum(pt.dx, pt.x, pt.y) - curr);
-    return poss;
+    return Math.min(
+      this.possibles(pt.dx, pt.x, pt.y),
+      missing,
+      this.maximum(pt.dx, pt.x, pt.y) - this.gridCount(pt.x, pt.y, gline),
+    );
   }
 
   islandCountspaces(is: Island, marks: boolean): number {
@@ -569,111 +501,80 @@ export class BridgesState {
       if (ifree > 0) {
         const bmax = this.maximum(dx, pt.x, pt.y);
         const bcurr = this.gridCount(pt.x, pt.y, dx ? G_LINEH : G_LINEV);
-        nsurrspc += min(ifree, bmax - bcurr);
+        nsurrspc += Math.min(ifree, bmax - bcurr);
       }
     }
-    if (nsurrspc < nspc) return true; // surrounding islands can't absorb the rest
-    return false;
+    return nsurrspc < nspc; // surrounding islands can't absorb the rest
   }
 
   // --- Map-wide helpers (bridges.c) ---
 
   /** Recompute possv/possh from the current lines. C map_update_possibles. */
   mapUpdatePossibles(): void {
-    const w = this.w;
-    const h = this.h;
-    const grid = this.grid;
-    const gridi = this.gridi;
-    const maxbParam = this.params.maxb;
-
-    // Vertical stripes -> possv.
+    const { w, h } = this;
     for (let x = 0; x < w; x++) {
-      let idx = x;
-      let s = -1;
-      let e = -1;
-      let bl = false;
-      let maxb = maxbParam;
-      let y = 0;
-      for (; y < h; y++) {
-        if (gridi[idx] >= 0) {
-          maxb = this.islands[gridi[idx]].count;
-          break;
-        }
-        this.possv[idx] = 0;
-        idx += w;
+      this.updateStripe(x, w, h, this.possv, this.maxv, G_LINEH | G_NOLINEV);
+    }
+    for (let y = 0; y < h; y++) {
+      this.updateStripe(y * w, 1, w, this.possh, this.maxh, G_LINEV | G_NOLINEH);
+    }
+  }
+
+  /**
+   * One column (`step` w) or row (`step` 1) of `mapUpdatePossibles`; its k-th
+   * cell is `start + k * step`. A run of cells between two islands can take the
+   * lesser of their two clues and the run's per-cell maxima, or nothing if any
+   * cell holds a `blockers` flag. Cells outside such a run take nothing.
+   */
+  private updateStripe(
+    start: number,
+    step: number,
+    len: number,
+    poss: Uint8Array,
+    max: Uint8Array,
+    blockers: number,
+  ): void {
+    let runStart = -1;
+    let runEnd = -1;
+    let blocked = false;
+    let maxb = 0;
+    let k = 0;
+    for (; k < len; k++) {
+      const island = this.gridi[start + k * step];
+      if (island >= 0) {
+        maxb = this.islands[island].count;
+        break;
       }
-      for (; y < h; y++) {
-        maxb = min(maxb, this.maxv[idx]);
-        const fi = gridi[idx];
-        if (fi >= 0) {
-          const np = min(maxb, this.islands[fi].count);
-          if (s !== -1) {
-            for (let i = s; i <= e; i++) this.possv[i * w + x] = bl ? 0 : np;
+      poss[start + k * step] = 0;
+    }
+    for (; k < len; k++) {
+      const c = start + k * step;
+      maxb = Math.min(maxb, max[c]);
+      const island = this.gridi[c];
+      if (island >= 0) {
+        const count = this.islands[island].count;
+        const n = Math.min(maxb, count);
+        if (runStart !== -1) {
+          for (let i = runStart; i <= runEnd; i++) {
+            poss[start + i * step] = blocked ? 0 : n;
           }
-          s = y + 1;
-          bl = false;
-          maxb = this.islands[fi].count;
-        } else {
-          e = y;
-          if (grid[idx] & (G_LINEH | G_NOLINEV)) bl = true;
         }
-        idx += w;
-      }
-      if (s !== -1) {
-        for (let i = s; i <= e; i++) this.possv[i * w + x] = 0;
+        runStart = k + 1;
+        blocked = false;
+        maxb = count;
+      } else {
+        runEnd = k;
+        if (this.grid[c] & blockers) blocked = true;
       }
     }
-
-    // Horizontal stripes -> possh.
-    for (let y = 0; y < h; y++) {
-      let idx = y * w;
-      let s = -1;
-      let e = -1;
-      let bl = false;
-      let maxb = maxbParam;
-      let x = 0;
-      for (; x < w; x++) {
-        if (gridi[idx] >= 0) {
-          maxb = this.islands[gridi[idx]].count;
-          break;
-        }
-        this.possh[idx] = 0;
-        idx += 1;
-      }
-      for (; x < w; x++) {
-        maxb = min(maxb, this.maxh[idx]);
-        const fi = gridi[idx];
-        if (fi >= 0) {
-          const np = min(maxb, this.islands[fi].count);
-          if (s !== -1) {
-            for (let i = s; i <= e; i++) this.possh[y * w + i] = bl ? 0 : np;
-          }
-          s = x + 1;
-          bl = false;
-          maxb = this.islands[fi].count;
-        } else {
-          e = x;
-          if (grid[idx] & (G_LINEV | G_NOLINEH)) bl = true;
-        }
-        idx += 1;
-      }
-      if (s !== -1) {
-        for (let i = s; i <= e; i++) this.possh[y * w + i] = 0;
-      }
+    if (runStart !== -1) {
+      for (let i = runStart; i <= runEnd; i++) poss[start + i * step] = 0;
     }
   }
 
   /** Recompute every island's `count` from the bridges on the grid. C map_count. */
   mapCount(): void {
-    for (const is of this.islands) {
-      is.count = 0;
-      for (const pt of is.points) {
-        const flag = pt.x === is.x ? G_LINEV : G_LINEH;
-        if (this.gridAt(pt.x, pt.y) & flag) {
-          is.count += this.lines[pt.y * this.w + pt.x];
-        }
-      }
-    }
+    for (const is of this.islands) is.count = this.islandCountbridges(is);
   }
 
   /** Clear everything but the islands (C map_clear — deliberately leaves lines/max). */
@@ -786,8 +687,4 @@ export function textFormat(state: BridgesState): string {
     ret += "\n";
   }
   return ret;
-}
-
-export function cloneBridgesState(s: BridgesState): BridgesState {
-  return s.clone();
 }

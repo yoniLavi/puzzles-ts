@@ -1,19 +1,16 @@
 /**
- * Gated C-vs-TS differential for the Bridges port. Reads the committed fixture
- * recorded from upstream bridges.c (puzzles/auxiliary/bridges-trace.c) and
- * asserts:
+ * Gated C-vs-TS differential for Bridges, against a fixture recorded from
+ * upstream's bridges.c by `puzzles/auxiliary/bridges-trace.c`. It asserts:
  *
  *  1. TS `newDesc` over the same seed reproduces the C desc **byte-for-byte** —
  *     the generator is a faithful port, its accept/reject decisions are made by
  *     identical solver verdicts, and the RNG is bit-identical.
  *  2. The TS solver solves each C-generated board at the recorded difficulty
- *     and (for a Medium/Hard board with enough islands) does NOT solve it one
+ *     and (above the lowest tier, with enough islands) does NOT solve it one
  *     level down — the same "too easy" gate the generator applied.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/bridges-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the build that recorded
+ * it is gone — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

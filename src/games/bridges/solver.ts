@@ -6,9 +6,9 @@
  *
  * Structure:
  *  - Stage 1 (Easy): whole-island arithmetic — fill when forced, mark full.
- *  - Stage 2 (Medium): per-connection reasoning — a direction that must carry a
+ *  - Stage 2 (Normal): per-connection reasoning — a direction that must carry a
  *    bridge, and loop-avoidance when `allowloops` is off.
- *  - Stage 3 (Hard): group reasoning over a dsf — speculatively cap/force a
+ *  - Stage 3 (Tricky): group reasoning over a dsf — speculatively cap/force a
  *    direction to avoid an isolated finished subgraph or an impossibility.
  *
  * `solve_sub`'s `difficulty` is a monotone stage gate (0/1/2 = stage 1 / +2 /
@@ -34,11 +34,6 @@ import {
   G_WARN,
   type Island,
 } from "./state.ts";
-
-/** Vertex index used by the dsf and findloop — matches C `DINDEX`/`y*w+x`. */
-function dindex(st: BridgesState, x: number, y: number): number {
-  return y * st.w + x;
-}
 
 /**
  * Neighbors of grid vertex `v` for loop detection — mirrors C
@@ -118,7 +113,7 @@ class Solver {
         st.grid[y * st.w + x] &= ~(G_SWEEP | G_WARN);
         const is = st.islandAt(x, y);
         if (!is) continue;
-        const d1 = dindex(st, x, y);
+        const d1 = st.idx(x, y);
         for (let i = 0; i < is.points.length; i++) {
           const pt = is.points[i];
           if (pt.dx === -1 || pt.dy === -1) continue; // only right/down
@@ -127,7 +122,7 @@ class Solver {
           // Merge every square between the two islands (a straight line).
           for (let x2 = x; x2 <= isJoin.x; x2++) {
             for (let y2 = y; y2 <= isJoin.y; y2++) {
-              const d2 = dindex(st, x2, y2);
+              const d2 = st.idx(x2, y2);
               if (d1 !== d2) dsf.merge(d1, d2);
             }
           }
@@ -143,7 +138,7 @@ class Solver {
     let nislands = 0;
     let allfull = true;
     for (const is of st.islands) {
-      if (dsf.canonify(dindex(st, is.x, is.y)) !== canon) continue;
+      if (dsf.canonify(st.idx(is.x, is.y)) !== canon) continue;
       st.grid[is.y * st.w + is.x] |= G_SWEEP;
       nislands++;
       if (st.islandCountbridges(is) !== is.count) allfull = false;
@@ -151,7 +146,7 @@ class Solver {
     if (warn && allfull && nislands !== st.islands.length) {
       for (let x = 0; x < st.w; x++) {
         for (let y = 0; y < st.h; y++) {
-          if (dsf.canonify(dindex(st, x, y)) === canon) st.grid[y * st.w + x] |= G_WARN;
+          if (dsf.canonify(st.idx(x, y)) === canon) st.grid[y * st.w + x] |= G_WARN;
         }
       }
     }
@@ -166,24 +161,22 @@ class Solver {
     for (const is of st.islands) {
       if (st.grid[is.y * st.w + is.x] & G_SWEEP) continue;
       ngroups++;
-      const [full] = this.mapGroupCheck(
-        this.dsf.canonify(dindex(st, is.x, is.y)),
-        true,
-      );
+      const [full] = this.mapGroupCheck(this.dsf.canonify(st.idx(is.x, is.y)), true);
       if (full) anyfull = true;
     }
     return [anyfull, ngroups];
   }
 
+  /** Upstream's `map_check`: whether the board is complete. As a deliberate
+   * side effect it leaves `G_WARN`/`G_SWEEP` set on loop edges and on
+   * prematurely satisfied groups, which is the warning overlay the renderer
+   * reads. */
   mapCheck(): boolean {
     const st = this.st;
-    if (!st.allowloops) {
-      if (mapHasloops(st, true)) return false;
-    }
+    if (!st.allowloops && mapHasloops(st, true)) return false;
     this.mapGroup(); // clears WARN and SWEEP
     const [anyfull, ngroups] = this.mapGroupFull();
-    if (anyfull && ngroups === 1) return true;
-    return false;
+    return anyfull && ngroups === 1;
   }
 
   // --- Join with dsf bookkeeping (C solve_join) ---
@@ -197,8 +190,8 @@ class Solver {
     if (!isOrth) throw new Error("solveJoin: no orthogonal island");
     st.islandJoin(is, isOrth, n, isMax);
     if (n > 0 && !isMax) {
-      const d1 = dindex(st, is.x, is.y);
-      const d2 = dindex(st, isOrth.x, isOrth.y);
+      const d1 = st.idx(is.x, is.y);
+      const d2 = st.idx(isOrth.x, isOrth.y);
       if (!this.dsf.equivalent(d1, d2)) this.dsf.merge(d1, d2);
     }
   }
@@ -209,13 +202,9 @@ class Solver {
     const st = this.st;
     let nadded = 0;
     for (let i = 0; i < is.points.length; i++) {
-      if (st.islandIsadj(is, i)) {
-        if (st.islandHasbridge(is, i)) {
-          // already attached; do nothing.
-        } else {
-          this.solveJoin(is, i, 1, false);
-          nadded++;
-        }
+      if (st.islandIsadj(is, i) && !st.islandHasbridge(is, i)) {
+        this.solveJoin(is, i, 1, false);
+        nadded++;
       }
     }
     return nadded;
@@ -238,7 +227,7 @@ class Solver {
     return nadded;
   }
 
-  /** Returns false if the puzzle is provably unsolvable from here. */
+  /** `ok` is false when this island proves the puzzle unsolvable. */
   solveIslandStage1(is: Island): { ok: boolean; didsth: boolean } {
     const st = this.st;
     const bridges = st.islandCountbridges(is);
@@ -255,12 +244,10 @@ class Solver {
       }
     } else if (st.gridAt(is.x, is.y) & G_MARK) {
       return { ok: false, didsth: false }; // marked but unfinished
-    } else {
-      if (is.count === bridges + nspaces) {
-        if (this.solveFill(is) > 0) didsth = true;
-      } else if (is.count > (nadj - 1) * st.maxb) {
-        if (this.solveFillone(is) > 0) didsth = true;
-      }
+    } else if (is.count === bridges + nspaces) {
+      if (this.solveFill(is) > 0) didsth = true;
+    } else if (is.count > (nadj - 1) * st.maxb) {
+      if (this.solveFillone(is) > 0) didsth = true;
     }
     if (didsth) st.mapUpdatePossibles();
     return { ok: true, didsth };
@@ -279,9 +266,7 @@ class Solver {
       st.islandOrthY(is, direction),
     );
     if (!isOrth) return false;
-    const d1 = dindex(st, is.x, is.y);
-    const d2 = dindex(st, isOrth.x, isOrth.y);
-    return this.dsf.equivalent(d1, d2);
+    return this.dsf.equivalent(st.idx(is.x, is.y), st.idx(isOrth.x, isOrth.y));
   }
 
   solveIslandStage2(is: Island): { ok: boolean; didsth: boolean } {
@@ -328,11 +313,10 @@ class Solver {
       if (st.islandCountbridges(isJoin) < isJoin.count) return false;
     }
     const [full, nislands] = this.mapGroupCheck(
-      this.dsf.canonify(dindex(st, is.x, is.y)),
+      this.dsf.canonify(st.idx(is.x, is.y)),
       false,
     );
-    if (full && nislands < st.islands.length) return true;
-    return false;
+    return full && nislands < st.islands.length;
   }
 
   solveIslandImpossible(): boolean {
@@ -381,31 +365,23 @@ class Solver {
     // isolating a subgraph reached by connecting maximally to all *other*
     // neighbors at once (the multi-target case pass 1 can't see).
     for (let i = 0; i < is.points.length; i++) {
-      let got = false;
-      const before: number[] = [];
-
-      let spc = st.islandAdjspace(is, true, missing, i);
-      if (spc === 0) continue;
-
-      for (let j = 0; j < is.points.length; j++) {
-        const pt = is.points[j];
-        before[j] = st.gridCount(pt.x, pt.y, pt.dx ? G_LINEH : G_LINEV);
-      }
+      if (st.islandAdjspace(is, true, missing, i) === 0) continue;
+      const before = is.points.map((pt) =>
+        st.gridCount(pt.x, pt.y, pt.dx ? G_LINEH : G_LINEV),
+      );
       if (before[i] !== 0) continue;
 
       const saved = this.dsf.clone();
       for (let j = 0; j < is.points.length; j++) {
-        spc = st.islandAdjspace(is, true, missing, j);
-        if (spc === 0) continue;
         if (j === i) continue;
-        this.solveJoin(is, j, before[j] + spc, false);
+        const spc = st.islandAdjspace(is, true, missing, j);
+        if (spc) this.solveJoin(is, j, before[j] + spc, false);
       }
       st.mapUpdatePossibles();
-
-      if (this.solveIslandSubgroup(is, -1)) got = true;
-
-      for (let j = 0; j < is.points.length; j++)
+      const got = this.solveIslandSubgroup(is, -1);
+      for (let j = 0; j < is.points.length; j++) {
         this.solveJoin(is, j, before[j], false);
+      }
       this.dsf = saved;
 
       if (got) {
@@ -415,8 +391,7 @@ class Solver {
       st.mapUpdatePossibles();
     }
 
-    if (didsth) return { ok: true, didsth: true };
-    return { ok: true, didsth: false };
+    return { ok: true, didsth };
   }
 
   // --- Driver (C solve_sub) ---
@@ -431,8 +406,8 @@ class Solver {
    * would matter — a pass that must sweep the whole ladder before restarting —
    * is Lightup's, and it is why Lightup stays out.
    *
-   * `!ok` is a contradiction, which is the runner's `< 0`; the caller turns that
-   * back into the `0` that `solveSub` has always returned.
+   * `!ok` is a contradiction, which is the runner's `< 0`; `solveSub` reports it
+   * as 0.
    */
   private ladder(): DeductionTechnique[] {
     const st = this.st;
@@ -474,22 +449,19 @@ class Solver {
   }
 
   solveSub(difficulty: number, firings?: FiringTally): number {
-    const ladder = this.ladder();
     const { impossible } = runDeductionFixpoint({
-      techniques: ladder,
+      techniques: this.ladder(),
       firings,
-      // The gates were `difficulty < 1` / `< 2` / `< 3` after each stage, and
-      // the ladder is tier-sorted, so a `maxTier` skip agrees with them. The
-      // trailing `difficulty < 3` guarded a fourth stage that does not exist.
+      // The ladder is tier-sorted, so a `maxTier` cap agrees with the stage
+      // gates of `solveSubLegacy`.
       maxTier: difficulty,
     });
     if (impossible) return 0;
     return this.mapCheck() ? 1 : 0;
   }
 
-  /** The hand-written loop this solver ran until
-   * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
-   * `bridges-ladder.test.ts` proves the adoption against. */
+  /** The hand-written stage loop, kept as the oracle `bridges-ladder.test.ts`
+   * proves the runner against. */
   solveSubLegacy(difficulty: number): number {
     const st = this.st;
     while (true) {
@@ -517,10 +489,7 @@ class Solver {
         if (!r.ok) return 0;
         if (r.didsth) didsth = true;
       }
-      if (didsth) continue;
-      else if (difficulty < 3) break;
-
-      break;
+      if (!didsth) break;
     }
     return this.mapCheck() ? 1 : 0;
   }
@@ -545,7 +514,7 @@ export function solveFromScratch(
 }
 
 /** {@link solveFromScratch} through the hand-written loop — the oracle
- * `bridges-ladder.test.ts` proves the adoption against. */
+ * `bridges-ladder.test.ts` proves the runner against. */
 export function solveFromScratchLegacy(
   state: BridgesState,
   difficulty: number,
@@ -558,25 +527,12 @@ export function solveFromScratchLegacy(
 }
 
 /**
- * Run C `map_check` on `state` in place: detect completion (one connected
- * group, all islands satisfied, no illegal loop) and — as a deliberate side
- * effect matching C — leave `G_WARN`/`G_SWEEP` display flags set on the grid
- * (loop edges, or a prematurely-satisfied subgroup). `executeMove` calls this
- * so the returned state carries both the completion verdict and the warning
- * overlay the renderer reads. Returns true iff the board is completed.
+ * Run C `map_check` on `state` in place: true iff the board is complete (one
+ * connected group, every island satisfied, no illegal loop). Like C, it leaves
+ * the `G_WARN`/`G_SWEEP` flags set (loop edges, or a prematurely-satisfied
+ * subgroup), which is how `executeMove`'s result carries the warning overlay
+ * the renderer reads.
  */
 export function runMapCheck(state: BridgesState): boolean {
   return new Solver(state).mapCheck();
-}
-
-/**
- * Solve `state` in place from its *current* bridges (C `solve_for_hint`: no
- * map_clear, and — like C — no `map_update_possibles`; it trusts the caller to
- * have kept possibles current through play) at unlimited difficulty. Used by
- * the 'h' single-step hint. Returns 1 if fully solved, 0 otherwise.
- */
-export function solveForHint(state: BridgesState): number {
-  const solver = new Solver(state);
-  solver.mapGroup();
-  return solver.solveSub(10);
 }

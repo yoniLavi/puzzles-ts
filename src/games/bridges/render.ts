@@ -1,21 +1,14 @@
 /**
- * Rendering for Bridges — imperative `redraw` per the post-Flip doctrine
- * (engine emits no pixels; the game's `!ds.started` branch owns the first
- * background fill; a per-tile `Int32Array` diff cache drives incremental
- * repaints).
- *
- * This is a faithful port of the upstream packed-word draw model
+ * Rendering for Bridges, a port of upstream's packed-word draw model
  * (`bridges.c` game_redraw + draw_* helpers): each tile's cache entry is a
  * 28-bit descriptor that encodes not only the tile's own contents but the
  * bridge-stubs intruding from neighboring islands and the island-arcs
  * intruding from adjacent island tiles. The descriptor *is* the cache key, so
  * "redraw iff `newgrid[i] != grid[i]`" falls straight out.
  *
- * Display code targets neat visuals + clean structure (not byte-fidelity), so
- * the one deliberate divergence is the mistake overlay: `findMistakes` wrong
- * bridges are recolored with the existing red `COL_WARNING` channel, which
- * lives inside the cache key and therefore repaints clean when the overlay
- * clears.
+ * The mistake overlay recolors `findMistakes` wrong bridges with the existing
+ * red `COL_WARNING` channel, which lives inside the cache key and therefore
+ * repaints clean when the overlay clears.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -27,7 +20,6 @@ import {
   INK,
 } from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import type { Color } from "../../engine/types.ts";
 import {
   type BridgesMistake,
@@ -64,7 +56,6 @@ export const COL_HINT = 6;
 export const COL_GRID = 7;
 export const COL_WARNING = 8;
 export const COL_CURSOR = 9;
-export const NCOLORS = 10;
 
 // --- Packed draw-word fields (bridges.c lines 2262-2297) ---
 // Line data (6 bits per direction).
@@ -107,13 +98,10 @@ const D_L_LINE_SHIFT_V = 22;
 export interface BridgesDrawState {
   started: boolean;
   tileSize: number;
-  w: number;
-  h: number;
   /** Per-cell packed draw descriptor from the last paint; -1 forces a redraw. */
   grid: Int32Array;
   /** Scratch descriptor grid for the current frame (avoids per-frame alloc). */
   newgrid: Int32Array;
-  dragging: boolean;
 }
 
 export function newDrawState(state: BridgesState): BridgesDrawState {
@@ -121,11 +109,8 @@ export function newDrawState(state: BridgesState): BridgesDrawState {
   return {
     started: false,
     tileSize: PREFERRED_TILE_SIZE,
-    w: state.w,
-    h: state.h,
     grid: new Int32Array(n).fill(-1),
     newgrid: new Int32Array(n),
-    dragging: false,
   };
 }
 
@@ -146,7 +131,6 @@ export function computeSize(
 
 export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  // COL_HINT = COL_LOWLIGHT; COL_MARK = HIGHLIGHT.
   return [
     background, // COL_BACKGROUND
     INK, // COL_FOREGROUND
@@ -166,7 +150,8 @@ export function colors(defaultBackground: Color): Color[] {
 
 // --- geometry helpers (all args positive, so integer division is trunc) ---
 const div = (a: number, b: number): number => Math.trunc(a / b);
-const coord = (x: number, ts: number, b: number): number => x * ts + b;
+/** A grid cell's top-left pixel (bridges.c COORD). */
+export const toCoord = (x: number, ts: number, b: number): number => x * ts + b;
 const lineWidth = (ts: number): number => div(ts, 8);
 const ts8 = (x: number, ts: number): number => div(x * ts, 8);
 const offset = (thing: number, ts: number): number => div(ts, 2) - div(thing, 2);
@@ -287,10 +272,9 @@ function drawGeneralLine(
       fg,
     );
   } else if (count !== 0) {
-    let lh = count;
-    if (lh === DL_COUNT_HINT) lh = 1;
+    const lh = count === DL_COUNT_HINT ? 1 : count;
     const lw = lineWidth(ts);
-    let gw = lineWidth(ts);
+    let gw = lw;
     // Shrink the inter-bridge gap until the whole bundle fits the tile.
     let bw = lw * lh + gw * (lh + 1);
     while (bw > ts) {
@@ -406,12 +390,12 @@ function drawIslandTile(
   clue: number,
   data: number,
 ): void {
-  const ox = coord(x, ts, b);
-  const oy = coord(y, ts, b);
+  const ox = toCoord(x, ts, b);
+  const oy = toCoord(y, ts, b);
   dr.clip({ x: ox, y: oy, w: ts, h: ts });
   dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, COL_BACKGROUND);
   const half = div(ts, 2);
-  for (let which = 1; which <= 2; which <<= 1) {
+  for (const which of [1, 2]) {
     drawHline(dr, ts, ox, oy, half, (data >> D_I_LINE_SHIFT_L) & DL_MASK, which);
     drawHline(
       dr,
@@ -446,8 +430,8 @@ function drawLineTile(
   y: number,
   data: number,
 ): void {
-  const ox = coord(x, ts, b);
-  const oy = coord(y, ts, b);
+  const ox = toCoord(x, ts, b);
+  const oy = toCoord(y, ts, b);
   dr.clip({ x: ox, y: oy, w: ts, h: ts });
   dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, COL_BACKGROUND);
   const hdata = (data >> D_L_LINE_SHIFT_H) & DL_MASK;
@@ -480,8 +464,8 @@ function drawEdgeTile(
   dy: number,
   data: number,
 ): void {
-  const ox = coord(x, ts, b);
-  const oy = coord(y, ts, b);
+  const ox = toCoord(x, ts, b);
+  const oy = toCoord(y, ts, b);
   let cx = ox;
   let cy = oy;
   let cw = ts;
@@ -565,13 +549,10 @@ export function redrawBridges(
   let dragSrc: { x: number; y: number } | null = null;
   let dragDst: { x: number; y: number } | null = null;
   if (ui.dragxSrc !== -1 && ui.dragySrc !== -1) {
-    ds.dragging = true;
     dragSrc = { x: ui.dragxSrc, y: ui.dragySrc };
     if (ui.dragxDst !== -1 && ui.dragyDst !== -1) {
       dragDst = { x: ui.dragxDst, y: ui.dragyDst };
     }
-  } else {
-    ds.dragging = false;
   }
 
   const mistakeMask = buildMistakeMask(s, mistakes);
@@ -704,14 +685,4 @@ export function redrawBridges(
       ds.grid[c] = newval;
     }
   }
-}
-
-/** Map a pixel coordinate to a grid cell (bridges.c FROMCOORD). */
-export function fromCoord(px: number, ts: number, b: number): number {
-  return fromCoordE(px, ts, b);
-}
-
-/** Map a grid cell to its top-left pixel (bridges.c COORD). */
-export function toCoord(x: number, ts: number, b: number): number {
-  return coord(x, ts, b);
 }

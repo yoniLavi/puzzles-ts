@@ -28,7 +28,7 @@ export function newBridgesDesc(
   rng: RandomState,
 ): { desc: string; aux?: string } {
   const wh = p.w * p.h;
-  const niReq = Math.max(Math.floor((p.islands * wh) / 100), MIN_SENSIBLE_ISLANDS);
+  const target = Math.max(Math.floor((p.islands * wh) / 100), MIN_SENSIBLE_ISLANDS);
 
   // `generate:` — full restart on any rejection.
   const attempt = retryLimit(`bridges: generation (${p.w}x${p.h})`);
@@ -39,16 +39,12 @@ export function newBridgesDesc(
 
     // Pick a first island position randomly.
     st.islandAdd(randomUpto(rng, p.w), randomUpto(rng, p.h), 0);
-    let niCurr = 1;
-    let niBad = 0;
+    let badTries = 0;
 
-    while (niCurr < niReq) {
+    while (st.islands.length < target) {
       // Pick a random island and a random direction to extend in.
-      const i = randomUpto(rng, st.islands.length);
-      let is = st.islands[i];
-      const j = randomUpto(rng, is.points.length);
-      const dx = is.points[j].dx;
-      const dy = is.points[j].dy;
+      const is = st.islands[randomUpto(rng, st.islands.length)];
+      const { dx, dy } = is.points[randomUpto(rng, is.points.length)];
 
       let joinx = -1;
       let joiny = -1;
@@ -68,7 +64,7 @@ export function newBridgesDesc(
       } else {
         // Scan outward for the farthest new-island position / a joinable island.
         while (true) {
-          if (x < 0 || x >= p.w || y < 0 || y >= p.h) {
+          if (!st.inGrid(x, y)) {
             maxx = x - dx;
             maxy = y - dy;
             break;
@@ -125,9 +121,7 @@ export function newBridgesDesc(
               bad = true;
             } else {
               is2 = st.islandAdd(newx, newy, 0);
-              is = st.islands[i]; // refetch (matches C; order is stable)
-              niCurr++;
-              niBad = 0;
+              badTries = 0;
             }
           }
         }
@@ -139,21 +133,21 @@ export function newBridgesDesc(
       }
 
       // `bad:`
-      niBad++;
-      if (niBad > MAX_NEWISLAND_TRIES) break; // -> generated
+      badTries++;
+      if (badTries > MAX_NEWISLAND_TRIES) break; // -> generated
     }
 
     // `generated:`
-    if (niCurr === 1) continue; // only one island — retry
+    if (st.islands.length === 1) continue; // only one island — retry
 
     // Require at least one island on each of the four extremities.
     let echeck = 0;
     for (let gx = 0; gx < p.w; gx++) {
-      if (st.gridi[0 * p.w + gx] >= 0) echeck |= 1;
+      if (st.gridi[gx] >= 0) echeck |= 1;
       if (st.gridi[(p.h - 1) * p.w + gx] >= 0) echeck |= 2;
     }
     for (let gy = 0; gy < p.h; gy++) {
-      if (st.gridi[gy * p.w + 0] >= 0) echeck |= 4;
+      if (st.gridi[gy * p.w] >= 0) echeck |= 4;
       if (st.gridi[gy * p.w + (p.w - 1)] >= 0) echeck |= 8;
     }
     if (echeck !== 15) continue;
@@ -164,7 +158,10 @@ export function newBridgesDesc(
     // Reject if solvable one difficulty easier (too easy). `solveFromScratch`
     // map_clears + solves in place; island counts survive so encode is stable.
     if (p.difficulty > 0) {
-      if (niCurr > MIN_SENSIBLE_ISLANDS && solveFromScratch(st, p.difficulty - 1) > 0) {
+      if (
+        st.islands.length > MIN_SENSIBLE_ISLANDS &&
+        solveFromScratch(st, p.difficulty - 1) > 0
+      ) {
         continue;
       }
     }

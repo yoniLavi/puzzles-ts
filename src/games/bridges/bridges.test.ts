@@ -1,8 +1,6 @@
 /**
- * Behavioral tests for the Bridges port (tier 1 logic + tier 2.5 render).
- * The byte-match generator/solver differential lives in
- * `bridges-differential.test.ts`; this file covers the codec, the drag→move
- * input model, executeMove/solve/findMistakes, and a render smoke frame.
+ * Behavioral tests for Bridges (tier 1 logic + tier 2.5 render). The byte-match
+ * generator/solver differential is `bridges-differential.test.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
@@ -36,8 +34,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-const randomState = (seed: string) => randomNew(seed);
 
 describe("bridges params codec", () => {
   it("round-trips every preset in full form", () => {
@@ -156,7 +152,7 @@ describe("bridges input model (drag → move)", () => {
 describe("bridges solve + findMistakes", () => {
   const genState = (difficulty: number, seed: string) => {
     const p = { ...BRIDGES_PRESETS[0], difficulty };
-    const { desc } = newBridgesDesc(p, randomState(seed));
+    const { desc } = newBridgesDesc(p, randomNew(seed));
     return { p, state: bridgesGame.newState(p, desc) };
   };
 
@@ -232,21 +228,19 @@ describe("bridges auto-mark aid", () => {
 describe("bridges render smoke (tier 2.5)", () => {
   it("redraws a generated board: background + island circles + a clue", () => {
     const p = BRIDGES_PRESETS[0];
-    const { desc } = newBridgesDesc(p, randomState("bridges-render"));
+    const { desc } = newBridgesDesc(p, randomNew("bridges-render"));
     const id = `${encodeParams(p, true)}:${desc}`;
     const { recording } = renderScenario({ game: bridgesGame, id });
-    // Background fill, island circles, and at least one clue number.
     expect(recording.ops.some((o) => o.op === "rect")).toBe(true);
     expect(recording.ops.some((o) => o.op === "circle")).toBe(true);
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
   });
 });
 
-// A Midend-driven save round-trip (state survives serialize/parse).
 describe("bridges save round-trip", () => {
   it("saveGame -> loadGame restores an equivalent game", () => {
     const p = BRIDGES_PRESETS[0];
-    const { desc } = newBridgesDesc(p, randomState("bridges-save"));
+    const { desc } = newBridgesDesc(p, randomNew("bridges-save"));
     const id = `${encodeParams(p, true)}:${desc}`;
     const me = new Midend(bridgesGame);
     expect(me.newGameFromId(id)).toBeUndefined();

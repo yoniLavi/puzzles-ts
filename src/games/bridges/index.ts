@@ -1,5 +1,5 @@
 /**
- * Bridges (Hashiwokakero) — native TS port of `puzzles/bridges.c`.
+ * Bridges (Hashiwokakero) — port of upstream's `bridges.c`.
  *
  * Connect the numbered islands with horizontal/vertical bridges so every island
  * carries its number of bridge-ends, at most `maxb` join any pair, bridges never
@@ -17,6 +17,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { fromCoord } from "../../engine/geometry.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
@@ -39,9 +40,8 @@ import {
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { GameStatus, Point } from "../../engine/types.ts";
 import { newBridgesDesc } from "./generator.ts";
 import {
   type BridgesDrawState,
@@ -49,7 +49,6 @@ import {
   colors,
   computeSize,
   FLASH_TIME,
-  fromCoord,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redrawBridges,
@@ -94,7 +93,7 @@ function newUi(state: BridgesState): BridgesUi {
     dragging: false,
     dragIsNoline: false,
     nlines: 0,
-    cursor: newCursor(first ? first.x : 0, first ? first.y : 0),
+    cursor: newCursor(first?.x ?? 0, first?.y ?? 0),
     showHints: false,
     autoMark: true,
   };
@@ -135,7 +134,7 @@ function uiCancelDrag(ui: BridgesUi): UiUpdate {
 
 /** Work out which orthogonal island the drag from (dragxSrc,dragySrc) toward
  * pixel (nx,ny) targets, and how many bridges the release would set. Mutates
- * `ui` in place; always a UI-only update. */
+ * `ui` in place; null only when there is no drag. */
 function updateDragDst(
   s: BridgesState,
   ui: BridgesUi,
@@ -151,69 +150,44 @@ function updateDragDst(
   const half = Math.trunc(ts / 2);
   const ox = toCoord(ui.dragxSrc, ts, b) + half;
   const oy = toCoord(ui.dragySrc, ts, b) + half;
-
-  let dx: number;
-  let dy: number;
-  let gtype: number;
-  let ntype: number;
-  let mtype: number;
-  let maxb: number;
-  if (Math.abs(nx - ox) < Math.abs(ny - oy)) {
-    dx = 0;
-    dy = ny - oy < 0 ? -1 : 1;
-    if (!s.inGrid(ui.dragxSrc + dx, ui.dragySrc + dy)) return UI_UPDATE;
-    gtype = G_LINEV;
-    ntype = G_NOLINEV;
-    mtype = G_MARKV;
-    maxb = s.maxv[s.idx(ui.dragxSrc + dx, ui.dragySrc + dy)];
-  } else {
-    dy = 0;
-    dx = nx - ox < 0 ? -1 : 1;
-    if (!s.inGrid(ui.dragxSrc + dx, ui.dragySrc + dy)) return UI_UPDATE;
-    gtype = G_LINEH;
-    ntype = G_NOLINEH;
-    mtype = G_MARKH;
-    maxb = s.maxh[s.idx(ui.dragxSrc + dx, ui.dragySrc + dy)];
-  }
+  let dx = 0;
+  let dy = 0;
+  if (Math.abs(nx - ox) < Math.abs(ny - oy)) dy = ny < oy ? -1 : 1;
+  else dx = nx < ox ? -1 : 1;
+  const nextX = ui.dragxSrc + dx;
+  const nextY = ui.dragySrc + dy;
+  if (!s.inGrid(nextX, nextY)) return UI_UPDATE;
+  const gtype = dx ? G_LINEH : G_LINEV;
+  const ntype = dx ? G_NOLINEH : G_NOLINEV;
+  const mtype = dx ? G_MARKH : G_MARKV;
+  const nc = s.idx(nextX, nextY);
 
   if (ui.dragIsNoline) {
     ui.todraw = ntype;
+  } else if (!(s.grid[nc] & gtype)) {
+    ui.todraw = gtype;
+    ui.nlines = 1;
+  } else if (s.lines[nc] === s.maximum(dx, nextX, nextY)) {
+    ui.todraw = 0;
+    ui.nlines = 0;
   } else {
-    const nc = s.idx(ui.dragxSrc + dx, ui.dragySrc + dy);
-    const curr = s.grid[nc];
-    const currl = s.lines[nc];
-    if (curr & gtype) {
-      if (currl === maxb) {
-        ui.todraw = 0;
-        ui.nlines = 0;
-      } else {
-        ui.todraw = gtype;
-        ui.nlines = currl + 1;
-      }
-    } else {
-      ui.todraw = gtype;
-      ui.nlines = 1;
-    }
+    ui.todraw = gtype;
+    ui.nlines = s.lines[nc] + 1;
   }
 
   const is = s.islandAt(ui.dragxSrc, ui.dragySrc);
   if (!is) return UI_UPDATE;
-  const nb = s.idx(is.x + dx, is.y + dy);
-  const currNb = s.grid[nb];
-  for (const pt of is.points) {
-    if (pt.off === 0) continue;
-    if (currNb & mtype) continue; // don't change marked lines
-    if (ui.dragIsNoline) {
-      if (currNb & gtype) continue; // no no-line where a line already is
-    } else {
-      if (s.possibles(dx, is.x + dx, is.y + dy) === 0) continue; // not possible
-      if (currNb & ntype) continue; // no bridge over a no-line
-    }
-    if (pt.dx === dx && pt.dy === dy) {
-      ui.dragxDst = is.x + pt.off * pt.dx;
-      ui.dragyDst = is.y + pt.off * pt.dy;
-    }
+  const pt = is.points.find((p) => p.dx === dx && p.dy === dy);
+  if (!pt || pt.off === 0) return UI_UPDATE;
+  if (s.grid[nc] & mtype) return UI_UPDATE; // don't change marked lines
+  if (ui.dragIsNoline) {
+    if (s.grid[nc] & gtype) return UI_UPDATE; // no no-line where a line already is
+  } else {
+    if (s.possibles(dx, nextX, nextY) === 0) return UI_UPDATE; // not possible
+    if (s.grid[nc] & ntype) return UI_UPDATE; // no bridge over a no-line
   }
+  ui.dragxDst = is.x + pt.off * dx;
+  ui.dragyDst = is.y + pt.off * dy;
   return UI_UPDATE;
 }
 
@@ -245,7 +219,6 @@ function interpretMove(
   const b = border(ts);
   const gx = fromCoord(p.x, ts, b);
   const gy = fromCoord(p.y, ts, b);
-  const ggrid = s.inGrid(gx, gy) ? s.gridAt(gx, gy) : 0;
   const shift = (button & MOD_SHFT) !== 0;
   const control = (button & MOD_CTRL) !== 0;
   const btn = stripModifiers(button);
@@ -253,7 +226,7 @@ function interpretMove(
   if (btn === LEFT_BUTTON || btn === RIGHT_BUTTON) {
     if (!s.inGrid(gx, gy)) return null;
     ui.cursor.visible = false;
-    if (ggrid & G_ISLAND) {
+    if (s.gridAt(gx, gy) & G_ISLAND) {
       ui.dragxSrc = gx;
       ui.dragySrc = gy;
       return UI_UPDATE;
@@ -286,7 +259,6 @@ function interpretMove(
       return uiCancelDrag(ui);
     }
     uiCancelDrag(ui);
-    if (!s.inGrid(gx, gy)) return null;
     if (!(s.gridAt(gx, gy) & G_ISLAND)) return null;
     return { ops: [{ op: "M", x: gx, y: gy }] };
   }
@@ -316,29 +288,19 @@ function interpretMove(
     // Not dragging: cone-search for the next island in the pressed direction.
     const dx = btn === CURSOR_RIGHT ? 1 : btn === CURSOR_LEFT ? -1 : 0;
     const dy = btn === CURSOR_DOWN ? 1 : btn === CURSOR_UP ? -1 : 0;
-    const dorthx = 1 - Math.abs(dx);
-    const dorthy = 1 - Math.abs(dy);
     // orthorder tweak so LEFT after a stray upward RIGHT tends back downward.
     const orthorder = btn === CURSOR_LEFT || btn === CURSOR_UP ? 1 : -1;
+    const dorthx = (1 - Math.abs(dx)) * orthorder;
+    const dorthy = (1 - Math.abs(dy)) * orthorder;
     for (let orth = 0; ; orth++) {
       let oingrid = false;
-      for (let dir = 1; ; dir++) {
+      // Search an outward cone only: never further sideways than forward.
+      for (let dir = Math.max(orth, 1); ; dir++) {
         let dingrid = false;
-        if (orth > dir) continue; // search in an outward cone only
-        let nx = ui.cursor.x + dir * dx + orth * dorthx * orthorder;
-        let ny = ui.cursor.y + dir * dy + orth * dorthy * orthorder;
-        if (s.inGrid(nx, ny)) {
-          dingrid = true;
-          oingrid = true;
-          if (s.gridAt(nx, ny) & G_ISLAND) {
-            ui.cursor.x = nx;
-            ui.cursor.y = ny;
-            return UI_UPDATE;
-          }
-        }
-        nx = ui.cursor.x + dir * dx - orth * dorthx * orthorder;
-        ny = ui.cursor.y + dir * dy - orth * dorthy * orthorder;
-        if (s.inGrid(nx, ny)) {
+        for (const side of [orth, -orth]) {
+          const nx = ui.cursor.x + dir * dx + side * dorthx;
+          const ny = ui.cursor.y + dir * dy + side * dorthy;
+          if (!s.inGrid(nx, ny)) continue;
           dingrid = true;
           oingrid = true;
           if (s.gridAt(nx, ny) & G_ISLAND) {
@@ -370,8 +332,7 @@ function interpretMove(
       ui.dragySrc = ui.cursor.y;
       ui.dragxDst = -1;
       ui.dragyDst = -1;
-      // Reached only on a plain CURSOR_SELECT (SELECT2 returned above), so this
-      // is always a bridge drag, never a no-line drag.
+      // Only a plain CURSOR_SELECT gets here, so this is a bridge drag.
       ui.dragIsNoline = false;
       return UI_UPDATE;
     }
@@ -434,28 +395,18 @@ function executeMove(s: BridgesState, m: BridgesMove): BridgesState {
   for (const op of m.ops) {
     if (op.op === "S") {
       ret.solved = true;
-    } else if (op.op === "L") {
+    } else if (op.op === "L" || op.op === "N") {
       if (!ret.inGrid(op.x1, op.y1) || !ret.inGrid(op.x2, op.y2))
-        throw new Error("bridges executeMove: L endpoint off-grid");
+        throw new Error(`bridges executeMove: ${op.op} endpoint off-grid`);
       if ((op.x1 !== op.x2 ? 1 : 0) + (op.y1 !== op.y2 ? 1 : 0) !== 1)
-        throw new Error("bridges executeMove: L not orthogonal");
+        throw new Error(`bridges executeMove: ${op.op} not orthogonal`);
       const is1 = ret.islandAt(op.x1, op.y1);
       const is2 = ret.islandAt(op.x2, op.y2);
       if (!is1 || !is2)
-        throw new Error("bridges executeMove: L endpoint not an island");
-      if (op.n < 0 || op.n > ret.maxb)
+        throw new Error(`bridges executeMove: ${op.op} endpoint not an island`);
+      if (op.op === "L" && (op.n < 0 || op.n > ret.maxb))
         throw new Error("bridges executeMove: L count out of range");
-      ret.islandJoin(is1, is2, op.n, false);
-    } else if (op.op === "N") {
-      if (!ret.inGrid(op.x1, op.y1) || !ret.inGrid(op.x2, op.y2))
-        throw new Error("bridges executeMove: N endpoint off-grid");
-      if ((op.x1 !== op.x2 ? 1 : 0) + (op.y1 !== op.y2 ? 1 : 0) !== 1)
-        throw new Error("bridges executeMove: N not orthogonal");
-      const is1 = ret.islandAt(op.x1, op.y1);
-      const is2 = ret.islandAt(op.x2, op.y2);
-      if (!is1 || !is2)
-        throw new Error("bridges executeMove: N endpoint not an island");
-      ret.islandJoin(is1, is2, -1, false);
+      ret.islandJoin(is1, is2, op.op === "L" ? op.n : -1, false);
     } else if (op.op === "M") {
       if (!ret.inGrid(op.x, op.y)) throw new Error("bridges executeMove: M off-grid");
       const is1 = ret.islandAt(op.x, op.y);
@@ -478,26 +429,18 @@ function stateDiff(src: BridgesState, dest: BridgesState): BridgesOp[] {
     const isS = src.islands[i];
     const isD = dest.islands[i];
     for (let d = 0; d < isS.points.length; d++) {
-      const pt = isS.points[d];
-      if (pt.dx === -1 || pt.dy === -1) continue; // right/down only
-      const x = pt.x;
-      const y = pt.y;
-      const gline = pt.dx ? G_LINEH : G_LINEV;
-      const nline = pt.dx ? G_NOLINEH : G_NOLINEV;
+      const { x, y, dx, dy } = isS.points[d];
+      if (dx === -1 || dy === -1) continue; // right/down only
       const orth = dest.islandAt(dest.islandOrthX(isD, d), dest.islandOrthY(isD, d));
+      if (!orth) continue;
+      const ends = { x1: isS.x, y1: isS.y, x2: orth.x, y2: orth.y };
+      const gline = dx ? G_LINEH : G_LINEV;
+      const nline = dx ? G_NOLINEH : G_NOLINEV;
       if (src.gridCount(x, y, gline) !== dest.gridCount(x, y, gline)) {
-        if (orth)
-          ops.push({
-            op: "L",
-            x1: isS.x,
-            y1: isS.y,
-            x2: orth.x,
-            y2: orth.y,
-            n: dest.gridCount(x, y, gline),
-          });
+        ops.push({ op: "L", ...ends, n: dest.gridCount(x, y, gline) });
       }
       if ((src.gridAt(x, y) & nline) !== (dest.gridAt(x, y) & nline)) {
-        if (orth) ops.push({ op: "N", x1: isS.x, y1: isS.y, x2: orth.x, y2: orth.y });
+        ops.push({ op: "N", ...ends });
       }
     }
     if ((src.gridAt(isS.x, isS.y) & G_MARK) !== (dest.gridAt(isD.x, isD.y) & G_MARK)) {
@@ -522,15 +465,11 @@ function findMistakes(state: BridgesState): readonly BridgesMistake[] {
   if (solveFromScratch(solved, 10) === 0) return [];
   const out: BridgesMistake[] = [];
   for (const is of state.islands) {
-    for (let d = 0; d < is.points.length; d++) {
-      const pt = is.points[d];
+    for (const pt of is.points) {
       if (pt.dx === -1 || pt.dy === -1) continue; // span once (right/down)
       if (pt.off === 0) continue;
       const gline = pt.dx ? G_LINEH : G_LINEV;
-      const playerCount = state.gridCount(pt.x, pt.y, gline);
-      const solvedCount = solved.gridCount(pt.x, pt.y, gline);
-      // The player has more bridges here than the unique solution supports.
-      if (playerCount > solvedCount) {
+      if (state.gridCount(pt.x, pt.y, gline) > solved.gridCount(pt.x, pt.y, gline)) {
         out.push({
           x1: is.x,
           y1: is.y,
@@ -543,13 +482,9 @@ function findMistakes(state: BridgesState): readonly BridgesMistake[] {
   return out;
 }
 
-/** Bridges' difficulty contract (`engine/difficulty.ts`). Its tiers are a plain
- * `difficulty: number` indexing `DIFFICULTY_NAMES` rather than a `DIFF_*`
- * family — which is exactly how a `DIFF_*` grep once missed this game while
- * surveying tiered games, and why the cross-game guard derives its enrollment
- * from the registry instead. `solveFromScratch` clears the board first and
- * returns 1 for fully solved, 0 otherwise, with no contradiction signal to
- * report. */
+/** Bridges' difficulty contract (`engine/difficulty.ts`). `solveFromScratch`
+ * clears the board first and returns 1 for fully solved, 0 otherwise, with no
+ * contradiction signal to report. */
 const difficulty: DifficultyContract<BridgesParams> = {
   tierOf: (p) => p.difficulty,
   withTier: (p, tier) => ({ ...p, difficulty: tier }),
@@ -661,13 +596,9 @@ export const bridgesGame: Game<
     },
   ],
 
-  newDesc(p: BridgesParams, rng: RandomState): { desc: string; aux?: string } {
-    return newBridgesDesc(p, rng);
-  },
+  newDesc: newBridgesDesc,
   validateDesc,
-  newState(p: BridgesParams, desc: string): BridgesState {
-    return newStateFromDesc(p, desc);
-  },
+  newState: newStateFromDesc,
   newUi,
 
   interpretMove,
@@ -684,15 +615,9 @@ export const bridgesGame: Game<
   textFormat,
   prefs,
 
-  colors(defaultBackground: Color): Color[] {
-    return colors(defaultBackground);
-  },
-  computeSize(p: BridgesParams, tileSize: number): Size {
-    return computeSize(p, tileSize);
-  },
-  setTileSize(ds: BridgesDrawState, tileSize: number): void {
-    setTileSize(ds, tileSize);
-  },
+  colors,
+  computeSize,
+  setTileSize,
   newDrawState,
   redraw(
     dr,
@@ -708,12 +633,9 @@ export const bridgesGame: Game<
   ): void {
     redrawBridges(dr, ds, prev, s, ui, flashTime, mistakes);
   },
-  animLength(): number {
-    return 0;
-  },
+  animLength: () => 0,
   flashLength(a: BridgesState, b: BridgesState): number {
-    if (!a.completed && b.completed && !a.solved && !b.solved) return FLASH_TIME;
-    return 0;
+    return !a.completed && b.completed && !a.solved && !b.solved ? FLASH_TIME : 0;
   },
 };
 

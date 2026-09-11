@@ -1,16 +1,8 @@
 /*
- * Bridges' adoption of `runDeductionFixpoint`, proved by equivalence
- * (`adopt-the-deduction-runner-where-it-rewires`). The harness and the argument
- * for it are `engine/testing/ladder-equivalence.ts`; this file is the
- * declaration.
- *
- * **Bridges is the adopter whose rungs sweep before they report.** Each of its
- * three stages walks every island and only then says whether anything happened.
- * That is the runner's contract at the *ladder* level rather than a violation of
- * it — the runner restarts the ladder when a rung reports progress, and a rung
- * may do as much work as it likes first. The shape that genuinely breaks the
- * runner is a pass that must sweep the whole *ladder* before restarting, which
- * is Lightup's and is why Lightup stays out.
+ * Bridges' `runDeductionFixpoint` ladder, proved equivalent to the hand-written
+ * stage loop (`solveSubLegacy`). The harness and the argument for it are
+ * `engine/testing/ladder-equivalence.ts`; why a rung that sweeps every island
+ * before reporting is legal is at `Solver.ladder`.
  */
 import { randomNew } from "../../engine/random/index.ts";
 import { describeLadderEquivalence } from "../../engine/testing/ladder-equivalence.ts";
@@ -46,8 +38,7 @@ describeLadderEquivalence<BridgesState>({
   game: "bridges",
   rungs: ["stage1-arithmetic", "stage2-counting", "stage3-connectivity"],
   unreached: {},
-  // The stages' own tiers; `difficulty` caps them. The fourth gate the old loop
-  // carried (`difficulty < 3`) guarded a stage that does not exist.
+  // The stages' own tiers, plus one above the top, where `difficulty` caps nothing.
   caps: [0, 1, 2, 3],
   cases,
   viaRunner: (s, cap, firings) => solveFromScratch(s, cap, firings),
