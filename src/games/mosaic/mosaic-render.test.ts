@@ -111,7 +111,7 @@ describe("Mosaic redraw", () => {
 
   it("recolors marked and blank tiles, with solved/error text colors", () => {
     let state = newState(P3, "000000000");
-    // Blank (0,0) → its clue gets closer to solved; mark (1,1) → errors.
+    // Marking (1,1) contradicts every zero clue around it.
     state = executeMove(state, { type: "toggle", x: 1, y: 1, double: false });
     const ds = freshDs(state);
     const { dr, ops } = recordingDrawing();

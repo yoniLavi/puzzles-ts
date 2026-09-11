@@ -1,9 +1,9 @@
 /**
- * Mosaic — native TS port of `mosaic.c` (Fill-a-Pix): numeric clues
- * count the black cells of their 3×3 neighborhood (itself included);
- * mark every cell black or white. Click toggles
- * unmarked→black→white→unmarked (right-click cycles the other way);
- * aligned drags paint the click's mark across a straight run.
+ * Mosaic (upstream's `mosaic.c`, Fill-a-Pix): numeric clues count the
+ * black cells of their 3×3 neighborhood (itself included); mark every
+ * cell black or white. Click toggles unmarked→black→white→unmarked
+ * (right-click cycles the other way); aligned drags paint the click's
+ * mark across a straight run.
  */
 
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
@@ -23,7 +23,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   colors,
   computeSize,
@@ -45,8 +45,10 @@ import {
   type MosaicState,
   type MosaicUi,
   newState,
+  paintRun,
   presets,
-  STATE_OK_NUM,
+  STATE_MARK_MASK,
+  STATE_UNMARKED,
   status,
   statusbarText,
   textFormat,
@@ -67,35 +69,6 @@ function newUi(_state: MosaicState): MosaicUi {
     lastState: 0,
     cursor: newCursor(),
   };
-}
-
-/** Is some cell on the straight run from (x,y) toward the exclusive
- * anchor still unmarked? (Upstream's `changed` check — a paint that
- * would change nothing emits no move, so no no-op history entries.) */
-function paintWouldChange(
-  state: MosaicState,
-  x: number,
-  y: number,
-  srcX: number,
-  srcY: number,
-): boolean {
-  let dirX = 0;
-  let dirY = 0;
-  let diff: number;
-  if (srcX === x && srcY !== y) {
-    diff = Math.abs(srcY - y);
-    dirY = srcY - y < 0 ? -1 : 1;
-  } else {
-    diff = Math.abs(srcX - x);
-    dirX = srcX - x < 0 ? -1 : 1;
-  }
-  for (let i = 0; i < diff; i++) {
-    const cx = x + dirX * i;
-    const cy = y + dirY * i;
-    if (cx < 0 || cy < 0 || cx >= state.width || cy >= state.height) continue;
-    if ((state.cells[cy * state.width + cx] & STATE_OK_NUM) === 0) return true;
-  }
-  return false;
 }
 
 function interpretMove(
@@ -131,20 +104,15 @@ function interpretMove(
     }
     // Capture the mark this cell is about to become; aligned drags and
     // the release paint it onto still-unmarked cells.
-    const cur = state.cells[gameY * width + gameX] & STATE_OK_NUM;
-    ui.lastState = (cur + (raw === RIGHT_BUTTON ? 2 : 1)) % STATE_OK_NUM;
+    const cur = state.cells[gameY * width + gameX] & STATE_MARK_MASK;
+    ui.lastState = (cur + (raw === RIGHT_BUTTON ? 2 : 1)) % STATE_MARK_MASK;
     ui.lastX = gameX;
     ui.lastY = gameY;
     return { type: "toggle", x: gameX, y: gameY, double: raw === RIGHT_BUTTON };
   }
 
-  if (
-    raw === LEFT_DRAG ||
-    raw === RIGHT_DRAG ||
-    raw === LEFT_RELEASE ||
-    raw === RIGHT_RELEASE
-  ) {
-    const isDrag = raw === LEFT_DRAG || raw === RIGHT_DRAG;
+  const isDrag = raw === LEFT_DRAG || raw === RIGHT_DRAG;
+  if (isDrag || raw === LEFT_RELEASE || raw === RIGHT_RELEASE) {
     ui.cursor.visible = false;
     const aligned =
       inBounds &&
@@ -164,8 +132,16 @@ function interpretMove(
       srcY: ui.lastY,
       paintState: ui.lastState,
     };
+    // Upstream's `changed` check: a paint that would change no cell emits
+    // no move, so it leaves no no-op entry in the history.
     const changed =
-      ui.lastState > 0 && paintWouldChange(state, gameX, gameY, ui.lastX, ui.lastY);
+      ui.lastState !== STATE_UNMARKED &&
+      paintRun(gameX, gameY, ui.lastX, ui.lastY).some(
+        (c) =>
+          c.x < width &&
+          c.y < height &&
+          (state.cells[c.y * width + c.x] & STATE_MARK_MASK) === 0,
+      );
     if (isDrag) {
       // The drag anchor advances; the release keeps it.
       ui.lastX = gameX;
@@ -205,16 +181,12 @@ function interpretMove(
 // --- flash --------------------------------------------------------------
 
 function flashLength(
-  oldState: MosaicState,
-  newState_: MosaicState,
+  prev: MosaicState,
+  next: MosaicState,
   _dir: number,
   _ui: MosaicUi,
 ): number {
-  if (
-    !oldState.cheated &&
-    oldState.notCompletedClues > 0 &&
-    newState_.notCompletedClues === 0
-  ) {
+  if (!prev.cheated && prev.notCompletedClues > 0 && next.notCompletedClues === 0) {
     return FLASH_TIME;
   }
   return 0;
@@ -241,7 +213,6 @@ export const mosaicGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  // Mosaic's params use `width`/`height` (not the shared helper's `w`/`h`).
   paramConfig: [
     ...dimensionParamConfig<MosaicParams>({ w: "width", h: "height" }),
     {
@@ -260,7 +231,7 @@ export const mosaicGame: Game<
     "aggressive-generation": p.aggressive,
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -280,9 +251,9 @@ export const mosaicGame: Game<
   textFormat,
   statusbarText,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: MosaicParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },

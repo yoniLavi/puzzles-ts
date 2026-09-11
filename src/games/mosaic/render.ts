@@ -1,9 +1,8 @@
 /**
- * Mosaic rendering — faithful port of `draw_cell` / `game_redraw` in
- * mosaic.c: a (width+1)×(height+1) per-cell diffed loop (the extra
- * margin row/column draws the closing grid lines and cursor edges),
- * with the completion flash inverting marked/blank in the first and
- * last thirds of the flash.
+ * Mosaic rendering (upstream's `draw_cell` / `game_redraw`): a
+ * (width+1)×(height+1) per-cell diffed loop, whose extra margin row and
+ * column draw the closing grid lines and cursor edges. The completion
+ * flash inverts marked/blank in its first and last thirds.
  */
 
 import { BLACK, TEAL_BOLD, TEAL_WASH, WHITE } from "../../engine/color/colors.ts";
@@ -76,10 +75,9 @@ const DRAWFLAG_MISTAKE = 0x4000;
 export interface MosaicDrawState {
   started: boolean;
   tilesize: number;
-  width: number;
-  height: number;
   /** (width+1)×(height+1) cache of last-drawn packed cell values; -1
-   * forces a draw (the documented no-BigInt Int32Array pattern). */
+   * forces a draw (docs/games/rendering.md § "The tile cache and the diff
+   * key"). */
   cache: Int32Array;
 }
 
@@ -87,8 +85,6 @@ export function newDrawState(state: MosaicState): MosaicDrawState {
   return {
     started: false,
     tilesize: 0,
-    width: state.width,
-    height: state.height,
     cache: new Int32Array((state.width + 1) * (state.height + 1)).fill(-1),
   };
 }
@@ -204,10 +200,7 @@ export function redraw(
   const flashing =
     flashTime > 0 && (flashTime <= FLASH_TIME / 3 || flashTime > (2 * FLASH_TIME) / 3);
 
-  let mistakeSet: Set<number> | null = null;
-  if (mistakes && mistakes.length > 0) {
-    mistakeSet = new Set(mistakes.map((m) => m.y * width + m.x));
-  }
+  const mistakeSet = new Set(mistakes?.map((m) => m.y * width + m.x));
 
   for (let y = 0; y <= height; y++) {
     for (let x = 0; x <= width; x++) {
@@ -222,7 +215,7 @@ export function redraw(
         if (ui.cursor.x === x && ui.cursor.y === y - 1) cell |= DRAWFLAG_CURSOR_U;
         if (ui.cursor.x === x - 1 && ui.cursor.y === y - 1) cell |= DRAWFLAG_CURSOR_UL;
       }
-      if (mistakeSet?.has(y * width + x) && inBounds) cell |= DRAWFLAG_MISTAKE;
+      if (inBounds && mistakeSet.has(y * width + x)) cell |= DRAWFLAG_MISTAKE;
 
       const clueVal = inBounds ? board.clues[y * width + x] : -1;
 

@@ -251,8 +251,6 @@ describe("Mosaic input mapping", () => {
   const ds = {
     started: false,
     tilesize: 32,
-    width: 3,
-    height: 3,
     cache: new Int32Array(0),
   };
   const at = (cx: number, cy: number) => ({

@@ -1,7 +1,7 @@
 /**
- * Mosaic solver + generator — idiomatic TS port of the solver half of
- * `mosaic.c` (`solve_cell` / `solve_check` / `solve_game_actual` /
- * `hide_clues` / `new_game_desc`).
+ * Mosaic solver and generator (the solver half of upstream's `mosaic.c`:
+ * `solve_cell`, `solve_check`, `solve_game_actual`, `hide_clues`,
+ * `new_game_desc`).
  *
  * One deduction rule, three drivers: generation feasibility
  * (`solveCheck`, desc-side, knows full/empty), clue minimization
@@ -12,22 +12,23 @@
 import { type RandomState, randomBits } from "../../engine/random/index.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import {
+  countAround,
   encodeBoard,
   type MosaicBoard,
   type MosaicMistake,
   type MosaicParams,
   type MosaicState,
   STATE_BLANK,
+  STATE_MARK_MASK,
   STATE_MARKED,
-  STATE_OK_NUM,
   STATE_UNMARKED,
 } from "./state.ts";
 
 // --- solver scratch -----------------------------------------------------
 
-/** Parallel typed arrays standing in for upstream's
- * `struct solution_cell[]` — `hideClues` runs `solveCheck` once per
- * candidate clue, so this is the hot allocation. */
+/** Upstream's `struct solution_cell[]` as parallel typed arrays:
+ * `hideClues` runs `solveCheck` once per candidate clue, so this is the
+ * hot allocation. */
 export interface Solution {
   /** STATE_UNMARKED / STATE_MARKED / STATE_BLANK per cell. */
   cell: Uint8Array;
@@ -64,27 +65,6 @@ function markAround(
   }
 }
 
-function countAroundSol(
-  width: number,
-  height: number,
-  sol: Solution,
-  x: number,
-  y: number,
-): { marked: number; blank: number; total: number } {
-  let marked = 0;
-  let blank = 0;
-  let total = 0;
-  for (let j = Math.max(0, y - 1); j <= Math.min(height - 1, y + 1); j++) {
-    for (let i = Math.max(0, x - 1); i <= Math.min(width - 1, x + 1); i++) {
-      total++;
-      const v = sol.cell[j * width + i];
-      if (v & STATE_BLANK) blank++;
-      else if (v & STATE_MARKED) marked++;
-    }
-  }
-  return { marked, blank, total };
-}
-
 /**
  * The whole deduction rule (upstream `solve_cell`). `clue < 0` means
  * the cell shows no clue; `full`/`empty` are the generation-side
@@ -103,46 +83,28 @@ export function solveCell(
 ): CellResult {
   const pos = y * width + x;
   if (sol.solved[pos]) return "none";
-  const { marked, blank, total } = countAroundSol(width, height, sol, x, y);
-  const shown = clue >= 0;
+  const { marked, blank, total } = countAround(width, height, sol.cell, x, y);
+  const determined = marked + blank === total;
 
-  if (full && shown) {
-    sol.solved[pos] = 1;
-    if (marked + blank < total) sol.needed[pos] = 1;
-    markAround(width, height, sol, x, y, STATE_MARKED);
-    return "progress";
-  }
-  if (empty && shown) {
-    sol.solved[pos] = 1;
-    if (marked + blank < total) sol.needed[pos] = 1;
-    markAround(width, height, sol, x, y, STATE_BLANK);
-    return "progress";
-  }
-  if (shown) {
-    if (marked === clue) {
-      // Clue satisfied: everything still unknown around it is blank.
-      sol.solved[pos] = 1;
-      if (total !== marked + blank) sol.needed[pos] = 1;
-      markAround(width, height, sol, x, y, STATE_BLANK);
-    } else if (clue === total - blank) {
-      // Clue needs every remaining unknown: mark them all.
-      sol.solved[pos] = 1;
-      if (total !== marked + blank) sol.needed[pos] = 1;
-      markAround(width, height, sol, x, y, STATE_MARKED);
-    } else if (total === marked + blank) {
-      // Neighborhood fully determined but the clue is unmet.
-      return "contradiction";
-    } else {
-      return "none";
-    }
-    return "progress";
-  }
-  if (total === marked + blank) {
+  if (clue < 0) {
     // No clue here; solved once its neighborhood is determined.
+    if (!determined) return "none";
     sol.solved[pos] = 1;
     return "progress";
   }
-  return "none";
+  // The unknowns are forced blank once the clue is met, and marked once it
+  // needs all of them; a determined neighborhood short of both is a
+  // contradiction.
+  let mark: number;
+  if (full) mark = STATE_MARKED;
+  else if (empty || marked === clue) mark = STATE_BLANK;
+  else if (clue === total - blank) mark = STATE_MARKED;
+  else if (determined) return "contradiction";
+  else return "none";
+  sol.solved[pos] = 1;
+  if (!determined) sol.needed[pos] = 1;
+  markAround(width, height, sol, x, y, mark);
+  return "progress";
 }
 
 // --- generation-side cells ------------------------------------------------
@@ -156,10 +118,10 @@ export interface GenCells {
   empty: Uint8Array;
 }
 
-/** Compute one cell's clue from the image (upstream `populate_cell`):
- * count the black cells of the clipped 3×3 neighborhood including the
- * cell itself, and detect "full" — clue saturates the neighborhood —
- * at 9 interior / 6 edge / 4 corner, "empty" at 0. */
+/** Compute one cell's clue from the image (upstream `populate_cell`): the
+ * black cells of its clipped 3×3 neighborhood, itself included. "Full"
+ * means the clue saturates the neighborhood (9 interior, 6 edge, 4
+ * corner), "empty" that it is 0. */
 export function populateCell(
   width: number,
   height: number,
@@ -168,28 +130,19 @@ export function populateCell(
   y: number,
 ): { clue: number; full: boolean; empty: boolean } {
   let clue = 0;
+  let total = 0;
   for (let j = Math.max(0, y - 1); j <= Math.min(height - 1, y + 1); j++) {
     for (let i = Math.max(0, x - 1); i <= Math.min(width - 1, x + 1); i++) {
       clue += image[j * width + i];
+      total++;
     }
   }
-  const xEdge = x === 0 || x === width - 1;
-  const yEdge = y === 0 || y === height - 1;
-  let full = false;
-  let empty = false;
-  if (clue === 0) {
-    empty = true;
-  } else if (clue === 9) {
-    full = true;
-  } else if ((xEdge && yEdge && clue === 4) || (xEdge !== yEdge && clue === 6)) {
-    full = true;
-  }
-  return { clue, full, empty };
+  return { clue, full: clue === total, empty: clue === 0 };
 }
 
-/** Upstream `start_point_check`, including its quirk of scanning only
- * the first `(width-1)*(height-1)` cells — kept so board acceptance
- * matches C's distribution. */
+/** Upstream `start_point_check`, quirk included: `newDesc` scans only the
+ * first `(width-1)*(height-1)` cells, not the whole board. Scanning them
+ * all would change every generated board. */
 export function startPointCheck(cells: GenCells, scanSize: number): boolean {
   for (let i = 0; i < scanSize; i++) {
     if (cells.empty[i] || cells.full[i]) return true;
@@ -245,12 +198,12 @@ export function solveCheck(
     }
   }
 
-  // Verify the whole board got determined (upstream only counts when
-  // the last round made progress — kept faithfully).
+  // Like upstream, count the determined cells only after a round that
+  // made progress.
   let determined = 0;
   if (madeProgress) {
     for (let pos = 0; pos < size; pos++) {
-      if (sol.cell[pos] & STATE_OK_NUM) determined++;
+      if (sol.cell[pos] & STATE_MARK_MASK) determined++;
     }
   }
   return { solved: determined === size, sol };
@@ -314,11 +267,8 @@ export function hideClues(
   const size = width * height;
   const needed: number[] = [];
   for (let pos = 0; pos < size; pos++) {
-    if (sol.needed[pos] && aggressive) {
-      needed.push(pos);
-    } else if (!sol.needed[pos]) {
-      cells.shown[pos] = 0;
-    }
+    if (!sol.needed[pos]) cells.shown[pos] = 0;
+    else if (aggressive) needed.push(pos);
   }
   if (aggressive) {
     shuffle(needed, rng);
@@ -345,7 +295,7 @@ export function newDesc(p: MosaicParams, rng: RandomState): { desc: string } {
     empty: new Uint8Array(size),
   };
 
-  for (;;) {
+  do {
     for (let i = 0; i < size; i++) image[i] = randomBits(rng, 1);
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
@@ -357,11 +307,11 @@ export function newDesc(p: MosaicParams, rng: RandomState): { desc: string } {
         cells.empty[pos] = empty ? 1 : 0;
       }
     }
-    if (!startPointCheck(cells, (width - 1) * (height - 1))) continue;
-    if (!solveCheck(width, height, cells, rng).solved) continue;
-    hideClues(width, height, cells, rng, aggressive);
-    break;
-  }
+  } while (
+    !startPointCheck(cells, (width - 1) * (height - 1)) ||
+    !solveCheck(width, height, cells, rng).solved
+  );
+  hideClues(width, height, cells, rng, aggressive);
 
   const clues = new Int8Array(size);
   for (let pos = 0; pos < size; pos++) {
@@ -397,7 +347,7 @@ export function findMistakes(state: MosaicState): MosaicMistake[] {
   const { width, cells } = state;
   const mistakes: MosaicMistake[] = [];
   for (let pos = 0; pos < cells.length; pos++) {
-    const mark = cells[pos] & STATE_OK_NUM;
+    const mark = cells[pos] & STATE_MARK_MASK;
     if (mark !== STATE_UNMARKED && mark !== solCells[pos]) {
       mistakes.push({ x: pos % width, y: Math.floor(pos / width) });
     }

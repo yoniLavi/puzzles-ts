@@ -110,12 +110,17 @@ describe("Mosaic midend lifecycle", () => {
   it("undo and redo restore the clue count", () => {
     const h = harness();
     expect(h.m.newGameFromId(GAME_ID)).toBeUndefined();
-    h.selectAt(1, 1); // mark the center → clue 9 unaffected, others pending
-    const after = h.statusBar();
+    // Marking the top-left 2×2 satisfies the corner clue (4) and no other;
+    // the fourth mark is the move undone.
+    h.selectAt(0, 0);
+    h.selectAt(1, 0);
+    h.selectAt(0, 1);
+    h.selectAt(1, 1);
+    expect(h.statusBar()).toBe("Clues left: 8");
     h.m.undo();
     expect(h.statusBar()).toBe("Clues left: 9");
     h.m.redo();
-    expect(h.statusBar()).toBe(after);
+    expect(h.statusBar()).toBe("Clues left: 8");
   });
 
   it("solves via the Solve command", () => {
