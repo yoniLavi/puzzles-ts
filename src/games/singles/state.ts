@@ -5,8 +5,8 @@ import { dimensionParamConfig } from "../../engine/params.ts";
 import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 /**
- * Types and pure state helpers for Singles (Hitori) — port of the
- * state/codec parts of `singles.c`.
+ * Types and pure state helpers for Singles (Hitori), from the state/codec
+ * parts of `singles.c`.
  *
  * Each cell carries an immutable number (`nums`, 1..max(w,h)) and a
  * mutable `flags` bitmask (black / circle / error / solver-scratch). A
@@ -18,11 +18,10 @@ import type { GridCursor } from "../../engine/pointer.ts";
 /** Difficulty: upstream DIFF_EASY / DIFF_TRICKY. */
 export type Difficulty = "easy" | "tricky";
 
-/** Numeric difficulty levels, mirroring the C `enum`. `ANY` is the
- * "return whatever the solver reaches" level used by Solve / findMistakes. */
+/** Numeric difficulty levels, as upstream's `enum`. `ANY` is the "whatever
+ * the solver reaches" level Solve and findMistakes use. */
 export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
-export const DIFF_MAX = 2;
 export const DIFF_ANY = 3;
 
 const DIFF_CHARS = "ek"; // singles_diffchars, indexed by level
@@ -33,9 +32,6 @@ export function diffToLevel(d: Difficulty): number {
 }
 export function diffFromLevel(level: number): Difficulty {
   return level === DIFF_TRICKY ? "tricky" : "easy";
-}
-export function diffChar(d: Difficulty): string {
-  return DIFF_CHARS[diffToLevel(d)];
 }
 export function diffName(d: Difficulty): string {
   return DIFF_NAMES[diffToLevel(d)];
@@ -118,10 +114,9 @@ export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
  *
  * A cell holds `1..max(w, h)` and the alphabet's 62 slots run `0..61`, so the
  * largest number expressible is 61 — **one less than upstream's bound**, which
- * is `10+26+26` written out. At exactly 62 the encoder walked off the end of
- * `A`–`Z` into `[`, which `c2n` reads back as `-1` and `validateDesc` then
- * rejects: a 62×62 board generated a description the game refused to load. The
- * bound is derived from the alphabet now, so it cannot drift from it again.
+ * is `10+26+26` written out. A 62 would encode as `[`, which `c2n` reads back
+ * as `-1` and `validateDesc` rejects. Derived from the alphabet so the two
+ * cannot drift apart.
  */
 const MAX_DIM = DESC_ALPHABET_SIZE - 1;
 
@@ -147,18 +142,9 @@ export function makeState(w: number, h: number, nums: Int8Array): SinglesState {
   };
 }
 
+/** `nums` is immutable, so the clone shares it. */
 export function cloneState(s: SinglesState): SinglesState {
-  return {
-    w: s.w,
-    h: s.h,
-    n: s.n,
-    o: s.o,
-    completed: s.completed,
-    cheated: s.cheated,
-    impossible: s.impossible,
-    nums: s.nums, // immutable, shared
-    flags: s.flags.slice(),
-  };
+  return { ...s, flags: s.flags.slice() };
 }
 
 // --- desc codec ------------------------------------------------------------

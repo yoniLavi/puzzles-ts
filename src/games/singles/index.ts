@@ -36,7 +36,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newSinglesDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -55,6 +55,7 @@ import {
   checkComplete,
   deduceHintPlan,
   type HintRecord,
+  inGrid,
   OP_BLACK,
   type SinglesReason,
   solveSpecific,
@@ -85,10 +86,7 @@ import {
 } from "./state.ts";
 
 /** A cell whose mark contradicts the unique solution (Check & Save). */
-export interface SinglesMistake {
-  x: number;
-  y: number;
-}
+export type SinglesMistake = Point;
 
 const PRESET_SIZES = [5, 6, 8, 10, 12];
 
@@ -118,10 +116,6 @@ function changedState(
   newSt: SinglesState,
 ): void {
   if (oldState && !oldState.completed && newSt.completed) ui.cursor.visible = false;
-}
-
-function inGrid(s: SinglesState, x: number, y: number): boolean {
-  return x >= 0 && x < s.w && y >= 0 && y < s.h;
 }
 
 function interpretMove(
@@ -205,8 +199,8 @@ function executeMove(state: SinglesState, move: SinglesMove): SinglesState {
     if (!inGrid(next, x, y)) throw new Error("singles move out of bounds");
     const i = y * next.w + x;
     next.flags[i] &= ~(F_BLACK | F_CIRCLE);
-    // `value` *is* a union, so the fall-through case is asserted: an
-    // unrecognized one used to arrive here as "empty" and clear the cell.
+    // `value` *is* a union, so an unrecognized one is rejected rather than
+    // read as "empty".
     if (value === "black") next.flags[i] |= F_BLACK;
     else if (value === "circle") next.flags[i] |= F_CIRCLE;
     else if (value !== "empty") assertNever(value, `singles: executeMove (${x},${y})`);
@@ -261,39 +255,29 @@ function findMistakes(state: SinglesState): readonly SinglesMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-interface Cell {
-  x: number;
-  y: number;
-}
-
 /** Highlight data for a Singles hint step. `targets` are the cell(s) the
  * displayed deduction forces, each with the mark it forces; a firing that
- * forces two cells at once (a 2×2 corner of four, an offset pair) carries
- * both. `evidence` are the deduction's premise cells — `redraw` shades an
- * undecided number cell (the digit draws on top) and rings an already-
+ * forces several cells at once carries them all. `evidence` are the
+ * deduction's premise cells — `redraw` outlines an undecided one and rings a
  * decided black/circle cell whose state *is* the reason. `strand` is the
  * distinct corner cell a 2×2-corner deduction is protecting from being
  * sealed off — drawn in its own color so the player can tell the corner
  * at risk apart from the matching numbers that share a value. */
 export interface SinglesHint {
   targets: { x: number; y: number; value: "black" | "circle" }[];
-  evidence: Cell[];
-  strand: Cell[];
+  evidence: Point[];
+  strand: Point[];
 }
 
 const opValue = (op: number): "black" | "circle" =>
   op === OP_BLACK ? "black" : "circle";
 
-const sameCell = (a: Cell, b: Cell): boolean => a.x === b.x && a.y === b.y;
+const sameCell = (a: Point, b: Point): boolean => a.x === b.x && a.y === b.y;
 
 /** Narrate *why* the grouped firing forces its cell(s), reading each number the
  * sentence names off the board. The words are [`hint-text.ts`](./hint-text.ts)'s. */
-function narrate(
-  reason: SinglesReason,
-  targets: { x: number; y: number }[],
-  state: SinglesState,
-): string {
-  const numAt = (c: Cell): number => state.nums[c.y * state.w + c.x];
+function narrate(reason: SinglesReason, targets: Point[], state: SinglesState): string {
+  const numAt = (c: Point): number => state.nums[c.y * state.w + c.x];
   switch (reason.kind) {
     case "sandwich":
       return say.sandwich(numAt(reason.ends[0]), numAt(targets[0]));
@@ -337,7 +321,7 @@ function narrate(
 /** The premise cells a reason reasons over (its visible evidence — the
  * cells that share a number, or the decided cell whose state is the
  * reason). The `strand` corner, when present, is surfaced separately. */
-function evidenceOf(reason: SinglesReason): Cell[] {
+function evidenceOf(reason: SinglesReason): Point[] {
   switch (reason.kind) {
     case "sandwich":
       return reason.ends;
@@ -364,13 +348,12 @@ function evidenceOf(reason: SinglesReason): Cell[] {
 
 /** The corner cell a 2×2-corner deduction is protecting (drawn in the
  * distinct strand color), if any. */
-function strandOf(reason: SinglesReason): Cell[] {
+function strandOf(reason: SinglesReason): Point[] {
   return reason.kind === "corner2" || reason.kind === "corner3" ? [reason.corner] : [];
 }
 
-/** Group the ordered records by firing (`group`) into one step each,
- * preserving deduction order. Records of one firing are contiguous, so a
- * first-seen-order bucket keeps the plan's order. */
+/** Group the ordered records by firing (`group`) into one step each. A
+ * firing's records are contiguous, so first-seen order keeps the plan's. */
 function groupRecords(records: HintRecord[]): HintRecord[][] {
   const groups = new Map<number, HintRecord[]>();
   for (const r of records) {
@@ -388,25 +371,21 @@ function hint(state: SinglesState): HintResult<SinglesMove, SinglesHint> {
   if (records.length === 0) {
     return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
+  const key = (c: Point): number => c.y * state.w + c.x;
   const steps: HintStep<SinglesMove, SinglesHint>[] = groupRecords(records).map(
     (group) => {
       const reason = group[0].reason;
-      const targets = group.map((r) => ({
-        x: r.x,
-        y: r.y,
-        value: opValue(r.op),
-      }));
-      const key = (c: Cell): number => c.y * state.w + c.x;
+      const targets = group.map((r) => ({ x: r.x, y: r.y, value: opValue(r.op) }));
       const targetKey = new Set(targets.map(key));
       // The protected corner is drawn in its own color; keep it out of
-      // both the targets and the shaded matching-number evidence.
+      // both the targets and the matching-number evidence.
       const strand = strandOf(reason).filter((c) => !targetKey.has(key(c)));
       const strandKey = new Set(strand.map(key));
       const evidence = evidenceOf(reason).filter(
         (c) => !targetKey.has(key(c)) && !strandKey.has(key(c)),
       );
       return {
-        move: { sets: targets.map((t) => ({ x: t.x, y: t.y, value: t.value })) },
+        move: { sets: targets.map((t) => ({ ...t })) },
         explanation: narrate(reason, targets, state),
         highlights: { targets, evidence, strand },
       };
@@ -423,56 +402,34 @@ function hintKeepTrack(
   step: HintStep<SinglesMove, SinglesHint>,
   state: SinglesState,
 ): HintTrackVerdict {
-  if (m.solve) return "off";
-  const targets = step.highlights?.targets ?? [];
-  if (targets.length === 0) return "off";
-  const want = new Map<number, "black" | "circle">();
-  for (const t of targets) want.set(t.y * state.w + t.x, t.value);
-
-  let matched = 0;
+  const hl = step.highlights;
+  if (m.solve || !hl || hl.targets.length === 0) return "off";
+  const key = (c: Point): number => c.y * state.w + c.x;
+  const want = new Map<number, CellValue>(hl.targets.map((t) => [key(t), t.value]));
   for (const s of m.sets) {
-    const want_v = want.get(s.y * state.w + s.x);
-    if (want_v === undefined || s.value !== want_v) return "off";
-    matched++;
+    if (want.get(key(s)) !== s.value) return "off";
   }
-  if (matched === 0) return "off";
-  if (matched === want.size) return "completed";
+  if (m.sets.length === 0) return "off";
+  if (m.sets.length === want.size) return "completed";
 
   // Strict subset of a multi-cell step: keep it displayed, shrunk to the
   // cells still outstanding (permitted on "onTrack").
-  const done = new Set(m.sets.map((s) => s.y * state.w + s.x));
-  const remaining = targets.filter((t) => !done.has(t.y * state.w + t.x));
-  step.move = { sets: remaining.map((t) => ({ x: t.x, y: t.y, value: t.value })) };
-  step.highlights = {
-    targets: remaining,
-    evidence: step.highlights?.evidence ?? [],
-    strand: step.highlights?.strand ?? [],
-  };
+  const done = new Set(m.sets.map(key));
+  const remaining = hl.targets.filter((t) => !done.has(key(t)));
+  step.move = { sets: remaining.map((t) => ({ ...t })) };
+  step.highlights = { ...hl, targets: remaining };
   return "onTrack";
 }
 
-function flashLength(
-  from: SinglesState,
-  to: SinglesState,
-  _dir: number,
-  _ui: SinglesUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
-}
-
 /** Singles' difficulty contract (`engine/difficulty.ts`). `solveSpecific`
- * returns > 0 when it solves; `makeState` rebuilds the board from its numbers
+ * returns > 0 when it solves; `newState` builds the board from the desc
  * alone, so no player mark reaches the verdict. `sneaky` is off — that is a
  * generator-side pre-pass, not a tier. */
 const difficulty: DifficultyContract<SinglesParams> = {
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
-  solveAtCap: (p, desc, cap) => {
-    const s = newState(p, desc);
-    return solveSpecific(makeState(s.w, s.h, s.nums), cap, false) > 0
-      ? "solved"
-      : "unsolved";
-  },
+  solveAtCap: (p, desc, cap) =>
+    solveSpecific(newState(p, desc), cap, false) > 0 ? "solved" : "unsolved",
 };
 
 export const singlesGame: Game<
@@ -495,12 +452,12 @@ export const singlesGame: Game<
   decodeParams,
   validateParams,
   paramConfig,
-  // Keys/shape match the `singles` config template in augmentation.ts
-  // ("{width}x{height} {difficulty:Easy|Tricky}"): width/height come from the
-  // worker adapter's w/h base, `difficulty` is the zero-based label index.
+  // Keys match the `singles` template in `puzzle/augmentation.ts`: width and
+  // height come from the worker adapter's w/h base, `difficulty` is the
+  // zero-based tier index.
   describeParams: (p) => ({ difficulty: diffToLevel(p.diff) }),
 
-  newDesc: (p, rng) => newSinglesDesc(p, rng),
+  newDesc: newSinglesDesc,
   validateDesc,
   newState,
   newUi,
@@ -530,15 +487,15 @@ export const singlesGame: Game<
     },
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SinglesParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(singlesGame);

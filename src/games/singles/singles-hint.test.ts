@@ -82,8 +82,8 @@ describe("deduceHintPlan records the deduction reason", () => {
   it("corner4: all four matching shade the diagonal via the box-in argument", () => {
     // Whole 2x2 board all equal — only the corner+inner diagonal can be
     // shaded without stranding the grid-corner white. Narration names the
-    // value and uses the same box-in language as corner3 (not the old,
-    // false "only pair that leaves one white per line" premise).
+    // value and uses the same box-in language as corner3, never the false
+    // "only pair that leaves one white per line" premise.
     const s = craft(2, 2, [4, 4, 4, 4]);
     const plan = deduceHintPlan(s);
     expect(plan.some((m) => m.reason.kind === "corner4")).toBe(true);
@@ -127,7 +127,8 @@ describe("hint", () => {
   });
 
   it("emits a two-cell firing (offset / corner-4) as a single step", () => {
-    // Offset-pairs force two whites at once; a tricky board reliably has one.
+    // Several rules force more than one cell per firing; a tricky board
+    // reliably has one.
     let found = false;
     for (const seed of ["hint-plan", "sh-1", "sh-2", "sh-3", "two-cell"]) {
       const s = fromSeed({ w: 6, h: 6, diff: "tricky" }, seed);
@@ -135,10 +136,8 @@ describe("hint", () => {
       if (!res?.ok) continue;
       const multi = res.steps.find((st) => st.move.sets.length > 1);
       if (multi) {
-        // Both cells carry a forced value and share the one explanation.
-        expect(multi.move.sets.length).toBeGreaterThanOrEqual(2);
-        const hl = multi.highlights as SinglesHint;
-        expect(hl.targets.length).toBe(multi.move.sets.length);
+        // Every cell carries its forced value, in the one step's move.
+        expect((multi.highlights as SinglesHint).targets).toEqual(multi.move.sets);
         found = true;
         break;
       }
@@ -147,13 +146,12 @@ describe("hint", () => {
   });
 
   it("a hint always makes progress from any partial position (resumable solve)", () => {
-    // Regression: solveSpecific is written to run from an empty board, and its
-    // cascade only propagates from cells it changes this run. Resuming it from
-    // the player's marks (the hint path) used to stall — a partially-solved,
-    // mistake-free board returned "No further move can be deduced". Walk each
-    // board to completion one hinted move at a time, recomputing the plan from
-    // scratch after every move so deduceHintPlan is exercised from many
-    // arbitrary partial positions; it must never give up before solved.
+    // solveSpecific is written to run from an empty board, and its cascade only
+    // propagates from cells it changes this run, so resumed from the player's
+    // marks it stalls unless they are primed. Walk each board to completion one
+    // hinted move at a time, recomputing the plan after every move so
+    // deduceHintPlan runs from many partial positions; it must never give up
+    // before solved.
     for (const seed of ["sh-1", "sh-2", "sh-3", "hint-plan"]) {
       let s = fromSeed({ w: 6, h: 6, diff: "tricky" }, seed);
       let guard = 0;
@@ -183,7 +181,7 @@ describe("hint", () => {
         expect(step.explanation).not.toContain("across from it");
         // "overlap" was geometrically false — the pairs can span a whole line.
         expect(step.explanation).not.toContain("overlap");
-        // Leads with the indication (§1b) — names the spotted pattern first.
+        // Leads with the indication — names the spotted pattern first.
         expect(step.explanation).toMatch(/^There's a pair of \d+s in one (column|row)/);
         found = true;
         break;
@@ -211,12 +209,10 @@ describe("hint", () => {
   });
 
   it("separates a corner deduction's protected corner from the matching pair", () => {
-    // The user-reported confusion: a 2×2-corner hint shaded the corner cell
-    // the same color as the matching numbers and called them all "corner
-    // squares". The corner is now its own `strand` role, disjoint from the
-    // shaded matching `evidence`. Reproduce the reported shape directly:
-    // top-left 2×2 = [[4,3],[5,3]] → the two 3s match (evidence), the 4 is
-    // the protected corner (strand), the 5 is forced white (target).
+    // The corner is its own `strand` role, disjoint from the matching
+    // `evidence`, so it never reads as one of the matching numbers. Top-left
+    // 2×2 = [[4,3],[5,3]] → the two 3s match (evidence), the 4 is the
+    // protected corner (strand), the 5 is forced white (target).
     const s = craft(2, 2, [4, 3, 5, 3]);
     const res = singlesGame.hint?.(s);
     expect(res?.ok).toBe(true);
@@ -231,10 +227,9 @@ describe("hint", () => {
     expect(hl.strand).toEqual([{ x: 0, y: 0 }]);
     expect(hl.evidence.length).toBeGreaterThanOrEqual(1);
     expect(hl.evidence.some((e) => e.x === 0 && e.y === 0)).toBe(false);
-    // Narration opens on the spotted pattern (§1b indication-first), names the
-    // actual numbers, and follows the contradiction arc (the touching pair →
-    // shading the target → trapping the corner), not the old confusing "two
-    // corner squares".
+    // Narration opens on the spotted pattern, names the actual numbers, and
+    // follows the contradiction arc (the touching pair → shading the target →
+    // trapping the corner), never the confusing "two corner squares".
     expect(cornerStep?.explanation).toMatch(
       /^A touching pair of 3s sits at the corner/,
     );

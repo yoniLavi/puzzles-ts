@@ -1,8 +1,6 @@
 /**
- * Singles (Hitori) generator — port of `new_game_desc` from `singles.c`. The
- * Latin-square machinery (`latin_generate`/`latin_generate_rect` and the
- * bipartite `matching` it rests on) lives in the shared `engine/latin.ts`
- * (promoted there when Towers became the second consumer); it stays
+ * Singles (Hitori) generator, a port of `new_game_desc` from `singles.c`. The
+ * Latin-square machinery lives in the shared `engine/latin.ts` and stays
  * RNG-faithful, so over the bit-identical `random.ts` the whole chain still
  * reproduces the C desc byte-for-byte for the same seed (see
  * `singles-differential.test.ts`).
@@ -15,7 +13,6 @@ import { shuffle } from "../../engine/shuffle.ts";
 import {
   newSolverState,
   OP_BLACK,
-  type SolverState,
   solveAllblackbutone,
   solveRemovesplits,
   solverOpAdd,
@@ -23,9 +20,7 @@ import {
   solveSpecific,
 } from "./solver.ts";
 import {
-  DIFF_ANY,
   DIFF_EASY,
-  type Difficulty,
   diffToLevel,
   encodeDesc,
   F_BLACK,
@@ -39,7 +34,8 @@ import {
 
 /** Choose the number to lay under the black cell at index `i`, preferring
  * a number that erases a Latin-square uniqueness, then any non-unique one.
- * Updates `rownums`/`colnums` for the chosen number. */
+ * `rownums`/`colnums` count the white copies at `line * o + number - 1`;
+ * the chosen number is added to them. */
 function bestBlackCol(
   s: SinglesState,
   rs: RandomState,
@@ -47,61 +43,41 @@ function bestBlackCol(
   rownums: Int32Array,
   colnums: Int32Array,
 ): number {
-  const w = s.w;
   const o = s.o;
-  const x = i % w;
-  const y = (i / w) | 0;
+  const row = ((i / s.w) | 0) * o;
+  const col = (i % s.w) * o;
 
-  /* Randomize the list of numbers to try (o RNG draws, as in C). */
-  const scratch: number[] = [];
-  for (let k = 0; k < o; k++) scratch[k] = k;
-  shuffle(scratch, rs);
+  /* Randomize the order to try the numbers in (o RNG draws, as in C). */
+  const order: number[] = [];
+  for (let k = 0; k < o; k++) order[k] = k;
+  shuffle(order, rs);
 
-  let j = 0;
-  let found = false;
-  /* Prefer numbers that only occur once in their row AND column. */
-  for (let k = 0; k < o && !found; k++) {
-    j = scratch[k] + 1;
-    if (rownums[y * o + j - 1] === 1 && colnums[x * o + j - 1] === 1) found = true;
+  /* Prefer numbers that only occur once in their row AND column, otherwise
+   * the first number that is not unique in its row/column. */
+  let v = -1;
+  for (let k = 0; k < o && v < 0; k++) {
+    if (rownums[row + order[k]] === 1 && colnums[col + order[k]] === 1) v = order[k];
   }
-  /* Otherwise the first number that is not unique in its row/column. */
-  for (let k = 0; k < o && !found; k++) {
-    j = scratch[k] + 1;
-    if (rownums[y * o + j - 1] !== 0 || colnums[x * o + j - 1] !== 0) found = true;
+  for (let k = 0; k < o && v < 0; k++) {
+    if (rownums[row + order[k]] !== 0 || colnums[col + order[k]] !== 0) v = order[k];
   }
-  if (!found) throw new Error("singles: unable to place number under black cell");
+  if (v < 0) throw new Error("singles: unable to place number under black cell");
 
-  rownums[y * o + j - 1] += 1;
-  colnums[x * o + j - 1] += 1;
-  return j;
+  rownums[row + v] += 1;
+  colnums[col + v] += 1;
+  return v + 1;
 }
 
 // --- difficulty gate (new_game_is_good) ------------------------------------
 
 const MAXTRIES = 20;
 
-/** True iff the board is solvable at `diff` and (for diff > Easy) NOT
+/** True iff the board is solvable at `diffLevel` and (above Easy) NOT
  * solvable at the level below with the sneaky generation-artifact step. */
-function newGameIsGood(
-  diffLevel: number,
-  state: SinglesState,
-  tosolve: SinglesState,
-): boolean {
-  tosolve.nums = state.nums; // share immutable numbers
-  tosolve.flags.fill(0);
-  tosolve.completed = false;
-  tosolve.impossible = false;
-
-  const sret = solveSpecific(tosolve, diffLevel, false);
-  let sretEasy = 0;
-  if (diffLevel > DIFF_EASY) {
-    tosolve.flags.fill(0);
-    tosolve.completed = false;
-    tosolve.impossible = false;
-    sretEasy = solveSpecific(tosolve, diffLevel - 1, true);
-  }
-
-  return !(sret <= 0 || sretEasy > 0);
+function newGameIsGood(diffLevel: number, state: SinglesState): boolean {
+  const blank = () => makeState(state.w, state.h, state.nums);
+  if (solveSpecific(blank(), diffLevel, false) <= 0) return false;
+  return diffLevel === DIFF_EASY || solveSpecific(blank(), diffLevel - 1, true) <= 0;
 }
 
 // --- new_game_desc ---------------------------------------------------------
@@ -110,26 +86,18 @@ function newGameIsGood(
  * white's last escape before it can be boxed in, so generation never makes the
  * board impossible. The guard below only fires if a porting discrepancy breaks
  * that invariant (see engine/retry-limit.ts). */
-export function newSinglesDesc(
-  paramsOrig: SinglesParams,
-  rs: RandomState,
-): { desc: string } {
-  let diff: Difficulty = paramsOrig.diff;
-  const w = paramsOrig.w;
-  const h = paramsOrig.h;
+export function newSinglesDesc(p: SinglesParams, rs: RandomState): { desc: string } {
+  const { w, h } = p;
   const o = Math.max(w, h);
   const n = w * h;
 
-  /* Tiny boards (no dimension ≥ 4) can't be generated at Tricky. */
-  if ((w < 4 || h < 4) && diffToLevel(diff) > DIFF_EASY) diff = "easy";
-  const diffLevel = diffToLevel(diff);
+  /* A board under 4 in either dimension can't be generated at Tricky. */
+  const diffLevel = w < 4 || h < 4 ? DIFF_EASY : diffToLevel(p.diff);
 
-  const nums = new Int8Array(n);
-  const state = makeState(w, h, nums);
-  const tosolve = makeState(w, h, nums);
-  const ss: SolverState = newSolverState(state);
+  const state = makeState(w, h, new Int8Array(n));
+  const ss = newSolverState(state);
 
-  const scratch = new Int32Array(n);
+  const cells: number[] = [];
   const rownums = new Int32Array(h * o);
   const colnums = new Int32Array(w * o);
 
@@ -139,16 +107,12 @@ export function newSinglesDesc(
 
     ss.ops = [];
     state.flags.fill(0);
-
-    /* Latin rectangle. */
-    const latin = latinGenerateRect(w, h, rs);
-    for (let i = 0; i < n; i++) state.nums[i] = latin[i];
+    state.nums.set(latinGenerateRect(w, h, rs));
 
     /* Add black squares at random, laying forced whites between placements. */
-    for (let i = 0; i < n; i++) scratch[i] = i;
-    shuffle(scratch as unknown as number[], rs);
-    for (let k = 0; k < n; k++) {
-      const i = scratch[k];
+    for (let i = 0; i < n; i++) cells[i] = i;
+    shuffle(cells, rs);
+    for (const i of cells) {
       if (state.flags[i] & (F_CIRCLE | F_BLACK)) continue;
 
       solverOpAdd(ss, i % w, (i / w) | 0, OP_BLACK);
@@ -168,28 +132,18 @@ export function newSinglesDesc(
     colnums.fill(0);
     for (let i = 0; i < n; i++) {
       if (state.flags[i] & F_BLACK) continue;
-      const j = state.nums[i];
-      const x = i % w;
-      const y = (i / w) | 0;
-      rownums[y * o + j - 1] += 1;
-      colnums[x * o + j - 1] += 1;
+      const v = state.nums[i] - 1;
+      rownums[((i / w) | 0) * o + v] += 1;
+      colnums[(i % w) * o + v] += 1;
     }
 
-    let ntries = 0;
-    while (true) {
+    for (let tries = 0; ; tries++) {
       for (let i = 0; i < n; i++) {
-        if (!(state.flags[i] & F_BLACK)) continue;
-        state.nums[i] = bestBlackCol(state, rs, i, rownums, colnums);
+        if (state.flags[i] & F_BLACK)
+          state.nums[i] = bestBlackCol(state, rs, i, rownums, colnums);
       }
-
-      if (diffLevel !== DIFF_ANY && !newGameIsGood(diffLevel, state, tosolve)) {
-        ntries++;
-        if (ntries > MAXTRIES) continue generate;
-        continue;
-      }
-      break;
+      if (newGameIsGood(diffLevel, state)) return { desc: encodeDesc(state) };
+      if (tries >= MAXTRIES) continue generate;
     }
-
-    return { desc: encodeDesc(state) };
   }
 }

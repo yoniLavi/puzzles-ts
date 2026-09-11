@@ -4,9 +4,8 @@
  * The deduction decides which sentence and with what values (`index.ts`'s
  * `narrate`, which reads each number off the board); this file decides only
  * how it reads. Every sentence names the numbers involved rather than "this
- * square / its other neighbor" (owner-directed: concrete values read far
- * clearer), and leads with the spotted pattern before the deduction
- * (indication-first, §1b).
+ * square / its other neighbor", because concrete values read far clearer, and
+ * leads with the spotted pattern before the deduction.
  */
 
 import { joinNums } from "../../engine/hint-text.ts";
@@ -29,9 +28,8 @@ export const say = {
   corner4: (n: number): string =>
     `This corner ${n} matches both its neighbors; keeping it white would shade both and box it in, so it and the ${n} diagonally inside must be shaded.`,
 
-  // Branch A shades the corner itself; branch B shades the inner cell to save
-  // the (separately highlighted) corner. Name the referent explicitly ("the
-  // corner") so it never reads as the matching number.
+  // Name the referent explicitly ("the corner") so it never reads as the
+  // matching number.
   /** The corner `t` itself matches both neighboring `m`s. */
   corner3Corner: (t: number, m: number): string =>
     `This corner ${t} matches both neighboring ${m}s; keeping it white would shade both and box it in, so the ${t} must be shaded.`,

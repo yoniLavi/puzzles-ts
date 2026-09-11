@@ -25,7 +25,7 @@ import {
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Color, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { SinglesHint } from "./index.ts";
 import {
   F_BLACK,
@@ -117,13 +117,12 @@ const DS_ERROR = 0x10;
 const DS_FLASH = 0x20;
 const DS_IMPOSSIBLE = 0x40;
 const DS_MISTAKE = 0x80;
-// Hint overlay (fork addition): a forced-black target, a forced-white
-// (circle) target, and an evidence cell (shaded if undecided, ringed if
-// it is a decided black/circle premise — the color is then the reason).
-const DS_HINT_BLACK = 0x100;
-const DS_HINT_WHITE = 0x200;
-const DS_HINT_EVID = 0x400;
-const DS_HINT_STRAND = 0x800; // a corner-deduction's protected corner (amber)
+// Hint overlay (fork addition): a forced cell, an evidence cell (outlined if
+// undecided, ringed if it is a decided black/circle premise — the color is
+// then the reason), and a corner-deduction's protected corner (amber).
+const DS_HINT_TARGET = 0x100;
+const DS_HINT_EVID = 0x200;
+const DS_HINT_STRAND = 0x400;
 
 export interface SinglesDrawState {
   started: boolean;
@@ -146,8 +145,6 @@ export function newDrawState(state: SinglesState): SinglesDrawState {
 export function setTileSize(ds: SinglesDrawState, ts: number): void {
   ds.tilesize = ts;
 }
-
-// --- cursor corner brackets (misc.c draw_rect_corners) ---------------------
 
 // --- tile drawing ----------------------------------------------------------
 
@@ -175,15 +172,14 @@ function tileRedraw(
 
   // A forced cell is never pre-filled with the black square / circle the player
   // must place themselves: the mark says "act here", the narration says which
-  // action. (Doing the move for the player read as already-done, when it is
-  // still theirs to apply — owner-directed, 2026-06-20. Auto-hint applies the
-  // move for real, so animation mode renders the actual mark.)
+  // action. (Auto-hint applies the move for real, so animation mode renders the
+  // actual mark.)
   //
   // Every Singles cell carries a **number**, so no hint role can be a fill; all
   // of them are marks on the cell's own border, drawn below. The band lies
   // inside the cell (`outer` 0), so this cell's own repaint — which its hint
   // bits are part of the cache key for — is what erases a mark that moves.
-  const target = f & (DS_HINT_BLACK | DS_HINT_WHITE);
+  const target = f & DS_HINT_TARGET;
   const decided = f & (DS_BLACK | DS_CIRCLE);
 
   const cx = x + Math.floor(ts / 2);
@@ -197,9 +193,6 @@ function tileRedraw(
     dr.drawCircle({ x: cx, y: cy }, cr, tcol, tcol);
     dr.drawCircle({ x: cx, y: cy }, cr - 1, bg, tcol);
   }
-
-  // (No forced-mark preview: the hint highlights where to act, it doesn't
-  // place the black square / circle for the player — see the override above.)
 
   // A decided premise cell (its black/circle color is the reason): ring
   // it rather than shading over it. The ring color follows the legend —
@@ -262,24 +255,22 @@ export function redraw(
   _animTime: number,
   flashTime: number,
   hint?: HintStep<SinglesMove, SinglesHint>,
-  mistakes?: readonly { x: number; y: number }[],
+  mistakes?: readonly Point[],
 ): void {
   const ts = ds.tilesize;
   const { w, h } = state;
 
   // Index the displayed hint step's target/evidence cells.
   const hl = hint?.highlights;
-  const hintBlack = new Set<number>();
-  const hintWhite = new Set<number>();
+  const hintTarget = new Set<number>();
   const hintEvid = new Set<number>();
   const hintStrand = new Set<number>();
   if (hl) {
-    for (const t of hl.targets) {
-      (t.value === "black" ? hintBlack : hintWhite).add(t.y * w + t.x);
-    }
+    for (const t of hl.targets) hintTarget.add(t.y * w + t.x);
     for (const e of hl.evidence) hintEvid.add(e.y * w + e.x);
     for (const s of hl.strand) hintStrand.add(s.y * w + s.x);
   }
+  const mistakeSet = new Set(mistakes?.map((m) => m.y * w + m.x));
 
   if (!ds.started) {
     const size = computeSize({ w, h }, ts);
@@ -297,7 +288,6 @@ export function redraw(
   }
 
   const flash = flashTime > 0 && Math.floor((flashTime * 5) / FLASH_TIME) % 2 === 1;
-  const mistakeSet = mistakes ? new Set(mistakes.map((m) => m.y * w + m.x)) : null;
 
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
@@ -313,9 +303,8 @@ export function redraw(
       }
       if (state.flags[i] & F_CIRCLE) f |= DS_CIRCLE;
       if (state.flags[i] & F_ERROR) f |= DS_ERROR;
-      if (mistakeSet?.has(i)) f |= DS_MISTAKE;
-      if (hintBlack.has(i)) f |= DS_HINT_BLACK;
-      if (hintWhite.has(i)) f |= DS_HINT_WHITE;
+      if (mistakeSet.has(i)) f |= DS_MISTAKE;
+      if (hintTarget.has(i)) f |= DS_HINT_TARGET;
       if (hintEvid.has(i)) f |= DS_HINT_EVID;
       if (hintStrand.has(i)) f |= DS_HINT_STRAND;
 

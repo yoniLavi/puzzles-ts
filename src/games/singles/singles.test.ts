@@ -85,8 +85,8 @@ describe("singles generator + solver", () => {
       // Solvable at its difficulty.
       const solved = cloneState(s);
       expect(solveSpecific(solved, diffToLevel(p.diff), false)).toBe(1);
-      // A second independent solve from blank yields the same partition,
-      // confirming a unique solution.
+      // Every rule is a forced deduction, so a completed solve is the unique
+      // solution: the all-rules solve must reach the same partition.
       const solved2 = makeState(p.w, p.h, s.nums);
       expect(solveSpecific(solved2, DIFF_ANY, false)).toBe(1);
       for (let i = 0; i < s.n; i++) {

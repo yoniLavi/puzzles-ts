@@ -1,5 +1,5 @@
 /**
- * Singles (Hitori) deductive solver — port of the solver in `singles.c`.
+ * Singles (Hitori) deductive solver, a port of the solver in `singles.c`.
  *
  * Works on a mutable working {@link SinglesState} (mutating `flags` and
  * `impossible`); the caller supplies a blank-flagged copy. The op-queue
@@ -9,6 +9,7 @@
 import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   cloneState,
   DIFF_ANY,
@@ -25,14 +26,15 @@ import {
 const DXS = [0, 1, 0, -1];
 const DYS = [-1, 0, 1, 0];
 
+/** Defined here, beside the solver's hot loops, rather than in `state.ts`:
+ * imported from there, generation and solving ran 1.2-1.4x slower under
+ * vitest (paired timing, 2026-09-11). */
+export function inGrid(s: SinglesState, x: number, y: number): boolean {
+  return x >= 0 && x < s.w && y >= 0 && y < s.h;
+}
+
 export const OP_BLACK = 0;
 export const OP_CIRCLE = 1;
-
-/** A grid coordinate. */
-export interface Pt {
-  x: number;
-  y: number;
-}
 
 /**
  * Why a cell is forced — the premise a hint narrates and highlights.
@@ -42,44 +44,39 @@ export interface Pt {
  */
 export type SinglesReason =
   /** SP/ST: two equal numbers one cell apart force the middle white. */
-  | { kind: "sandwich"; ends: [Pt, Pt] }
+  | { kind: "sandwich"; ends: [Point, Point] }
   /** PI: an adjacent equal pair blackens the other copies in its line. */
-  | { kind: "pair"; pair: [Pt, Pt] }
+  | { kind: "pair"; pair: [Point, Point] }
   /** QC: a 2×2 corner of four equal numbers blackens this diagonal. */
-  | { kind: "corner4"; block: Pt[] }
+  | { kind: "corner4"; block: Point[] }
   /** TC: three equal numbers in a 2×2 corner blacken the apex. `corner`
    * is the board-corner cell that would be stranded; `matched` are the
    * three cells sharing the number. */
-  | { kind: "corner3"; corner: Pt; matched: Pt[] }
+  | { kind: "corner3"; corner: Point; matched: Point[] }
   /** DC: two equal numbers in a 2×2 corner force the other neighbor
    * white. `corner` is the board-corner cell at risk of being sealed off;
    * `pair` are the two cells sharing the number. */
-  | { kind: "corner2"; corner: Pt; pair: [Pt, Pt] }
+  | { kind: "corner2"; corner: Point; pair: [Point, Point] }
   /** IP: an offset pair of equal numbers forces two whites. */
-  | { kind: "offset"; quad: Pt[] }
+  | { kind: "offset"; quad: Point[] }
   /** SB cascade: a cell next to a new black must be white. */
-  | { kind: "adjBlack"; black: Pt }
+  | { kind: "adjBlack"; black: Point }
   /** SC cascade: a number sharing a line with a new circle must be black. */
-  | { kind: "sameLine"; circled: Pt }
+  | { kind: "sameLine"; circled: Point }
   /** CC/CE/QM: a white cell with one non-black neighbor forces it white. */
-  | { kind: "boxedIn"; cell: Pt }
+  | { kind: "boxedIn"; cell: Point }
   /** MC: a cell whose shading would split the white region must be white. */
-  | { kind: "split"; neighbors: Pt[] };
+  | { kind: "split"; neighbors: Point[] };
 
-/** One forced cell recorded for a hint, in deduction order. `group`
- * ties together cells forced by one firing (the only multi-cell firings
- * are corner-4 and offset-pair). */
-export interface HintRecord {
-  x: number;
-  y: number;
+/** One forced cell recorded for a hint, in deduction order. `group` ties
+ * together the cells forced by one firing. */
+export interface HintRecord extends Point {
   op: number;
   reason: SinglesReason;
   group: number;
 }
 
-interface Op {
-  x: number;
-  y: number;
+interface Op extends Point {
   op: number;
   /** Present only when the solver runs in recording (hint) mode. */
   reason?: SinglesReason;
@@ -120,10 +117,6 @@ function recordOp(ss: SolverState, op: Op): void {
   }
 }
 
-function ingrid(s: SinglesState, x: number, y: number): boolean {
-  return x >= 0 && x < s.w && y >= 0 && y < s.h;
-}
-
 export function solverOpAdd(
   ss: SolverState,
   x: number,
@@ -143,7 +136,7 @@ function solverOpCircle(
   reason?: SinglesReason,
   group?: number,
 ): void {
-  if (!ingrid(s, x, y)) return;
+  if (!inGrid(s, x, y)) return;
   const i = y * s.w + x;
   if (s.flags[i] & F_BLACK) {
     s.impossible = true;
@@ -161,7 +154,7 @@ function solverOpBlacken(
   reason?: SinglesReason,
   group?: number,
 ): void {
-  if (!ingrid(s, x, y)) return;
+  if (!inGrid(s, x, y)) return;
   const i = y * s.w + x;
   if (s.nums[i] !== num) return;
   if (s.flags[i] & F_CIRCLE) {
@@ -171,61 +164,59 @@ function solverOpBlacken(
   if (!(s.flags[i] & F_BLACK)) solverOpAdd(ss, x, y, OP_BLACK, reason, group);
 }
 
+/** SB cascade: a black cell forces its four neighbors white — one firing. */
+function cascadeFromBlack(
+  s: SinglesState,
+  ss: SolverState,
+  x: number,
+  y: number,
+): void {
+  const r = ss.records ? { kind: "adjBlack" as const, black: { x, y } } : undefined;
+  const g = newGroup(ss);
+  solverOpCircle(s, ss, x - 1, y, r, g);
+  solverOpCircle(s, ss, x + 1, y, r, g);
+  solverOpCircle(s, ss, x, y - 1, r, g);
+  solverOpCircle(s, ss, x, y + 1, r, g);
+}
+
+/** SC cascade: a circle blackens every equal number in its row and column —
+ * one firing. */
+function cascadeFromCircle(
+  s: SinglesState,
+  ss: SolverState,
+  x: number,
+  y: number,
+): void {
+  const num = s.nums[y * s.w + x];
+  const r = ss.records ? { kind: "sameLine" as const, circled: { x, y } } : undefined;
+  const g = newGroup(ss);
+  for (let xx = 0; xx < s.w; xx++) {
+    if (xx !== x) solverOpBlacken(s, ss, xx, y, num, r, g);
+  }
+  for (let yy = 0; yy < s.h; yy++) {
+    if (yy !== y) solverOpBlacken(s, ss, x, yy, num, r, g);
+  }
+}
+
 /** Apply every queued op, cascading new ops as blacks/circles imply
- * their neighbors. Returns the number of cells actually changed. */
-export function solverOpsDo(s: SinglesState, ss: SolverState): number {
-  let nextOp = 0;
-  let nOps = 0;
-
-  while (nextOp < ss.ops.length) {
-    const op = ss.ops[nextOp++];
+ * their neighbors. */
+export function solverOpsDo(s: SinglesState, ss: SolverState): void {
+  for (let next = 0; next < ss.ops.length; next++) {
+    const op = ss.ops[next];
     const i = op.y * s.w + op.x;
-
-    if (op.op === OP_BLACK) {
-      if (s.flags[i] & F_CIRCLE) {
-        s.impossible = true;
-        return nOps;
-      }
-      if (!(s.flags[i] & F_BLACK)) {
-        s.flags[i] |= F_BLACK;
-        nOps++;
-        recordOp(ss, op);
-        // SB cascade: a new black forces its neighbors white — one firing.
-        const r = ss.records
-          ? { kind: "adjBlack" as const, black: { x: op.x, y: op.y } }
-          : undefined;
-        const g = ss.records ? newGroup(ss) : undefined;
-        solverOpCircle(s, ss, op.x - 1, op.y, r, g);
-        solverOpCircle(s, ss, op.x + 1, op.y, r, g);
-        solverOpCircle(s, ss, op.x, op.y - 1, r, g);
-        solverOpCircle(s, ss, op.x, op.y + 1, r, g);
-      }
-    } else {
-      if (s.flags[i] & F_BLACK) {
-        s.impossible = true;
-        return nOps;
-      }
-      if (!(s.flags[i] & F_CIRCLE)) {
-        s.flags[i] |= F_CIRCLE;
-        nOps++;
-        recordOp(ss, op);
-        // SC cascade: a new circle blackens its line-mates of equal
-        // number — one firing forcing every other copy in its row/column.
-        const r = ss.records
-          ? { kind: "sameLine" as const, circled: { x: op.x, y: op.y } }
-          : undefined;
-        const g = ss.records ? newGroup(ss) : undefined;
-        for (let x = 0; x < s.w; x++) {
-          if (x !== op.x) solverOpBlacken(s, ss, x, op.y, s.nums[i], r, g);
-        }
-        for (let y = 0; y < s.h; y++) {
-          if (y !== op.y) solverOpBlacken(s, ss, op.x, y, s.nums[i], r, g);
-        }
-      }
+    const set = op.op === OP_BLACK ? F_BLACK : F_CIRCLE;
+    const clash = op.op === OP_BLACK ? F_CIRCLE : F_BLACK;
+    if (s.flags[i] & clash) {
+      s.impossible = true;
+      return;
     }
+    if (s.flags[i] & set) continue;
+    s.flags[i] |= set;
+    recordOp(ss, op);
+    if (op.op === OP_BLACK) cascadeFromBlack(s, ss, op.x, op.y);
+    else cascadeFromCircle(s, ss, op.x, op.y);
   }
   ss.ops = [];
-  return nOps;
 }
 
 /* --- once-only deductions (number-only) --- */
@@ -233,49 +224,26 @@ export function solverOpsDo(s: SinglesState, ss: SolverState): number {
 /** SP/ST: identical numbers one cell apart force the middle cell white. */
 function solveSinglesep(s: SinglesState, ss: SolverState): number {
   const before = ss.ops.length;
+  // The ends sit at (x, y) and two steps along (dx, dy).
+  const sandwich = (x: number, y: number, dx: number, dy: number): void => {
+    const i = y * s.w + x;
+    const mid = i + dy * s.w + dx;
+    if (s.nums[i] !== s.nums[mid + dy * s.w + dx] || s.flags[mid] & F_CIRCLE) return;
+    const reason: SinglesReason | undefined = ss.records
+      ? {
+          kind: "sandwich",
+          ends: [
+            { x, y },
+            { x: x + 2 * dx, y: y + 2 * dy },
+          ],
+        }
+      : undefined;
+    solverOpAdd(ss, x + dx, y + dy, OP_CIRCLE, reason, newGroup(ss));
+  };
   for (let x = 0; x < s.w; x++) {
     for (let y = 0; y < s.h; y++) {
-      const i = y * s.w + x;
-      const ir = i + 1;
-      const irr = ir + 1;
-      if (x < s.w - 2 && s.nums[i] === s.nums[irr] && !(s.flags[ir] & F_CIRCLE)) {
-        solverOpAdd(
-          ss,
-          x + 1,
-          y,
-          OP_CIRCLE,
-          ss.records
-            ? {
-                kind: "sandwich",
-                ends: [
-                  { x, y },
-                  { x: x + 2, y },
-                ],
-              }
-            : undefined,
-          newGroup(ss),
-        );
-      }
-      const id = i + s.w;
-      const idd = id + s.w;
-      if (y < s.h - 2 && s.nums[i] === s.nums[idd] && !(s.flags[id] & F_CIRCLE)) {
-        solverOpAdd(
-          ss,
-          x,
-          y + 1,
-          OP_CIRCLE,
-          ss.records
-            ? {
-                kind: "sandwich",
-                ends: [
-                  { x, y },
-                  { x, y: y + 2 },
-                ],
-              }
-            : undefined,
-          newGroup(ss),
-        );
-      }
+      if (x < s.w - 2) sandwich(x, y, 1, 0);
+      if (y < s.h - 2) sandwich(x, y, 0, 1);
     }
   }
   return ss.ops.length - before;
@@ -285,52 +253,38 @@ function solveSinglesep(s: SinglesState, ss: SolverState): number {
  * that row/column. */
 function solveDoubles(s: SinglesState, ss: SolverState): number {
   const before = ss.ops.length;
+  // The pair sits at (x, y) and one step along (dx, dy); one firing blackens
+  // every other copy along that line.
+  const pair = (x: number, y: number, dx: number, dy: number): void => {
+    const i = y * s.w + x;
+    const j = i + dy * s.w + dx;
+    if (s.flags[j] & F_BLACK || s.nums[i] !== s.nums[j]) return;
+    const reason: SinglesReason | undefined = ss.records
+      ? {
+          kind: "pair",
+          pair: [
+            { x, y },
+            { x: x + dx, y: y + dy },
+          ],
+        }
+      : undefined;
+    const g = newGroup(ss);
+    const at = dx ? x : y;
+    for (let k = 0; k < (dx ? s.w : s.h); k++) {
+      if (k === at || k === at + 1) continue;
+      const cx = dx ? k : x;
+      const cy = dx ? y : k;
+      const c = cy * s.w + cx;
+      if (s.nums[c] === s.nums[i] && !(s.flags[c] & F_BLACK)) {
+        solverOpAdd(ss, cx, cy, OP_BLACK, reason, g);
+      }
+    }
+  };
   for (let y = 0, i = 0; y < s.h; y++) {
     for (let x = 0; x < s.w; x++, i++) {
       if (s.flags[i] & F_BLACK) continue;
-
-      let ii = i + 1;
-      if (x < s.w - 1 && !(s.flags[ii] & F_BLACK) && s.nums[i] === s.nums[ii]) {
-        // One firing: this pair forces every other copy in the row black.
-        const reason: SinglesReason | undefined = ss.records
-          ? {
-              kind: "pair",
-              pair: [
-                { x, y },
-                { x: x + 1, y },
-              ],
-            }
-          : undefined;
-        const g = newGroup(ss);
-        for (let xy = 0; xy < s.w; xy++) {
-          if (xy === x || xy === x + 1) continue;
-          const j = y * s.w + xy;
-          if (s.nums[j] === s.nums[i] && !(s.flags[j] & F_BLACK)) {
-            solverOpAdd(ss, xy, y, OP_BLACK, reason, g);
-          }
-        }
-      }
-
-      ii = i + s.w;
-      if (y < s.h - 1 && !(s.flags[ii] & F_BLACK) && s.nums[i] === s.nums[ii]) {
-        const reason: SinglesReason | undefined = ss.records
-          ? {
-              kind: "pair",
-              pair: [
-                { x, y },
-                { x, y: y + 1 },
-              ],
-            }
-          : undefined;
-        const g = newGroup(ss);
-        for (let xy = 0; xy < s.h; xy++) {
-          if (xy === y || xy === y + 1) continue;
-          const j = xy * s.w + x;
-          if (s.nums[j] === s.nums[i] && !(s.flags[j] & F_BLACK)) {
-            solverOpAdd(ss, x, xy, OP_BLACK, reason, g);
-          }
-        }
-      }
+      if (x < s.w - 1) pair(x, y, 1, 0);
+      if (y < s.h - 1) pair(x, y, 0, 1);
     }
   }
   return ss.ops.length - before;
@@ -345,72 +299,65 @@ function solveCorner(
   dx: number,
   dy: number,
 ): void {
-  const w = s.w;
-  const is: number[] = [];
-  const ns: number[] = [];
-  for (let yy = 0; yy < 2; yy++) {
-    for (let xx = 0; xx < 2; xx++) {
-      const idx = (y + dy * yy) * w + (x + dx * xx);
-      is[yy * 2 + xx] = idx;
-      ns[yy * 2 + xx] = s.nums[idx];
-    }
-  } /* order: (corner, side1, side2, inner) */
-
+  const corner = { x, y };
+  const side1 = { x: x + dx, y };
+  const side2 = { x, y: y + dy };
+  const inner = { x: x + dx, y: y + dy };
+  const [nc, n1, n2, ni] = [corner, side1, side2, inner].map(
+    (p) => s.nums[p.y * s.w + p.x],
+  );
   const rec = !!ss.records;
-  const P = (k: number): Pt => ({ x: is[k] % w, y: (is[k] / w) | 0 });
-  const cx = (k: number): number => is[k] % w;
-  const cy = (k: number): number => (is[k] / w) | 0;
 
-  if (ns[0] === ns[1] && ns[0] === ns[2] && ns[0] === ns[3]) {
+  if (nc === n1 && nc === n2 && nc === ni) {
     // QC: all four equal — both far-diagonal cells black, one firing.
     const reason: SinglesReason | undefined = rec
-      ? { kind: "corner4", block: [P(0), P(1), P(2), P(3)] }
+      ? { kind: "corner4", block: [corner, side1, side2, inner] }
       : undefined;
     const g = newGroup(ss);
-    solverOpAdd(ss, cx(0), cy(0), OP_BLACK, reason, g);
-    solverOpAdd(ss, cx(3), cy(3), OP_BLACK, reason, g);
-  } else if (ns[0] === ns[1] && ns[0] === ns[2]) {
+    solverOpAdd(ss, corner.x, corner.y, OP_BLACK, reason, g);
+    solverOpAdd(ss, inner.x, inner.y, OP_BLACK, reason, g);
+  } else if (nc === n1 && nc === n2) {
     // TC: corner matches both sides — the corner itself is the apex.
     solverOpAdd(
       ss,
-      cx(0),
-      cy(0),
+      corner.x,
+      corner.y,
       OP_BLACK,
-      rec ? { kind: "corner3", corner: P(0), matched: [P(0), P(1), P(2)] } : undefined,
+      rec ? { kind: "corner3", corner, matched: [corner, side1, side2] } : undefined,
       newGroup(ss),
     );
-  } else if (ns[1] === ns[2] && ns[1] === ns[3]) {
-    // TC: inner matches both sides — the inner is the apex; the corner
-    // (P(0)) is the cell that would be stranded.
+  } else if (n1 === n2 && n1 === ni) {
+    // TC: inner matches both sides — the inner is the apex; the corner is
+    // the cell that would be stranded.
     solverOpAdd(
       ss,
-      cx(3),
-      cy(3),
+      inner.x,
+      inner.y,
       OP_BLACK,
-      rec ? { kind: "corner3", corner: P(0), matched: [P(1), P(2), P(3)] } : undefined,
+      rec ? { kind: "corner3", corner, matched: [side1, side2, inner] } : undefined,
       newGroup(ss),
     );
-  } else if (ns[0] === ns[1] || ns[1] === ns[3]) {
+  } else if (nc === n1 || n1 === ni) {
     // DC: side1 is in a matching pair — the corner's other neighbor
     // (side2) stays white. The pair is (corner,side1) or (side1,inner).
-    const pair: [Pt, Pt] = ns[0] === ns[1] ? [P(0), P(1)] : [P(1), P(3)];
+    const pair: [Point, Point] = nc === n1 ? [corner, side1] : [side1, inner];
     solverOpAdd(
       ss,
-      cx(2),
-      cy(2),
+      side2.x,
+      side2.y,
       OP_CIRCLE,
-      rec ? { kind: "corner2", corner: P(0), pair } : undefined,
+      rec ? { kind: "corner2", corner, pair } : undefined,
       newGroup(ss),
     );
-  } else if (ns[0] === ns[2] || ns[2] === ns[3]) {
+  } else if (nc === n2 || n2 === ni) {
     // DC mirror: side2 is in a matching pair — side1 stays white.
-    const pair: [Pt, Pt] = ns[0] === ns[2] ? [P(0), P(2)] : [P(2), P(3)];
+    const pair: [Point, Point] = nc === n2 ? [corner, side2] : [side2, inner];
     solverOpAdd(
       ss,
-      cx(1),
-      cy(1),
+      side1.x,
+      side1.y,
       OP_CIRCLE,
-      rec ? { kind: "corner2", corner: P(0), pair } : undefined,
+      rec ? { kind: "corner2", corner, pair } : undefined,
       newGroup(ss),
     );
   }
@@ -434,48 +381,36 @@ function solveOffsetpairPair(
   x2: number,
   y2: number,
 ): void {
-  const w = s.w;
-  let ox: number;
-  let oy: number;
-  if (x1 === x2) {
-    ox = 1;
-    oy = 0;
-  } else {
-    ox = 0;
-    oy = 1;
-  }
-
+  // (ox, oy) steps from the pair's line to the next one.
+  const ox = x1 === x2 ? 1 : 0;
+  const oy = 1 - ox;
   const ax = x1 + ox;
   const ay = y1 + oy;
-  const an = s.nums[ay * w + ax];
+  const an = s.nums[ay * s.w + ax];
 
-  const dx = [x2 + ox + oy, x2 + ox - oy];
-  const dy = [y2 + oy + ox, y2 + oy - ox];
-
-  for (let d = 0; d < 2; d++) {
-    if (ingrid(s, dx[d], dy[d]) && (dx[d] !== ax || dy[d] !== ay)) {
-      const dn = s.nums[dy[d] * w + dx[d]];
-      if (an === dn) {
-        const xd = dx[d] - x2;
-        const yd = dy[d] - y2;
-        // One firing: the two offset pairs (A at (x1,y1)&(x2,y2), B at
-        // (ax,ay)&(dx,dy)) force both these neighbors of (x2,y2) white.
-        const reason: SinglesReason | undefined = ss.records
-          ? {
-              kind: "offset",
-              quad: [
-                { x: x1, y: y1 },
-                { x: ax, y: ay },
-                { x: x2, y: y2 },
-                { x: dx[d], y: dy[d] },
-              ],
-            }
-          : undefined;
-        const g = newGroup(ss);
-        solverOpAdd(ss, x2 + xd, y2, OP_CIRCLE, reason, g);
-        solverOpAdd(ss, x2, y2 + yd, OP_CIRCLE, reason, g);
-      }
-    }
+  for (const sign of [1, -1]) {
+    const xd = ox + sign * oy;
+    const yd = oy + sign * ox;
+    const bx = x2 + xd;
+    const by = y2 + yd;
+    if (!inGrid(s, bx, by) || (bx === ax && by === ay)) continue;
+    if (s.nums[by * s.w + bx] !== an) continue;
+    // One firing: the two offset pairs (A at (x1,y1)&(x2,y2), B at
+    // (ax,ay)&(bx,by)) force both these neighbors of (x2,y2) white.
+    const reason: SinglesReason | undefined = ss.records
+      ? {
+          kind: "offset",
+          quad: [
+            { x: x1, y: y1 },
+            { x: ax, y: ay },
+            { x: x2, y: y2 },
+            { x: bx, y: by },
+          ],
+        }
+      : undefined;
+    const g = newGroup(ss);
+    solverOpAdd(ss, x2 + xd, y2, OP_CIRCLE, reason, g);
+    solverOpAdd(ss, x2, y2 + yd, OP_CIRCLE, reason, g);
   }
 }
 
@@ -511,45 +446,33 @@ function solveOffsetpair(s: SinglesState, ss: SolverState): number {
 /** CC/CE/QM: a white cell whose only non-black neighbor must be white. */
 export function solveAllblackbutone(s: SinglesState, ss: SolverState): number {
   const before = ss.ops.length;
-  const dis = [-s.w, 1, s.w, -1];
-
   for (let y = 0, i = 0; y < s.h; y++) {
-    for (let x = 0; x < s.w; x++, i++) {
+    cells: for (let x = 0; x < s.w; x++, i++) {
       if (s.flags[i] & F_BLACK) continue;
 
-      let ifree = -1;
-      let skip = false;
+      let free = -1;
       for (let d = 0; d < 4; d++) {
         const xd = x + DXS[d];
         const yd = y + DYS[d];
-        const id = i + dis[d];
-        if (!ingrid(s, xd, yd)) continue;
-        if (s.flags[id] & F_CIRCLE) {
-          skip = true;
-          break; /* this cell already has a way out */
-        }
-        if (!(s.flags[id] & F_BLACK)) {
-          if (ifree !== -1) {
-            skip = true;
-            break; /* >1 white cell around it */
-          }
-          ifree = id;
-        }
+        if (!inGrid(s, xd, yd)) continue;
+        const id = yd * s.w + xd;
+        if (s.flags[id] & F_CIRCLE) continue cells; /* already has a way out */
+        if (s.flags[id] & F_BLACK) continue;
+        if (free !== -1) continue cells; /* >1 white cell around it */
+        free = id;
       }
-      if (skip) continue;
-      if (ifree !== -1) {
-        solverOpAdd(
-          ss,
-          ifree % s.w,
-          (ifree / s.w) | 0,
-          OP_CIRCLE,
-          ss.records ? { kind: "boxedIn", cell: { x, y } } : undefined,
-          newGroup(ss),
-        );
-      } else {
+      if (free === -1) {
         s.impossible = true;
         return 0;
       }
+      solverOpAdd(
+        ss,
+        free % s.w,
+        (free / s.w) | 0,
+        OP_CIRCLE,
+        ss.records ? { kind: "boxedIn", cell: { x, y } } : undefined,
+        newGroup(ss),
+      );
     }
   }
   return ss.ops.length - before;
@@ -571,29 +494,25 @@ function hasSingleWhiteRegion(s: SinglesState, ss: SolverState): boolean {
     s.impossible = true;
     return false;
   }
-  ss.scratch.fill(-1);
-  ss.scratch[0] = lwhite;
+  // Breadth-first: `ss.scratch` is the queue, F_SCRATCH marks a queued cell.
+  const queue = ss.scratch;
+  queue[0] = lwhite;
   s.flags[lwhite] |= F_SCRATCH;
-  let start = 0;
   let end = 1;
-  let next = 1;
-  while (start < end) {
-    for (let a = start; a < end; a++) {
-      const i = ss.scratch[a];
-      for (let d = 0; d < 4; d++) {
-        const x = (i % s.w) + DXS[d];
-        const y = ((i / s.w) | 0) + DYS[d];
-        const j = y * s.w + x;
-        if (!ingrid(s, x, y)) continue;
-        if (s.flags[j] & (F_BLACK | F_SCRATCH)) continue;
-        ss.scratch[next++] = j;
-        s.flags[j] |= F_SCRATCH;
-      }
+  for (let a = 0; a < end; a++) {
+    const cx = queue[a] % s.w;
+    const cy = (queue[a] / s.w) | 0;
+    for (let d = 0; d < 4; d++) {
+      const x = cx + DXS[d];
+      const y = cy + DYS[d];
+      if (!inGrid(s, x, y)) continue;
+      const j = y * s.w + x;
+      if (s.flags[j] & (F_BLACK | F_SCRATCH)) continue;
+      queue[end++] = j;
+      s.flags[j] |= F_SCRATCH;
     }
-    start = end;
-    end = next;
   }
-  return next === nwhite;
+  return end === nwhite;
 }
 
 function solveRemovesplitsCheck(
@@ -602,7 +521,7 @@ function solveRemovesplitsCheck(
   x: number,
   y: number,
 ): void {
-  if (!ingrid(s, x, y)) return;
+  if (!inGrid(s, x, y)) return;
   const i = y * s.w + x;
   if (s.flags[i] & (F_CIRCLE | F_BLACK)) return;
 
@@ -615,11 +534,11 @@ function solveRemovesplitsCheck(
     // shading it would split them into disconnected white regions.
     let reason: SinglesReason | undefined;
     if (ss.records) {
-      const neighbors: Pt[] = [];
+      const neighbors: Point[] = [];
       for (let d = 0; d < 4; d++) {
         const xd = x + DXS[d];
         const yd = y + DYS[d];
-        if (ingrid(s, xd, yd) && !(s.flags[yd * s.w + xd] & F_BLACK)) {
+        if (inGrid(s, xd, yd) && !(s.flags[yd * s.w + xd] & F_BLACK)) {
           neighbors.push({ x: xd, y: yd });
         }
       }
@@ -651,25 +570,23 @@ export function solveRemovesplits(s: SinglesState, ss: SolverState): number {
 
 /** SNEAKY: a generation-artifact step — a number unique in its row AND
  * column must be white. Not implied by the rules; used only to grade a
- * board "too easy". `ss === null` counts without queuing ops. */
-export function solveSneaky(s: SinglesState, ss: SolverState | null): number {
-  let nunique = 0;
+ * board "too easy". */
+function solveSneaky(s: SinglesState, ss: SolverState): void {
   for (let i = 0; i < s.n; i++) s.flags[i] &= ~F_SCRATCH;
 
+  // Mark every number that repeats along its row or column.
   for (let x = 0; x < s.w; x++) {
     for (let y = 0; y < s.h; y++) {
       const i = y * s.w + x;
-      for (let xx = x; xx < s.w; xx++) {
+      for (let xx = x + 1; xx < s.w; xx++) {
         const ii = y * s.w + xx;
-        if (i === ii) continue;
         if (s.nums[i] === s.nums[ii]) {
           s.flags[i] |= F_SCRATCH;
           s.flags[ii] |= F_SCRATCH;
         }
       }
-      for (let yy = y; yy < s.h; yy++) {
+      for (let yy = y + 1; yy < s.h; yy++) {
         const ii = yy * s.w + x;
-        if (i === ii) continue;
         if (s.nums[i] === s.nums[ii]) {
           s.flags[i] |= F_SCRATCH;
           s.flags[ii] |= F_SCRATCH;
@@ -679,14 +596,9 @@ export function solveSneaky(s: SinglesState, ss: SolverState | null): number {
   }
 
   for (let i = 0; i < s.n; i++) {
-    if (!(s.flags[i] & F_SCRATCH)) {
-      if (ss) solverOpAdd(ss, i % s.w, (i / s.w) | 0, OP_CIRCLE);
-      nunique++;
-    } else {
-      s.flags[i] &= ~F_SCRATCH;
-    }
+    if (s.flags[i] & F_SCRATCH) s.flags[i] &= ~F_SCRATCH;
+    else solverOpAdd(ss, i % s.w, (i / s.w) | 0, OP_CIRCLE);
   }
-  return nunique;
 }
 
 /* --- completion check --- */
@@ -695,8 +607,7 @@ export const CC_MARK_ERRORS = 1;
 export const CC_MUST_FILL = 2;
 
 function connectIfSame(s: SinglesState, dsf: Dsf, i1: number, i2: number): void {
-  if ((s.flags[i1] & F_BLACK) !== (s.flags[i2] & F_BLACK)) return;
-  dsf.merge(i1, i2);
+  if ((s.flags[i1] & F_BLACK) === (s.flags[i2] & F_BLACK)) dsf.merge(i1, i2);
 }
 
 /** Count duplicate white numbers along one row/column; mark both circled
@@ -731,8 +642,7 @@ function checkRowcol(
 export function checkComplete(s: SinglesState, flags: number): boolean {
   const dsf = new Dsf(s.n);
   let error = 0;
-  const w = s.w;
-  const h = s.h;
+  const { w, h } = s;
 
   if (flags & CC_MARK_ERRORS) {
     for (let i = 0; i < s.n; i++) s.flags[i] &= ~F_ERROR;
@@ -749,7 +659,7 @@ export function checkComplete(s: SinglesState, flags: number): boolean {
 
   if (flags & CC_MUST_FILL) {
     for (let i = 0; i < s.n; i++) {
-      if (!(s.flags[i] & F_BLACK) && !(s.flags[i] & F_CIRCLE)) error += 1;
+      if (!(s.flags[i] & (F_BLACK | F_CIRCLE))) error += 1;
     }
   }
 
@@ -816,9 +726,7 @@ export function solveSpecific(
   const budget = ss.records ? stepBudget("singles hint") : undefined;
 
   // The shared ordered technique ladder (`engine/deduction-fixpoint.ts`). Two
-  // mappings are worth reading before editing this, because both were once
-  // recorded as reasons Singles could *not* use the runner
-  // (`re-derive-the-fixpoint-no-gos`):
+  // mappings are worth reading before editing this:
   //
   //  - **The op-queue drain is a technique, in position 0, that never fires.**
   //    The ladder restarts from the top the moment anything fires, so a
@@ -876,50 +784,27 @@ export function deduceHintPlan(state: SinglesState): HintRecord[] {
   const work = cloneState(state);
   const ss = newSolverState(work);
   ss.records = [];
-  ss.group = 0;
   primeCascadeFromMarks(work, ss);
   solveSpecific(work, DIFF_ANY, false, ss);
   return ss.records;
 }
 
 /**
- * Seed the op queue with the cascade implications of cells the player has
- * already decided. `solverOpsDo` fires a cell's cascade (a black forces its
- * neighbors white; a circle blackens its equal line-mates) only when it
- * *changes* that cell during this solve run. `solveSpecific` is written to run
- * from an empty board (upstream's only use), so resuming it from the player's
- * marks — the hint path — would never propagate from those marks and the
- * solver stalls partway. Priming the existing marks' implications makes the
- * solve resumable from any consistent partial position, so a hint can always
- * make progress on a still-solvable board. (Hint-only: the generator solves
- * from empty with a non-recording state, so its byte-identical path is
- * untouched.)
+ * Seed the op queue with the cascades of the cells the player has already
+ * decided. `solverOpsDo` fires a cell's cascade only when it *changes* that
+ * cell during this run, and `solveSpecific` is written to run from an empty
+ * board (upstream's only use), so resumed from the player's marks it would
+ * never propagate from them and the solver would stall partway. Priming makes
+ * the solve resumable from any consistent partial position, so a hint can
+ * always make progress on a still-solvable board. (Hint-only: the generator
+ * solves from empty and never calls this.)
  */
 function primeCascadeFromMarks(s: SinglesState, ss: SolverState): void {
   for (let y = 0; y < s.h; y++) {
     for (let x = 0; x < s.w; x++) {
-      const i = y * s.w + x;
-      if (s.flags[i] & F_BLACK) {
-        const r = ss.records
-          ? { kind: "adjBlack" as const, black: { x, y } }
-          : undefined;
-        const g = ss.records ? newGroup(ss) : undefined;
-        solverOpCircle(s, ss, x - 1, y, r, g);
-        solverOpCircle(s, ss, x + 1, y, r, g);
-        solverOpCircle(s, ss, x, y - 1, r, g);
-        solverOpCircle(s, ss, x, y + 1, r, g);
-      } else if (s.flags[i] & F_CIRCLE) {
-        const r = ss.records
-          ? { kind: "sameLine" as const, circled: { x, y } }
-          : undefined;
-        const g = ss.records ? newGroup(ss) : undefined;
-        for (let xx = 0; xx < s.w; xx++) {
-          if (xx !== x) solverOpBlacken(s, ss, xx, y, s.nums[i], r, g);
-        }
-        for (let yy = 0; yy < s.h; yy++) {
-          if (yy !== y) solverOpBlacken(s, ss, x, yy, s.nums[i], r, g);
-        }
-      }
+      const f = s.flags[y * s.w + x];
+      if (f & F_BLACK) cascadeFromBlack(s, ss, x, y);
+      else if (f & F_CIRCLE) cascadeFromCircle(s, ss, x, y);
     }
   }
 }
