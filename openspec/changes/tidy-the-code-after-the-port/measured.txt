@@ -1,0 +1,20 @@
+# Re-measurement against baseline.txt (task 6.1), 2026-09-11.
+#
+# Counted the same way for both columns: tracked non-test .ts files, listed by
+# git, with the engine figure excluding src/engine/testing/ as the baseline's
+# did. "base" is 11b5fadf, the commit this change started from; baseline.txt
+# itself was recorded a few commits earlier, which is why its engine figure is
+# 22,386 against the base tree's 22,313.
+
+scope         base      now   removed
+games       135236   125623      9613
+engine       22313    21082      1231
+shell        17502    17016       486
+total       175051   163721     11330
+
+Every one of the 57 games went down; none grew and none stayed the same.
+(`src/games/index.ts`, the registry, is not a game and is unchanged at 152.)
+
+Comment lines fell with them: games 24,141 -> 22,200, engine 8,326 -> 7,343,
+shell 3,333 -> 2,900. The engine's comment share stays the highest in the tree
+at 35%, which is the contract documentation a game author reads.

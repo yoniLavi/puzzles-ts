@@ -19,29 +19,29 @@
 
 ## 3. Fan out over the remaining games
 
-- [ ] 3.1 Run the remaining 54 games in waves of disjoint directories, each
+- [x] 3.1 Run the remaining 54 games in waves of disjoint directories, each
       agent verifying its own game's tests with fixtures and snapshots
       unchanged; verify every game has a commit or a recorded reason for none.
-- [ ] 3.2 Repoint any `docs/` citation of a renamed function, and verify a grep
+- [x] 3.2 Repoint any `docs/` citation of a renamed function, and verify a grep
       for each old name in `docs/` returns nothing.
 
 ## 4. Engine
 
-- [ ] 4.1 Apply the pass to `src/engine/`, re-anchoring the probe where lines
+- [x] 4.1 Apply the pass to `src/engine/`, re-anchoring the probe where lines
       moved, and verify `npm run probe -- --verify` and the engine tests pass.
 
 ## 5. App shell and tooling
 
-- [ ] 5.1 Apply the pass to `src/puzzle/`, `src/screens/`, `src/dialogs/`,
+- [x] 5.1 Apply the pass to `src/puzzle/`, `src/screens/`, `src/dialogs/`,
       `src/components/`, `src/utils/`, `src/store/` and the `src/` root, and
       verify their tests pass with custom element names, public properties
       and event names unchanged.
-- [ ] 5.2 Apply the pass to `scripts/` and `vite-plugins/`, and verify every
+- [x] 5.2 Apply the pass to `scripts/` and `vite-plugins/`, and verify every
       gate step still runs green on the full tree.
 
 ## 6. Close
 
-- [ ] 6.1 Re-measure against `baseline.txt`, and verify the total and every
+- [x] 6.1 Re-measure against `baseline.txt`, and verify the total and every
       game's count went down or did not move.
 - [ ] 6.2 Run the full gate, open a handful of games and every dialog in the
       running app, and verify each plays and renders.
