@@ -1,7 +1,7 @@
 /**
- * Light Up board generation — faithful port of the generator half of
- * `lightup.c` (`set_blacks` / `place_lights` / `place_numbers` /
- * `puzzle_is_good` / `strip_unused_nums` / `new_game_desc`).
+ * Light Up board generation — port of the generator half of `lightup.c`
+ * (`set_blacks` / `place_lights` / `place_numbers` / `puzzle_is_good` /
+ * `strip_unused_nums` / `new_game_desc`).
  *
  * Every RNG draw is reproduced in upstream order, so for the same seed
  * the published desc byte-matches the C reference (asserted by
@@ -12,13 +12,8 @@ import type { RandomState } from "../../engine/random/index.ts";
 import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { placeSymmetricBlacks } from "../../engine/symmetric-blacks.ts";
-import {
-  type DepthTracker,
-  dosolve,
-  F_SOLVE_ALLOWRECURSE,
-  flagsFromDifficulty,
-  unplaceLights,
-} from "./solver.ts";
+import type { Point } from "../../engine/types.ts";
+import { dosolve, flagsFromDifficulty, unplaceLights } from "./solver.ts";
 import {
   cloneState,
   emptyState,
@@ -37,28 +32,14 @@ import {
   setLight,
 } from "./state.ts";
 
-/** Clear the board for regeneration (upstream `clean_board`). */
-function cleanBoard(state: LightupState, leaveBlacks: boolean): void {
-  for (let x = 0; x < state.w; x++) {
-    for (let y = 0; y < state.h; y++) {
-      const i = idx(x, y, state.w);
-      state.flags[i] = leaveBlacks ? state.flags[i] & F_BLACK : 0;
-      state.lights[i] = 0;
-    }
-  }
-  state.nlights = 0;
-}
-
-/** Randomize the black squares over the symmetry-reduced region, then
- * mirror/rotate the region over the whole board (upstream `set_blacks`,
- * via the shared engine helper — Sticks is the second consumer). */
-export function setBlacks(
-  state: LightupState,
-  params: LightupParams,
-  rs: RandomState,
-): void {
+/** Clear the board, then randomize the black squares over the
+ * symmetry-reduced region and mirror/rotate it over the whole board
+ * (upstream `clean_board` + `set_blacks`, via the shared engine helper). */
+function setBlacks(state: LightupState, params: LightupParams, rs: RandomState): void {
   const { w } = state;
-  cleanBoard(state, false);
+  state.flags.fill(0);
+  state.lights.fill(0);
+  state.nlights = 0;
   placeSymmetricBlacks({
     w,
     h: state.h,
@@ -73,12 +54,12 @@ export function setBlacks(
   });
 }
 
-/** Would removing a bulb at (x, y) leave some square it lights dark? */
-function checkDark(state: LightupState, x: number, y: number): number {
+/** Would removing the bulb at (x, y) leave some square it lights dark? */
+function leavesDark(state: LightupState, x: number, y: number): boolean {
   for (const pt of litCells(state, x, y, true)) {
-    if (state.lights[idx(pt.x, pt.y, state.w)] === 1) return 1;
+    if (state.lights[idx(pt.x, pt.y, state.w)] === 1) return true;
   }
-  return 0;
+  return false;
 }
 
 /**
@@ -86,48 +67,31 @@ function checkDark(state: LightupState, x: number, y: number): number {
  * by another) by filling the whole grid with bulbs and then removing
  * shadowed clusters in a random order (upstream `place_lights`).
  */
-export function placeLights(state: LightupState, rs: RandomState): void {
+function placeLights(state: LightupState, rs: RandomState): void {
   const { w, h } = state;
-  const wh = w * h;
-  const numindices = Array.from({ length: wh }, (_, i) => i);
+  const numindices = Array.from({ length: w * h }, (_, i) => i);
   shuffle(numindices, rs);
 
-  // Bulb on every open square (also clear the F_MARK scratch bit).
+  // Bulb on every open square (`setBlacks` has just cleared F_MARK).
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
-      const i = idx(x, y, w);
-      state.flags[i] &= ~F_MARK;
-      if (state.flags[i] & F_BLACK) continue;
-      setLight(state, x, y, true);
+      if (!(state.flags[idx(x, y, w)] & F_BLACK)) setLight(state, x, y, true);
     }
   }
 
-  for (let i = 0; i < wh; i++) {
-    const y = Math.floor(numindices[i] / w);
-    const x = numindices[i] % w;
-    const ii = idx(x, y, w);
-    if (!(state.flags[ii] & F_LIGHT)) continue;
-    if (state.flags[ii] & F_MARK) continue;
-    const cells = [...litCells(state, x, y, false)];
+  const isBulb = (pt: Point): boolean =>
+    (state.flags[idx(pt.x, pt.y, w)] & F_LIGHT) !== 0;
+  for (const i of numindices) {
+    if (!(state.flags[i] & F_LIGHT) || state.flags[i] & F_MARK) continue;
+    const cells = [...litCells(state, i % w, Math.floor(i / w), false)];
 
     // If we're not lighting any bulbs ourself, don't remove anything.
-    let n = 0;
-    for (const pt of cells) {
-      if (state.flags[idx(pt.x, pt.y, w)] & F_LIGHT) n++;
-    }
-    if (n === 0) continue;
+    if (!cells.some(isBulb)) continue;
 
-    // Would removing the bulbs we light leave anything dark?
-    n = 0;
-    for (const pt of cells) {
-      if (state.flags[idx(pt.x, pt.y, w)] & F_LIGHT) {
-        n += checkDark(state, pt.x, pt.y);
-      }
-    }
-    if (n === 0) {
-      // No: remove them all.
+    // If removing the bulbs we light leaves nothing dark, remove them all.
+    if (!cells.some((pt) => isBulb(pt) && leavesDark(state, pt.x, pt.y))) {
       for (const pt of cells) setLight(state, pt.x, pt.y, false);
-      state.flags[ii] |= F_MARK;
+      state.flags[i] |= F_MARK;
     }
 
     if (!gridOverlap(state)) return; // done
@@ -138,7 +102,7 @@ export function placeLights(state: LightupState, rs: RandomState): void {
 }
 
 /** Fill every black square with the count of adjacent bulbs. */
-export function placeNumbers(state: LightupState): void {
+function placeNumbers(state: LightupState): void {
   const { w, h } = state;
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
@@ -159,29 +123,21 @@ export function placeNumbers(state: LightupState): void {
  * Leaves `state` solved (with `F_NUMBERUSED` set on the clues the solver
  * used) on success. */
 export function puzzleIsGood(state: LightupState, difficulty: number): boolean {
-  const sflags = flagsFromDifficulty(difficulty);
   unplaceLights(state);
-  const mdepth: DepthTracker = { value: 0 };
-  const nsol = dosolve(state, sflags, mdepth);
-  // If we wanted an easy puzzle, make sure we didn't need recursion.
-  if (!(sflags & F_SOLVE_ALLOWRECURSE) && mdepth.value > 0) return false;
-  return nsol === 1;
+  // Below Unreasonable the flags forbid a guess, so a board that needs one
+  // solves to -1 ("don't know"), never 1. (Upstream also checks the depth
+  // reached, which without recursion is always 0.)
+  return dosolve(state, flagsFromDifficulty(difficulty)) === 1;
 }
 
 /** Remove clue numbers the last solve never used. */
-export function stripUnusedNums(state: LightupState): number {
-  let n = 0;
-  for (let x = 0; x < state.w; x++) {
-    for (let y = 0; y < state.h; y++) {
-      const i = idx(x, y, state.w);
-      if (state.flags[i] & F_NUMBERED && !(state.flags[i] & F_NUMBERUSED)) {
-        state.flags[i] &= ~F_NUMBERED;
-        state.lights[i] = 0;
-        n++;
-      }
+function stripUnusedNums(state: LightupState): void {
+  for (let i = 0; i < state.flags.length; i++) {
+    if (state.flags[i] & F_NUMBERED && !(state.flags[i] & F_NUMBERUSED)) {
+      state.flags[i] &= ~F_NUMBERED;
+      state.lights[i] = 0;
     }
   }
-  return n;
 }
 
 const MAX_GRIDGEN_TRIES = 20;
@@ -202,12 +158,10 @@ export function newLightupDesc(
 ): { desc: string } {
   const params = { ...paramsIn }; // blackpc is ramped locally on failure
   let news = emptyState(params);
-  const wh = params.w * params.h;
 
-  // One shuffled list of grid positions for the number-removal order —
-  // shuffled once, exactly as upstream (a per-grid reshuffle would draw
-  // different RNG).
-  const numindices = Array.from({ length: wh }, (_, i) => i);
+  // The number-removal order is shuffled once, as upstream: a per-grid
+  // reshuffle would draw different RNG.
+  const numindices = Array.from({ length: params.w * params.h }, (_, i) => i);
   shuffle(numindices, rs);
 
   const round = retryLimit("lightup: generation (blackpc ramp)", MAX_RAMP_ROUNDS);
@@ -215,7 +169,7 @@ export function newLightupDesc(
     round();
 
     for (let tries = 0; tries < MAX_GRIDGEN_TRIES; tries++) {
-      setBlacks(news, params, rs); // also cleans the board
+      setBlacks(news, params, rs);
       placeLights(news, rs);
       placeNumbers(news);
       if (!puzzleIsGood(news, params.difficulty)) continue;
@@ -227,10 +181,7 @@ export function newLightupDesc(
 
       // Remove numbers one-by-one in the shuffled order, reverting any
       // removal that breaks the puzzle.
-      for (let j = 0; j < wh; j++) {
-        const y = Math.floor(numindices[j] / params.w);
-        const x = numindices[j] % params.w;
-        const i = idx(x, y, params.w);
+      for (const i of numindices) {
         if (!(news.flags[i] & F_NUMBERED)) continue;
         const num = news.lights[i];
         news.lights[i] = 0;
@@ -241,11 +192,8 @@ export function newLightupDesc(
         }
       }
 
-      if (params.difficulty > 0) {
-        // Is the maximally-difficult puzzle difficult enough? It must not
-        // fall to the next-simpler solver.
-        if (puzzleIsGood(news, params.difficulty - 1)) continue;
-      }
+      // The maximally-stripped puzzle must not fall to the next-simpler solver.
+      if (params.difficulty > 0 && puzzleIsGood(news, params.difficulty - 1)) continue;
 
       return { desc: encodeDesc(news) };
     }

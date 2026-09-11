@@ -16,6 +16,7 @@ import {
   LEFT_BUTTON,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
+import { SYMM_ROT2, SYMM_ROT4 } from "../../engine/symmetric-blacks.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import {
   DEFAULT_BACKGROUND,
@@ -38,8 +39,6 @@ import {
   type LightupState,
   type LightupUi,
   newState,
-  SYMM_ROT2,
-  SYMM_ROT4,
   setLight,
   validateDesc,
   validateParams,

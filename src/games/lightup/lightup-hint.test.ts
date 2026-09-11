@@ -1,16 +1,16 @@
 /**
- * Behavioral tests for the Light Up explained hint (`add-lightup-hint`).
+ * Behavioral tests for the Light Up explained hint.
  *
- * The recorder-off byte-match guard is `lightup-differential.test.ts`
- * (unchanged by this change); these tests cover the recorder-on plan:
- * completeness on Easy/Tricky boards, the bleed rule (a step's marks stay
- * inside its narrated evidence), the narration voice guards, refusals,
- * keep-track shrinking, and the honest Unreasonable-tier refusal at the
- * guess point.
+ * The recorder-off byte-match guard is `lightup-differential.test.ts`; these
+ * tests cover the recorder-on plan: completeness on Easy/Normal boards, the
+ * bleed rule (a step's marks stay inside its narrated evidence), the narration
+ * voice guards, refusals, keep-track shrinking, and the honest
+ * Unreasonable-tier refusal at the guess point.
  */
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { SYMM_ROT4 } from "../../engine/symmetric-blacks.ts";
 import { type LightupHint, lightupGame } from "./index.ts";
 import { deduceHintPlan, solveUnique } from "./solver.ts";
 import {
@@ -21,7 +21,6 @@ import {
   type LightupMove,
   type LightupParams,
   type LightupState,
-  SYMM_ROT4,
 } from "./state.ts";
 
 type Step = HintStep<LightupMove, LightupHint>;
@@ -157,7 +156,7 @@ describe("narration", () => {
 
 describe("narration — a second mark on the board is named", () => {
   /** Any bare pointer at the acted-on square. With two marks in view it picks
-   * out neither, which is the defect `disambiguate-hint-deixis` sweeps. */
+   * out neither. */
   const DEICTIC = /\b(this|that) (square|cell)\b|\bhere\b/;
   /** What each branch ties it with — relational throughout, never a color
    * name (`docs/games/hints.md` § "Two marks on the board, one 'this cell'").
@@ -200,11 +199,8 @@ describe("narration — a second mark on the board is named", () => {
         ).toBe(true);
       }
       // Both discount sentences say "one of them must" of the set, so the set
-      // must hold at least two. Asserted rather than assumed: the first cut of
-      // this guard asserted it of the *shaded area* instead and went red,
-      // which is how the ringed dark square turned out to be a set member
-      // itself (it is, in over half of `discountUnlit`'s firings) — the
-      // narration had been excluding a candidate its own deduction counts.
+      // must hold at least two. The *set*, not the shaded area: the ringed dark
+      // square is itself a member in over half of `discountUnlit`'s firings.
       for (let i = 0; i < steps.length; i++) {
         const reason = firings[i].reason;
         if (reason.kind !== "discountUnlit" && reason.kind !== "discountClue") continue;
@@ -212,8 +208,7 @@ describe("narration — a second mark on the board is named", () => {
       }
     }
     // Vacuity guards: an empty sweep, or one that never reached the two
-    // discount rules (the ones the sweep flagged), would pass while measuring
-    // nothing (`audit-guessing-tier-names` §3.2).
+    // discount rules, would pass while measuring nothing.
     expect(checked).toBeGreaterThan(50);
     expect(withMark).toBeGreaterThan(50);
     for (const kind of [

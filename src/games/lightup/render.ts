@@ -1,15 +1,14 @@
 /**
  * Light Up rendering — port of `tile_flags` / `tile_redraw` /
  * `game_redraw` in `lightup.c`: a per-tile diffed loop over a packed
- * display-flag word per cell (the playbook's Int32Array cache-key
- * pattern is upstream's own model here). Black squares show their clue
- * (red when provably wrong), open squares fill yellow when lit, bulbs
- * are circles (red when lit by another bulb), the player's
- * impossible-mark is a small black blob, and the completion flash is a
- * 3-phase background blink.
+ * display-flag word per cell (docs/games/rendering.md § "The tile cache and
+ * the diff key"). Black squares show their clue (red when provably wrong),
+ * open squares fill yellow when lit, bulbs are circles (red when lit by
+ * another bulb), the impossible-mark is a small black blob, and the
+ * completion flash is a 3-phase background blink.
  *
- * The palette stays index-for-index with the upstream color enum, so a reader
- * can check it against upstream's slot by slot. Light Up has no dark-mode
+ * The palette stays index-for-index with the upstream color enum, and the
+ * fork's hint colors are appended past it. Light Up has no dark-mode
  * `paletteOverrides`, so nothing addresses a slot by number.
  */
 
@@ -27,7 +26,7 @@ import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
-import type { Color, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { LightupHint, LightupMistake } from "./index.ts";
 import {
   F_BLACK,
@@ -53,27 +52,24 @@ export const COL_LIGHT = 3; // white: bulbs and clue digits
 export const COL_LIT = 4; // yellow lit-square fill
 export const COL_ERROR = 5;
 export const COL_CURSOR = 6;
-// Fork hint colors, appended past the C enum (Light Up has no dark-mode
-// paletteOverrides, so an appended index cannot collide with one). The digit
-// of a driving clue recolors COL_HINT (the Pattern clue↔move tie).
+// Fork hint colors. The digit of a driving clue recolors COL_HINT (the
+// Pattern clue↔move tie).
 export const COL_HINT = 7; // forced cell(s), blue fill (highlight only)
 export const COL_HINT_CELL = 8; // evidence: the shade on a *dark* square
 export const COL_HINT_LITERF = 9; // cited lit/bulb premise (green ring)
 export const COL_HINT_DARKREF = 10; // the unlit square a deduction is about (violet ring)
 
 export function colors(defaultBackground: Color): Color[] {
-  const bg = defaultBackground;
   const out: Color[] = [];
-  out[COL_BACKGROUND] = bg;
+  out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = GRID_MID;
   // Pinned: a wall *is* black and a bulb *is* white, in either scheme.
   out[COL_BLACK] = BLACK;
   out[COL_LIGHT] = WHITE;
-  // The **wash** step, not plain yellow: a lit square is a large fill with
-  // bulbs and clue digits drawn on top of it, and its job is to read as *the
-  // board, lit* rather than as an object placed on the board. Plain yellow is a
-  // near-board tint under a light scheme and a bright patch under a dark one —
-  // the regression `hand-author-dark-palette` F1 found in Slide's target zone.
+  // The **wash** step, not plain yellow: a lit square is a large fill under
+  // bulbs and digits and must read as *the board, lit*, not as an object on it.
+  // Plain yellow is a near-board tint under a light scheme and a bright patch
+  // under a dark one.
   out[COL_LIT] = YELLOW_WASH;
   out[COL_ERROR] = ERROR_WASH;
   out[COL_CURSOR] = CURSOR;
@@ -90,8 +86,7 @@ export function colors(defaultBackground: Color): Color[] {
 
 export const border = (ts: number): number => Math.floor(ts / 2);
 export const coord = (v: number, ts: number): number => v * ts + border(ts);
-/** Pixel → cell, upstream FROMCOORD (safe for coords just left of the
- * border thanks to the +TILE_SIZE shift). */
+/** Pixel → cell (upstream FROMCOORD). */
 export const fromCoord = (v: number, ts: number): number =>
   fromCoordE(v, ts, border(ts));
 
@@ -124,8 +119,6 @@ export interface LightupDrawState {
   started: boolean;
   tilesize: number;
   crad: number;
-  w: number;
-  h: number;
   cache: Int32Array;
 }
 
@@ -134,8 +127,6 @@ export function newDrawState(state: LightupState): LightupDrawState {
     started: false,
     tilesize: 0,
     crad: 0,
-    w: state.w,
-    h: state.h,
     cache: new Int32Array(state.w * state.h).fill(-1),
   };
 }
@@ -188,10 +179,15 @@ function tileRedraw(
   y: number,
 ): void {
   const ts = ds.tilesize;
-  const dsFlags = ds.cache[idx(x, y, ds.w)];
+  const dsFlags = ds.cache[idx(x, y, state.w)];
   const dx = coord(x, ts);
   const dy = coord(y, ts);
   const lit = dsFlags & DF_FLASH ? COL_GRID : COL_LIT;
+  /** A doubled inset ring. */
+  const ring = (color: number): void => {
+    drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, color);
+    drawRectOutline(dr, dx + 2, dy + 2, ts - 3, ts - 3, color);
+  };
 
   if (dsFlags & DF_BLACK) {
     dr.drawRect({ x: dx, y: dy, w: ts, h: ts }, COL_BLACK);
@@ -220,13 +216,11 @@ function tileRedraw(
       );
     }
   } else {
-    // Hint roles (fork): the target square is **ringed** COL_HINT below, so a
-    // square that already holds a light or an impossible-blob keeps showing it.
-    // A *dark* evidence square shades COL_HINT_CELL and that is the wash form of
-    // the role doing its job: the premise there is that the square is **not
-    // lit**, which a teal shade preserves — it is not yellow — where a *lit*
-    // evidence square's premise is the yellow itself, so that one keeps its
-    // color and takes a green ring instead.
+    // Hint roles (fork): the target is **ringed** COL_HINT, so a light or blob
+    // already on it stays visible. A *dark* evidence square is shaded
+    // COL_HINT_CELL, which keeps its premise (not lit: the shade is not
+    // yellow); a *lit* one's premise is the yellow itself, so it keeps its
+    // fill and takes a ring instead.
     const fill =
       dsFlags & DF_HINT_AREA && !(dsFlags & DF_LIT)
         ? COL_HINT_CELL
@@ -243,14 +237,8 @@ function tileRedraw(
         COL_HINT,
       );
     }
-    if (dsFlags & DF_HINT_AREA && dsFlags & DF_LIT) {
-      drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, COL_HINT_LITERF);
-      drawRectOutline(dr, dx + 2, dy + 2, ts - 3, ts - 3, COL_HINT_LITERF);
-    }
-    if (dsFlags & DF_HINT_DARKREF) {
-      drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, COL_HINT_DARKREF);
-      drawRectOutline(dr, dx + 2, dy + 2, ts - 3, ts - 3, COL_HINT_DARKREF);
-    }
+    if (dsFlags & DF_HINT_AREA && dsFlags & DF_LIT) ring(COL_HINT_LITERF);
+    if (dsFlags & DF_HINT_DARKREF) ring(COL_HINT_DARKREF);
     if (dsFlags & DF_LIGHT) {
       const lcol = dsFlags & DF_OVERLAP ? COL_ERROR : COL_LIGHT;
       dr.drawCircle(
@@ -276,12 +264,9 @@ function tileRedraw(
     }
   }
 
-  // Check & Save: this cell contradicts the unique solution — a doubled
-  // red inset ring (fork divergence; upstream has no mistake overlay).
-  if (dsFlags & DF_WRONG) {
-    drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, COL_ERROR);
-    drawRectOutline(dr, dx + 2, dy + 2, ts - 3, ts - 3, COL_ERROR);
-  }
+  // Check & Save: this cell contradicts the unique solution (fork divergence;
+  // upstream has no mistake overlay).
+  if (dsFlags & DF_WRONG) ring(COL_ERROR);
 
   if (dsFlags & DF_CURSOR) {
     const coff = Math.floor(ts / 8);
@@ -309,16 +294,15 @@ export function redraw(
   const { w, h } = state;
 
   // Per-cell hint-role bits for the displayed step (fork addition).
+  const hintBits = new Map<number, number>();
+  const add = (cells: readonly Point[], bit: number): void => {
+    for (const c of cells) {
+      const i = idx(c.x, c.y, w);
+      hintBits.set(i, (hintBits.get(i) ?? 0) | bit);
+    }
+  };
   const hl = hint?.highlights;
-  let hintBits: Map<number, number> | null = null;
   if (hl) {
-    hintBits = new Map();
-    const add = (cells: readonly { x: number; y: number }[], bit: number): void => {
-      for (const c of cells) {
-        const i = idx(c.x, c.y, w);
-        hintBits?.set(i, (hintBits.get(i) ?? 0) | bit);
-      }
-    };
     add(hl.targets, DF_HINT_TARGET);
     add(hl.area, DF_HINT_AREA);
     if (hl.dark) add([hl.dark], DF_HINT_DARKREF);
@@ -352,7 +336,7 @@ export function redraw(
       let df = tileFlags(state, ui, x, y, flashing);
       if (wrong?.has(i)) df |= DF_WRONG;
       if (ui.drawBlobsWhenLit) df |= DF_BLOBS_PREF;
-      if (hintBits?.has(i)) df |= hintBits.get(i) ?? 0;
+      df |= hintBits.get(i) ?? 0;
       if (ds.cache[i] !== df) {
         ds.cache[i] = df;
         tileRedraw(dr, ds, state, ui, x, y);

@@ -35,7 +35,7 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { SYMMETRY_CHOICES } from "../../engine/symmetric-blacks.ts";
-import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, Point } from "../../engine/types.ts";
 import { newLightupDesc, puzzleIsGood } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -54,7 +54,6 @@ import {
   dosolve,
   F_SOLVE_ALLOWRECURSE,
   F_SOLVE_DISCOUNTSETS,
-  type HintCell,
   type LightupFiring,
   solveUnique,
 } from "./solver.ts";
@@ -117,9 +116,9 @@ function interpretMove(
   const button = stripModifiers(rawButton);
   const { w, h } = state;
 
-  let action: "light" | "impossible" | null = null;
-  let cx = -1;
-  let cy = -1;
+  let x: number;
+  let y: number;
+  let action: "light" | "impossible";
   /** What an ineffective pointer action returns: hiding a visible cursor
    * is itself a UI change (upstream's `nullret = empty`). */
   let nullret: null | UiUpdate = null;
@@ -127,9 +126,8 @@ function interpretMove(
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     if (ui.cursor.visible) nullret = UI_UPDATE;
     ui.cursor.visible = false;
-    const ts = ds.tilesize;
-    cx = fromCoord(p.x, ts);
-    cy = fromCoord(p.y, ts);
+    x = fromCoord(p.x, ds.tilesize);
+    y = fromCoord(p.y, ds.tilesize);
     action = button === LEFT_BUTTON ? "light" : "impossible";
   } else if (
     button === CURSOR_SELECT ||
@@ -139,8 +137,8 @@ function interpretMove(
   ) {
     if (ui.cursor.visible) {
       // Cursor-effect operations only apply to a visible cursor.
-      cx = ui.cursor.x;
-      cy = ui.cursor.y;
+      x = ui.cursor.x;
+      y = ui.cursor.y;
       action = button === CURSOR_SELECT ? "light" : "impossible";
     } else {
       ui.cursor.visible = true;
@@ -163,15 +161,12 @@ function interpretMove(
     return null;
   }
 
-  if (action) {
-    if (cx < 0 || cy < 0 || cx >= w || cy >= h) return nullret;
-    const flags = state.flags[idx(cx, cy, w)];
-    if (flags & F_BLACK) return nullret;
-    if (action === "light" && flags & F_IMPOSSIBLE) return nullret;
-    if (action === "impossible" && flags & F_LIGHT) return nullret;
-    return { ops: [{ kind: action, x: cx, y: cy }] };
-  }
-  return nullret;
+  if (x < 0 || y < 0 || x >= w || y >= h) return nullret;
+  const flags = state.flags[idx(x, y, w)];
+  if (flags & F_BLACK) return nullret;
+  // A bulb and a mark each refuse the square holding the other.
+  if (flags & (action === "light" ? F_IMPOSSIBLE : F_LIGHT)) return nullret;
+  return { ops: [{ kind: action, x, y }] };
 }
 
 function executeMove(state: LightupState, move: LightupMove): LightupState {
@@ -274,16 +269,16 @@ function findMistakes(state: LightupState): readonly LightupMistake[] {
  * about (violet ring); `clue` is the driving clue, whose digit recolors. */
 export interface LightupHint {
   kind: "light" | "impossible";
-  targets: HintCell[];
-  area: HintCell[];
-  dark?: HintCell;
-  clue?: HintCell;
+  targets: Point[];
+  area: Point[];
+  dark?: Point;
+  clue?: Point;
 }
 
-const sameCell = (a: HintCell, b: HintCell): boolean => a.x === b.x && a.y === b.y;
+const sameCell = (a: Point, b: Point): boolean => a.x === b.x && a.y === b.y;
 
 function buildHighlights(f: LightupFiring): LightupHint {
-  const notTarget = (c: HintCell): boolean => !f.cells.some((t) => sameCell(t, c));
+  const notTarget = (c: Point): boolean => !f.cells.some((t) => sameCell(t, c));
   switch (f.reason.kind) {
     case "forcedLight": {
       const dark = f.reason.dark;
@@ -371,14 +366,9 @@ function hint(state: LightupState): HintResult<LightupMove, LightupHint> {
   const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
   if (refusal) return refusal;
   const plan = deduceHintPlan(state);
-  if (plan.length === 0) {
-    // Only reachable on an Unreasonable board (Easy/Tricky boards are
-    // deduction-complete by generation): refuse honestly at the guess point.
-    return {
-      ok: false,
-      error: DEDUCTION_EXHAUSTED,
-    };
-  }
+  // Only reachable on an Unreasonable board (Easy/Normal boards are
+  // deduction-complete by generation): refuse honestly at the guess point.
+  if (plan.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
   return { ok: true, steps: plan.map(buildStep) };
 }
 
@@ -386,7 +376,7 @@ function hint(state: LightupState): HintResult<LightupMove, LightupHint> {
  * toggle op on such a cell would *remove* the mark — off-plan.) */
 function hasMark(
   state: LightupState,
-  cell: { x: number; y: number },
+  cell: Point,
   kind: "light" | "impossible",
 ): boolean {
   const flags = state.flags[idx(cell.x, cell.y, state.w)];
@@ -437,20 +427,9 @@ function refreshHintStep(
   };
 }
 
-function flashLength(
-  from: LightupState,
-  to: LightupState,
-  _dir: number,
-  _ui: LightupUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
-}
-
 /** Light Up's difficulty contract (`engine/difficulty.ts`). `puzzleIsGood` is
- * already exactly this predicate — "is this board solvable by a player working
- * at `difficulty`?" — spelled privately for the generator; the cap reaches the
- * solver as a *flag set* (`flagsFromDifficulty`) rather than as a number, which
- * is the shape no cross-game caller could have guessed. */
+ * already this predicate, spelled for the generator; it hands the cap to the
+ * solver as a flag set (`flagsFromDifficulty`), not as a number. */
 const difficulty: DifficultyContract<LightupParams> = {
   tierOf: (p) => p.difficulty,
   withTier: (p, tier) => ({ ...p, difficulty: tier }),
@@ -518,7 +497,7 @@ export const lightupGame: Game<
     },
   ],
 
-  newDesc: (p, rng) => newLightupDesc(p, rng),
+  newDesc: newLightupDesc,
   validateDesc,
   newState,
   newUi,
@@ -550,15 +529,15 @@ export const lightupGame: Game<
     },
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: LightupParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(lightupGame);

@@ -2,16 +2,16 @@
  * Light Up (Akari) state, params, and desc codec — port of the
  * corresponding parts of `lightup.c`.
  *
- * The board is two parallel typed arrays, exactly as upstream: `flags`
- * carries the per-cell flag byte (black / numbered / player bulb /
- * player impossible-mark, plus the solver-scratch NUMBERUSED and MARK
- * bits that never appear in play states), and `lights` carries, for a
- * numbered black square its clue value, and for an open square the
- * number of bulbs currently lighting it.
+ * The board is two parallel typed arrays, as upstream: `flags` carries the
+ * per-cell flag byte (black / numbered / bulb / impossible-mark, plus the
+ * NUMBERUSED and MARK scratch bits that never appear in play states), and
+ * `lights` carries a numbered black square's clue value, or the number of
+ * bulbs lighting an open square.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
+import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import {
   SYMM_MAX,
@@ -19,7 +19,7 @@ import {
   SYMM_ROT2,
   SYMM_ROT4,
 } from "../../engine/symmetric-blacks.ts";
-import type { GameStatus } from "../../engine/types.ts";
+import type { GameStatus, Point } from "../../engine/types.ts";
 
 // --- cell flags (upstream values) -------------------------------------------
 
@@ -36,21 +36,6 @@ export const F_LIGHT = 16;
 export const F_MARK = 32;
 
 export const idx = (x: number, y: number, w: number): number => y * w + x;
-
-// --- symmetry / difficulty ---------------------------------------------------
-
-// The symmetry enum lives in the shared symmetric-blacks helper (Sticks is
-// the second consumer of upstream's set_blacks); re-exported so lightup's
-// own modules keep importing it from here.
-export {
-  SYMM_NONE,
-  SYMM_REF2,
-  SYMM_REF4,
-  SYMM_ROT2,
-  SYMM_ROT4,
-} from "../../engine/symmetric-blacks.ts";
-
-export const DIFFCOUNT = 2; // difficulty is 0 (easy), 1 (tricky), 2 (unreasonable)
 
 // --- types ---------------------------------------------------------------------
 
@@ -111,15 +96,8 @@ const PRESETS: LightupParams[] = [
 ];
 
 // Difficulty 2 requires guess-and-backtrack by construction (the generator
-// rejects boards solvable at the tier below), so per the narratable-deduction
-// generation policy it is *named* Unreasonable. The params encoding (`d2`)
-// and board generation are untouched — this is a label, not a re-grade.
-//
-// **This is the game's only tier list**, and it was two until
-// `adopt-conventional-tier-names`: a lowercase copy here for the preset titles
-// ("7x7 easy") and a capitalized one in `index.ts`'s `paramConfig`. Every other
-// game titles its presets in the menu's own words, so the preset titles gained
-// a capital rather than the menu losing one.
+// rejects boards solvable at the tier below), so it is named Unreasonable. The
+// game's only tier list: the preset titles and `paramConfig` both read it.
 export const DIFF_NAMES: readonly string[] = tierNames(3, { search: true });
 
 export function defaultParams(): LightupParams {
@@ -136,48 +114,30 @@ export function presets(): PresetMenu<LightupParams> {
   };
 }
 
-/** C `atoi` + advance-past-digits, upstream's EATNUM. */
-function eatNum(s: string, i: number): { value: number; next: number } {
-  let j = i;
-  while (j < s.length && s[j] >= "0" && s[j] <= "9") j++;
-  return { value: j > i ? Number.parseInt(s.slice(i, j), 10) : 0, next: j };
-}
-
 export function decodeParams(s: string): LightupParams {
   const p = defaultParams();
   let i = 0;
-  let r = eatNum(s, i);
-  p.w = r.value;
-  i = r.next;
-  if (s[i] === "x") {
-    r = eatNum(s, i + 1);
-    p.h = r.value;
+  // Upstream's EATNUM: `atoi` from `start`, leaving `i` just past the digits.
+  const eatNum = (start: number): number => {
+    const r = parseLeadingInt(s, start);
     i = r.next;
-  }
-  if (s[i] === "b") {
-    r = eatNum(s, i + 1);
-    p.blackpc = r.value;
-    i = r.next;
-  }
-  if (s[i] === "s") {
-    r = eatNum(s, i + 1);
-    p.symm = r.value;
-    i = r.next;
-  } else if (p.symm === SYMM_ROT4 && p.w !== p.h) {
-    // Cope with user input such as '18x10' by ensuring symmetry is not
-    // selected by default to be incompatible with dimensions.
+    return r.value;
+  };
+  p.w = eatNum(0);
+  if (s[i] === "x") p.h = eatNum(i + 1);
+  if (s[i] === "b") p.blackpc = eatNum(i + 1);
+  if (s[i] === "s") p.symm = eatNum(i + 1);
+  else if (p.symm === SYMM_ROT4 && p.w !== p.h) {
+    // A bare '18x10' must not keep the default's square-only 4-fold symmetry.
     p.symm = SYMM_ROT2;
   }
   p.difficulty = 0;
-  // Cope with old params: a bare 'r' meant the recursive (hard) solver.
+  // Old params: a bare 'r' meant the recursive (Unreasonable) solver.
   if (s[i] === "r") {
     p.difficulty = 2;
     i++;
   }
-  if (s[i] === "d") {
-    r = eatNum(s, i + 1);
-    p.difficulty = r.value;
-  }
+  if (s[i] === "d") p.difficulty = eatNum(i + 1);
   return p;
 }
 
@@ -199,7 +159,8 @@ export function validateParams(p: LightupParams, full: boolean): string | null {
     if ((p.symm === SYMM_ROT4 || p.symm === SYMM_REF4) && p.w < 3 && p.h < 3)
       return "Width or height must be at least 3 for 4-way symmetry";
     if (p.symm < 0 || p.symm >= SYMM_MAX) return "Unknown symmetry type";
-    if (p.difficulty < 0 || p.difficulty > DIFFCOUNT) return "Unknown difficulty level";
+    if (p.difficulty < 0 || p.difficulty >= DIFF_NAMES.length)
+      return "Unknown difficulty level";
   }
   return null;
 }
@@ -209,13 +170,8 @@ export function validateParams(p: LightupParams, full: boolean): string | null {
 /** The orthogonal in-bounds neighbors of (x, y), in upstream's
  * left/right/up/down order (order matters — solver scratch lists and
  * tie-breaks are built in this order). */
-export function getSurrounds(
-  w: number,
-  h: number,
-  ox: number,
-  oy: number,
-): { x: number; y: number }[] {
-  const out: { x: number; y: number }[] = [];
+export function getSurrounds(w: number, h: number, ox: number, oy: number): Point[] {
+  const out: Point[] = [];
   if (ox > 0) out.push({ x: ox - 1, y: oy });
   if (ox < w - 1) out.push({ x: ox + 1, y: oy });
   if (oy > 0) out.push({ x: ox, y: oy - 1 });
@@ -236,7 +192,7 @@ export function* litCells(
   ox: number,
   oy: number,
   includeOrigin: boolean,
-): Generator<{ x: number; y: number }> {
+): Generator<Point> {
   const { w, h, flags } = state;
   let minx = ox;
   let maxx = ox;
@@ -278,51 +234,35 @@ export function setLight(
 ): void {
   const i = idx(ox, oy, state.w);
   if (state.flags[i] & F_BLACK) throw new Error("setLight on a black square");
-  let diff = 0;
-  if (!on && state.flags[i] & F_LIGHT) {
-    diff = -1;
-    state.flags[i] &= ~F_LIGHT;
-    state.nlights--;
-  } else if (on && !(state.flags[i] & F_LIGHT)) {
-    diff = 1;
-    state.flags[i] |= F_LIGHT;
-    state.nlights++;
-  }
-  if (diff !== 0) {
-    for (const { x, y } of litCells(state, ox, oy, true)) {
-      state.lights[idx(x, y, state.w)] += diff;
-    }
+  if (((state.flags[i] & F_LIGHT) !== 0) === on) return;
+  const diff = on ? 1 : -1;
+  state.flags[i] ^= F_LIGHT;
+  state.nlights += diff;
+  for (const { x, y } of litCells(state, ox, oy, true)) {
+    state.lights[idx(x, y, state.w)] += diff;
   }
 }
 
 // --- completion ----------------------------------------------------------------------
 
 /** True when every open square is lit. */
-export function gridLit(state: LightupState): boolean {
-  for (let x = 0; x < state.w; x++) {
-    for (let y = 0; y < state.h; y++) {
-      const i = idx(x, y, state.w);
-      if (state.flags[i] & F_BLACK) continue;
-      if (state.lights[i] === 0) return false;
-    }
+function gridLit({ flags, lights }: LightupState): boolean {
+  for (let i = 0; i < flags.length; i++) {
+    if (!(flags[i] & F_BLACK) && lights[i] === 0) return false;
   }
   return true;
 }
 
 /** True when any bulb is lit by another bulb. */
-export function gridOverlap(state: LightupState): boolean {
-  for (let x = 0; x < state.w; x++) {
-    for (let y = 0; y < state.h; y++) {
-      const i = idx(x, y, state.w);
-      if (!(state.flags[i] & F_LIGHT)) continue;
-      if (state.lights[i] > 1) return true;
-    }
+export function gridOverlap({ flags, lights }: LightupState): boolean {
+  for (let i = 0; i < flags.length; i++) {
+    if (flags[i] & F_LIGHT && lights[i] > 1) return true;
   }
   return false;
 }
 
 /** Exactly `clue` bulbs around the numbered square at (x, y). */
-export function numberCorrect(state: LightupState, x: number, y: number): boolean {
+function numberCorrect(state: LightupState, x: number, y: number): boolean {
   let n = 0;
   for (const pt of getSurrounds(state.w, state.h, x, y)) {
     if (state.flags[idx(pt.x, pt.y, state.w)] & F_LIGHT) n++;
@@ -351,7 +291,7 @@ export function numberWrong(state: LightupState, x: number, y: number): boolean 
 }
 
 /** True when all clue counts are exactly satisfied. */
-export function gridAddsup(state: LightupState): boolean {
+function gridAddsup(state: LightupState): boolean {
   for (let x = 0; x < state.w; x++) {
     for (let y = 0; y < state.h; y++) {
       const i = idx(x, y, state.w);
@@ -424,18 +364,13 @@ export function encodeDesc(state: LightupState): string {
 export function validateDesc(p: LightupParams, desc: string): string | null {
   let j = 0;
   for (let i = 0; i < p.w * p.h; i++) {
-    const c = desc[j];
+    const c = desc[j++];
     if (c === undefined) return "Game description shorter than expected";
-    if (c >= "0" && c <= "4") {
-      /* OK */
-    } else if (c === "B") {
-      /* OK */
-    } else if (c >= "a" && c <= "z") {
-      i += desc.charCodeAt(j) - A; // and the loop's i++ adds another one
-    } else {
+    if (c >= "a" && c <= "z") {
+      i += c.charCodeAt(0) - A; // and the loop's i++ adds another one
+    } else if (c !== "B" && !(c >= "0" && c <= "4")) {
       return "Game description contained unexpected character";
     }
-    j++;
   }
   if (j < desc.length) return "Game description longer than expected";
   return null;
@@ -443,28 +378,21 @@ export function validateDesc(p: LightupParams, desc: string): string | null {
 
 export function newState(p: LightupParams, desc: string): LightupState {
   const state = emptyState(p);
-  const { w } = p;
-  let run = 0;
+  let run = 0; // open squares still owed by a run letter
   let j = 0;
-  for (let y = 0; y < p.h; y++) {
-    for (let x = 0; x < p.w; x++) {
-      let c = "S";
-      if (run === 0) {
-        c = desc[j++] ?? "S";
-        if (c >= "a" && c <= "z") run = c.charCodeAt(0) - A + 1;
-      }
-      if (run > 0) {
-        c = "S";
-        run--;
-      }
-      const i = idx(x, y, w);
-      if (c >= "0" && c <= "4") {
-        state.flags[i] |= F_NUMBERED | F_BLACK;
-        state.lights[i] = c.charCodeAt(0) - "0".charCodeAt(0);
-      } else if (c === "B") {
-        state.flags[i] |= F_BLACK;
-      }
-      // 'S': open square — nothing to do.
+  for (let i = 0; i < p.w * p.h; i++) {
+    if (run > 0) {
+      run--;
+      continue;
+    }
+    const c = desc[j++] ?? "S";
+    if (c >= "a" && c <= "z") {
+      run = c.charCodeAt(0) - A; // this square is the run's first
+    } else if (c >= "0" && c <= "4") {
+      state.flags[i] |= F_NUMBERED | F_BLACK;
+      state.lights[i] = Number(c);
+    } else if (c === "B") {
+      state.flags[i] |= F_BLACK;
     }
   }
   return state;

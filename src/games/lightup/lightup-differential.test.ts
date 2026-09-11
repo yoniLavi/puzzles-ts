@@ -5,10 +5,9 @@
  * (clue acceptance and stripping are decided by solver verdicts), so this
  * also pins the solver's exact deductive power at every difficulty.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/lightup-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: it was captured from
+ * upstream's C by a harness that no longer exists (see
+ * `engine/testing/differential.ts`).
  *
  * Generation at Tricky/Hard runs the discount-set/recursive solver in a
  * retry loop — legitimately seconds of fixed work per fixture. The work is

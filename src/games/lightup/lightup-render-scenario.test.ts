@@ -12,6 +12,7 @@
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { SYMM_ROT4 } from "../../engine/symmetric-blacks.ts";
 import { expectRing } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type LightupHint, lightupGame } from "./index.ts";
@@ -22,7 +23,7 @@ import {
   COL_HINT_DARKREF,
   COL_HINT_LITERF,
 } from "./render.ts";
-import { encodeParams, type LightupParams, SYMM_ROT4 } from "./state.ts";
+import { encodeParams, type LightupParams } from "./state.ts";
 
 const EASY: LightupParams = { w: 7, h: 7, blackpc: 20, symm: SYMM_ROT4, difficulty: 0 };
 const TRICKY: LightupParams = { ...EASY, difficulty: 1 };
@@ -57,7 +58,9 @@ describe("Light Up hint render scenarios", () => {
       true,
     );
     // Clue digits elsewhere still drawn; the grid frame is present.
-    expect(recording.ops.some((o) => o.op === "text")).toBe(true);
+    expect(recording.ops.some((o) => o.op === "text" && o.color !== COL_HINT)).toBe(
+      true,
+    );
     expect(recording.ops.some((o) => "color" in o && o.color === COL_GRID)).toBe(true);
     expect(size.w).toBeGreaterThan(0);
 
@@ -121,8 +124,7 @@ describe("Light Up hint render scenarios", () => {
       showHint: true,
       // Reach the frame by its *shape*, not by its wording: `discountUnlit` is
       // the only firing that crosses a square out while ringing a dark one, so
-      // this predicate survives a rewording of the sentence (which
-      // `disambiguate-hint-deixis` then did).
+      // this predicate survives a rewording of the sentence.
       hintUntil: (step) => {
         const h = hl(step);
         return h?.kind === "impossible" && h?.dark !== undefined;

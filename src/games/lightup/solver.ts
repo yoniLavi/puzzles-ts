@@ -1,5 +1,5 @@
 /**
- * Light Up solver — faithful port of the solver half of `lightup.c`
+ * Light Up solver — port of the solver half of `lightup.c`
  * (`try_solve_light` / `try_solve_number` / the overlapping-set discount
  * machinery / `solve_sub` / `dosolve`).
  *
@@ -12,6 +12,7 @@
  */
 import { Combi } from "../../engine/combi/index.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   cloneState,
   F_BLACK,
@@ -46,15 +47,9 @@ const MAXRECURSE = 5;
 // --- hint recording -----------------------------------------------------------
 //
 // The hint plan is the solver's own deduction script, so a recorder is
-// threaded through the deduction functions and gated on presence: with no
-// recorder every function runs byte-for-byte as before (the generator's
-// byte-match differential is the regression guard); with one, each firing
-// is reported with the cells it forces and the premise to narrate.
-
-export interface HintCell {
-  x: number;
-  y: number;
-}
+// threaded through the deduction functions and gated on presence: with none,
+// every function runs as upstream's (the differential guards it); with one,
+// each firing is reported with the cells it forces and the premise to narrate.
 
 /** The premise of one deduction firing — what the hint narrates/highlights. */
 export type LightupHintReason =
@@ -62,22 +57,22 @@ export type LightupHintReason =
       /** An unlit square with exactly one remaining way to be lit. */
       kind: "forcedLight";
       /** The square in the dark. */
-      dark: HintCell;
+      dark: Point;
       /** Its whole line of sight (every square that could light it). */
-      corridor: HintCell[];
+      corridor: Point[];
     }
   | {
       /** A clue with all its bulbs placed rules out its free neighbors. */
       kind: "clueSatisfied";
-      clue: HintCell;
+      clue: Point;
       n: number;
       /** The clue's placed bulbs (the premise). */
-      bulbs: HintCell[];
+      bulbs: Point[];
     }
   | {
       /** A clue with as many bulbs left to place as free neighbors. */
       kind: "clueSaturated";
-      clue: HintCell;
+      clue: Point;
       n: number;
       /** Bulbs still to place (= the number of free neighbors). */
       need: number;
@@ -86,23 +81,23 @@ export type LightupHintReason =
       /** Overlapping-set discount seeded by an unlit square: a bulb at
        * the target would extinguish every way to light `dark`. */
       kind: "discountUnlit";
-      dark: HintCell;
-      set: HintCell[];
+      dark: Point;
+      set: Point[];
     }
   | {
       /** Overlapping-set discount seeded by a clue: at least one of
        * `set` must be a bulb, and a bulb at the target rules them all out. */
       kind: "discountClue";
-      clue: HintCell;
+      clue: Point;
       n: number;
-      set: HintCell[];
+      set: Point[];
     };
 
 /** One recorded firing: the mark it places and every cell it places it
  * on (one firing = one grouped hint step). */
 export interface LightupFiring {
   kind: "light" | "impossible";
-  cells: HintCell[];
+  cells: Point[];
   reason: LightupHintReason;
   /** Working-board snapshot with this firing (and all before it)
    * applied — highlights are computed against it, not the start board,
@@ -114,20 +109,19 @@ export interface LightupFiring {
 /** Called once per firing, after its marks are applied to the state. */
 export type LightupRecorder = (
   kind: "light" | "impossible",
-  cells: HintCell[],
+  cells: Point[],
   reason: LightupHintReason,
 ) => void;
 
 /** The discount seed, threaded to the mark site for the reason payload. */
 type DiscountSource =
-  | { kind: "unlit"; dark: HintCell }
-  | { kind: "clue"; clue: HintCell; n: number };
+  | { kind: "unlit"; dark: Point }
+  | { kind: "clue"; clue: Point; n: number };
 
 // --- basic deductions ---------------------------------------------------------
 
-export function couldPlaceLight(flags: number, lights: number): boolean {
-  if (flags & (F_BLACK | F_IMPOSSIBLE)) return false;
-  return !(lights > 0);
+function couldPlaceLight(flags: number, lights: number): boolean {
+  return !(flags & (F_BLACK | F_IMPOSSIBLE)) && lights <= 0;
 }
 
 function couldPlaceLightXy(state: LightupState, x: number, y: number): boolean {
@@ -164,13 +158,11 @@ function trySolveLight(
   }
   if (n === 1) {
     setLight(state, sx, sy, true);
-    if (rec) {
-      rec("light", [{ x: sx, y: sy }], {
-        kind: "forcedLight",
-        dark: { x: ox, y: oy },
-        corridor: [...litCells(state, ox, oy, true)],
-      });
-    }
+    rec?.("light", [{ x: sx, y: sy }], {
+      kind: "forcedLight",
+      dark: { x: ox, y: oy },
+      corridor: [...litCells(state, ox, oy, true)],
+    });
     return true;
   }
   return false;
@@ -182,77 +174,52 @@ function trySolveNumber(
   state: LightupState,
   nx: number,
   ny: number,
-  nflags: number,
-  nlights: number,
+  flags: number,
+  clue: number,
   rec?: LightupRecorder,
 ): boolean {
-  if (!(nflags & F_NUMBERED)) return false;
+  if (!(flags & F_NUMBERED)) return false;
   const { w, h } = state;
-  let nl = nlights;
-  const points = getSurrounds(w, h, nx, ny).map((pt) => ({ ...pt, mark: false }));
-  let ns = points.length;
-
-  // nl is the number of bulbs still to place, ns the number of spaces left
-  // to place them in; narrow both and mark the points to ignore.
-  for (const pt of points) {
+  const around = getSurrounds(w, h, nx, ny);
+  // `need` is the number of bulbs still to place, `free` the squares left to
+  // place them in.
+  let need = clue;
+  const free: Point[] = [];
+  for (const pt of around) {
     const i = idx(pt.x, pt.y, w);
-    if (state.flags[i] & F_LIGHT) {
-      nl--;
-      ns--;
-      pt.mark = true;
-    } else if (!couldPlaceLight(state.flags[i], state.lights[i])) {
-      ns--;
-      pt.mark = true;
-    }
+    if (state.flags[i] & F_LIGHT) need--;
+    else if (couldPlaceLight(state.flags[i], state.lights[i])) free.push(pt);
   }
-  if (ns === 0) return false; // nowhere to put anything
-  let ret = false;
-  if (nl === 0) {
+  if (free.length === 0) return false; // nowhere to put anything
+  if (need === 0) {
     // All bulbs this clue needs are placed; the remaining surrounds are
     // impossible.
     state.flags[idx(nx, ny, w)] |= F_NUMBERUSED;
-    const targets: HintCell[] = [];
-    for (const pt of points) {
-      if (!pt.mark) {
-        state.flags[idx(pt.x, pt.y, w)] |= F_IMPOSSIBLE;
-        ret = true;
-        if (rec) targets.push({ x: pt.x, y: pt.y });
-      }
-    }
-    if (rec && targets.length > 0) {
-      rec("impossible", targets, {
-        kind: "clueSatisfied",
-        clue: { x: nx, y: ny },
-        n: nlights,
-        bulbs: points
-          .filter((pt) => state.flags[idx(pt.x, pt.y, w)] & F_LIGHT)
-          .map((pt) => ({ x: pt.x, y: pt.y })),
-      });
-    }
-  } else if (nl === ns) {
+    for (const pt of free) state.flags[idx(pt.x, pt.y, w)] |= F_IMPOSSIBLE;
+    rec?.("impossible", free, {
+      kind: "clueSatisfied",
+      clue: { x: nx, y: ny },
+      n: clue,
+      bulbs: around.filter((pt) => state.flags[idx(pt.x, pt.y, w)] & F_LIGHT),
+    });
+    return true;
+  }
+  if (need === free.length) {
     // As many bulbs to place as spaces left; fill them all.
     state.flags[idx(nx, ny, w)] |= F_NUMBERUSED;
-    const targets: HintCell[] = [];
-    for (const pt of points) {
-      if (!pt.mark) {
-        setLight(state, pt.x, pt.y, true);
-        ret = true;
-        if (rec) targets.push({ x: pt.x, y: pt.y });
-      }
-    }
-    if (rec && targets.length > 0) {
-      rec("light", targets, {
-        kind: "clueSaturated",
-        clue: { x: nx, y: ny },
-        n: nlights,
-        need: nl,
-      });
-    }
+    for (const pt of free) setLight(state, pt.x, pt.y, true);
+    rec?.("light", free, {
+      kind: "clueSaturated",
+      clue: { x: nx, y: ny },
+      n: clue,
+      need,
+    });
+    return true;
   }
-  return ret;
+  return false;
 }
 
-// --- overlapping-set discount (tricky difficulty) --------------------------------
+// --- overlapping-set discount (Normal and up) --------------------------------
 //
 // Upstream's "new solver algorithm": a MAKESLIGHT set (from an unlit square
 // or a clue combination) is a set of squares of which at least one must be
@@ -403,7 +370,7 @@ function discountClue(
   let m = clue;
   if (m === 0) return false;
 
-  const sempty: { x: number; y: number }[] = [];
+  const sempty: Point[] = [];
   for (const pt of getSurrounds(w, h, x, y)) {
     const i = idx(pt.x, pt.y, w);
     if (state.flags[i] & F_LIGHT) m--;
@@ -429,24 +396,17 @@ function discountClue(
 
 // --- the solve loop -----------------------------------------------------------------
 
-/** Mutable max-recursion-depth tracker (upstream's `int *maxdepth`). */
-export interface DepthTracker {
-  value: number;
-}
-
 function solveSub(
   state: LightupState,
   solveFlags: number,
   depth: number,
-  maxdepth: DepthTracker | null,
   rec?: LightupRecorder,
 ): number {
-  if (maxdepth && maxdepth.value < depth) maxdepth.value = depth;
   const maxrecurse = solveFlags & F_SOLVE_ALLOWRECURSE ? MAXRECURSE : 0;
   const { w, h } = state;
 
   // Guard the hint/recording path against a non-terminating fixpoint; the
-  // generator (no `rec`) runs unguarded and byte-for-byte unchanged.
+  // generator (no `rec`) runs unguarded.
   const budget = rec ? stepBudget("lightup hint") : undefined;
 
   for (;;) {
@@ -531,7 +491,7 @@ function solveSub(
     // (in a copy).
     const scopy = cloneState(state);
     state.flags[idx(bestx, besty, w)] |= F_IMPOSSIBLE;
-    const selfSoluble = solveSub(state, solveFlags, depth + 1, maxdepth);
+    const selfSoluble = solveSub(state, solveFlags, depth + 1);
 
     if (!(solveFlags & F_SOLVE_FORCEUNIQUE) && selfSoluble > 0) {
       // We didn't need all solutions and just found one.
@@ -539,7 +499,7 @@ function solveSub(
     }
 
     setLight(scopy, bestx, besty, true);
-    const copySoluble = solveSub(scopy, solveFlags, depth + 1, maxdepth);
+    const copySoluble = solveSub(scopy, solveFlags, depth + 1);
 
     if (solveFlags & F_SOLVE_FORCEUNIQUE && (copySoluble < 0 || selfSoluble < 0)) {
       // Wanted uniqueness but hit the recursion limit on a branch: we may
@@ -566,11 +526,10 @@ function solveSub(
 export function dosolve(
   state: LightupState,
   solveFlags: number,
-  maxdepth: DepthTracker | null = null,
   rec?: LightupRecorder,
 ): number {
   for (let i = 0; i < state.flags.length; i++) state.flags[i] &= ~F_NUMBERUSED;
-  return solveSub(state, solveFlags, 0, maxdepth, rec);
+  return solveSub(state, solveFlags, 0, rec);
 }
 
 /**
@@ -585,20 +544,15 @@ export function dosolve(
 export function deduceHintPlan(state: LightupState): LightupFiring[] {
   const work = cloneState(state);
   const firings: LightupFiring[] = [];
-  dosolve(
-    work,
-    F_SOLVE_FORCEUNIQUE | F_SOLVE_DISCOUNTSETS,
-    null,
-    (kind, cells, reason) => {
-      firings.push({
-        kind,
-        cells,
-        reason,
-        flags: work.flags.slice(),
-        lights: work.lights.slice(),
-      });
-    },
-  );
+  dosolve(work, F_SOLVE_FORCEUNIQUE | F_SOLVE_DISCOUNTSETS, (kind, cells, reason) => {
+    firings.push({
+      kind,
+      cells,
+      reason,
+      flags: work.flags.slice(),
+      lights: work.lights.slice(),
+    });
+  });
   return firings;
 }
 
@@ -609,8 +563,7 @@ export function unplaceLights(state: LightupState): void {
     for (let y = 0; y < state.h; y++) {
       const i = idx(x, y, state.w);
       if (state.flags[i] & F_LIGHT) setLight(state, x, y, false);
-      state.flags[i] &= ~F_IMPOSSIBLE;
-      state.flags[i] &= ~F_NUMBERUSED;
+      state.flags[i] &= ~(F_IMPOSSIBLE | F_NUMBERUSED);
     }
   }
 }
