@@ -9,8 +9,6 @@
  * wrong pairs, gets quietly weaker, and — because the generator is solver-gated
  * — emits *different puzzles*. Upstream's `DEBUG_DLINES` blocks existed to
  * eyeball this; here it is mechanical.
- *
- * Written before the solver, deliberately (design D3a).
  */
 import { describe, expect, it } from "vitest";
 import { ALL_GRID_TYPES, type Grid, type GridType } from "../../engine/grid/index.ts";

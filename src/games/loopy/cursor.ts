@@ -134,25 +134,19 @@ export function edgesByDirection(dot: GridDot, button: number): GridEdge[] | nul
   return ranked.map((r) => r.e);
 }
 
-/** How far off an arrow's direction an edge may lie and still be walked. An
- * edge at 90° or more is another arrow's business: Up never walks you sideways
- * or down, even at a dot whose only edges go that way. */
-const WALK_CAP = Math.PI / 2;
-
 /**
  * The edge a plain arrow **walks**: the nearest in that direction, provided it
- * lies within {@link WALK_CAP}. `null` when nothing at this dot heads that way.
+ * lies less than 90° off it (a positive dot product with the arrow). `null`
+ * when nothing at this dot heads that way: an edge at 90° or more is another
+ * arrow's business, so Up never walks you sideways or down, even at a dot whose
+ * only edges go that way.
  */
 export function walkEdge(dot: GridDot, button: number): GridEdge | null {
   const v = arrowVector(button);
-  if (!v) return null;
-  const ranked = edgesByDirection(dot, button);
-  const e = ranked?.[0];
-  if (!e) return null;
+  const e = edgesByDirection(dot, button)?.[0];
+  if (!v || !e) return null;
   const far = farDot(e, dot);
-  const dot_ = v.dx * (far.x - dot.x) + v.dy * (far.y - dot.y);
-  const len = Math.hypot(far.x - dot.x, far.y - dot.y);
-  return Math.acos(Math.max(-1, Math.min(1, dot_ / len))) < WALK_CAP ? e : null;
+  return v.dx * (far.x - dot.x) + v.dy * (far.y - dot.y) > 0 ? e : null;
 }
 
 /**

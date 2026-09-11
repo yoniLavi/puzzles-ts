@@ -24,11 +24,9 @@
  * **If those orderings are off, nothing crashes and nothing asserts.** Every
  * dline deduction silently indexes the wrong pair, the solver quietly gets
  * weaker, and — because the generator is solver-gated — the game generates
- * *different puzzles* rather than showing a visible fault. That is the worst
- * failure shape in this port: silent, diffuse, and attributable to any of 18
- * tilings. Upstream's `DEBUG_DLINES` printf blocks existed to eyeball exactly
- * this; `dlines.test.ts` asserts it mechanically across all 18 tilings instead,
- * and was written **before** the solver that depends on it.
+ * *different puzzles* rather than showing a visible fault. Upstream eyeballed
+ * this with `DEBUG_DLINES` printfs; `dlines.test.ts` asserts it across all 18
+ * tilings.
  */
 import type { Grid, GridDot, GridFace } from "../../engine/grid/index.ts";
 

@@ -8,13 +8,11 @@
  * different geometries". Hence the sweep: nine tilings, including both
  * aperiodic families, each asserted against the invariants that must hold for
  * *any* tiling (one circle per dot, one line per edge, one digit per clued
- * face, every digit on the canvas). These tilings have never been rendered
- * anywhere before, so this is their first check rather than a regression net.
+ * face, every digit on the canvas).
  *
  * The rest are the state-dependent colorings the sweep's opener frames cannot
- * reach: line state, the faint-line preference, vertex errors, the
- * `exactlyOneLoop` clue rule, and the clue-position cache `setTileSize`
- * invalidates.
+ * reach — line state, the faint-line preference, vertex errors, the
+ * `exactlyOneLoop` clue rule — and the clue positions after a resize.
  */
 import { describe, expect, it } from "vitest";
 import { gridFindIncenter } from "../../engine/grid/index.ts";
@@ -108,7 +106,7 @@ describe("Loopy render scenarios: every tiling draws its whole grid", () => {
 
       // The game paints its own background first; the engine emits no pixels
       // of its own, so a missing opener rect means the board is drawn over
-      // whatever was there before (`fix-flip-canvas-reshape`).
+      // whatever was there before.
       expect(ops[0]).toMatchObject({ op: "rect", x: 0, y: 0, color: COL_BACKGROUND });
 
       // Nothing may be dropped or duplicated in the translation from grid to
@@ -333,11 +331,10 @@ describe("Loopy render scenarios: error highlighting", () => {
 
 describe("Loopy render scenarios: clue-position cache", () => {
   it("moves the clues when the tile size changes", () => {
-    // Design D6b. Upstream never invalidates the `textx`/`texty` cache because
-    // its frontends set the size once; this project's ResizeController calls
-    // `size()` on every layout perturbation, so a surviving cache would leave
-    // every clue at its pre-resize position — the stale-cache class of bug
-    // that cost Flip three iterations.
+    // Upstream caches clue positions and never invalidates them, because its
+    // frontends set the size once; this project's ResizeController calls
+    // `size()` on every layout perturbation, so a stale position would leave
+    // every clue where it was before the resize.
     const { p, id, state } = board("squares", 0, 5, 5);
     const g = state.grid;
     const palette = loopyGame.colors(DEFAULT_BACKGROUND);

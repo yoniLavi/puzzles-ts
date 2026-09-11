@@ -5,8 +5,8 @@
  * Upstream generates four parallel arrays from one `GRIDLIST` macro
  * (`gridnames[]`, `grid_types[]`, `grid_size_limits[]`, `GRID_CONFIGS`) and
  * three more from `DIFFLIST`, because C has no better way to keep them in
- * step. TS does: one `as const` table of objects per list, with the choice
- * names, the encode char and the min-size error messages all *derived* from it.
+ * step. Here each list is one `as const` table of objects, and the choice
+ * names, the encode char and the min-size error messages are *derived* from it.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
@@ -16,21 +16,19 @@ import { dimensionParamConfig, parseLeadingInt } from "../../engine/params.ts";
 
 /**
  * Loopy's grid types, in **Loopy's own ordering** — which is deliberately not
- * `grid.ts`'s `GridType` ordering (`GRIDGEN_LIST`). The two genuinely differ:
- * Loopy's index 11 is Penrose P2, where `GRIDGEN_LIST`'s is
- * `greatdodecagonal`.
+ * `grid.ts`'s `GridType` ordering (`GRIDGEN_LIST`): Loopy's index 11 is Penrose
+ * P2, where `GRIDGEN_LIST`'s is `greatdodecagonal`.
  *
  * **The array index is the wire format.** It is encoded into params as `t<n>`
- * and therefore into every saved game and shared game ID. Upstream says it at
- * length and it is worth repeating: *do not add values to this list except at
- * the end, or old game ids will stop working.* Never reorder it, never insert
- * into the middle, and never "tidy" it into `GRIDGEN_LIST` order.
+ * and therefore into every saved game and shared game ID. As upstream warns:
+ * *do not add values to this list except at the end, or old game ids will stop
+ * working* — and never "tidy" it into `GRIDGEN_LIST` order.
  *
  * `amin` / `omin` are the per-type minimum sizes: both dimensions must be at
  * least `amin`, and at least one must be at least `omin`. They live here rather
  * than in the geometry because they are a *game* judgment about what makes a
- * playable board — `gridValidateParams` deliberately implements only the
- * maximum-size guards.
+ * playable board — `gridValidateParams` implements only the maximum-size
+ * guards.
  */
 export const LOOPY_GRIDS = [
   { title: "Squares", type: "square", amin: 3, omin: 3 },
@@ -101,16 +99,9 @@ export function encodeParams(p: LoopyParams, full: boolean): string {
   return full ? `${base}d${LOOPY_DIFFS[p.diff].char}` : base;
 }
 
-/**
- * Parse a params string (`<w>x<h>t<type>d<diffchar>`, every part after the
- * width optional).
- *
- * Mirrors upstream `decode_params`, which mutates a caller-supplied params
- * struct: it resets `diff` to Easy up front but pointedly does **not** reset
- * `type`. Every caller hands it fresh defaults, so starting from
- * {@link defaultParams} (`type: 0`) is exactly equivalent — but the asymmetry
- * is deliberate upstream, so don't "fix" it into a reset of both.
- */
+/** Parse a params string (`<w>x<h>t<type>d<diffchar>`). Every part after the
+ * width is optional: a missing height copies the width, and a missing type or
+ * difficulty keeps its {@link defaultParams} value. */
 export function decodeParams(s: string): LoopyParams {
   const p = defaultParams();
   let i = 0;
@@ -121,7 +112,6 @@ export function decodeParams(s: string): LoopyParams {
   };
 
   p.h = p.w = int();
-  p.diff = DIFF_EASY;
   if (s[i] === "x") {
     i++;
     p.h = int();
@@ -131,10 +121,8 @@ export function decodeParams(s: string): LoopyParams {
     p.type = int();
   }
   if (s[i] === "d") {
-    i++;
-    const found = LOOPY_DIFFS.findIndex((d) => d.char === s[i]);
+    const found = LOOPY_DIFFS.findIndex((d) => d.char === s[i + 1]);
     if (found >= 0) p.diff = found;
-    if (i < s.length) i++;
   }
   return p;
 }
@@ -146,16 +134,14 @@ export function validateParams(p: LoopyParams, _full: boolean): string | null {
     return `Width and height for this grid type must both be at least ${amin}`;
   if (p.w < omin && p.h < omin)
     return `At least one of width and height for this grid type must be at least ${omin}`;
-  // A deliberate divergence from upstream, which accepts these params and then
-  // *aborts* during generation. A Penrose kite/dart patch of width 3 comes out
-  // empty for every seed and every height — measured at 0 successes in 200
-  // descriptions for each of 3x3 through 3x8, where every other aperiodic
-  // configuration surveyed succeeds at least ~20% of the time and so is
-  // recovered by `buildLoopyGrid`'s retry. Since retrying cannot rescue an
-  // impossible configuration, reject it here, where the Custom dialog can show
-  // the player a reason instead of failing on "New game". Note the asymmetry is
-  // real: 4x3 and larger heights-of-3 generate fine, so this is a width bound,
-  // not an `amin` bump (which would forbid those too).
+  // A deliberate divergence: upstream accepts these params and then *aborts*
+  // during generation. A Penrose kite/dart patch of width 3 comes out empty for
+  // every seed and every height — 0 successes in 200 descriptions for each of
+  // 3x3 through 3x8, where every other aperiodic configuration surveyed
+  // succeeds at least ~20% of the time — so `buildLoopyGrid`'s retry cannot
+  // rescue it. Rejecting it here lets the Custom dialog show a reason instead
+  // of failing on "New game". A width bound, not an `amin` bump: 4x3 and wider
+  // generate fine.
   if (type === "penrose_p2_kite" && p.w < 4)
     return "Width for Penrose (kite/dart) must be at least 4";
   return gridValidateParams(type, p.w, p.h);
@@ -174,11 +160,8 @@ export const paramConfig: ParamConfigItem<LoopyParams>[] = [
     },
   },
   {
-    // `difficulty`, as the other 28 tiered games spell it. It was `diff` until
-    // the type header started reading tier names off this item: the header
-    // looks the field up by the key `describeParams` emits, which was already
-    // `difficulty` here, so the two spellings disagreed and Loopy's header
-    // rendered a raw tier index.
+    // `difficulty`, as the other tiered games spell it: the type header looks
+    // this item up by the key `describeParams` emits.
     kw: "difficulty",
     name: "Difficulty",
     type: "choices",
@@ -226,22 +209,18 @@ const PRESETS_MORE: LoopyParams[] = [
   preset(10, 10, DIFF_HARD, 17), // Spectres
 ];
 
-/** Preset title. Note the dimensions are printed **height first** — upstream's
- * `sprintf(buf, "%dx%d %s - %s", params->h, params->w, ...)` — so the 12×10
- * triangular preset displays as "10x12". Kept because these strings are the
- * user-visible preset names and match the rest of the collection's history. */
+/** Preset title, with the dimensions printed **height first** as upstream's
+ * `sprintf(buf, "%dx%d %s - %s", params->h, params->w, ...)` does, so the 12×10
+ * triangular preset displays as "10x12". */
 function presetTitle(p: LoopyParams): string {
   return `${p.h}x${p.w} ${LOOPY_GRIDS[p.type].title} - ${LOOPY_DIFFS[p.diff].title}`;
 }
 
 /**
- * The **two-level** preset menu — unusual in this collection. The top level
- * holds the common grids, and a "More..." submenu holds the exotic tilings.
- * The app shell flattens submenus into a labeled section (a divider plus an
- * `<h3>` heading followed by the section's entries — see
- * `puzzle-type-menu.ts`), so the nesting renders as a titled group rather than
- * a nested flyout. That is a faithful and readable rendering of the intent, so
- * the nesting is kept rather than flattened here.
+ * The **two-level** preset menu — unusual in this collection: the common grids
+ * at the top level, the exotic tilings in a "More..." submenu. The app shell
+ * renders a submenu as a labeled section rather than a nested flyout (see
+ * `components/type-menu.ts`), which reads well, so the nesting is kept.
  */
 export function presets(): PresetMenu<LoopyParams> {
   return {

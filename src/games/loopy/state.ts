@@ -65,17 +65,10 @@ export interface LoopyState {
 /** A fresh state over the same grid, with independent line/clue arrays. */
 export function cloneState(s: LoopyState): LoopyState {
   return {
-    grid: s.grid,
-    gridDesc: s.gridDesc,
-    gridType: s.gridType,
-    w: s.w,
-    h: s.h,
+    ...s,
     clues: s.clues.slice(),
     lines: s.lines.slice(),
     lineErrors: s.lineErrors.slice(),
-    exactlyOneLoop: s.exactlyOneLoop,
-    completed: s.completed,
-    cheated: s.cheated,
   };
 }
 
@@ -142,11 +135,9 @@ export function decodeClues(clueDesc: string, numFaces: number): Int8Array {
  * Face counts for `validateDesc`, keyed by `(type, w, h, gridDesc)`.
  *
  * Upstream builds an **entire grid** purely to learn `numFaces`, and flags the
- * inefficiency itself. For the four aperiodic tilings that is now a full
- * generation plus a vigorous trim — paid on every description validation,
- * including the assertion at the end of every `newDesc`. Memoizing is
- * behavior-identical and removes a cost upstream only tolerated because its
- * aperiodic grids were built far less often than ours are.
+ * inefficiency itself. For an aperiodic tiling that is a full generation plus a
+ * vigorous trim, paid on every description validation — including the
+ * assertion at the end of every `newDesc` — so the count is memoized.
  */
 const faceCountCache = new Map<string, number | null>();
 
@@ -212,8 +203,6 @@ export function validateDesc(p: LoopyParams, desc: string): string | null {
 export function newState(p: LoopyParams, desc: string): LoopyState {
   const { gridDesc, clueDesc } = splitDesc(desc);
   const grid = gridNew(gridTypeOf(p), p.w, p.h, gridDesc);
-  const lines = new Uint8Array(grid.numEdges);
-  lines.fill(LINE_UNKNOWN);
   return {
     grid,
     gridDesc,
@@ -221,7 +210,7 @@ export function newState(p: LoopyParams, desc: string): LoopyState {
     w: p.w,
     h: p.h,
     clues: decodeClues(clueDesc, grid.numFaces),
-    lines,
+    lines: new Uint8Array(grid.numEdges).fill(LINE_UNKNOWN),
     lineErrors: new Uint8Array(grid.numEdges),
     exactlyOneLoop: false,
     completed: false,
@@ -271,14 +260,14 @@ const COMP_EMPTY = 4;
  * freshly-built state (`executeMove`'s copy), never on one already published.
  *
  * Upstream explains at length why the shared `findloop.c` is the wrong tool
- * here, and the reasoning is worth keeping: in most puzzles loops are simply
- * *forbidden*, so highlighting every edge that lies on a loop is exactly right.
- * Loopy is unusual — you are *supposed* to make a loop, but only one, so some
- * loops are wrong and the interesting question is *which* edges to blame.
- * Worse, the intuitive answer flips with context: a small accidental loop in a
- * corner should be highlighted, but a nearly-complete solution with a few
- * forgotten stray edges elsewhere should blame the strays. Finding the longest
- * cycle would settle it and is NP-complete.
+ * here: in most puzzles loops are simply *forbidden*, so highlighting every
+ * edge that lies on a loop is exactly right. Loopy is unusual — you are
+ * *supposed* to make a loop, but only one, so some loops are wrong and the
+ * interesting question is *which* edges to blame. Worse, the intuitive answer
+ * flips with context: a small accidental loop in a corner should be
+ * highlighted, but a nearly-complete solution with a few forgotten stray edges
+ * elsewhere should blame the strays. Finding the longest cycle would settle it
+ * and is NP-complete.
  *
  * The tractable substitute leans on the fact that no vertex may have degree
  * greater than two, which is trivial to detect:
@@ -382,25 +371,16 @@ export function checkCompletion(state: LoopyState): boolean {
     }
   }
 
-  if (nloop === 1 && npath === 0 && nsilly === 0) {
-    // Exactly one component and it is a loop, so the puzzle is potentially
-    // complete: check the clues.
-    let ret = true;
-    for (let i = 0; i < g.numFaces; i++) {
-      const c = state.clues[i];
-      if (c >= 0 && faceOrder(state, i, LINE_YES) !== c) {
-        ret = false;
-        break;
-      }
-    }
-    // Whether or not it is complete, record that this state is one loop and
-    // nothing else: it changes how clues are highlighted at display time.
-    state.exactlyOneLoop = true;
-    return ret;
+  // Exactly one component and it is a loop: record that, since it changes how
+  // clues are highlighted at display time, and the puzzle is complete if the
+  // clues agree.
+  state.exactlyOneLoop = nloop === 1 && npath === 0 && nsilly === 0;
+  if (!state.exactlyOneLoop) return false;
+  for (let i = 0; i < g.numFaces; i++) {
+    const c = state.clues[i];
+    if (c >= 0 && faceOrder(state, i, LINE_YES) !== c) return false;
   }
-
-  state.exactlyOneLoop = false;
-  return false;
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -412,54 +392,40 @@ export function checkCompletion(state: LoopyState): boolean {
  * square lattice, and there is no sensible text rendering of a Penrose patch.
  *
  * Upstream expresses this as a separate `game_can_format_as_text_now(params)`
- * entry point returning false for every non-square type; this project's `Game`
- * interface has a static `canFormatAsText`, so the param-dependence is carried
- * by returning `undefined` here instead (the midend and the share dialog
- * already treat an absent rendering as "no text panel"). That was the cheapest
- * of the options design D6d listed, and it needed no new hook.
+ * returning false for every non-square type; this project's `Game` has a static
+ * `canFormatAsText`, so the param-dependence is carried by returning
+ * `undefined` instead (the midend and the share dialog treat an absent
+ * rendering as "no text panel").
  */
 export function textFormat(state: LoopyState): string | undefined {
   if (state.gridType !== 0) return undefined;
 
   const g = state.grid;
-  const f0 = g.faces[0];
-  // Dots are clockwise, so opposite corners span the square.
+  // Dots are clockwise, so a face's dots 0 and 2 are opposite corners.
   // biome-ignore lint/style/noNonNullAssertion: a square face has all four dots.
-  const cellSize = Math.abs(f0.dots[0]!.x - f0.dots[2]!.x);
+  const corners = (i: number) => [g.faces[i].dots[0]!, g.faces[i].dots[2]!] as const;
+  const [c0, c2] = corners(0);
+  const cellSize = Math.abs(c0.x - c2.x);
+  // Canvas coordinates are twice cell coordinates, so a midpoint is a sum.
+  const cx = (x: number) => (x - g.lowestX) / cellSize;
+  const cy = (y: number) => (y - g.lowestY) / cellSize;
 
-  const w = (g.highestX - g.lowestX) / cellSize;
-  const h = (g.highestY - g.lowestY) / cellSize;
-  const W = 2 * w + 2;
-  const H = 2 * h + 1;
-
+  const W = 2 * cx(g.highestX) + 2;
+  const H = 2 * cy(g.highestY) + 1;
   const canvas: string[] = new Array(W * H).fill(" ");
   for (let y = 0; y < H; y++) canvas[y * W + W - 1] = "\n";
 
   for (let i = 0; i < g.numEdges; i++) {
-    const e = g.edges[i];
-    const x1 = (e.dot1.x - g.lowestX) / cellSize;
-    const x2 = (e.dot2.x - g.lowestX) / cellSize;
-    const y1 = (e.dot1.y - g.lowestY) / cellSize;
-    const y2 = (e.dot2.y - g.lowestY) / cellSize;
-    // Canvas coordinates are twice cell coordinates, so the midpoint is a sum.
-    const x = x1 + x2;
-    const y = y1 + y2;
-    if (state.lines[i] === LINE_YES) canvas[y * W + x] = y1 === y2 ? "-" : "|";
-    else if (state.lines[i] === LINE_NO) canvas[y * W + x] = "x";
+    const { dot1, dot2 } = g.edges[i];
+    const at = (cy(dot1.y) + cy(dot2.y)) * W + cx(dot1.x) + cx(dot2.x);
+    if (state.lines[i] === LINE_YES) canvas[at] = dot1.y === dot2.y ? "-" : "|";
+    else if (state.lines[i] === LINE_NO) canvas[at] = "x";
   }
 
   for (let i = 0; i < g.numFaces; i++) {
-    const f = g.faces[i];
-    // biome-ignore lint/style/noNonNullAssertion: a square face has all four dots.
-    const x1 = (f.dots[0]!.x - g.lowestX) / cellSize;
-    // biome-ignore lint/style/noNonNullAssertion: ditto.
-    const x2 = (f.dots[2]!.x - g.lowestX) / cellSize;
-    // biome-ignore lint/style/noNonNullAssertion: ditto.
-    const y1 = (f.dots[0]!.y - g.lowestY) / cellSize;
-    // biome-ignore lint/style/noNonNullAssertion: ditto.
-    const y2 = (f.dots[2]!.y - g.lowestY) / cellSize;
-    const clue = state.clues[i];
-    canvas[(y1 + y2) * W + (x1 + x2)] = clue < 0 ? " " : clueChar(clue);
+    const [a, b] = corners(i);
+    const at = (cy(a.y) + cy(b.y)) * W + cx(a.x) + cx(b.x);
+    canvas[at] = state.clues[i] < 0 ? " " : clueChar(state.clues[i]);
   }
 
   return canvas.join("");

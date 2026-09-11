@@ -5,29 +5,22 @@
  * There is **no per-tiling drawing code at all**: faces are never filled,
  * edges are always straight `dot1→dot2` segments, and dots are always
  * circles. Every visible difference between the 18 tilings comes out of
- * `grid.ts`'s geometry, so this file is far smaller than "18 tilings"
- * suggests.
+ * `grid.ts`'s geometry.
  *
- * Two deliberate divergences from the C, both display-only (this project's
- * byte-parity scope covers generator/solver/codec, never rendering):
+ * Two deliberate divergences from the C, both display-only:
  *
- * - **No incremental redraw.** Upstream carries ~200 lines of `edge_bbox` /
- *   `dot_bbox` / `face_text_bbox` / `boxes_intersect` / clip / `draw_update`
- *   machinery to repaint sub-rectangles. Its stated reason is an artifact of
- *   drawing *over* an existing frame — an antialiased diagonal drawn over
- *   itself gets steadily thicker — which cannot happen in a renderer that
- *   clears and repaints. What survives is the part that carries meaning: the
- *   per-edge draw key (`lineErrors[i] ? DS_LINE_ERROR : lines[i]`), the
- *   per-face error/satisfied key, and the five-phase color z-order, which is
- *   a real ordering — mistakes must paint over everything.
+ * - **No incremental redraw.** Upstream carries ~200 lines of bounding-box,
+ *   clip and `draw_update` machinery to repaint sub-rectangles, because an
+ *   antialiased diagonal drawn over itself gets steadily thicker — which cannot
+ *   happen in a renderer that clears and repaints. What survives is the part
+ *   that carries meaning: the per-face error/satisfied key, and the five-phase
+ *   color z-order, which is a real ordering — mistakes must paint over
+ *   everything.
  * - **Whole-pixel coordinates** — see {@link border} and {@link toScreen}.
  *
  * The palette, by contrast, is upstream's exactly, *including* its known
  * misbehavior on a dark background: adapting for that here would fight the
  * app's own dark-mode pipeline. See {@link colors}.
- *
- * `BORDER = DOT_RADIUS` rather than `tilesize / 2` is not a divergence at all:
- * it is the arm this fork's build selects (`NARROW_BORDERS`).
  */
 
 import {
@@ -76,10 +69,6 @@ export interface LoopyRenderUi {
   cursor: LoopyCursor;
 }
 
-/** Per-edge draw key: the line state, or this sentinel when the edge is part
- * of a highlighted error. Mirrors `DS_LINE_ERROR`, one past `LINE_NO`. */
-const DS_LINE_ERROR = 3;
-
 const clamp = (lo: number, v: number, hi: number): number =>
   Math.min(Math.max(lo, v), hi);
 
@@ -95,73 +84,37 @@ const cursorDiscRadius = (tileSize: number): number =>
   clamp(4, 2 * dotRadius(tileSize) + 2, 9);
 
 /**
- * The gutter around the board, in pixels.
+ * The gutter around the board, in pixels: wide enough for the keyboard
+ * cursor's disc on a boundary dot, and for its halo on a boundary edge. The
+ * gutter this fork's parent compiled (`NARROW_BORDERS`: the dot radius alone,
+ * 1–3 px) clipped both.
  *
- * `loopy.c` offers two arms; `puzzles/cmake/platforms/webapp.cmake` defines
- * `NARROW_BORDERS`, so the one this fork compiles is `BORDER = DOT_RADIUS`
- * (1–3 px) rather than `tilesize / 2` (16 px at the preferred tile size).
- * That is a very visible difference, so it was checked rather than assumed.
- *
- * Rounded **up** to a whole pixel, which the C does not do: it uses the raw
- * float in `game_compute_size` but truncates it in `grid_to_screen`, so a
- * boundary dot of radius 2.5 sits in a 2 px gutter and loses half a pixel.
- * A whole-pixel border keeps every coordinate integral (the pixel-center
- * convention `Drawing` expects) and gives the dot exactly the room it needs.
+ * Rounded **up** to a whole pixel, which the C does not do: a whole-pixel
+ * border keeps every coordinate integral (the pixel-center convention
+ * `Drawing` expects).
  */
 export function border(tileSize: number): number {
-  // Wide enough for the keyboard cursor's disc on a boundary dot, and for its
-  // halo on a boundary edge — the dot radius alone (1–3 px) clipped both.
   return Math.ceil(Math.max(dotRadius(tileSize), cursorDiscRadius(tileSize)));
 }
 
 export interface LoopyDrawState {
-  started: boolean;
   tileSize: number;
-  flashing: boolean;
-  /** Cached **screen** position of each face's clue, `-1` when not yet
-   * computed. Invalidated by {@link setTileSize}. */
-  textx: Int32Array;
-  texty: Int32Array;
-  /** Per-edge draw key (a `LineState`, or {@link DS_LINE_ERROR}). */
-  lines: Uint8Array;
   /** Per-face clue coloring keys, as booleans in a byte array. */
   clueError: Uint8Array;
   clueSatisfied: Uint8Array;
 }
 
 export function newDrawState(s: LoopyState): LoopyDrawState {
-  const { numFaces, numEdges } = s.grid;
-  const lines = new Uint8Array(numEdges);
-  lines.fill(LINE_UNKNOWN);
+  const { numFaces } = s.grid;
   return {
-    started: false,
     tileSize: PREFERRED_TILE_SIZE,
-    flashing: false,
-    textx: new Int32Array(numFaces).fill(-1),
-    texty: new Int32Array(numFaces).fill(-1),
-    lines,
     clueError: new Uint8Array(numFaces),
     clueSatisfied: new Uint8Array(numFaces),
   };
 }
 
-/**
- * Adopt a new tile size, **discarding the clue-position cache**.
- *
- * Upstream never invalidates it, because its frontends call `game_set_size`
- * once before the first redraw. This project's `ResizeController` calls
- * `size()` on every layout perturbation, so a surviving cache would draw every
- * clue at its pre-resize position — the same class of stale-cache bug that
- * cost Flip three iterations (`fix-flip-canvas-reshape`).
- *
- * Only the *screen projection* is stale: the incenter itself is a property of
- * the face's shape, is tile-size-independent, and stays cached on the face by
- * `grid.ts`.
- */
 export function setTileSize(ds: LoopyDrawState, tileSize: number): void {
   ds.tileSize = tileSize;
-  ds.textx.fill(-1);
-  ds.texty.fill(-1);
 }
 
 export function computeSize(p: LoopyParams, tileSize: number): Size {
@@ -172,8 +125,8 @@ export function computeSize(p: LoopyParams, tileSize: number): Size {
  * The canvas a `type`/`w`/`h` board is given, from the tiling's **nominal**
  * extent. {@link redraw} paints its background to exactly this, not to the
  * built grid's own extent: an aperiodic patch is trimmed and can come out
- * narrower than nominal, and the difference is otherwise never painted — it
- * showed as a black strip down the right of a Hats board.
+ * narrower than nominal, and the difference would otherwise go unpainted (a
+ * black strip down the right of a Hats board).
  */
 function canvasSize(type: GridType, w: number, h: number, tileSize: number): Size {
   const g = gridComputeSize(type, w, h);
@@ -190,22 +143,16 @@ function canvasSize(type: GridType, w: number, h: number, tileSize: number): Siz
  * The palette, index-for-index with the `loopy.c` color enum. Every value is
  * a shared role: the undecided and ruled-out edges are `lineMaybeColor` and
  * `lineNoColor`, which Palisade and Separate draw with too, and the board
- * itself is whatever `resolvePalette` hands every game — upstream's
- * `frontend_default_colour` taken raw, which is why Loopy's dark board once
- * differed from Palisade's, is no longer a choice a game makes.
+ * itself is whatever `resolvePalette` hands every game.
  *
  * `COL_FAINT` and `COL_LINEUNKNOWN` derive from the background by moving
- * *towards black*. Upstream flags that this fails on a dark host and declines
- * to fix it (`loopy.c:1046-1049`: *"Except if the background is pretty dark
- * already; then it ought to be a bit lighter. Oy vey."*). **Do not adapt for it
- * here**: `colors()` never sees a dark background — `puzzle-view.ts` hands the
- * engine pure white in dark mode and adapts the returned palette in OKLCH — and
- * the two roles carry their own authored dark values, so the "oy vey" case is
- * answered in the palette, once, for all three games
- * (docs/games/rendering.md § "Dark mode is the app's concern").
- *
- * (`COL_LINEUNKNOWN`'s blue component is zeroed rather than scaled, which is
- * what makes it a yellow rather than a gray.)
+ * *towards black*, which upstream concedes fails on a dark host (`loopy.c`:
+ * *"Except if the background is pretty dark already; then it ought to be a bit
+ * lighter. Oy vey."*). **Do not adapt for it here**: `colors()` never sees a
+ * dark background — `components/view.ts` hands the engine pure white in dark
+ * mode and adapts the returned palette in OKLCH — and the two roles carry their
+ * own authored dark values (docs/games/rendering.md § "Dark mode is the app's
+ * concern").
  */
 export function colors(defaultBackground: Color): Color[] {
   const out: Color[] = [];
@@ -215,8 +162,8 @@ export function colors(defaultBackground: Color): Color[] {
   out[COL_HIGHLIGHT] = FLASH;
   out[COL_MISTAKE] = ERROR;
   // A deliberate, player-visible aid: upstream drew a satisfied clue in the
-  // same black as an open one, so the slot's distinction never reached the
-  // screen. Graying it back retires the clue the way Magnets and Towers do.
+  // same black as an open one. Graying it retires the clue the way Magnets and
+  // Towers do.
   out[COL_SATISFIED] = clueDoneColor(defaultBackground);
   out[COL_FAINT] = lineNoColor(defaultBackground);
   out[COL_CURSOR] = CURSOR;
@@ -243,18 +190,6 @@ function toScreen(g: Grid, tileSize: number, gx: number, gy: number): [number, n
   ];
 }
 
-/** The clue's screen position, computed once per face per tile size. */
-function faceTextPos(ds: LoopyDrawState, g: Grid, faceIndex: number): [number, number] {
-  if (ds.textx[faceIndex] < 0) {
-    const f = g.faces[faceIndex];
-    gridFindIncenter(f);
-    const [x, y] = toScreen(g, ds.tileSize, f.ix, f.iy);
-    ds.textx[faceIndex] = x;
-    ds.texty[faceIndex] = y;
-  }
-  return [ds.textx[faceIndex], ds.texty[faceIndex]];
-}
-
 /** The color phases, in z-order: mistakes paint over everything. */
 const PHASES = [
   COL_FAINT,
@@ -264,11 +199,11 @@ const PHASES = [
   COL_MISTAKE,
 ] as const;
 
-/** The color an edge draws in, from its draw key. */
-function lineColor(key: number, flashing: boolean): number {
-  if (key === DS_LINE_ERROR) return COL_MISTAKE;
-  if (key === LINE_UNKNOWN) return COL_LINEUNKNOWN;
-  if (key === LINE_NO) return COL_FAINT;
+/** The color edge `i` draws in: an error highlight overrides its line state. */
+function lineColor(s: LoopyState, i: number, flashing: boolean): number {
+  if (s.lineErrors[i]) return COL_MISTAKE;
+  if (s.lines[i] === LINE_UNKNOWN) return COL_LINEUNKNOWN;
+  if (s.lines[i] === LINE_NO) return COL_FAINT;
   return flashing ? COL_HIGHLIGHT : COL_FOREGROUND;
 }
 
@@ -306,25 +241,20 @@ export function redraw(
   }
 
   // The completion flash is three visible segments over FLASH_TIME.
-  ds.flashing =
+  const flashing =
     flashTime > 0 && (flashTime <= FLASH_TIME / 3 || flashTime >= (FLASH_TIME * 2) / 3);
 
   // Bucket the edges by color once, rather than upstream's scan-per-phase.
   const buckets = new Map<number, number[]>(PHASES.map((c) => [c, []]));
-  for (let i = 0; i < g.numEdges; i++) {
-    const key = s.lineErrors[i] ? DS_LINE_ERROR : s.lines[i];
-    ds.lines[i] = key;
-    buckets.get(lineColor(key, ds.flashing))?.push(i);
-  }
+  for (let i = 0; i < g.numEdges; i++) buckets.get(lineColor(s, i, flashing))?.push(i);
 
   // The whole canvas, from the nominal extent — not the built grid's, which a
   // trimmed aperiodic patch undershoots (see `canvasSize`).
   const { w, h } = canvasSize(LOOPY_GRIDS[s.gridType].type, s.w, s.h, ts);
 
-  // The game paints its own background; the engine emits no pixels of its own
-  // (`fix-flip-canvas-reshape`). Every frame is a full repaint, so this both
-  // establishes the background on the first draw and erases the previous frame
-  // on every later one.
+  // The game paints its own background; the engine emits no pixels of its own.
+  // Every frame is a full repaint, so this both establishes the background on
+  // the first draw and erases the previous frame on every later one.
   dr.drawRect({ x: 0, y: 0, w, h }, COL_BACKGROUND);
 
   // The keyboard cursor, drawn from grid geometry like everything else, so it
@@ -349,7 +279,9 @@ export function redraw(
   for (let i = 0; i < g.numFaces; i++) {
     const n = s.clues[i];
     if (n < 0) continue;
-    const [x, y] = faceTextPos(ds, g, i);
+    const f = g.faces[i];
+    gridFindIncenter(f);
+    const [x, y] = toScreen(g, ts, f.ix, f.iy);
     dr.drawText(
       { x, y },
       {
@@ -392,5 +324,4 @@ export function redraw(
   }
 
   dr.drawUpdate({ x: 0, y: 0, w, h });
-  ds.started = true;
 }

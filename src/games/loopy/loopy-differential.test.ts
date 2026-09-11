@@ -10,15 +10,12 @@
  * off-by-one in the run-length clue encoding, and the description differs.
  * Nothing else available is as strong.
  *
- * It is also this change's first real exercise of `extend-grid-tilings` and
- * `add-aperiodic-tilings`, which shipped with no user-visible surface and were
- * accepted on the explicit basis that Loopy would be their first acceptance
- * test. Hence the matrix is skewed to **breadth**: all 18 grid types appear.
+ * The matrix is skewed to **breadth** — all 18 grid types appear — so every
+ * tiling's geometry is exercised end to end, through generator and solver.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/loopy-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: it was captured from
+ * upstream's C by a harness that no longer exists — see
+ * `engine/testing/differential.ts`.
  *
  * **What this cannot cover**, and where to look instead: the C *aborts* on a
  * degenerate Penrose patch and *hangs* on an unfavorable one, so no fixture

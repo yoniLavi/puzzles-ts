@@ -62,17 +62,12 @@ function addFullClues(state: LoopyState, rng: RandomState): void {
  *
  * Mutates `state.clues` in place. Upstream clones the whole game state around
  * each attempt and restores the clone on failure; since only the clue array can
- * change, restoring the single clue is exactly equivalent — and `solveGame`
- * works on its own copy, so nothing else observes the intermediate boards.
+ * change, restoring the single clue is exactly equivalent.
  */
 function removeClues(state: LoopyState, rng: RandomState, diff: number): void {
-  const numFaces = state.grid.numFaces;
-  const faceList: number[] = [];
-  for (let n = 0; n < numFaces; n++) faceList.push(n);
-  shuffle(faceList, rng);
-
-  for (let n = 0; n < numFaces; n++) {
-    const face = faceList[n];
+  const faces = Array.from({ length: state.grid.numFaces }, (_, i) => i);
+  shuffle(faces, rng);
+  for (const face of faces) {
     const old = state.clues[face];
     state.clues[face] = NO_CLUE;
     if (!gameHasUniqueSoln(state, diff)) state.clues[face] = old;
@@ -85,8 +80,8 @@ function removeClues(state: LoopyState, rng: RandomState, diff: number): void {
  * **Two nested retry loops, and the nesting order is not negotiable.**
  *
  * - The **outer** loop draws a grid description and builds the grid, retrying
- *   when an aperiodic patch trims away to nothing. That recovery is new (see
- *   `grid-build.ts`); upstream has no equivalent because it aborts instead.
+ *   when an aperiodic patch trims away to nothing. That recovery is this port's
+ *   own (see `grid-build.ts`): upstream aborts instead.
  * - The **inner** loop is upstream's `goto newboard_please`: it re-draws the
  *   loop and its clues over the **already-built grid** until the result is
  *   uniquely solvable at the requested difficulty and *not* solvable one
@@ -129,7 +124,7 @@ export function newDesc(p: LoopyParams, rng: RandomState): { desc: string } {
       w: p.w,
       h: p.h,
       clues: new Int8Array(grid.numFaces),
-      lines: new Uint8Array(grid.numEdges),
+      lines: new Uint8Array(grid.numEdges).fill(LINE_UNKNOWN),
       lineErrors: new Uint8Array(grid.numEdges),
       exactlyOneLoop: false,
       completed: false,
@@ -151,16 +146,12 @@ export function newDesc(p: LoopyParams, rng: RandomState): { desc: string } {
 
 /** Upstream's `newboard_please` loop: draw a loop and its clues over an
  * already-built grid until the result is uniquely solvable at this difficulty
- * and not solvable one rung easier. Mutates `state`. */
+ * and not solvable one rung easier. Only `state.clues` changes from attempt to
+ * attempt, because the solver works on its own copy of the board. */
 function generateOnGrid(state: LoopyState, p: LoopyParams, rng: RandomState): void {
   const board = retryLimit("loopy: board generation");
   for (;;) {
     board();
-    state.lines.fill(LINE_UNKNOWN);
-    state.lineErrors.fill(0);
-    state.exactlyOneLoop = false;
-    state.completed = false;
-    state.cheated = false;
 
     // A fully-clued board is always solvable in principle, but not necessarily
     // *uniquely* at this difficulty — so keep drawing loops until one is.

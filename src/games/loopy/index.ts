@@ -5,24 +5,21 @@
  * Draw a single closed loop along the grid's edges so that every numbered face
  * is bordered by exactly that many loop segments. Playable on **all eighteen**
  * tilings `grid.ts` provides, from squares to Penrose patches, hats and
- * spectres — and the renderer has no per-tiling code at all, because every
- * geometric difference comes out of `grid.ts`.
+ * spectres.
  *
  * **Two ways to reach an edge, one way to set it.** A pointer reaches an edge
  * by `gridNearestEdge`; the keyboard walks the cursor along one (a plain arrow)
- * or aims at one without moving (Shift+arrow) — `cursor.ts`. Both then go through {@link setEdge}, so a
- * keyboard selection *is* the click on that edge — autofollow included — rather
- * than a second input model beside it. Left / Enter cycles an edge towards
- * YES, right / Space towards NO, middle / Backspace clears. Loopy does
- * genuinely read `MOD_STYLUS`, and `wantsStylusModifier` is set for it — see
- * {@link nextLineState}; the keyboard has two keys and needs no such cycle.
+ * or aims at one without moving (Shift+arrow) — `cursor.ts`. Both then go
+ * through {@link setEdge}, so a keyboard selection *is* the click on that edge,
+ * autofollow included, rather than a second input model beside it. Left / Enter
+ * cycles an edge towards YES, right / Space towards NO, middle / Backspace
+ * clears. Loopy genuinely reads `MOD_STYLUS` — see {@link nextLineState}.
  *
  * Upstream gives Loopy no keyboard at all (`loopy.c` has no `CURSOR_`
  * reference), so the keyboard here is this fork's design, not a port.
  *
- * The port is split across `params.ts`, `state.ts`, `dlines.ts`, `solver.ts`,
- * `generator.ts`, `grid-build.ts`, `cursor.ts` and `render.ts`; this file is
- * the `Game` glue plus input handling.
+ * This file is the `Game` glue plus input handling; the rest of the port lives
+ * beside it.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -30,7 +27,6 @@ import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
-  type GameDrawing,
   type GamePref,
   type SolveResult,
   UI_UPDATE,
@@ -105,10 +101,10 @@ export interface LoopyOp {
   state: LineState;
 }
 
-/** A player move (or the Solve action, which additionally marks the game as
- * solved with help). Upstream encodes these as a string that `execute_move`
- * re-parses; the string was a C program's only way to express a variant, not
- * part of the game's meaning, and the save format is ours. */
+/** A player move, or the Solve action, which also marks the game as solved with
+ * help. Upstream encodes these as a string that `execute_move` re-parses; that
+ * was a C program's only way to express a variant, and the save format is
+ * ours. */
 export type LoopyMove =
   | { kind: "set"; ops: readonly LoopyOp[] }
   | { kind: "solve"; ops: readonly LoopyOp[] };
@@ -128,9 +124,9 @@ export interface LoopyUi {
 }
 
 function newUi(state: LoopyState): LoopyUi {
-  // Upstream also consults `LOOPY_FAINT_LINES` / `LOOPY_AUTOFOLLOW` environment
-  // variables here (`legacy_prefs_override`), a pre-preferences-dialog relic
-  // with no meaning in a browser. Dropped; the prefs below are the whole story.
+  // Upstream also reads `LOOPY_FAINT_LINES` / `LOOPY_AUTOFOLLOW` environment
+  // variables here, a pre-preferences relic with no meaning in a browser; the
+  // prefs below are the whole story.
   return {
     drawFaintLines: true,
     autofollow: AF_OFF,
@@ -161,22 +157,17 @@ const prefs: GamePref<LoopyUi>[] = [
 ];
 
 /**
- * What clicking `button` does to an edge currently in state `old`.
+ * What clicking `button` does to an edge currently in state `old`, or `null`
+ * when the button does nothing here.
  *
  * With a mouse each button is a **2-state toggle** between its own state and
  * UNKNOWN: left flips YES on and off, right flips NO on and off, middle always
  * clears. With a **stylus** there is no right button to reach the other state
  * with, so each button becomes a **3-cycle** and a single tap can reach every
  * state — left goes `UNKNOWN → YES → NO → UNKNOWN`, right goes
- * `UNKNOWN → NO → YES → UNKNOWN`.
- *
- * That asymmetry is the whole reason for the two deliberate `switch`
- * fallthroughs in upstream's `interpret_move`; without knowing about stylus
- * mode it reads as a bug and invites "fixing". TypeScript forbids the
- * transliteration anyway (`noFallthroughCasesInSwitch`), and the explicit table
- * is clearer than the C.
- *
- * Returns `null` when the button does nothing here.
+ * `UNKNOWN → NO → YES → UNKNOWN`. Those are the two deliberate `switch`
+ * fallthroughs in upstream's `interpret_move`, which read as a bug to anyone
+ * not thinking of stylus mode.
  */
 export function nextLineState(
   button: number,
@@ -212,13 +203,9 @@ export function nextLineState(
  * NO edges would be self-defeating. The walk continues only while exactly one
  * candidate exists and it currently matches the clicked edge's old state.
  *
- * Accumulating into a `Set` replaces upstream's `goto autofollow_done`, whose
- * label sits at the end of the *inner* loop and therefore breaks only that
- * loop, contradicting its own comment about needing to terminate both. The
- * difference is immaterial to the resulting board — tracing a closed loop from
- * the second end merely revisits the same edges, and ops are absolute sets — so
- * this is a tidy-up, not a behavior change. `loopy.test.ts` pins the
- * closed-loop case specifically.
+ * Returning on coming full circle replaces upstream's `goto autofollow_done`,
+ * which breaks only the inner loop, so its second end retraces the same edges.
+ * Ops are absolute sets, so the board is the same either way.
  */
 export function autofollowEdges(
   state: LoopyState,
@@ -391,9 +378,9 @@ function moveCursorAlong(cursor: LoopyCursor, from: GridDot, e: GridEdge): void 
 }
 
 function executeMove(state: LoopyState, move: LoopyMove): LoopyState {
-  // Both arms carry the same op list and differ only in whether the fill counts
-  // as a cheat, so nothing below would notice an unknown kind — hence the
-  // up-front check rather than a `default` on a dispatch that does not exist.
+  // Both kinds carry the same op list, so nothing below would notice an unknown
+  // one: hence the up-front check rather than a `default` on a dispatch that
+  // does not exist.
   if (move.kind !== "set" && move.kind !== "solve") {
     return assertNever(move, "loopy: executeMove");
   }
@@ -469,10 +456,8 @@ export const loopyGame: Game<
   validateParams,
   paramConfig,
 
-  // The type-summary formatter for a custom (non-preset) game keys off the
-  // same config names the C's `game_configure` used, and the worker adapter
-  // supplies only `width`/`height` on its own. Values must be the numeric
-  // choice indices, not their rendered names — the formatter does the lookup.
+  // The names Loopy's type-summary formatter (`augmentation.ts`) reads, with
+  // choices as numeric indices: the formatter does the lookup.
   describeParams: (p) => ({
     width: p.w,
     height: p.h,
@@ -499,16 +484,7 @@ export const loopyGame: Game<
   computeSize,
   setTileSize,
   newDrawState,
-  redraw: (
-    dr: GameDrawing,
-    ds: LoopyDrawState,
-    prev: LoopyState | null,
-    s: LoopyState,
-    dir: number,
-    ui: LoopyUi,
-    animTime: number,
-    flashTime: number,
-  ) => redraw(dr, ds, prev, s, dir, ui, animTime, flashTime),
+  redraw,
   flashLength: (a, b) => winFlash(a, b, FLASH_TIME),
 };
 

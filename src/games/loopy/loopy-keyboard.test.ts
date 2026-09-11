@@ -1,12 +1,10 @@
 /**
- * Loopy's keyboard — the one game of fifty-seven that had none.
+ * Loopy's keyboard, which upstream does not have. Three kinds of guarantee:
  *
- * Three kinds of guarantee, in the order they were written:
- *
- * 1. **A coverage proof over all 23 presets** (`add-loopy-keyboard-control`
- *    design D5). A plain arrow *walks* the cursor along an edge, which becomes
- *    the chosen one, so an edge no walk ever takes is unselectable; Shift+arrow
- *    *aims* without moving, as the fallback. The claim is that the walk alone
+ * 1. **A coverage proof over all 23 presets.** A plain arrow *walks* the
+ *    cursor along an edge, which becomes the chosen one, so an edge no walk
+ *    ever takes is unselectable; Shift+arrow *aims* without moving, as the
+ *    fallback. The claim is that the walk alone
  *    covers every edge of 22 presets and walk plus aim covers the 23rd
  *    (Penrose kite/dart), and that is walked mechanically here per tiling
  *    rather than argued — the triangular case exhibits the tie the opposite-

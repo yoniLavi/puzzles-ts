@@ -51,23 +51,20 @@ const squareParams = (w = 4, h = 4, diff = DIFF_EASY) => ({ w, h, diff, type: 0 
 
 /** A blank state over a freshly built grid, with no clues. */
 function blankState(w = 4, h = 4, type = 0): LoopyState {
-  const p = { w, h, diff: DIFF_EASY, type };
   const { desc, grid } = buildLoopyGrid(
     LOOPY_GRIDS[type].type,
     w,
     h,
     randomNew("blank"),
   );
-  const lines = new Uint8Array(grid.numEdges);
-  lines.fill(LINE_UNKNOWN);
   return {
     grid,
     gridDesc: desc,
     gridType: type,
-    w: p.w,
-    h: p.h,
+    w,
+    h,
     clues: new Int8Array(grid.numFaces).fill(NO_CLUE),
-    lines,
+    lines: new Uint8Array(grid.numEdges).fill(LINE_UNKNOWN),
     lineErrors: new Uint8Array(grid.numEdges),
     exactlyOneLoop: false,
     completed: false,

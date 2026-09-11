@@ -22,11 +22,11 @@
  * carries a `(thresholdDiff, thresholdIndex)` pair that the shared runner has
  * no notion of. Each rung returns the *lowest* rung that could notice what it
  * just did (or `DIFF_MAX` for "no progress"), and the loop uses that to skip
- * re-running cheap rungs that provably cannot use the new information. That
- * started life as a speed optimization, but because the generator is
- * solver-gated it is **load-bearing for which puzzles exist**: a solver that
- * explores in a different order accepts a different set of boards. So the loop
- * is ported exactly rather than adapted to the shared shape.
+ * re-running cheap rungs that provably cannot use the new information. That is
+ * a speed optimization, but because the generator is solver-gated it is
+ * **load-bearing for which puzzles exist**: a solver that explores in a
+ * different order accepts a different set of boards. So the loop is ported
+ * exactly rather than adapted to the shared shape.
  */
 import { Dsf, FlipDsf } from "../../engine/dsf.ts";
 import type { Grid, GridEdge } from "../../engine/grid/index.ts";
@@ -58,7 +58,7 @@ export type SolverStatus = "solved" | "mistake" | "ambiguous" | "incomplete";
  * Two upstream allocations are legitimately **absent at low difficulties** —
  * `dlines` only exists from Normal, `linedsf` only from Hard — so they are
  * typed `| null` and the compiler enforces the difficulty guards that upstream
- * can only maintain by discipline. That is a real safety win the C cannot have.
+ * can only maintain by discipline.
  */
 export class SolverState {
   readonly state: LoopyState;
@@ -85,14 +85,9 @@ export class SolverState {
 
   /**
    * Scratch for `dlineDeductions`' per-face `maxs`/`mins` interval matrices,
-   * allocated once and reused for every face.
-   *
-   * Upstream declares these as `int[MAX_FACE_SIZE][MAX_FACE_SIZE]` stack arrays
-   * and asserts `N <= MAX_FACE_SIZE`, where `MAX_FACE_SIZE` is 14 — a bound
-   * that exists purely so the arrays can live on the stack, and which is
-   * *tight*, chosen to accommodate the 14-edged Hat and Spectre faces. In TS
-   * the constant evaporates: size the buffer from the grid's actual maximum
-   * face order and the limit is whatever the grid really contains.
+   * allocated once and reused for every face. Upstream's are stack arrays
+   * bounded by `MAX_FACE_SIZE` (14, just enough for the Hat and Spectre
+   * faces); these are sized from the grid's actual largest face order.
    */
   readonly maxs: Int32Array;
   readonly mins: Int32Array;
@@ -282,23 +277,19 @@ function findConstrainedUnknownPair(
   ss: SolverState,
   faceIndex: number,
 ): { e1: number; e2: number } | null {
-  const g = ss.grid;
   const s = ss.state;
-  const f = g.faces[faceIndex];
+  const f = ss.grid.faces[faceIndex];
 
   for (let j = 0; j < f.order; j++) {
-    const edgeA = f.edges[j];
-    const edgeB = f.edges[j + 1 < f.order ? j + 1 : 0];
-    if (edgeA === null || edgeB === null) continue;
-    const e1 = edgeA.index;
-    const e2 = edgeB.index;
+    const a = f.edges[j];
+    const b = f.edges[j + 1 < f.order ? j + 1 : 0];
+    if (a === null || b === null) continue;
+    const e1 = a.index;
+    const e2 = b.index;
     if (s.lines[e1] !== LINE_UNKNOWN || s.lines[e2] !== LINE_UNKNOWN) continue;
 
     // The two edges are consecutive around the face, so they share a dot.
-    const a = g.edges[e1];
-    const b = g.edges[e2];
-    const shared = a.dot1 === b.dot1 || a.dot1 === b.dot2 ? a.dot1 : a.dot2;
-    const d = g.dots[shared.index];
+    const d = a.dot1 === b.dot1 || a.dot1 === b.dot2 ? a.dot1 : a.dot2;
     for (let k = 0; k < d.order; k++) {
       if (s.lines[d.edges[k].index] === LINE_YES) return { e1, e2 };
     }
@@ -696,29 +687,24 @@ function dlineDeductions(ss: SolverState): number {
  * Set every pair of provably-identical UNKNOWN lines around a face to
  * `lineNew`.
  *
- * **This function always returns `false`, even when it changed the board — and
- * that is deliberate.** Upstream initializes `retval = false` and never
- * reassigns it, so the caller is told "no progress" whenever this fires. Do not
- * "fix" it: a linter's *value is never reassigned* hint points at exactly the
- * wrong cleanup here.
+ * **This always returns `false`, even when it changed the board, and that is
+ * deliberate.** Upstream initializes `retval = false` and never reassigns it,
+ * so the caller is told "no progress" whenever this fires.
  *
- * The deduction it makes is *sound* (two lines known identical, with room for
- * only one more YES between them, must both be NO), so it never writes a wrong
- * line. What the lost return value costs is *strength*: the missing progress
- * report is only sometimes masked by the edge-dsf propagation loop that follows
- * it. When the flip-dsf canonical happens to be one of the two edges just set,
+ * The deduction is *sound* (two lines known identical, with room for only one
+ * more YES between them, must both be NO); what the lost return value costs is
+ * *strength*. The edge-dsf propagation that follows only sometimes masks it:
+ * when the flip-dsf canonical is one of the two edges just set,
  * `linedsfDeductions` returns `DIFF_MAX` **despite having mutated the board**,
- * so `solveGameRec` does not reset to rung 0 and never re-runs
- * `trivialDeductions` over the lines just written — and can exit
- * `incomplete` early.
+ * so {@link solveGame} does not restart at rung 0 over the lines just written,
+ * and can exit `incomplete` early.
  *
- * The solver is therefore strictly weaker than its author intended, and **that
- * weakness is baked into which puzzles upstream generates**: `gameHasUniqueSoln`
- * gates every clue removal, the board-retry loop and the too-easy rejection.
- * Repairing it would produce different, generally sparser puzzles from the same
- * seed, and would break every seed-level differential. It is the difficulty
- * curve upstream ships, not a player-visible defect — so it is preserved, and
- * `solver.test.ts` asserts it returns `false` *even when it mutates*.
+ * **That weakness is baked into which puzzles upstream generates**, because the
+ * generator is solver-gated: repairing it would produce different, generally
+ * sparser puzzles from the same seed and break the differential. It is the
+ * difficulty curve upstream ships, not a player-visible defect, so it is
+ * preserved, and `loopy.test.ts` asserts it returns `false` *even when it
+ * mutates*.
  */
 function faceSetallIdentical(
   ss: SolverState,
@@ -778,28 +764,18 @@ function findUnknowns(
  * UNKNOWNs left, relate or force them. Returns the lowest rung that could
  * notice the result, or `DIFF_MAX` for no progress.
  *
- * **`totalParity` is a `number`, not a boolean, and the truthiness test is
- * deliberate.** The face caller passes `(clue - yes) % 2`, which is *negative*
- * when `clue < yes`; C's truncating `%` yields `-1`, which is truthy, so the
- * XOR always produces `LINE_YES` on that path. TypeScript's `%` truncates
- * identically, so the literal port and the idiomatic port are the same code —
- * the only trap is applying the hygiene fix `((x % 2) + 2) % 2`, which would
- * change the behavior. Hence: keep the `number`, keep the truthiness test, and
- * do not normalize.
+ * **`totalParity` is used raw, never normalized to 0/1.** The face caller
+ * passes `(clue - yes) % 2`, which is `-1` when `clue < yes` — truthy, since
+ * TypeScript's `%` truncates exactly like C's — so the XOR always produces
+ * `LINE_YES` on that path (`-1 ^ 1` is -2 and truthy, where `1 ^ 1` is 0). The
+ * hygiene fix `((x % 2) + 2) % 2` would change the deduction there.
  *
- * That path is in fact **unreachable on any board this game constructs**.
- * `clue < yes` means a face already has more YES edges than its clue allows —
- * an already-contradictory board. `trivialDeductions` detects exactly that
- * condition and returns `mistake`; it is rung 0 at Easy so it always runs
- * first, and any progress by any rung restarts the ladder and forces it to
- * re-verify. Every deduction here is sound, so on a board admitting at least
- * one solution no face can ever exceed its clue. The generator cannot produce
- * such a board (clues are derived from a real loop, and clue removal only ever
- * erases) and gameplay cannot either (`solve` builds its solver state from the
- * *pristine* puzzle, not the player's board). The only door is a hand-typed
- * malformed game ID, where these deductions are transient garbage on a board
- * already heading for `mistake`. A real latent bug, then — but dead code, and
- * preserving it costs nothing.
+ * That path is **unreachable on any board this game constructs**: `clue < yes`
+ * means a face already exceeds its clue, which `trivialDeductions` (rung 0,
+ * re-run after any progress) reports as `mistake` first, and every deduction
+ * is sound, so no face exceeds its clue on a board that has a solution. Only a
+ * hand-typed malformed game ID reaches it, on a board already heading for
+ * `mistake`.
  */
 function parityDeductions(
   ss: SolverState,
@@ -811,10 +787,6 @@ function parityDeductions(
   const linedsf = ss.linedsf;
   if (linedsf === null) return DIFF_MAX;
   let diff = DIFF_MAX;
-  // NOTE: `totalParity` is used **raw** below, never normalized to 0/1. See the
-  // doc comment: a negative value is truthy and XORs exactly as C's does, and
-  // normalizing it would silently change the deduction on that path (e.g.
-  // `-1 ^ 1` is -2 and truthy, where `1 ^ 1` is 0 and falsy).
 
   if (unknownCount === 2) {
     // The two are alike or opposite, depending on the parity.
@@ -1070,14 +1042,10 @@ const RUNGS: readonly { fn: (ss: SolverState) => number; diff: number }[] = [
 ];
 
 /**
- * Run the rungs to a fixpoint over a copy of `state`, capped at `diff`.
- *
- * Merges upstream's `new_solver_state` + `dup_solver_state` + `solve_game_rec`
- * into one entry point. The dup is upstream's defensive copy at the top of
- * `solve_game_rec`, preserving "solving does not mutate the caller's state" —
- * but every caller hands it a freshly built solver state, and the constructor
- * already clones the game state, so building the working state here is exactly
- * equivalent and there is nothing left to free.
+ * Run the rungs to a fixpoint over a copy of `state`, capped at `diff`:
+ * upstream's `new_solver_state` + `dup_solver_state` + `solve_game_rec` in one
+ * entry point. The constructor clones the game state, which is all the dup
+ * was for.
  *
  * The `(thresholdDiff, thresholdIndex)` pair is the speed optimization
  * described in the module doc: a rung earlier in the list than `thresholdIndex`
@@ -1137,6 +1105,6 @@ export function gameHasUniqueSoln(state: LoopyState, diff: number): boolean {
   return ss.status === "solved";
 }
 
-/** Exposed for `solver.test.ts` only — see {@link faceSetallIdentical}'s doc for
+/** Exposed for `loopy.test.ts` only — see {@link faceSetallIdentical}'s doc for
  * why its return value is asserted rather than trusted. */
-export const _internals = { faceSetallIdentical, solverSetLine, parityDeductions };
+export const _internals = { faceSetallIdentical };

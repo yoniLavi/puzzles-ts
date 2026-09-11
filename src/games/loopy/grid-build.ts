@@ -4,48 +4,31 @@
  * **The degenerate-patch problem.** A small Penrose patch can come out
  * *empty*: the seed triangle lands outside the bounding box, so the trimming
  * BFS never runs and every face is discarded. Upstream then aborts inside
- * `dsf_new(0)` — and this is reachable from Loopy's own Custom dialog, because
- * `loopy.c` accepts 3×3 for both Penrose variants. `grid.ts` raises
- * {@link GridTrimmedAwayError} rather than aborting, and this module decides
- * what Loopy does with it.
+ * `dsf_new(0)` — reachable from its own Custom dialog, because `loopy.c`
+ * accepts 3×3 for both Penrose variants. `grid.ts` raises
+ * {@link GridTrimmedAwayError} instead, and this module decides what Loopy
+ * does with it.
  *
- * **Decision (change design D1): catch it and retry with a fresh description,
- * bounded by `retryLimit`. Do not raise the minimum sizes.** The failure is
- * *per seed*, not per size — the same `(type, w, h)` succeeds or fails
- * depending on the draw — so raising the minima would forbid sizes that work
- * for the great majority of seeds, and would still not prove some larger size
- * can never fail. Retrying costs one extra draw on the rare bad seed and
- * nothing on the rest.
+ * **Catch it and retry with a fresh description, bounded; do not raise the
+ * minimum sizes.** The failure is *per seed*, not per size — the same
+ * `(type, w, h)` succeeds or fails depending on the draw — so raising the
+ * minima would forbid sizes that work for most seeds, and would still not
+ * prove some larger size can never fail. Retrying costs one extra draw on a bad
+ * seed and nothing on the rest.
  *
- * Three properties worth being explicit about:
- *
- * - **It diverges from the C only where the C has no defined behavior.** C
- *   aborts on precisely the seeds we retry, so byte-agreement is preserved on
- *   every input where the C produces any output at all.
- * - **Determinism is preserved.** The retry draws from the same RNG stream, so
- *   a given seed yields the same sequence of attempts every run, and a
+ * - **It diverges from the C only where the C has no defined behavior**: C
+ *   aborts on precisely the seeds we retry.
+ * - **Determinism is preserved**: the retry draws from the same RNG stream, so a
  *   `params#seed` game ID still reproduces its board.
- * - **Exhaustion throws.** The bound exists to catch a porting divergence (a
- *   generator that *never* succeeds), not to paper over one — so it raises
- *   `RetryLimitExceeded` rather than returning a fallback board, and no seed
- *   that used to converge can quietly start producing a different desc.
+ * - **Exhaustion throws** `RetryLimitExceeded` rather than returning a fallback
+ *   board: the bound exists to catch a generator that *never* succeeds, not to
+ *   paper over one.
  *
- * The catch is on the *error*, not on the tiling: any aperiodic generator
- * could in principle produce a degenerate patch, and a "is this Penrose?"
- * predicate would need revisiting the first time one did.
+ * The catch is on the *error*, not on the tiling, so it covers any aperiodic
+ * generator that produces a degenerate patch, not only Penrose.
  *
- * **A measurement that refined the original decision.** D1 assumed every
- * degenerate patch is seed-dependent. Surveying 200 descriptions per
- * configuration across all four aperiodic tilings (sizes from each type's
- * minimum up to minimum + 5) found that almost true — success rates run from
- * ~20% to ~98% and retrying always converges — with exactly one exception:
- * **Penrose kite/dart at width 3 never succeeds, at any height** (0/200 for
- * each of 3×3 … 3×8). Note it is specifically the *width*: 4×3 … 8×3 succeed
- * roughly half the time. Retrying cannot rescue an impossible configuration, so
- * that one is rejected up front by `validateParams` instead (see
- * `params.ts`), and the bound here is deliberately small so that any *other*
- * impossible configuration fails in milliseconds with a clear error rather than
- * after the house default of 10,000 attempts.
+ * One configuration never succeeds at all — Penrose kite/dart at width 3 — so
+ * `validateParams` rejects it up front (`params.ts` has the measurement).
  */
 import {
   type Grid,
@@ -66,10 +49,12 @@ export interface BuiltGrid {
 
 /**
  * Attempts allowed before a degenerate patch is treated as an impossible
- * configuration rather than an unlucky draw. The worst *generable* success rate
- * measured was ~20% (Penrose rhombs at 3×3), at which 100 attempts fail with
- * probability ~2e-10 — while an ungenerable configuration gives up in about
- * 50 ms instead of the tens of seconds the house default would take.
+ * configuration rather than an unlucky draw. Surveying 200 descriptions per
+ * configuration over all four aperiodic tilings (each type's minimum size up to
+ * minimum + 5), the worst *generable* success rate was ~20% (Penrose rhombs at
+ * 3×3), at which 100 attempts fail with probability ~2e-10 — while an
+ * ungenerable configuration gives up in about 50 ms instead of the tens of
+ * seconds the house default would take.
  */
 const MAX_GRID_ATTEMPTS = 100;
 
