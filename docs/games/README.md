@@ -106,6 +106,41 @@ A drag-preview game adds a small `moves.ts` so `render.ts` can simulate the
 release move without an import cycle — see
 [`rendering.md`](./rendering.md) § "A simulated-release preview lives in `moves.ts`".
 
+## Comments, and what earns one
+
+Write the comment the code cannot. Everything else ages badly, and nothing in
+the gate notices when it does.
+
+**Keep it local.** A comment describes the lines it sits above. It does not
+describe what `state.ts` holds, how the midend will call you, or what another
+game decided. Those sentences are true when written and wrong within weeks:
+the tidy pass found a render header describing per-digit colors the code no
+longer draws, tier comments naming "Trivial" where players see "Easy", and a
+note about a dark-mode override in a game that has no dark-mode entry.
+
+**Point, don't paraphrase.** When the reader really does need the neighbor,
+name it and stop. `see runDeductionFixpoint` beats three sentences explaining
+what it does, because the function is one jump away and is never out of date.
+Prefer sending a reader into the code over summarizing it for them. Cite a
+guide by file and heading name, never by a section number — numbers move, and
+the tidy pass deleted dozens of `§4.3`-style pointers that resolved nowhere.
+
+**An assertion about behavior is a claim.** If a test checks it, say which one:
+"byte-matches upstream, the frozen differential asserts it" survives contact
+with the future. "Draws the clue in its run's color" is a description that the
+next render change quietly falsifies.
+
+**Keep, always:** provenance (which upstream behavior this derives from), a
+constraint that still binds together with the reason it binds, and why
+something is deliberately absent. A reader cannot reconstruct those from the
+code.
+
+**Delete on sight:** a restatement of the line below it, a narration of how the
+code used to be, a bare change id or design tag standing in for an
+explanation, and a count written in prose. Write the query, not its answer —
+"the games that call `latinSolver`" cannot go stale, while "the eleven
+latin-family games" already has.
+
 ## Definition of done
 
 A game (or a change to one) is done when **all** of these hold:
