@@ -35,13 +35,12 @@ const COL_HINT = 4;
 
 // --- hint highlights --------------------------------------------------
 
-/** Highlight data for a Sixteen hint step: which tile to move and
- * where it should go. The renderer highlights the tile's current cell
- * and its target cell so the player can figure out the right slides. */
+/** A hint step's marks: the tile to move, filled, and the cell the step lands
+ * it in, outlined. */
 export interface SixteenHintHighlights {
   /** The tile number being moved closer to its target. */
   tile: number;
-  /** The position (flat index) where this tile should end up. */
+  /** The cell (flat index) this step's move lands the tile in. */
   targetPos: number;
   /** Where the *next* plan step takes this tile when it continues the
    * same journey perpendicular to this one (two-leg preview). */
@@ -50,16 +49,13 @@ export interface SixteenHintHighlights {
 
 // --- coordinate helpers -----------------------------------------------
 
+// The border is one tile wide, which is where the gutter arrows live.
 function coord(pos: number, ts: number): number {
-  return coordE(pos, ts, border(ts));
+  return coordE(pos, ts, ts);
 }
 
 export function fromCoord(pixel: number, ts: number): number {
-  return fromCoordE(pixel, ts, border(ts));
-}
-
-function border(ts: number): number {
-  return ts;
+  return fromCoordE(pixel, ts, ts);
 }
 
 // --- drawing ----------------------------------------------------------
@@ -73,20 +69,15 @@ export interface SixteenDrawState {
   tilesize: number;
   curX: number;
   curY: number;
-  /** Tile number currently highlighted as hint, or null. */
+  /** The hint marks last drawn, or null, so a changed hint can erase them. */
   hintTile: number | null;
-  /** Target position currently highlighted as hint, or null. */
   hintTarget: number | null;
-  /** Ultimate destination currently highlighted as hint, or null. */
   hintUltimate: number | null;
-  /** Arrow currently highlighted as hint, or null. */
   hintArrowX: number | null;
   hintArrowY: number | null;
   dragging?: boolean;
   dragAxis?: "row" | "column" | null;
   dragIndex?: number;
-  dragX?: number;
-  dragY?: number;
 }
 
 export function newDrawState(state: SixteenState): SixteenDrawState {
@@ -108,11 +99,7 @@ export function newDrawState(state: SixteenState): SixteenDrawState {
 }
 
 export function computeSize(p: SixteenParams, ts: number): Size {
-  const b = border(ts);
-  return {
-    w: ts * p.w + 2 * b,
-    h: ts * p.h + 2 * b,
-  };
+  return { w: ts * p.w + 2 * ts, h: ts * p.h + 2 * ts };
 }
 
 export function colors(defaultBackground: Color): Color[] {
@@ -238,8 +225,7 @@ export function redraw(
     drawArrowForCursor(dr, ts, ds, ds.curX, ds.curY, false);
   }
 
-  // Hint highlights: highlight the tile to move and its target position.
-  // Track in drawstate so we can repaint when the hint changes.
+  // Hint marks: fill the tile to move, outline its target cells.
   const hl = activeHint?.highlights;
   const hintTile = hl?.tile ?? null;
   const hintTarget = hl?.targetPos ?? null;
@@ -249,22 +235,21 @@ export function redraw(
     hintTarget !== ds.hintTarget ||
     hintUltimate !== ds.hintUltimate
   ) {
-    // Erase old highlights by repainting those tiles.
+    // Erase the old marks by repainting those tiles.
     if (ds.hintTile !== null) {
       const oldPos = state.tiles.indexOf(ds.hintTile);
-      if (oldPos >= 0)
-        drawHintOverlay(dr, ts, hw, state, oldPos, COL_BACKGROUND, false);
+      if (oldPos >= 0) drawHintOverlay(dr, ts, hw, state, oldPos, COL_BACKGROUND);
     }
     if (ds.hintTarget !== null) {
-      drawHintOverlay(dr, ts, hw, state, ds.hintTarget, COL_BACKGROUND, true);
+      drawHintOverlay(dr, ts, hw, state, ds.hintTarget, COL_BACKGROUND);
     }
     if (ds.hintUltimate !== null) {
-      drawHintOverlay(dr, ts, hw, state, ds.hintUltimate, COL_BACKGROUND, true);
+      drawHintOverlay(dr, ts, hw, state, ds.hintUltimate, COL_BACKGROUND);
     }
-    // Draw new highlights (source fill).
+    // Draw the new source fill.
     if (hintTile !== null) {
       const pos = state.tiles.indexOf(hintTile);
-      if (pos >= 0) drawHintOverlay(dr, ts, hw, state, pos, COL_HINT, false);
+      if (pos >= 0) drawHintOverlay(dr, ts, hw, state, pos, COL_HINT);
     }
     ds.hintTile = hintTile;
     ds.hintTarget = hintTarget;
@@ -275,6 +260,7 @@ export function redraw(
   dr.clip({ x: coord(0, ts), y: coord(0, ts), w: ts * state.w, h: ts * state.h });
 
   for (let i = 0; i < state.n; i++) {
+    // -1 marks a tile the move shifted, which animates.
     let t: number;
     if (prev && prev.tiles[i] !== state.tiles[i]) t = -1;
     else t = state.tiles[i];
@@ -301,13 +287,9 @@ export function redraw(
         : i % state.w === ds.dragIndex)
     );
 
-    const mustRedraw =
+    if (
       isDraggedNow ||
       wasDraggedPrev ||
-      (isDraggedNow && (ui.dragX !== ds.dragX || ui.dragY !== ds.dragY));
-
-    if (
-      mustRedraw ||
       ds.bgcolor !== bgcolor ||
       ds.tiles[i] !== t ||
       ds.tiles[i] === -1 ||
@@ -333,12 +315,8 @@ export function redraw(
 
         const x1 = coord(i % state.w, ts);
         const y1 = coord(Math.floor(i / state.w), ts);
-
-        // Find where this tile was in the old state.
-        let j = 0;
-        for (; j < prev.n; j++) {
-          if (prev.tiles[j] === state.tiles[i]) break;
-        }
+        // Where this tile was in the old state.
+        const j = prev.tiles.indexOf(t);
         const x0 = coord(j % state.w, ts);
         const y0 = coord(Math.floor(j / state.w), ts);
 
@@ -351,9 +329,7 @@ export function redraw(
           dy = dy < 0 ? dy + ts * state.h : dy - ts * state.h;
         }
 
-        let c = animTime / ANIM_TIME;
-        c = Math.max(0, Math.min(1, c));
-
+        const c = Math.max(0, Math.min(1, animTime / ANIM_TIME));
         drawX = x0 + Math.round(c * dx);
         drawY = y0 + Math.round(c * dy);
         drawX2 = x1 - dx + Math.round(c * dx);
@@ -428,14 +404,14 @@ export function redraw(
   ds.dragging = ui.dragging;
   ds.dragAxis = ui.dragAxis;
   ds.dragIndex = ui.dragIndex;
-  ds.dragX = ui.dragX;
-  ds.dragY = ui.dragY;
+  // Outlined after the tiles, at the cells' own coordinates, so a sliding line
+  // passes under the target rather than carrying it along.
   if (hintTarget !== null) {
     const isIntermediate = hintUltimate !== null;
-    drawHintBorder(dr, ts, state, hintTarget, COL_HINT, isIntermediate);
+    drawHintBorder(dr, ts, state, hintTarget, isIntermediate);
   }
   if (hintUltimate !== null) {
-    drawHintBorder(dr, ts, state, hintUltimate, COL_HINT, false);
+    drawHintBorder(dr, ts, state, hintUltimate, false);
   }
   dr.unclip();
   ds.bgcolor = bgcolor;
@@ -455,26 +431,42 @@ function drawTile(
   tile: number,
   bgColor: number,
 ): void {
-  if (tile === 0) {
-    dr.drawRect({ x, y, w: ts, h: ts }, bgColor);
-  } else {
-    drawRaisedBevel(
-      dr,
-      { left: x, top: y, right: x + ts - 1, bottom: y + ts - 1 },
-      COL_HIGHLIGHT,
-      COL_LOWLIGHT,
-    );
-    // Center fill.
-    dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColor);
-    // Number.
-    dr.drawText(
-      { x: x + ts / 2, y: y + ts / 2 },
-      { align: "center", baseline: "mathematical", fontType: "variable", size: ts / 3 },
-      COL_TEXT,
-      String(tile),
-    );
-  }
+  drawRaisedBevel(
+    dr,
+    { left: x, top: y, right: x + ts - 1, bottom: y + ts - 1 },
+    COL_HIGHLIGHT,
+    COL_LOWLIGHT,
+  );
+  dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColor);
+  dr.drawText(
+    { x: x + ts / 2, y: y + ts / 2 },
+    { align: "center", baseline: "mathematical", fontType: "variable", size: ts / 3 },
+    COL_TEXT,
+    String(tile),
+  );
   dr.drawUpdate({ x, y, w: ts, h: ts });
+}
+
+/** Erase (`COL_BACKGROUND`) or paint (`COL_HINT`) the hint fill on the tile in
+ * cell `pos`, keeping its number visible. Targets are outlined instead, by
+ * {@link drawHintBorder}. */
+function drawHintOverlay(
+  dr: GameDrawing,
+  ts: number,
+  hw: number,
+  state: SixteenState,
+  pos: number,
+  color: number,
+): void {
+  const x = coord(pos % state.w, ts);
+  const y = coord(Math.floor(pos / state.w), ts);
+  const tile = state.tiles[pos];
+
+  if (color === COL_BACKGROUND) {
+    drawTile(dr, ts, hw, x, y, tile, COL_BACKGROUND);
+  } else {
+    drawTile(dr, ts, hw, x, y, tile, COL_HINT);
+  }
 }
 
 function drawArrow(
@@ -529,81 +521,46 @@ function drawArrowAt(
   dr.drawUpdate({ x: coord(ax, ts), y: coord(ay, ts), w: ts, h: ts });
 }
 
-/** Draw a border-only highlight on a tile cell (target position).
- * Draws a 3-pixel outline so the tile number remains fully readable. */
+/** Outline cell `pos` with a 3-pixel hint border, which keeps the tile's number
+ * readable; dashed for the intermediate stop of a two-leg journey. */
 function drawHintBorder(
   dr: GameDrawing,
   ts: number,
   state: SixteenState,
   pos: number,
-  color: number,
-  dashed = false,
+  dashed: boolean,
 ): void {
   const x = coord(pos % state.w, ts);
   const y = coord(Math.floor(pos / state.w), ts);
-  const b = 3; // 3-pixel border
+  const b = 3;
 
   if (dashed) {
     const dashLen = 6;
     const gapLen = 4;
     const step = dashLen + gapLen;
-
-    // Draw top border (horizontal)
     for (let cx = x; cx < x + ts; cx += step) {
       const w = Math.min(dashLen, x + ts - cx);
-      dr.drawRect({ x: cx, y, w, h: b }, color);
+      dr.drawRect({ x: cx, y, w, h: b }, COL_HINT);
     }
-    // Draw bottom border (horizontal)
     for (let cx = x; cx < x + ts; cx += step) {
       const w = Math.min(dashLen, x + ts - cx);
-      dr.drawRect({ x: cx, y: y + ts - b, w, h: b }, color);
+      dr.drawRect({ x: cx, y: y + ts - b, w, h: b }, COL_HINT);
     }
-    // Draw left border (vertical)
     for (let cy = y + b; cy < y + ts - b; cy += step) {
       const h = Math.min(dashLen, y + ts - b - cy);
-      dr.drawRect({ x, y: cy, w: b, h }, color);
+      dr.drawRect({ x, y: cy, w: b, h }, COL_HINT);
     }
-    // Draw right border (vertical)
     for (let cy = y + b; cy < y + ts - b; cy += step) {
       const h = Math.min(dashLen, y + ts - b - cy);
-      dr.drawRect({ x: x + ts - b, y: cy, w: b, h }, color);
+      dr.drawRect({ x: x + ts - b, y: cy, w: b, h }, COL_HINT);
     }
   } else {
-    // Draw outline: top, bottom, left, right.
-    dr.drawRect({ x, y, w: ts, h: b }, color);
-    dr.drawRect({ x, y: y + ts - b, w: ts, h: b }, color);
-    dr.drawRect({ x, y: y + b, w: b, h: ts - 2 * b }, color);
-    dr.drawRect({ x: x + ts - b, y: y + b, w: b, h: ts - 2 * b }, color);
+    dr.drawRect({ x, y, w: ts, h: b }, COL_HINT);
+    dr.drawRect({ x, y: y + ts - b, w: ts, h: b }, COL_HINT);
+    dr.drawRect({ x, y: y + b, w: b, h: ts - 2 * b }, COL_HINT);
+    dr.drawRect({ x: x + ts - b, y: y + b, w: b, h: ts - 2 * b }, COL_HINT);
   }
   dr.drawUpdate({ x, y, w: ts, h: ts });
-}
-
-/** Draw or erase a hint highlight for a tile. Source tiles are highlighted
- * with a filled color using drawTile (keeping the number visible), while
- * target positions are highlighted with a 3-pixel border. */
-function drawHintOverlay(
-  dr: GameDrawing,
-  ts: number,
-  hw: number,
-  state: SixteenState,
-  pos: number,
-  color: number,
-  isTarget: boolean,
-): void {
-  const x = coord(pos % state.w, ts);
-  const y = coord(Math.floor(pos / state.w), ts);
-  const tile = state.tiles[pos];
-
-  if (color === COL_BACKGROUND) {
-    // Erase highlight: just redraw the tile with normal background.
-    drawTile(dr, ts, hw, x, y, tile, COL_BACKGROUND);
-  } else if (isTarget) {
-    // Draw target border.
-    drawHintBorder(dr, ts, state, pos, color);
-  } else {
-    // Draw source fill: draw the tile with COL_HINT as the background!
-    drawTile(dr, ts, hw, x, y, tile, COL_HINT);
-  }
 }
 
 function drawArrowForCursor(

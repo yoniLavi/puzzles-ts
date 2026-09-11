@@ -51,6 +51,7 @@ import {
   decodeParams,
   defaultParams,
   encodeParams,
+  isCompleted,
   newDesc,
   newState,
   paramConfig,
@@ -59,6 +60,7 @@ import {
   type SixteenParams,
   type SixteenState,
   type SixteenUi,
+  status,
   textFormat,
   validateDesc,
   validateParams,
@@ -95,27 +97,16 @@ export function executeMove(state: SixteenState, move: SixteenMove): SixteenStat
     }
   }
 
-  const moveCount = state.moveCount + 1;
-  let completed = state.completed;
-  if (!completed) {
-    let done = true;
-    for (let i = 0; i < state.n; i++) {
-      if (tiles[i] !== i + 1) {
-        done = false;
-        break;
-      }
-    }
-    if (done) completed = moveCount;
-  }
-
-  return {
+  const next: SixteenState = {
     ...state,
     tiles,
-    moveCount,
-    completed,
-    lastMovementSense: axis === "row" ? delta : 0 + (axis === "column" ? delta : 0),
+    moveCount: state.moveCount + 1,
+    lastMovementSense: delta,
     lastMove: move,
   };
+  if (!state.completed && isCompleted(next))
+    return { ...next, completed: next.moveCount };
+  return next;
 }
 
 // --- UI ---------------------------------------------------------------
@@ -156,68 +147,40 @@ function interpretMove(
       )
         return null;
 
-      const { x: nx, y: ny } = gridCursorMove(
-        rawButton | pad,
-        ui.cursor.x,
-        ui.cursor.y,
-        state.w,
-        state.h,
-        false,
-      ) ?? { x: ui.cursor.x, y: ui.cursor.y };
-      const { x: nwx, y: nwy } = gridCursorMove(
-        rawButton | pad,
-        ui.cursor.x,
-        ui.cursor.y,
-        state.w,
-        state.h,
-        true,
-      ) ?? { x: ui.cursor.x, y: ui.cursor.y };
+      const key = rawButton | pad;
+      const at = { x: ui.cursor.x, y: ui.cursor.y };
+      const clamped = gridCursorMove(key, at.x, at.y, state.w, state.h) ?? at;
+      const wrapped = gridCursorMove(key, at.x, at.y, state.w, state.h, true) ?? at;
 
       let move: SixteenMove;
-      if (nx !== nwx) {
-        move = {
-          type: "slide",
-          axis: "row",
-          index: ui.cursor.y,
-          delta: nx > ui.cursor.x ? 1 : -1,
-        };
-      } else if (ny !== nwy) {
-        move = {
-          type: "slide",
-          axis: "column",
-          index: ui.cursor.x,
-          delta: ny > ui.cursor.y ? 1 : -1,
-        };
-      } else if (nx === ui.cursor.x) {
-        move = {
-          type: "slide",
-          axis: "column",
-          index: ui.cursor.x,
-          delta: ny - ui.cursor.y,
-        };
+      if (clamped.x !== wrapped.x) {
+        const delta = clamped.x > at.x ? 1 : -1;
+        move = { type: "slide", axis: "row", index: at.y, delta };
+      } else if (clamped.y !== wrapped.y) {
+        const delta = clamped.y > at.y ? 1 : -1;
+        move = { type: "slide", axis: "column", index: at.x, delta };
+      } else if (clamped.x === at.x) {
+        move = { type: "slide", axis: "column", index: at.x, delta: clamped.y - at.y };
       } else {
-        move = {
-          type: "slide",
-          axis: "row",
-          index: ui.cursor.y,
-          delta: nx - ui.cursor.x,
-        };
+        move = { type: "slide", axis: "row", index: at.y, delta: clamped.x - at.x };
       }
 
       if (control || (!shift && ui.curMode === CursorMode.LockTile)) {
-        ui.cursor.x = nwx;
-        ui.cursor.y = nwy;
+        ui.cursor.x = wrapped.x;
+        ui.cursor.y = wrapped.y;
       }
 
       return move;
     } else {
+      // The cursor walks the gutter ring around the board, in coordinates
+      // shifted by one so the ring starts at 0; stepping into a corner turns
+      // the cursor onto the adjacent side.
       const { x: nx, y: ny } = gridCursorMove(
         rawButton | pad,
         ui.cursor.x + 1,
         ui.cursor.y + 1,
         state.w + 2,
         state.h + 2,
-        false,
       ) ?? { x: ui.cursor.x + 1, y: ui.cursor.y + 1 };
 
       if (nx === 0 && ny === 0) {
@@ -430,11 +393,11 @@ const TANGLE_COST = 4;
  * *fallback* prefers, and it would do one thing worse: the deep search's gate
  * is "the fallback found nothing better than standing still", so a measure that
  * escapes a two-tangle endgame stops that gate from ever opening and turns a
- * complete nine-move plan into a five-move partial one. Measured, on the 5×4
- * one-pair board, when this term was priced from the first tangle.
+ * complete nine-move plan into a five-move partial one. Measured on the 5×4
+ * one-pair board, with this term priced from the first tangle.
  *
  * So the measure differs from plain travel **only past the point where nothing
- * else can help**, which is also the only place it was ever needed.
+ * else can help**.
  */
 const TANGLES_IN_REACH = 2;
 
@@ -461,9 +424,9 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
 
   // Every legal move: a slide of any line by any distance. A slide by any
   // distance is a *single* move — the same granularity as a player's drag and
-  // as the move counter — so the plan's first move is directly executable
-  // (executing a longer journey than the plan's first step deviated from the
-  // plan and caused auto-hint cycles).
+  // as the move counter — so the plan's first move is directly executable;
+  // planning in smaller steps than a hint executes leaves the plan on every
+  // executed hint, and auto-hint cycles.
   const moves: SlideMove[] = [];
   for (let r = 0; r < h; r++) {
     for (let delta = 1; delta < w; delta++) {
@@ -502,8 +465,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
    * why a tangled board is a *strict local minimum* of travel alone — every
    * slide makes the picture worse — and why a hint steered by travel alone
    * cannot leave one. Four tangles is thirteen-odd moves from home, twice what
-   * the exact search stores and four plies past what the deep one walks, and
-   * that is the board the hint used to give up on.
+   * the exact search stores and four plies past what the deep one walks.
    *
    * Counting them is the escape. The measure is not a distance and is not
    * trying to be: the searches that need a true distance do not consult a
@@ -540,10 +502,9 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     goal,
     moves,
     // The heuristic search only ever runs on boards the exact search below
-    // could not reach, which are the ones far from finished. One budget, not the
-    // 6000-or-4000 it used to be depending on how close the board looked: that
-    // was a gate on a board measure, which is the shape this game's hint cycle
-    // came from, and the exact search is the whole cost anyway.
+    // could not reach. One budget however close the board looks: a gate on a
+    // board measure is the shape this game's hint cycle came from, and the
+    // exact search is the whole cost anyway.
     maxStates: 6000,
     // Don't open by undoing (or partly undoing) the slide the player just made.
     rejectFirstMove:
@@ -568,7 +529,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     // (two swapped pairs) sits ~8 plies uphill of every slide, beyond any
     // forward budget, and meeting in the middle crosses it at ~4 plies a side.
     //
-    // **The unconditional part is the whole fix, and it was not obvious.**
+    // **The unconditional part is the whole fix, and it is not obvious.**
     // Arming this only near the finish reads like an easy saving and is a
     // ping-pong: the exact plan walks *uphill* in both of the cheap measures of
     // "near" (measured on a 5×5 board — a plan starting at 9 tiles out of place
@@ -586,8 +547,8 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     // finished board costs the same nine moves of reach for a few tens of MB,
     // and the database is built once and answers every later hint.
     //
-    // Without this the hint gave up on about one 5×5 game in five, four tiles
-    // from home, on a board that was perfectly solvable.
+    // Without this the hint gives up on about one 5×5 game in five, four tiles
+    // from home, on a board that is perfectly solvable.
     deepSearch: { forwardDepth: 5, databaseDepth: 4 },
   };
 
@@ -595,12 +556,8 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
 
   const path = plan.moves;
   if (path.length === 0) {
-    // **Everything above has run out of reach**, which is the only thing this
-    // says. It used to say "No move here would get you closer", which is a
-    // claim about the board that nothing here ever checked — and on the board
-    // that prompted this it was flatly untrue: plenty of moves got the player
-    // closer, and they had followed thirty-three hints to arrive at it.
-    //
+    // **Every search has run out of reach**, which is all this says. It makes
+    // no claim about the board — plenty of moves may get the player closer.
     // A hint that plans by searching has a *reach*, and no arrangement of this
     // machinery extends it much: each further ply costs about 40×. So past it
     // the truthful answer is that we did not find a way, and the player is told
@@ -609,14 +566,11 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     return { ok: false, error: SEARCH_OUT_OF_REACH };
   }
 
-  // Narrate each step against the simulated board it applies to: the
-  // plan is computed once, so every step's story must already be told
-  // from the state its predecessors produce. A step that the previous
-  // step previewed as the continuation of a tile's journey ("then to
-  // column 2") is narrated around that same tile — the user who
-  // follows the journey must see its second leg, not an unrelated
-  // story about whichever tile happens to be lowest-numbered on the
-  // line.
+  // Narrate each step against the simulated board it applies to: the plan is
+  // computed once, so every step's story must already be told from the state
+  // its predecessors produce. A step that the previous step previewed as the
+  // continuation of a tile's journey ("then to column 2") is narrated around
+  // that same tile, so the player following the journey sees its second leg.
   const steps: HintStep<SixteenMove, SixteenHintHighlights>[] = [];
   let board = tiles;
   for (let k = 0; k < path.length; k++) {
@@ -634,22 +588,16 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   return { ok: true, steps };
 }
 
-/** Narrate one plan step against the board it applies to. The
- * highlighted tile is the lowest-numbered out-of-place tile on the
- * moved line — unless the previous step previewed this move as the
- * continuation of a tile's journey, in which case that journey tile
- * carries the narration through its second leg. The target is the
- * narrated tile's landing cell under the move (with a second-leg
- * preview when the next planned move continues the same tile's
- * journey perpendicular to this one); the returned move's delta is
- * normalized to the in-grid direction of travel. (An earlier version
- * narrated the tile's *solved* row/column regardless of what the move
- * achieved; once hints started executing the narrated slide, that
- * overpromise pushed the game off the solver's path and auto-play
- * could cycle.) The narration reads "Working on tile N: move it to
- * <line>[, then <line>]" and explains *why* via a trailing clause —
- * ", its final spot" when the journey ends in the tile's solved cell,
- * else "(setting up)" — per the shared sliding-tile hint vocabulary. */
+/** Narrate one plan step against the board it applies to. The highlighted tile
+ * is the lowest-numbered out-of-place tile on the moved line, unless the
+ * previous step previewed this move as the continuation of a tile's journey, in
+ * which case that tile carries the narration through its second leg.
+ *
+ * The target is where this move lands the narrated tile, never the tile's solved
+ * line: hints execute the narrated slide, so narrating past what it achieves
+ * pushes the game off the plan. A second-leg preview is added when the next
+ * planned move continues the same tile's journey perpendicular to this one, and
+ * the returned move's delta is normalized to the in-grid direction of travel. */
 function narrateStep(
   tiles: Int32Array,
   w: number,
@@ -677,49 +625,17 @@ function narrateStep(
     }
   }
 
-  // Otherwise pick the lowest-numbered out-of-place tile on the moved
-  // row/column; if every tile on the line is in place (the move only
-  // serves another line's journey), the lowest-numbered tile on it.
-  if (bestTile === 0 && move.axis === "row") {
-    const r = move.index;
-    for (let c = 0; c < w; c++) {
-      const tile = tiles[r * w + c];
-      const targetCol = (tile - 1) % w;
-      const targetRow = Math.floor((tile - 1) / w);
-      if (targetRow !== r || targetCol !== c) {
-        if (bestTile === 0 || tile < bestTile) {
-          bestTile = tile;
-        }
-      }
-    }
-    if (bestTile === 0) {
-      for (let c = 0; c < w; c++) {
-        const tile = tiles[r * w + c];
-        if (bestTile === 0 || tile < bestTile) {
-          bestTile = tile;
-        }
-      }
-    }
-  } else if (bestTile === 0) {
-    const colIndex = move.index;
-    for (let r = 0; r < h; r++) {
-      const tile = tiles[r * w + colIndex];
-      const targetCol = (tile - 1) % w;
-      const targetRow = Math.floor((tile - 1) / w);
-      if (targetRow !== r || targetCol !== colIndex) {
-        if (bestTile === 0 || tile < bestTile) {
-          bestTile = tile;
-        }
-      }
-    }
-    if (bestTile === 0) {
-      for (let r = 0; r < h; r++) {
-        const tile = tiles[r * w + colIndex];
-        if (bestTile === 0 || tile < bestTile) {
-          bestTile = tile;
-        }
-      }
-    }
+  // Otherwise the lowest-numbered out-of-place tile on the moved line; if the
+  // whole line is home (the move only serves another line's journey), the
+  // lowest-numbered tile on it.
+  if (bestTile === 0) {
+    const cells =
+      move.axis === "row"
+        ? Array.from({ length: w }, (_, c) => move.index * w + c)
+        : Array.from({ length: h }, (_, r) => r * w + move.index);
+    const outOfPlace = cells.filter((i) => tiles[i] !== i + 1);
+    const candidates = outOfPlace.length > 0 ? outOfPlace : cells;
+    bestTile = Math.min(...candidates.map((i) => tiles[i]));
   }
 
   // bestTile is selected from the moved line, so it is always found.
@@ -813,18 +729,16 @@ export const sixteenGame: Game<
     "number-of-shuffling-moves": String(p.movetarget),
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
 
   interpretMove,
   executeMove,
-  status: (s) => (s.completed > 0 ? "solved" : "ongoing"),
+  status,
 
-  solve(_orig, _curr) {
-    return { ok: true, move: { type: "solve" as const } };
-  },
+  solve: () => ({ ok: true, move: { type: "solve" } }),
 
   hint,
 

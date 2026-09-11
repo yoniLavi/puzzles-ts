@@ -80,11 +80,10 @@ describe("Sixteen midend integration — keyboard input", () => {
   it("cursor keys move the cursor (UI update)", () => {
     const h = harness();
     h.m.newGame();
-    // Show cursor.
-    h.m.processInput(0, 0, CURSOR_SELECT);
-    // Move cursor right.
-    h.m.processInput(0, 0, CURSOR_RIGHT);
-    // Just verify no crash — the cursor position is internal UI state.
+    expect(h.m.processInput(0, 0, CURSOR_SELECT)).toBe(true); // shows the cursor
+    const redraws = h.redraws();
+    expect(h.m.processInput(0, 0, CURSOR_RIGHT)).toBe(true);
+    expect(h.redraws()).toBeGreaterThan(redraws);
   });
 
   it("shift+cursor makes a slide move", () => {
@@ -243,10 +242,9 @@ describe("Sixteen midend integration — hint persistence", () => {
   });
 
   it("a multi-leg journey stays displayed through its legs (owner board, 2026-06-10)", () => {
-    // Owner-reported: landing the tile on the intermediate target made
-    // the hint "reset" — the display hid mid-journey. A journey is one
-    // hint: its flagged continuation steps must stay displayed; only
-    // the step after the journey waits for a fresh request.
+    // Landing the tile on the intermediate target must not hide the hint
+    // mid-journey. A journey is one hint: its flagged continuation steps
+    // stay displayed; only the step after the journey waits for a request.
     const h = harness();
     h.m.newGameFromId(
       "5x5:1,2,3,4,6,7,13,8,9,5,11,12,18,14,15,16,17,24,19,20,21,22,23,10,25",
@@ -346,16 +344,13 @@ describe("Sixteen midend integration — executeHint auto-play", () => {
     expect(mPrivate.animLength).toBeCloseTo(0.4);
   });
 
-  // The bidirectional search itself takes a few seconds when it
-  // engages — that is the very cost this test pins to once-per-plan.
-  // Slow by nature (the bidirectional search below), and deliberately not
-  // clock-gated: the guarantee is the mechanism — hintCalls === 1 — not the
-  // milliseconds. One generous ceiling lives in vitest.config.ts.
+  // Deliberately not clock-gated: the guarantee is the mechanism — hintCalls
+  // === 1 — not the milliseconds. One generous ceiling lives in vitest.config.ts.
   it("crosses the two-swap 5x5 endgame on one stored plan (no per-step recompute)", () => {
-    // Regression guard for the cost model: the exact bidirectional
-    // fallback (~0.5-2s when it engages) must run once for the whole
-    // endgame, not once per auto-played step — and executing one
-    // stored plan verbatim is also what eliminates replan wobble.
+    // The cost model: the exact bidirectional search (~0.5-2s when it
+    // engages) runs once for the whole endgame, not once per auto-played
+    // step — and executing one stored plan verbatim is also what
+    // eliminates replan wobble.
     let hintCalls = 0;
     const countingGame: typeof sixteenGame = {
       ...sixteenGame,

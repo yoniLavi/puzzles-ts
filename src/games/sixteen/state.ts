@@ -18,14 +18,14 @@ export interface SixteenState {
   readonly w: number;
   readonly h: number;
   readonly n: number;
-  /** 1-indexed tile values (1..n). 0 is unused in sixteen. */
+  /** Tile numbers 1..n, row-major, with no gap; tile `t` is home in cell `t - 1`. */
   readonly tiles: Int32Array;
   /** 0 = ongoing; >0 = move count at which the puzzle was completed */
   readonly completed: number;
   readonly cheated: boolean;
   readonly moveCount: number;
   readonly moveTarget: number;
-  /** dx+dy of the last move, used for animation direction */
+  /** The last slide's delta, which picks the animation's direction */
   readonly lastMovementSense: number;
   readonly lastMove?: SixteenMove;
 }
@@ -123,8 +123,8 @@ export function validateDesc(p: SixteenParams, desc: string): string | null {
   const parts = desc.split(",");
   if (parts.length !== area) return "Not enough numbers in string";
   const used = new Set<number>();
-  for (let i = 0; i < parts.length; i++) {
-    const n = Number(parts[i]);
+  for (const part of parts) {
+    const n = Number(part);
     if (!Number.isInteger(n) || n < 1 || n > area) return "Number out of range";
     if (used.has(n)) return "Number used twice";
     used.add(n);
@@ -162,17 +162,10 @@ export function isCompleted(state: SixteenState): boolean {
 export function status(state: SixteenState): "solved" | "ongoing" {
   return state.completed > 0 ? "solved" : "ongoing";
 }
-
-/* A `serializeMove`/`deserializeMove` pair lived here and was never wired into
- * `sixteenGame`, so the save codec has always used the default identity path —
- * `SixteenMove` is plain JSON, which is why nothing noticed. Its own test
- * round-tripped the pair against itself, and a round-trip test passes whether or
- * not anybody calls either half. Deleted rather than wired: wiring it now would
- * change the bytes of every existing Sixteen save, which is the owner's call and
- * not a refactor's (see AGENTS.md, "Nothing is sacred"). Found by
- * `reject-unrecognised-moves`, whose foreign-move sweep expected the guard in
- * `executeMove` to fire and got a parse error from Pegs — the only game that
- * really does parse at the boundary — instead. */
+/* No `serializeMove`/`deserializeMove`: `SixteenMove` is plain JSON, so saves
+ * take the save codec's default identity path. Adding a codec now would change
+ * the bytes of every existing Sixteen save, which is the owner's call (AGENTS.md,
+ * "Nothing is sacred"). */
 
 // --- text format ------------------------------------------------------
 
@@ -229,10 +222,7 @@ export function newDesc(p: SixteenParams, rng: RandomState): { desc: string } {
           const tmp = prevmoves[index] + direction;
           if (Math.abs(2 * tmp) > len || Math.abs(tmp) < Math.abs(prevmoves[index]))
             continue;
-        }
-
-        // Accept the move.
-        if (offset !== prevoffset) {
+        } else {
           prevmoves.fill(0);
           prevoffset = offset;
         }
@@ -295,8 +285,5 @@ export function newDesc(p: SixteenParams, rng: RandomState): { desc: string } {
     }
   }
 
-  // Encode as comma-separated integers.
-  const parts: string[] = [];
-  for (let i = 0; i < n; i++) parts.push(String(tiles[i]));
-  return { desc: parts.join(",") };
+  return { desc: tiles.join(",") };
 }

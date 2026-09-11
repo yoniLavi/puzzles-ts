@@ -42,6 +42,29 @@ function solvedState(w: number, h: number): SixteenState {
   };
 }
 
+/** A `GameDrawing` that records each call's name and color. */
+function recordingDrawing() {
+  const ops: Array<{ op: string; color?: number }> = [];
+  const rec = (op: string, color?: number) => ops.push({ op, color });
+  const dr: GameDrawing = {
+    startDraw: () => rec("startDraw"),
+    endDraw: () => rec("endDraw"),
+    drawUpdate: () => rec("drawUpdate"),
+    clip: () => rec("clip"),
+    unclip: () => rec("unclip"),
+    drawRect: (_r, c) => rec("drawRect", c),
+    drawLine: (_a, _b, c) => rec("drawLine", c),
+    drawPolygon: (_p, f) => rec("drawPolygon", f),
+    drawCircle: (_p, _r, f) => rec("drawCircle", f),
+    drawText: (_p, _o, c) => rec("drawText", c),
+    blitterNew: () => ({}),
+    blitterFree: () => rec("blitterFree"),
+    blitterSave: () => rec("blitterSave"),
+    blitterLoad: () => rec("blitterLoad"),
+  };
+  return { dr, ops };
+}
+
 // --- params -----------------------------------------------------------
 
 describe("Sixteen params", () => {
@@ -63,8 +86,7 @@ describe("Sixteen params", () => {
   });
 
   it("decodes a bare square form to w === h", () => {
-    // Regression: the old `indexOf("x")` returned -1 on "4" and mis-sliced
-    // (w became NaN). The square fallback in parseDimensions fixes this.
+    // Upstream's `w = h = atoi(s)`: a bare number is a square board.
     expect(decodeParams("4")).toEqual({ w: 4, h: 4, movetarget: 0 });
     expect(decodeParams("6")).toEqual({ w: 6, h: 6, movetarget: 0 });
   });
@@ -161,11 +183,6 @@ describe("Sixteen completion", () => {
     expect(status({ ...s, completed: 5 })).toBe("solved");
   });
 });
-
-/* The "Sixteen move serialization" block went with the codec it tested: that
- * pair was never wired into `sixteenGame`, and a round-trip against itself is
- * green either way. The save path Sixteen actually uses is covered end to end by
- * `engine/save-round-trip.test.ts`. */
 
 // --- text format ------------------------------------------------------
 
@@ -330,17 +347,10 @@ describe("Sixteen hint", () => {
     const { desc } = newDesc(defaultParams(), rng);
     const s = newState(defaultParams(), desc);
     const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
     if (!result?.ok) return;
     const next = executeMove(s, result.steps[0].move);
-    // The state should have changed (tiles rearranged).
-    let changed = false;
-    for (let i = 0; i < s.n; i++) {
-      if (s.tiles[i] !== next.tiles[i]) {
-        changed = true;
-        break;
-      }
-    }
-    expect(changed).toBe(true);
+    expect(Array.from(next.tiles)).not.toEqual(Array.from(s.tiles));
   });
 
   it("the explanation mentions the tile and target location", () => {
@@ -348,6 +358,7 @@ describe("Sixteen hint", () => {
     const { desc } = newDesc(defaultParams(), rng);
     const s = newState(defaultParams(), desc);
     const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
     if (!result?.ok) return;
     // Format: "Working on tile T: move it to row R" / "… to column C".
     expect(result.steps[0].explanation).toMatch(
@@ -360,6 +371,7 @@ describe("Sixteen hint", () => {
     const { desc } = newDesc(defaultParams(), rng);
     const s = newState(defaultParams(), desc);
     const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
     if (!result?.ok) return;
     const next = executeMove(s, result.steps[0].move);
     // Count total toroidal distance for all tiles before and after.
@@ -412,20 +424,13 @@ describe("Sixteen hint", () => {
   });
 
   it("solves the board that previously cycled tile 2 back and forth", () => {
-    // Regression: with 6 tiles out of place the A* search planned in
-    // single-step slides while hints executed multi-step ones, so each
-    // executed hint left the planned path and auto-play looped through
-    // the same four states forever. Planning in full slides fixes it.
+    // A plan in single-step slides, followed by hints that execute whole ones,
+    // leaves the plan on every executed hint: on this board auto-play then
+    // loops through the same four states for ever. Planning in full slides is
+    // what prevents it.
     let s: SixteenState = {
-      w: 4,
-      h: 4,
-      n: 16,
+      ...solvedState(4, 4),
       tiles: new Int32Array([3, 4, 1, 8, 5, 6, 2, 7, 9, 10, 11, 12, 13, 14, 15, 16]),
-      completed: 0,
-      cheated: false,
-      moveCount: 0,
-      moveTarget: 0,
-      lastMovementSense: 0,
     };
     for (let round = 0; round < 10 && s.completed === 0; round++) {
       const result = sixteenGame.hint?.(s);
@@ -437,27 +442,10 @@ describe("Sixteen hint", () => {
   });
 
   it("prioritizes the lowest-numbered out-of-place tile", () => {
-    // Construct a 4×4 state where tile 1 is out of place.
-    const w = 4,
-      h = 4,
-      n = 16;
-    const tiles = new Int32Array(n);
-    for (let i = 0; i < n; i++) tiles[i] = i + 1;
-    // Shift row 0 right by 1 step: 4, 1, 2, 3. All tiles on row 0 are out of place.
-    tiles[0] = 4;
-    tiles[1] = 1;
-    tiles[2] = 2;
-    tiles[3] = 3;
+    // Row 0 shifted right by one step: 4, 1, 2, 3, every tile on it out of place.
     const s: SixteenState = {
-      w,
-      h,
-      n,
-      tiles,
-      completed: 0,
-      cheated: false,
-      moveCount: 0,
-      moveTarget: 0,
-      lastMovementSense: 0,
+      ...solvedState(4, 4),
+      tiles: new Int32Array([4, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
     };
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
@@ -473,8 +461,7 @@ describe("Sixteen hint", () => {
     // slid, neither the (intermediate) target nor the ultimate target is
     // the tile's own current cell, and applying the step's move lands
     // the tile exactly on its highlighted target. Plans are re-requested
-    // only on exhaustion. Regression: a 2D hint once drew its
-    // intermediate target around the tile's starting position.
+    // only on exhaustion.
     for (const [w, h, seeds] of [
       [3, 3, ["hint-geom-a", "hint-geom-b"]],
       [4, 4, ["hint-geom-c", "hint-geom-d"]],
@@ -511,24 +498,16 @@ describe("Sixteen hint", () => {
   });
 
   it("solves the two-swap 5x5 endgame that previously halted auto-hint", () => {
-    // Regression: tiles 1↔6 and 16↔20 swapped, everything else solved.
-    // Every single slide makes the distance heuristic worse (strict local
-    // minimum ~8 plies deep), so the forward search finds nothing and
-    // hint() returned "No helpful hint found", halting auto-play. The
-    // exact bidirectional fallback crosses the hill.
+    // Tiles 1↔6 and 16↔20 swapped, everything else solved. Every single slide
+    // makes the distance heuristic worse (a strict local minimum ~8 plies
+    // deep), so a forward search finds nothing and auto-play halts; the exact
+    // bidirectional search crosses the hill.
     let s: SixteenState = {
-      w: 5,
-      h: 5,
-      n: 25,
+      ...solvedState(5, 5),
       tiles: new Int32Array([
         6, 2, 3, 4, 5, 1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 17, 18, 19, 16, 21, 22,
         23, 24, 25,
       ]),
-      completed: 0,
-      cheated: false,
-      moveCount: 0,
-      moveTarget: 0,
-      lastMovementSense: 0,
     };
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
@@ -538,50 +517,43 @@ describe("Sixteen hint", () => {
     // thing worth asserting, and it needs no flag to say so.
     for (const step of result.steps) s = executeMove(s, step.move);
     expect(s.completed).toBeGreaterThan(0);
-    // The exact bidirectional BFS over ~1.5M states is inherently slow; the
-    // assertions above are the guarantee, never the clock. Ceiling: vitest.config.ts.
+    // The exact bidirectional search over ~1.5M states is slow; the assertions
+    // above are the guarantee, never the clock. Ceiling: vitest.config.ts.
   });
 
   /* ---------------------------------------------------------------------
    * The deep-search walks: `npm run test:slow -- src/games/sixteen`.
    *
-   * These two are **73% of this file** and, before they moved, this file alone
-   * was 109 s CPU — the most expensive in the collection (measured 2026-09-09,
-   * `retire-tests-that-do-not-earn-their-runtime`). Each asks the hint to walk
-   * a deliberately pathological 5×5 to solved, recomputing a full exact search
-   * after every move.
+   * These two were 73% of this file, which alone was 109 s CPU — the most
+   * expensive in the collection (measured 2026-09-09). Each walks a
+   * deliberately pathological 5×5 to solved, recomputing a full exact search
+   * after every move. The Sixteen hint is not expected to change again (owner
+   * decision), so they are deferred, not deleted: run the command above when
+   * anything under `engine/slide-planner.ts` or this game's heuristic moves.
    *
-   * **Owner decision, 2026-09-09**: the Sixteen hint was worked and tested over
-   * several sessions and is not expected to change again, so the per-commit
-   * path is not where this evidence has to live. It is deferred, not deleted —
-   * run the command above when anything under `engine/slide-planner.ts` or this
-   * game's heuristic moves.
+   * **What the gate still checks, on every commit.** Real 5×5 hint coverage:
+   * "solves the two-swap 5x5 endgame that previously halted auto-hint" drives
+   * a board only the exact bidirectional search can cross, and "recomputing
+   * after every move still lands on the same board, one move nearer" walks it
+   * with a fresh search per move, which is the recompute-stability property.
+   * Both are seconds, not minutes.
    *
-   * **What the gate still checks, on every commit.** Sixteen keeps real 5×5
-   * hint coverage: "solves the two-swap 5x5 endgame that previously halted
-   * auto-hint" drives a board only the exact bidirectional search can cross,
-   * and "recomputing after every move still lands on the same board, one move
-   * nearer" walks that same board with a fresh search per move, which is the
-   * recompute-stability property. Both are seconds, not minutes.
-   *
-   * **What the gate gives up, stated because it is real.** The *tangle* term is
-   * priced only above `TANGLES_IN_REACH` (2), and the boards the gate keeps sit
-   * at or below it — so a regression in the tangle measure specifically will
-   * now be caught here only in the slow tier. Verified rather than assumed:
-   * zeroing `TANGLE_COST` turns the deferred test below red and leaves the
-   * retained pair green.
+   * **What the gate gives up.** The *tangle* term is priced only above
+   * `TANGLES_IN_REACH` (2), and the boards the gate keeps sit at or below it,
+   * so a regression in the tangle measure is caught only in the slow tier.
+   * Verified: zeroing `TANGLE_COST` turns the deferred test below red and
+   * leaves the retained pair green.
    * ------------------------------------------------------------------- */
 
   itSlow(
     "finds the way home from the swapped-pair endgames that used to strand it",
     () => {
-      // **The boards the hint gave up on**, and it gave up often: walking forty
-      // games of each preset one recomputed hint at a time, 5×5 stopped on five of
-      // them and 5×4 on twelve, always saying "No move here would get you closer."
-      // on a board that was perfectly solvable. Every one had this shape — one or
-      // two pairs of tiles sitting in each other's cells, which is a strict local
-      // minimum of the distance measure (every slide makes it worse) and is nine
-      // moves from finished while looking like two.
+      // **The boards a hint without `deepSearch` gives up on**, and often:
+      // walking forty games of each preset one recomputed hint at a time, 5×5
+      // stopped on five of them and 5×4 on twelve, each perfectly solvable. Every
+      // one has this shape — one or two pairs of tiles sitting in each other's
+      // cells, a strict local minimum of the distance measure (every slide makes
+      // it worse), nine moves from finished while looking like two.
       //
       // Nine is one past what a search that stores every board it visits can
       // afford here, so these are the boards `deepSearch` exists for. **The plan
@@ -620,15 +592,8 @@ describe("Sixteen hint", () => {
 
       for (const { label, w, h, tiles } of cases) {
         const state: SixteenState = {
-          w,
-          h,
-          n: w * h,
+          ...solvedState(w, h),
           tiles: new Int32Array(tiles),
-          completed: 0,
-          cheated: false,
-          moveCount: 0,
-          moveTarget: 0,
-          lastMovementSense: 0,
         };
         const result = sixteenGame.hint?.(state);
         expect(result?.ok, `${label}: the hint gave up`).toBe(true);
@@ -648,23 +613,21 @@ describe("Sixteen hint", () => {
   );
 
   itSlow("finds the way home from the tangled boards the searches cannot reach", () => {
-    // **The board the hint gave up on, and the class around it.** A *tangle* is
-    // a non-trivial cycle of the tile permutation — two tiles in each other's
-    // cells, three rotating among themselves. Travel distance prices one at the
-    // couple of squares it looks like and it is really nine moves, so a board
-    // made of several is a strict local minimum a dozen moves from finished:
-    // past the exact search (eight), past the deep search (nine), and unclimbable
-    // by a fallback steered by travel alone. `hint()` refused on the first board
-    // below in 3.2 s, saying "No move here would get you closer" about a
-    // position the player had reached by following thirty-three of its hints.
+    // **A board a player reaches by following thirty-three hints, and the class
+    // around it.** A *tangle* is a non-trivial cycle of the tile permutation —
+    // two tiles in each other's cells, three rotating among themselves. Travel
+    // distance prices one at the couple of squares it looks like and it is
+    // really nine moves, so a board made of several is a strict local minimum a
+    // dozen moves from finished: past the exact search (eight), past the deep
+    // search (nine), and unclimbable by a fallback steered by travel alone.
     //
     // **The assertion is the walk, not the plan.** What a player experiences is
     // one recomputed hint at a time, and a plan that comes back is worth nothing
-    // if the next recompute sends the board back where it came from — which is
-    // exactly what the first fix for this did, for 400 moves without solving
-    // (the sharper measure ran only where the blunt one was stuck, so
-    // consecutive recomputes steered by different measures). Walking to solved
-    // is what says the measure is stable, and no assertion on a single plan can.
+    // if the next recompute sends the board back where it came from — which a
+    // measure consulted only where the blunt one is stuck does, for 400 moves
+    // without solving, because consecutive recomputes steer by different
+    // measures. Walking to solved is what says the measure is stable, and no
+    // assertion on a single plan can.
     //
     // **Every board here is an *even* permutation, and that is load-bearing.**
     // On a 5×5 board every slide is a 5-cycle, so odd permutations are
@@ -712,23 +675,14 @@ describe("Sixteen hint", () => {
     // about where they are going. They do because each returns a **shortest**
     // plan, so following its first move leaves a board exactly one move nearer —
     // and the plan length falls by exactly one, every time, until it is gone.
-    //
-    // This is the guard for `fix-sixteen-hint-recompute-stability`: the same
-    // endgame, walked rather than replayed. Before that change the walk found a
-    // period-4 cycle here instead of a descent.
+    // The same endgame, walked rather than replayed: the failure this guards is
+    // a period-4 cycle here instead of a descent.
     let s: SixteenState = {
-      w: 5,
-      h: 5,
-      n: 25,
+      ...solvedState(5, 5),
       tiles: new Int32Array([
         6, 2, 3, 4, 5, 1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 17, 18, 19, 16, 21, 22,
         23, 24, 25,
       ]),
-      completed: 0,
-      cheated: false,
-      moveCount: 0,
-      moveTarget: 0,
-      lastMovementSense: 0,
     };
     let previous: number | null = null;
     let first = 0;
@@ -751,26 +705,19 @@ describe("Sixteen hint", () => {
   });
 
   it("a mid-game board out of the exact search's reach still gets a useful plan", () => {
-    // Regression (owner-reported, 2026-06-10): 7 tiles out of place in one
-    // 7-cycle needing a 12-slide solution — beyond the exact search's depth cap,
-    // so it comes back empty having spent its budget and the heuristic's partial
-    // plan is what the player gets. That fallthrough is on the common path now
-    // that the exact search runs on every board, so what matters is that the
-    // partial plan is still *useful*: it must exist and it must net-improve the
-    // board, which is what this asserts.
+    // 7 tiles out of place in one 7-cycle needing a 12-slide solution — beyond
+    // the exact search's depth cap, so it comes back empty having spent its
+    // budget and the heuristic's partial plan is what the player gets. That
+    // fallthrough is on the common path, since the exact search runs on every
+    // board, so what matters is that the partial plan is *useful*: it must exist
+    // and it must net-improve the board, which is what this asserts.
     const s: SixteenState = {
-      w: 5,
-      h: 5,
-      n: 25,
+      ...solvedState(5, 5),
       tiles: new Int32Array([
         1, 2, 3, 4, 6, 7, 12, 8, 9, 5, 11, 18, 13, 14, 15, 16, 17, 24, 19, 20, 21, 22,
         23, 10, 25,
       ]),
-      completed: 0,
-      cheated: false,
       moveCount: 34,
-      moveTarget: 0,
-      lastMovementSense: 0,
     };
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
@@ -788,28 +735,20 @@ describe("Sixteen hint", () => {
     expect(outOfPlace(board)).toBeLessThan(outOfPlace(s));
   });
 
-  // Single fixed-board hint computation; work and assertions are deterministic.
   it("a previewed two-leg journey tracks and narrates the same tile through both legs", () => {
-    // Owner flow: the hint says "Working on tile 7: move it to row 1,
-    // then column 2". Following it leg by leg must (a) keep the plan alive with
-    // "completed" verdicts — including equivalent wrap-around deltas —
-    // and (b) narrate the second leg around the SAME tile, not switch
-    // to whichever tile is lowest-numbered on the second line (the
-    // switcheroo made a re-requested mid-journey hint look like an
-    // unrelated fresh hint).
+    // The hint says "Working on tile 7: move it to row 1, then column 2".
+    // Following it leg by leg must (a) keep the plan alive with "completed"
+    // verdicts — including equivalent wrap-around deltas — and (b) narrate the
+    // second leg around the SAME tile, not whichever tile is lowest-numbered on
+    // the second line, which would make a re-requested mid-journey hint look
+    // like an unrelated fresh one.
     let s: SixteenState = {
-      w: 5,
-      h: 5,
-      n: 25,
+      ...solvedState(5, 5),
       tiles: new Int32Array([
         1, 2, 3, 4, 6, 7, 12, 8, 9, 5, 11, 18, 13, 14, 15, 16, 17, 24, 19, 20, 21, 22,
         23, 10, 25,
       ]),
-      completed: 0,
-      cheated: false,
       moveCount: 34,
-      moveTarget: 0,
-      lastMovementSense: 0,
     };
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
@@ -853,9 +792,7 @@ describe("Sixteen hint", () => {
     // Row 0 rotated one cell out of place: the single solving slide lands
     // tile 1 in its solved cell, so the hint must read as a home move.
     const homeBoard: SixteenState = {
-      w: 4,
-      h: 4,
-      n: 16,
+      ...solvedState(4, 4),
       // biome-ignore format: keep the 4×4 grid readable.
       tiles: new Int32Array([
         4, 1, 2, 3,
@@ -863,11 +800,6 @@ describe("Sixteen hint", () => {
         9, 10, 11, 12,
         13, 14, 15, 16,
       ]),
-      completed: 0,
-      cheated: false,
-      moveCount: 0,
-      moveTarget: 0,
-      lastMovementSense: 0,
     };
     const homeRes = sixteenGame.hint?.(homeBoard);
     expect(homeRes?.ok).toBe(true);
@@ -927,17 +859,8 @@ describe("Sixteen hint", () => {
     const maxRounds = 100;
     while (s.completed === 0 && rounds < maxRounds) {
       const result = sixteenGame.hint?.(s);
-      if (!result?.ok) {
-        console.log(
-          "Failed at round",
-          rounds,
-          "with error:",
-          result?.error,
-          "board:",
-          s.tiles.join(","),
-        );
-        break;
-      }
+      expect(result?.ok, `round ${rounds}, board ${s.tiles.join(",")}`).toBe(true);
+      if (!result?.ok) break;
       for (const step of result.steps) s = executeMove(s, step.move);
       rounds++;
     }
@@ -946,24 +869,13 @@ describe("Sixteen hint", () => {
 
   describe("backtracking and oscillation prevention", () => {
     it("says plainly to slide back the move that undid a finished board", () => {
-      // This used to assert the opposite — that a hint never opens by undoing
-      // the slide the player just made, on the grounds that it is useless advice
-      // and is the shape a ping-pong takes. The second half of that was the real
-      // reason and it no longer applies: the ping-pong is prevented by the plan
-      // being *shortest* (`exactSearch` in the planner), and the veto cannot be
-      // applied to a shortest plan without destroying exactly that guarantee —
-      // forbid a plan's true first move and what comes back is no longer a plan
-      // whose first move shortens the way home.
-      //
-      // What is left is the first half, and it was wrong. From one slide off a
-      // finished board there is exactly one move that finishes it, and it is the
-      // undo. Withholding it does not save the player anything; it sends them
-      // the long way round. So the guarantee here is the useful one: the hint
-      // gives the move that finishes the board.
-      //
-      // The veto is still wired, and still earns its place on the boards the
-      // exact search cannot reach, where the heuristic has no such guarantee to
-      // fall back on. `slide-planner.test.ts` tests it there, directly.
+      // From one slide off a finished board exactly one move finishes it, and it
+      // is the undo, so the hint gives it rather than sending the player the long
+      // way round. What prevents a ping-pong is the plan being *shortest*
+      // (`exactSearch` in the planner), and vetoing a shortest plan's true first
+      // move would destroy exactly that guarantee. The undo veto still applies on
+      // the boards the exact search cannot reach, where the heuristic has no such
+      // guarantee; `slide-planner.test.ts` tests it there, directly.
       const s0 = solvedState(4, 4);
 
       for (const delta of [1, 2]) {
@@ -978,124 +890,75 @@ describe("Sixteen hint", () => {
   });
 
   it("handles the edge case of tile 7 and 8 under column slide of index 3", () => {
-    const tiles = new Int32Array([
-      1, 2, 14, 8, 5, 6, 15, 7, 9, 10, 11, 12, 4, 13, 3, 16,
-    ]);
     const s: SixteenState = {
-      w: 4,
-      h: 4,
-      n: 16,
-      tiles,
-      completed: 0,
-      cheated: false,
+      ...solvedState(4, 4),
+      tiles: new Int32Array([1, 2, 14, 8, 5, 6, 15, 7, 9, 10, 11, 12, 4, 13, 3, 16]),
       moveCount: 16,
-      moveTarget: 0,
-      lastMovementSense: 0,
     };
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
   });
 
   it("uses the immediate destination in hint explanation when tile is already in its target row/column", () => {
-    // Row 1 has tile 7 (correct column 1, wrong row 3), 2 (correct column 2, wrong row 1), 6 (solved).
-    // All tiles on Row 1 are in their correct column!
-    // So if the recommended move is to slide Row 1, any selected tile will be in its correct column already.
-    const tiles = new Int32Array([4, 8, 3, 7, 2, 6, 1, 5, 9]);
+    // Tile 1 sits in its home column but the wrong row, and the plan opens by
+    // sliding its row, which takes it out of that column. Every step must name
+    // the line its own move lands the tile on, never the line the tile belongs
+    // on.
     const s: SixteenState = {
-      w: 3,
-      h: 3,
-      n: 9,
-      tiles,
-      completed: 0,
-      cheated: false,
-      moveCount: 0,
-      moveTarget: 0,
-      lastMovementSense: 0,
+      ...solvedState(3, 3),
+      tiles: new Int32Array([4, 3, 9, 1, 6, 5, 8, 2, 7]),
     };
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
 
-    // If the chosen move is a row slide on row 0 (e.g. index 0) and the chosen tile is 2 or 3:
-    // They are already in their correct column (column 2 and 3).
-    // So the explanation must use their immediate destination, NOT their correct column!
-    const step = result.steps[0];
-    if (step.move.type === "slide" && step.move.axis === "row") {
+    for (const step of result.steps) {
+      if (step.move.type !== "slide") continue;
       const hl = step.highlights as SixteenHintHighlights;
-      const tile = hl?.tile;
-      if (tile === 2) {
-        // Tile 2 is at col 2 (index 1). Shifting left/right.
-        // It must NOT claim to move it to its correct "column 2".
-        expect(step.explanation).not.toContain("column 2");
-      } else if (tile === 3) {
-        // Tile 3 is at col 3 (index 2). Shifting left/right.
-        // It must NOT claim to move it to its correct "column 3".
-        expect(step.explanation).not.toContain("column 3");
-      }
+      const line =
+        step.move.axis === "row"
+          ? `column ${(hl.targetPos % 3) + 1}`
+          : `row ${Math.floor(hl.targetPos / 3) + 1}`;
+      expect(step.explanation).toMatch(
+        new RegExp(`^Working on tile ${hl.tile}: (move it|then) to ${line}\\b`),
+      );
     }
   });
 
   it("always prefers candidates in ascending numeric order regardless of whether they are out-of-place on the moved axis", () => {
-    // Row 0 has:
-    // Index 0: Tile 1 (solved)
-    // Index 1: Tile 4 (target Row 1, Col 1. Currently at Row 0, Col 1. Column is correct, row is wrong -> Strategy 2 candidate)
-    // Index 2: Tile 8 (target Row 2, Col 0. Currently at Row 0, Col 2. Column is wrong, row is wrong -> Strategy 1 candidate)
-    // Board: [1, 4, 8, ...]
-    const tiles = new Int32Array([1, 4, 8, 2, 5, 6, 7, 3, 9]);
+    // Row 0 holds tile 4 (right column, wrong row) and tile 6 (wrong both), and
+    // the plan opens by sliding it. Out of place is out of place: every step
+    // that starts a journey narrates the lowest-numbered out-of-place tile on
+    // the line it slides, whichever axis that tile is wrong on.
     const s: SixteenState = {
-      w: 3,
-      h: 3,
-      n: 9,
-      tiles,
-      completed: 0,
-      cheated: false,
-      moveCount: 0,
-      moveTarget: 0,
-      lastMovementSense: 0,
+      ...solvedState(3, 3),
+      tiles: new Int32Array([4, 6, 3, 9, 2, 5, 8, 1, 7]),
     };
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
 
-    // The recommended move should be a row slide on Row 0 (since both Tile 4 and Tile 8 can be moved/aligned).
-    // And since we now strictly prefer ascending numeric order, Tile 4 (lowest-numbered out-of-place tile on Row 0)
-    // must be selected over Tile 8, even though Tile 8 is out-of-place on the moved axis (wrong column)
-    // and Tile 4 is not (correct column, wrong row).
-    const step = result.steps[0];
-    if (
-      step.move.type === "slide" &&
-      step.move.axis === "row" &&
-      step.move.index === 0
-    ) {
-      const hl = step.highlights as SixteenHintHighlights;
-      expect(hl?.tile).toBe(4);
+    let board = s;
+    let checked = 0;
+    for (const step of result.steps) {
+      if (step.move.type !== "slide") continue;
+      const { axis, index } = step.move;
+      const cells = Array.from({ length: 3 }, (_, k) =>
+        axis === "row" ? index * 3 + k : k * 3 + index,
+      );
+      const outOfPlace = cells.filter((i) => board.tiles[i] !== i + 1);
+      if (!step.continuesPrevious && outOfPlace.length > 0) {
+        const tile = (step.highlights as SixteenHintHighlights).tile;
+        expect(tile).toBe(Math.min(...outOfPlace.map((i) => board.tiles[i])));
+        checked++;
+      }
+      board = executeMove(board, step.move);
     }
+    expect(checked).toBeGreaterThan(0);
   });
 });
 
 describe("Sixteen hint rendering", () => {
-  function recordingDrawing() {
-    const ops: Array<{ op: string; color?: number }> = [];
-    const rec = (op: string, color?: number) => ops.push({ op, color });
-    const dr: GameDrawing = {
-      startDraw: () => rec("startDraw"),
-      endDraw: () => rec("endDraw"),
-      drawUpdate: () => rec("drawUpdate"),
-      clip: () => rec("clip"),
-      unclip: () => rec("unclip"),
-      drawRect: (_r, c) => rec("drawRect", c),
-      drawLine: (_a, _b, c) => rec("drawLine", c),
-      drawPolygon: (_p, f) => rec("drawPolygon", f),
-      drawCircle: (_p, _r, f) => rec("drawCircle", f),
-      drawText: (_p, _o, c) => rec("drawText", c),
-      blitterNew: () => ({}),
-      blitterFree: () => rec("blitterFree"),
-      blitterSave: () => rec("blitterSave"),
-      blitterLoad: () => rec("blitterLoad"),
-    };
-    return { dr, ops };
-  }
-
   it("highlights hint tiles and arrow in COL_HINT", () => {
     const rng = randomNew("render-test");
     const { desc } = newDesc(defaultParams(), rng);
@@ -1113,11 +976,9 @@ describe("Sixteen hint rendering", () => {
     const { dr, ops } = recordingDrawing();
     sixteenGame.redraw?.(dr, ds, null, s, 1, ui, 0, 0, result.steps[0]);
 
-    // We should see drawTile (using COL_HINT rect/polygon fill) or drawHintBorder (drawRect)
-    // and drawArrow (drawPolygon) using COL_HINT (which is color index 4).
+    // The tile fill and target border (rects) and the arrow (polygon) all paint
+    // in COL_HINT, which is color index 4.
     const COL_HINT_INDEX = 4;
-
-    // Check for hint highlight operations
     const hintOps = ops.filter((o) => o.color === COL_HINT_INDEX);
     expect(hintOps.length).toBeGreaterThan(0);
   });
@@ -1145,28 +1006,6 @@ describe("Sixteen hint rendering", () => {
 });
 
 describe("Sixteen hint track and direction fixes", () => {
-  function recordingDrawing() {
-    const ops: Array<{ op: string; color?: number }> = [];
-    const rec = (op: string, color?: number) => ops.push({ op, color });
-    const dr: GameDrawing = {
-      startDraw: () => rec("startDraw"),
-      endDraw: () => rec("endDraw"),
-      drawUpdate: () => rec("drawUpdate"),
-      clip: () => rec("clip"),
-      unclip: () => rec("unclip"),
-      drawRect: (_r, c) => rec("drawRect", c),
-      drawLine: (_a, _b, c) => rec("drawLine", c),
-      drawPolygon: (_p, f) => rec("drawPolygon", f),
-      drawCircle: (_p, _r, f) => rec("drawCircle", f),
-      drawText: (_p, _o, c) => rec("drawText", c),
-      blitterNew: () => ({}),
-      blitterFree: () => rec("blitterFree"),
-      blitterSave: () => rec("blitterSave"),
-      blitterLoad: () => rec("blitterLoad"),
-    };
-    return { dr, ops };
-  }
-
   it("always overrides arrow direction to point in-grid (avoiding wrapping arrow)", () => {
     // Case 1: tile 1 at col 0, target at col 2.
     // Recommended move was left (delta: -1), but in-grid direction is right (delta: 1).
@@ -1279,21 +1118,18 @@ describe("Sixteen hint track and direction fixes", () => {
 });
 
 describe("the hint marks while the hinted slide animates", () => {
-  // Netslide's owner-reported defect class (edadec1): once the hinted slide
-  // starts animating, a mark on the *moving tile* must ride the slide and a
-  // mark on a *fixed cell* must stay put — the midend advances the plan only
-  // at animation end, so the displayed step's indices refer to the board the
-  // move left behind. Sixteen holds both properties by construction (the
-  // tile mark is keyed by tile *number*, so it follows the tile through the
-  // interpolated draw; the target border is drawn after the tile loop at the
-  // cell's own coordinates). These tests pin that down at an actual
-  // mid-slide frame, which the settled-frame snapshots cannot see.
+  // Netslide's defect class: once the hinted slide starts animating, a mark on
+  // the *moving tile* must ride the slide and a mark on a *fixed cell* must
+  // stay put — the midend advances the plan only at animation end, so the
+  // displayed step's indices refer to the board the move left behind. Sixteen
+  // holds both properties by construction (the tile mark is keyed by tile
+  // *number*, so it follows the tile through the interpolated draw; the target
+  // border is drawn after the tile loop at the cell's own coordinates). These
+  // tests pin that down at an actual mid-slide frame, which a settled frame
+  // cannot show.
   const TS = 48;
-  const BORDER = TS; // sixteen's border(ts) = ts
-  // Read from the helper, not written out: this restated Sixteen's own divisor
-  // and went stale the day the collection agreed on one
-  // (`unify-the-raised-tile-bevel`).
-  const HW = raisedBevelWidth(TS);
+  const BORDER = TS; // Sixteen's border is one tile wide
+  const HW = raisedBevelWidth(TS); // read from the helper, so it cannot go stale
   const px = (cell: number) => cell * TS + BORDER;
 
   interface Op {
