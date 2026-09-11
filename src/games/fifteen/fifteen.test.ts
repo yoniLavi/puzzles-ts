@@ -7,6 +7,7 @@ import {
   LEFT_BUTTON,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { permParity } from "../../engine/shuffle.ts";
 import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { executeMove, fifteenGame } from "./index.ts";
 import {
@@ -20,7 +21,6 @@ import {
   newDesc,
   newState,
   parityP,
-  permParity,
   presets,
   status,
   textFormat,
@@ -171,7 +171,7 @@ describe("Fifteen slide moves", () => {
   it("records completion when the solved arrangement is reached", () => {
     const near = nearSolved4x4(); // one slide from solved
     expect(near.completed).toBe(0);
-    // Slide tile 15 back: click its cell (3,3 is the gap home? rebuild).
+    // Slide tile 15 back left: the gap returns home to (3,3).
     const back = executeMove(near, { type: "move", x: 3, y: 3 });
     expect(isCompletedTiles(back.tiles, back.n)).toBe(true);
     expect(back.completed).toBe(back.moveCount);
@@ -346,9 +346,9 @@ describe("Fifteen hint", () => {
   });
 
   it("never says 'closer' when the target tile is being pushed away (owner board)", () => {
-    // Owner report 2026-06-15: tile 8 sits one cell below its home (the spot
-    // 12 occupies); the greedy step slides 8 DOWN, away from home, to walk the
-    // gap around it. The hint must not claim "closer".
+    // Tile 8 sits one cell below its home (the spot 12 occupies); the greedy
+    // step slides 8 DOWN, away from home, to walk the gap around it. The hint
+    // must not claim "closer".
     const p = { w: 4, h: 4 };
     const state = newState(p, "1,2,3,4,5,6,7,12,9,11,15,8,13,10,14,0");
     const result = fifteenGame.hint?.(state);
@@ -366,9 +366,9 @@ describe("Fifteen hint", () => {
   });
 
   it("holds the goal steady through the end-of-row rotation (owner board)", () => {
-    // Owner report 2026-06-15: with tile 8 in the bottom-right and the gap at
-    // tile 8's home (index 7), the greedy solver displaces the already-home
-    // tile 7 to route the gap, then re-homes 7 before finally homing 8. The
+    // With tile 8 in the bottom-right and the gap at tile 8's home (index 7),
+    // the greedy solver displaces the already-home tile 7 to route the gap,
+    // then re-homes 7 before finally homing 8. The
     // banner must keep reading "Working on tile 8" across the whole rotation
     // (not flip to "tile 7"), and narrate 7's restoration as "slide tile 7
     // into place".
@@ -403,6 +403,7 @@ describe("Fifteen hint", () => {
     // Across a whole greedy plan, every "slide it closer" step must shrink the
     // target tile's Manhattan distance to its solved cell.
     const p = { w: 4, h: 4 };
+    let closerSteps = 0;
     for (let s = 0; s < 20; s++) {
       let board = newState(p, newDesc(p, randomNew(`closer-${s}`)).desc);
       const result = fifteenGame.hint?.(board);
@@ -410,6 +411,7 @@ describe("Fifteen hint", () => {
       for (const step of result.steps) {
         if (step.move.type !== "move") continue;
         if (step.explanation.includes("slide it closer")) {
+          closerSteps++;
           const target = Number(step.explanation.match(/Working on tile (\d+):/)?.[1]);
           const dist = (idx: number) =>
             Math.abs((idx % 4) - ((target - 1) % 4)) +
@@ -421,6 +423,8 @@ describe("Fifteen hint", () => {
         board = executeMove(board, step.move);
       }
     }
+    // Vacuity guard: the loop above asserts nothing if no step says "closer".
+    expect(closerSteps).toBeGreaterThan(0);
   });
 
   it("reports no plan on an already-solved board", () => {

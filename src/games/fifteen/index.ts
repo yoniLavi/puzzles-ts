@@ -60,8 +60,8 @@ export function executeMove(state: FifteenState, move: FifteenMove): FifteenStat
   if (move.type === "solve") {
     const tiles = new Int32Array(n);
     for (let i = 0; i < n; i++) tiles[i] = (i + 1) % n;
-    // Upstream snaps movecount and completed to 1 (Solve resets to a
-    // clean solved board to practice from; "Moves since auto-solve: 0").
+    // As upstream, Solve resets to a clean solved board to practice from:
+    // movecount and completed both snap to 1 ("Moves since auto-solve: 0").
     return {
       ...state,
       tiles,
@@ -73,33 +73,23 @@ export function executeMove(state: FifteenState, move: FifteenMove): FifteenStat
   }
   if (move.type !== "move") return assertNever(move, "fifteen: executeMove");
 
-  const { x: dx, y: dy } = move;
+  const { x, y } = move;
   const gx = state.gapPos % w;
   const gy = Math.floor(state.gapPos / w);
-
-  if (
-    dx < 0 ||
-    dx >= w ||
-    dy < 0 ||
-    dy >= h ||
-    (dx === gx) === (dy === gy) // must share exactly one coordinate
-  ) {
-    throw new Error(`Illegal fifteen move to (${dx}, ${dy})`);
+  // The destination must share exactly one coordinate with the gap.
+  if (x < 0 || x >= w || y < 0 || y >= h || (x === gx) === (y === gy)) {
+    throw new Error(`Illegal fifteen move to (${x}, ${y})`);
   }
 
-  // Unit step from the old gap toward the destination, and its flat
-  // stride.
-  const ux = dx < gx ? -1 : dx > gx ? +1 : 0;
-  const uy = dy < gy ? -1 : dy > gy ? +1 : 0;
-  const up = uy * w + ux;
-
+  // The flat stride of one step from the old gap toward the destination.
+  const step = Math.sign(y - gy) * w + Math.sign(x - gx);
   const tiles = new Int32Array(state.tiles);
-  const newGap = dy * w + dx;
+  const newGap = y * w + x;
   tiles[newGap] = 0;
 
   let moveCount = state.moveCount;
-  for (let p = state.gapPos; p !== newGap; p += up) {
-    tiles[p] = state.tiles[p + up];
+  for (let p = state.gapPos; p !== newGap; p += step) {
+    tiles[p] = state.tiles[p + step];
     moveCount++;
   }
 
@@ -115,20 +105,12 @@ function newUi(_state: FifteenState): FifteenUi {
   return { invertCursor: false };
 }
 
-function flipCursor(button: number): number {
-  switch (button) {
-    case CURSOR_UP:
-      return CURSOR_DOWN;
-    case CURSOR_DOWN:
-      return CURSOR_UP;
-    case CURSOR_LEFT:
-      return CURSOR_RIGHT;
-    case CURSOR_RIGHT:
-      return CURSOR_LEFT;
-    default:
-      return 0;
-  }
-}
+const OPPOSITE_ARROW: Record<number, number> = {
+  [CURSOR_UP]: CURSOR_DOWN,
+  [CURSOR_DOWN]: CURSOR_UP,
+  [CURSOR_LEFT]: CURSOR_RIGHT,
+  [CURSOR_RIGHT]: CURSOR_LEFT,
+};
 
 function interpretMove(
   state: FifteenState,
@@ -137,39 +119,27 @@ function interpretMove(
   p: Point,
   button: number,
 ): FifteenMove | null | UiUpdate {
-  const w = state.w;
-  const h = state.h;
-  const cx = state.gapPos % w;
-  const cy = Math.floor(state.gapPos / w);
-  let nx = cx;
-  let ny = cy;
-
+  const { w, h } = state;
+  const gx = state.gapPos % w;
+  const gy = Math.floor(state.gapPos / w);
   const raw = stripModifiers(button);
 
-  if (raw === LEFT_BUTTON) {
-    const ts = ds.tilesize;
-    nx = fromCoord(p.x, ts);
-    ny = fromCoord(p.y, ts);
-    if (nx < 0 || nx >= w || ny < 0 || ny >= h) return null; // out of bounds
-  } else if (isCursorMove(raw)) {
-    // Default arrow semantics: the pressed arrow moves a *tile* in that
-    // direction, so the gap moves the opposite way (flip). The
-    // (never-set) invertCursor preference would undo the flip.
-    let b = flipCursor(raw);
-    if (ui.invertCursor) b = flipCursor(b);
-    // Clamped move (no wrap); a no-op edge move leaves (cx, cy) — which
-    // then fails the share-one-coordinate test below and returns null,
-    // matching upstream `move_cursor(..., wrap=false)`.
-    ({ x: nx, y: ny } = gridCursorMove(b, cx, cy, w, h) ?? { x: cx, y: cy });
-  } else {
-    return null;
+  if (isCursorMove(raw)) {
+    // The pressed arrow moves a *tile* that way, so the gap moves the
+    // opposite way (unless invertCursor). One step along one axis always
+    // makes a legal slide; a step off the edge is null, as upstream's
+    // clamped `move_cursor`.
+    const arrow = ui.invertCursor ? raw : OPPOSITE_ARROW[raw];
+    const next = gridCursorMove(arrow, gx, gy, w, h);
+    return next && { type: "move", x: next.x, y: next.y };
   }
+  if (raw !== LEFT_BUTTON) return null;
 
+  const x = fromCoord(p.x, ds.tilesize);
+  const y = fromCoord(p.y, ds.tilesize);
+  if (x < 0 || x >= w || y < 0 || y >= h) return null;
   // A legal target shares exactly one coordinate with the gap.
-  if ((cx === nx) !== (cy === ny)) {
-    return { type: "move", x: nx, y: ny };
-  }
-  return null;
+  return (x === gx) !== (y === gy) ? { type: "move", x, y } : null;
 }
 
 // --- status bar -------------------------------------------------------
@@ -185,35 +155,27 @@ function statusbarText(state: FifteenState, _ui: FifteenUi): string {
 
 // --- hint -------------------------------------------------------------
 
-/** Narrate one greedy step, explaining *why* it matters (per the hint
- * quality bar). The tile being slid lands at the old gap (`board.gapPos`),
- * and tile `t`'s solved cell is index `t - 1`.
+/** Narrate one greedy step around a **stable goal** tile (see `hint`), not
+ * the solver's per-step `target`. To place the last tiles of a line the
+ * solver displaces an already-home tile and then restores it; narrating
+ * `target` would make the banner read "Working on tile 8", then "Working on
+ * tile 7", as though the hint had lost the plot. Held steady, the
+ * restoration reads as a sub-step of the same goal ("slide tile 7 into
+ * place").
  *
- * The narration is framed around a **stable goal** tile (see `hint`): the
- * one we are working toward home right now. Crucially this is *not* the
- * solver's memoryless `nextpiece`, which flips around during the
- * end-of-row/column rotation. To place the last tiles of a line the solver
- * temporarily displaces an already-home tile and then restores it; if we
- * re-narrated the goal as whatever `nextpiece` currently is, the banner
- * would read "Working on tile 8" then "Working on tile 7" and look like it
- * lost the plot (the owner-reported case). Holding the goal steady, the
- * displaced tile's restoration reads as a sub-step ("slide tile 7 into
- * place") of the same goal.
- *
- * Cases, given the stable `goal`:
- * - the goal tile lands in its solved cell → "slide it into place" (home);
- * - the goal tile slides but not home → compare its Manhattan distance to
- *   home before vs after and say "slide it closer" only when it actually
- *   decreases, else "reposition it" (the solver often pushes the goal
- *   *away* to route the gap to the far side of it — tile 8 sliding *down*);
- * - a non-goal tile lands in *its* solved cell → "slide tile N into place"
- *   (restoring a tile displaced earlier in the rotation);
- * - any other non-goal slide → "slide tile N out of the way". */
+ * The slid tile lands at the old gap (`board.gapPos`); tile `t`'s solved
+ * cell is index `t - 1`. Given the goal:
+ * - the goal lands home → "slide it into place";
+ * - the goal moves but not home → "slide it closer" only when its Manhattan
+ *   distance to home shrinks, else "reposition it" (the solver often pushes
+ *   the goal *away* to route the gap round it);
+ * - another tile lands in its own home → "slide tile N into place";
+ * - any other slide → "slide tile N out of the way". */
 function narrateFifteenStep(
   board: FifteenState,
   tile: number,
   goal: number,
-  dest: { x: number; y: number },
+  dest: Point,
 ): string {
   const w = board.w;
   const landsAtOwnHome = board.gapPos === tile - 1;
@@ -233,14 +195,11 @@ function narrateFifteenStep(
   return say.outOfWay(goal, tile);
 }
 
-/** Compute the *whole* greedy solution as a hint plan: one narrated
- * single-cell gap slide per step, simulated forward from the current
- * board. Returning the full plan (rather than one step per request) is
- * what keeps the hint banner populated through an auto-hint run instead
- * of clearing and recomputing on every step — matching Sixteen, where a
- * single multi-step plan stays on display while it is followed. The plan
- * is cheap (the greedy solver is fast) and recomputed only when the
- * player deviates (see `hintKeepTrack`). */
+/** The *whole* greedy solution as one plan, one narrated gap slide per
+ * step, so the banner stays populated through an auto-hint run instead of
+ * clearing and recomputing on every step, as Sixteen's plan does. The
+ * solver is cheap, and the plan is recomputed only when the player
+ * deviates (see `hintKeepTrack`). */
 function hint(state: FifteenState): HintResult<FifteenMove, FifteenHintHighlights> {
   if (isCompletedTiles(state.tiles, state.n)) {
     return { ok: false, error: ALREADY_SOLVED };
@@ -248,20 +207,14 @@ function hint(state: FifteenState): HintResult<FifteenMove, FifteenHintHighlight
 
   const steps: HintStep<FifteenMove, FifteenHintHighlights>[] = [];
   let board = state;
-  // The greedy solver terminates within the upstream 5·n³ bound; the
-  // guard is a belt-and-braces cap against an unexpected non-terminating
-  // board, never reached for a solvable one.
-  let guard = 5 * state.n * state.n * state.n;
-  // The *stable* goal tile: the one we are working toward home. The solver's
-  // per-step `nextpiece` drops to a lower tile mid-rotation when it displaces
-  // an already-home tile, so we hold the goal at the running maximum until it
-  // is actually homed, then let the next step pick a fresh one. This keeps the
-  // banner from flip-flopping (e.g. "tile 8" → "tile 7" → "tile 8") through the
-  // end-of-line corner dance.
+  // The goal is the running maximum of the solver's `target` until it is
+  // homed: mid-rotation the target drops to the tile being restored.
   let goal: number | null = null;
-  while (!isCompletedTiles(board.tiles, board.n) && guard-- > 0) {
+  // Upstream's 5·n³ bound on the greedy solver: a cap against an unexpected
+  // non-terminating board, never reached for a solvable one.
+  for (let guard = 5 * state.n ** 3; guard > 0; guard--) {
     const dest = computeHint(board);
-    if (!dest) break;
+    if (!dest) break; // solved
     const tile = board.tiles[dest.y * board.w + dest.x];
     goal = goal === null ? dest.target : Math.max(goal, dest.target);
     const move: FifteenMove = { type: "move", x: dest.x, y: dest.y };
@@ -270,7 +223,6 @@ function hint(state: FifteenState): HintResult<FifteenMove, FifteenHintHighlight
       explanation: narrateFifteenStep(board, tile, goal, dest),
       highlights: { tile },
     });
-    // Reset the goal once it lands home so the next pursuit starts fresh.
     const homedGoal = tile === goal && board.gapPos === goal - 1;
     board = executeMove(board, move);
     if (homedGoal) goal = null;
@@ -280,23 +232,17 @@ function hint(state: FifteenState): HintResult<FifteenMove, FifteenHintHighlight
   return { ok: true, steps };
 }
 
-/** Classify a player move against the current plan step. A move that
- * produces exactly the board the plan expects after this step completes
- * it (so the remaining steps stay valid); anything else is a deviation,
- * which drops the plan and lets the next hint request recompute. */
+/** A slide is named by the gap's destination, so a move to the hinted
+ * destination leaves exactly the board the plan expects and completes the
+ * step. Anything else is a deviation, which drops the plan for the next
+ * hint request to recompute. */
 function hintKeepTrack(
   m: FifteenMove,
   step: HintStep<FifteenMove, FifteenHintHighlights>,
-  state: FifteenState,
 ): HintTrackVerdict {
-  if (m.type !== "move" || step.move.type !== "move") return "off";
-  const expected = executeMove(state, step.move);
-  const actual = executeMove(state, m);
-  if (actual.gapPos !== expected.gapPos) return "off";
-  for (let i = 0; i < expected.n; i++) {
-    if (actual.tiles[i] !== expected.tiles[i]) return "off";
-  }
-  return "completed";
+  const hinted = step.move;
+  if (m.type !== "move" || hinted.type !== "move") return "off";
+  return m.x === hinted.x && m.y === hinted.y ? "completed" : "off";
 }
 
 // --- Game object ------------------------------------------------------
@@ -324,7 +270,7 @@ export const fifteenGame: Game<
   validateParams,
   paramConfig,
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -333,9 +279,7 @@ export const fifteenGame: Game<
   executeMove,
   status,
 
-  solve(_orig, _curr) {
-    return { ok: true, move: { type: "solve" as const } };
-  },
+  solve: () => ({ ok: true, move: { type: "solve" } }),
 
   hint,
   hintKeepTrack,

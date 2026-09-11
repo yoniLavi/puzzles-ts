@@ -131,8 +131,8 @@ function dr0(_ds: unknown, _state: unknown): GameDrawing {
 }
 
 describe("the hint mark while the hinted slide animates", () => {
-  // Netslide's owner-reported defect class (edadec1): a hint mark on a
-  // *moving tile* must ride the slide — the midend advances the plan only at
+  // Netslide's defect class: a hint mark on a *moving tile* must ride the
+  // slide — the midend advances the plan only at
   // animation end, so while the hinted move animates the displayed step
   // still describes the board the move left behind. Fifteen holds this by
   // construction: the mark is keyed by tile *number* and painted as the
@@ -163,10 +163,8 @@ describe("the hint mark while the hinted slide animates", () => {
 
       // The hint fill is drawTile's center rect, inset by the shared bevel
       // width, drawn at the tile's interpolated position — half a cell from its
-      // origin toward the gap it slides into. Read from the helper rather than
-      // written out: this said `2` while the divisor was Fifteen's own, and
-      // went stale the day the collection agreed on one
-      // (`unify-the-raised-tile-bevel`).
+      // origin toward the gap it slides into. The inset is read from the
+      // shared helper so it follows the collection's bevel width.
       const hw = raisedBevelWidth(TS);
       const x0 = coord(from % 4);
       const y0 = coord(Math.floor(from / 4));

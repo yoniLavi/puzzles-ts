@@ -4,8 +4,6 @@ import { dims, paramsCodec } from "../../engine/params-codec.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { permParity } from "../../engine/shuffle.ts";
 
-export { permParity };
-
 // --- types -----------------------------------------------------------
 
 export interface FifteenParams {
@@ -32,15 +30,14 @@ export interface FifteenState {
 }
 
 /** A slide carries the *destination* gap cell (upstream `"M x,y"`); a
- * solve snaps to the solved board (upstream `"S"`). Both are plain
- * JSON-safe data, so the default move codec suffices. */
+ * solve snaps to the solved board (upstream `"S"`). Both are plain data,
+ * so the default move codec suffices. */
 export type FifteenMove = { type: "move"; x: number; y: number } | { type: "solve" };
 
 export interface FifteenUi {
-  /** Upstream's arrow-semantics preference. `false` (the default we
-   * ship) means the pressed arrow moves a *tile* in that direction; the
-   * gap moves the opposite way. No UI exposes this yet — the engine has
-   * no preferences hook — so it is always `false`. */
+  /** Upstream's arrow-semantics preference: `false` means the pressed arrow
+   * moves a *tile* that way, so the gap moves the opposite way. Always
+   * `false`, because the engine has no preferences hook to expose it. */
   invertCursor: boolean;
 }
 
@@ -83,10 +80,6 @@ export function isCompletedTiles(tiles: Int32Array, n: number): boolean {
   return true;
 }
 
-export function isCompleted(state: FifteenState): boolean {
-  return isCompletedTiles(state.tiles, state.n);
-}
-
 /** Required permutation parity for a board whose gap sits at flat index
  * `gap`: chessboard parity of the gap cell XOR parity of `n` (the solved
  * target `1..n-1,0` is a cyclic rotation of `0..n-1`, odd iff `n` is
@@ -95,10 +88,6 @@ export function parityP(w: number, h: number, gap: number): number {
   const gx = gap % w;
   const gy = Math.floor(gap / w);
   return ((gx - (w - 1)) ^ (gy - (h - 1)) ^ (w * h + 1)) & 1;
-}
-
-export function parityS(state: FifteenState): number {
-  return parityP(state.w, state.h, state.gapPos);
 }
 
 // --- desc / state -----------------------------------------------------
@@ -123,17 +112,13 @@ export function newState(p: FifteenParams, desc: string): FifteenState {
   const n = p.w * p.h;
   const tiles = new Int32Array(n);
   const parts = desc.split(",");
-  let gapPos = 0;
-  for (let i = 0; i < n; i++) {
-    tiles[i] = Number.parseInt(parts[i], 10);
-    if (tiles[i] === 0) gapPos = i;
-  }
+  for (let i = 0; i < n; i++) tiles[i] = Number.parseInt(parts[i], 10);
   return {
     w: p.w,
     h: p.h,
     n,
     tiles,
-    gapPos,
+    gapPos: tiles.indexOf(0),
     completed: 0,
     cheated: false,
     moveCount: 0,
@@ -162,10 +147,9 @@ export function textFormat(state: FifteenState): string {
 
 // --- generator --------------------------------------------------------
 
-/** Faithful port of upstream `new_game_desc`: place all tiles except the
- * last two at random, then pick the final two so the whole permutation's
- * parity matches the required parity (gap chessboard-parity ⊕ parity of
- * `n`), rejecting an already-solved layout. */
+/** Upstream's `new_game_desc`: place all tiles except the last two at
+ * random, then order the final two so the permutation's parity matches
+ * `parityP`, rejecting an already-solved layout. */
 export function newDesc(p: FifteenParams, rng: RandomState): { desc: string } {
   const n = p.w * p.h;
   const tiles = new Int32Array(n);
@@ -194,39 +178,20 @@ export function newDesc(p: FifteenParams, rng: RandomState): { desc: string } {
       tiles[x] = j;
     }
 
-    // Find the last two free locations and the last two unused pieces.
-    while (tiles[x] >= 0) x++;
-    const x1 = x++;
-    while (tiles[x] >= 0) x++;
-    const x2 = x;
-
-    let p1 = -1;
-    let p2 = -1;
-    for (let i = 0; i < n; i++) {
-      if (!used[i]) {
-        p1 = i;
-        break;
-      }
-    }
-    for (let i = p1 + 1; i < n; i++) {
-      if (!used[i]) {
-        p2 = i;
-        break;
-      }
-    }
-
-    const parity = parityP(p.w, p.h, gap);
+    // The last two free locations and the last two unused pieces.
+    const x1 = tiles.indexOf(-1);
+    const x2 = tiles.indexOf(-1, x1 + 1);
+    const p1 = used.indexOf(0);
+    const p2 = used.indexOf(0, p1 + 1);
 
     // Try one way round; if parity is wrong, swap the last two.
     tiles[x1] = p1;
     tiles[x2] = p2;
-    if (permParity(tiles, n) !== parity) {
+    if (permParity(tiles, n) !== parityP(p.w, p.h, gap)) {
       tiles[x1] = p2;
       tiles[x2] = p1;
     }
   } while (isCompletedTiles(tiles, n));
 
-  const parts: string[] = [];
-  for (let i = 0; i < n; i++) parts.push(String(tiles[i]));
-  return { desc: parts.join(",") };
+  return { desc: tiles.join(",") };
 }

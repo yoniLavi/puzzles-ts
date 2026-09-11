@@ -6,10 +6,9 @@
  * tile-by-tile, walking the next piece toward its home, with a
  * hard-coded shortest-move table for the awkward end-of-line 3×2 corner.
  *
- * Ported branch-for-branch from the C; the pointer-swapping at the call
- * sites (upstream passes `&dy, &dx` to reuse the same routine for the
- * column axis) is reproduced by mapping the returned `{dx, dy}` value
- * object at each site.
+ * Upstream reuses each routine for a mirrored or transposed axis by
+ * swapping its pointer arguments (`&dy, &dx`); here each call site maps
+ * the returned `{dx, dy}` instead.
  */
 
 import type { FifteenState } from "./state.ts";
@@ -58,8 +57,7 @@ const MOVE_3X2: ReadonlyArray<number> = [
 
 /** When w = 3 and h = 2 and the tile going in the top left corner is at
  * (ax, ay), the tile going in the bottom left corner is at (bx, by), and
- * the blank is at (gx, gy): which way to move. Returns `{dx, dy}` (the
- * natural first/second outputs of upstream's two pointer args). */
+ * the blank is at (gx, gy): which way to move. */
 function nextMove3x2(
   ax: number,
   ay: number,
@@ -74,12 +72,11 @@ function nextMove3x2(
   if (eb > ea) --eb;
   if (eg > ea) --eg;
   if (eg > eb) --eg;
-  const v = MOVE_3X2[ea + eb * 6 + eg * 5 * 6];
-  return { dx: D3X2[v].dx, dy: D3X2[v].dy };
+  return D3X2[MOVE_3X2[ea + eb * 6 + eg * 5 * 6]];
 }
 
-/** Faithful port of upstream `next_move`. Returns `{dx, dy}` for the two
- * pointer outputs in the order they appear in the C signature. */
+/** Upstream's `next_move`: the gap's next step while walking piece (nx, ny)
+ * toward its home (tx, ty), with (ox, oy) the piece that goes after it. */
 function nextMove(
   nx: number,
   ny: number,
@@ -107,7 +104,7 @@ function nextMove(
     gy <= ty + 2 &&
     (gx === tx || gx === tx + 1)
   ) {
-    // C passes pointers (dy, dx): first output → dy, second → dx; then dx *= -1.
+    // The table's axes are swapped and x-mirrored: its dx is our dy, its dy our -dx.
     const r = nextMove3x2(
       oy - ty,
       tx + 1 - ox,
@@ -134,7 +131,7 @@ function nextMove(
     } else if (gy === ty) {
       out.dy = +1;
     } else if (nx !== tx || ny !== ty + 1) {
-      // C passes pointers (dx, dy) in the same order; then dx *= -1.
+      // Mirrored in x.
       const r = nextMove(w - 1 - nx, ny, -1, -1, w - 1 - gx, gy, 0, ty + 1, -1);
       out.dx = -r.dx;
       out.dy = r.dy;
@@ -177,13 +174,10 @@ function nextMove(
   return out;
 }
 
-/** The overall greedy solving process: find the next piece to place,
- * then move the gap one cell toward where that piece needs to go.
- * Returns the gap's next destination cell plus `target` — the tile the
- * solver is currently working toward its home (upstream's `nextpiece`),
- * which the hint narration uses to explain *which* tile a maneuvering
- * move serves — or `null` when the board is already solved (no hint).
- * Faithful port of upstream `compute_hint`. */
+/** Upstream's `compute_hint`: find the next piece to place, then move the
+ * gap one cell toward where that piece needs to go. Returns the gap's
+ * destination plus `target`, the piece being placed (upstream's
+ * `nextpiece`), or `null` on a solved board. */
 export function computeHint(
   state: FifteenState,
 ): { x: number; y: number; target: number } | null {
@@ -202,11 +196,11 @@ export function computeHint(
   let unsolvedCols = w;
 
   while (solr < h && solc < w) {
-    const step = unsolvedCols <= unsolvedRows ? 1 : w;
-    const stop = unsolvedCols <= unsolvedRows ? unsolvedCols : unsolvedRows;
+    const alongRow = unsolvedCols <= unsolvedRows;
+    const step = alongRow ? 1 : w;
+    const stop = Math.min(unsolvedCols, unsolvedRows);
     const start = solr * w + solc;
-    let i = 0;
-    for (; i < stop; i++) {
+    for (let i = 0; i < stop; i++) {
       const j = start + i * step;
       if (tiles[j] !== j + 1) {
         nextPiece = j + 1;
@@ -214,9 +208,9 @@ export function computeHint(
         break;
       }
     }
-    if (i < stop) break;
+    if (nextPiece) break;
 
-    if (unsolvedCols <= unsolvedRows) {
+    if (alongRow) {
       solr++;
       unsolvedRows--;
     } else {
@@ -231,13 +225,13 @@ export function computeHint(
   const tx = (nextPiece - 1) % w;
   const ty = Math.floor((nextPiece - 1) / w);
 
-  let i = 0;
-  for (; i < n && tiles[i] !== nextPiece; i++);
+  const i = tiles.indexOf(nextPiece);
   const nx = i % w;
   const ny = Math.floor(i / w);
 
-  let i2 = 0;
-  for (; i2 < n && tiles[i2] !== nextPiece2; i2++);
+  // The piece after it in the line. Past the board's last tile there is
+  // none, and upstream's search then stops at index `n`.
+  const i2 = nextPiece2 < n ? tiles.indexOf(nextPiece2) : n;
   const ox = i2 % w;
   const oy = Math.floor(i2 / w);
 

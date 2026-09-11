@@ -9,8 +9,8 @@
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { HINT_ACTION, INK } from "../../engine/color/palette.ts";
 import {
-  drawRecessedBorder as drawBevel,
   drawRaisedBevel,
+  drawRecessedBorder,
   raisedBevelWidth,
 } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
@@ -58,8 +58,6 @@ export function fromCoord(pixel: number, ts: number): number {
 
 export interface FifteenDrawState {
   started: boolean;
-  w: number;
-  h: number;
   bgcolor: number;
   /** Per-cell cache of the last-drawn tile value; `-1` forces a redraw
    * (unknown, or animating). */
@@ -72,8 +70,6 @@ export interface FifteenDrawState {
 export function newDrawState(state: FifteenState): FifteenDrawState {
   return {
     started: false,
-    w: state.w,
-    h: state.h,
     bgcolor: COL_BACKGROUND,
     tiles: new Int32Array(state.n).fill(-1),
     tilesize: 0,
@@ -115,9 +111,7 @@ function drawTile(
       COL_HIGHLIGHT,
       COL_LOWLIGHT,
     );
-    // Center fill.
     dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColor);
-    // Number.
     dr.drawText(
       { x: x + Math.floor(ts / 2), y: y + Math.floor(ts / 2) },
       { align: "center", baseline: "mathematical", fontType: "variable", size: ts / 3 },
@@ -128,14 +122,14 @@ function drawTile(
   dr.drawUpdate({ x, y, w: ts, h: ts });
 }
 
-function drawRecessedBorder(
+function drawPlayfieldBorder(
   dr: GameDrawing,
   w: number,
   h: number,
   ts: number,
   hw: number,
 ): void {
-  drawBevel(
+  drawRecessedBorder(
     dr,
     {
       left: coord(0, ts) - hw,
@@ -175,7 +169,7 @@ export function redraw(
     // (the recessed border leaves a margin around the playfield).
     const size = computeSize({ w, h }, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
-    drawRecessedBorder(dr, w, h, ts, hw);
+    drawPlayfieldBorder(dr, w, h, ts, hw);
     ds.started = true;
   }
 
@@ -195,8 +189,7 @@ export function redraw(
         ds.bgcolor !== bgcolor ||
         ds.hintTile !== hintTile ||
         ds.tiles[i] !== t ||
-        ds.tiles[i] === -1 ||
-        t === -1
+        ds.tiles[i] === -1
       ) {
         let x: number;
         let y: number;
@@ -214,11 +207,8 @@ export function redraw(
 
             const x1 = coord(i % w, ts);
             const y1 = coord(Math.floor(i / w), ts);
-            // Find where this tile was in the previous state.
-            let j = 0;
-            for (; j < (prev as FifteenState).n; j++) {
-              if ((prev as FifteenState).tiles[j] === state.tiles[i]) break;
-            }
+            // Where this tile was in the previous state.
+            const j = (prev as FifteenState).tiles.indexOf(t);
             const x0 = coord(j % w, ts);
             const y0 = coord(Math.floor(j / w), ts);
 

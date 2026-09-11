@@ -93,10 +93,9 @@ describe("Fifteen midend lifecycle", () => {
   });
 
   it("stretches a hint-executed move to the uniform 1s, despite Fifteen's 0.13s base", () => {
-    // Owner report 2026-06-16: Fifteen's normal slide animation (0.13s) is far
-    // shorter than the auto-hint dwell, leaving a long frozen gap between
-    // steps. A hint move must now stretch to HINT_ANIM_S (1.0s) so the dwell
-    // is filled by continuous motion, not a pause.
+    // Fifteen's own slide (0.13s) is far shorter than the auto-hint dwell, so
+    // a hint move stretches to HINT_ANIM_S (1.0s): the dwell is filled by
+    // continuous motion, not a pause.
     const mPrivate = h.m as unknown as { animLength: number };
 
     // A manual slide is NOT stretched — it keeps Fifteen's own 0.13s.
