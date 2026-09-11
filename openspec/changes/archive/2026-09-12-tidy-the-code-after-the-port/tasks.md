@@ -43,6 +43,6 @@
 
 - [x] 6.1 Re-measure against `baseline.txt`, and verify the total and every
       game's count went down or did not move.
-- [ ] 6.2 Run the full gate, open a handful of games and every dialog in the
+- [x] 6.2 Run the full gate, open a handful of games and every dialog in the
       running app, and verify each plays and renders.
-- [ ] 6.3 Archive the change.
+- [x] 6.3 Archive the change.
