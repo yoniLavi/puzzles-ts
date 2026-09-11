@@ -35,9 +35,10 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Color, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
   C_ADD,
+  C_DIV,
   C_MUL,
   C_SUB,
   checkErrors,
@@ -97,16 +98,19 @@ export interface KeenHint {
    * chain's cells additionally carry their place in it, drawn as an ordinal. */
   area: OrderedCell[];
   /** The cell(s) the deduction acts on, ringed `COL_HINT`. */
-  targets: { x: number; y: number }[];
+  targets: Point[];
   /** The candidate number(s) ruled out, shown struck among the pencil marks. */
   marks: { x: number; y: number; n: number }[];
 }
 
 // --- operation symbols (upstream text_fallback first choice) ---------------
 
-const MINUS_SIGN = "−";
-const TIMES_SIGN = "×";
-const DIVIDE_SIGN = "÷";
+const OP_SYMBOL: Record<number, string> = {
+  [C_ADD]: "+",
+  [C_SUB]: "−",
+  [C_MUL]: "×",
+  [C_DIV]: "÷",
+};
 
 // --- tile flag bits (upstream DF_*) ----------------------------------------
 
@@ -186,10 +190,6 @@ function drawTile(
   x: number,
   y: number,
   tile: number,
-  onlyOneOp: boolean,
-  wrong: boolean,
-  hint: number,
-  hintOrder: number,
 ): void {
   const ts = ds.tilesize;
   const w = state.params.w;
@@ -198,22 +198,20 @@ function drawTile(
   const cell = y * w + x;
   const drawClue = minimal[cell] === cell;
 
-  // Hint overlay (docs/games/hints.md § "The element-type color legend"): the
-  // evidence cell washes COL_HINT_CELL, and the target is *ringed* COL_HINT at
-  // the end of this function rather than competing for the background. `struck`
-  // is the set of candidates this firing rules out, drawn crossed through among
-  // the marks.
-  // (both hint bits are read in `redraw`, which draws the target's ring and the
-  // evidence region's outline in the gutter, so neither is a background here)
-  const struck = hint >> 2; // bit n ⇒ candidate n struck
+  // Of the hint overlay, only the candidates this firing rules out are drawn
+  // here, crossed through among the marks. The target's ring and the evidence
+  // region's outline are drawn by `redraw` in the gutter, so a hint never
+  // paints over the digits it is talking about.
+  const struck = ds.hint.packed[cell] >> 2; // bit n ⇒ candidate n struck
 
   const tx = border(ts) + x * ts + 1 + ge;
   const ty = border(ts) + y * ts + 1 + ge;
+  const inner = ts - 1 - 2 * ge;
 
   let cx = tx;
   let cy = ty;
-  let cw = ts - 1 - 2 * ge;
-  let ch = ts - 1 - 2 * ge;
+  let cw = inner;
+  let ch = inner;
 
   // Widen the background toward same-cage neighbors so the cage merges.
   if (x > 0 && dsf.equivalent(cell, cell - 1)) {
@@ -229,9 +227,6 @@ function drawTile(
 
   dr.clip({ x: cx, y: cy, w: cw, h: ch });
 
-  // Background. No hint role appears here: the target's ring and the evidence
-  // region's outline are both drawn in the gutter (see `redraw`), so a hint
-  // never paints over the digits it is talking about.
   const bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
   dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, bg);
 
@@ -253,31 +248,17 @@ function drawTile(
   if (x > 0 && y > 0 && !dsf.equivalent(cell, (y - 1) * w + x - 1))
     dr.drawRect({ x: tx - ge, y: ty - ge, w: ge, h: ge }, COL_GRID);
   if (x + 1 < w && y > 0 && !dsf.equivalent(cell, (y - 1) * w + x + 1))
-    dr.drawRect({ x: tx + ts - 1 - 2 * ge, y: ty - ge, w: ge, h: ge }, COL_GRID);
+    dr.drawRect({ x: tx + inner, y: ty - ge, w: ge, h: ge }, COL_GRID);
   if (x > 0 && y + 1 < w && !dsf.equivalent(cell, (y + 1) * w + x - 1))
-    dr.drawRect({ x: tx - ge, y: ty + ts - 1 - 2 * ge, w: ge, h: ge }, COL_GRID);
+    dr.drawRect({ x: tx - ge, y: ty + inner, w: ge, h: ge }, COL_GRID);
   if (x + 1 < w && y + 1 < w && !dsf.equivalent(cell, (y + 1) * w + x + 1))
-    dr.drawRect(
-      { x: tx + ts - 1 - 2 * ge, y: ty + ts - 1 - 2 * ge, w: ge, h: ge },
-      COL_GRID,
-    );
+    dr.drawRect({ x: tx + inner, y: ty + inner, w: ge, h: ge }, COL_GRID);
 
   // Cage clue text (top-left of the minimal cell).
   if (drawClue) {
     const clue = clues[cell];
-    const op = clueOp(clue);
-    const val = clueVal(clue);
-    const size = dsf.size(cell);
-    const symbol =
-      size === 1 || onlyOneOp
-        ? ""
-        : op === C_ADD
-          ? "+"
-          : op === C_SUB
-            ? MINUS_SIGN
-            : op === C_MUL
-              ? TIMES_SIGN
-              : DIVIDE_SIGN;
+    const onlyOneOp = dsf.size(cell) === 1 || state.params.multiplicationOnly;
+    const symbol = onlyOneOp ? "" : OP_SYMBOL[clueOp(clue)];
     dr.drawText(
       { x: tx + ge * 2, y: ty + ge * 2 + ((ts / 4) | 0) },
       {
@@ -287,7 +268,7 @@ function drawTile(
         size: (ts / 4) | 0,
       },
       tile & DF_ERR_CLUE ? COL_ERROR : COL_GRID,
-      `${val}${symbol}`,
+      `${clueVal(clue)}${symbol}`,
     );
   }
 
@@ -308,35 +289,27 @@ function drawTile(
     let npencil = 0;
     for (let i = 1; i <= w; i++) if (tile & (1 << (i + DF_PENCIL_SHIFT))) npencil++;
     if (npencil) {
-      const minph = 2;
-      let pl = tx + ge;
-      const pr = pl + ts - ge;
-      let pt = ty + ge;
-      const pb = pt + ts - ge;
-      if (drawClue) pt += (ts / 4) | 0;
-
-      // Choose the grid layout maximizing the font size.
+      // Lay the marks out in `pw` columns × `rows(pw)` (at least two rows),
+      // choosing `pw` to maximize the font size in the area below the clue.
+      const areaW = ts - ge;
+      const areaH = ts - ge - (drawClue ? (ts / 4) | 0 : 0);
+      const rows = (cols: number): number =>
+        Math.max(((npencil + cols - 1) / cols) | 0, 2);
       let bestsize = 0;
-      let pbest = 0;
-      for (let pw = 3; pw < Math.max(npencil, 4); pw++) {
-        let ph = ((npencil + pw - 1) / pw) | 0;
-        ph = Math.max(ph, minph);
-        const fw = (pr - pl) / pw;
-        const fh = (pb - pt) / ph;
-        const fs = Math.min(fw, fh);
+      let pw = 0;
+      for (let cols = 3; cols < Math.max(npencil, 4); cols++) {
+        const fs = Math.min(areaW / cols, areaH / rows(cols));
         if (fs > bestsize) {
           bestsize = fs;
-          pbest = pw;
+          pw = cols;
         }
       }
-      const pw = pbest;
-      let ph = ((npencil + pw - 1) / pw) | 0;
-      ph = Math.max(ph, minph);
-      const fontsize = Math.min(((pr - pl) / pw) | 0, ((pb - pt) / ph) | 0);
+      const ph = rows(pw);
+      const fontsize = Math.min((areaW / pw) | 0, (areaH / ph) | 0);
 
-      pl = tx + (((ts - fontsize * pw) / 2) | 0);
-      let pt2 = ty + (((ts - fontsize * ph) / 2) | 0);
-      if (drawClue) pt2 = Math.max(pt2, ty + ge * 3 + ((ts / 4) | 0));
+      const pl = tx + (((ts - fontsize * pw) / 2) | 0);
+      let pt = ty + (((ts - fontsize * ph) / 2) | 0);
+      if (drawClue) pt = Math.max(pt, ty + ge * 3 + ((ts / 4) | 0));
 
       let j = 0;
       for (let i = 1; i <= w; i++) {
@@ -344,7 +317,7 @@ function drawTile(
           const dx = j % pw;
           const dy = (j / pw) | 0;
           const cx = pl + (((fontsize * (2 * dx + 1)) / 2) | 0);
-          const cy = pt2 + (((fontsize * (2 * dy + 1)) / 2) | 0);
+          const cy = pt + (((fontsize * (2 * dy + 1)) / 2) | 0);
           dr.drawText(
             { x: cx, y: cy },
             {
@@ -369,7 +342,7 @@ function drawTile(
   }
 
   // Check & Save mistake overlay (fork addition): an inset red outline.
-  if (wrong) {
+  if (ds.wrong.at(cell)) {
     const l = tx;
     const t = ty;
     const r = tx + ts - 1 - 2 * ge;
@@ -403,9 +376,9 @@ function drawTile(
   }
 
   // A forcing chain's place in the order it fires, so the narration can cite
-  // the cells by number instead of asking the player to reconstruct the chain
-  // (`walk-tactic-hint-chains`). Drawn inside the clip, so it can never spill
-  // into a neighboring cage.
+  // the cells by number instead of asking the player to reconstruct the chain.
+  // Drawn inside the clip, so it can never spill into a neighboring cage.
+  const hintOrder = ds.hint.order[cell];
   if (hintOrder > 0)
     drawHintOrdinal(dr, { x: tx, y: ty }, ts - 2 * ge, hintOrder, COL_HINT_CELL);
 
@@ -511,7 +484,7 @@ export function redraw(
   for (let y = 0; y < w; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
-      let tile = state.grid[i] ? state.grid[i] : state.pencil[i] << DF_PENCIL_SHIFT;
+      let tile = state.grid[i] || state.pencil[i] << DF_PENCIL_SHIFT;
       if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y)
         tile |= ui.pencilMode ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
       if (flash) tile |= DF_HIGHLIGHT;
@@ -519,18 +492,7 @@ export function redraw(
       if (ds.errors[i] & ERR_CLUE) tile |= DF_ERR_CLUE;
 
       if (ds.tiles[i] !== tile || ds.hint.stale(i) || ds.wrong.stale(i)) {
-        drawTile(
-          dr,
-          ds,
-          state,
-          x,
-          y,
-          tile,
-          state.params.multiplicationOnly,
-          ds.wrong.at(i),
-          ds.hint.packed[i],
-          ds.hint.order[i],
-        );
+        drawTile(dr, ds, state, x, y, tile);
         ds.tiles[i] = tile;
         ds.hint.commit(i);
         ds.wrong.commit(i);

@@ -148,11 +148,12 @@ describe("keen generator", () => {
         const easier = new Uint8Array(p.w * p.w);
         expect(solveKeen(p.w, st.clues, easier, lvl - 1)).toBeGreaterThan(lvl - 1);
       }
-      // Valid cage areas: 1..6, and every sub/div cage is a domino.
+      // Valid cage areas: 2..6 (the generator strands no singleton), and every
+      // sub/div cage is a domino.
       for (let i = 0; i < p.w * p.w; i++) {
         if (st.clues.minimal[i] !== i) continue;
         const size = st.clues.dsf.size(i);
-        expect(size).toBeGreaterThanOrEqual(1);
+        expect(size).toBeGreaterThanOrEqual(2);
         expect(size).toBeLessThanOrEqual(6);
         const op = clueOp(st.clues.clues[i]);
         if (op === C_SUB || op === C_DIV) expect(size).toBe(2);
@@ -435,19 +436,21 @@ describe("adaptive mark-all ('M')", () => {
   });
 
   it("never strikes a candidate that is only a cage-mate (cages are not uniqueness regions)", () => {
-    // Place a 1 at (0,0); note 1 at (2,2), which shares neither row nor column
-    // with (0,0). Even if (0,0) and (2,2) were cage-mates, a Keen cage permits a
-    // legal repeat, so the 1 at (2,2) must survive the cleanup (design D3).
+    // Place a 1 at (2,2); D4's L-shaped cage also holds (3,3), which shares
+    // neither row nor column with it. A Keen cage permits a legal repeat, so the
+    // 1 noted at (3,3) must survive the cleanup.
     const st = cloneState(newState(P4, D4));
+    expect(st.clues.dsf.equivalent(2 * W + 2, 3 * W + 3)).toBe(true);
     const all = (1 << (W + 1)) - (1 << 1);
     for (let i = 0; i < W * W; i++) st.pencil[i] = all;
-    st.grid[0] = 1;
-    st.pencil[0] = 0;
+    st.grid[2 * W + 2] = 1;
+    st.pencil[2 * W + 2] = 0;
     const move = press(st);
     if (typeof move !== "object" || move === null || move.type !== "pencilStrike")
       throw new Error("expected pencilStrike");
     const struck = new Set(move.marks.map((m) => `${m.x},${m.y},${m.n}`));
-    expect(struck.has("2,2,1")).toBe(false); // not in row 0 or column 0 → kept
+    expect(struck.has("2,0,1")).toBe(true); // same column → struck
+    expect(struck.has("3,3,1")).toBe(false); // cage-mate only → kept
   });
 });
 

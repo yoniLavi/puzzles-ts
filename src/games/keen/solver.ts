@@ -9,9 +9,10 @@
  * layouts consistent with the cage's arithmetic clue + the current candidate
  * cube and prune the cube accordingly.
  *
- * Index conventions are kept verbatim from C (docs/games/solver-and-generator.md § "The Latin family" — re-deriving the
- * transpositions is error-prone and would diverge the differential): the cage
- * `boxlist`/`whichbox`/`sq` all live in the **transposed** cell space
+ * Index conventions are kept verbatim from C (docs/games/solver-and-generator.md
+ * § "The Latin family": re-deriving the transpositions is error-prone and would
+ * diverge the differential): the cage `boxlist`/`whichbox`/`sq` all live in the
+ * **transposed** cell space
  * `s = x·w + y`, so a candidate read is `solver.cube[s·w + n−1]` (which equals
  * `cubeGet(x, y, n)` because `latin.ts`'s `cubepos(x,y,n) = (x·o+y)·o+n−1`), and
  * the result grid (reading order `y·w+x`) is read in `keenValid` via
@@ -26,6 +27,7 @@ import {
   type LatinSolver,
   latinSolver,
 } from "../../engine/latin.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   C_ADD,
   C_DIV,
@@ -48,22 +50,16 @@ export { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE };
  * positional/set/forcing deductions) it covers every technique the recording
  * solver fires; the `kind` fields never collide with the Latin reasons.
  *
- * `cage` is the EASY/NORMAL per-square pruning: no arrangement of the cage's
- * digits consistent with its clue leaves this candidate possible in this cell.
- * `cageLine` is the HARD cross-line pruning: a digit appears in every consistent
- * layout of the cage somewhere along a row/column, so it is ruled out of the rest
- * of that line outside the cage (`horizontal` = the line is a row). Both carry the
- * cage's packed operation/value and its cells (reading order) for narration +
- * evidence shading. */
+ * `cage` is the `DIFF_EASY`/`DIFF_NORMAL` per-square pruning: no arrangement of
+ * the cage's digits consistent with its clue leaves this candidate possible in
+ * this cell. `cageLine` is the `DIFF_HARD` cross-line pruning: a digit appears
+ * in every consistent layout of the cage somewhere along a row/column, so it is
+ * ruled out of the rest of that line outside the cage (`horizontal` = the line
+ * is a row). Both carry the cage's packed operation/value and its cells for
+ * narration + evidence shading. */
 export type KeenReason =
-  | { kind: "cage"; op: number; value: number; cells: { x: number; y: number }[] }
-  | {
-      kind: "cageLine";
-      op: number;
-      value: number;
-      cells: { x: number; y: number }[];
-      horizontal: boolean;
-    }
+  | { kind: "cage"; op: number; value: number; cells: Point[] }
+  | { kind: "cageLine"; op: number; value: number; cells: Point[]; horizontal: boolean }
   /** A *hidden* single — digit `n` can go in only one cell of a row (`line:
    * "row"`, `index` = that row's y) or column (`line: "col"`, `index` = that
    * column's x). Distinct from the generic Latin `single` (a *naked* single,
@@ -207,10 +203,10 @@ function solverCommon(solver: LatinSolver, ctx: KeenCtx, diff: number): number {
     const op = clueOp(ctx.clues[box]);
     const sq = (j: number): number => boxlist[sqStart + j];
 
-    // Cage cells in reading order — computed once per cage, on the hint path
-    // only, for narration + evidence shading.
-    let cageCells: { x: number; y: number }[] | null = null;
-    const getCageCells = (): { x: number; y: number }[] => {
+    // Cage cells, computed once per cage on the hint path only, for narration +
+    // evidence shading.
+    let cageCells: Point[] | null = null;
+    const getCageCells = (): Point[] => {
       if (!cageCells) {
         cageCells = [];
         for (let k = 0; k < n; k++) {
@@ -309,13 +305,10 @@ function solverCommon(solver: LatinSolver, ctx: KeenCtx, diff: number): number {
           }
         }
       }
-      // On the hint-recording path, return as soon as one cage fires so each
-      // recorded firing (one `solver.group`) covers a single cage — otherwise a
-      // pass would lump several cages' eliminations under one group and a hint
-      // step would narrate one cage while struck marks bled in from another (the
-      // Towers/Unequal "bleed across clues" bug). The generate/solve path (no
-      // recorder) keeps accumulating across cages, byte-identical to the C
-      // reference.
+      // On the hint-recording path, return as soon as one cage fires, so each
+      // recorded firing (one `solver.group`) covers a single cage and a hint step
+      // never narrates one cage while striking marks from another. Without a
+      // recorder it keeps accumulating across cages, as upstream does.
       if (solver.recorder && ret) return ret;
     } else {
       // HARD: rule a required digit out of the rest of its row/column.
@@ -462,8 +455,7 @@ export function solveKeen(
  * placed entries only — never the player's notes), up to `maxdiff`, and return
  * every candidate elimination and cell placement it makes, in solver order, each
  * tagged with the rule + premise that forced it. This is the raw deduction script
- * a hint narrates; the recorder-off path (`solveKeen` without a callback) is
- * byte-for-byte unchanged. `grid` is treated read-only (a working copy is solved
+ * a hint narrates. `grid` is treated read-only (a working copy is solved
  * internally).
  */
 export function recordKeenDeductions(

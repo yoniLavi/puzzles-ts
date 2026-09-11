@@ -26,9 +26,7 @@ import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
-  type HintResult,
   type HintStep,
-  type HintTrackVerdict,
   type PresetMenu,
   type SolveResult,
   UI_UPDATE,
@@ -64,17 +62,9 @@ import {
   moveCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { ConfigValues, KeyLabel, Point } from "../../engine/types.ts";
 import { newKeenDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -221,7 +211,7 @@ function interpretMove(
 
   // 'M' / 'm': fill all pencil marks, then (on a fully-noted board) clean the
   // obvious row/column candidates. Keen cages are arithmetic, NOT uniqueness
-  // regions, so a legal cage duplicate is never struck (design D3).
+  // regions, so a legal cage duplicate is never struck.
   if (button === 77 || button === 109)
     return adaptiveMarkAllMove<KeenMove>(state.grid, state.pencil, w, (x, y) =>
       rowColRegions(x, y, w),
@@ -305,7 +295,7 @@ function solve(orig: KeenState, _curr: KeenState, aux?: string): SolveResult<Kee
     return { ok: false, error: "No solution exists for this puzzle" };
   if (ret === DIFF_AMBIGUOUS)
     return { ok: false, error: "Multiple solutions exist for this puzzle" };
-  return { ok: true, move: { type: "solve", grid: Array.from(soln, (v) => v) } };
+  return { ok: true, move: { type: "solve", grid: Array.from(soln) } };
 }
 
 function findMistakes(state: KeenState): readonly KeenMistake[] {
@@ -330,12 +320,13 @@ function findMistakes(state: KeenState): readonly KeenMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-/** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the narration"): indication → reasoning →
- * necessity-voice conclusion. `ns` is the struck value list (a placement passes
- * its single digit); `w` is the grid order. Cage deductions name the cage by its
- * clue; the generic Latin techniques carry no clean local area (the struck notes
- * carry the premise). The words are [`hint-text.ts`](./hint-text.ts)'s. */
-function narrate(reason: HintReason, ns: number[], _w: number): string {
+/** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the
+ * narration"): indication → reasoning → necessity-voice conclusion. `ns` is the
+ * struck value list (a placement passes its single digit). Cage deductions name
+ * the cage by its clue; the generic Latin techniques carry no clean local area
+ * (the struck notes carry the premise). The words are
+ * [`hint-text.ts`](./hint-text.ts)'s. */
+function narrate(reason: HintReason, ns: number[]): string {
   switch (reason.kind) {
     case "cage":
       return say.cage(reason.op, reason.value, ns);
@@ -363,7 +354,7 @@ function reasonArea(reason: HintReason): OrderedCell[] {
  * reasons over (so the player sees that no *other* cell in the line can take the
  * digit); a naked single needs no area (its own collapsed candidates are the
  * premise). */
-function placementArea(reason: HintReason, w: number): { x: number; y: number }[] {
+function placementArea(reason: HintReason, w: number): Point[] {
   return reason.kind === "hiddenSingle"
     ? hiddenSingleLine(reason.line, reason.index, w)
     : [];
@@ -395,7 +386,7 @@ function emitStrikeJourney(
     const reason = cellOps[0].reason;
     steps.push({
       move: { type: "pencilStrike", marks },
-      explanation: narrate(reason, values, w),
+      explanation: narrate(reason, values),
       highlights: { area: reasonArea(reason), targets: [{ x, y }], marks },
       continuesPrevious: !first,
     });
@@ -421,7 +412,7 @@ function emitPlacement(
 ): void {
   steps.push({
     move: { type: "set", x, y, n, pencil: false, autoElim: autoClean },
-    explanation: narrate(reason, [n], w),
+    explanation: narrate(reason, [n]),
     highlights: { area: placementArea(reason, w), targets: [{ x, y }], marks: [] },
   });
   wGrid[y * w + x] = n;
@@ -441,7 +432,7 @@ function emitPlacement(
   if (!autoClean && dupMarks.length > 0) {
     steps.push({
       move: { type: "pencilStrike", marks: dupMarks },
-      explanation: narrate({ kind: "dup", n, px: x, py: y }, [], w),
+      explanation: narrate({ kind: "dup", n, px: x, py: y }, []),
       highlights: {
         area: [],
         targets: dupMarks.map((m) => ({ x: m.x, y: m.y })),
@@ -475,18 +466,14 @@ function buildSteps(
     steps,
     say.populate,
   );
-  // The obvious-candidate cleanup is emitted once, right after notes first exist
-  // (just populated, or already present on a pre-noted board) — see step 3.
-  let cleaned = false;
+  let cleaned = false; // see step 3
 
   let ops = recordKeenDeductions(w, state.clues, Uint8Array.from(wGrid), maxdiff);
   const budget = stepBudget("keen hint plan");
   const cap = w * w * w * 4 + 4;
   for (let guard = 0; guard < cap; guard++) {
     budget.tick();
-    let filled = true;
-    for (let i = 0; i < w * w; i++) if (!wGrid[i]) filled = false;
-    if (filled) break;
+    if (!wGrid.includes(0)) break;
 
     // 1. A naked single — the next move a human makes.
     const ns = nakedSingle(wGrid, wPen, w);
@@ -512,10 +499,9 @@ function buildSteps(
       continue;
     }
 
-    // 3. Once notes exist (just populated, or already present), bulk-clear the
-    // obvious candidates in one step — the adaptive Mark-all second press — then
-    // the walk goes straight to the real cage deductions (later placements keep
-    // notes clean via `emitPlacement`).
+    // 3. Once, as soon as notes exist (just populated, or already present),
+    // bulk-clear the obvious candidates in one step — the adaptive Mark-all
+    // second press. Later placements keep notes clean via `emitPlacement`.
     if (!cleaned) {
       cleaned = true;
       if (
@@ -554,43 +540,6 @@ function buildSteps(
   }
 
   return steps;
-}
-
-function hint(
-  state: KeenState,
-  _aux?: string,
-  ui?: KeenUi,
-): HintResult<KeenMove, KeenHint> {
-  return candidateHint(state, ui, findMistakes, buildSteps);
-}
-
-/** Classify a player move against the displayed hint step (shared
- * candidate-elimination keep-track; `KeenHint` is structurally
- * `CandidateHighlights`). */
-function hintKeepTrack(
-  m: KeenMove,
-  step: HintStep<KeenMove, KeenHint>,
-  state: KeenState,
-): HintTrackVerdict {
-  return keepCandidateHintTrack(m, step, state.pencil, state.params.w);
-}
-
-/** Re-validate a stored hint step against the current board before it is
- * (re-)displayed (shared "never show a stale step" guarantee). */
-function refreshHintStep(
-  step: HintStep<KeenMove, KeenHint>,
-  state: KeenState,
-): HintStep<KeenMove, KeenHint> | null {
-  return refreshCandidateHintStep(step, state.grid, state.pencil, state.params.w);
-}
-
-function flashLength(
-  from: KeenState,
-  to: KeenState,
-  _dir: number,
-  _ui: KeenUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
 }
 
 /** Keen's difficulty contract (`engine/difficulty.ts`). `solveKeen` follows the
@@ -665,7 +614,7 @@ export const keenGame: Game<
     "multiplication-only": p.multiplicationOnly ? 1 : 0,
   }),
 
-  newDesc: (p, rng: RandomState) => newKeenDesc(p, rng),
+  newDesc: newKeenDesc,
   validateDesc,
   newState,
   newUi,
@@ -673,13 +622,17 @@ export const keenGame: Game<
 
   interpretMove,
   executeMove,
-  status: (s): GameStatus => status(s),
+  status,
 
   solve,
   difficulty,
-  hint,
-  hintKeepTrack,
-  refreshHintStep,
+  hint: (state, _aux, ui) => candidateHint(state, ui, findMistakes, buildSteps),
+  // The shared candidate-elimination keep-track and stale-step check;
+  // `KeenHint` is structurally `CandidateHighlights`.
+  hintKeepTrack: (m, step: HintStep<KeenMove, KeenHint>, state) =>
+    keepCandidateHintTrack(m, step, state.pencil, state.params.w),
+  refreshHintStep: (step: HintStep<KeenMove, KeenHint>, state) =>
+    refreshCandidateHintStep(step, state.grid, state.pencil, state.params.w),
   findMistakes,
   requestKeys: (p): KeyLabel[] => digitKeys(p.w),
 
@@ -691,15 +644,15 @@ export const keenGame: Game<
     pencilKeepHighlightPref<KeenUi>(),
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: KeenParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(keenGame);

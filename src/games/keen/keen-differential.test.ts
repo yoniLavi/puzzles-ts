@@ -5,12 +5,11 @@
  * flag), assert the TS generator reproduces the C desc byte-for-byte over the
  * bit-identical RNG, and that the TS solver grades the board at the same minimal
  * difficulty the C solver recorded. Faithful generation + a faithful solver
- * verdict — the strongest available bar (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
+ * verdict — the strongest available bar (docs/games/testing.md § "Byte-match:
+ * fidelity where there is a right answer").
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/keen-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C harness that
+ * recorded it is gone (see `engine/testing/differential.ts`).
  */
 
 import { describe, expect, it } from "vitest";

@@ -26,9 +26,8 @@ export const DIFF_NORMAL = 1;
 export const DIFF_HARD = 2;
 export const DIFF_EXTREME = 3;
 export const DIFF_UNREASONABLE = 4;
-export const DIFF_COUNT = 5;
 
-// keen_diffchars / keen_diffnames, indexed by level.
+// Upstream's keen_diffchars, indexed by level.
 const DIFF_CHARS = "enhxu";
 export const DIFF_NAMES = tierNames(5, { search: true });
 const DIFFS: Difficulty[] = ["easy", "normal", "hard", "extreme", "unreasonable"];
@@ -99,21 +98,18 @@ export function decodeParams(s: string): KeenParams {
   while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
   if (digits) p.w = Number.parseInt(digits, 10);
   if (s[i] === "d") {
-    i++;
-    const idx = DIFF_CHARS.indexOf(s[i] ?? "");
-    p.diff = idx >= 0 ? diffFromLevel(idx) : "normal";
-    if (idx >= 0) i++;
+    const level = DIFF_CHARS.indexOf(s[++i] ?? "");
+    if (level >= 0) {
+      p.diff = diffFromLevel(level);
+      i++;
+    }
   }
-  if (s[i] === "m") {
-    i++;
-    p.multiplicationOnly = true;
-  }
+  if (s[i] === "m") p.multiplicationOnly = true;
   return p;
 }
 
 export function validateParams(p: KeenParams, _full: boolean): string | null {
   if (p.w < 3 || p.w > 9) return "Grid size must be between 3 and 9";
-  if (diffToLevel(p.diff) >= DIFF_COUNT) return "Unknown difficulty rating";
   return null;
 }
 
@@ -123,67 +119,57 @@ export function validateParams(p: KeenParams, _full: boolean): string | null {
  * Build, for the dsf over `a` cells, a map `minimal[i]` = the smallest-indexed
  * cell in `i`'s class (upstream `dsf_minimal`). Keen stores each cage's clue at
  * its minimal cell and the desc lists clues in minimal-cell order, so this
- * identity — not just connectivity — is load-bearing. The shared `Dsf` uses
- * union-by-size and doesn't track a minimal element, so we precompute it once
- * after all merges are done (correct because generation/parse never read a
- * minimal mid-merge). A single ascending pass: the first cell seen for each
- * root is, by construction, its minimum.
+ * identity, not just connectivity, is load-bearing. The shared `Dsf` doesn't
+ * track a minimal element, so it is computed once after all merges (nothing
+ * reads a minimal mid-merge): in an ascending pass, the first cell seen for
+ * each root is its minimum.
  */
 export function buildMinimal(dsf: Dsf, a: number): Int32Array {
   const rootMin = new Int32Array(a).fill(-1);
   for (let i = 0; i < a; i++) {
     const r = dsf.canonify(i);
-    if (rootMin[r] < 0) rootMin[r] = i; // first (smallest) i for this root
+    if (rootMin[r] < 0) rootMin[r] = i;
   }
   const minimal = new Int32Array(a);
   for (let i = 0; i < a; i++) minimal[i] = rootMin[dsf.canonify(i)];
   return minimal;
 }
 
+/** The two cells either side of internal edge `i`, in the order the block
+ * structure lists edges: the `w·(w−1)` vertical edges in reading order, then
+ * the `w·(w−1)` horizontal edges in transposed order. */
+function edgeCells(i: number, w: number): [number, number] {
+  if (i < w * (w - 1)) {
+    const cell = ((i / (w - 1)) | 0) * w + (i % (w - 1));
+    return [cell, cell + 1];
+  }
+  const cell = (i % (w - 1)) * w + ((i / (w - 1)) | 0) - w;
+  return [cell, cell + w];
+}
+
 /**
- * Encode the cage partition as the pattern of internal dividing lines: first
- * the `w·(w−1)` internal vertical lines in reading order, then the `w·(w−1)`
- * internal horizontal lines in transposed order, plus one terminating virtual
- * edge. Runs of non-edges between edges are encoded `_` (0), `a`..`y` (1..25),
- * `z` (25 with no following edge). A second pass compresses a run of the same
- * letter into `letter + count`. Faithful to upstream `encode_block_structure`.
+ * Encode the cage partition as the pattern of internal dividing lines (in
+ * {@link edgeCells} order) plus one terminating virtual edge. Runs of non-edges
+ * between edges are encoded `_` (0), `a`..`y` (1..25), `z` (25 with no
+ * following edge). A second pass compresses a run of the same letter into
+ * `letter + count`. Faithful to upstream `encode_block_structure`.
  */
 export function encodeBlockStructure(w: number, dsf: Dsf): string {
   let raw = "";
   let currrun = 0;
   const total = 2 * w * (w - 1);
   for (let i = 0; i <= total; i++) {
-    let edge: boolean;
-    if (i === total) {
-      edge = true; // terminating virtual edge
-    } else {
-      let p0: number;
-      let p1: number;
-      if (i < w * (w - 1)) {
-        const y = (i / (w - 1)) | 0;
-        const x = i % (w - 1);
-        p0 = y * w + x;
-        p1 = y * w + x + 1;
-      } else {
-        const x = ((i / (w - 1)) | 0) - w;
-        const y = i % (w - 1);
-        p0 = y * w + x;
-        p1 = (y + 1) * w + x;
-      }
-      edge = !dsf.equivalent(p0, p1);
-    }
-
-    if (edge) {
-      while (currrun > 25) {
-        raw += "z";
-        currrun -= 25;
-      }
-      if (currrun) raw += String.fromCharCode(97 - 1 + currrun);
-      else raw += "_";
-      currrun = 0;
-    } else {
+    // The last edge is the terminating virtual one.
+    if (i < total && dsf.equivalent(...edgeCells(i, w))) {
       currrun++;
+      continue;
     }
+    while (currrun > 25) {
+      raw += "z";
+      currrun -= 25;
+    }
+    raw += currrun ? String.fromCharCode(96 + currrun) : "_";
+    currrun = 0;
   }
 
   // Compression pass: replace a run of the same character with one copy plus a
@@ -203,17 +189,16 @@ export function encodeBlockStructure(w: number, dsf: Dsf): string {
 }
 
 /**
- * Rebuild the cage dsf from the block-structure prefix of `desc` starting at
- * `start`. Returns `{ error, next }` where `next` is the index of the comma (or
- * end) following the block structure. Faithful to `parse_block_structure`.
+ * Rebuild the cage dsf from the block-structure prefix of `desc`. Returns
+ * `{ error, next }` where `next` is the index of the comma (or end) following
+ * the block structure. Faithful to `parse_block_structure`.
  */
 export function parseBlockStructure(
   desc: string,
-  start: number,
   w: number,
   dsf: Dsf,
 ): { error: string | null; next: number } {
-  let i = start;
+  let i = 0;
   let pos = 0;
   let repc = 0;
   let repn = 0;
@@ -243,20 +228,7 @@ export function parseBlockStructure(
     while (c-- > 0) {
       if (pos >= total)
         return { error: "Too much data in block structure specification", next: i };
-      let p0: number;
-      let p1: number;
-      if (pos < w * (w - 1)) {
-        const y = (pos / (w - 1)) | 0;
-        const x = pos % (w - 1);
-        p0 = y * w + x;
-        p1 = y * w + x + 1;
-      } else {
-        const x = ((pos / (w - 1)) | 0) - w;
-        const y = pos % (w - 1);
-        p0 = y * w + x;
-        p1 = (y + 1) * w + x;
-      }
-      dsf.merge(p0, p1);
+      dsf.merge(...edgeCells(pos, w));
       pos++;
     }
     if (adv) {
@@ -310,11 +282,20 @@ export function cloneState(s: KeenState): KeenState {
 
 // --- desc codec ------------------------------------------------------------
 
+/** Each clue operation's letter in a desc, and back. */
+export const LETTER_OF_OP: Record<number, string> = {
+  [C_ADD]: "a",
+  [C_MUL]: "m",
+  [C_SUB]: "s",
+  [C_DIV]: "d",
+};
+const OP_OF_LETTER: Record<string, number> = { a: C_ADD, m: C_MUL, s: C_SUB, d: C_DIV };
+
 export function validateDesc(p: KeenParams, desc: string): string | null {
   const w = p.w;
   const a = w * w;
   const dsf = new Dsf(a);
-  const { error, next } = parseBlockStructure(desc, 0, w, dsf);
+  const { error, next } = parseBlockStructure(desc, w, dsf);
   if (error) return error;
   if (desc[next] !== ",") return "Expected ',' after block structure description";
 
@@ -322,17 +303,11 @@ export function validateDesc(p: KeenParams, desc: string): string | null {
   const minimal = buildMinimal(dsf, a);
   for (let cell = 0; cell < a; cell++) {
     if (minimal[cell] !== cell) continue;
-    const ch = desc[i];
-    if (ch === "a" || ch === "m") {
-      // no validation
-    } else if (ch === "d" || ch === "s") {
-      if (dsf.size(cell) !== 2)
-        return "Subtraction and division blocks must have area 2";
-    } else if (ch === undefined || ch === "") {
-      return "Too few clues for block structure";
-    } else {
-      return "Unrecognized clue type";
-    }
+    if (i >= desc.length) return "Too few clues for block structure";
+    const op = OP_OF_LETTER[desc[i]];
+    if (op === undefined) return "Unrecognized clue type";
+    if ((op === C_SUB || op === C_DIV) && dsf.size(cell) !== 2)
+      return "Subtraction and division blocks must have area 2";
     i++;
     while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;
   }
@@ -344,7 +319,7 @@ export function newState(p: KeenParams, desc: string): KeenState {
   const w = p.w;
   const a = w * w;
   const dsf = new Dsf(a);
-  const { next } = parseBlockStructure(desc, 0, w, dsf);
+  const { next } = parseBlockStructure(desc, w, dsf);
   const minimal = buildMinimal(dsf, a);
 
   // `next` points at the comma.
@@ -352,27 +327,12 @@ export function newState(p: KeenParams, desc: string): KeenState {
   const clues = new Int32Array(a);
   for (let cell = 0; cell < a; cell++) {
     if (minimal[cell] !== cell) continue;
-    let clue = 0;
-    switch (desc[i]) {
-      case "a":
-        clue = C_ADD;
-        break;
-      case "m":
-        clue = C_MUL;
-        break;
-      case "s":
-        clue = C_SUB;
-        break;
-      case "d":
-        clue = C_DIV;
-        break;
-      default:
-        throw new Error("keen: bad description in newState");
-    }
+    const op = OP_OF_LETTER[desc[i]];
+    if (op === undefined) throw new Error("keen: bad description in newState");
     i++;
     let num = "";
     while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-    clues[cell] = clue | Number.parseInt(num, 10);
+    clues[cell] = op | Number.parseInt(num, 10);
   }
 
   return {
@@ -432,51 +392,31 @@ export function checkErrors(state: KeenState, errors?: Int32Array): boolean {
   }
 
   for (let i = 0; i < a; i++) {
-    const j = minimal[i];
-    if (j === i) {
-      if (clueVal(clues[j]) !== cluevals[i]) {
-        errs = true;
-        if (errors && full[j]) errors[j] |= ERR_CLUE;
-      }
+    if (minimal[i] === i && clueVal(clues[i]) !== cluevals[i]) {
+      errs = true;
+      if (errors && full[i]) errors[i] |= ERR_CLUE;
     }
   }
 
+  // Each row, then each column; `cellOf(line, k)` is the line's k-th cell.
+  const cellOf = (line: number, k: number): number =>
+    line < w ? line * w + k : k * w + line - w;
   const fullMask = (1 << (w + 1)) - (1 << 1); // bits 1..w
-  for (let y = 0; y < w; y++) {
+  for (let line = 0; line < 2 * w; line++) {
     let mask = 0;
     let errmask = 0;
-    for (let x = 0; x < w; x++) {
-      const bit = 1 << grid[y * w + x];
+    for (let k = 0; k < w; k++) {
+      const bit = 1 << grid[cellOf(line, k)];
       errmask |= mask & bit;
       mask |= bit;
     }
-    if (mask !== fullMask) {
-      errs = true;
-      errmask &= ~1;
-      if (errors) {
-        for (let x = 0; x < w; x++) {
-          if (errmask & (1 << grid[y * w + x])) errors[y * w + x] |= ERR_LATIN;
-        }
-      }
-    }
-  }
-
-  for (let x = 0; x < w; x++) {
-    let mask = 0;
-    let errmask = 0;
-    for (let y = 0; y < w; y++) {
-      const bit = 1 << grid[y * w + x];
-      errmask |= mask & bit;
-      mask |= bit;
-    }
-    if (mask !== fullMask) {
-      errs = true;
-      errmask &= ~1;
-      if (errors) {
-        for (let y = 0; y < w; y++) {
-          if (errmask & (1 << grid[y * w + x])) errors[y * w + x] |= ERR_LATIN;
-        }
-      }
+    if (mask === fullMask) continue;
+    errs = true;
+    errmask &= ~1;
+    if (!errors) continue;
+    for (let k = 0; k < w; k++) {
+      const cell = cellOf(line, k);
+      if (errmask & (1 << grid[cell])) errors[cell] |= ERR_LATIN;
     }
   }
 
@@ -518,13 +458,14 @@ export interface KeenUi {
   cursor: GridCursor;
   pencilMode: boolean;
   cursorFromKeyboard: boolean;
-  /** Preference (default off, upstream `PREF_PENCIL_KEEP_HIGHLIGHT`): keep the
+  /** Preference (default on; upstream `PREF_PENCIL_KEEP_HIGHLIGHT`): keep the
    * mouse highlight after a pencil-mark change. */
   pencilKeepHighlight: boolean;
   /** Preference (default on): right-click toggles a *sticky* pencil mode. */
   pencilSticky: boolean;
-  /** Preference (default on): placing a digit strikes it from the pencil marks
-   * of every other cell in its row and column. */
+  /** Preference (default off, so notes clear only via mark-all or a hint):
+   * placing a digit strikes it from the pencil marks of every other cell in its
+   * row and column. */
   autoPencil: boolean;
 }
 
@@ -535,9 +476,6 @@ export function newUi(_state: KeenState): KeenUi {
     cursorFromKeyboard: false,
     pencilKeepHighlight: true,
     pencilSticky: true,
-    // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its
-    // row/column notes. Notes clear only via the mark-all button or a hint; opt
-    // back in through the "auto-pencil" pref.
     autoPencil: false,
   };
 }

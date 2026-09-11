@@ -10,6 +10,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectContour, expectRing } from "../../engine/testing/mark-shape.ts";
 import {
   DEFAULT_BACKGROUND,
   renderScenario,
@@ -38,32 +39,11 @@ function gen(p: KeenParams, seed: string) {
 // biome-ignore lint/suspicious/noExplicitAny: structural access to hint highlights/move in tests.
 type AnyStep = any;
 
-/**
- * The acted-on cell is **ringed**, not filled: four thin `COL_HINT` rects, and
- * no solid one.
- *
- * Asserted as a shape rather than "some rect is COL_HINT", because the whole
- * point of the change is *which* rect. A fill measured **1.91:1** against a
- * pencil mark in light and 1.96 in dark — the digits the hint is talking about
- * were the thing it painted over — and no color in the palette can fix that
- * without landing next to `ERROR_WASH`. A ring sits beside the content instead
- * of under it, so it can use the emphatic `HINT_ACTION` blue.
- */
-function expectRing(ops: readonly { op: string }[]): void {
-  const sides = ops.filter(
-    (o): o is { op: "rect"; color: number; w: number; h: number } =>
-      o.op === "rect" && (o as { color?: number }).color === COL_HINT,
-  );
-  expect(sides.length, "the target ring is four rects").toBe(4);
-  // Every one is thin in exactly one direction — a solid fill would be thick in
-  // both, which is the shape this replaced.
-  for (const s of sides) {
-    expect(
-      Math.min(s.w, s.h) * 4 < Math.max(s.w, s.h),
-      `ring side ${s.w}x${s.h} is not thin — that is a fill`,
-    ).toBe(true);
-  }
-}
+// The acted-on cell is **ringed**, not filled (`expectRing`): a fill measured
+// 1.91:1 against a pencil mark in light and 1.96 in dark, painting over the
+// digits the hint talks about, and no palette color fixes that without landing
+// next to `ERROR_WASH`. A ring sits beside the content, so it can use the
+// emphatic `HINT_ACTION` blue.
 
 const NORMAL: KeenParams = { w: 6, diff: "normal", multiplicationOnly: false };
 const HARD: KeenParams = { w: 6, diff: "hard", multiplicationOnly: false };
@@ -428,11 +408,10 @@ describe("keen hint render", () => {
     expect(recording.ops.some((o) => o.op === "text" && o.color === COL_PENCIL)).toBe(
       true,
     );
-    // The target is **ringed** COL_HINT — four thin rects, never a solid fill.
     // A strike step gets the same ring as a placement: the cell a hint acts on
     // is marked the same way whatever the move, so it is never left identified
     // only by the strikethrough the player has to spot first.
-    expectRing(recording.ops);
+    expectRing(recording.ops, COL_HINT);
     expect(recording.ops).toMatchSnapshot();
   });
 
@@ -447,15 +426,10 @@ describe("keen hint render", () => {
       hintUntil: (s) => /can go in only this cell/.test(s.explanation),
     });
     expect(hint?.explanation).toMatch(/In this (row|column)/);
-    // The line is outlined COL_HINT_CELL, and the count is the point: a contour
-    // around a `w`-cell row is `2w + 2` sides — two long ones plus a cap at each
-    // end — so a line that lost its target cell, or that drew a ring per cell
-    // instead of one contour, fails here.
-    const sides = recording.ops.filter(
-      (o) => o.op === "rect" && o.color === COL_HINT_CELL,
-    );
-    expect(sides.length).toBe(2 * small.w + 2);
-    expectRing(recording.ops);
+    // The line is one COL_HINT_CELL contour, so a line that lost its target
+    // cell, or that drew a ring per cell, fails here.
+    expectContour(recording.ops, COL_HINT_CELL, small.w);
+    expectRing(recording.ops, COL_HINT);
     expect(recording.ops).toMatchSnapshot();
   });
 });
