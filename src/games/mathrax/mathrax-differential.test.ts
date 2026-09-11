@@ -12,7 +12,8 @@
  *    therefore validates `latinGenerate`'s RNG draw order, the two `shuffle`s,
  *    every deduction the tiered solver makes (including the shared
  *    `engine/latin.ts` framework), the candidate-clue precedence cascade and the
- *    run-length codec, all at once (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
+ *    run-length codec, all at once
+ *    (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  *
  *    **`upstreamLooseGate` is set here and nowhere else.** The shipped
  *    generator additionally rejects a board the tier below already solves,

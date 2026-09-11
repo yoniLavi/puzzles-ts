@@ -409,8 +409,8 @@ describe("mathrax generator", () => {
     }
   });
 
-  // The tier gate (grade-difficulty-tiers-honestly). Upstream had none, so a
-  // tier need not bind: 3 of the 23 frozen C fixtures above Easy fall lower.
+  // The tier gate. Upstream had none, so a tier need not bind: 3 of the 23
+  // frozen C fixtures above Easy fall lower.
   describe("difficulty tiers bind", () => {
     const CASES: [number, MathraxDiff, number, number][] = [
       [3, "tricky", DIFF_TRICKY, DIFF_NORMAL],

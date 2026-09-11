@@ -1,6 +1,3 @@
-import { tierNames } from "../../engine/difficulty.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
-import { newCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Mathrax — the state/codec parts of
  * `puzzles/unreleased/mathrax.c` (© 2019 Lennard Sprong).
@@ -12,18 +9,17 @@ import { newCursor } from "../../engine/pointer.ts";
  * that result; `=` means each diagonal pair is equal; `E`/`O` mean all four
  * digits are even / odd.
  *
- * The clue array is immutable after load and shared by reference across cloned
- * states; the working digits, per-cell flags and pencil marks are cloned per
- * move.
- *
- * **Two bitmask conventions live in this port, deliberately.** The *solver's*
- * candidate masks (`solver.ts`) keep upstream's `BIT(d) = 1 << (d−1)` verbatim,
- * because they decide the solver's verdict and so the generated description
- * (docs/games/solver-and-generator.md § "Solver-gated generation"). The *player's* pencil marks here use the Latin-family
- * convention `1 << n` (bits `1..o`), which is what `engine/candidate-hint.ts`
- * (mark-all, and a future explained hint) reads. Marks never reach the desc or a
- * save — the save codec replays moves — so the divergence is free.
+ * **Two bitmask conventions, deliberately.** The solver's candidate masks
+ * (`solver.ts`) keep upstream's `BIT(d) = 1 << (d−1)`, because they decide the
+ * solver's verdict and so the generated description
+ * (docs/games/solver-and-generator.md § "Solver-gated generation"). The player's
+ * pencil marks use the Latin-family `1 << n` (bits `1..o`), which
+ * `engine/candidate-hint.ts` reads. Marks never reach the desc or a save (the
+ * save replays moves), so the divergence is free.
  */
+
+import { tierNames } from "../../engine/difficulty.ts";
+import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 
 // --- difficulty ------------------------------------------------------------
 
@@ -33,14 +29,12 @@ export const DIFF_EASY = 0;
 export const DIFF_NORMAL = 1;
 export const DIFF_TRICKY = 2;
 export const DIFF_RECURSIVE = 3;
-export const DIFF_COUNT = 4;
 
-/** `mathrax_diffchars` / `mathrax_diffnames`, indexed by level. */
+/** Upstream `mathrax_diffchars`, indexed by level. */
 const DIFF_CHARS = "entr";
-// `Unreasonable`, not upstream's `Recursive` (`audit-guessing-tier-names`,
-// design D7): it is the tier that may require guessing, and the collection says
-// one word for that. The difficulty *character* is untouched (`r`), so game IDs,
-// saved games and shared links are unaffected — only the menu label moves.
+// The top tier reads `Unreasonable`, not upstream's `Recursive`: it is the tier
+// that may require guessing, and the collection has one word for that. Its
+// character stays `r`, so game IDs and saved games are unaffected.
 export const DIFF_NAMES = tierNames(4, { search: true });
 const DIFFS: MathraxDiff[] = ["easy", "normal", "tricky", "recursive"];
 
@@ -63,8 +57,8 @@ export function diffName(d: MathraxDiff): string {
 // clue's number (upstream `CLUENUM`/`SET_CLUENUM`). Equality is encoded as
 // `CLUE_SUB` with number 0, which is also how `mathraxOptions` deduces it
 // (|a − b| == 0 ⇒ a == b) — so there is no separate equality arm anywhere.
+// Type 0 is no clue.
 
-export const CLUE_NONE = 0;
 export const CLUE_ADD = 1;
 export const CLUE_SUB = 2;
 export const CLUE_MUL = 3;
@@ -147,7 +141,7 @@ export function decodeParams(s: string): MathraxParams {
   let i = 0;
   let digits = "";
   while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
-  p.o = digits ? Number.parseInt(digits, 10) : 0; // atoi("") === 0
+  p.o = Number(digits); // "" reads as 0, like `atoi`
   if (s[i] === "d") {
     i++;
     // An unrecognized (or missing) letter leaves the difficulty invalid, which
@@ -173,15 +167,12 @@ export function validateParams(p: MathraxParams, full: boolean): string | null {
   if (p.o > 9) return "Size must be no more than 9";
   if (DIFFS.indexOf(p.diff) < 0) return "Unknown difficulty rating";
   if (full && !p.options) return "At least one clue type must be enabled";
-  // A 3x3 grid has only four intersections, and at that size two of the four
-  // tiers have nothing to grade with: measured over 3,000 candidate boards each,
-  // none needed Normal (Easy always sufficed) and none needed the top tier
-  // (Tricky always sufficed). Tricky itself is fine — roughly one board in ten
-  // binds. Refusing to generate beats offering a difficulty that silently yields
-  // another one (`grade-difficulty-tiers-honestly`); a saved game or a game ID
-  // carrying its own description still loads, because `full` is false there.
-  // The message names the tiers the way the menu does, so a player can match it
-  // to what they picked — hence `DIFF_NAMES`, not the internal `diff` word.
+  // A 3x3 grid has only four intersections, and two of its four tiers have
+  // nothing to grade with: over 3,000 candidate boards each, none needed Normal
+  // (Easy always sufficed) and none needed the top tier (Tricky always did).
+  // Tricky binds on roughly one board in ten. Refusing beats a difficulty that
+  // silently yields another; a saved game or game ID still loads, because `full`
+  // is false there. The message uses the menu's tier names.
   if (full && p.o === 3 && (p.diff === "normal" || p.diff === "recursive")) {
     return `Size 3 has no ${DIFF_NAMES[DIFF_NORMAL]} or ${DIFF_NAMES[DIFF_RECURSIVE]} puzzles; use ${DIFF_NAMES[DIFF_EASY]} or ${DIFF_NAMES[DIFF_TRICKY]}`;
   }
@@ -195,8 +186,8 @@ export interface MathraxState {
   /** `o²` working digits (0 = blank). */
   grid: Uint8Array;
   /** `o²` per-cell flags: {@link F_IMMUTABLE} plus the live `FE_*` error bits,
-   * recomputed by {@link mathraxValidate} on every committed digit move (as
-   * upstream stores them on the state and `game_redraw` reads them back). */
+   * which {@link mathraxValidate} recomputes after every `set` and `solve` move
+   * (upstream, too, keeps them on the state for `game_redraw` to read). */
   flags: Uint8Array;
   /** `o²` pencil-mark bitmaps, bit `n` = candidate `n` (see the module note). */
   pencil: Int32Array;
@@ -225,89 +216,54 @@ export function status(s: MathraxState): "solved" | "ongoing" {
 
 // --- desc codec ------------------------------------------------------------
 
-/**
- * Encode a board as the two comma-separated run-length parts upstream's
- * `new_game_desc` emits: the `o²` grid givens (a digit is its own character, a
- * run of empties is one letter `a`..`z` for 1..26), then the `(o−1)²` clues
- * (`A`/`S`/`M`/`D` + number, `E`/`O`, `a`..`z` runs; `S0` is equality).
- */
-export function encodeDesc(o: number, grid: Uint8Array, clues: Int32Array): string {
-  const s = o * o;
-  const cs = (o - 1) * (o - 1);
+/** Each clue type's description letter, indexed by type. */
+const CLUE_LETTERS = ["", "A", "S", "M", "D", "E", "O"];
+
+/** One clue's description text: its letter, plus the number for arithmetic. */
+function clueText(clue: number): string {
+  const type = clueType(clue);
+  // A typeless clue is unreachable; upstream writes a blank for it "just to be safe".
+  const letter = CLUE_LETTERS[type] || "a";
+  return type >= CLUE_ADD && type <= CLUE_DIV ? letter + clueNum(clue) : letter;
+}
+
+/** Upstream's run-length form of the first `n` values: `text` of each nonzero
+ * value, and a run of zeros as one letter `a`..`z` (1..26). */
+function runLength(
+  values: ArrayLike<number>,
+  n: number,
+  text: (v: number) => string,
+): string {
   let out = "";
   let run = 0;
-
-  for (let i = 0; i < s; i++) {
-    if (grid[i] !== 0) {
-      if (run) {
-        out += String.fromCharCode(96 + run);
-        run = 0;
-      }
-      out += String(grid[i]);
-    } else {
+  for (let i = 0; i < n; i++) {
+    if (values[i] === 0) {
       if (run === 26) {
-        out += String.fromCharCode(96 + run);
+        out += "z";
         run = 0;
       }
       run++;
-    }
-  }
-  if (run) out += String.fromCharCode(96 + run);
-
-  out += ",";
-  run = 0;
-  for (let i = 0; i < cs; i++) {
-    const clue = clues[i];
-    if (clue !== 0) {
-      if (run) {
-        out += String.fromCharCode(96 + run);
-        run = 0;
-      }
-      switch (clueType(clue)) {
-        case CLUE_ADD:
-          out += `A${clueNum(clue)}`;
-          break;
-        case CLUE_SUB:
-          out += `S${clueNum(clue)}`;
-          break;
-        case CLUE_MUL:
-          out += `M${clueNum(clue)}`;
-          break;
-        case CLUE_DIV:
-          out += `D${clueNum(clue)}`;
-          break;
-        case CLUE_EVN:
-          out += "E";
-          break;
-        case CLUE_ODD:
-          out += "O";
-          break;
-        default:
-          // Unreachable (a stored clue always carries a type); upstream emits an
-          // empty space "just to be safe", so we do the same.
-          out += "a";
-      }
     } else {
-      if (run === 26) {
-        out += String.fromCharCode(96 + run);
-        run = 0;
-      }
-      run++;
+      if (run) out += String.fromCharCode(96 + run);
+      run = 0;
+      out += text(values[i]);
     }
   }
   if (run) out += String.fromCharCode(96 + run);
-
   return out;
 }
 
-const CLUE_LETTERS: Record<string, number> = {
-  A: CLUE_ADD,
-  S: CLUE_SUB,
-  M: CLUE_MUL,
-  D: CLUE_DIV,
-  E: CLUE_EVN,
-  O: CLUE_ODD,
-};
+/**
+ * Encode a board as the two comma-separated run-length parts upstream's
+ * `new_game_desc` emits: the `o²` grid givens (a digit is its own character),
+ * then the `(o−1)²` clues (`A`/`S`/`M`/`D` + number, `E`/`O`; `S0` is equality).
+ */
+export function encodeDesc(o: number, grid: Uint8Array, clues: Int32Array): string {
+  return [
+    runLength(grid, o * o, String),
+    runLength(clues, (o - 1) * (o - 1), clueText),
+  ].join(",");
+}
 
 interface LoadResult {
   grid: Uint8Array;
@@ -367,12 +323,11 @@ export function loadGame(
 
       if (c >= "a" && c <= "z") pos += c.charCodeAt(0) - 97 + 1;
       if (c >= "A" && c <= "Z") {
-        const type = CLUE_LETTERS[c];
-        if (type === undefined)
-          return { ok: false, error: "Invalid clue in description." };
+        const type = CLUE_LETTERS.indexOf(c);
+        if (type < 0) return { ok: false, error: "Invalid clue in description." };
         let num = "";
         while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-        const value = num ? Number.parseInt(num, 10) : 0; // atoi
+        const value = Number(num); // "" reads as 0, like `atoi`
         if (value > 99)
           return { ok: false, error: "Number is too high in clue description." };
         clues[pos++] = type | setClueNum(value);
@@ -419,11 +374,10 @@ export function bitOf(d: number): number {
   return 1 << (d - 1);
 }
 
-/** "No constraint" — upstream returns `~0` (every bit of an `unsigned int`).
- * Kept as `~0` rather than masked to `(1 << o) − 1`: it composes identically
- * under `&`, and the `simple` early return below hands it straight back, where
- * narrowing it would be a *different* value and could change a solver verdict —
- * which, on a solver-gated generator, changes the description (docs/games/solver-and-generator.md § "Solver-gated generation"). */
+/** "No constraint": upstream's `~0`, every bit set. Not masked to
+ * `(1 << o) − 1`: the `simple` early return below hands it straight back, and a
+ * different value could change a solver verdict and so the description
+ * (docs/games/solver-and-generator.md § "Solver-gated generation"). */
 const ALL_DIGITS = ~0;
 
 /**
@@ -485,9 +439,8 @@ export function mathraxOptions(clue: number, mark: number, simple: boolean): num
  * in its row or column, and `FE_TOPLEFT`/… when the clue at that corner admits
  * no pairing between this cell and the one diagonally opposite it.
  *
- * Upstream's `is_solver` parameter (read the cell's marks instead of "any digit"
- * for a blank cell) is never passed `true` by the shipped game, so only that
- * branch is ported (docs/games/solver-and-generator.md § "Solver-gated generation": port the shipped behavior).
+ * Upstream's `is_solver` mode (read a blank cell's marks instead of "any digit")
+ * is never used by the shipped game, so it is not ported.
  */
 export function mathraxValidate(
   o: number,
@@ -514,101 +467,33 @@ export function mathraxValidate(
 
   for (let y = 0; y < o; y++) {
     for (let x = 0; x < o; x++) {
-      const d = grid[y * o + x];
+      const i = y * o + x;
+      const d = grid[i];
       const bits = d ? bitOf(d) : maxbits;
 
       if (!d) {
         if (ret === STATUS_COMPLETE) ret = STATUS_UNFINISHED;
       } else if (counts[(d - 1) * o + y] > 1 || counts[(d - 1) * o + o * o + x] > 1) {
-        flags[y * o + x] |= FE_COUNT;
+        flags[i] |= FE_COUNT;
       }
 
-      // Each of the (up to) four incident clues: does it admit *any* pairing
-      // between this cell and the one diagonally across the intersection?
-      if (y < o - 1 && x < o - 1)
-        checkCorner(
-          grid,
-          clues,
-          flags,
-          o,
-          x,
-          y,
-          y * co + x,
-          y + 1,
-          x + 1,
-          bits,
-          FE_BOTRIGHT,
-        );
-      if (y > 0 && x < o - 1)
-        checkCorner(
-          grid,
-          clues,
-          flags,
-          o,
-          x,
-          y,
-          (y - 1) * co + x,
-          y - 1,
-          x + 1,
-          bits,
-          FE_TOPRIGHT,
-        );
-      if (y < o - 1 && x > 0)
-        checkCorner(
-          grid,
-          clues,
-          flags,
-          o,
-          x,
-          y,
-          y * co + x - 1,
-          y + 1,
-          x - 1,
-          bits,
-          FE_BOTLEFT,
-        );
-      if (y > 0 && x > 0)
-        checkCorner(
-          grid,
-          clues,
-          flags,
-          o,
-          x,
-          y,
-          (y - 1) * co + x - 1,
-          y - 1,
-          x - 1,
-          bits,
-          FE_TOPLEFT,
-        );
+      // Flag `bit` when the clue at index `clue` admits no pairing between this
+      // cell and the cell `(ox, oy)` diagonally across its intersection.
+      const corner = (clue: number, ox: number, oy: number, bit: number): void => {
+        const other = grid[oy * o + ox];
+        const opts = mathraxOptions(clues[clue], other ? bitOf(other) : maxbits, false);
+        if (!(opts & bits)) flags[i] |= bit;
+      };
+      if (y < co && x < co) corner(y * co + x, x + 1, y + 1, FE_BOTRIGHT);
+      if (y > 0 && x < co) corner((y - 1) * co + x, x + 1, y - 1, FE_TOPRIGHT);
+      if (y < co && x > 0) corner(y * co + x - 1, x - 1, y + 1, FE_BOTLEFT);
+      if (y > 0 && x > 0) corner((y - 1) * co + x - 1, x - 1, y - 1, FE_TOPLEFT);
 
-      if (flags[y * o + x] & FE_ERRORMASK) ret = STATUS_INVALID;
+      if (flags[i] & FE_ERRORMASK) ret = STATUS_INVALID;
     }
   }
 
   return ret;
-}
-
-/** One incident-clue check of {@link mathraxValidate}: flag `bit` on `(x, y)`
- * when the clue at `clueIdx` admits no digit consistent with both this cell's
- * candidate `bits` and the cell diagonally opposite at `(ox, oy)`. */
-function checkCorner(
-  grid: Uint8Array,
-  clues: Int32Array,
-  flags: Uint8Array,
-  o: number,
-  x: number,
-  y: number,
-  clueIdx: number,
-  oy: number,
-  ox: number,
-  bits: number,
-  bit: number,
-): void {
-  const maxbits = (1 << o) - 1;
-  const other = grid[oy * o + ox];
-  const opts = mathraxOptions(clues[clueIdx], other ? bitOf(other) : maxbits, false);
-  if (!(opts & bits)) flags[y * o + x] |= bit;
 }
 
 // --- moves -----------------------------------------------------------------

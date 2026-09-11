@@ -33,7 +33,7 @@ import {
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Color, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
   CLUE_ADD,
   CLUE_DIV,
@@ -57,8 +57,8 @@ export const PREFERRED_TILE_SIZE = 40;
 export const FLASH_TIME = 0.7;
 const FLASH_FRAME = 0.1;
 
-/** Upstream's `NARROW_BORDERS` arm — the web build compiles with it defined, so
- * the board's border is one pixel, not half a tile (docs/games/rendering.md § "The tile cache and the diff key"). */
+/** Upstream's `NARROW_BORDERS` arm, which the web build compiled: a one-pixel
+ * border, not half a tile (docs/games/rendering.md § "Sizing"). */
 export const BORDER = 1;
 
 // --- palette (index-for-index with the upstream COL_* enum) ----------------
@@ -94,8 +94,6 @@ export function colors(defaultBackground: Color): Color[] {
   out[COL_GUESS] = playerEntryColor(background);
   out[COL_PENCIL] = pencilColor(background);
   out[COL_ERROR] = ERROR;
-  // Faithful to upstream: the red channel is saturated and the other two are
-  // derived from the *background*, so the error wash tints rather than replaces.
   out[COL_ERRORBG] = ERROR_WASH;
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   return out;
@@ -117,9 +115,9 @@ export function computeSize(p: { o: number }, ts: number): Size {
   return { w: side, h: side + indicatorSize(ts) };
 }
 
-/** Upstream `FROMCOORD` — C integer division, which **truncates** toward zero,
- * so a pointer inside the one-pixel border maps to row/column 0 rather than −1
- * (the same idiom Sticks needed; docs/games/input.md § "The accreting-paint drag"). */
+/** Upstream `FROMCOORD`: C integer division **truncates**, so a pointer inside
+ * the one-pixel border maps to row/column 0 rather than −1 (the Sticks idiom,
+ * docs/games/input.md § "The accreting-paint drag"). */
 export function fromCoord(v: number, ts: number): number {
   return Math.trunc((v - BORDER) / ts);
 }
@@ -129,7 +127,6 @@ export function fromCoord(v: number, ts: number): number {
 export interface MathraxDrawState {
   started: boolean;
   tilesize: number;
-  o: number;
   /** `o²` packed last-drawn tile values (−1 = never drawn): the digit in bits
    * 0–3, the pencil-mark bitmap (which itself starts at bit 1) in bits 4–13,
    * and the cell + draw flags in bits 14–24. */
@@ -145,7 +142,6 @@ export function newDrawState(state: MathraxState): MathraxDrawState {
   return {
     started: false,
     tilesize: 0,
-    o,
     tiles: new Int32Array(o * o).fill(-1),
     wrong: new OverlaySidecar(o * o),
     pencilModeShown: false,
@@ -229,12 +225,12 @@ function drawTile(
   const i = y * o + x;
   const tx = BORDER + x * ts;
   const ty = BORDER + y * ts;
+  const cell = { x: tx, y: ty, w: ts, h: ts };
 
-  dr.clip({ x: tx, y: ty, w: ts, h: ts });
-  dr.drawUpdate({ x: tx, y: ty, w: ts, h: ts });
-
+  dr.clip(cell);
+  dr.drawUpdate(cell);
   dr.drawRect(
-    { x: tx, y: ty, w: ts, h: ts },
+    cell,
     fs & FD_FLASH ? COL_FLASH : fs & FD_CURSOR ? COL_CURSOR : COL_BACKGROUND,
   );
 
@@ -381,14 +377,14 @@ export function redraw(
   _animTime: number,
   flashTime: number,
   _hint?: unknown,
-  mistakes?: readonly { x: number; y: number }[],
+  mistakes?: readonly Point[],
 ): void {
   const ts = ds.tilesize;
   const o = state.params.o;
   const size = computeSize({ o }, ts);
   const firstFrame = !ds.started;
 
-  if (!ds.started) {
+  if (firstFrame) {
     // The engine paints no pixels of its own (docs/games/rendering.md § "The rendering doctrine") — the game fills
     // its whole canvas, then the black rectangle the cell outlines sit on.
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);

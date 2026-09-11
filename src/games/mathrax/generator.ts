@@ -12,29 +12,27 @@
  *    removal while the puzzle still solves at the target difficulty.
  *
  * Step 3 is **solver-gated**, so the published description depends on the
- * solver's verdict on every intermediate board — which is exactly why a single
- * byte-match assertion validates the generator, the solver *and* the codec
- * together (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
+ * solver's verdict on every intermediate board, and one byte-match validates the
+ * generator, the solver and the codec together
+ * (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  *
- * ## The one deliberate divergence: removals must keep the board *unique*
+ * ## Divergence: removals must keep the board *unique*
  *
- * (Owner-approved; docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3, "diverge for a genuine player-visible
- * defect".) Both strip loops here keep a removal only while the board remains
- * **uniquely** solvable. Upstream instead tests `mathrax_solve`'s verdict for
- * bare truthiness — and that verdict is `2` for *ambiguous*, which is truthy —
- * so it keeps stripping past the point where the board still has one answer.
+ * Both strip loops keep a removal only while the board stays **uniquely**
+ * solvable (docs/games/solver-and-generator.md § "Divergence and what it costs",
+ * rule 3). Upstream tests `mathrax_solve`'s verdict for bare truthiness, and that
+ * verdict is `2` for *ambiguous*, so it strips past the point where the board
+ * has one answer.
  *
- * Below `Recursive` no recursion runs, so the verdict can only be "stuck" or
+ * Below the top tier no recursion runs, so the verdict can only be "stuck" or
  * "solved" and the two tests are **identical**: Easy / Normal / Tricky boards
- * are bit-for-bit upstream's and their byte-match differential is untouched. At
- * `Recursive` the difference is total — every sampled upstream board (30 of 30)
- * had more than one solution, which makes the whole tier ill-posed: Check & Save
- * can flag nothing (there is no unique answer to check against) and Solve may
- * show a different grid than the one the player legitimately finished on.
+ * stay byte-for-byte upstream's. At the top tier (upstream's Recursive) the
+ * difference is total: every sampled upstream board (30 of 30) had more than one
+ * solution, so Check & Save could flag nothing and Solve could show a grid other
+ * than the one the player legitimately finished.
  *
- * The cost is the byte-match oracle on that tier alone. The frozen C
- * descriptions for it stay in the fixture and are checked the weaker,
- * order-independent way instead — the TS solver must reach C's recorded verdict
+ * That tier's frozen C descriptions stay in the fixture and are checked the
+ * order-independent way instead: the TS solver must reach C's recorded verdict
  * on them (docs/games/testing.md § "Order-independent verdicts").
  */
 
@@ -87,6 +85,7 @@ export function mathraxCandidateClue(
 ): number {
   if (a1 < b1) [a1, b1] = [b1, a1];
   if (a2 < b2) [a2, b2] = [b2, a2];
+  const ratio = (a1 / b1) | 0;
 
   if (options & OPTION_ADD && a1 + b1 === a2 + b2)
     return CLUE_ADD | setClueNum(a1 + b1);
@@ -97,12 +96,12 @@ export function mathraxCandidateClue(
     return CLUE_MUL | setClueNum(a1 * b1);
   if (
     options & OPTION_DIV &&
-    ((a1 / b1) | 0) === ((a2 / b2) | 0) &&
+    ratio === ((a2 / b2) | 0) &&
     a1 % b1 === 0 &&
     a2 % b2 === 0 &&
-    ((a1 / b1) | 0) !== 1
+    ratio !== 1
   )
-    return CLUE_DIV | setClueNum((a1 / b1) | 0);
+    return CLUE_DIV | setClueNum(ratio);
   if (options & OPTION_ODD && a1 & b1 & a2 & b2 & 1) return CLUE_ODD;
   if (options & OPTION_ODD && !((a1 | b1 | a2 | b2) & 1)) return CLUE_EVN;
 
@@ -124,14 +123,11 @@ function stripGridClues(
   diff: number,
   rs: RandomState,
 ): void {
-  const o2 = o * o;
-  const spaces: number[] = [];
-  for (let i = 0; i < o2; i++) spaces.push(i);
+  const spaces = Array.from({ length: o * o }, (_, i) => i);
   shuffle(spaces, rs);
 
-  const backup = new Uint8Array(o2);
-  for (let i = 0; i < o2; i++) {
-    const j = spaces[i];
+  const backup = new Uint8Array(o * o);
+  for (const j of spaces) {
     if (grid[j] === 0) continue;
 
     backup.set(grid);
@@ -152,15 +148,11 @@ function stripMathClues(
   diff: number,
   rs: RandomState,
 ): void {
-  const co = o - 1;
-  const cs = co * co;
-  const spaces: number[] = [];
-  for (let i = 0; i < cs; i++) spaces.push(i);
+  const spaces = Array.from({ length: (o - 1) * (o - 1) }, (_, i) => i);
   shuffle(spaces, rs);
 
   const backup = Uint8Array.from(grid);
-  for (let i = 0; i < cs; i++) {
-    const j = spaces[i];
+  for (const j of spaces) {
     const clue = clues[j];
     if (clue === 0) continue;
 
@@ -172,29 +164,20 @@ function stripMathClues(
 
 export interface MathraxGenerateOptions {
   /**
-   * Reproduce upstream's difficulty gate, which does not exist.
+   * Reproduce upstream's missing difficulty gate.
    *
-   * Upstream strips givens and clues while the board still solves at the target
-   * tier and publishes whatever that leaves; it never asks whether an easier
-   * tier would also have done, so the tier need not bind. Measured over this
-   * game's own frozen C fixtures, 3 of the 23 boards above Easy fall to a lower
-   * tier (at order 3, a Tricky board that Easy solves outright). The player
-   * chose the tier, so {@link newMathraxDesc} rejects such a candidate and
-   * generates another.
+   * Upstream publishes whatever survives stripping at the target tier and never
+   * asks whether an easier tier would also have done: 3 of this game's 23 frozen
+   * C boards above Easy fall to a lower tier (at order 3, a Tricky board that
+   * Easy solves outright). {@link newMathraxDesc} rejects such a board and
+   * generates another, which changes every description above Easy.
    *
-   * Because generation is solver-gated at every removal, that changes every
-   * description above Easy — which would cost the byte-match differential that
-   * validates `latinGenerate`'s draw order, the tiered solver, the clue cascade
-   * and the codec together. This flag keeps that oracle:
-   * `mathrax-differential.test.ts` sets it, so the fixtures still match the C
-   * byte-for-byte and the only lines the oracle no longer covers are the tier
-   * check below. Nothing else should ever set it.
-   *
-   * Note this is the *second* divergence in this generator; the first (unique
-   * rather than merely truthy removals, see the module header) already costs the
-   * oracle on `Recursive` alone. The two are independent and compose: with this
-   * flag set the loop always returns on its first pass, so the RNG is drawn in
-   * exactly upstream's order.
+   * This flag keeps the byte-match oracle anyway: `mathrax-differential.test.ts`
+   * sets it, so the fixtures still match C byte-for-byte and the tier check is
+   * the only line they no longer cover. Nothing else should set it. With it set
+   * the loop returns on its first pass, so the RNG is drawn in exactly
+   * upstream's order. It composes with the unique-removal divergence (module
+   * header), which already costs the oracle the top tier.
    */
   readonly upstreamLooseGate?: boolean;
 }
@@ -217,10 +200,7 @@ export function newMathraxDesc(
   for (;;) {
     attempt();
 
-    const square = latinGenerate(o, rs);
-    const grid = new Uint8Array(o * o);
-    for (let i = 0; i < o * o; i++) grid[i] = square[i];
-
+    const grid = Uint8Array.from(latinGenerate(o, rs));
     const clues = new Int32Array(co * co);
     for (let y = 0; y < co; y++) {
       for (let x = 0; x < co; x++) {
@@ -237,8 +217,8 @@ export function newMathraxDesc(
     stripGridClues(o, grid, clues, diff, rs);
     stripMathClues(o, grid, clues, diff, rs);
 
-    // The tier gate (the divergence): a board the tier below already solves
-    // uniquely is not the difficulty the player asked for. `mathraxSolve` fills
+    // The tier gate: a board the tier below already solves uniquely is not the
+    // difficulty the player asked for. `mathraxSolve` fills
     // the grid it is given, so the probe runs on a copy.
     if (!loose && diff > DIFF_EASY) {
       if (mathraxSolve(o, Uint8Array.from(grid), clues, diff - 1) === SOLVE_UNIQUE) {

@@ -39,18 +39,15 @@ import {
   mathraxOptions,
 } from "./state.ts";
 
-export { mathraxOptions };
-
 /** Solver verdicts, upstream `mathrax_solve`'s return codes. */
 export const SOLVE_IMPOSSIBLE = -1;
 export const SOLVE_STUCK = 0;
 export const SOLVE_UNIQUE = 1;
 export const SOLVE_AMBIGUOUS = 2;
 
-/** The per-solve context: a mirror of the candidate cube in Mathrax's own
- * `BIT(d)` bitmap form, plus the (immutable) clue array. The marks mirror is
- * mutated as the cube narrows, so the recursion needs a real clone — unlike
- * Keen/Towers, whose contexts are immutable. */
+/** The per-solve context: the candidate cube mirrored in Mathrax's own `BIT(d)`
+ * form, plus the clues. The mirror narrows as the solve runs, so each recursive
+ * guess needs its own copy — unlike Keen/Towers, whose contexts are immutable. */
 interface MathraxCtx {
   marks: Int32Array;
   clues: Int32Array;
@@ -155,8 +152,7 @@ export function mathraxSolve(
     // simply skipped.
     valid: null,
     ctx: { marks, clues },
-    // The marks mirror is mutable, so each recursive guess needs its own copy
-    // (upstream `clone_ctx`); the clues never change and stay shared.
+    // Upstream `clone_ctx`; the clues never change and stay shared.
     ctxNew: (c) => ({ marks: c.marks.slice(), clues: c.clues }),
   });
 

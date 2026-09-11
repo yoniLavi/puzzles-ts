@@ -44,16 +44,8 @@ import {
   isEraseKey,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newMathraxDesc } from "./generator.ts";
 import {
   colors,
@@ -106,11 +98,10 @@ import {
 /** A player marking that contradicts the unique solution:
  * - `"cell"` — a filled-in digit that is wrong;
  * - `"note"` — an empty cell whose non-empty pencil notes have crossed out the
- *   cell's solution digit (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"). */
-export interface MathraxMistake {
+ *   cell's solution digit
+ *   (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"). */
+export interface MathraxMistake extends Point {
   kind: "cell" | "note";
-  x: number;
-  y: number;
 }
 
 // --- presets ---------------------------------------------------------------
@@ -167,12 +158,11 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, o, o) ?? {
-      x: ui.cursor.x,
-      y: ui.cursor.y,
-    };
-    ui.cursor.x = moved.x;
-    ui.cursor.y = moved.y;
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, o, o);
+    if (moved) {
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
+    }
     ui.cursor.visible = true;
     ui.cursorFromKeyboard = true;
     return UI_UPDATE;
@@ -184,10 +174,8 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  // Digit entry / clear. `CURSOR_SELECT2` is the space bar; `isEraseKey` is
-  // backspace/delete (upstream binds only `'\b'`, which this frontend never
-  // sends — see `engine/pointer.ts`).
-  // `0` clears, like the erase keys.
+  // Digit entry. Space (`CURSOR_SELECT2`), backspace/delete and `0` clear;
+  // upstream binds only `'\b'`, which this frontend never sends.
   const isClear = button === CURSOR_SELECT2 || isEraseKey(button);
   const c = isClear ? 0 : digitOf(button);
   if (ui.cursor.visible && c !== null) {
@@ -208,10 +196,10 @@ function interpretMove(
     return { type: "set", x: ui.cursor.x, y: ui.cursor.y, n: c, pencil: ui.pencilMode };
   }
 
-  // 'M' / 'm': fill every empty cell's notes, then — on an already-noted board —
-  // strike the candidates already placed in that cell's row or column
-  // (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"'s adaptive mark-all). Mathrax's uniqueness regions are
-  // exactly the row and the column; a clue is *not* a uniqueness region.
+  // 'M' / 'm': adaptive mark-all
+  // (docs/games/mechanics.md § "Pencil marks: the full note-taking UX").
+  // Mathrax's uniqueness regions are exactly the row and the column; a clue is
+  // *not* one.
   if (button === 77 || button === 109) {
     return adaptiveMarkAllMove<MathraxMove>(state.grid, state.pencil, o, (x, y) =>
       rowColRegions(x, y, o),
@@ -276,6 +264,10 @@ function executeMove(state: MathraxState, move: MathraxMove): MathraxState {
 
 // --- solving ---------------------------------------------------------------
 
+/** A fresh grid holding only the givens, for the solver to fill. */
+const givens = (s: MathraxState): Uint8Array =>
+  s.grid.map((d, i) => (s.flags[i] & F_IMMUTABLE ? d : 0));
+
 /**
  * Solve from the givens alone into a fresh grid. Derives the answer from the
  * placed givens only — never from the player's notes, since a note can be wrong
@@ -292,11 +284,8 @@ function solveFromGivens(
   state: MathraxState,
   requireUnique: boolean,
 ): Uint8Array | null {
-  const o = state.params.o;
-  const grid = new Uint8Array(o * o);
-  for (let i = 0; i < o * o; i++)
-    if (state.flags[i] & F_IMMUTABLE) grid[i] = state.grid[i];
-  const verdict = mathraxSolve(o, grid, state.clues, DIFF_RECURSIVE);
+  const grid = givens(state);
+  const verdict = mathraxSolve(state.params.o, grid, state.clues, DIFF_RECURSIVE);
   const ok = requireUnique
     ? verdict === SOLVE_UNIQUE
     : verdict === SOLVE_UNIQUE || verdict === SOLVE_AMBIGUOUS;
@@ -329,21 +318,11 @@ function findMistakes(state: MathraxState): readonly MathraxMistake[] {
   return out;
 }
 
-function flashLength(
-  from: MathraxState,
-  to: MathraxState,
-  _dir: number,
-  _ui: MathraxUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
-}
-
 // --- the game --------------------------------------------------------------
 
 /** The six clue-type checkboxes, in the Custom dialog's (and the description
- * summary's) order. The `kw`s are the C config-name slugs, so the TS and C
- * builds present the identical form and `augmentation.ts`'s Mathrax summary
- * reads the keys it expects. */
+ * summary's) order. The `kw`s are upstream's config-name slugs, which
+ * `augmentation.ts`'s Mathrax summary reads. */
 const CLUE_OPTIONS: ReadonlyArray<{ kw: string; name: string; bit: number }> = [
   { kw: "addition-clues", name: "Addition clues", bit: OPTION_ADD },
   { kw: "subtraction-clues", name: "Subtraction clues", bit: OPTION_SUB },
@@ -356,23 +335,14 @@ const CLUE_OPTIONS: ReadonlyArray<{ kw: string; name: string; bit: number }> = [
 /** Mathrax's difficulty contract (`engine/difficulty.ts`). `mathraxSolve` has
  * its own four-way return (`SOLVE_IMPOSSIBLE` / `SOLVE_STUCK` / `SOLVE_UNIQUE` /
  * `SOLVE_AMBIGUOUS`) rather than the latin-family sentinels its solver is built
- * on, so it is read here and not by `latinVerdict`.
- *
- * **The grid must be seeded from the `F_IMMUTABLE` givens.** Mathrax boards do
- * carry given digits, and the first version of this adapter passed a blank grid
- * — which makes every board unsolvable at every cap. The cross-game guard
- * caught it on its first run, which is exactly the "an adapter that lies makes a
- * guard pass vacuously" risk the contract's design named. `solveFromGivens` does
- * the same seeding for `solve` and `findMistakes`. */
+ * on, so it is read here and not by `latinVerdict`. The solve starts from the
+ * board's givens: a blank grid would make every board unsolvable at every cap. */
 const difficulty: DifficultyContract<MathraxParams> = {
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
   solveAtCap: (p, desc, cap) => {
     const s = newState(p, desc);
-    const o = s.params.o;
-    const grid = new Uint8Array(o * o);
-    for (let i = 0; i < o * o; i++) if (s.flags[i] & F_IMMUTABLE) grid[i] = s.grid[i];
-    const ret = mathraxSolve(o, grid, s.clues, cap);
+    const ret = mathraxSolve(p.o, givens(s), s.clues, cap);
     if (ret === SOLVE_UNIQUE) return "solved";
     return ret === SOLVE_IMPOSSIBLE ? "impossible" : "unsolved";
   },
@@ -429,7 +399,7 @@ export const mathraxGame: Game<
       },
     })),
   ],
-  describeParams: (p): ConfigValues => ({
+  describeParams: (p) => ({
     size: String(p.o),
     difficulty: diffToLevel(p.diff),
     ...Object.fromEntries(
@@ -437,31 +407,31 @@ export const mathraxGame: Game<
     ),
   }),
 
-  newDesc: (p, rng: RandomState) => newMathraxDesc(p, rng),
+  newDesc: (p, rng) => newMathraxDesc(p, rng),
   validateDesc,
   newState,
   newUi,
 
   interpretMove,
   executeMove,
-  status: (s): GameStatus => status(s),
+  status,
 
   solve,
   difficulty,
   findMistakes,
-  requestKeys: (p): KeyLabel[] => digitKeys(p.o),
+  requestKeys: (p) => digitKeys(p.o),
 
   prefs: [stickyPencilPref<MathraxUi>(), pencilKeepHighlightPref<MathraxUi>()],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: MathraxParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(mathraxGame);
