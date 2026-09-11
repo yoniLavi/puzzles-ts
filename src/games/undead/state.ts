@@ -5,19 +5,18 @@ import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 /**
- * Types and pure state helpers for Undead ("Haunted Mirror Mazes") — the
- * state/codec parts of `undead.c`.
+ * Types and pure state helpers for Undead ("Haunted Mirror Mazes"), from
+ * upstream `undead.c`.
  *
- * The board is a `w × h` grid embedded in a `(w+2) × (h+2)` array: the interior
- * cells are each either a fixed diagonal mirror (`\` = `CELL_MIRROR_L`, `/` =
- * `CELL_MIRROR_R`) or a monster cell, and the border cells carry the edge
- * sighting clues. The player places one of three monsters — Ghost (`1`),
- * Vampire (`2`), Zombie (`4`) — in each monster cell.
+ * The board is a `w × h` grid embedded in a `(w+2) × (h+2)` array: each interior
+ * cell is a fixed diagonal mirror (`\` = `CELL_MIRROR_L`, `/` = `CELL_MIRROR_R`)
+ * or a monster cell, and the border cells carry the edge sighting clues. The
+ * player places a Ghost (`1`), Vampire (`2`) or Zombie (`4`) in each monster
+ * cell.
  *
  * The immutable, generation-derived data (the grid, the cell→monster-index map
- * `xinfo`, the per-type totals, the fixed-cell flags, and the traced sightlines
- * `paths`) lives in a shared {@link UndeadCommon}; the mutable per-move data
- * (`guess`, `pencil`, the live error overlays, the struck-clue flags) lives in
+ * `xinfo`, the per-type totals, the fixed-cell flags and the traced sightlines)
+ * lives in a shared {@link UndeadCommon}; the per-move data lives in
  * {@link UndeadState}, which references one `common` and clones cheaply.
  */
 
@@ -28,26 +27,15 @@ export type Difficulty = "easy" | "normal" | "tricky";
 export const DIFF_EASY = 0;
 export const DIFF_NORMAL = 1;
 export const DIFF_TRICKY = 2;
-export const DIFFCOUNT = 3;
-// The top tier is `Unreasonable` (`audit-guessing-tier-names`, design D5), and
-// this corrects the reasoning that previously stood here.
-//
-// `strengthen-undead-deduction` measured a **zero recursion-only residual** and
-// concluded "so Easy/Normal/Tricky are all guess-free". That measurement is
-// sound and still holds — but it answers a different question. It is about
-// *recursion*: no board needs a hypothesis nested inside a hypothesis. The rule
-// is about **propagation**: rung 3 (`forcingPass`) hypothesizes one candidate
-// and runs the arc-consistency + counting *fixpoint* from it, taking the
-// contradiction that eventually appears. That is a solve-from-hypothesis, the
-// shape Galaxies' removed rung had, and only a tier named `Unreasonable` may
-// require it. Undead has no tier above rung 3, so the tier is renamed rather
-// than the rung moved.
-//
-// Easy and Normal are unaffected: their ladder stops below the forcing rung.
 
-// undead_diffchars, indexed by level — **unchanged**, so game IDs, saved games
-// and shared links survive the rename; only the label moves.
+// Upstream's `undead_diffchars`, indexed by level: game IDs and saves carry
+// these letters.
 const DIFF_CHARS = "ent";
+// The top tier is `Unreasonable`: rung 3 (`forcingPass`) hypothesizes one
+// candidate and runs the arc-consistency + counting fixpoint from it to a
+// contradiction, a solve-from-hypothesis only an Unreasonable tier may require.
+// No board needs a hypothesis nested inside that one (measured by
+// `strengthen-undead-deduction`), and Easy and Normal stop below rung 3.
 export const DIFF_NAMES = tierNames(3, { search: true });
 const DIFFS: Difficulty[] = ["easy", "normal", "tricky"];
 
@@ -81,6 +69,11 @@ export const MON_GHOST = 1;
 export const MON_VAMPIRE = 2;
 export const MON_ZOMBIE = 4;
 export const MON_NONE = 7; // undecided (all candidates)
+export const MONSTERS = [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE] as const;
+
+/** A single monster: a placed cell, or a candidate set narrowed to one. */
+export const isSingleton = (v: number): boolean =>
+  v === MON_GHOST || v === MON_VAMPIRE || v === MON_ZOMBIE;
 
 // --- grid walk directions (upstream DIRECTION_* enum) ----------------------
 
@@ -143,7 +136,6 @@ export function validateParams(p: UndeadParams, _full: boolean): string | null {
   if (p.w < 3) return "Width must be at least 3";
   if (p.h < 3) return "Height must be at least 3";
   if (p.w > Math.floor(54 / p.h)) return "Grid is too big";
-  if (diffToLevel(p.diff) >= DIFFCOUNT) return "Unknown difficulty rating";
   return null;
 }
 
@@ -167,8 +159,8 @@ export function range2grid(
   return { x: 0, y: 0, dir: DIRECTION_NONE };
 }
 
-/** Inverse of {@link range2grid}: the edge index for a border cell, or `-1` for
- * an interior or corner cell. */
+/** Inverse of {@link range2grid}: the edge index for a border (clue) cell, or
+ * `-1` for an interior, corner or off-board cell. */
 export function grid2range(x: number, y: number, w: number, h: number): number {
   if (x > 0 && x < w + 1 && y > 0 && y < h + 1) return -1;
   if (x < 0 || x > w + 1 || y < 0 || y > h + 1) return -1;
@@ -183,22 +175,6 @@ export function grid2range(x: number, y: number, w: number, h: number): number {
  * order. */
 export function num2grid(num: number, width: number): { x: number; y: number } {
   return { x: 1 + (num % width), y: 1 + Math.floor(num / width) };
-}
-
-/** True iff `(x, y)` is one of the editable edge clue cells. */
-export function isClue(w: number, h: number, x: number, y: number): boolean {
-  if ((x === 0 || x === w + 1) && y > 0 && y <= h) return true;
-  if ((y === 0 || y === h + 1) && x > 0 && x <= w) return true;
-  return false;
-}
-
-/** Edge index of the clue cell `(x, y)`, or `-1`. */
-export function clueIndex(w: number, h: number, x: number, y: number): number {
-  if (y === 0) return x - 1;
-  if (x === w + 1) return w + y - 1;
-  if (y === h + 1) return 2 * w + h - x;
-  if (x === 0) return 2 * (w + h) - y;
-  return -1;
 }
 
 // --- shared immutable structure --------------------------------------------
@@ -242,44 +218,23 @@ export interface UndeadCommon {
   numPaths: number;
 }
 
-/** Grid index for interior/border coordinates of `common`. */
-export function gidx(common: UndeadCommon, x: number, y: number): number {
-  return x + y * (common.w + 2);
-}
-
 /**
- * Trace every sightline of the maze (upstream `make_paths`). Reads
- * `common.grid` (mirrors + border clue numbers) and fills `common.paths`. The
- * `paths` array must already hold `numPaths` empty {@link UndeadPath} records
- * sized to `wh`.
+ * Trace every sightline of the maze (upstream `make_paths`) from `common.grid`
+ * (mirrors and border clue numbers) into the pre-allocated `common.paths`.
  */
 export function makePaths(common: UndeadCommon): void {
-  const w = common.w;
-  const h = common.h;
+  const { w, h, grid, xinfo, paths } = common;
   const stride = w + 2;
-  const grid = common.grid;
-  const xinfo = common.xinfo;
-  const paths = common.paths;
   let count = 0;
+  const tracedEnds = new Set<number>();
 
   for (let i = 0; i < 2 * (w + h); i++) {
-    // Skip a path whose inverse we already traced.
-    let found = false;
-    for (let j = 0; j < count; j++) {
-      if (i === paths[j].gridEnd) {
-        found = true;
-        break;
-      }
-    }
-    if (found) continue;
+    if (tracedEnds.has(i)) continue; // the reverse of a path already traced
 
-    const path = paths[count];
+    const path = paths[count++];
     path.length = 0;
     path.gridStart = i;
-    const g = range2grid(i, w, h);
-    let x = g.x;
-    let y = g.y;
-    let dir = g.dir;
+    let { x, y, dir } = range2grid(i, w, h);
     path.sightingsStart = grid[x + y * stride];
 
     while (true) {
@@ -292,56 +247,58 @@ export function makePaths(common: UndeadCommon): void {
       if (r !== -1) {
         path.gridEnd = r;
         path.sightingsEnd = grid[x + y * stride];
+        tracedEnds.add(r);
         break;
       }
 
       const cell = x + y * stride;
-      const c = grid[cell];
       path.xy[path.length] = cell;
-      if (c === CELL_MIRROR_L) {
-        path.p[path.length] = -1;
+      path.p[path.length++] = xinfo[cell]; // -1 at a mirror
+      if (grid[cell] === CELL_MIRROR_L) {
         if (dir === DIRECTION_DOWN) dir = DIRECTION_RIGHT;
         else if (dir === DIRECTION_LEFT) dir = DIRECTION_UP;
         else if (dir === DIRECTION_UP) dir = DIRECTION_LEFT;
         else if (dir === DIRECTION_RIGHT) dir = DIRECTION_DOWN;
-      } else if (c === CELL_MIRROR_R) {
-        path.p[path.length] = -1;
+      } else if (grid[cell] === CELL_MIRROR_R) {
         if (dir === DIRECTION_DOWN) dir = DIRECTION_LEFT;
         else if (dir === DIRECTION_LEFT) dir = DIRECTION_DOWN;
         else if (dir === DIRECTION_UP) dir = DIRECTION_RIGHT;
         else if (dir === DIRECTION_RIGHT) dir = DIRECTION_UP;
-      } else {
-        path.p[path.length] = xinfo[cell];
       }
-      path.length++;
     }
 
-    // Count distinct monsters on the path.
-    let numMonsters = 0;
-    for (let j = 0; j < common.numTotal; j++) {
-      let nseen = 0;
-      for (let k = 0; k < path.length; k++) if (path.p[k] === j) nseen++;
-      if (nseen > 0) numMonsters++;
-    }
-    path.numMonsters = numMonsters;
-
-    // Build the mapping vector (distinct monster indices, traversal order).
-    let c = 0;
-    for (let pp = 0; pp < path.length; pp++) {
-      const m = path.p[pp];
-      if (m === -1) continue;
-      let seen = false;
-      for (let j = 0; j < c; j++) if (path.mapping[j] === m) seen = true;
-      if (!seen) path.mapping[c++] = m;
-    }
-    count++;
+    // The distinct monsters on the path, in traversal order.
+    const distinct = new Set<number>();
+    for (let k = 0; k < path.length; k++) if (path.p[k] !== -1) distinct.add(path.p[k]);
+    path.mapping.set([...distinct]);
+    path.numMonsters = distinct.size;
   }
 }
 
 /** Stable sort of the traced paths by ascending monster count (upstream
- * `qsort(path_cmp)`; see design D1 — stability is all a TS-only game needs). */
+ * `qsort(path_cmp)`, whose tie order is unspecified). */
 export function sortPaths(common: UndeadCommon): void {
   common.paths.sort((a, b) => a.numMonsters - b.numMonsters);
+}
+
+/** How many monsters `guess` shows along `path` seen from its start, or from
+ * its end with `fromEnd`: vampires before the first mirror, ghosts after it,
+ * zombies always. */
+export function visibleCount(
+  path: UndeadPath,
+  guess: ArrayLike<number>,
+  fromEnd: boolean,
+): number {
+  let count = 0;
+  let mirror = false;
+  for (let k = 0; k < path.length; k++) {
+    const m = path.p[fromEnd ? path.length - 1 - k : k];
+    if (m === -1) mirror = true;
+    else if (guess[m] === MON_GHOST && mirror) count++;
+    else if (guess[m] === MON_VAMPIRE && !mirror) count++;
+    else if (guess[m] === MON_ZOMBIE) count++;
+  }
+  return count;
 }
 
 function newPath(wh: number): UndeadPath {
@@ -442,10 +399,9 @@ export type UndeadMove =
   | { type: "clear"; cell: number }
   /** Toggle a pencil mark (1/2/4) in cell `cell`. */
   | { type: "pencil"; cell: number; monster: number }
-  /** Clear a list of candidate bits across cells atomically (idempotent — a
-   * re-applied strike never re-adds a candidate). The one-firing-one-step note
-   * move used by the hint (`docs/games/hints.md § "Persist, populate, and the moves"); unlike `pencil` it is
-   * resume-safe in a kept plan. */
+  /** Clear a list of candidate bits across cells at once, the hint's note move.
+   * Idempotent, unlike `pencil`, so it is resume-safe in a kept plan
+   * (docs/games/hints.md § "Persist, populate, and the moves"). */
   | { type: "pencilStrike"; marks: { cell: number; monster: number }[] }
   /** Fill every undecided cell with all candidate notes (`M`). */
   | { type: "markAll" }
@@ -461,7 +417,6 @@ export const COUNT_STYLE_REMAINING = 1;
 export const COUNT_STYLE_PLACED_TOTAL = 2;
 /** Fork addition (default): remaining-to-place / total-needed, e.g. `3/8`. */
 export const COUNT_STYLE_REMAINING_TOTAL = 3;
-export const N_COUNT_STYLE = 4;
 
 export interface UndeadUi {
   cursor: GridCursor;
@@ -499,8 +454,7 @@ export function newUi(_state: UndeadState): UndeadUi {
  * {@link validateDesc} first). */
 export function newState(params: UndeadParams, desc: string): UndeadState {
   const common = newCommon(params);
-  const w = common.w;
-  const h = common.h;
+  const { w, h } = common;
   const stride = w + 2;
 
   let pos = 0;
@@ -525,38 +479,33 @@ export function newState(params: UndeadParams, desc: string): UndeadState {
   const state = blankState(common);
   common.fixed = new Uint8Array(common.numTotal);
 
-  // Grid run-length walk.
-  let count = 0; // monster index assigned so far
-  let n = 0; // interior cell number (reading order)
-  while (pos < desc.length && desc[pos] !== ",") {
+  // Grid run-length walk: `n` numbers the interior cells in reading order,
+  // `count` the monster cells.
+  let count = 0;
+  let n = 0;
+  const nextCell = (): number => {
+    const g = num2grid(n++, w);
+    return g.x + g.y * stride;
+  };
+  for (; pos < desc.length && desc[pos] !== ","; pos++) {
     const c = desc[pos];
     if (c === "L" || c === "R") {
-      const gg = num2grid(n, w);
-      common.grid[gg.x + gg.y * stride] = c === "L" ? CELL_MIRROR_L : CELL_MIRROR_R;
-      common.xinfo[gg.x + gg.y * stride] = -1;
-      n++;
+      const cell = nextCell();
+      common.grid[cell] = c === "L" ? CELL_MIRROR_L : CELL_MIRROR_R;
+      common.xinfo[cell] = -1;
     } else if (c === "G" || c === "V" || c === "Z") {
-      const gg = num2grid(n, w);
-      common.grid[gg.x + gg.y * stride] =
+      const cell = nextCell();
+      common.grid[cell] =
         c === "G" ? CELL_GHOST : c === "V" ? CELL_VAMPIRE : CELL_ZOMBIE;
-      common.xinfo[gg.x + gg.y * stride] = count;
+      common.xinfo[cell] = count;
       state.guess[count] = c === "G" ? MON_GHOST : c === "V" ? MON_VAMPIRE : MON_ZOMBIE;
-      common.fixed[count] = 1;
-      count++;
-      n++;
+      common.fixed[count++] = 1;
     } else {
-      let run = c.charCodeAt(0) - ("a".charCodeAt(0) - 1);
-      while (run-- > 0) {
-        const gg = num2grid(n, w);
-        common.grid[gg.x + gg.y * stride] = CELL_EMPTY;
-        common.xinfo[gg.x + gg.y * stride] = count;
-        state.guess[count] = MON_NONE;
-        common.fixed[count] = 0;
-        count++;
-        n++;
+      // A run of empty monster cells, `a` = 1.
+      for (let run = c.charCodeAt(0) - 96; run > 0; run--) {
+        common.xinfo[nextCell()] = count++;
       }
     }
-    pos++;
   }
   pos++; // skip the comma after the grid
 
@@ -642,38 +591,23 @@ export function validateDesc(p: UndeadParams, desc: string): string | null {
  * signal.
  */
 export function recomputeErrors(state: UndeadState): boolean {
-  const common = state.common;
   state.cellErrors.fill(0);
   state.hintErrors.fill(0);
   state.countErrors.fill(0);
-  let correct = true;
-  if (!checkNumbersDraw(state)) correct = false;
-  for (let p = 0; p < common.numPaths; p++) {
-    if (!checkPathSolution(state, p)) correct = false;
+  let correct = checkNumbersDraw(state);
+  for (const path of state.common.paths) {
+    if (!checkPathSolution(state, path)) correct = false;
   }
-  for (let i = 0; i < common.numTotal; i++) {
-    const g = state.guess[i];
-    if (g !== MON_GHOST && g !== MON_VAMPIRE && g !== MON_ZOMBIE) correct = false;
-  }
-  return correct;
+  return correct && state.guess.every(isSingleton);
 }
 
 function checkNumbersDraw(state: UndeadState): boolean {
   const common = state.common;
   const stride = common.w + 2;
-  let cg = 0;
-  let cv = 0;
-  let cz = 0;
-  for (let i = 0; i < common.numTotal; i++) {
-    if (state.guess[i] === MON_GHOST) cg++;
-    else if (state.guess[i] === MON_VAMPIRE) cv++;
-    else if (state.guess[i] === MON_ZOMBIE) cz++;
-  }
-  let valid = true;
-  const filled = cg + cv + cz >= common.numTotal;
+  const counts = MONSTERS.map((m) => state.guess.filter((g) => g === m).length);
   const totals = [common.numGhosts, common.numVampires, common.numZombies];
-  const counts = [cg, cv, cz];
-  const masks = [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE];
+  const filled = counts[0] + counts[1] + counts[2] >= common.numTotal;
+  let valid = true;
   for (let t = 0; t < 3; t++) {
     if (counts[t] > totals[t] || (filled && counts[t] !== totals[t])) {
       valid = false;
@@ -682,7 +616,7 @@ function checkNumbersDraw(state: UndeadState): boolean {
         for (let y = 1; y <= common.h; y++) {
           const xy = x + y * stride;
           const xi = common.xinfo[xy];
-          if (xi >= 0 && state.guess[xi] === masks[t]) state.cellErrors[xy] = 1;
+          if (xi >= 0 && state.guess[xi] === MONSTERS[t]) state.cellErrors[xy] = 1;
         }
       }
     }
@@ -690,51 +624,24 @@ function checkNumbersDraw(state: UndeadState): boolean {
   return valid;
 }
 
-function checkPathSolution(state: UndeadState, p: number): boolean {
-  const common = state.common;
-  const path = common.paths[p];
-  let correct = true;
-
-  // Forward (entering at gridStart).
-  let count = 0;
-  let mirror = false;
+/** Flag each of `path`'s clues that its cells can no longer meet: more
+ * monsters already visible than it says, or too few even if every undecided
+ * cell turned out visible. */
+function checkPathSolution(state: UndeadState, path: UndeadPath): boolean {
   let unfilled = 0;
   for (let i = 0; i < path.length; i++) {
-    const m = path.p[i];
-    if (m === -1) mirror = true;
-    else {
-      const g = state.guess[m];
-      if (g === MON_GHOST && mirror) count++;
-      else if (g === MON_VAMPIRE && !mirror) count++;
-      else if (g === MON_ZOMBIE) count++;
-      else if (g === MON_NONE) unfilled++;
+    if (path.p[i] !== -1 && state.guess[path.p[i]] === MON_NONE) unfilled++;
+  }
+  let correct = true;
+  const check = (edge: number, clue: number, fromEnd: boolean): void => {
+    const seen = visibleCount(path, state.guess, fromEnd);
+    if (seen > clue || seen + unfilled < clue) {
+      correct = false;
+      state.hintErrors[edge] = 1;
     }
-  }
-  if (count > path.sightingsStart || count + unfilled < path.sightingsStart) {
-    correct = false;
-    state.hintErrors[path.gridStart] = 1;
-  }
-
-  // Backward (entering at gridEnd).
-  count = 0;
-  mirror = false;
-  unfilled = 0;
-  for (let i = path.length - 1; i >= 0; i--) {
-    const m = path.p[i];
-    if (m === -1) mirror = true;
-    else {
-      const g = state.guess[m];
-      if (g === MON_GHOST && mirror) count++;
-      else if (g === MON_VAMPIRE && !mirror) count++;
-      else if (g === MON_ZOMBIE) count++;
-      else if (g === MON_NONE) unfilled++;
-    }
-  }
-  if (count > path.sightingsEnd || count + unfilled < path.sightingsEnd) {
-    correct = false;
-    state.hintErrors[path.gridEnd] = 1;
-  }
-
+  };
+  check(path.gridStart, path.sightingsStart, false);
+  check(path.gridEnd, path.sightingsEnd, true);
   if (!correct) {
     for (let i = 0; i < path.length; i++) state.cellErrors[path.xy[i]] = 1;
   }

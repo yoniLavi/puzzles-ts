@@ -1,5 +1,5 @@
 /**
- * Undead explained-hint tests (`add-undead-hint`).
+ * Undead explained-hint tests.
  *
  * Tier 1 — the recording solver records a reason per deduction kind; the plan
  * solves a generated board from empty *and* mid-game, naked-single-first, with
@@ -8,7 +8,7 @@
  * — a render-scenario snapshot of a sightline-elimination frame.
  *
  * Undead is the fork's first *non-Latin* candidate-elimination hint (its own
- * recorder off `solveIterative` + the counting/forcing ladder, not `latin.ts`).
+ * recorder off the sightline and counting rungs, not `latin.ts`).
  */
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
@@ -72,11 +72,11 @@ describe("undead recording solver", () => {
     expect(seen.has("total")).toBe(true);
     // `onlyCells` (counting's dual) is rarer but should appear in this spread.
     expect(seen.has("onlyCells")).toBe(true);
-    // …and `forcing` never, on any tier: `audit-guessing-tier-names` removed
-    // that rung from the recorder, because it hypothesizes a candidate and runs
-    // the arc+counting fixpoint from it — a multi-step search, which belongs to
-    // an `Unreasonable` board and never to a hint. The solver keeps the rung
-    // (the generator grades on it), so this is about narration only.
+    // …and `forcing` never, on any tier: the recorder has no such rung, because
+    // it hypothesizes a candidate and runs the arc+counting fixpoint from it — a
+    // multi-step search, which belongs to an `Unreasonable` board and never to a
+    // hint. The solver keeps the rung (the generator grades on it), so this is
+    // about narration only.
     expect(seen.has("forcing")).toBe(false);
   });
 
@@ -103,10 +103,10 @@ describe("undead recording solver", () => {
 
 describe("undead hint plan", () => {
   it("a freshly-computed plan solves the board from empty (the deductive tiers)", () => {
-    // `Unreasonable` is deliberately absent: `audit-guessing-tier-names` took
-    // the forcing rung out of the recorder, and such a board needs it at least
-    // once by construction, so the plan stops short there. That is asserted
-    // separately below — not silently dropped.
+    // `Unreasonable` is deliberately absent: the recorder has no forcing rung,
+    // and such a board needs it at least once by construction, so the plan
+    // stops short there. That is asserted separately below — not silently
+    // dropped.
     const tiers: UndeadParams[] = [
       { w: 4, h: 4, diff: "easy" },
       { w: 5, h: 5, diff: "normal" },
@@ -324,12 +324,11 @@ describe("undead hint resume (per tier)", () => {
   });
 
   it("5x5 unreasonable: hints run until deduction stops, then refuse", () => {
-    // The tier's contract after `audit-guessing-tier-names`. It used to be
-    // folded into the loop above, and could not be: such a board needs the
-    // forcing rung, which the hint no longer narrates, so the walk *must* end
-    // on a refusal instead of on "solved". Both bounds are asserted so neither
-    // failure mode passes quietly — a walk that solved would mean the rung came
-    // back; one that gave nothing would mean the hint is dead on arrival.
+    // Kept apart from the loop above: such a board needs the forcing rung,
+    // which the hint does not narrate, so the walk *must* end on a refusal
+    // instead of on "solved". Both bounds are asserted so neither failure mode
+    // passes quietly — a walk that solved would mean the rung came back; one
+    // that gave nothing would mean the hint is dead on arrival.
     for (const seed of ["a", "b", "c"]) {
       let s = gen({ w: 5, h: 5, diff: "tricky" }, `resume-tricky-${seed}`);
       let moves = 0;

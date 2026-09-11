@@ -7,13 +7,12 @@
  * in ASCII mode), or a 2×2 grid of pencil notes. The count blocks and edge clues
  * recolor red on error and dim when complete / struck. Cells are diffed against
  * a per-monster-cell cache; the Check & Save mistake overlay rides a sidecar in
- * the diff key (docs/games/rendering.md § "The tile cache and the diff key"). The fork pencil-mode indicator sits in the
- * top-right border corner.
+ * the diff key (docs/games/rendering.md § "The tile cache and the diff key"). The
+ * fork's pencil-mode indicator sits in the top-right border corner.
  *
- * Note (parity): upstream computes `cell_errors` but never *renders* them (only
- * the count blocks and edge clues turn red); we match that — the red overlay you
- * see in play comes from the counts/clues, and the inset red outline is the
- * separate Check & Save mistake overlay.
+ * Upstream computes `cell_errors` but never *renders* them (only the count
+ * blocks and edge clues turn red), and neither does this port; the inset red
+ * outline is the separate Check & Save mistake overlay.
  */
 
 import {
@@ -40,29 +39,32 @@ import {
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import { type GridCursor, newCursor } from "../../engine/pointer.ts";
-import type { Color, Size } from "../../engine/types.ts";
+import type { Color, Point, Rect, Size } from "../../engine/types.ts";
 import {
   CELL_MIRROR_L,
   COUNT_STYLE_PLACED_TOTAL,
   COUNT_STYLE_REMAINING,
   COUNT_STYLE_REMAINING_TOTAL,
   COUNT_STYLE_TOTAL,
+  isSingleton,
   MON_GHOST,
   MON_VAMPIRE,
   MON_ZOMBIE,
+  MONSTERS,
+  range2grid,
   type UndeadMove,
   type UndeadState,
   type UndeadUi,
 } from "./state.ts";
 
 /** Highlight payload an Undead hint step carries (built in `index.ts`). See
- * docs/games/hints.md § "The element-type color legend" for the element-type legend. Coordinates are interior
- * (1-based) grid cells, matching `redraw`/`findMistakes`. */
+ * docs/games/hints.md § "The element-type color legend". Coordinates are
+ * interior (1-based) grid cells, matching `redraw`/`findMistakes`. */
 export interface UndeadHint {
-  /** The driving sightline's bounce path, shaded `COL_HINT_CELL` (evidence). */
-  area: { x: number; y: number }[];
-  /** The cell(s) the deduction acts on; a placement target fills `COL_HINT`. */
-  targets: { x: number; y: number }[];
+  /** The driving sightline's bounce path, outlined `COL_HINT_CELL` (evidence). */
+  area: Point[];
+  /** The cell(s) the deduction acts on, ringed `COL_HINT`. */
+  targets: Point[];
   /** The candidate monster(s) ruled out, shown struck through in the notes. */
   marks: { x: number; y: number; monster: number }[];
 }
@@ -264,11 +266,6 @@ export function countBlockAt(ds: UndeadDrawState, px: number, py: number): numbe
   return -1;
 }
 
-/** Bottom pixel of the count row (upstream `COUNT_Y + COUNT_H`). */
-export function countRowBottom(ds: UndeadDrawState): number {
-  return countY(ds.tilesize) + ds.tilesize;
-}
-
 // --- primitives ------------------------------------------------------------
 
 function drawCircleOrPoint(
@@ -283,7 +280,8 @@ function drawCircleOrPoint(
 }
 
 /** Draw a monster shape centered at `(x, y)` into a `ts`-wide box (upstream
- * `draw_monster`). `ts` is the monster's own display size, not the tile size. */
+ * `draw_monster`). `ts` is the monster's own display size, not the tile size.
+ * The paired features loop left then right. */
 function drawMonster(
   dr: GameDrawing,
   x: number,
@@ -305,9 +303,10 @@ function drawMonster(
     dr.drawCircle({ x, y }, m25, COL_GHOST, black);
     dr.unclip();
 
-    const poly: { x: number; y: number }[] = [];
-    poly.push({ x: x - m25, y: y - 2 });
-    poly.push({ x: x - m25, y: y + m25 });
+    const poly: Point[] = [
+      { x: x - m25, y: y - 2 },
+      { x: x - m25, y: y + m25 },
+    ];
     for (let j = 0; j < 3; j++) {
       const total = m25 * 2;
       const before = idiv(total * j, 3);
@@ -322,32 +321,19 @@ function drawMonster(
     dr.drawPolygon(poly, COL_GHOST, black);
     dr.unclip();
 
-    dr.drawCircle(
-      { x: x - f(ts / 6), y: y - f(ts / 12) },
-      f(ts / 10),
-      COL_BACKGROUND,
-      black,
-    );
-    dr.drawCircle(
-      { x: x + f(ts / 6), y: y - f(ts / 12) },
-      f(ts / 10),
-      COL_BACKGROUND,
-      black,
-    );
-    drawCircleOrPoint(
-      dr,
-      x - f(ts / 6) + 1 + f(ts / 48),
-      y - f(ts / 12),
-      f(ts / 48),
-      black,
-    );
-    drawCircleOrPoint(
-      dr,
-      x + f(ts / 6) + 1 + f(ts / 48),
-      y - f(ts / 12),
-      f(ts / 48),
-      black,
-    );
+    const eyeY = y - f(ts / 12);
+    const pupil = f(ts / 48);
+    for (const s of [-1, 1]) {
+      dr.drawCircle(
+        { x: x + s * f(ts / 6), y: eyeY },
+        f(ts / 10),
+        COL_BACKGROUND,
+        black,
+      );
+    }
+    for (const s of [-1, 1]) {
+      drawCircleOrPoint(dr, x + s * f(ts / 6) + 1 + pupil, eyeY, pupil, black);
+    }
   } else if (monster === MON_VAMPIRE) {
     dr.clip({ x: x - f(ts / 2) + 2, y: y - f(ts / 2) + 2, w: ts - 3, h: f(ts / 2) });
     dr.drawCircle({ x, y }, m25, black, black);
@@ -369,84 +355,51 @@ function drawMonster(
     dr.drawCircle({ x, y }, m25, COL_VAMPIRE, black);
     dr.unclip();
 
-    dr.drawCircle(
-      { x: x - f(ts / 7), y: y - f(ts / 16) },
-      f(ts / 16),
-      COL_BACKGROUND,
-      black,
-    );
-    dr.drawCircle(
-      { x: x + f(ts / 7), y: y - f(ts / 16) },
-      f(ts / 16),
-      COL_BACKGROUND,
-      black,
-    );
-    drawCircleOrPoint(dr, x - f(ts / 7), y - f(ts / 16), f(ts / 48), black);
-    drawCircleOrPoint(dr, x + f(ts / 7), y - f(ts / 16), f(ts / 48), black);
+    const eyeY = y - f(ts / 16);
+    for (const s of [-1, 1]) {
+      dr.drawCircle(
+        { x: x + s * f(ts / 7), y: eyeY },
+        f(ts / 16),
+        COL_BACKGROUND,
+        black,
+      );
+    }
+    drawCircleOrPoint(dr, x - f(ts / 7), eyeY, f(ts / 48), black);
+    drawCircleOrPoint(dr, x + f(ts / 7), eyeY, f(ts / 48), black);
 
     dr.clip({ x: x - f(ts / 2) + 2, y: y + f(ts / 8), w: ts - 3, h: f(ts / 4) });
-    dr.drawPolygon(
-      [
-        { x: x - idiv(3 * ts, 16), y: y + idiv(ts, 8) },
-        { x: x - idiv(2 * ts, 16), y: y + idiv(7 * ts, 24) },
-        { x: x - idiv(1 * ts, 16), y: y + idiv(ts, 8) },
-      ],
-      COL_BACKGROUND,
-      black,
-    );
-    dr.drawPolygon(
-      [
-        { x: x + idiv(3 * ts, 16), y: y + idiv(ts, 8) },
-        { x: x + idiv(2 * ts, 16), y: y + idiv(7 * ts, 24) },
-        { x: x + idiv(1 * ts, 16), y: y + idiv(ts, 8) },
-      ],
-      COL_BACKGROUND,
-      black,
-    );
+    for (const s of [-1, 1]) {
+      dr.drawPolygon(
+        [
+          { x: x + s * idiv(3 * ts, 16), y: y + idiv(ts, 8) },
+          { x: x + s * idiv(2 * ts, 16), y: y + idiv(7 * ts, 24) },
+          { x: x + s * idiv(1 * ts, 16), y: y + idiv(ts, 8) },
+        ],
+        COL_BACKGROUND,
+        black,
+      );
+    }
     dr.drawCircle({ x, y: y - f(ts / 5) }, m25, COL_VAMPIRE, black);
     dr.unclip();
   } else if (monster === MON_ZOMBIE) {
     dr.drawCircle({ x, y }, m25, COL_ZOMBIE, black);
 
-    const ex = f(ts / 7);
-    const ey = f(ts / 12);
+    // Crossed-out eyes.
+    const eyeY = y - f(ts / 12);
     const r = f(ts / 16);
-    dr.drawLine(
-      { x: x - ex - r, y: y - ey - r },
-      { x: x - ex + r, y: y - ey + r },
-      black,
-      1,
-    );
-    dr.drawLine(
-      { x: x - ex + r, y: y - ey - r },
-      { x: x - ex - r, y: y - ey + r },
-      black,
-      1,
-    );
-    dr.drawLine(
-      { x: x + ex - r, y: y - ey - r },
-      { x: x + ex + r, y: y - ey + r },
-      black,
-      1,
-    );
-    dr.drawLine(
-      { x: x + ex + r, y: y - ey - r },
-      { x: x + ex - r, y: y - ey + r },
-      black,
-      1,
-    );
+    for (const s of [-1, 1]) {
+      const ex = x + s * f(ts / 7);
+      dr.drawLine({ x: ex - r, y: eyeY - r }, { x: ex + r, y: eyeY + r }, black, 1);
+      dr.drawLine({ x: ex + r, y: eyeY - r }, { x: ex - r, y: eyeY + r }, black, 1);
+    }
 
-    dr.clip({ x: x - f(ts / 5), y: y + f(ts / 6), w: m25 + 1, h: f(ts / 2) });
-    dr.drawCircle(
-      { x: x - f(ts / 15), y: y + f(ts / 6) },
-      f(ts / 12),
-      COL_BACKGROUND,
-      black,
-    );
+    const mouthY = y + f(ts / 6);
+    dr.clip({ x: x - f(ts / 5), y: mouthY, w: m25 + 1, h: f(ts / 2) });
+    dr.drawCircle({ x: x - f(ts / 15), y: mouthY }, f(ts / 12), COL_BACKGROUND, black);
     dr.unclip();
     dr.drawLine(
-      { x: x - f(ts / 5), y: y + f(ts / 6) },
-      { x: x + f(ts / 5), y: y + f(ts / 6) },
+      { x: x - f(ts / 5), y: mouthY },
+      { x: x + f(ts / 5), y: mouthY },
       black,
       1,
     );
@@ -467,6 +420,13 @@ function cellCenter(
   };
 }
 
+/** A cell's `TILESIZE − 1` square, inside the grid lines around it. */
+function cellRect(ds: UndeadDrawState, x: number, y: number): Rect {
+  const ts = ds.tilesize;
+  const { dx, dy } = cellCenter(ds, x, y);
+  return { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 };
+}
+
 /**
  * Where a hint mark sits around cell `(x, y)` (border-ring coordinates) —
  * straddling the grid line, one pixel of gutter and a couple of the cell's own
@@ -482,12 +442,10 @@ function cellCenter(
  * of a tile in, so it clears the cell edge by `TILESIZE/20`.
  */
 function markBand(ds: UndeadDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
-  const { dx, dy } = cellCenter(ds, x, y);
   return {
-    box: { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 },
+    box: cellRect(ds, x, y),
     outer: 1,
-    inner: Math.max(2, f(ts / 24)),
+    inner: Math.max(2, f(ds.tilesize / 24)),
   };
 }
 
@@ -497,19 +455,15 @@ function drawCellBackground(
   ui: UndeadUi,
   x: number,
   y: number,
-  hintBg = -1,
 ): void {
   const ts = ds.tilesize;
   const { dx, dy } = cellCenter(ds, x, y);
   const hon = ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y;
-  // A hint background overrides the cursor highlight (the hint is what to act on).
-  const bg =
-    hintBg >= 0 ? hintBg : hon && !ui.pencilMode ? COL_HIGHLIGHT : COL_BACKGROUND;
   dr.drawRect(
-    { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 },
-    bg,
+    cellRect(ds, x, y),
+    hon && !ui.pencilMode ? COL_HIGHLIGHT : COL_BACKGROUND,
   );
-  if (hintBg < 0 && hon && ui.pencilMode) {
+  if (hon && ui.pencilMode) {
     dr.drawPolygon(
       [
         { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1 },
@@ -520,7 +474,7 @@ function drawCellBackground(
       COL_HIGHLIGHT,
     );
   }
-  dr.drawUpdate({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 });
+  dr.drawUpdate(cellRect(ds, x, y));
 }
 
 function drawMirror(
@@ -533,28 +487,16 @@ function drawMirror(
 ): void {
   const ts = ds.tilesize;
   const { dx, dy } = cellCenter(ds, x, y);
-  let mx1: number;
-  let my1: number;
-  let mx2: number;
-  let my2: number;
-  if (mirror === CELL_MIRROR_L) {
-    mx1 = dx - f(ts / 4);
-    my1 = dy - f(ts / 4);
-    mx2 = dx + f(ts / 4);
-    my2 = dy + f(ts / 4);
-  } else {
-    mx1 = dx - f(ts / 4);
-    my1 = dy + f(ts / 4);
-    mx2 = dx + f(ts / 4);
-    my2 = dy - f(ts / 4);
-  }
+  // `\` falls to the right, `/` rises.
+  const d = f(ts / 4);
+  const fall = mirror === CELL_MIRROR_L ? d : -d;
   dr.drawLine(
-    { x: mx1, y: my1 },
-    { x: mx2, y: my2 },
+    { x: dx - d, y: dy - fall },
+    { x: dx + d, y: dy + fall },
     hflash ? COL_FLASH : COL_TEXT,
     f(ts / 16),
   );
-  dr.drawUpdate({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 });
+  dr.drawUpdate(cellRect(ds, x, y));
 }
 
 function drawBigMonster(
@@ -612,48 +554,44 @@ function drawPencils(
   y: number,
   pencil: number,
   ascii: boolean,
-  struck = 0,
+  struck: number,
 ): void {
   const ts = ds.tilesize;
   const dx = border(ts) + x * ts + f(ts / 4);
   const dy = border(ts) + y * ts + f(ts / 4) + ts;
-  const monsters = [0, 0, 0, 0];
-  let i = 0;
-  for (let j = 1; j < 8; j *= 2) if (pencil & j) monsters[i++] = j;
-
-  for (let py = 0; py < 2; py++) {
-    for (let px = 0; px < 2; px++) {
-      const m = monsters[py * 2 + px];
-      if (!m) continue;
-      const cx = dx + f(ts / 2) * px;
-      const cy = dy + f(ts / 2) * py;
-      if (!ascii) {
-        drawMonster(dr, cx, cy, f(ts / 2), false, m);
-      } else {
-        const buf = m === MON_GHOST ? "G" : m === MON_VAMPIRE ? "V" : "Z";
-        dr.drawText(
-          { x: cx, y: cy },
-          {
-            align: "center",
-            baseline: "mathematical",
-            fontType: "variable",
-            size: f(ts / 4),
-          },
-          COL_TEXT,
-          buf,
-        );
-      }
-      // A struck candidate keeps its normal glyph (legible on a non-COL_HINT
-      // background, §5.3) and gains a COL_HINT strikethrough as the "ruled out" cue.
-      if (struck & m) {
-        const r = f(ts / 6);
-        dr.drawLine(
-          { x: cx - r, y: cy + r },
-          { x: cx + r, y: cy - r },
-          COL_HINT,
-          Math.max(1, f(ts / 24)),
-        );
-      }
+  // The notes present fill a 2×2 grid in reading order.
+  let slot = 0;
+  for (const m of MONSTERS) {
+    if (!(pencil & m)) continue;
+    const cx = dx + f(ts / 2) * (slot % 2);
+    const cy = dy + f(ts / 2) * Math.floor(slot / 2);
+    slot++;
+    if (!ascii) {
+      drawMonster(dr, cx, cy, f(ts / 2), false, m);
+    } else {
+      const buf = m === MON_GHOST ? "G" : m === MON_VAMPIRE ? "V" : "Z";
+      dr.drawText(
+        { x: cx, y: cy },
+        {
+          align: "center",
+          baseline: "mathematical",
+          fontType: "variable",
+          size: f(ts / 4),
+        },
+        COL_TEXT,
+        buf,
+      );
+    }
+    // A struck candidate keeps its normal glyph (legible on a non-COL_HINT
+    // background) and gains a COL_HINT strikethrough as the "ruled out" cue.
+    if (struck & m) {
+      const r = f(ts / 6);
+      dr.drawLine(
+        { x: cx - r, y: cy + r },
+        { x: cx + r, y: cy - r },
+        COL_HINT,
+        Math.max(1, f(ts / 24)),
+      );
     }
   }
   dr.drawUpdate({
@@ -686,14 +624,9 @@ function drawMonsterCount(
   const dw = ds.countW;
   const dh = ts;
   const msize = idiv(2 * ts, 3);
-  const fontsize = ds.countFontsize;
-  const gap = ds.countGap;
-  const padding = ds.countPadding;
   const placed = ds.countPlaced[c];
   const common = state.common;
-
-  const total =
-    c === 0 ? common.numGhosts : c === 1 ? common.numVampires : common.numZombies;
+  const total = [common.numGhosts, common.numVampires, common.numZombies][c];
   const bufm = c === 0 ? "G" : c === 1 ? "V" : "Z";
 
   let buf: string;
@@ -713,7 +646,7 @@ function drawMonsterCount(
     buf = String(total);
   }
 
-  dr.drawRect({ x: dx, y: dy, w: dw + gap, h: dh }, COL_BACKGROUND);
+  dr.drawRect({ x: dx, y: dy, w: dw + ds.countGap, h: dh }, COL_BACKGROUND);
   if (!ds.ascii) {
     drawMonster(dr, dx + f(msize / 2), dy + f(dh / 2), msize, hflash, 1 << c);
   } else {
@@ -738,33 +671,35 @@ function drawMonsterCount(
           ? COL_DONE
           : COL_TEXT;
   dr.drawText(
-    { x: dx + msize + padding, y: dy + f(dh / 2) },
-    { align: "left", baseline: "mathematical", fontType: "variable", size: fontsize },
+    { x: dx + msize + ds.countPadding, y: dy + f(dh / 2) },
+    {
+      align: "left",
+      baseline: "mathematical",
+      fontType: "variable",
+      size: ds.countFontsize,
+    },
     color,
     buf,
   );
-  dr.drawUpdate({ x: dx, y: dy, w: dw + gap, h: dh });
+  dr.drawUpdate({ x: dx, y: dy, w: dw + ds.countGap, h: dh });
 }
 
-function drawPathHint(
+/** An edge sighting clue, in border cell `(x, y)`. */
+function drawClue(
   dr: GameDrawing,
   ds: UndeadDrawState,
   x: number,
   y: number,
   color: number,
-  hint: number,
+  clue: number,
 ): void {
   const ts = ds.tilesize;
-  let dx = border(ts) + x * ts;
-  let dy = border(ts) + y * ts + ts;
-  const textDx = dx + f(ts / 2);
-  const textDy = dy + f(ts / 2);
-  dx += 2;
-  dy += 2;
-  const textSize = ts - 3;
-  dr.drawRect({ x: dx, y: dy, w: textSize, h: textSize }, COL_BACKGROUND);
+  const dx = border(ts) + x * ts;
+  const dy = border(ts) + y * ts + ts;
+  const box = { x: dx + 2, y: dy + 2, w: ts - 3, h: ts - 3 };
+  dr.drawRect(box, COL_BACKGROUND);
   dr.drawText(
-    { x: textDx, y: textDy },
+    { x: dx + f(ts / 2), y: dy + f(ts / 2) },
     {
       align: "center",
       baseline: "mathematical",
@@ -772,9 +707,9 @@ function drawPathHint(
       size: idiv(ts, 2),
     },
     color,
-    String(hint),
+    String(clue),
   );
-  dr.drawUpdate({ x: dx, y: dy, w: textSize, h: textSize });
+  dr.drawUpdate(box);
 }
 
 function rectOutline(
@@ -800,10 +735,9 @@ function rectOutline(
 function drawPencilIndicator(dr: GameDrawing, ds: UndeadDrawState, on: boolean): void {
   const ts = ds.tilesize;
   const b = border(ts);
-  // The empty top-right corner cell of the clue ring (grid cell (w+1, 0)) — a full
-  // tile, like Towers' clue-corner indicator. Undead's border is only ts/4, so the
-  // old thin-border glyph read tiny; the shared `drawPencilGlyph` now gets a full
-  // `ts` box, matching the other pencil-mark games' size.
+  // The empty top-right corner cell of the clue ring (grid cell (w+1, 0)), a
+  // full tile like Towers' clue-corner indicator: Undead's ts/4 border is too
+  // thin for the shared glyph to read at the other pencil-mark games' size.
   const ox = b + (ds.w + 1) * ts;
   const oy = b + ts;
   dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, COL_BACKGROUND);
@@ -888,8 +822,8 @@ export function redraw(
     if (stale) drawMonsterCount(dr, ds, state, i, hflash);
   }
 
-  // Path-count hints.
-  const isHintStale = (index: number): boolean => {
+  // The edge clues.
+  const isClueStale = (index: number): boolean => {
     let ret = false;
     if (!ds.started) ret = true;
     if (ds.hflash !== hflash) ret = true;
@@ -903,21 +837,20 @@ export function redraw(
     }
     return ret;
   };
-  const hintColor = (index: number): number => {
+  const clueColor = (index: number): number => {
     if (state.hintErrors[index]) return COL_ERROR;
     if (hflash) return COL_FLASH;
     if (state.hintsDone[index]) return COL_DONE;
     return COL_TEXT;
   };
+  const drawClueAt = (index: number, clue: number): void => {
+    if (!isClueStale(index)) return;
+    const g = range2grid(index, common.w, common.h);
+    drawClue(dr, ds, g.x, g.y, clueColor(index), clue);
+  };
   for (const path of common.paths) {
-    if (isHintStale(path.gridStart)) {
-      const g = rangeCell(path.gridStart, common.w, common.h);
-      drawPathHint(dr, ds, g.x, g.y, hintColor(path.gridStart), path.sightingsStart);
-    }
-    if (isHintStale(path.gridEnd)) {
-      const g = rangeCell(path.gridEnd, common.w, common.h);
-      drawPathHint(dr, ds, g.x, g.y, hintColor(path.gridEnd), path.sightingsEnd);
-    }
+    drawClueAt(path.gridStart, path.sightingsStart);
+    drawClueAt(path.gridEnd, path.sightingsEnd);
   }
 
   // The two overlay sidecars. Hint: bit 0 target, bit 1 area, bits 2.. struck mask.
@@ -955,20 +888,14 @@ export function redraw(
       if (ds.wrong.stale(xy)) stale = true;
 
       if (stale) {
-        const pack = ds.hint.packed[xy];
-        const struck = (pack >> 2) & 7;
-        // Both cell-level marks are drawn in `redraw` — the target ringed, the
-        // evidence area outlined, both on the cell's own border — so the cell
-        // paints its ordinary background here and a marked cell keeps showing
-        // the candidates the hint is reasoning about.
+        const struck = (ds.hint.packed[xy] >> 2) & 7;
+        // Both hint marks are drawn after this loop, on the cell's border, so
+        // the cell paints its ordinary background and a marked cell keeps
+        // showing the candidates the hint is reasoning about.
         drawCellBackground(dr, ds, ui, x, y);
         if (xi < 0) {
           drawMirror(dr, ds, x, y, hflash, c);
-        } else if (
-          state.guess[xi] === MON_GHOST ||
-          state.guess[xi] === MON_VAMPIRE ||
-          state.guess[xi] === MON_ZOMBIE
-        ) {
+        } else if (isSingleton(state.guess[xi])) {
           drawBigMonster(dr, ds, x, y, hflash, state.guess[xi], ui.ascii);
         } else {
           drawPencils(dr, ds, x, y, state.pencil[xi], ui.ascii, struck);
@@ -985,12 +912,7 @@ export function redraw(
               COL_ERROR,
             );
           }
-          dr.drawUpdate({
-            x: dx - f(ts / 2) + 1,
-            y: dy - f(ts / 2) + 1,
-            w: ts - 1,
-            h: ts - 1,
-          });
+          dr.drawUpdate(cellRect(ds, x, y));
         }
         ds.hint.commit(xy);
         ds.wrong.commit(xy);
@@ -1027,22 +949,5 @@ export function redraw(
   ds.cursor.visible = ui.cursor.visible;
   ds.pencilMode = ui.pencilMode;
   ds.hflash = hflash;
-  ds.countStyle = ui.countStyle;
   ds.started = true;
-}
-
-/** Border cell `(x, y)` for an edge index — the render-side `range2grid` (we
- * only need the position, not the direction). */
-function rangeCell(
-  rangeno: number,
-  width: number,
-  height: number,
-): { x: number; y: number } {
-  if (rangeno < width) return { x: rangeno + 1, y: 0 };
-  rangeno -= width;
-  if (rangeno < height) return { x: width + 1, y: rangeno + 1 };
-  rangeno -= height;
-  if (rangeno < width) return { x: width - rangeno, y: height + 1 };
-  rangeno -= width;
-  return { x: 0, y: height - rangeno };
 }

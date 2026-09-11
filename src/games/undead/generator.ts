@@ -6,33 +6,30 @@
  * sparse/dense or have an over-long sightline; trace the paths; seed
  * unique-solution sightlines (`getUnique`) until a difficulty-dependent fraction
  * of the grid is determined; fill the rest with random monsters; compute the
- * sighting clues from that solution; then grade with the iterative + brute-force
- * solver and accept only at the requested difficulty (regenerate otherwise).
+ * sighting clues from that solution; then grade by the deductive ladder and
+ * accept only at the requested tier (regenerate otherwise).
  *
- * Ported faithfully over `random.ts` (deterministic in TS) but, unlike the other
- * solver/codec ports, *not* byte-match-gated: generation orders equal-length
- * paths with `qsort`, whose tie-break is implementation-defined (design D1). A
- * stable sort is used here; the differential validates the solver/codec instead.
+ * Not byte-matched with upstream: C orders equal-length paths with `qsort`,
+ * whose tie order is unspecified, where this port sorts stably. The
+ * differential validates the solver and codec instead.
  */
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import {
+  type DeductiveResult,
   EASY_MAX_ARC_PASSES,
   isUniquelySolvable,
+  lowestBit,
   nextList,
   RUNG_ARC,
   RUNG_COUNTING,
   RUNG_FORCING,
-  type Rung,
   solveDeductive,
+  TIER_RUNG,
 } from "./solver.ts";
 import {
-  CELL_EMPTY,
-  CELL_GHOST,
   CELL_MIRROR_L,
   CELL_MIRROR_R,
-  CELL_VAMPIRE,
-  CELL_ZOMBIE,
   DIFF_EASY,
   DIFF_NORMAL,
   DIFF_TRICKY,
@@ -41,62 +38,44 @@ import {
   MON_NONE,
   MON_VAMPIRE,
   MON_ZOMBIE,
+  MONSTERS,
   makePaths,
   newCommon,
   range2grid,
   sortPaths,
   type UndeadCommon,
   type UndeadParams,
+  visibleCount,
 } from "./state.ts";
 
 /**
- * Does this board's required deductive rung match the requested tier? The
- * guess-free generation gate: every tier accepts only a board the deductive
- * ladder solves to a unique solution (no recursion). A board the ladder can't
- * solve is non-unique (the re-grade measured a zero uniquely-solvable residual)
- * and is rejected by the uniqueness oracle.
+ * Does this board's grade match the requested tier? Every tier accepts only a
+ * board the ladder solves outright, never by recursion (the re-grade found no
+ * unique board the ladder cannot solve, so this turns none away):
  *
  *  - **Easy**   = arc-consistency alone, within {@link EASY_MAX_ARC_PASSES} passes
  *  - **Normal** = arc-consistency beyond the cap, or the exact-counting rung
- *  - **Tricky** = the depth-1 forcing rung
+ *  - **Unreasonable** = the depth-1 forcing rung
  */
-function gradeMatchesTier(
-  rung: Rung,
-  arcPasses: number,
-  solved: boolean,
-  diff: number,
-): boolean {
+function gradeMatchesTier(grade: DeductiveResult, diff: number): boolean {
+  if (!grade.solved) return false;
   switch (diff) {
     case DIFF_EASY:
-      return solved && rung === RUNG_ARC && arcPasses <= EASY_MAX_ARC_PASSES;
+      return grade.rung === RUNG_ARC && grade.arcPasses <= EASY_MAX_ARC_PASSES;
     case DIFF_NORMAL:
       return (
-        solved &&
-        ((rung === RUNG_ARC && arcPasses > EASY_MAX_ARC_PASSES) ||
-          rung === RUNG_COUNTING)
+        (grade.rung === RUNG_ARC && grade.arcPasses > EASY_MAX_ARC_PASSES) ||
+        grade.rung === RUNG_COUNTING
       );
     case DIFF_TRICKY:
-      return solved && rung === RUNG_FORCING;
+      return grade.rung === RUNG_FORCING;
     default:
       return false;
   }
 }
 
-/** Optional measurement hook (inert in production): called for every candidate
- * board the generator grades, accepted or not. The re-grade harness sets this to
- * histogram the rung distribution per tier (the keep-vs-drop decision data).
- * `common` is the graded board, so the harness can run its own oracle checks. */
-export type GradeProbe = (info: {
-  diff: number;
-  rung: Rung;
-  arcPasses: number;
-  solved: boolean;
-  accepted: boolean;
-  common: UndeadCommon;
-}) => void;
-
-/** Backstop against a porting slip turning the (capped, upstream) regenerate
- * loop into a hang; a faithful port converges quickly. */
+/** Backstop against a regression turning the regenerate loop into a hang;
+ * generation converges quickly. */
 const MAX_REGENERATE = 5000;
 
 interface CountResult {
@@ -118,10 +97,6 @@ function countMonsters(common: UndeadCommon, guess: Uint8Array): CountResult {
     else none++;
   }
   return { none, ghosts, vampires, zombies };
-}
-
-function lowestBit(v: number): number {
-  return v & 1 ? 1 : v & 2 ? 2 : 4;
 }
 
 /**
@@ -146,55 +121,20 @@ function getUnique(
     pgGuess[p] = lowestBit(pgPossible[p]);
   }
 
-  const pathlimit = path.length + 1;
   // For each distinct (start_view, end_view) pair: how many assignments hit it,
   // and the first assignment that did (Map keeps insertion order).
   const counts = new Map<number, number>();
   const firstGuess = new Map<number, Int32Array>();
-
-  // Resolve a step's monster index to its position in the path_guess vector.
-  const posOf = (m: number): number => {
-    for (let i = 0; i < len; i++) if (path.mapping[i] === m) return i;
-    return -1;
-  };
-
-  while (true) {
-    let mirror = false;
-    let startView = 0;
-    for (let p = 0; p < path.length; p++) {
-      if (path.p[p] === -1) {
-        mirror = true;
-      } else {
-        const i = posOf(path.p[p]);
-        if (i >= 0) {
-          if (pgGuess[i] === 1 && mirror) startView++;
-          if (pgGuess[i] === 2 && !mirror) startView++;
-          if (pgGuess[i] === 4) startView++;
-        }
-      }
-    }
-    mirror = false;
-    let endView = 0;
-    for (let p = path.length - 1; p >= 0; p--) {
-      if (path.p[p] === -1) {
-        mirror = true;
-      } else {
-        const i = posOf(path.p[p]);
-        if (i >= 0) {
-          if (pgGuess[i] === 1 && mirror) endView++;
-          if (pgGuess[i] === 2 && !mirror) endView++;
-          if (pgGuess[i] === 4) endView++;
-        }
-      }
-    }
-
-    const key = startView * pathlimit + endView;
+  const full = new Int32Array(common.numTotal);
+  do {
+    for (let i = 0; i < len; i++) full[path.mapping[i]] = pgGuess[i];
+    const key =
+      visibleCount(path, full, false) * (path.length + 1) +
+      visibleCount(path, full, true);
     const c = (counts.get(key) ?? 0) + 1;
     counts.set(key, c);
     if (c === 1) firstGuess.set(key, pgGuess.slice());
-
-    if (!nextList(pgGuess, pgPossible, len - 1)) break;
-  }
+  } while (nextList(pgGuess, pgPossible, len - 1));
 
   // The (start, end) pairs achieved by exactly one assignment.
   const singles: Int32Array[] = [];
@@ -214,94 +154,62 @@ function getUnique(
 export function newUndeadDesc(
   params: UndeadParams,
   rng: RandomState,
-  probe?: GradeProbe,
 ): { desc: string; aux: string } {
-  const W = params.w;
-  const H = params.h;
-  const stride = W + 2;
+  const { w, h } = params;
+  const stride = w + 2;
   const diff = diffToLevel(params.diff);
 
   for (let attempt = 0; attempt < MAX_REGENERATE; attempt++) {
     const common = newCommon(params);
-    const grid = common.grid;
-    const xinfo = common.xinfo;
+    const { grid, xinfo } = common;
 
     // Fill the grid with random mirrors and (empty) monster cells.
     let count = 0;
-    for (let h = 1; h < H + 1; h++) {
-      for (let w = 1; w < W + 1; w++) {
+    for (let y = 1; y <= h; y++) {
+      for (let x = 1; x <= w; x++) {
         const c = randomUpto(rng, 5);
-        const cell = w + h * stride;
+        const cell = x + y * stride;
         if (c >= 2) {
-          grid[cell] = CELL_EMPTY;
           xinfo[cell] = count++;
-        } else if (c === 0) {
-          grid[cell] = CELL_MIRROR_L;
-          xinfo[cell] = -1;
         } else {
-          grid[cell] = CELL_MIRROR_R;
+          grid[cell] = c === 0 ? CELL_MIRROR_L : CELL_MIRROR_R;
           xinfo[cell] = -1;
         }
       }
     }
     common.numTotal = count;
 
-    if (common.numTotal <= 4) continue;
-    const ratio = common.numTotal / (W * H);
+    if (count <= 4) continue;
+    const ratio = count / (w * h);
     if (ratio < 0.48 || ratio > 0.78) continue;
 
-    // Assign (temporary) clue identifiers to the border cells.
-    for (let r = 0; r < 2 * (W + H); r++) {
-      const g = range2grid(r, W, H);
-      grid[g.x + g.y * stride] = g.dir;
-      xinfo[g.x + g.y * stride] = 0;
-    }
-    // The four corners are irrelevant.
-    for (const cell of [0, W + 1, W + 1 + (H + 1) * stride, (H + 1) * stride]) {
-      grid[cell] = 0;
-      xinfo[cell] = 0;
-    }
-
-    const guess = new Uint8Array(common.numTotal).fill(MON_NONE);
-    common.fixed = new Uint8Array(common.numTotal);
-
+    // The border and corner cells stay 0 until the clues are written below.
+    const guess = new Uint8Array(count).fill(MON_NONE);
     makePaths(common);
 
     // Reject grids with an over-long sightline.
     let maxLength: number;
-    if (diff === DIFF_EASY) maxLength = Math.min(W, H) + 1;
-    else if (diff === DIFF_NORMAL) maxLength = Math.floor((Math.max(W, H) * 3) / 2);
+    if (diff === DIFF_EASY) maxLength = Math.min(w, h) + 1;
+    else if (diff === DIFF_NORMAL) maxLength = Math.floor((Math.max(w, h) * 3) / 2);
     else maxLength = 9;
-    let abort = false;
-    for (const path of common.paths) if (path.numMonsters > maxLength) abort = true;
-    if (abort) continue;
+    if (common.paths.some((path) => path.numMonsters > maxLength)) continue;
 
     sortPaths(common);
 
     // How much of the grid to fix with unique-solution paths.
     let filling: number;
     if (diff === DIFF_EASY) filling = 2;
-    else if (diff === DIFF_NORMAL)
-      filling = Math.min(W + H, Math.floor(common.numTotal / 2));
-    else filling = Math.max(W + H, Math.floor(common.numTotal / 2));
+    else if (diff === DIFF_NORMAL) filling = Math.min(w + h, Math.floor(count / 2));
+    else filling = Math.max(w + h, Math.floor(count / 2));
 
-    let idx = 0;
-    while (countMonsters(common, guess).none > filling) {
-      if (idx >= common.numPaths) break;
-      if (common.paths[idx].numMonsters === 0) {
-        idx++;
-        continue;
-      }
-      getUnique(common, guess, idx, rng);
-      idx++;
+    for (let i = 0; i < common.numPaths; i++) {
+      if (countMonsters(common, guess).none <= filling) break;
+      getUnique(common, guess, i, rng);
     }
 
     // Fill remaining undecided cells with random monsters.
-    for (let g = 0; g < common.numTotal; g++) {
-      if (guess[g] === MON_NONE) {
-        const r = randomUpto(rng, 3);
-        guess[g] = r === 0 ? MON_GHOST : r === 1 ? MON_VAMPIRE : MON_ZOMBIE;
-      }
+    for (let i = 0; i < count; i++) {
+      if (guess[i] === MON_NONE) guess[i] = MONSTERS[randomUpto(rng, 3)];
     }
 
     // Determine the monster totals.
@@ -323,86 +231,26 @@ export function newUndeadDesc(
     )
       continue;
 
-    // Bake the solution monster types into the grid (vestigial for the desc, but
-    // faithful to upstream).
-    for (let w = 1; w < W + 1; w++) {
-      for (let h = 1; h < H + 1; h++) {
-        const cell = w + h * stride;
-        const c = xinfo[cell];
-        if (c >= 0) {
-          if (guess[c] === MON_GHOST) grid[cell] = CELL_GHOST;
-          else if (guess[c] === MON_VAMPIRE) grid[cell] = CELL_VAMPIRE;
-          else if (guess[c] === MON_ZOMBIE) grid[cell] = CELL_ZOMBIE;
-        }
-      }
-    }
-
     // Compute each path's sightings from the solution and write them into the
     // border cells.
     for (const path of common.paths) {
-      let mirror = false;
-      let s = 0;
-      for (let g = 0; g < path.length; g++) {
-        const m = path.p[g];
-        if (m === -1) mirror = true;
-        else if (guess[m] === MON_GHOST && mirror) s++;
-        else if (guess[m] === MON_VAMPIRE && !mirror) s++;
-        else if (guess[m] === MON_ZOMBIE) s++;
-      }
-      path.sightingsStart = s;
-
-      mirror = false;
-      s = 0;
-      for (let g = path.length - 1; g >= 0; g--) {
-        const m = path.p[g];
-        if (m === -1) mirror = true;
-        else if (guess[m] === MON_GHOST && mirror) s++;
-        else if (guess[m] === MON_VAMPIRE && !mirror) s++;
-        else if (guess[m] === MON_ZOMBIE) s++;
-      }
-      path.sightingsEnd = s;
-
-      const a = range2grid(path.gridStart, W, H);
+      path.sightingsStart = visibleCount(path, guess, false);
+      path.sightingsEnd = visibleCount(path, guess, true);
+      const a = range2grid(path.gridStart, w, h);
       grid[a.x + a.y * stride] = path.sightingsStart;
-      const b = range2grid(path.gridEnd, W, H);
+      const b = range2grid(path.gridEnd, w, h);
       grid[b.x + b.y * stride] = path.sightingsEnd;
     }
 
-    // Snapshot the solution for `aux` before the grading reset.
+    // The solution, for Solve.
     const aux = `S${Array.from(guess, (g) => (g === MON_GHOST ? "G" : g === MON_VAMPIRE ? "V" : "Z")).join("")}`;
 
-    // Grade by the deductive ladder (arc-consistency → counting → forcing, no
-    // recursion) and accept only when the required rung matches the tier — the
-    // guess-free generation gate (replaces upstream's brute-force-amount grading).
-    // Cap the ladder at the tier's rung: a board the tier can't use is rejected
-    // anyway, so don't pay for forcing when grading Easy/Normal.
-    const tierMaxRung: Rung =
-      diff === DIFF_EASY
-        ? RUNG_ARC
-        : diff === DIFF_NORMAL
-          ? RUNG_COUNTING
-          : RUNG_FORCING;
-    const allUndecided = new Uint8Array(common.numTotal).fill(MON_NONE);
-    const grade = solveDeductive(common, allUndecided, tierMaxRung);
-    let accept =
-      !grade.inconsistent &&
-      gradeMatchesTier(grade.rung, grade.arcPasses, grade.solved, diff);
-
-    // Verify uniqueness independently against the brute-force oracle. A
-    // deductively-solved board is unique by soundness; a recursion-only
-    // (`Unreasonable`) board must be confirmed unique here.
-    if (accept && !isUniquelySolvable(common)) accept = false;
-
-    probe?.({
-      diff,
-      rung: grade.rung,
-      arcPasses: grade.arcPasses,
-      solved: grade.solved,
-      accepted: accept,
-      common,
-    });
-
-    if (!accept) continue;
+    // Grade by the deductive ladder, capped at the tier's rung (a board the
+    // tier can't use is rejected anyway, so Easy and Normal skip forcing), and
+    // confirm uniqueness independently against the brute-force oracle.
+    const allUndecided = new Uint8Array(count).fill(MON_NONE);
+    const grade = solveDeductive(common, allUndecided, TIER_RUNG[diff]);
+    if (!gradeMatchesTier(grade, diff) || !isUniquelySolvable(common)) continue;
 
     return { desc: encodeDesc(common), aux };
   }
@@ -411,45 +259,34 @@ export function newUndeadDesc(
 
 /** Encode the accepted board to a desc (totals + run-length grid + sightings). */
 function encodeDesc(common: UndeadCommon): string {
-  const W = common.w;
-  const H = common.h;
-  const stride = W + 2;
-  const grid = common.grid;
+  const { w, h, grid } = common;
+  const stride = w + 2;
 
-  let desc = `${common.numGhosts},${common.numVampires},${common.numZombies},`;
-
-  // Grid: monster cells run-length encoded, mirrors as L/R.
-  let count = 0;
-  const flushRun = (): string => (count > 0 ? String.fromCharCode(count - 1 + 97) : "");
+  // Grid: runs of monster cells as `a`–`z` (1–26 cells), mirrors as L/R.
   let body = "";
-  for (let y = 1; y < H + 1; y++) {
-    for (let x = 1; x < W + 1; x++) {
+  let run = 0;
+  const flushRun = (): string => (run > 0 ? String.fromCharCode(96 + run) : "");
+  for (let y = 1; y <= h; y++) {
+    for (let x = 1; x <= w; x++) {
       const c = grid[x + y * stride];
-      if (count > 25) {
+      if (run > 25) {
         body += "z";
-        count -= 26;
+        run -= 26;
       }
-      if (c !== CELL_MIRROR_L && c !== CELL_MIRROR_R) {
-        count++;
-      } else if (c === CELL_MIRROR_L) {
-        body += flushRun();
-        body += "L";
-        count = 0;
+      if (c === CELL_MIRROR_L || c === CELL_MIRROR_R) {
+        body += flushRun() + (c === CELL_MIRROR_L ? "L" : "R");
+        run = 0;
       } else {
-        body += flushRun();
-        body += "R";
-        count = 0;
+        run++;
       }
     }
   }
   body += flushRun();
-  desc += body;
 
-  // Sightings.
-  for (let p = 0; p < 2 * (W + H); p++) {
-    const g = range2grid(p, W, H);
+  let desc = `${common.numGhosts},${common.numVampires},${common.numZombies},${body}`;
+  for (let p = 0; p < 2 * (w + h); p++) {
+    const g = range2grid(p, w, h);
     desc += `,${grid[g.x + g.y * stride]}`;
   }
-
   return desc;
 }

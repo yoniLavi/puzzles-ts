@@ -79,26 +79,22 @@ import {
   EASY_MAX_ARC_PASSES,
   findUndeadSolution,
   type HintOp,
-  RUNG_ARC,
-  RUNG_COUNTING,
-  RUNG_FORCING,
-  type Rung,
   recordUndeadDeductions,
   solveDeductive,
+  TIER_RUNG,
   type UndeadReason,
 } from "./solver.ts";
 import {
   cloneState,
-  clueIndex,
   DIFF_EASY,
-  DIFF_NORMAL,
   decodeParams,
   defaultParams,
   diffFromLevel,
   diffName,
   diffToLevel,
   encodeParams,
-  isClue,
+  grid2range,
+  isSingleton,
   MON_GHOST,
   MON_NONE,
   MON_VAMPIRE,
@@ -110,6 +106,7 @@ import {
   recomputeErrors,
   status,
   textFormat,
+  type UndeadCommon,
   type UndeadMove,
   type UndeadParams,
   type UndeadState,
@@ -153,6 +150,12 @@ function presets(): PresetMenu<UndeadParams> {
   };
 }
 
+/** True iff some empty cell carries no notes: the `M` press has something to
+ * fill, and a hint plan must populate before it can strike anything. */
+function anyEmptyLacksNotes(guess: Uint8Array, pencil: Uint8Array): boolean {
+  return guess.some((g, i) => g === MON_NONE && pencil[i] === 0);
+}
+
 function interpretMove(
   state: UndeadState,
   ui: UndeadUi,
@@ -161,8 +164,7 @@ function interpretMove(
   rawButton: number,
 ): UndeadMove | null | UiUpdate {
   const common = state.common;
-  const w = common.w;
-  const h = common.h;
+  const { w, h, xinfo } = common;
   const stride = w + 2;
   const ts = ds.tilesize;
   const b = Math.floor(ts / 4);
@@ -171,7 +173,6 @@ function interpretMove(
   const digit = digitOf(button);
   const gx = Math.trunc((point.x - b - 1) / ts);
   const gy = Math.trunc((point.y - b - 2) / ts) - 1;
-
   // A left-click on a count block (place/remove by clicking the tally).
   let cc = -1;
   if (button === LEFT_BUTTON && ds) cc = countBlockAt(ds, point.x, point.y);
@@ -186,15 +187,8 @@ function interpretMove(
   // none, so a press on an already-noted board is a true no-op rather than an
   // undo entry that changes nothing.
   if (button === KEY_M || button === KEY_m) {
-    for (let i = 0; i < common.numTotal; i++) {
-      if (state.guess[i] === MON_NONE && state.pencil[i] === 0) {
-        return { type: "markAll" };
-      }
-    }
-    return null;
+    return anyEmptyLacksNotes(state.guess, state.pencil) ? { type: "markAll" } : null;
   }
-
-  const xinfo = common.xinfo;
 
   // Real-entry mode: highlight shown, not penciling.
   if (ui.cursor.visible && !ui.pencilMode) {
@@ -274,11 +268,8 @@ function interpretMove(
         move = { type: "clear", cell: xi };
       }
       if (move) {
-        // Undead used to clear `pencilMode` here as well as hiding the
-        // highlight, which contradicted its own sticky-pencil preference —
-        // whose label promises the mode "stays on until right-clicked again"
-        // and which is on by default. One mouse-driven pencil mark turned it
-        // off. The shared rule keeps the mode.
+        // Hides the highlight but keeps pencil mode, which the sticky-pencil
+        // preference promises stays on until right-clicked again.
         releaseHighlightAfterEntry(ui);
         return move;
       }
@@ -287,7 +278,7 @@ function interpretMove(
 
   // Grid clicks (selection / mode). Undead's highlight is in the 1-based
   // interior coordinates the clue border leaves, and `xinfo` maps those to a
-  // monster index — `-1` for a square that is not part of the puzzle at all.
+  // monster index — `-1` for a mirror.
   if (gx >= 1 && gx <= w && gy >= 1 && gy <= h) {
     const xi = xinfo[gx + gy * stride];
     const playable = xi >= 0 && !common.fixed[xi];
@@ -298,9 +289,8 @@ function interpretMove(
     return press !== null ? UI_UPDATE : null;
   }
 
-  if (button === LEFT_BUTTON && isClue(w, h, gx, gy)) {
-    return { type: "hintDone", clue: clueIndex(w, h, gx, gy) };
-  }
+  const clue = grid2range(gx, gy, w, h);
+  if (button === LEFT_BUTTON && clue !== -1) return { type: "hintDone", clue };
 
   return null;
 }
@@ -308,7 +298,6 @@ function interpretMove(
 function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
   const next = cloneState(state);
   const common = next.common;
-  let solver = false;
 
   switch (move.type) {
     case "set":
@@ -339,18 +328,14 @@ function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
       break;
     case "solve":
       for (let i = 0; i < common.numTotal; i++) next.guess[i] = move.placements[i];
-      solver = true;
+      next.completed = true;
+      next.cheated = true;
       break;
     default:
       return assertNever(move, "undead: executeMove");
   }
 
-  const correct = recomputeErrors(next);
-  if (correct && !solver) next.completed = true;
-  if (solver) {
-    next.completed = true;
-    next.cheated = true;
-  }
+  if (recomputeErrors(next)) next.completed = true;
   return next;
 }
 
@@ -389,46 +374,10 @@ function solve(
   return { ok: true, move: { type: "solve", placements: Array.from(sol.guess) } };
 }
 
-function findMistakes(state: UndeadState): readonly UndeadMistake[] {
-  const common = state.common;
-  const sol = findUndeadSolution(state);
-  if (!sol.ok) return [];
-
-  // Monster index → interior grid coords.
+/** Monster index → interior (1-based) grid coordinates, matching `redraw`. */
+function monsterCellXY(common: UndeadCommon): Point[] {
   const stride = common.w + 2;
-  const cellXY: { x: number; y: number }[] = [];
-  for (let y = 1; y <= common.h; y++) {
-    for (let x = 1; x <= common.w; x++) {
-      const xi = common.xinfo[x + y * stride];
-      if (xi >= 0) cellXY[xi] = { x, y };
-    }
-  }
-
-  const out: UndeadMistake[] = [];
-  for (let i = 0; i < common.numTotal; i++) {
-    if (common.fixed[i]) continue;
-    const at = cellXY[i];
-    if (!at) continue;
-    const g = state.guess[i];
-    if (g === MON_GHOST || g === MON_VAMPIRE || g === MON_ZOMBIE) {
-      if (g !== sol.guess[i]) out.push({ kind: "cell", x: at.x, y: at.y });
-    } else if (state.pencil[i] !== 0 && !(state.pencil[i] & sol.guess[i])) {
-      out.push({ kind: "note", x: at.x, y: at.y });
-    }
-  }
-  return out;
-}
-
-// --- hint ------------------------------------------------------------------
-
-const isSingleton = (v: number): boolean =>
-  v === MON_GHOST || v === MON_VAMPIRE || v === MON_ZOMBIE;
-
-/** Monster index → interior (1-based) grid coordinates, matching `redraw`/
- * `findMistakes`. */
-function monsterCellXY(common: UndeadState["common"]): { x: number; y: number }[] {
-  const stride = common.w + 2;
-  const out: { x: number; y: number }[] = [];
+  const out: Point[] = [];
   for (let y = 1; y <= common.h; y++) {
     for (let x = 1; x <= common.w; x++) {
       const xi = common.xinfo[x + y * stride];
@@ -438,27 +387,44 @@ function monsterCellXY(common: UndeadState["common"]): { x: number; y: number }[
   return out;
 }
 
+function findMistakes(state: UndeadState): readonly UndeadMistake[] {
+  const common = state.common;
+  const sol = findUndeadSolution(state);
+  if (!sol.ok) return [];
+
+  const xyOf = monsterCellXY(common);
+  const out: UndeadMistake[] = [];
+  for (let i = 0; i < common.numTotal; i++) {
+    if (common.fixed[i]) continue;
+    const { x, y } = xyOf[i];
+    const g = state.guess[i];
+    if (isSingleton(g)) {
+      if (g !== sol.guess[i]) out.push({ kind: "cell", x, y });
+    } else if (state.pencil[i] !== 0 && !(state.pencil[i] & sol.guess[i])) {
+      out.push({ kind: "note", x, y });
+    }
+  }
+  return out;
+}
+
+// --- hint ------------------------------------------------------------------
+
 /** A sightline path's traced cells (mirrors and monster cells) as interior
- * coordinates, shaded as the evidence area (§5.2). */
-function pathCells(
-  common: UndeadState["common"],
-  p: number,
-): { x: number; y: number }[] {
+ * coordinates, shaded as the evidence area. */
+function pathCells(common: UndeadCommon, p: number): Point[] {
   const path = common.paths[p];
   const stride = common.w + 2;
-  const cells: { x: number; y: number }[] = [];
-  for (let i = 0; i < path.length; i++) {
-    const cell = path.xy[i];
-    cells.push({ x: cell % stride, y: Math.trunc(cell / stride) });
-  }
-  return cells;
+  return Array.from(path.xy.subarray(0, path.length), (cell) => ({
+    x: cell % stride,
+    y: Math.trunc(cell / stride),
+  }));
 }
 
 /** Narrate *why* a firing is forced. `bits` is the struck candidate mask (an
  * elimination) or the single placed monster (a placement); `continues` gets a
  * terser continuation-leg line. The words are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(
-  common: UndeadState["common"],
+  common: UndeadCommon,
   reason: UndeadReason,
   bits: number,
   continues: boolean,
@@ -480,35 +446,19 @@ function narrate(
 
 /** The evidence area to shade: a sightline shades its whole bounce path; the
  * other deductions have no clean local area (the struck/placed cell carries it). */
-function reasonArea(
-  common: UndeadState["common"],
-  reason: UndeadReason,
-): { x: number; y: number }[] {
+function reasonArea(common: UndeadCommon, reason: UndeadReason): Point[] {
   return reason.kind === "sightline" ? pathCells(common, reason.path) : [];
-}
-
-/** True iff some empty cell carries no notes — the board needs a fill-all
- * populate before eliminations have anything to cross out. */
-function anyEmptyLacksNotes(
-  wGuess: Uint8Array,
-  wPen: Uint8Array,
-  numTotal: number,
-): boolean {
-  for (let i = 0; i < numTotal; i++)
-    if (wGuess[i] === MON_NONE && wPen[i] === 0) return true;
-  return false;
 }
 
 /** A naked single in the player's working notes: the first empty cell whose
  * notes have collapsed to one monster. On a mistake-free board that lone note is
  * the solution, so placing it is sound — and it is the move a person makes next,
- * so the hint surfaces it ahead of any elimination (§9.3). */
+ * so the hint surfaces it ahead of any elimination. */
 function nakedSingle(
   wGuess: Uint8Array,
   wPen: Uint8Array,
-  numTotal: number,
 ): { cell: number; monster: number } | null {
-  for (let i = 0; i < numTotal; i++) {
+  for (let i = 0; i < wGuess.length; i++) {
     if (wGuess[i] !== MON_NONE) continue;
     if (isSingleton(wPen[i])) return { cell: i, monster: wPen[i] };
   }
@@ -547,31 +497,15 @@ function nextFiring(
   return null;
 }
 
-/** Push a placement step, advancing the working grid. */
-function emitPlace(
-  steps: HintStep<UndeadMove, UndeadHint>[],
-  xyOf: { x: number; y: number }[],
-  common: UndeadState["common"],
-  cell: number,
-  monster: number,
-  reason: UndeadReason,
-): void {
-  steps.push({
-    move: { type: "set", cell, monster },
-    explanation: narrate(common, reason, monster, false),
-    highlights: { area: reasonArea(common, reason), targets: [xyOf[cell]], marks: [] },
-  });
-}
-
 /** Push the steps for one elimination firing. A `total` firing is one step
- * (strike one monster across every cell); a `forcing` firing is one cell; a
- * `sightline` firing splits **by cell** into a `continuesPrevious` journey (§9.3
- * region pattern — the shaded sightline stays constant, each leg names one cell). */
+ * (strike one monster across every cell); a `sightline` firing splits **by
+ * cell** into a `continuesPrevious` journey (the shaded sightline stays
+ * constant, each leg names one cell). */
 function emitFiring(
   steps: HintStep<UndeadMove, UndeadHint>[],
   firing: { ops: HintOp[]; reason: UndeadReason },
-  xyOf: { x: number; y: number }[],
-  common: UndeadState["common"],
+  xyOf: Point[],
+  common: UndeadCommon,
 ): void {
   const { ops, reason } = firing;
   const markOf = (op: HintOp) => ({
@@ -607,15 +541,13 @@ function emitFiring(
     return;
   }
 
-  // total / forcing — one step. (`total` names one monster across many cells;
-  // `forcing` is one cell, one candidate.)
-  const monster = reason.kind === "total" ? reason.monster : ops[0].monster;
+  // A total firing: one monster struck across many cells, in one step.
   steps.push({
     move: {
       type: "pencilStrike",
       marks: ops.map((op) => ({ cell: op.cell, monster: op.monster })),
     },
-    explanation: narrate(common, reason, monster, false),
+    explanation: narrate(common, reason, ops[0].monster, false),
     highlights: {
       area: [],
       targets: ops.map((op) => xyOf[op.cell]),
@@ -629,24 +561,24 @@ function emitFiring(
  * next elimination firing (populating notes lazily, only when an elimination
  * first needs something to cross out). The working candidate state is re-derived
  * from the **placed grid only** (`recordUndeadDeductions`), never the player's
- * notes (§9.1); the notes decide which already-valid elimination to surface and
- * what is done. **No solution-walk / guess** — the strengthened deductive ladder
- * always has a real deduction to narrate (D3). */
+ * notes; the notes decide which already-valid elimination to surface and what
+ * is done. There is no solution walk: where the deductions run out, the plan
+ * ends. */
 function buildSteps(state: UndeadState): HintStep<UndeadMove, UndeadHint>[] {
   const common = state.common;
-  const numTotal = common.numTotal;
   const xyOf = monsterCellXY(common);
   const steps: HintStep<UndeadMove, UndeadHint>[] = [];
   const wGuess = state.guess.slice();
   const wPen = state.pencil.slice();
+  let ops = recordUndeadDeductions(common, wGuess);
 
-  let populated = !anyEmptyLacksNotes(wGuess, wPen, numTotal);
+  let populated = !anyEmptyLacksNotes(wGuess, wPen);
   const ensurePopulated = (): void => {
     if (populated) return;
     // Mirrors the additive `markAll` above: a cell the player has already
     // narrowed keeps its notes, so the plan never strikes a candidate that is
     // no longer on their board.
-    for (let i = 0; i < numTotal; i++) {
+    for (let i = 0; i < wGuess.length; i++) {
       if (wGuess[i] === MON_NONE && wPen[i] === 0) wPen[i] = MON_NONE;
     }
     steps.push({
@@ -656,47 +588,49 @@ function buildSteps(state: UndeadState): HintStep<UndeadMove, UndeadHint>[] {
     });
     populated = true;
   };
+  // Push a placement step and advance the working grid.
+  const place = (cell: number, monster: number, reason: UndeadReason): void => {
+    steps.push({
+      move: { type: "set", cell, monster },
+      explanation: narrate(common, reason, monster, false),
+      highlights: {
+        area: reasonArea(common, reason),
+        targets: [xyOf[cell]],
+        marks: [],
+      },
+    });
+    wGuess[cell] = monster;
+    wPen[cell] = 0;
+    ops = recordUndeadDeductions(common, wGuess);
+  };
 
-  let ops = recordUndeadDeductions(common, wGuess);
   const budget = stepBudget("undead hint plan");
-  const cap = numTotal * 8 + 8;
+  const cap = wGuess.length * 8 + 8;
   for (let guard = 0; guard < cap; guard++) {
     budget.tick();
-    let allPlaced = true;
-    for (let i = 0; i < numTotal; i++) if (!isSingleton(wGuess[i])) allPlaced = false;
-    if (allPlaced) break;
+    if (wGuess.every(isSingleton)) break;
 
     // 1. A naked single — the next move a person makes (needs notes).
-    const ns = nakedSingle(wGuess, wPen, numTotal);
-    if (ns) {
-      emitPlace(steps, xyOf, common, ns.cell, ns.monster, { kind: "single" });
-      wGuess[ns.cell] = ns.monster;
-      wPen[ns.cell] = 0;
-      ops = recordUndeadDeductions(common, wGuess);
+    const single = nakedSingle(wGuess, wPen);
+    if (single) {
+      place(single.cell, single.monster, { kind: "single" });
       continue;
     }
 
     // 2. A forced placement (counting's "only these cells" dual) — needs no notes.
-    const place = nextPlaceOp(ops, wGuess);
-    if (place) {
-      emitPlace(steps, xyOf, common, place.cell, place.monster, place.reason);
-      wGuess[place.cell] = place.monster;
-      wPen[place.cell] = 0;
-      ops = recordUndeadDeductions(common, wGuess);
+    const forced = nextPlaceOp(ops, wGuess);
+    if (forced) {
+      place(forced.cell, forced.monster, forced.reason);
       continue;
     }
 
     // 3. The next elimination firing (the deduction worth teaching). Populate
     //    lazily, the moment a strike first needs notes to cross out.
     const firing = nextFiring(ops, wGuess, wPen);
-    if (firing) {
-      ensurePopulated();
-      emitFiring(steps, firing, xyOf, common);
-      for (const op of firing.ops) wPen[op.cell] &= ~op.monster;
-      continue;
-    }
-
-    break; // stuck (only on a board that needs a guess — not a shipped tier)
+    if (!firing) break; // the rest needs the forcing search (Unreasonable)
+    ensurePopulated();
+    emitFiring(steps, firing, xyOf, common);
+    for (const op of firing.ops) wPen[op.cell] &= ~op.monster;
   }
 
   return steps;
@@ -710,7 +644,7 @@ function hint(
   const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
   if (refusal) return refusal;
   // Undead has no trivial (non-teachable) elimination to fold away, so it takes
-  // no auto-pencil pref and ignores `ui` (design D4).
+  // no auto-pencil pref and ignores `ui`.
   const steps = buildSteps(state);
   if (steps.length === 0) {
     return { ok: false, error: DEDUCTION_EXHAUSTED };
@@ -720,7 +654,7 @@ function hint(
 
 /** Re-derive the displayed step's highlights for a shrunk `pencilStrike`. */
 function strikeHighlights(
-  xyOf: { x: number; y: number }[],
+  xyOf: Point[],
   prev: UndeadHint | undefined,
   marks: { cell: number; monster: number }[],
 ): UndeadHint {
@@ -735,7 +669,8 @@ function strikeHighlights(
   };
 }
 
-/** Classify a player move against the displayed hint step (PRE-move state, §3). */
+/** Classify a player move against the displayed hint step (in its pre-move
+ * state). */
 function hintKeepTrack(
   m: UndeadMove,
   step: HintStep<UndeadMove, UndeadHint>,
@@ -753,7 +688,7 @@ function hintKeepTrack(
     if (m.type !== "pencil") return "off";
     const hit = sm.marks.findIndex((k) => k.cell === m.cell && k.monster === m.monster);
     if (hit < 0) return "off"; // a non-target candidate
-    // PRE-move: a toggle clears the candidate iff it is present now; an absent
+    // Pre-move: a toggle clears the candidate iff it is present now; an absent
     // candidate would be *re-added* — off-plan.
     if (!(state.pencil[m.cell] & m.monster)) return "off";
     const remaining = sm.marks.filter((_, j) => j !== hit);
@@ -769,8 +704,8 @@ function hintKeepTrack(
   return "off";
 }
 
-/** Re-validate a stored step against the current board before (re-)display (the
- * engine's "never show a stale step" guarantee, §7.3). */
+/** Re-validate a stored step against the current board before (re-)display, so
+ * a stale step is never shown. */
 function refreshHintStep(
   step: HintStep<UndeadMove, UndeadHint>,
   state: UndeadState,
@@ -793,10 +728,7 @@ function refreshHintStep(
     return state.guess[m.cell] !== MON_NONE ? null : step;
   }
   if (m.type === "markAll") {
-    for (let i = 0; i < state.common.numTotal; i++) {
-      if (state.guess[i] === MON_NONE && state.pencil[i] === 0) return step;
-    }
-    return null;
+    return anyEmptyLacksNotes(state.guess, state.pencil) ? step : null;
   }
   return step;
 }
@@ -807,35 +739,26 @@ function flashLength(from: UndeadState, to: UndeadState): number {
 
 /** Undead's difficulty contract (`engine/difficulty.ts`).
  *
- * **Its cap is a technique rung, not a difficulty number** — this fork replaced
- * upstream's "how much brute force does it need?" grading with a deductive
- * ladder (arc-consistency → exact counting → depth-1 forcing) so that every
- * shipped tier is pure-deduction solvable (`docs/games/solver-and-generator.md § "Guess-free generation"). So the tier
- * maps to a `Rung` and the question `solveAtCap` asks is the generator's own:
- * does the ladder, capped there, narrow every cell to a singleton?
+ * **Its cap is a technique rung, not a difficulty number**: this fork grades by
+ * a deductive ladder (arc-consistency → exact counting → depth-1 forcing), so
+ * the question `solveAtCap` asks is the generator's own: does the ladder,
+ * capped at the tier's rung, narrow every cell to a singleton? The generator
+ * additionally requires the *exact* rung for the tier; that is a
+ * tier-acceptance rule, not solvability, and it stays with the generator.
  *
- * The generator additionally requires the *exact* rung for the tier. That is a
- * tier-acceptance rule, not solvability, and it belongs to the generator —
- * `solvableAtExactlyTier` is the shared expression of the same idea.
- *
- * **Easy is a rung *and* a bound, and this cap must carry both**
- * (`assert-that-tiers-bind`, 2026-09-08). Undead's Easy is arc-consistency
- * within {@link EASY_MAX_ARC_PASSES} passes; a board needing more passes is a
- * Normal board even though it never leaves the arc rung. This function ran the
- * arc rung *unbounded* at `DIFF_EASY`, so every Normal board answered "solved"
- * at cap Easy — and the collection's difficulty guards, which grade through this
- * contract rather than through the generator, read an Easy that was not
- * Undead's. The generator was right the whole time; the instrument was wide, and
- * nothing compared the two spellings until a guard did. */
+ * **Easy is a rung *and* a bound, and this cap must carry both.** Undead's Easy
+ * is arc-consistency within {@link EASY_MAX_ARC_PASSES} passes; a board needing
+ * more is Normal though it never leaves the arc rung. Without the bound here,
+ * every Normal board answers "solved" at cap Easy to the collection's
+ * difficulty guards, which grade through this contract rather than through the
+ * generator. */
 const difficulty: DifficultyContract<UndeadParams> = {
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
   solveAtCap: (p, desc, cap) => {
     const common = newState(p, desc).common;
-    const maxRung: Rung =
-      cap === DIFF_EASY ? RUNG_ARC : cap === DIFF_NORMAL ? RUNG_COUNTING : RUNG_FORCING;
     const start = new Uint8Array(common.numTotal).fill(MON_NONE);
-    const grade = solveDeductive(common, start, maxRung);
+    const grade = solveDeductive(common, start, TIER_RUNG[cap]);
     if (grade.inconsistent) return "impossible";
     if (cap === DIFF_EASY && grade.arcPasses > EASY_MAX_ARC_PASSES) return "unsolved";
     return grade.solved ? "solved" : "unsolved";
@@ -863,8 +786,7 @@ export const undeadGame: Game<
   decodeParams,
   validateParams,
   paramConfig,
-  // Keys match the `undead` config template in augmentation.ts
-  // ("{width}x{height} {difficulty:Easy|Normal|Tricky}").
+  // Keys match the `undead` config template in augmentation.ts.
   describeParams: (p): ConfigValues => ({
     width: String(p.w),
     height: String(p.h),

@@ -8,7 +8,7 @@
  * narration"). A monster set arrives as its bitmask.
  */
 
-import { MON_GHOST, MON_VAMPIRE, MON_ZOMBIE } from "./state.ts";
+import { MON_GHOST, MON_VAMPIRE, MONSTERS } from "./state.ts";
 
 /** Singular monster name for a single bit. */
 function monsterName(bit: number): string {
@@ -18,9 +18,7 @@ function monsterName(bit: number): string {
 /** Human list of the monsters in a bitmask: "ghost", "ghost or vampire",
  * "ghost, vampire or zombie". */
 function joinMonsters(bits: number, conj: "or" | "and" = "or"): string {
-  const names: string[] = [];
-  for (const b of [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE])
-    if (bits & b) names.push(monsterName(b));
+  const names = MONSTERS.filter((b) => bits & b).map(monsterName);
   if (names.length <= 1) return names[0] ?? "";
   return `${names.slice(0, -1).join(", ")} ${conj} ${names[names.length - 1]}`;
 }
@@ -40,7 +38,7 @@ export const say = {
   // clues decide (docs/games/hints.md § "Rules belong in the help").
   /** The sightline's clues `a` and `b` leave no room for `bits` here. */
   sightline: (a: number, b: number, bits: number): string => {
-    const kinds = [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE].filter((m) => bits & m).length;
+    const kinds = MONSTERS.filter((m) => bits & m).length;
     const them =
       kinds === 1 ? `the ${joinMonsters(bits)}` : kinds === 2 ? "both" : "all three";
     return `This sightline's ${a} and ${b} leave no room for a ${joinMonsters(bits)} here, so we must cross out ${them}.`;

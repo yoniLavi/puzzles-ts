@@ -2,28 +2,24 @@
  * Gated C-vs-TS differential for Undead — **solver-agreement**, not byte-match.
  *
  * Undead's generator orders equal-length paths with `qsort`, whose tie-break is
- * implementation-defined and differs across libc builds (native-glibc trace vs
- * wasm-musl), so the emitted desc is not reproducible byte-for-byte (design D1).
- * Instead this differential decodes a frozen set of **C-generated** boards and
- * asserts the TS solver reaches the same *order-independent* verdicts the C
- * solver did: uniquely solvable, the iterative solver solved-or-not, the same
- * post-fixpoint ambiguity count, and the brute-force outcome. These three
- * quantities are provably path-order-independent (the iterative fixpoint is the
- * intersection of monotone per-path constraints; ambiguity reads that fixpoint;
- * brute-force scans the narrowed candidate space).
+ * implementation-defined and differs across libc builds, so the emitted desc is
+ * not reproducible byte-for-byte. Instead this differential decodes a frozen set
+ * of **C-generated** boards and asserts the TS solver reaches the same
+ * *order-independent* verdicts the C solver did: uniquely solvable, the
+ * iterative solver solved-or-not, the same post-fixpoint ambiguity count, and
+ * the brute-force outcome. These are provably path-order-independent (the
+ * iterative fixpoint is the intersection of monotone per-path constraints;
+ * ambiguity reads that fixpoint; brute-force scans the narrowed candidate space).
  *
- * The `gradeUndead`-vs-C assertions verify the *ported iterative/brute solver*,
- * which is unchanged. They are **not** a difficulty-grade match: with the fork's
- * deductive ladder (`strengthen-undead-deduction`) Undead grades by rung and
- * deliberately diverges from upstream, which has no forcing layer. The
- * differential's role narrows to **soundness** — every published (unique) board
- * is solved by the deductive ladder to *the* unique solution, and the ladder
- * never solves a board the brute-force oracle finds non-unique.
+ * The `gradeUndead`-vs-C assertions verify the *ported iterative/brute solver*.
+ * They are **not** a difficulty-grade match: Undead grades by its deductive
+ * ladder, which upstream does not have. For the ladder the differential checks
+ * **soundness**: every published (unique) board is solved by the ladder to
+ * *the* unique solution.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/undead-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: it was captured from
+ * upstream's C by `puzzles/auxiliary/undead-trace.c`, a harness that no longer
+ * exists — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import cReference from "./__fixtures__/undead-c-reference.json" with { type: "json" };

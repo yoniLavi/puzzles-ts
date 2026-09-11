@@ -1,7 +1,6 @@
 /**
- * The Undead deductive ladder (`strengthen-undead-deduction`): unit tests for
- * each rung (arc-consistency → exact counting → depth-1 forcing) and the
- * guess-free generation property.
+ * The Undead deductive ladder: unit tests for each rung (arc-consistency →
+ * exact counting → depth-1 forcing) and the guess-free generation property.
  *
  * The counting rung is path-independent, so it is exercised in isolation with a
  * synthetic paths-free `UndeadCommon` (arc-consistency is then a no-op, isolating
