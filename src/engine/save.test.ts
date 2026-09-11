@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { fakeGame, LEFT_BUTTON } from "./fake-game.ts";
+import { fakeGame } from "./fake-game.ts";
 import { Midend } from "./midend.ts";
+import { LEFT_BUTTON } from "./pointer.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 import type { ChangeNotification } from "./types.ts";
 
@@ -67,8 +68,7 @@ describe("save codec", () => {
       timerElapsed: 12,
       cheated: true,
     });
-    // The old key is *gone*, not carried alongside: two names for one fact is
-    // the thing this change exists to remove.
+    // The old key is *gone*, not carried alongside as a second name for one fact.
     expect(Object.hasOwn(round, "usedSolve")).toBe(false);
   });
 
@@ -122,17 +122,11 @@ describe("save codec", () => {
     );
   });
 
-  // Every field guard, one corruption at a time.
-  //
-  // Added by `audit-test-suite-strength`: the mutation run found **30 of
-  // save.ts's 85 mutants surviving**, the worst rate of the seven engine modules
-  // audited, and all of them in `isSaveEnvelope`. The cause is visible above —
-  // `{"hello":1}` fails on the *first* check (`v.v === 1`) and short-circuits, so
-  // the other nine were executed only by the happy path and never asserted to
-  // reject anything. Each could be replaced by `true` with the suite still green.
-  //
-  // That matters beyond the score: this guard is what stands between a corrupt
-  // or truncated save and a game state rebuilt from nonsense.
+  // Every field guard, one corruption at a time. `{"hello":1}` above fails on
+  // the *first* check and short-circuits, so without these the other guards
+  // would run only on the happy path, and each could be replaced by `true` with
+  // the suite still green. This guard is what stands between a corrupt or
+  // truncated save and a game state rebuilt from nonsense.
   describe("rejects an envelope with any one field wrong", () => {
     const valid: SaveEnvelope = {
       v: 2,
@@ -153,8 +147,7 @@ describe("save codec", () => {
     });
 
     const cases: [name: string, corrupt: Record<string, unknown>][] = [
-      // A *future* version, which we cannot read. `v: 1` is deliberately not
-      // here any more: it is upgraded rather than rejected (see above).
+      // A *future* version, which we cannot read (`v: 1` is upgraded instead).
       ["v is a version we cannot read", { v: 3 }],
       ["v is a string", { v: "2" }],
       ["v is missing", { v: undefined }],
@@ -243,10 +236,10 @@ describe("Midend save/restore round-trip", () => {
   });
 
   // `loadGame` has four ways to say no, each returning a sentence the player
-  // reads in a dialog, and only the puzzle-id one was covered. They are not
-  // interchangeable: the difference between "this file is not a save" and "this
-  // save is for Galaxies" is the difference between a corrupt file and the
-  // wrong one, and only one of those is worth the player retrying.
+  // reads in a dialog. They are not interchangeable: the difference between
+  // "this file is not a save" and "this save is for Galaxies" is the difference
+  // between a corrupt file and the wrong one, and only one of those is worth the
+  // player retrying.
   //
   // The load must also be *refused*, not half-applied — a game rebuilt from a
   // save that was rejected halfway is the worst of both.

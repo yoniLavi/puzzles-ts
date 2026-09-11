@@ -1,13 +1,11 @@
 /**
- * The native-TS midend: orchestrates a `Game` exactly the way
- * upstream's midend.c orchestrates a `struct game`, but idiomatically.
+ * The midend: orchestrates a `Game` the way upstream's midend.c orchestrates a
+ * `struct game`.
  *
  * It owns, per live game: the selected `Game`, its parameters, the
- * immutable-state move/undo/redo history, the UI, the engine random
- * source (the retained bit-identical `random.ts`), timer bookkeeping,
- * and preset handling. It emits the same `ChangeNotification` shapes
- * the app already consumes, so nothing above the Comlink boundary
- * changes.
+ * immutable-state move/undo/redo history, the UI, the engine random source,
+ * timer bookkeeping and preset handling, and reports them to the app as
+ * `ChangeNotification`s.
  *
  * `Midend` is generic over a game's types but implements the
  * non-generic `EngineCore` surface, so the worker adapter and registry
@@ -34,29 +32,23 @@ import type {
   ConfigValues,
   GameStatus,
   KeyLabel,
-  Point,
   PresetMenuEntry,
   PuzzleStaticAttributes,
   ReferenceModel,
   Size,
 } from "./types.ts";
 
-/** Target wall-clock duration (seconds) for a hint-executed move's
- * slow-motion animation, *independent of the game's own (often very
- * short) move-animation time*. Stretching every game's hint move to the
- * same duration is what makes auto-hint flow as continuous motion: the
- * `puzzle.ts` auto-hint loop dwells `AUTO_HINT_STEP_MS` per step, so
- * matching that here (1s) leaves no frozen gap between the animation
- * finishing and the next step starting. Keep this equal to
- * `AUTO_HINT_STEP_MS`. (A game with no move animation — `animLength` 0 —
- * stays un-stretched; the dwell's floor paces it instead.) */
+/** Wall-clock duration (seconds) of a hint-executed move's slow-motion
+ * animation, whatever the game's own move-animation time. Keep it equal to
+ * `puzzle.ts`'s `AUTO_HINT_STEP_MS`, the auto-hint loop's per-step dwell, so
+ * auto-hint flows as continuous motion with no frozen gap between steps. A game
+ * with no move animation (`animLength` 0) stays instant; the dwell paces it. */
 const HINT_ANIM_S = 1.0;
 
 export type NotifyChange = (message: ChangeNotification) => void;
 export type NotifyTimerState = (isActive: boolean) => void;
-/** "Repaint the canvas now" — the worker adapter draws via the
- * `Drawing` it owns. Mirrors the C frontend redrawing after every
- * processed input and on each animation tick. */
+/** "Repaint the canvas now": the worker adapter draws via the `Drawing` it
+ * owns, after every processed input and on each animation tick. */
 export type NotifyRedraw = () => void;
 
 /** The non-generic surface the worker adapter drives. Every method is
@@ -126,55 +118,40 @@ export interface EngineCore {
    * the implementation on {@link Midend}. */
   darkPalette(defaultBackground: Color): Record<number, Color>;
   preferredSize(): Size;
-  /** Purely informational: compute the puzzle's preferred pixel size
-   * for the given max, record the resolved tile/window size, and
-   * return it. No side effects on the per-game draw state — the
-   * frontend may call this many times per second (any element-size
-   * change goes through it via `puzzle-view.ts`'s `ResizeController`)
-   * and a side-effecting call would wipe per-tile caches at unrelated
-   * moments and cause spurious full repaints.
+  /** Pick the largest integer tile size whose board fits `maxSize`, record it
+   * (informing the drawstate via `setTileSize`), and return the board's pixel
+   * size at it.
    *
-   * NOTE: this diverges from `midend.c`'s `midend_size`, which
-   * unconditionally recreates the drawstate on every call. That
-   * design assumed a frontend that only invoked size() on real window
-   * resizes; our `ResizeController` fires on any layout perturbation
-   * (CSS transitions, mobile address-bar show/hide). The
-   * canvas-clearing concern is captured separately by
-   * `canvasCleared()` (called from the adapter's `resizeDrawing`),
-   * which is the *real* signal that the per-tile cache is stale.
+   * No other side effect on the drawstate, unlike upstream's `midend_size`,
+   * which recreates it on every call: `puzzle-view.ts`'s `ResizeController`
+   * calls this on any layout perturbation (CSS transitions, mobile address-bar
+   * show/hide), and wiping the per-tile cache then would cause spurious full
+   * repaints. `canvasCleared()` is the real signal that the cache is stale.
    *
-   * Upstream's `midend_size` also takes a `user_size` flag (cap at the
-   * preferred tile size when false) and our chain used to thread a
-   * `devicePixelRatio` alongside it. The app passed `true` at its one call
-   * site and never read the dpr at all, so both were removed
-   * (`audit-vestigial-contract-surface`). The "don't grow past the preferred
-   * size" job is done a layer up and better, by the `maxScale` setting, which
-   * caps `maxSize` at N× `preferredSize()` before this is called; the dpr's
-   * real consumer is `resizeDrawing`. */
+   * There is no upstream `user_size` flag: the board fills the slot it is
+   * given, and the `maxScale` setting caps `maxSize` at N× `preferredSize()`
+   * before this is called. */
   size(maxSize: Size): Size;
   /** The frontend just cleared the canvas (`Drawing.resize` resets the
-   * backing store), so any per-tile cache the game holds is now
-   * stale. Discard the drawstate and let the game's next `redraw`
-   * paint from scratch via its `!ds.started` branch. */
+   * backing store, the only path that invalidates pixels), so any per-tile
+   * cache the game holds is stale. Discard the drawstate so the game's next
+   * `redraw` paints from scratch via its `!ds.started` branch. */
   canvasCleared(): void;
   formatAsText(): string | undefined;
   saveGame(): Uint8Array<ArrayBuffer>;
   loadGame(data: Uint8Array): string | undefined;
   timer(tplus: number): void;
   redraw(dr: GameDrawing): void;
-  /** Drop the per-game drawstate (so any cache it holds is gone)
-   * and run a redraw. The worker adapter calls this when the
-   * existing palette or font is replaced — neither clears the
-   * canvas, but they invalidate the color/font assumptions baked
-   * into any cached tile. Mirrors `webapp.cpp`'s `forceRedraw()` on
-   * the C path, minus the engine bg-fill step (the game's own
-   * `!ds.started` branch paints its background). */
+  /** Drop the drawstate and redraw. The worker adapter calls this when the
+   * palette or font is replaced: neither clears the canvas, but both
+   * invalidate the colors and fonts baked into cached tiles. The game's
+   * `!ds.started` branch repaints from scratch, background included. */
   forceRedraw(dr: GameDrawing): void;
   delete(): void;
 }
 
-/** Random 64-bit-ish seed string for a fresh game (mirrors the role of
- * C's system entropy seed; `random.ts` keeps IDs reproducible). */
+/** A random 128-bit seed string for a fresh game (upstream seeds from system
+ * entropy; `random.ts` makes the id reproducible from it). */
 function freshSeed(): string {
   const b = new Uint8Array(16);
   crypto.getRandomValues(b);
@@ -195,13 +172,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * clicked", midend.c:991) rather than to the blank pre-click board that
    * `history[0]` holds. */
   private descSuperseded = false;
-  /** The solved-layout hint a generator returns alongside `desc`
-   * (upstream `aux_info`). Retained so `solve()` can hand it to a game
-   * whose solver needs it (e.g. Untangle reconstructs the untangled
-   * positions from it). Set only on a freshly *generated* game; cleared
-   * for a descriptive `:desc` id or a loaded save — exactly like
-   * upstream, where Solve is unavailable unless the game was generated
-   * this session. */
+  /** The solved-layout hint a generator returns alongside `desc` (upstream
+   * `aux_info`), handed to a game's `solve` and `hint` (Untangle reconstructs
+   * the untangled positions from it). Set only on a freshly *generated* game,
+   * never for a `:desc` id or a loaded save, as upstream. */
   private aux?: string;
   private seed?: string;
   /** Immutable-state history; `pos` is the current index. */
@@ -213,14 +187,6 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private ui!: Ui;
   private drawState: DrawState | null = null;
   private currentTileSize: number;
-  // A `winSize` used to sit here, caching the window pixel size `size()` had
-  // just computed. Its doc said it was "exposed only via tests" — it was
-  // `private`, and no test ever read it, nor did anything else: `size()`
-  // assigned it and returned it on the next line. Its real consumer, the
-  // engine's own background fill, went when each game took over painting its
-  // background in the `!ds.started` branch (`fix-flip-canvas-reshape`), and the
-  // field outlived it by carrying a sentence about who read it
-  // (`audit-vestigial-contract-surface` follow-up).
   private cheated = false;
   /** Last-applied user preference values, keyed by pref `kw`. Retained
    * across new games / loads because the midend recreates `ui` (via
@@ -272,7 +238,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   constructor(private readonly game: Game<Params, State, Move, Ui, DrawState>) {
     this.params = game.defaultParams();
-    this.currentTileSize = game.preferredTileSize ?? 32;
+    this.currentTileSize = this.preferredTileSize;
   }
 
   // --- lifecycle ---------------------------------------------------
@@ -357,14 +323,9 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // Upstream `game_changed_state` with oldstate == NULL: let a game
     // whose Ui tracks the current state seed it from the fresh board.
     this.game.changedState?.(this.ui, null, initial);
-    // `newUi` reset the ui to its defaults, including any preference
-    // fields; re-apply the player's retained choices so a preference
-    // survives a new game (upstream keeps one `game_ui` across new
-    // games — this reproduces that effect).
+    // `newUi` reset any preference fields to their defaults; re-apply the
+    // player's choices (upstream keeps one `game_ui` across new games).
     this.applyPrefs();
-    // A fresh drawstate ensures the per-tile cache reflects the new
-    // game; the game's `!ds.started` branch covers the
-    // background/grid setup on its next paint.
     this.drawState = this.freshDrawState(initial);
     this.cheated = false;
     this.clearHint();
@@ -375,12 +336,8 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.emitParamsChange();
     this.emitStateChange();
     this.emitStatusBar();
-    // Request a repaint even though the app's reactive flow would
-    // normally trigger one via the game-id-change notification.
-    // Deterministic boards (e.g. English Pegs) produce the same
-    // desc every time, so currentGameId doesn't change and the app
-    // never detects a change to repaint. The drawstate is fresh
-    // (ds.started=false), so the game will do a full repaint.
+    // Repaint explicitly: a deterministic board (English Pegs) deals the same
+    // desc every time, so the app sees no game-id change to repaint on.
     this.requestRedraw();
     this.syncTimer();
   }
@@ -388,13 +345,8 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   restartGame(): void {
     if (this.history.length === 0) return;
     const prev = this.state;
-    // For a game that has superseded its desc, `history[0]` is the board it
-    // started from — for Mines, the blank pre-click grid whose layout did not
-    // exist yet. Upstream rebuilds the restart state from the (public) desc
-    // instead, "so that Mines gets slightly more sensible behavior (restart
-    // goes to _after_ the first click so you don't have to remember where you
-    // clicked)" (midend.c:991). Every other game's `history[0]` *is*
-    // `newState(params, desc)`, so this branch is theirs alone.
+    // A superseded game restarts from its public desc (see `descSuperseded`);
+    // every other game's `history[0]` *is* `newState(params, desc)`.
     this.history = [
       this.descSuperseded
         ? this.game.newState(this.params, this.desc)
@@ -420,16 +372,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   /**
-   * A draw state for `s`, with the current tile size already applied.
-   *
-   * The two steps are paired here rather than at each of the (three) sites
-   * that need a fresh drawstate, because the pairing is what makes
-   * `Game.interpretMove`'s promise true — `ds` is non-null *and* sized, so a
-   * game reads `ds.tilesize` rather than guessing at the preferred size.
-   * Every game that had a `ds?.tilesize || PREFERRED_TILE_SIZE` was defending
-   * against the gap between these two lines (`newDrawState` initializes
-   * `tilesize: 0`), which is a gap only a fourth caller splitting them could
-   * open (`audit-vestigial-contract-surface`).
+   * A draw state for `s`, with the current tile size already applied. The two
+   * steps are paired here, not at each caller, because the pairing is what
+   * makes `Game.interpretMove`'s promise true: `ds` is non-null *and* sized, so
+   * a game reads `ds.tilesize` rather than guessing at the preferred size.
    */
   private freshDrawState(s: State): DrawState {
     const ds = this.game.newDrawState(s);
@@ -442,18 +388,16 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // send input before a game exists; this is what makes `interpretMove`'s
     // non-null `ds` true rather than merely usually-true.
     if (this.drawState === null) return false;
-    // A press from a finger or a pen arrives with MOD_STYLUS set. Strip it,
-    // unless the game has asked to see it (`wantsStylusModifier`): a game with
-    // no touch-specific behavior must not have to *remember* to strip a bit it
-    // does not care about, because forgetting makes it silently ignore every
-    // touch — which is exactly what nine ported games shipped doing.
+    // A finger or pen press arrives with MOD_STYLUS set. Strip it unless the
+    // game asked to see it: a game that forgets to strip it silently ignores
+    // every touch (see `Game.wantsStylusModifier`).
     const b = this.game.wantsStylusModifier ? button : button & ~MOD_STYLUS;
 
     const move = this.game.interpretMove(
       this.state,
       this.ui,
       this.drawState,
-      { x, y } as Point,
+      { x, y },
       b,
     );
     if (move === null) return false;
@@ -522,19 +466,13 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * commit's redraw paints, keeping the displayed step in sync with the
    * frame. */
   private commitMove(next: State, move: Move): boolean {
-    // Check BEFORE touching history. `executeMove`'s return type says `State`,
-    // but a game whose `switch` is exhaustive over its move union has no
-    // `default` arm and no trailing `return` — so a move that is *typed* right
-    // and *valued* wrong (an unknown `type` replayed out of a save, which
-    // arrives as `unknown` and is cast, never parsed) falls off the end and
-    // yields `undefined`. TypeScript cannot see it; only a save from another
-    // build produces it.
-    //
-    // Pushing that into `history` is what turned one bad move into a broken
-    // session: `this.state` became `undefined`, so `changedState` threw, and
-    // then every later `redraw` threw too, on a board the player could no
-    // longer do anything with. Failing here keeps the damage to the one move
-    // and gives `loadGame` something to report.
+    // Check BEFORE touching history. A game whose `switch` is exhaustive over
+    // its move union has no `default` arm, so a move *typed* right and *valued*
+    // wrong (an unknown `type` replayed from another build's save, cast rather
+    // than parsed) falls off the end as `undefined`, which TypeScript cannot
+    // see. In `history` it would make every later `changedState` and `redraw`
+    // throw; refusing it here confines the damage to one move and gives
+    // `loadGame` something to report.
     if (next === undefined || next === null) {
       throw new Error(
         `${this.game.id}: executeMove returned no state for move ` +
@@ -596,23 +534,17 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.afterTransition();
   }
 
-  /** Replay a list of game `Move`s directly, as if the player had made
-   * them, bypassing the `interpretMove` pointer mapping. Each goes
-   * through the same transition path as a real move (history, the
-   * parallel move log, `changedState`, animation arming, save/undo
-   * support), so the resulting midend is indistinguishable from one
-   * reached by clicking. This is the engine's scriptable-replay
-   * primitive: the in-process render-scenario harness uses it to reach
-   * a target frame without synthesizing pointer events (no coordinate
-   * math, no right-button quirks), and it is a natural entry for any
-   * future move-scripting feature. It does NOT consult the active hint
-   * plan (`hintKeepTrack`) — replayed moves are setup, not player
-   * input answering a displayed hint — so any stored plan is dropped,
-   * exactly as a self-played move drops it on the production path.
-   * (Leaving the plan stored re-shows a stale step on the next
-   * `hint()`: the re-validation pass is a no-op for a game without
-   * `refreshHintStep`, and a stale step can be illegal to execute —
-   * found by the cross-game overlay guard on Flood.) */
+  /** Replay game `Move`s as if the player had made them, bypassing
+   * `interpretMove`'s pointer mapping. Each goes through the same transition
+   * path as a real move (history, move log, `changedState`, animation,
+   * save/undo), so the result is indistinguishable from one reached by
+   * clicking; the render-scenario harness uses it to reach a target frame.
+   *
+   * It does not consult the hint plan (`hintKeepTrack`), since replayed moves
+   * are setup rather than an answer to a displayed hint, so any stored plan is
+   * dropped, as a self-played move drops it. A kept plan would re-show a stale
+   * step on the next `hint()` (re-validation is a no-op for a game without
+   * `refreshHintStep`), and a stale step can be illegal to execute (Flood). */
   playMoves(moves: readonly Move[]): void {
     if (moves.length > 0) this.clearHint();
     for (const move of moves) this.applyMove(move);
@@ -670,9 +602,6 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.activeMistakes = null;
   }
 
-  /** Compute the current board's mistakes via the game's hook, store
-   * them as the ephemeral overlay, repaint, and return the count. A
-   * game with no `findMistakes` reports 0 and changes nothing. */
   findMistakes(): number {
     if (!this.game.findMistakes) return 0;
     const mistakes = this.game.findMistakes(this.state);
@@ -681,17 +610,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     return mistakes.length;
   }
 
-  /** The active game's reference-aid model for the current board, or
-   * null if the game has no reference. Pure read — no state change. */
   getReference(): ReferenceModel | null {
     if (!this.game.reference) return null;
     return this.game.reference(this.state, this.ui);
   }
 
-  /** Spotlight a reference item (or clear it when `key` is null) by
-   * mutating the live `Ui` through the game's hook, then repaint — the
-   * same in-place path a `UI_UPDATE` takes: no move, no history entry,
-   * no serialization. A no-op (or an absent hook) skips the repaint. */
   selectReference(key: string | null): void {
     if (!this.game.selectReference) return;
     if (this.game.selectReference(this.ui, key)) {
@@ -817,13 +740,9 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     return undefined;
   }
 
-  /** The hint step currently on display (`undefined` when no plan is
-   * active or the plan is hidden) — the same step `redraw` is handed
-   * and the status bar narrates. Exposed so the render-scenario harness
-   * and tests can assert on the structured step (its `highlights`,
-   * `explanation`) rather than only the draw ops it produces, and so a
-   * scenario can walk the plan with `executeHint` until a step of
-   * interest is reached. */
+  /** The displayed hint step (see {@link displayedHintStep}), exposed so the
+   * render-scenario harness and tests can assert on the structured step rather
+   * than only its draw ops, and walk a plan with `executeHint`. */
   activeHintStep(): HintStep<Move> | undefined {
     return this.displayedHintStep;
   }
@@ -983,9 +902,6 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   // --- custom params ----------------------------------------------
 
-  /** Build the app's "Custom type…" config description from the game's
-   * declarative `paramConfig` (empty items when the game has none, which
-   * keeps the dialog empty — correct for a preset-only game). */
   getCustomParamsConfig(): ConfigDescription {
     const items: ConfigDescription["items"] = {};
     for (const item of this.game.paramConfig ?? []) {
@@ -1054,8 +970,6 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   // --- preferences -------------------------------------------------
 
-  /** Build the app's preferences config-dialog description from the
-   * game's declarative `prefs` (empty items when the game has none). */
   getPreferencesConfig(): ConfigDescription {
     const items: ConfigDescription["items"] = {};
     for (const p of this.game.prefs ?? []) {
@@ -1134,10 +1048,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * per-index data.
    *
    * An index that is **absent** has no authored dark value and is adapted by
-   * `utils/color.ts`'s calculation, which is what every color did before
-   * tokens existed. That is what lets a scheme be authored token by token.
+   * `utils/color.ts`'s calculation, which lets a scheme be authored token by
+   * token.
    *
-   * A per-puzzle entry in `augmentation.ts` still wins over this: it is the more
+   * A per-puzzle entry in `augmentation.ts` wins over this: it is the more
    * specific statement, and a game that wants its black *lifted* rather than
    * preserved (Light Up's wall) says so there.
    */
@@ -1158,29 +1072,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     return this.game.computeSize(this.params, this.preferredTileSize);
   }
 
-  /** Pick the largest integer tile size whose board fits `maxSize`
-   * (mirrors `midend_size`'s fit-to-window binary search, including
-   * user-size expansion beyond the preferred tile size) and inform the
-   * draw state via `setTileSize` (upstream's `game_set_size`).
-   *
-   * **Pure** in the drawstate-cache sense: no recreation of the
-   * drawstate, no firstDraw arming. The frontend may call this on
-   * every `ResizeController` tick (which fires for any layout
-   * perturbation, not just real window resizes); a side-effecting
-   * call here would wipe the per-tile cache at unrelated moments and
-   * flash a full repaint on the next animation frame. The
-   * canvas-clearing concern is handled by `canvasCleared()` which
-   * the adapter invokes from `resizeDrawing` only — the real signal
-   * that the cache is stale. */
   size(maxSize: Size): Size {
     const base = this.game.computeSize(this.params, this.preferredTileSize);
     if (base.w <= 0 || base.h <= 0) return base;
-    // Largest integer tile size whose board fits maxSize — upstream
-    // midend_size's binary search, in its `user_size` form: the board fills
-    // the layout slot it is given, and the tile may exceed the game's
-    // preferred size to do it. Capping instead at the preferred size is what
-    // upstream's flag bought, and the `maxScale` setting already does that job
-    // a layer up by shrinking `maxSize` itself.
+    // Upstream midend_size's binary search, in its `user_size` form: the tile
+    // may exceed the game's preferred size to fill the slot.
     const fits = (ts: number): boolean => {
       const s = this.game.computeSize(this.params, ts);
       return s.w <= maxSize.w && s.h <= maxSize.h;
@@ -1197,24 +1093,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
     const tile = lo;
     this.currentTileSize = tile;
-    if (this.drawState !== null) {
-      // `setTileSize` is informational on the existing drawstate —
-      // games like Flip use it to recompute coordinate mappings.
-      // Flip's setTileSize is a no-op when the tile size is
-      // unchanged, so this is genuinely cheap.
-      this.game.setTileSize?.(this.drawState, tile);
-    }
-    // (`drawState` is null only before the first `startFrom`, i.e. before
-    // there is a board to size for.)
+    // `drawState` is null only before the first board exists.
+    if (this.drawState !== null) this.game.setTileSize?.(this.drawState, tile);
     return this.game.computeSize(this.params, tile);
   }
 
-  /** The canvas was just cleared by `Drawing.resize` (the only path
-   * that actually invalidates pixels). The game's per-tile cache —
-   * whose entries are "this tile's pixels match this cached value" —
-   * is therefore stale, so discard the drawstate. The next `redraw`
-   * sees a fresh drawstate (`!ds.started`) and the game paints from
-   * scratch, including its own background. */
   canvasCleared(): void {
     if (this.history.length === 0) return;
     this.drawState = this.freshDrawState(this.history[0]);
@@ -1335,14 +1218,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (this.animating) {
       this.animTime += tplus;
       this.flashTime += tplus;
-      // Mirror `midend.c` lines 1429-1432 exactly: reset flashTime
-      // when it's caught up to flashLength (flash done) OR when no
-      // flash was ever armed (flashLength === 0). Without this
-      // reset, flashTime grows unbounded on every animated move and
-      // the game's redraw — which checks `flashTime ? ... : -1` —
-      // activates the flash overlay during non-solving animations
-      // too. That was the bug behind the "wave through every cell"
-      // flicker the owner reported on 2026-05-20.
+      // As midend.c does, end the flash once it has caught up with
+      // `flashLength`, or at once when none was armed: otherwise `flashTime`
+      // grows on every animated move, and a game's redraw (`flashTime ? … :
+      // -1`) flashes during ordinary animations.
       if (this.flashTime >= this.flashLength || this.flashLength === 0) {
         this.flashTime = 0;
         this.flashLength = 0;
@@ -1367,19 +1246,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   // --- drawing -----------------------------------------------------
 
   redraw(dr: GameDrawing): void {
-    // No board yet, so no drawstate and nothing to paint. (This used to be
-    // `if (!this.game.redraw) return;` — a check on an optional hook all 57
-    // games implement, standing in for the condition that can actually
-    // occur.)
-    if (this.drawState === null) return;
-    // The engine paints no pixels of its own — it just orchestrates
-    // the game's `redraw`. The background fill that used to live
-    // here (mirroring `midend.c`'s first-draw rect) moved into each
-    // game's `!ds.started` branch, so the framework no longer paints
-    // behind the game's back. The canvas-cleared / palette-replaced
-    // signals reach the game via a fresh drawstate (ds.started=false
-    // ⇒ game's first-draw branch fires), set up by `canvasCleared`
-    // and `forceRedraw`.
+    if (this.drawState === null) return; // no board yet
+    // The engine paints no pixels of its own. A cleared canvas or a replaced
+    // palette reaches the game as a fresh drawstate (`canvasCleared`,
+    // `forceRedraw`), whose `!ds.started` branch repaints everything.
     dr.startDraw();
     this.game.redraw(
       dr,
@@ -1399,15 +1269,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     dr.endDraw();
   }
 
-  /** Drop the per-game drawstate (so any cache it holds is gone) and
-   * run a redraw. The worker adapter calls this when an
-   * already-installed palette or font is replaced — neither clears
-   * the canvas, but the color/font choices baked into cached tiles
-   * are now stale. The game's `!ds.started` branch will repaint
-   * from scratch over the existing canvas content (including its
-   * own background paint). */
   forceRedraw(dr: GameDrawing): void {
-    if (this.history.length === 0) return;
     this.canvasCleared();
     this.redraw(dr);
   }
@@ -1427,27 +1289,19 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private emitIdChange(): void {
     this.emit({
       type: "game-id-change",
-      // Descriptive game ID (`params:desc`): the desc fully specifies the
-      // puzzle, so the params need not carry the difficulty suffix
-      // (upstream `midend_get_game_id` → `encode_params(..., FALSE)`).
+      // Shares the board: the desc fully specifies it, so the params omit the
+      // difficulty (upstream `midend_get_game_id` → `encode_params(..., FALSE)`).
       currentGameId: `${this.game.encodeParams(this.params, false)}:${this.desc}`,
-      // The same board, addressed for *re-dealing it here* rather than for
-      // handing to someone else — so the params are FULL. Loading any game ID
-      // sets the params from its prefix (see `newGameFromId`), which is right
-      // for a shared link (the recipient should not inherit the sender's
-      // difficulty for their next game) and wrong for restoring your own board:
-      // it silently dropped a tiered puzzle back to its default difficulty every
-      // time the app reopened it. Emitted here rather than spliced together by
-      // the caller from `params` + a desc, because those are two signals that
-      // could drift, and a mismatched pair yields a broken board rather than a
-      // wrong label.
+      // Re-deals this board here, so the params are FULL. Loading an id sets the
+      // params from its prefix, which is right for a shared link (the recipient
+      // keeps their own difficulty) and wrong for reopening your own board,
+      // which would drop to the default difficulty. Emitted here rather than
+      // assembled by the caller from `params` and a desc, two signals that
+      // could drift into a broken board.
       restoreGameId: `${this.game.encodeParams(this.params, true)}:${this.desc}`,
-      // Random seed (`params#seed`): regenerating the puzzle from the seed
-      // needs the *full* params, difficulty included (upstream
-      // `midend_get_random_seed` → `encode_params(..., TRUE)`). The app's
-      // `currentParams` prefers this form precisely because it is the
-      // descriptive one — a `false` encoding here dropped difficulty from
-      // the type-menu label and from shared seeds.
+      // Shares the seed: regenerating needs the FULL params, difficulty
+      // included (upstream `midend_get_random_seed` → `encode_params(...,
+      // TRUE)`). The app's `currentParams`, and so the type-menu label, read it.
       randomSeed: this.seed
         ? `${this.game.encodeParams(this.params, true)}#${this.seed}`
         : undefined,
@@ -1474,20 +1328,15 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   /**
-   * Does any cell carry a pencil mark?
-   *
-   * Read **generically, off the state's `pencil` field**, which is not a guess:
-   * `unify-the-note-taking-vocabulary` made that the single spelling across
-   * every note-taking game, and `mark-all.test.ts`'s cross-game probe already
-   * reads it the same way. Asking each game instead would be fifteen games
-   * re-answering a question none of them could legitimately answer differently
-   * — the shape `AGENTS.md` says means the layer below is missing one.
+   * Does any cell carry a pencil mark? Read **generically, off the state's
+   * `pencil` field**, the one spelling every note-taking game uses, rather than
+   * having each game re-answer a question none could answer differently.
    * `mark-all.test.ts` holds every `canMarkAll` game to exposing a readable
    * `pencil`, so this cannot quietly answer `false` for a game that drifted.
    *
    * The predicate is "any marks at all", not "the next press will narrow rather
    * than fill". Those differ only on a board where the player has marked some
-   * cells by hand and left others bare — after one press they agree, and the
+   * cells by hand and left others bare; after one press they agree, and the
    * finer question needs each game's own idea of an empty cell.
    */
   private hasPencilMarks(): boolean {
@@ -1501,22 +1350,17 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   private emitStatusBar(): void {
-    // The status-bar-change notification carries BOTH the status-bar text
-    // and the active hint explanation (the banner). A game may want the
-    // hint banner without a status bar (e.g. Range — `wantsStatusbar`
-    // false, but it has explained hints), so a hint-capable game always
-    // emits (so the explanation both appears and, on the next move,
-    // clears); only a game with neither a status bar nor a hint is
-    // skipped. The status-bar DOM is gated on `wantsStatusbar`
-    // independently (puzzle-view.ts), so the empty text emitted here for
-    // a no-status-bar game is inert.
+    // The notification carries both the status-bar text and the hint banner.
+    // A game may want the banner without a status bar (Range), so a
+    // hint-capable game always emits, letting its explanation appear and
+    // clear; only a game with neither is skipped. `puzzle-view.ts` gates the
+    // status-bar DOM on `wantsStatusbar`, so the empty text is inert.
     if (!this.game.wantsStatusbar && !this.game.hint) return;
     let text = this.game.wantsStatusbar
       ? (this.game.statusbarText?.(this.state, this.ui) ?? "")
       : "";
-    // A timed game shows the elapsed clock as a `[M:SS]` prefix on its status
-    // text — upstream `midend_rewrite_statusbar` (midend.c:2204), the midend's
-    // job, not the game's. Mines is the first TS game to exercise it.
+    // A timed game's status text gets an elapsed `[M:SS]` prefix: upstream
+    // `midend_rewrite_statusbar` (midend.c:2204), the midend's job.
     if (this.game.isTimed && this.game.wantsStatusbar) {
       const sec = Math.floor(this.timerElapsed);
       text = `[${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}] ${text}`;
@@ -1530,16 +1374,13 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   /**
-   * Where the displayed step sits in its journey, and how long the journey is.
+   * Where the displayed step sits in its journey, and how long the journey is;
+   * `undefined` when no hint is displayed.
    *
-   * A journey is one deduction firing: the first step of the run plus every
-   * following step the game flagged `continuesPrevious` (`ts-engine`, "One
-   * deduction firing is one journey"). Walking back to that first step and
-   * forward to the last is the whole computation, and it is **derived from a
-   * flag the game already sets for its own reasons** — nothing has to declare a
-   * journey, and a game that never groups its steps simply reports length 1.
-   *
-   * `undefined` when no hint is displayed: there is no journey to be in.
+   * A journey is one deduction firing (`ts-engine`, "One deduction firing is
+   * one journey"): a first step plus every following step flagged
+   * `continuesPrevious`. It is **derived from a flag the game already sets for
+   * its own reasons**, so a game that never groups its steps reports length 1.
    */
   private hintJourney(): { index: number; length: number } | undefined {
     const plan = this.activeHint;

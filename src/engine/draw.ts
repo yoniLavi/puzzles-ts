@@ -1,17 +1,4 @@
-/**
- * Shared `GameDrawing` primitives.
- *
- * `drawRecessedBorder` is the two-pentagon bevel that frames a playfield
- * (upstream games inline it; Fifteen, Sixteen, Twiddle, Samegame, and
- * Flood all carried the same pair of `drawPolygon` calls). It is keyed on
- * the already-computed outer pixel bounds rather than `(w, h, hw)` so that
- * games deriving their edges differently (Samegame's constant highlight
- * width + gap offset) fit the same helper.
- *
- * `drawRectOutline` is the faithful port of upstream `draw_rect_outline`:
- * a 1px rectangle border via four lines, inclusive corners
- * (`(x, y)`..`(x + w - 1, y + h - 1)`).
- */
+/** Shared `GameDrawing` primitives. */
 import type { GameDrawing } from "./game.ts";
 
 /** Outer pixel bounds of a beveled frame; edges are inclusive pixels. */
@@ -23,11 +10,15 @@ export interface BevelBounds {
 }
 
 /**
- * Draw the upstream recessed bevel: a top-right `highlight` wedge and a
- * bottom-left `lowlight` wedge, each a filled pentagon inset by `inset`
- * (the tile size). The two pentagons share their two diagonal vertices,
- * so together they bevel the whole border. Winding is irrelevant to the
- * fill, so a single canonical ordering reproduces every caller's pixels.
+ * Draw the upstream recessed bevel that frames a playfield: a top-right
+ * `highlight` wedge and a bottom-left `lowlight` wedge, each a filled pentagon
+ * inset by `inset` (the tile size). The two pentagons share their two diagonal
+ * vertices, so together they bevel the whole border. Winding is irrelevant to
+ * the fill, so a single canonical ordering reproduces every caller's pixels.
+ *
+ * Keyed on the outer pixel bounds rather than `(w, h, hw)`, so a game deriving
+ * its edges differently (Samegame's constant highlight width and gap offset)
+ * fits the same helper.
  */
 export function drawRecessedBorder(
   dr: GameDrawing,
@@ -66,47 +57,35 @@ export function drawRecessedBorder(
 }
 
 /**
+ * How wide the raised bevel's border reads at a given tile size: one formula,
+ * so the same visual idiom has the same border in every game that draws it.
+ *
+ * **The `max(1, …)` is not optional.** Without it the width reaches 0 at small
+ * tile sizes, at which point the caller's inner rect covers both triangles
+ * completely and the bevel *disappears* rather than thinning.
+ */
+export function raisedBevelWidth(tileSize: number): number {
+  return Math.max(1, Math.floor(tileSize / 16));
+}
+
+/**
  * The raised block: a `lowlight` triangle over the bottom-right half and a
  * `highlight` triangle over the top-left, which a caller then covers with its
  * own inner rect so both show as a border. {@link drawRecessedBorder}'s
  * sibling, in the opposite direction.
  *
- * Promoted from five hand-derived copies (fifteen, inertia, mines, sokoban,
- * sixteen) by `unify-the-raised-tile-bevel`.
- *
  * **Takes bounds rather than a tile**, because each game's tile body differs
  * for a real reason and a rect keeps that the caller's fact: Fifteen, Sixteen
  * and Mines bevel `(x, y) … (x+ts−1, y+ts−1)`, while Inertia and Sokoban inset
- * by one to leave a grid line and bevel `(x+1, y+1) … (x+ts, y+ts)`. Both are
- * correct for their own tile, so a rect moves no pixels on that axis.
+ * by one to leave a grid line and bevel `(x+1, y+1) … (x+ts, y+ts)`.
  *
  * **The inner fill stays with the caller**, which is why no highlight width is
  * passed: the two triangles do not depend on it, and each game covers them with
  * its own color and its own inset.
  *
  * Lowlight is drawn first, then highlight. The two share their diagonal, so the
- * order decides a hairline — fixed here so it is one decision rather than six.
+ * order decides a hairline, fixed here so it is one decision.
  */
-/**
- * How wide the raised bevel's border reads, for a given tile size — the one
- * formula, where there used to be four.
- *
- * The six games that draw a raised tile had `max(1, floor(ts/20))` (fifteen,
- * sixteen), `max(1, floor(ts/10))` (mines), `floor(ts/10)` (inertia, sokoban)
- * and `floor(ts/16)` (pegs), so the same visual idiom carried a 1px border in
- * one game and a 3px one in another at the same tile size. Nothing in the six
- * recorded a reason for the divisor, which makes it drift rather than design
- * (`unify-the-raised-tile-bevel`).
- *
- * **The `max(1, …)` is not optional.** Three of the six had dropped it, and
- * without it `hw` reaches 0 at small tile sizes — at which point the caller's
- * inner rect covers both triangles completely and the bevel *disappears*
- * rather than thinning.
- */
-export function raisedBevelWidth(tileSize: number): number {
-  return Math.max(1, Math.floor(tileSize / 16));
-}
-
 export function drawRaisedBevel(
   dr: GameDrawing,
   bounds: BevelBounds,
@@ -156,13 +135,9 @@ export function drawRectOutline(
 }
 
 /**
- * A rectangle outline `thickness` pixels wide, drawn as four filled rects —
+ * A rectangle outline `thickness` pixels wide, drawn as four filled rects:
  * the collection's "this is wrong" frame, and upstream's
  * `*_draw_err_rectangle` in every game that has one.
- *
- * Promoted from eight private copies (bricks, clusters, crossing, magnets,
- * pattern, sticks, tents, unruly) by `re-express-the-collection` B4, the same
- * way {@link drawRectCorners} was promoted from seven.
  *
  * **What stays with the game** is the two things it actually chooses: how thick
  * the frame is (`ts/10`, `ts/16`, or its own) and whether it is inset from the
@@ -191,11 +166,8 @@ export function drawThickRectOutline(
 /**
  * Upstream `misc.c draw_rect_corners`: four L-shaped corner brackets on the
  * square of radius `r` centered at `(cx, cy)`, each arm reaching halfway along
- * its side — the collection's standard "keyboard cursor is here" mark.
- *
- * Promoted from seven byte-identical private copies (ascent, bricks, dominosa,
- * signpost, singles, spokes, subsets) when Crossing would have been the eighth.
- * The emitted line order matches upstream's, so no render snapshot moves.
+ * its side: the collection's standard "keyboard cursor is here" mark. The
+ * emitted line order is upstream's.
  *
  * `thickness` defaults to upstream's hairline. Raise it on a board whose
  * materials are mid-tone rather than ink-on-paper, where a one-pixel stroke has

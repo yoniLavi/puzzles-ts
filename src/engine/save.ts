@@ -1,11 +1,7 @@
 /**
- * The clean TS-native save format: a versioned JSON envelope, UTF-8
- * encoded into the bytes the Dexie store already holds
- * (`SavedGameRecord.data` is `Uint8Array | Blob`, so no schema
- * migration). It is deliberately NOT compatible with the C
- * `midend_serialise` format — per the `ts-migration` doctrine old
- * C-format saves and pre-pivot shared IDs are expendable. `random.ts`
- * (retained, bit-identical) keeps future game IDs reproducible.
+ * The save format: a versioned JSON envelope, UTF-8 encoded into the bytes the
+ * Dexie store holds (`SavedGameRecord.data` is `Uint8Array | Blob`). It is not
+ * upstream's `midend_serialise` format; C-format saves are expendable.
  *
  * Restoration replays `moves` from the initial `desc`, so the format
  * stores the move log rather than every state.
@@ -81,8 +77,7 @@ function isSaveEnvelope(value: unknown): value is SaveEnvelope {
     typeof v["puzzleId"] === "string" &&
     typeof v["params"] === "string" &&
     typeof v["desc"] === "string" &&
-    // Additive and optional: a save written before desc supersession existed
-    // simply omits it, and every non-superseding game still does.
+    // Optional: only a desc-superseding game writes it.
     (v["privDesc"] === undefined || typeof v["privDesc"] === "string") &&
     Array.isArray(v["moves"]) &&
     typeof v["pos"] === "number" &&

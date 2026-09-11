@@ -1,25 +1,20 @@
 /**
- * A tiny fake `Game` used only by the engine's behavioral tests
- * (imported solely from `*.test.ts`). It is the smallest thing that
- * exercises every midend path: a counter you increment toward a
- * target, with a solver that jumps straight to the target, a text
- * format, and a status bar. No timed clock.
+ * A tiny fake `Game` used only by the engine's behavioral tests (imported
+ * solely from `*.test.ts`): the smallest thing that exercises every midend
+ * path. A counter you increment toward a target, with a solver that jumps
+ * straight to the target, a hint plan, a text format and a status bar; no
+ * timed clock.
  *
- * State carries its own target, so `status(state)` is pure (the goal
- * is encoded in the state, exactly as a real game encodes its goal).
+ * State carries its own target, so `status(state)` is pure, as a real game
+ * encodes its goal in its state.
  *
- * It also implements just enough of the drawing contract
- * (`newDrawState`/`setTileSize`/`redraw`) to drive the first-draw and
- * force-redraw behavior the midend mirrors from `midend.c`. Each
- * `newDrawState` and each `redraw` invocation is recorded on the
- * drawstate itself so tests can assert without leaking globals.
- *
- * This is the `ts-migration` "validated without a golden corpus"
- * discipline applied to the midend: the suite asserts behavioral
- * invariants against this game, not a recorded C corpus.
+ * Its drawing members record each drawstate's identity and each `setTileSize`
+ * and `redraw` call on the drawstate itself, so tests can assert on first-draw
+ * and force-redraw behavior without leaking globals.
  */
 
 import type { Game } from "./game.ts";
+import { LEFT_BUTTON, RIGHT_BUTTON } from "./pointer.ts";
 import { randomUpto } from "./random/index.ts";
 
 export interface FakeParams {
@@ -35,11 +30,8 @@ export type FakeMove = "inc" | "dec" | "solve";
 
 export interface FakeDrawState {
   tileSize: number;
-  /** Mirrors the per-game first-paint flag every real game keeps
-   * (`ds.started` in Flip/upstream). The fake's `redraw` paints a
-   * one-off background rect when this is false, then sets it true —
-   * exactly the pattern the engine now relies on every game to
-   * implement (since the engine itself no longer paints pixels). */
+  /** The first-paint flag every real game keeps (`ds.started`): `redraw`
+   * paints a one-off background rect while it is false, then sets it. */
   started: boolean;
   /** Incremented every time `setTileSize` is called. */
   setSizeCalls: number;
@@ -53,9 +45,6 @@ export interface FakeDrawState {
 }
 
 let nextInstance = 0;
-
-export const LEFT_BUTTON = 0x0200;
-export const RIGHT_BUTTON = 0x0202;
 
 export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, FakeDrawState> = {
   id: "__fake__",
@@ -140,12 +129,10 @@ export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, FakeDrawState
     ds.setSizeCalls += 1;
   },
   redraw: (dr, ds, _prev, s) => {
-    if (ds === null) return;
     ds.redrawCalls += 1;
     if (!ds.started) {
-      // First paint of this drawstate — game owns the background
-      // fill (no engine-emitted pixels). winSize = state.target *
-      // tileSize wide × tileSize tall, matching `computeSize`.
+      // First paint of this drawstate: the game owns its background fill, at
+      // the size `computeSize` reports.
       dr.drawRect({ x: 0, y: 0, w: s.target * ds.tileSize, h: ds.tileSize }, 0);
       ds.started = true;
     }

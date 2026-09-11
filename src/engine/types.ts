@@ -3,24 +3,13 @@
  * and the change notifications the engine emits.
  *
  * Every name here belongs to a contract the **engine** states and a game
- * implements — `Color` is what `Game.colors()` returns, `Rect`/`Point`/`Size`
+ * implements: `Color` is what `Game.colors()` returns, `Rect`/`Point`/`Size`
  * are the drawing API's coordinate records. The app is a consumer. Several are
- * still upstream's C structures seen through a JS lens (a `Color` is an RGB
- * triple in 0..1, not a CSS string), which is why they read the way they do.
+ * upstream's C structures seen through a JS lens (a `Color` is an RGB triple in
+ * 0..1, not a CSS string), which is why they read the way they do.
  *
- * These declarations used to be *re-exported from the Emscripten-generated*
- * `src/assets/puzzles/emcc-runtime.d.ts` — so the native TypeScript engine's
- * type vocabulary was, literally, emitted by `emcc --emit-tsd` from
- * `webapp.cpp`, which made a generated file in a gitignored assets directory
- * the root of the type graph for 200-odd files. `retire-c-engine` hand-authored
- * them in the app layer instead, at `src/puzzle/types.ts`, preserving every
- * shape exactly so that not one importer had to change — the right call when
- * the goal was proving nothing else had moved.
- *
- * That left the engine importing its own vocabulary from the shell, and left
- * the layering test unable to say so. `retire-native-directory` moved the file
- * down here, which is what lets that test assert the real invariant: the engine
- * and the games import nothing above them.
+ * It lives in the engine rather than the app because the engine and the games
+ * import nothing above them, which the layering test asserts.
  */
 
 /** An RGB triple, each component in 0..1 — the puzzle drawing API's color
@@ -67,12 +56,11 @@ export type DrawTextOptions = {
 };
 
 /**
- * Three ids for three jobs, and they are not interchangeable — see
- * `Midend.emitIdChange`. `currentGameId` shares a *board* and deliberately omits
- * difficulty; `randomSeed` shares a *seed*; `restoreGameId` re-deals *this exact
- * game*. Recording the sharing id where the restoring one belonged is what reset
- * every tiered puzzle to its default difficulty on reopen
- * (`remember-the-difficulty-of-a-dealt-board`).
+ * Three ids for three jobs, and they are not interchangeable (see
+ * `Midend.emitIdChange`): `currentGameId` shares a *board* and deliberately
+ * omits difficulty; `randomSeed` shares a *seed*; `restoreGameId` re-deals
+ * *this exact game*. Recording the sharing id where the restoring one belongs
+ * reopens a tiered puzzle at its default difficulty.
  */
 export type NotifyGameIdChange = {
   type: "game-id-change";
@@ -90,12 +78,9 @@ export type NotifyGameStateChange = {
   canRedo: boolean;
   /**
    * Whether any cell on the board carries a pencil mark, for a game that offers
-   * the Mark-all press. Always `false` for a game that does not.
-   *
-   * The chrome uses it to say which of the press's two jobs it is about to do:
-   * *Fill* all pencil marks on a bare board, *Update* them once there are marks
-   * to narrow. The press has always done both — that is the point of it — and
-   * the control said "Fill" for both, so the second job was invisible.
+   * the Mark-all press; always `false` for a game that does not. The chrome uses
+   * it to name which of the press's two jobs it is about to do: *Fill* all
+   * pencil marks on a bare board, *Update* them once there are marks to narrow.
    */
   hasPencilMarks: boolean;
 };
@@ -178,7 +163,6 @@ export enum PuzzleButton {
   UI_REDO,
   UI_UPPER_BOUND,
 
-  /* made smaller because of 'limited range of datatype' errors. */
   MOD_STYLUS = 0x0800,
   MOD_CTRL = 0x1000,
   MOD_SHFT = 0x2000,
@@ -189,21 +173,15 @@ export enum PuzzleButton {
 /**
  * What the app learns about a game once, at construction, and never asks again.
  *
- * Every field is produced by `Midend.getStaticProperties` and relayed — under
- * the same name — into a `Puzzle` field, so the chain is easy to extend and its
- * far end is easy to forget: **two of the original nine fields turned out to
- * have no reader at all**, `canConfigure` (which the midend answered with a
- * literal `true`) and `displayName` (which `Puzzle` overrode from the catalog on
- * every path). `contract-surface.test.ts` sweeps this interface for the same
- * reason it sweeps `Game`.
+ * Every field is produced by `Midend.getStaticProperties` and relayed, under
+ * the same name, into a `Puzzle` field, so the chain is easy to extend and its
+ * far end easy to forget: `contract-surface.test.ts` sweeps this interface, as
+ * it sweeps `Game`, for a field nothing reads.
+ *
+ * There is no `canConfigure`: every game declares a `paramConfig`
+ * (`custom-params.test.ts`), so the "Custom type…" entry is unconditional.
  */
 export interface PuzzleStaticAttributes {
-  // A `canConfigure` used to sit here, gating the type menu's "Custom type…"
-  // entry — and the midend answered it with a hard-coded `true`, so the gate
-  // never closed. Every game declares a `paramConfig`, which
-  // `custom-params.test.ts` now asserts, so the entry is unconditional; a
-  // future preset-only game reopens the question with that test as the prompt
-  // (`audit-vestigial-contract-surface`).
   canSolve: boolean;
   canHint: boolean;
   /** The game can check the board for mistakes (the `findMistakes` hook). */
@@ -215,7 +193,6 @@ export interface PuzzleStaticAttributes {
    * of its fixed inventory with found status. Gates the toolbar reference
    * button. */
   hasReference: boolean;
-  // TODO: canFormatAsTextEver: boolean;
   /** The game has no meaning for the secondary button, so the view must not
    * synthesize one from a long press or a two-finger tap — see
    * `Game.ignoresSecondaryButton`. */

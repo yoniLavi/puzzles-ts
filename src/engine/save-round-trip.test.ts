@@ -1,20 +1,13 @@
 /**
  * The collection-wide save/load guard.
  *
- * Every game's move log is written to a save and replayed on load, and until
- * this test there was **no cross-game coverage of that replay at all** — the
- * per-game suites each round-trip a save they made themselves, from a handful
- * of hand-written moves, so no game was ever asked what happens when the *whole*
- * range of moves its own input produces goes through `loadGame`.
- *
- * That gap shipped a crash. `Midend.applyMove` hands `executeMove`'s return
- * straight to `commitMove`, which pushes it into `history` **before** anything
- * looks at it — so a game whose `executeMove` falls off the end of its `switch`
- * (returning `undefined`, which the exhaustive-union typing hides at compile
- * time) poisons the history array, and every later `redraw` throws on a state
- * that is not there. The first symptom a player sees is an unhandled rejection
- * from `changedState`, and the second is the same from `redraw` — one broken
- * move, then a permanently broken board.
+ * Every game's move log is written to a save and replayed on load. The
+ * per-game suites round-trip saves of a few hand-written moves; this asks each
+ * game what happens when the *whole* range of moves its own input produces goes
+ * through `loadGame`. A move `executeMove` does not handle falls off the end of
+ * its `switch` as `undefined` (the exhaustive-union typing hides it), and in
+ * `history` that would make every later `changedState` and `redraw` throw: one
+ * broken move, then a permanently broken board.
  *
  * So this sweep drives each game with *real* input through a real `Midend`,
  * saves, loads into a fresh one, and checks the two agree — and, because the
@@ -171,18 +164,14 @@ describe("a saved game reloads in every ported game", () => {
 });
 
 /**
- * The other half, and the one the shipped crash actually needed.
+ * The other half: a save this build cannot play.
  *
- * A save is untrusted input: it is JSON that has been sitting in the player's
- * IndexedDB since whenever, written by whatever build they were running then.
- * Its `moves` are typed `unknown[]` and *cast* to `Move`, never parsed — so a
- * move a later build no longer handles reaches `executeMove` looking perfectly
- * well-typed, and comes back `undefined`.
- *
- * The replay used to run straight into the live game, so a bad move left the
- * board neither the old game nor the new one, but a history with a hole in it
- * that threw on every subsequent repaint. It is now rewound to the saved
- * game's opening position and reported, which is all any caller needs.
+ * A save is untrusted input: JSON that has been sitting in the player's
+ * IndexedDB, written by whatever build they were running then. Its `moves` are
+ * typed `unknown[]` and *cast* to `Move`, never parsed, so a move a later build
+ * does not handle reaches `executeMove` looking perfectly well-typed. The load
+ * must be refused and rewound to the saved game's opening position, never left
+ * as a history with a hole in it that throws on every repaint.
  */
 describe("a save this build cannot play is refused, not half-applied", () => {
   for (const id of REGISTERED) {
@@ -216,14 +205,10 @@ describe("a save this build cannot play is refused, not half-applied", () => {
       // the game named itself, and the error came from its own guard rather
       // than from whatever a misread happened to break first.
       //
-      // That third job is why this is not merely `toMatch(/Could not restore/)`.
-      // Before `reject-unrecognised-moves` the collection split three ways on an
-      // unplayable move — 8 games returned `undefined`, 29 threw something
-      // downstream ("m.ops is not iterable", "Paint out of bounds", "Illegal
-      // fifteen move to (undefined, undefined)"), and **20 silently returned a
-      // board that was not the one saved**. All 57 measured, none guessed. The
-      // loose form here passed for all three, which is what let the silent camp
-      // exist; the strict form is the guarantee.
+      // That third job is why this is not merely `toMatch(/Could not restore/)`:
+      // an unplayable move can come back `undefined`, throw something downstream
+      // ("m.ops is not iterable"), or silently yield a board that is not the one
+      // saved, and the loose form passed for all three.
       expect(err, `${id}: a foreign move in the log was not refused`).toMatch(
         new RegExp(`^Could not restore this saved game: ${id}: .*unrecognized`),
       );
@@ -323,8 +308,8 @@ describe("a v1 save still loads", () => {
       // The invariant is *fidelity*, not a hard-coded verdict: whatever the
       // game reported when it was saved, it reports again when restored. That
       // is the assertion the flag is load-bearing for — and it covers Mines,
-      // whose Solve reveals the board without marking it won (upstream-faithful
-      // and pre-dating this change), so it saves and restores as "ongoing".
+      // whose Solve reveals the board without marking it won (as upstream's
+      // does), so it saves and restores as "ongoing".
       expect(status, `${id}: status changed across a v1 restore`).toBe(playedStatus);
 
       // And what it saves back out is clean v2 — the old key gone, not carried.

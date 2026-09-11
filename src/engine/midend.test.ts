@@ -1,19 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { mkhighlightBackground } from "./color/color-mkhighlight.ts";
 import { token } from "./color/color-token.ts";
-import {
-  type FakeDrawState,
-  fakeGame,
-  LEFT_BUTTON,
-  RIGHT_BUTTON,
-} from "./fake-game.ts";
+import { type FakeDrawState, fakeGame } from "./fake-game.ts";
 import type { Game, GameDrawing } from "./game.ts";
 import { UI_UPDATE } from "./game.ts";
 import { Midend } from "./midend.ts";
+import { LEFT_BUTTON, RIGHT_BUTTON } from "./pointer.ts";
 import type { ChangeNotification, Color } from "./types.ts";
 
-/** Recording fake `GameDrawing` for engine-level redraw assertions —
- * mirrors `src/games/flip/flip.test.ts`'s helper. */
+/** Recording fake `GameDrawing` for engine-level redraw assertions. */
 function recordingDrawing() {
   const ops: Array<{
     op: string;
@@ -353,9 +348,9 @@ describe("Midend params + presets", () => {
 
   // A game ID is user input — it arrives in a URL, a shared link, or a typed
   // box — and the midend has a separate refusal for each way it can be wrong.
-  // Only the first two were tested; the params-decode and params-validate arms
-  // are the ones a *plausible* bad link hits (right shape, impossible values),
-  // and each returns a string the player reads.
+  // The params-decode and params-validate arms are the ones a *plausible* bad
+  // link hits (right shape, impossible values), and each returns a string the
+  // player reads.
   it.each([
     ["nope", /Invalid game ID/, "no separator at all"],
     ["t2:bad!", /bad desc/, "a description the game rejects"],
@@ -371,16 +366,11 @@ describe("Midend params + presets", () => {
   });
 
   it("each of the three ids encodes params for the job it is for", () => {
-    // Regression 1: `emitIdChange` encoded both the `params:desc` id and the
-    // `params#seed` seed with `full=false`, dropping a difficulty-style
-    // suffix from the seed. The app's `currentParams` prefers the seed
-    // form, so the type-menu label lost the difficulty (Extreme shown as
-    // the default).
-    //
-    // Regression 2 (`remember-the-difficulty-of-a-dealt-board`): there was no
-    // third id, so the app remembered a dealt board as `currentGameId` — whose
-    // params are lossy on purpose — and reopening a tiered puzzle silently
-    // dropped it to its default difficulty.
+    // The seed must carry the full params: the app's `currentParams` prefers
+    // the seed form, so a short encoding drops the tier from the type-menu
+    // label. And a dealt board must be remembered by the restoring id, not by
+    // `currentGameId`, whose params are lossy on purpose: reopening a tiered
+    // puzzle by the latter drops it to its default difficulty.
     const h = harness(tieredGame());
     expect(h.m.setParams("t3d1")).toBeUndefined();
     h.m.newGame();
@@ -425,12 +415,10 @@ describe("Midend params + presets", () => {
     // `validate_params(params, full)`'s `full` means "these params are about
     // to GENERATE a board", which is how a game expresses a bound that only
     // generation has — a size whose generator succeeds too rarely to wait for.
-    // Upstream midend.c:1956 passes exactly `desc == NULL`; ours passed a
-    // literal `true` on both arms, so a generation-only bound also rejected
-    // an already-described board. That silently made the `full` flag dead:
-    // every one of its production call sites passed `true`, so the sixteen
-    // games gating a bound on it were gating on a constant, and a game ID
-    // shared before a bound was introduced stopped loading.
+    // Upstream midend.c:1956 passes exactly `desc == NULL`. Passing `true` on
+    // both arms would make a generation-only bound reject an already-described
+    // board, so a game ID shared before a bound was introduced would stop
+    // loading, and every game gating a bound on `full` would gate on a constant.
     const boundedGame: typeof fakeGame = {
       ...fakeGame,
       validateParams: (p, full) =>
@@ -458,9 +446,8 @@ describe("Midend params + presets", () => {
   });
 });
 
-// The three methods only the worker adapter calls, and which no test called at
-// all. Each is one line, which is exactly why they are easy to leave untested
-// and easy to break in a refactor of the thing they delegate to.
+// The three methods only the worker adapter calls. Each is one line, which is
+// exactly why they are easy to break in a refactor of what they delegate to.
 describe("Midend palette + teardown (adapter-facing)", () => {
   const withPalette = {
     ...fakeGame,
@@ -571,14 +558,11 @@ describe("Midend timer", () => {
 });
 
 describe("Midend.size is purely informational (regression: ResizeObserver flicker)", () => {
-  // `puzzle-view.ts`'s `ResizeController` calls `puzzle.size()` on
-  // every element-size change — including CSS transitions, mobile
-  // address-bar show/hide, and other layout perturbations unrelated
-  // to actual canvas resizing. Side-effecting `size()` (wiping the
-  // per-tile cache + arming a full-canvas overpaint) caused a
-  // user-visible "everything flickers" regression. Locking it in:
-  // size() must not touch drawstate identity, and must not cause the
-  // next `redraw` to emit a background fill.
+  // `puzzle-view.ts`'s `ResizeController` calls `puzzle.size()` on every
+  // element-size change, including CSS transitions and mobile address-bar
+  // show/hide. A side-effecting `size()` makes everything flicker, so it must
+  // not touch drawstate identity or make the next `redraw` repaint its
+  // background.
   function midend() {
     const m = new Midend(fakeGame);
     m.setCallbacks(
@@ -592,8 +576,8 @@ describe("Midend.size is purely informational (regression: ResizeObserver flicke
   it("preferredSize is the game's own size at its preferred tile size", () => {
     // The adapter asks for this before any layout exists, so it is the board's
     // natural size — `computeSize(params, preferredTileSize)` and nothing else.
-    // Untested until now, and unlike `size()` it has no slot to be corrected
-    // against: whatever it answers is what the canvas is first made.
+    // Unlike `size()` it has no slot to be corrected against: whatever it
+    // answers is what the canvas is first made.
     expect(midend().preferredSize()).toEqual({ w: 3 * 10, h: 10 });
 
     const bigTiles = new Midend({ ...fakeGame, preferredTileSize: 24 });
@@ -751,11 +735,8 @@ describe("Midend.forceRedraw is canvasCleared + redraw (palette/font replacement
 });
 
 describe("Engine emits no pixels of its own (game owns the canvas content)", () => {
-  // Locks in the directional cleanup: the framework reconciles
-  // *when* to call `game.redraw` but never paints behind the game's
-  // back. The whole-canvas bg fill that briefly lived in
-  // `Midend.redraw` is gone — every draw op in a `redraw()` call
-  // originates from `game.redraw`.
+  // The framework decides *when* to call `game.redraw` but never paints behind
+  // the game's back: every draw op in a `redraw()` call comes from the game.
   it("Midend.redraw emits only startDraw/endDraw around game.redraw", () => {
     const m = new Midend(fakeGame);
     m.setCallbacks(
@@ -765,17 +746,13 @@ describe("Engine emits no pixels of its own (game owns the canvas content)", () 
     m.newGame();
     m.size({ w: 200, h: 200 });
 
-    // Replace fake game's `!ds.started` branch with one that paints
-    // a distinctive marker, so we can prove every op in the
-    // recording came from the game (not the engine).
+    // Past its first paint the fake's redraw emits nothing, so any op besides
+    // the engine's `startDraw`/`endDraw` brackets would be the engine's own.
     const ds = (m as unknown as { drawState: FakeDrawState }).drawState;
-    ds.started = true; // pretend the game already did its first paint
+    ds.started = true;
 
     const { dr, ops } = recordingDrawing();
     m.redraw(dr);
-    // The fake's redraw with `started=true` emits no draw ops — so
-    // the only ops we see are `startDraw` and `endDraw` (the engine
-    // frame brackets).
     const drawing = ops.filter((o) => o.op !== "startDraw" && o.op !== "endDraw");
     expect(drawing).toEqual([]);
   });
@@ -1055,8 +1032,7 @@ describe("Midend hint plan lifecycle", () => {
   });
 });
 
-// A displayed hint step is never stale (openspec `fix-stale-hint-step`). The
-// engine-level guarantee: before (re-)displaying a stored step, the midend asks
+// A displayed hint step is never stale. The engine-level guarantee: before (re-)displaying a stored step, the midend asks
 // the game's `refreshHintStep` whether parts of it are already resolved and
 // drops/advances past them. Modeled here with the smallest game whose move has
 // a side effect that resolves a *later* plan step (Towers' auto-pencil shape):
@@ -1205,13 +1181,9 @@ describe("Midend re-validates a kept plan (a displayed step is never stale)", ()
     const m = new Midend(strikeGame({ sideEffect: true }));
     m.newGame();
     m.hint(); // plan strike 0,1,2
-    // A scripted replay bypasses `hintKeepTrack` — the moves are setup, not
-    // an answer to the displayed hint — so the stored plan (computed for a
-    // board the replay just changed) is dropped, exactly as a self-played
-    // move drops it on the production input path. Leaving it stored would
-    // re-show a stale step on the next `hint()`: re-validation is a no-op
-    // for a game without `refreshHintStep`, and a stale step can even be
-    // illegal to execute (Flood, found by the cross-game overlay guard).
+    // A scripted replay bypasses `hintKeepTrack` (the moves are setup, not an
+    // answer to the displayed hint), so the stored plan is dropped, as a
+    // self-played move drops it; see `Midend.playMoves`.
     m.playMoves([{ type: "strike", i: 0 }]);
     expect(strikeInternals(m).activeHint, "playMoves drops the stored plan").toBeNull();
     // Side effects covered 1; strike 2 solves the board. Re-asking
@@ -1294,8 +1266,7 @@ describe("Midend executeHint plays the stored plan", () => {
     h = harness(c.game);
     h.m.newGame();
     h.m.hint();
-    h.m.undo(); // no-op at pos 0 — use an off-plan move instead
-    h.m.processInput(0, 0, RIGHT_BUTTON); // drops the plan
+    h.m.processInput(0, 0, RIGHT_BUTTON); // off-plan: drops the plan
     expect(h.m.executeHint()).toBeUndefined();
     expect(c.hintCalls()).toBe(2);
   });

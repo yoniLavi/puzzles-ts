@@ -1,10 +1,9 @@
 /**
- * Shared pointer button codes.
- *
- * Button codes mirror `PuzzleButton` in `./types.ts` but are
- * exported as plain `const` values (not an enum) so advisory diff
- * scripts can import them under Node's strip-only TS loader.
+ * Shared pointer and key button codes, and the predicates and cursor helpers
+ * built on them. The codes match `PuzzleButton` in `./types.ts`.
  */
+
+import type { Point } from "./types.ts";
 
 // --- button codes (matching PuzzleButton values) -------------------
 
@@ -27,9 +26,8 @@ export const CURSOR_SELECT2 = 0x020e;
 // --- mouse button class predicates (upstream IS_MOUSE_* macros) ----
 
 // LEFT/MIDDLE/RIGHT are contiguous within each of the down/drag/release
-// triples, so upstream's `IS_MOUSE_*` macros are a range check. Reproduced
-// here so a drag game classifies a (already modifier-stripped) button without
-// re-listing the three constants (27 ports had each written their own copy).
+// triples, so upstream's `IS_MOUSE_*` macros are range checks on an already
+// modifier-stripped button.
 
 /** True for `LEFT_BUTTON` / `MIDDLE_BUTTON` / `RIGHT_BUTTON` (a press). */
 export function isMouseDown(button: number): boolean {
@@ -57,14 +55,12 @@ export const ESCAPE = 27;
 export const DELETE = 127;
 
 /**
- * **"Rub this out"** — clear a cell, delete a typed digit.
+ * **"Rub this out"**: clear a cell, delete a typed digit.
  *
- * Shared because getting it wrong is invisible and has happened seven times.
- * Upstream writes `button == '\b'`, and a faithful transcription is a **key that
- * can never fire**: this frontend maps Backspace to `127`, not `8`. Ascent,
- * Clusters, Sticks and Unruly each shipped an `8`-only test — Ascent's cost a
- * keyboard player any way to correct a typo mid-number — and Pearl and
- * Rectangles the same in their cancel arms.
+ * Shared because getting it wrong is invisible. Upstream writes
+ * `button == '\b'`, and a faithful transcription is a **key that can never
+ * fire**: this frontend maps Backspace to `127`, not `8`, so an `8`-only test
+ * leaves a keyboard player no way to correct a typo.
  *
  * Both codes are accepted: `8` costs nothing and keeps upstream's binding true
  * for any frontend that does send it. The point is that no game decides this
@@ -90,24 +86,22 @@ export function isCancelKey(button: number): boolean {
 // --- the digit keys ------------------------------------------------
 
 /**
- * **"Which digit is this key?"** — `0`–`9` for a digit key, `null` for anything
+ * **"Which digit is this key?"**: `0`–`9` for a digit key, `null` for anything
  * else.
  *
  * One frontend fact, answered here so no game spells the character range
- * again. Measured 2026-09-10, every game that reads a digit key had written it
- * by hand — two ways (`48..57` and `0x30..0x39`), disagreeing about whether it
- * began at `0` or at `1`, with the subtraction repeated at every use. A scan
- * keyed on a helper name would have missed most of them, which is why the
- * guard in `emittable-keys.test.ts` keys on the literal codes instead.
+ * again; hand-written copies disagreed about whether it began at `0` or `1`.
+ * The guard in `emittable-keys.test.ts` keys on the literal codes rather than
+ * on this name, so a hand-written copy is still caught.
  *
  * What this deliberately does **not** answer is the game's own half of the
  * question: the **bound** (`<= w`, `< n`, the cell's region size) and the
- * **meaning of `0`** — a clear in Seismic and Crossing, ten in Guess, sixteen in
- * Bridges, one more typed digit in Ascent. Those differ between games for
+ * **meaning of `0`** (a clear in Seismic and Crossing, ten in Guess, sixteen in
+ * Bridges, one more typed digit in Ascent). Those differ between games for
  * reasons about the puzzle, so each game keeps them beside its call.
  *
  * Modifier bits are looked through, because a numpad digit with Num Lock on
- * arrives as `MOD_NUM_KEYPAD | '7'` and *is* a press of 7 — the keypad is a
+ * arrives as `MOD_NUM_KEYPAD | '7'` and *is* a press of 7: the keypad is a
  * convenience route to the same digit, never a different key
  * (docs/games/input.md § "The numeric keypad never arrives"). A game that gives
  * the **numpad's** digits another meaning — Ascent, Bricks, Cube and Twiddle use
@@ -189,7 +183,7 @@ export function gridCursorMove(
   w: number,
   h: number,
   wrap = false,
-): { x: number; y: number } | null {
+): Point | null {
   const delta = cursorDelta(button);
   if (!delta) return null;
   let nx = x + delta.dx;

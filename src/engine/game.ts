@@ -1,20 +1,16 @@
 /**
- * The `Game` interface every native-TS port implements.
+ * The `Game` interface every game implements: the sole contract between a game
+ * and the engine, since a game never depends on the `Midend`.
  *
- * This is an idiomatic TypeScript rendering of upstream's `struct game`
- * (puzzles/puzzles.h): generic over a game's parameter / state / move /
- * UI / draw-state types, with **immutable** state transitions
- * (`executeMove` returns a new state, never mutates), GC instead of
- * `dup_*`/`free_*`, and union/boolean types instead of integer
- * sentinels. A port depends on this interface only — never on the
- * `Midend` — so the interface is the sole contract between a game and
- * the engine.
+ * An idiomatic TypeScript rendering of upstream's `struct game`
+ * (puzzles/puzzles.h): generic over a game's params / state / move / UI /
+ * draw-state types, with **immutable** state transitions (`executeMove`
+ * returns a new state, never mutates), GC instead of `dup_*`/`free_*`, and
+ * union/boolean types instead of integer sentinels.
  *
- * Optional members model genuinely optional upstream capabilities (a
- * game with no solver omits `solve`, a game with no preferences omits
- * `getPrefs`, …). The midend treats an absent optional member as "this
- * game does not have that capability", which is the correct behavior,
- * not a stub.
+ * An absent optional member means "this game does not have that capability"
+ * (no solver, no `solve`; no preferences, no `prefs`), which the midend treats
+ * as the correct behavior, not a stub.
  */
 
 import type { DifficultyContract } from "./difficulty.ts";
@@ -234,25 +230,20 @@ export interface Game<
    * `detectSecondaryButton` entirely for such a game, and a finger that rests
    * before it drags stays a left press.
    *
-   * Without it, a touch player's press is promoted to `RIGHT_BUTTON` after a
-   * 350 ms hold — and a game that never tests `RIGHT_BUTTON` then simply drops
-   * the whole gesture. That is not a hypothetical: "press, pause to aim, then
-   * drag" *is* a press that stays put, so Pegs' drag died precisely when the
-   * player stopped to think, and a Flip tap held a beat too long did nothing.
-   * Seven games were in that state when `audit-input-mode-parity` swept the
-   * collection (Cube, Fifteen, Filling, Flip, Flood, Pegs, Sokoban).
+   * Without it, a touch press is promoted to `RIGHT_BUTTON` after a 350 ms
+   * hold, and a game that never tests `RIGHT_BUTTON` drops the whole gesture:
+   * "press, pause to aim, then drag" *is* a press that stays put, so Pegs' drag
+   * would die whenever the player stopped to think.
    *
    * **Exactly guarded, so it cannot drift**: `input-parity.test.ts` asserts the
-   * biconditional — a game declares this **iff** it consumes `RIGHT_BUTTON`
+   * biconditional, that a game declares this **iff** it consumes `RIGHT_BUTTON`
    * nowhere on a real board. Do not set it to suppress an affordance you merely
    * dislike; the sweep will convict the declaration on the day the game grows a
    * secondary meaning.
    *
-   * This replaces upstream's `REQUIRE_RBUTTON` (`needsRightButton`), which
-   * eighteen games declared and nothing ever read. It is not that flag
-   * inverted: the third category is real and is the largest — Tracks *uses* the
-   * right button without *needing* it, so inverting `REQUIRE_RBUTTON` would
-   * have suppressed a promotion Tracks handles correctly.
+   * It is not upstream's `REQUIRE_RBUTTON` inverted: a third category exists
+   * and is the largest. Tracks *uses* the right button without *needing* it,
+   * so an inverted `REQUIRE_RBUTTON` would suppress a promotion Tracks handles.
    */
   readonly ignoresSecondaryButton?: boolean;
   /**
@@ -262,27 +253,22 @@ export interface Game<
    * strips `MOD_STYLUS` before `interpretMove` for every other game, so that a
    * plain `button === LEFT_BUTTON` test cannot silently ignore every touch.
    *
-   * This is a deliberate divergence from upstream, where `midend.c` hands the
-   * bit to `interpret_move` and each game is expected to remember to strip it.
-   * That is a footgun, and it had already fired: nine ported games (Flip,
-   * Galaxies, Pegs, Blackbox, Dominosa, Guess, Signpost, Untangle, Inertia)
-   * shipped completely deaf to touch, because comparing the raw button is the
-   * obvious thing to write and it silently fails only on a device the test
-   * suite never uses. Inverting the default makes the dangerous case the one
-   * you have to ask for. Two games ask: Pattern (it cycles a cell's state on
-   * touch, having no right button to cycle with) and Loopy (its stylus mode
-   * cycles line states through a dedicated 3-cycle).
+   * A deliberate divergence from upstream, where `midend.c` hands the bit to
+   * `interpret_move` and each game must remember to strip it. Comparing the raw
+   * button is the obvious thing to write, and it fails only on a device the
+   * test suite never uses, so ports written that way shipped deaf to touch.
+   * Inverting the default makes the dangerous case the one you have to ask
+   * for. Pattern asks (it cycles a cell's state on touch, having no right
+   * button to cycle with), and so does Loopy (its stylus mode cycles line
+   * states through a dedicated 3-cycle).
    */
   readonly wantsStylusModifier?: boolean;
 
-  /** The on-screen keypad this game wants, faithful to upstream
-   * `game_request_keys(params, *nkeys)`. Returns the `{ button, label }`
-   * keys (digits/letters plus a clear key, or a game's bespoke keys like
-   * Undead's Ghost/Vampire/Zombie). It depends on `params` only — the
-   * keypad does not vary with play and the app's key panel reloads only
-   * on param change — so it deliberately takes neither state nor ui.
-   * Absent ⇒ no keypad (the correct behavior for games like Flip that
-   * upstream gave none). */
+  /** The on-screen keypad this game wants (upstream `game_request_keys`): the
+   * `{ button, label }` keys, digits/letters plus a clear key or a game's
+   * bespoke keys like Undead's Ghost/Vampire/Zombie. It depends on `params`
+   * only, since the app's key panel reloads only on a param change, so it
+   * deliberately takes neither state nor ui. Absent ⇒ no keypad. */
   requestKeys?(p: Params): KeyLabel[];
 
   defaultParams(): Params;
@@ -350,10 +336,10 @@ export interface Game<
    * `ds` is the live draw state, **never null and always sized**: the midend
    * creates it and applies `setTileSize` in the same breath (see
    * `Midend.freshDrawState`) and refuses input before there is a board. So
-   * read `ds.tilesize` directly — a `ds?.tilesize ?? PREFERRED_TILE_SIZE`
+   * read `ds.tilesize` directly: a `ds?.tilesize ?? PREFERRED_TILE_SIZE`
    * fallback is not merely inert, it is a *wrong answer* waiting to happen,
    * mapping the pointer at the preferred tile size rather than the one on
-   * screen (`audit-vestigial-contract-surface`; fifty-seven games had one). */
+   * screen. */
   interpretMove(
     s: State,
     ui: Ui,
@@ -384,9 +370,9 @@ export interface Game<
    *
    * `ui` is the live game UI, passed so a hint can honor a player
    * preference that changes how moves behave or how the hint should be
-   * expressed (e.g. Towers' auto-pencil mode, which decides whether the
-   * hint teaches the trivial row/column note eliminations or folds them
-   * into the placement). Optional and ignored by most games. */
+   * expressed (Towers' auto-pencil mode decides whether the hint teaches
+   * the trivial row/column note eliminations or folds them into the
+   * placement). Ignored by most games. */
   hint?(state: State, aux?: string, ui?: Ui): HintResult<Move>;
   /** Classify a player move against the current hint step. The game
    * MAY adjust `step.move` in place on `"onTrack"` (e.g. shrink a
@@ -425,7 +411,7 @@ export interface Game<
    * and the suppression is invisible until the player touches it — at which
    * point nothing happens at all, and there is no way out of hint mode. Subsets'
    * reference aid draws in the hint's overlay space; Crossing's hint takes over
-   * the board's coloring from the selected-run wash. Both shipped that bug.
+   * the board's coloring from the selected-run wash.
    *
    * `() => true` dismisses on every UI change — the simplest rule, and enough
    * when the game has no "follow this by hand" flow to protect. Answering per
@@ -470,12 +456,11 @@ export interface Game<
   /** Render the state as plain text for the share dialog. Returns `undefined`
    * when *these particular* params have no text rendering, which the static
    * `canFormatAsText` flag cannot express: Loopy's text format assumes a square
-   * lattice, so it is available on the square grid type and on none of the
-   * other seventeen (upstream spells this as a separate
-   * `game_can_format_as_text_now(params)` entry point). The midend and the app
-   * already treat an absent rendering as "no text panel", so a game with a
-   * param-dependent format sets `canFormatAsText: true` and returns `undefined`
-   * for the params it cannot render. */
+   * lattice, so it is available on the square grid type only (upstream spells
+   * this as a separate `game_can_format_as_text_now(params)` entry point). The
+   * midend and the app treat an absent rendering as "no text panel", so a game
+   * with a param-dependent format sets `canFormatAsText: true` and returns
+   * `undefined` for the params it cannot render. */
   textFormat?(s: State): string | undefined;
   statusbarText?(s: State, ui: Ui): string;
 
@@ -495,9 +480,7 @@ export interface Game<
    * "Custom type…" dialog and parses back onto a copy of `Params`,
    * validated by this game's own `validateParams`. A plain width/height
    * game declares `paramConfig: dimensionParamConfig()`. Absent ⇒ an empty
-   * custom dialog; every one of the 57 games declares one, and the trap
-   * that made this optional — a new port shipping a blank dialog because
-   * nobody remembered to wire it — is why it should stay that way.
+   * custom dialog, which `custom-params.test.ts` refuses for every game.
    *
    * **It is the field list two other things are derived from**, so what it
    * declares reaches further than the dialog: `difficultyTiers` reads a
@@ -509,20 +492,18 @@ export interface Game<
   paramConfig?: ParamConfigItem<Params>[];
 
   /** How to read and set a difficulty tier on a params object, and how to run
-   * this game's solver capped at one. Declared by a game with difficulty tiers;
-   * absent for the twenty-eight games without them, exactly as a game without a
-   * solver omits `solve`.
+   * this game's solver capped at one. Declared by a game with difficulty tiers,
+   * absent otherwise, as a game without a solver omits `solve`.
    *
-   * **What the tiers are is not here** — the names come off this game's own
+   * **What the tiers are is not here**: the names come off this game's own
    * difficulty `paramConfig` item (`difficultyTiers`), so a tiered game declares
    * its tier list exactly once, where a player picks from it.
    *
    * It exists so that a property *about* tiers can be asserted for every tiered
-   * game at once rather than one game at a time — most of all
-   * cap-monotonicity, which Boats shipped without and which silently broke
-   * Check & Save on every Easy board. See `difficulty.ts` for the contract and
-   * `difficulty-contract.test.ts` for the guards a game is enrolled in the
-   * moment it declares this. */
+   * game at once, above all cap-monotonicity, without which Check & Save
+   * silently breaks on a game's lowest tier. See `difficulty.ts` for the
+   * contract and `difficulty-contract.test.ts` for the guards a game is enrolled
+   * in the moment it declares this. */
   difficulty?: DifficultyContract<Params>;
 
   /** RGB palette (each component 0..1), index 0 is conventionally the
@@ -535,14 +516,12 @@ export interface Game<
   computeSize(p: Params, tileSize: number): Size;
   /** Upstream's `game_set_size`: tell the draw state the chosen tile
    * size so coordinate mapping (`interpretMove`) and `redraw` agree.
-   * The midend calls this after `newDrawState` (at the preferred
-   * size) and again whenever `size()` picks a new tile size. */
+   * The midend calls this right after `newDrawState` and again whenever
+   * `size()` picks a new tile size. */
   setTileSize?(ds: DrawState, tileSize: number): void;
   /** Build the per-game draw state (the tile cache and whatever else `redraw`
-   * needs). Required, not optional: all 57 games have one, the midend has no
-   * sensible behavior without one, and while it *was* optional every game
-   * received a `DrawState | null` and wrote a guard against a null the engine
-   * could not produce (`audit-vestigial-contract-surface`). */
+   * needs). Required, so that a game never receives a null `ds`: the midend
+   * has no sensible behavior without one. */
   newDrawState(s: State): DrawState;
   /** Paint the board. `ds` is never null — see {@link Game.newDrawState}. */
   redraw(

@@ -1,7 +1,7 @@
 /**
- * The native-TS engine: the `Game` interface every port implements,
- * the `Midend` that orchestrates it, the per-game registry that is the
- * runtime hybrid decision point, and the clean save codec.
+ * The engine's barrel: the `Game` interface every game implements, the `Midend`
+ * that orchestrates it, the game registry, the save codec, and a few shared
+ * helpers.
  *
  * See `openspec/specs/ts-engine/spec.md` for the capability contract.
  */

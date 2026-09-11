@@ -1,13 +1,11 @@
 /**
  * Shared builders for a game's on-screen keypad (`Game.requestKeys`).
  *
- * Faithful to upstream `game_request_keys`: upstream returns
- * `label = NULL` for keys whose display text is derived from the button
- * code (the digits, and the `'\b'` clear key) and lets the frontend's
- * `button2label` resolve them. We resolve the label here instead — a
- * digit/letter key carries its own character, and the clear key carries
- * the literal `"Clear"` so the `puzzle-keys` icon map (`Clear →
- * key-clear`) renders the clear icon exactly as the C/WASM frontend did.
+ * Upstream's `game_request_keys` returns `label = NULL` for keys whose text
+ * derives from the button code (the digits and the `'\b'` clear key) and lets
+ * the frontend's `button2label` resolve them. Here the label is resolved up
+ * front: a digit/letter key carries its own character, and the clear key the
+ * literal `"Clear"`, which the `puzzle-keys` icon map renders as the clear icon.
  */
 
 import type { KeyLabel } from "./types.ts";
