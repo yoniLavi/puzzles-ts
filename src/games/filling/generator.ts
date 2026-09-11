@@ -1,9 +1,8 @@
 /**
  * Filling (Fillomino) generator — byte-faithful port of `filling.c`'s
- * `make_board` + `minimize_clue_set`. Faithful means the RNG draw sequence
- * matches upstream exactly (same `shuffle` and `randomUpto` order over the
- * bit-identical `random.ts`), so a generated desc reproduces C's for the
- * same seed.
+ * `make_board` + `minimize_clue_set`: the same `shuffle` and `randomUpto`
+ * draws in the same order, so a desc reproduces C's for the same seed (the
+ * differential checks it).
  *
  * Generation uses a plain mutable `number[]` board (negative sentinels appear
  * transiently in `mergeOnes`), distinct from the immutable game state.
@@ -18,7 +17,7 @@ import { DX, DY, encodeDesc, type FillingParams, makeRegionDsf } from "./state.t
 function maxRegionSize(w: number, h: number): number {
   // The `max(...,3)` is the documented w=h=2 special case (a 2×2 board needs
   // a size-3 region).
-  return Math.min(Math.max(Math.max(w, h), 3), 9);
+  return Math.min(Math.max(w, h, 3), 9);
 }
 
 /** Flood the region of value `n` from `i`, marking cells `-1`; return false
@@ -93,11 +92,11 @@ function mergeOnes(board: number[], w: number, h: number): void {
           break;
         }
       }
-      // Mirror C's loop increment `board[i] = 1` after the final fall-through:
-      // a 1-cell that failed to merge must be left as a 1 (else it stays part
+      // C's loop increment runs once more after the final fall-through: a
+      // 1-cell that failed to merge must be left as a 1 (else it stays part
       // of the neighbor region, overflowing it by one).
-      if (!matched) board[i] = 1;
       if (matched) change = true;
+      else board[i] = 1;
     }
   } while (change);
 }
@@ -108,8 +107,7 @@ function mergeOnes(board: number[], w: number, h: number): void {
 function makeBoard(w: number, h: number, rng: RandomState): number[] {
   const sz = w * h;
   const maxsize = maxRegionSize(w, h);
-  const board: number[] = [];
-  for (let i = 0; i < sz; i++) board[i] = i; // shuffled cell-index list
+  const board = Array.from({ length: sz }, (_, i) => i); // shuffled cell indices
   const dsf = new Dsf(sz);
 
   const attempt = retryLimit("filling: makeBoard");
@@ -169,8 +167,7 @@ function minimizeClueSet(
   rng: RandomState,
 ): void {
   const sz = w * h;
-  const shuf: number[] = [];
-  for (let i = 0; i < sz; i++) shuf[i] = i;
+  const shuf = Array.from({ length: sz }, (_, i) => i);
   shuffle(shuf, rng);
 
   // Region partition computed once from the full board (as upstream).

@@ -1,8 +1,6 @@
 /**
- * Filling (Fillomino) state, params, and desc codec — idiomatic TS port of
- * the state half of `filling.c`. Fill every cell with a number `n` so that
- * each maximal orthogonally-connected region of equal numbers contains
- * exactly `n` cells.
+ * Filling (Fillomino) state, params, and desc codec — the state half of
+ * `filling.c`.
  *
  * A cell holds 0 (EMPTY) or 1..9. `clues[i] != 0` marks an immutable given
  * (shared by reference across a game's states, upstream's refcounted
@@ -56,13 +54,6 @@ export interface FillingUi {
   keydragging: boolean;
 }
 
-/** A player-filled cell whose number contradicts the unique solution
- * (the mistake-checking divergence; surfaced by Check & Save). */
-export interface FillingMistake {
-  x: number;
-  y: number;
-}
-
 // --- params --------------------------------------------------------------
 
 const PRESETS: FillingParams[] = [
@@ -104,15 +95,10 @@ export function validateParams(p: FillingParams, _full: boolean): string | null 
 // Run-length: a lowercase letter 'a'..'z' advances past a run of 1..26 empty
 // cells; a digit places a clue of that value. The decoded area is exactly w·h.
 
-/** Greatest clue value upstream's `validate_desc` admits (`max(max(w,h),3)`);
- * actual clues never exceed 9, but we mirror the C bound faithfully. */
-function maxClueValue(p: FillingParams): number {
-  return Math.max(Math.max(p.w, p.h), 3);
-}
-
 export function validateDesc(p: FillingParams, desc: string): string | null {
   const sz = p.w * p.h;
-  const m = maxClueValue(p);
+  // Upstream `validate_desc`'s bound on a clue; generated clues never exceed 9.
+  const m = Math.max(p.w, p.h, 3);
   let area = 0;
   for (const tok of scanRunLength(desc)) {
     if ("blanks" in tok) {

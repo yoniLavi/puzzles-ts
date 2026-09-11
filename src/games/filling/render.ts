@@ -1,14 +1,13 @@
 /**
- * Filling (Fillomino) rendering — faithful port of `game_redraw` /
- * `draw_grid` / `draw_square` in filling.c. Per-cell `Int32Array` cache keyed
- * on a packed `(value | flags)` word; region borders, completed/overfull/
- * boxed-in error shades, selection and cursor highlights recomputed each
- * frame from a fresh region DSF. Plus the fork's mistake overlay (Check &
- * Save), an inset error outline distinct from the live overfull shade.
+ * Filling (Fillomino) rendering — port of `game_redraw` / `draw_grid` /
+ * `draw_square` in filling.c. Per-cell `Int32Array` cache keyed on a packed
+ * `(value | flags)` word; region borders, completed/overfull/boxed-in error
+ * shades, selection and cursor highlights recomputed each frame from a fresh
+ * region DSF. Plus the fork's mistake overlay (Check & Save), an inset error
+ * outline distinct from the live overfull shade, and its hint marks.
  *
- * Palette mirrors the C color enum index-for-index; `COL_BACKGROUND` is the
- * frontend default background, as in C (Filling has no near-white tiles, so
- * no `mkhighlightSpecific` is needed).
+ * `COL_BACKGROUND` is the frontend default background, as in C (Filling has
+ * no near-white tiles, so no `mkhighlightSpecific` is needed).
  */
 
 import { PURPLE } from "../../engine/color/colors.ts";
@@ -23,22 +22,21 @@ import {
 } from "../../engine/color/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
-import type { Color, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { FillingHint } from "./index.ts";
 import {
   DX,
   DY,
-  type FillingMistake,
   type FillingMove,
   type FillingState,
+  type FillingUi,
   makeRegionDsf,
 } from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 32;
 export const FLASH_TIME = 0.4;
 
-// --- palette (mirrors the filling.c color enum index-for-index) ---------
+// --- palette (the filling.c color enum, then the fork's two hint roles) ---
 export const COL_BACKGROUND = 0;
 export const COL_GRID = 1; // grid lines and clue digits (COL_CLUE = COL_GRID)
 export const COL_HIGHLIGHT = 2; // selected-cell background
@@ -61,22 +59,15 @@ export function colors(defaultBackground: Color): Color[] {
   // Not `CURSOR`: green is the player's own digits.
   out[COL_CURSOR] = PURPLE;
   out[COL_HINT] = HINT_ACTION;
-  // Filling's evidence is **outlined rather than washed**, and it is the game
-  // where that call is least obvious, so here is the reason.
-  //
-  // Filling is the strongest case *for* a shade in the whole collection: its
-  // premise is a **number**, and a digit reads perfectly well on a pale fill
-  // (3.41:1 in light, 4.04:1 in dark against the evidence wash). That is true,
-  // and it is not the binding constraint. The wash also has to be dark enough
-  // for a *derived* foreground to survive on it, and at that lightness it
-  // measures **1.15:1 against its own board in dark mode** — legible content on
-  // a tint nobody can see. The two requirements move in opposite directions
-  // along one axis, so a wash under content loses whichever way it is tuned.
-  //
-  // An outline is not on that axis at all: it is read *against* the board rather
-  // than through, so it can take teal's **bold** step — the one defined as "dark
-  // in light mode, light in dark mode", standing off the board by a similar
-  // margin in both schemes where the base sits at one lightness under either.
+  // The evidence is **outlined rather than washed**, though Filling is the
+  // strongest case for a wash in the collection: its premise is a digit, which
+  // reads well on a pale fill (3.41:1 in light, 4.04:1 in dark). But the wash
+  // must also be dark enough for a *derived* foreground to survive on it, and
+  // at that lightness it measures **1.15:1 against its own board in dark
+  // mode**. The two pull opposite ways along one axis, so a wash under content
+  // loses however it is tuned. An outline is read *against* the board, so it
+  // can take teal's **bold** step ("dark in light mode, light in dark mode"),
+  // standing off the board by a similar margin in both schemes.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
@@ -97,8 +88,8 @@ const ERROR_BG = 0x4000;
 const USER_COL = 0x8000;
 const CURSOR_SQ = 0x10000;
 const FF_MISTAKE = 0x20000; // fork's Check & Save overlay (no upstream analog)
-const HINT_TARGET = 0x40000; // the cell the displayed hint points at
-const HINT_AREA = 0x80000; // an evidence cell shaded light blue
+const HINT_TARGET = 0x40000; // a cell the displayed hint points at
+const HINT_AREA = 0x80000; // one of the hint's evidence cells
 
 // --- geometry (upstream BORDER = TILE_SIZE/2, BORDER_WIDTH = max(TS/32,1)) -
 const border = (ts: number) => Math.floor(ts / 2);
@@ -206,30 +197,22 @@ function drawSquare(
     );
   }
 
-  // The hint leaves the target cell empty with only a mild highlight, so it
-  // reads as a call to action ("input a number here"), not a filled answer.
-
   // Bold region borders.
   if (flags & BORDER_L)
     dr.drawRect({ x: px + 1, y: py + 1, w: bw, h: ts - 1 }, COL_GRID);
   if (flags & BORDER_U)
     dr.drawRect({ x: px + 1, y: py + 1, w: ts - 1, h: bw }, COL_GRID);
-  if (flags & BORDER_R) {
+  if (flags & BORDER_R)
     dr.drawRect({ x: px + ts - bw, y: py + 1, w: bw, h: ts - 1 }, COL_GRID);
-  }
-  if (flags & BORDER_D) {
+  if (flags & BORDER_D)
     dr.drawRect({ x: px + 1, y: py + ts - bw, w: ts - 1, h: bw }, COL_GRID);
-  }
   if (flags & BORDER_UL) dr.drawRect({ x: px + 1, y: py + 1, w: bw, h: bw }, COL_GRID);
-  if (flags & BORDER_UR) {
+  if (flags & BORDER_UR)
     dr.drawRect({ x: px + ts - bw, y: py + 1, w: bw, h: bw }, COL_GRID);
-  }
-  if (flags & BORDER_DL) {
+  if (flags & BORDER_DL)
     dr.drawRect({ x: px + 1, y: py + ts - bw, w: bw, h: bw }, COL_GRID);
-  }
-  if (flags & BORDER_DR) {
+  if (flags & BORDER_DR)
     dr.drawRect({ x: px + ts - bw, y: py + ts - bw, w: bw, h: bw }, COL_GRID);
-  }
 
   // Mistake overlay (Check & Save): an inset error outline.
   if (flags & FF_MISTAKE) {
@@ -267,14 +250,11 @@ export function redrawFilling(
   _prev: FillingState | null,
   state: FillingState,
   _dir: number,
-  ui: {
-    sel: Set<number> | null;
-    cursor: GridCursor;
-  },
+  ui: FillingUi,
   _animTime: number,
   flashTime: number,
   hint?: HintStep<FillingMove, FillingHint>,
-  mistakes?: readonly FillingMistake[],
+  mistakes?: readonly Point[],
 ): void {
   const ts = ds.tilesize;
   const { w, h, board, clues } = state;
@@ -307,12 +287,8 @@ export function redrawFilling(
     mistakes && mistakes.length > 0
       ? new Set(mistakes.map((m) => m.y * w + m.x))
       : null;
-
-  // The displayed hint step: the forced target cells (a mild "fill here"
-  // highlight) and the deduction's evidence cells (shaded light blue).
-  const hl = hint?.highlights;
-  const hintTargets = hl && hl.cells.length > 0 ? new Set(hl.cells) : null;
-  const hintArea = hl && hl.area.length > 0 ? new Set(hl.area) : null;
+  const hintTargets = new Set(hint?.highlights?.cells);
+  const hintArea = new Set(hint?.highlights?.area);
 
   // Border between two differing cells when both are filled, or either's
   // region is complete/overfull. Bit 1 = border to the right, bit 2 = below.
@@ -376,12 +352,6 @@ export function redrawFilling(
       if (ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y)
         flags |= CURSOR_SQ;
 
-      // Outer-edge borders are independent of the interior border flag.
-      if (x === 0) flags |= BORDER_L;
-      if (y === 0) flags |= BORDER_U;
-      if (x === w - 1) flags |= BORDER_R;
-      if (y === h - 1) flags |= BORDER_D;
-
       if (x === 0 || borderScratch[i - 1] & 1) flags |= BORDER_L;
       if (y === 0 || borderScratch[i - w] & 2) flags |= BORDER_U;
       if (x === w - 1 || borderScratch[i] & 1) flags |= BORDER_R;
@@ -413,8 +383,8 @@ export function redrawFilling(
       if (mistakeSet?.has(i)) flags |= FF_MISTAKE;
       // Independent bits, not an either/or: a cell can be both the acted-on cell
       // and part of the evidence, and it then carries both marks.
-      if (hintTargets?.has(i)) flags |= HINT_TARGET;
-      if (hintArea?.has(i)) flags |= HINT_AREA;
+      if (hintTargets.has(i)) flags |= HINT_TARGET;
+      if (hintArea.has(i)) flags |= HINT_AREA;
 
       const word = v | (flags << VALUE_BITS);
       if (ds.cache[i] !== word) {
@@ -434,11 +404,11 @@ export function redrawFilling(
 function paintHintMarks(
   dr: GameDrawing,
   ds: FillingDrawState,
-  targets: ReadonlySet<number> | null,
-  area: ReadonlySet<number> | null,
+  targets: ReadonlySet<number>,
+  area: ReadonlySet<number>,
 ): void {
   const cellAt = (i: number): MarkCell => ({ x: i % ds.w, y: (i / ds.w) | 0 });
-  ds.marks.paint(dr, [...(targets ?? [])].map(cellAt), [...(area ?? [])].map(cellAt), {
+  ds.marks.paint(dr, [...targets].map(cellAt), [...area].map(cellAt), {
     band: (x, y) => markBand(ds, x, y),
     targetColor: COL_HINT,
     evidenceColor: COL_HINT_CELL,

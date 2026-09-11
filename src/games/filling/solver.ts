@@ -1,13 +1,11 @@
 /**
- * Filling (Fillomino) solver — idiomatic TS port of `filling.c`'s `solver`
- * and its four `learn_*` deductions.
+ * Filling (Fillomino) solver — port of `filling.c`'s `solver` and its four
+ * `learn_*` deductions, iterated to fixpoint.
  *
  * Every deduction only fills an *empty* cell with a *forced* value, so the
  * solver is **confluent**: the final filled set is independent of the order
- * the techniques fire. We therefore port the four techniques idiomatically
- * (no `connected[]` cyclic-linked-list mirroring) and iterate to fixpoint;
- * the solved/stuck verdict — which the generator's clue minimization depends
- * on — is identical to C's because both reach the same fixpoint.
+ * the techniques fire, and the solved/stuck verdict the generator's clue
+ * minimization depends on is C's because both reach the same fixpoint.
  */
 import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
@@ -116,10 +114,10 @@ class FillingSolver {
     }
   }
 
-  /** Fill empty cell `t` with the value of filled cell `f`, merging. */
-  private expand(t: number, f: number): void {
-    this.board[t] = this.board[f];
-    this.filledSquare(t);
+  /** Fill empty cell `i` with `n`, merging it into equal neighbors. */
+  private fillCell(i: number, n: number): void {
+    this.board[i] = n;
+    this.filledSquare(i);
     this.nempty--;
   }
 
@@ -207,15 +205,10 @@ class FillingSolver {
    * over empty cells — every cell it could ever grow to include. A forced
    * cell is necessarily among these, so this bounds the capacity check. */
   private regionReachableEmpties(root: number, n: number): number[] {
-    const { w, h, board, dsf, sz } = this;
+    const { w, h, board, sz } = this;
     const visited = new Uint8Array(sz);
-    const stack: number[] = [];
-    for (let c = 0; c < sz; c++) {
-      if (board[c] === n && dsf.canonify(c) === root) {
-        stack.push(c);
-        visited[c] = 1;
-      }
-    }
+    const stack = this.regionCells(root, n);
+    for (const c of stack) visited[c] = 1;
     const empties: number[] = [];
     while (stack.length > 0) {
       const c = stack.pop() as number;
@@ -281,8 +274,7 @@ class FillingSolver {
       if (dsf.size(i) === board[i]) continue; // already complete
       const region = this.regionCells(i, board[i]);
       const targets = new Set<number>();
-      let bail = false;
-      for (const c of region) {
+      scan: for (const c of region) {
         const x = c % w;
         const y = (c / w) | 0;
         for (let k = 0; k < 4; k++) {
@@ -293,16 +285,12 @@ class FillingSolver {
           if (board[idx] !== 0 || targets.has(idx)) continue;
           if (this.expandsize(idx, board[i]) > board[i]) continue;
           targets.add(idx);
-          if (targets.size > 1) {
-            bail = true;
-            break;
-          }
+          if (targets.size > 1) break scan;
         }
-        if (bail) break;
       }
-      if (bail || targets.size !== 1) continue;
-      const target = targets.values().next().value as number;
-      this.expand(target, i);
+      if (targets.size !== 1) continue;
+      const [target] = targets;
+      this.fillCell(target, board[i]);
       this.rec?.(target, board[i], "blocked", region);
       learn = true;
     }
@@ -334,9 +322,9 @@ class FillingSolver {
         }
         if (dsf.size(idx) === board[idx]) continue; // region complete
         if (this.checkCapacity(idx, i)) continue; // can still complete without i
-        const region = this.regionCells(dsf.canonify(idx), board[idx]);
         const n = board[idx];
-        this.expand(i, idx);
+        const region = this.regionCells(dsf.canonify(idx), n);
+        this.fillCell(i, n);
         this.rec?.(i, n, "capacity", region);
         learn = true;
         expanded = true;
@@ -344,8 +332,7 @@ class FillingSolver {
       }
       if (!expanded && one) {
         const neighbors = this.filledNeighbors(i);
-        board[i] = 1;
-        this.nempty--;
+        this.fillCell(i, 1); // no neighbor is a 1, so nothing merges
         this.rec?.(i, 1, "lonely", neighbors);
         learn = true;
       }
@@ -380,11 +367,9 @@ class FillingSolver {
         } while (k !== i);
         if (k === i) continue; // not within range (or only `i` is — the quirk)
         if (this.checkCapacity(i, j)) continue;
-        const region = this.regionCells(i, board[i]);
         const n = board[i];
-        board[j] = board[i];
-        this.filledSquare(j);
-        this.nempty--;
+        const region = this.regionCells(i, n);
+        this.fillCell(j, n);
         this.rec?.(j, n, "capacity", region);
         learn = true;
       }
@@ -465,45 +450,21 @@ class FillingSolver {
     // A cell with a single possible number is forced.
     for (let i = 0; i < sz; i++) {
       const mask = bm[i];
-      if (mask && !(mask & (mask - 1))) {
-        let val = mask;
-        let n = 0;
-        if (val >> 8) {
-          val >>= 8;
-          n += 8;
-        }
-        if (val >> 4) {
-          val >>= 4;
-          n += 4;
-        }
-        if (val >> 2) {
-          val >>= 2;
-          n += 2;
-        }
-        if (val >> 1) {
-          val >>= 1;
-          n += 1;
-        }
-        if (board[i] === 0) {
-          const neighbors = this.filledNeighbors(i);
-          board[i] = n;
-          this.filledSquare(i);
-          this.nempty--;
-          this.rec?.(i, n, "bitmap", neighbors);
-          learn = true;
-        }
-      }
+      if (board[i] !== 0 || !mask || mask & (mask - 1)) continue;
+      const n = 31 - Math.clz32(mask); // the one set bit
+      const neighbors = this.filledNeighbors(i);
+      this.fillCell(i, n);
+      this.rec?.(i, n, "bitmap", neighbors);
+      learn = true;
     }
 
     return learn;
   }
 
   run(): void {
-    // Guard the hint/recording path against a non-terminating fixpoint; the
-    // generator (no `rec`) runs unguarded and byte-for-byte unchanged.
+    // Only the hint path (with `rec`) is budgeted; the generator runs unguarded.
     const budget = this.rec ? stepBudget("filling hint") : undefined;
-    // Four techniques, easiest first, restart on the first that fires — stop
-    // once every cell is filled. (Shared restart-on-first-firing ladder.)
+    // Easiest first, restarting after any firing, until every cell is filled.
     // Filling has no difficulty tiers, so every technique sits on tier 0 and
     // the reported grade is unused — the ladder is an *order*, not a grading.
     runDeductionFixpoint({

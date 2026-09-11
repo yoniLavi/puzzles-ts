@@ -9,10 +9,8 @@
  *   2. the TS solver uniquely solves the C-recorded board to a valid full
  *      Fillomino solution (every region's size equals its number).
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/filling-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C harness that
+ * recorded it is gone (see `engine/testing/differential.ts`).
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

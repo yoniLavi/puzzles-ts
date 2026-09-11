@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
-import { LEFT_BUTTON } from "../../engine/pointer.ts";
+import { LEFT_BUTTON, LEFT_DRAG } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
@@ -131,13 +131,7 @@ describe("filling moves + selection", () => {
     const ts = fillingGame.preferredTileSize ?? 32;
     const cx = (i: number) => Math.floor(ts / 2) + i * ts + Math.floor(ts / 2);
     fillingGame.interpretMove(st, ui, ds, { x: cx(1), y: cx(0) }, LEFT_BUTTON);
-    fillingGame.interpretMove(
-      st,
-      ui,
-      ds,
-      { x: cx(2), y: cx(0) },
-      0x0203 /* LEFT_DRAG */,
-    );
+    fillingGame.interpretMove(st, ui, ds, { x: cx(2), y: cx(0) }, LEFT_DRAG);
     expect(ui.sel && [...ui.sel].sort()).toEqual([1, 2]);
     const move = fillingGame.interpretMove(st, ui, ds, { x: 0, y: 0 }, 0x32 /* '2' */);
     expect(move).toEqual({ type: "set", cells: [1, 2], value: 2 });

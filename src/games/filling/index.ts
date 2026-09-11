@@ -1,12 +1,11 @@
 /**
- * Filling (Fillomino) — native TS port of `filling.c`. Fill every cell with a
- * number `n` so that each maximal orthogonally-connected region of equal
- * numbers contains exactly `n` cells.
+ * Filling (Fillomino) — port of `filling.c`. Fill every cell with a number
+ * `n` so that each maximal orthogonally-connected region of equal numbers
+ * contains exactly `n` cells.
  *
  * Input is selection-based: left-click / left-drag (or the keyboard cursor
  * with multi-select) build a selection, then a digit key fills every selected
- * non-clue cell. Read the docs/games/ guides and the Galaxies
- * port first.
+ * non-clue cell.
  */
 
 import { winFlash } from "../../engine/flash.ts";
@@ -34,9 +33,8 @@ import {
   newCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, KeyLabel, Point, Size } from "../../engine/types.ts";
+import type { KeyLabel, Point, Size } from "../../engine/types.ts";
 import { newFillingDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -54,7 +52,6 @@ import {
   defaultParams,
   encodeParams,
   executeMove,
-  type FillingMistake,
   type FillingMove,
   type FillingParams,
   type FillingState,
@@ -82,10 +79,10 @@ function changedState(
   ui.keydragging = false;
 }
 
-/** Add the cursor cell to the selection (if it isn't a clue). */
-function selectCursor(ui: FillingUi, state: FillingState): void {
+/** Add cell `(x, y)` to the selection (if it isn't a clue). */
+function selectCell(ui: FillingUi, state: FillingState, x: number, y: number): void {
   if (!ui.sel) ui.sel = new Set();
-  const i = ui.cursor.y * state.w + ui.cursor.x;
+  const i = y * state.w + x;
   if (!state.clues[i]) ui.sel.add(i);
 }
 
@@ -98,18 +95,13 @@ function interpretMove(
 ): FillingMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w, h, clues, board } = state;
-  const sz = w * h;
   const ts = ds.tilesize;
-  const b = Math.floor(ts / 2);
-  const tx = Math.floor((p.x + ts - b) / ts) - 1;
-  const ty = Math.floor((p.y + ts - b) / ts) - 1;
+  const tx = Math.floor((p.x - Math.floor(ts / 2)) / ts);
+  const ty = Math.floor((p.y - Math.floor(ts / 2)) / ts);
 
   if (button === LEFT_BUTTON || button === LEFT_DRAG) {
     if (button === LEFT_BUTTON) ui.sel = null;
-    if (tx >= 0 && tx < w && ty >= 0 && ty < h) {
-      if (!ui.sel) ui.sel = new Set();
-      if (!clues[ty * w + tx]) ui.sel.add(ty * w + tx);
-    }
+    if (tx >= 0 && tx < w && ty >= 0 && ty < h) selectCell(ui, state, tx, ty);
     ui.cursor.visible = false;
     return UI_UPDATE;
   }
@@ -121,7 +113,7 @@ function interpretMove(
       ui.cursor.x = moved.x;
       ui.cursor.y = moved.y;
     }
-    if (ui.keydragging) selectCursor(ui, state);
+    if (ui.keydragging) selectCell(ui, state, ui.cursor.x, ui.cursor.y);
     return UI_UPDATE;
   }
 
@@ -131,7 +123,7 @@ function interpretMove(
       return UI_UPDATE;
     }
     ui.keydragging = !ui.keydragging;
-    if (ui.keydragging) selectCursor(ui, state);
+    if (ui.keydragging) selectCell(ui, state, ui.cursor.x, ui.cursor.y);
     return UI_UPDATE;
   }
 
@@ -164,7 +156,7 @@ function interpretMove(
   ui.keydragging = false;
 
   const cells: number[] = [];
-  for (let i = 0; i < sz; i++) {
+  for (let i = 0; i < w * h; i++) {
     const targeted =
       (ui.sel?.has(i) ?? false) ||
       (!ui.sel && ui.cursor.visible && ui.cursor.y * w + ui.cursor.x === i);
@@ -184,21 +176,18 @@ function solve(orig: FillingState): SolveResult<FillingMove> {
   const { w, h, clues } = orig;
   const { solved, board } = solveFilling(clues, w, h);
   if (!solved) return { ok: false, error: "Sorry, I couldn't find a solution" };
-  let s = "";
-  for (let i = 0; i < w * h; i++) s += String(board[i]);
-  return { ok: true, move: { type: "solve", board: s } };
+  return { ok: true, move: { type: "solve", board: board.join("") } };
 }
 
 /** Re-solve from the immutable clues and flag every player-filled cell whose
  * number contradicts the unique solution (the Check & Save divergence). */
-function findMistakes(state: FillingState): readonly FillingMistake[] {
+function findMistakes(state: FillingState): readonly Point[] {
   const { w, h, board, clues } = state;
   const { solved, board: solution } = solveFilling(clues, w, h);
   if (!solved) return [];
-  const out: FillingMistake[] = [];
+  const out: Point[] = [];
   for (let i = 0; i < w * h; i++) {
-    if (clues[i] !== 0) continue;
-    if (board[i] !== 0 && board[i] !== solution[i]) {
+    if (clues[i] === 0 && board[i] !== 0 && board[i] !== solution[i]) {
       out.push({ x: i % w, y: (i / w) | 0 });
     }
   }
@@ -208,17 +197,12 @@ function findMistakes(state: FillingState): readonly FillingMistake[] {
 // --- hint ------------------------------------------------------------------
 
 /** Highlight data for a Filling hint step. `cells` are the empty squares the
- * deduction forces (one *or several* — a single firing usually pins a group);
- * each gets a mild "fill here" highlight with **no digit**, so it reads as a
- * call to action rather than a filled-in answer (the value is read off the
- * narration — "the region of N", "a 1"). `value` is the forced number, kept
- * for `hintKeepTrack` (not rendered). `area` is the deduction's evidence to
- * shade light-blue — the region it reasons about, or the neighbors that pin a
- * lonely / eliminated cell — so a beginner can *see* the reasoning, not just
- * the conclusion (the Palisade region-highlight convention). The evidence
- * cells are filled, but a light fill leaves their digits readable, so Filling
- * shades rather than rings (unlike Unruly, whose premise is a tile *color* a
- * fill would hide). */
+ * deduction forces (a single firing usually pins a group), ringed with no
+ * digit drawn: the narration names the value ("the region of N", "a 1").
+ * `value` is the forced number, read by `hintKeepTrack` and never drawn.
+ * `area` is the deduction's evidence — the region it reasons about, or the
+ * neighbors that pin a lonely or eliminated cell — outlined so the player
+ * sees the reasoning, not just the conclusion. */
 export interface FillingHint {
   cells: number[];
   value: number;
@@ -246,9 +230,7 @@ function hint(state: FillingState): HintResult<FillingMove, FillingHint> {
   const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
   if (refusal) return refusal;
   const plan = deduceHintPlan(state.board, state.w, state.h);
-  if (plan.length === 0) {
-    return { ok: false, error: DEDUCTION_EXHAUSTED };
-  }
+  if (plan.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
   const steps: HintStep<FillingMove, FillingHint>[] = plan.map((m) => ({
     move: { type: "set", cells: m.cells, value: m.value },
     explanation: narrate(m.reason, m.cells.length),
@@ -269,8 +251,7 @@ function hintKeepTrack(
 ): HintTrackVerdict {
   if (m.type !== "set") return "off";
   const t = step.highlights;
-  if (!t) return "off";
-  if (m.value !== t.value) return "off";
+  if (!t || m.value !== t.value) return "off";
   if (!m.cells.every((c) => t.cells.includes(c))) return "off"; // touched a non-target
   const filled = new Set(m.cells);
   const remaining = t.cells.filter((c) => !filled.has(c));
@@ -282,22 +263,13 @@ function hintKeepTrack(
   return "onTrack";
 }
 
-function flashLength(
-  oldState: FillingState,
-  newState_: FillingState,
-  _dir: number,
-  _ui: FillingUi,
-): number {
-  return winFlash(oldState, newState_, FLASH_TIME);
-}
-
 export const fillingGame: Game<
   FillingParams,
   FillingState,
   FillingMove,
   FillingUi,
   FillingDrawState,
-  FillingMistake
+  Point
 > = {
   id: "filling",
   wantsStatusbar: false,
@@ -305,8 +277,8 @@ export const fillingGame: Game<
   canSolve: true,
   canFormatAsText: true,
   // Selection is a left press or a left drag across a run of cells, and the
-  // secondary button has no meaning — so a held press must not be promoted
-  // into one, which would have killed the drag mid-gesture.
+  // secondary button has no meaning, so a held press must not be promoted
+  // into one: that would kill the drag mid-gesture.
   ignoresSecondaryButton: true,
 
   defaultParams,
@@ -316,7 +288,7 @@ export const fillingGame: Game<
   validateParams,
   paramConfig,
 
-  newDesc: (p: FillingParams, rng: RandomState) => newFillingDesc(p, rng),
+  newDesc: newFillingDesc,
   validateDesc,
   newState,
   newUi,
@@ -335,7 +307,7 @@ export const fillingGame: Game<
 
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: FillingParams, ts: number): Size => computeSize(p.w, p.h, ts),
   setTileSize: (ds, ts) => {
@@ -344,7 +316,7 @@ export const fillingGame: Game<
   newDrawState,
   redraw: redrawFilling,
 
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(fillingGame);
