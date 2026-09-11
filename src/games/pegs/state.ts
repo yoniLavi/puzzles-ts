@@ -1,12 +1,6 @@
 /**
  * Pegs' data model: the grid vocabulary, params and presets, the desc codec's
  * validation half, and the state/ui constructors.
- *
- * The grid cell values live here rather than in `render.ts`, where they sat
- * briefly while Pegs had no `state.ts`: `render.ts` must import no *value* from
- * `index.ts` or the two form a runtime import cycle
- * (`module-layering.test.ts`). With a state module they simply belong here, and
- * both of the others import them from it.
  */
 
 import { rejectMove } from "../../engine/assert-never.ts";
@@ -26,8 +20,10 @@ export const TYPE_CROSS = 0;
 export const TYPE_OCTAGON = 1;
 export const TYPE_RANDOM = 2;
 
-const BOARD_TYPE_NAMES = ["Cross", "Octagon", "Random"] as const;
-const BOARD_TYPE_LOWER = ["cross", "octagon", "random"] as const;
+/** Indexed by board type. */
+export const BOARD_TYPE_NAMES = ["Cross", "Octagon", "Random"] as const;
+/** The params string's board-type words. */
+const BOARD_TYPE_LOWER = BOARD_TYPE_NAMES.map((name) => name.toLowerCase());
 
 // --- types -----------------------------------------------------------
 
@@ -55,7 +51,6 @@ export interface PegsUi {
   /** Pixel coords of current drag position. */
   dx: number;
   dy: number;
-  /** Keyboard cursor position. */
   cursor: GridCursor;
   /** When true, next cursor-move attempts a jump. */
   curJumping: boolean;
@@ -85,11 +80,10 @@ export function presets() {
   return {
     title: "Type",
     submenu: PEGS_PRESETS.map((p) => {
-      let name = BOARD_TYPE_NAMES[p.type];
-      if (p.type === TYPE_CROSS || p.type === TYPE_RANDOM) {
-        name += ` ${p.w}×${p.h}`;
-      }
-      return { title: name, params: p };
+      // Octagon comes in one size only, so its title names none.
+      const name = BOARD_TYPE_NAMES[p.type];
+      const title = p.type === TYPE_OCTAGON ? name : `${name} ${p.w}×${p.h}`;
+      return { title, params: p };
     }),
   };
 }
@@ -101,19 +95,10 @@ export function encodeParams(p: PegsParams, full: boolean): string {
 }
 
 export function decodeParams(s: string): PegsParams {
-  // `WxH`-or-square dimension prefix via the shared engine helper; the
-  // old `indexOf("x")` + slice mis-sliced a bare square form ("7" → w=7,
-  // h=undefined). `next` is the index of the trailing board-type word.
+  // `next` indexes the board-type word after the dimensions.
   const { w, h, next } = parseDimensions(s, 0);
-  const rest = s.slice(next);
-  let type = TYPE_CROSS;
-  for (let i = 0; i < BOARD_TYPE_LOWER.length; i++) {
-    if (rest === BOARD_TYPE_LOWER[i]) {
-      type = i;
-      break;
-    }
-  }
-  return { w, h, type };
+  const type = BOARD_TYPE_LOWER.indexOf(s.slice(next));
+  return { w, h, type: type < 0 ? TYPE_CROSS : type };
 }
 
 export function validateParams(p: PegsParams, full: boolean): string | null {
@@ -127,23 +112,13 @@ export function validateParams(p: PegsParams, full: boolean): string | null {
     return "Width times height must not be unreasonably large";
   }
   if (full && p.type === TYPE_CROSS) {
-    const valid =
-      (p.w === 9 && p.h === 5) ||
-      (p.w === 5 && p.h === 9) ||
-      (p.w === 9 && p.h === 9) ||
-      (p.w === 7 && p.h === 5) ||
-      (p.w === 5 && p.h === 7) ||
-      (p.w === 9 && p.h === 7) ||
-      (p.w === 7 && p.h === 9) ||
-      (p.w === 7 && p.h === 7);
-    if (!valid) {
+    const side = (n: number) => n === 5 || n === 7 || n === 9;
+    if (!side(p.w) || !side(p.h) || (p.w === 5 && p.h === 5)) {
       return "This board type is only supported at 5×7, 5×9, 7×7, 7×9, and 9×9";
     }
   }
-  if (full && p.type === TYPE_OCTAGON) {
-    if (p.w !== 7 || p.h !== 7) {
-      return "This board type is only supported at 7×7";
-    }
+  if (full && p.type === TYPE_OCTAGON && (p.w !== 7 || p.h !== 7)) {
+    return "This board type is only supported at 7×7";
   }
   return null;
 }
@@ -178,31 +153,16 @@ export function newState(p: PegsParams, desc: string): PegsState {
 }
 
 export function newUi(state: PegsState): PegsUi {
-  // Place cursor on the first peg or hole.
-  for (let y = 0; y < state.h; y++) {
-    for (let x = 0; x < state.w; x++) {
-      const v = state.grid[y * state.w + x];
-      if (v === GRID_PEG || v === GRID_HOLE) {
-        return {
-          dragging: false,
-          sx: 0,
-          sy: 0,
-          dx: 0,
-          dy: 0,
-          cursor: newCursor(x, y),
-          curJumping: false,
-        };
-      }
-    }
-  }
-  // Should never happen (valid desc always has pegs/holes).
+  // The cursor starts on the first playable cell, which a valid desc has.
+  const first = state.grid.findIndex((v) => v !== GRID_OBST);
+  const i = Math.max(0, first);
   return {
     dragging: false,
     sx: 0,
     sy: 0,
     dx: 0,
     dy: 0,
-    cursor: newCursor(),
+    cursor: newCursor(i % state.w, Math.floor(i / state.w)),
     curJumping: false,
   };
 }
@@ -236,10 +196,9 @@ export function serializeMove(m: PegsMove): unknown {
 export function deserializeMove(raw: unknown): PegsMove {
   const s = String(raw);
   const match = s.match(/^(-?\d+),(-?\d+)-(-?\d+),(-?\d+)$/);
-  // Pegs is the one game that parses its moves at the save boundary, so this is
-  // where a foreign move is caught — before `executeMove` ever sees it. Same
-  // message shape as every other game's refusal, and `raw` rather than `s`,
-  // which renders an object as the useless "[object Object]".
+  // Pegs parses its moves at the save boundary, so a foreign move is caught
+  // here, before `executeMove` sees it. `raw` rather than `s`, which renders
+  // an object as the useless "[object Object]".
   if (!match) rejectMove(raw, "pegs: deserializeMove");
   return {
     type: "jump",

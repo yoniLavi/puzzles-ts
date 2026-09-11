@@ -27,9 +27,9 @@ import {
 
 export const PREFERRED_TILE_SIZE = 33;
 
-/** Draw-state overlay: cursor ring on the cell. */
+/** Added to a cell's value in the tile cache: the keyboard cursor is on the
+ * cell, or is on it holding the peg picked up to jump. */
 const GRID_CURSOR = 10;
-/** Draw-state overlay: jumping-mode highlight on the cell. */
 const GRID_JUMPING = 20;
 
 // --- color indices --------------------------------------------------
@@ -53,16 +53,12 @@ export interface PegsDrawState {
   dragging: boolean;
   dragX: number;
   dragY: number;
-  w: number;
-  h: number;
   /** Per-tile cache of last-drawn cell value (including cursor/jumping overlays). */
   grid: Uint8Array;
   started: boolean;
   bgColor: number;
 }
 // --- coordinate helpers ----------------------------------------------
-
-const highlightWidth = raisedBevelWidth;
 
 function border(ts: number): number {
   return Math.floor(ts / 2);
@@ -124,8 +120,6 @@ export function newDrawState(s: PegsState): PegsDrawState {
     dragging: false,
     dragX: 0,
     dragY: 0,
-    w: s.w,
-    h: s.h,
     grid: new Uint8Array(s.w * s.h).fill(255),
     started: false,
     bgColor: -1,
@@ -193,7 +187,7 @@ export function redraw(
 ): void {
   const { w, h } = s;
   const ts = ds.tileSize;
-  const hw = highlightWidth(ts);
+  const hw = raisedBevelWidth(ts);
   const b = border(ts);
 
   let bgColor: number;
@@ -214,8 +208,9 @@ export function redraw(
   }
 
   if (!ds.started) {
-    // First-draw setup: relief borders around all playable cells.
-    // Four passes, matching C's game_redraw.
+    // First draw: the relief round the playable cells, in upstream's four
+    // passes. Each pass covers every cell before the next begins, because a
+    // cell's relief overlaps its neighbors'.
 
     // Pass 1: diagonal corner triangles.
     for (let y = 0; y < h; y++) {
@@ -223,9 +218,9 @@ export function redraw(
         if (s.grid[y * w + x] !== GRID_OBST) {
           const cx = coord(x, ts);
           const cy = coord(y, ts);
-          // The relief extends `hw` *outside* the cell, unlike the other five,
-          // because Pegs bevels the gaps between playable cells rather than
-          // the cells themselves.
+          // The relief extends `hw` *outside* the cell, unlike the other
+          // raised-bevel games, because Pegs bevels the gaps between playable
+          // cells rather than the cells themselves.
           drawRaisedBevel(
             dr,
             {
@@ -256,7 +251,7 @@ export function redraw(
       }
     }
 
-    // Pass 3: trapeziums on each edge.
+    // Pass 3: trapezoids on each edge.
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         if (s.grid[y * w + x] !== GRID_OBST) {
@@ -302,12 +297,7 @@ export function redraw(
     }
 
     ds.started = true;
-    dr.drawUpdate({
-      x: 0,
-      y: 0,
-      w: ts * w + 2 * b,
-      h: ts * h + 2 * b,
-    });
+    dr.drawUpdate({ x: 0, y: 0, w: ts * w + 2 * b, h: ts * h + 2 * b });
   }
 
   // Incremental redraw: only changed cells.

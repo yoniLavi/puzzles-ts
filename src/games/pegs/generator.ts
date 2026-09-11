@@ -21,41 +21,33 @@ import {
 
 // --- generator (Random boards) --------------------------------------
 
+/** A jump undone: the peg at (x,y) returns to (x+2dx, y+2dy), and the peg it
+ * took reappears between. */
 interface GenMove {
   x: number;
   y: number;
   dx: number;
   dy: number;
-  /** 0, 1, or 2: how many OBST cells must become HOLE to play this move. */
+  /** 0, 1, or 2: how many obstacle cells the move adds to the board. */
   cost: number;
 }
 
-function genMoveCmpByMove(a: GenMove, b: GenMove): number {
-  if (a.y !== b.y) return a.y - b.y;
-  if (a.x !== b.x) return a.x - b.x;
-  if (a.dy !== b.dy) return a.dy - b.dy;
-  if (a.dx !== b.dx) return a.dx - b.dx;
-  return 0;
+/** Cheapest first, then by position and direction. `genMoves` picks by index
+ * into this order, so it decides which board a seed makes. */
+function compareMoves(a: GenMove, b: GenMove): number {
+  return a.cost - b.cost || a.y - b.y || a.x - b.x || a.dy - b.dy || a.dx - b.dx;
 }
 
-function genMoveCmpByCost(a: GenMove, b: GenMove): number {
-  if (a.cost !== b.cost) return a.cost - b.cost;
-  return genMoveCmpByMove(a, b);
-}
+const DIRECTIONS = [
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+  [0, -1],
+] as const;
 
 /**
- * Re-evaluate the twelve moves that can include (x,y) and update
- * the two sorted indexes. Mirrors C's `update_moves`.
- *
- * The C code uses `find234(byMove, &move, NULL)` to find an existing
- * move by position (since byMove's comparator ignores cost), then
- * checks if the cost changed. If so, it removes the old version from
- * both trees using the actual element (not the probe).
- *
- * We replicate this: first delete from byMove (position-only
- * comparator), then if we found the old element, delete *it* from
- * byCost (using the old element's actual cost for the comparator).
- * Then re-add if the move is still valid.
+ * Re-evaluate the twelve reverse moves that involve (x,y), so `moves` holds
+ * exactly the legal ones, each at its current cost. Upstream's `update_moves`.
  */
 function updateMoves(
   grid: Uint8Array,
@@ -63,128 +55,69 @@ function updateMoves(
   h: number,
   x: number,
   y: number,
-  byMove: SortedMultiset<GenMove>,
-  byCost: SortedMultiset<GenMove>,
+  moves: SortedMultiset<GenMove>,
 ): void {
-  const DIRS: [number, number][] = [
-    [1, 0],
-    [0, 1],
-    [-1, 0],
-    [0, -1],
-  ];
-  for (const [ddx, ddy] of DIRS) {
+  for (const [dx, dy] of DIRECTIONS) {
     for (let pos = 0; pos < 3; pos++) {
-      const mx = x - pos * ddx;
-      const my = y - pos * ddy;
+      const mx = x - pos * dx;
+      const my = y - pos * dy;
       if (mx < 0 || mx >= w || my < 0 || my >= h) continue;
-      const ex = mx + 2 * ddx;
-      const ey = my + 2 * ddy;
+      const ex = mx + 2 * dx;
+      const ey = my + 2 * dy;
       if (ex < 0 || ex >= w || ey < 0 || ey >= h) continue;
 
       const v1 = grid[my * w + mx];
-      const v2 = grid[(my + ddy) * w + (mx + ddx)];
+      const v2 = grid[(my + dy) * w + (mx + dx)];
       const v3 = grid[ey * w + ex];
 
-      const newCost = (v2 === GRID_OBST ? 1 : 0) + (v3 === GRID_OBST ? 1 : 0);
-
-      // Probe for the existing move by position (cost doesn't matter
-      // for the byMove comparator).
-      const positionProbe: GenMove = {
-        x: mx,
-        y: my,
-        dx: ddx,
-        dy: ddy,
-        cost: 0, // ignored by genMoveCmpByMove
-      };
-
-      // Remove from byMove (finds by position).
-      byMove.delete(positionProbe);
-
-      // Remove from byCost using the position probe. Since byCost
-      // compares cost first, we need to try all possible costs.
-      // But we can be smarter: just try deleting with the new cost.
-      // If the old element had a different cost, this won't find it.
-      // So we also need to try the other cost values.
-      // Actually, the simplest correct approach: delete from byCost
-      // for each possible cost (0, 1, 2). Only one will match.
-      for (let c = 0; c <= 2; c++) {
-        byCost.delete({ x: mx, y: my, dx: ddx, dy: ddy, cost: c });
+      // The set orders by cost first, so an entry is found only by its own
+      // cost: probe all three to drop a stale one.
+      for (let cost = 0; cost <= 2; cost++) {
+        moves.delete({ x: mx, y: my, dx, dy, cost });
       }
-
       if (v1 === GRID_PEG && v2 !== GRID_PEG && v3 !== GRID_PEG) {
-        // Move is valid. Add fresh copies to both trees.
-        const fresh: GenMove = { x: mx, y: my, dx: ddx, dy: ddy, cost: newCost };
-        byMove.add({ ...fresh });
-        byCost.add({ ...fresh });
+        const cost = (v2 === GRID_OBST ? 1 : 0) + (v3 === GRID_OBST ? 1 : 0);
+        moves.add({ x: mx, y: my, dx, dy, cost });
       }
     }
   }
 }
 
-/**
- * Build a random board by reverse-moves. Mirrors C's `pegs_genmoves`.
- * The grid is mutated in place.
- */
+/** Grow the board in `grid`, in place, by undoing jumps until none is cheap
+ * enough. Upstream's `pegs_genmoves`. */
 function genMoves(grid: Uint8Array, w: number, h: number, rng: RandomState): void {
-  const byMove = new SortedMultiset<GenMove>(genMoveCmpByMove);
-  const byCost = new SortedMultiset<GenMove>(genMoveCmpByCost);
-
-  // Seed the move trees from all pegs on the board.
+  const moves = new SortedMultiset<GenMove>(compareMoves);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      if (grid[y * w + x] === GRID_PEG) {
-        updateMoves(grid, w, h, x, y, byMove, byCost);
-      }
+      if (grid[y * w + x] === GRID_PEG) updateMoves(grid, w, h, x, y, moves);
     }
   }
 
-  let nMoves = 0;
-
-  while (true) {
-    // Find the cheapest available moves.
+  for (let nMoves = 0; ; nMoves++) {
+    // The cheapest moves on offer (two-cost ones only in the first w*h/2
+    // moves). The set is cheapest first, and the probe sorts after every move
+    // of its cost, so moves 0..last are exactly the cheapest class.
     const maxCost = nMoves < (w * h) / 2 ? 2 : 1;
-    let limit = -1;
-    let move: GenMove | undefined;
-
-    for (let cost = 0; cost <= maxCost; cost++) {
-      const probe: GenMove = { x: 0, y: h + 1, dx: 0, dy: 0, cost };
-      limit = byCost.lastIndexLessThan(probe);
-      if (limit >= 0) {
-        move = byCost.get(limit);
-        break;
-      }
+    let last = -1;
+    for (let cost = 0; cost <= maxCost && last < 0; cost++) {
+      last = moves.lastIndexLessThan({ x: 0, y: h + 1, dx: 0, dy: 0, cost });
     }
+    if (last < 0) break;
+    const m = moves.get(randomUpto(rng, last + 1));
 
-    if (!move) break;
-
-    // Pick a random move among those with the same cost.
-    // `limit` is the index of the last element with cost <= move.cost.
-    // We need the range of elements with cost == move.cost.
-    const costProbe: GenMove = { x: 0, y: -1, dx: 0, dy: 0, cost: move.cost };
-    const firstIdx = byCost.lastIndexLessThan(costProbe) + 1;
-    const rangeSize = limit - firstIdx + 1;
-    const pickIdx = firstIdx + randomUpto(rng, rangeSize);
-    const picked = byCost.get(pickIdx);
-
-    // Apply the reverse move: source becomes HOLE, middle becomes PEG, end becomes PEG.
-    grid[picked.y * w + picked.x] = GRID_HOLE;
-    grid[(picked.y + picked.dy) * w + (picked.x + picked.dx)] = GRID_PEG;
-    grid[(picked.y + 2 * picked.dy) * w + (picked.x + 2 * picked.dx)] = GRID_PEG;
-
-    // Re-evaluate moves around the three affected cells.
+    // Undo the jump: the source empties, and the two cells beyond it fill.
+    grid[m.y * w + m.x] = GRID_HOLE;
+    grid[(m.y + m.dy) * w + (m.x + m.dx)] = GRID_PEG;
+    grid[(m.y + 2 * m.dy) * w + (m.x + 2 * m.dx)] = GRID_PEG;
     for (let i = 0; i <= 2; i++) {
-      const tx = picked.x + i * picked.dx;
-      const ty = picked.y + i * picked.dy;
-      updateMoves(grid, w, h, tx, ty, byMove, byCost);
+      updateMoves(grid, w, h, m.x + i * m.dx, m.y + i * m.dy, moves);
     }
-
-    nMoves++;
   }
 }
 
 /**
  * Generate a random board, retrying until it touches all four edges.
- * Mirrors C's `pegs_generate`.
+ * Upstream's `pegs_generate`.
  */
 function generate(grid: Uint8Array, w: number, h: number, rng: RandomState): void {
   while (true) {
@@ -216,51 +149,35 @@ export function newDesc(p: PegsParams, rng: RandomState): { desc: string } {
   if (type === TYPE_RANDOM) {
     generate(grid, w, h, rng);
   } else {
-    // Cross or Octagon layout.
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const cx = Math.abs(x - Math.floor(w / 2));
         const cy = Math.abs(y - Math.floor(h / 2));
+        const i = y * w + x;
         if (type === TYPE_CROSS) {
-          if (cx === 0 && cy === 0) grid[y * w + x] = GRID_HOLE;
-          else if (cx > 1 && cy > 1) grid[y * w + x] = GRID_OBST;
-          else grid[y * w + x] = GRID_PEG;
+          if (cx === 0 && cy === 0) grid[i] = GRID_HOLE;
+          else grid[i] = cx > 1 && cy > 1 ? GRID_OBST : GRID_PEG;
         } else {
-          // TYPE_OCTAGON
-          if (cx + cy > 1 + Math.floor(Math.max(w, h) / 2)) {
-            grid[y * w + x] = GRID_OBST;
-          } else {
-            grid[y * w + x] = GRID_PEG;
-          }
+          grid[i] = cx + cy > 1 + Math.floor(Math.max(w, h) / 2) ? GRID_OBST : GRID_PEG;
         }
       }
     }
 
-    // Octagon: the center hole is insoluble (parity proof in C comments).
-    // Pick a random solvable starting hole from one of three equivalence classes.
+    // Octagon: the center hole is insoluble (parity proof in upstream's
+    // comments), so start from a hole in one of the three soluble classes.
     if (type === TYPE_OCTAGON) {
       const cls = randomUpto(rng, 3);
-      let dx: number;
-      let dy: number;
+      let dx = randomUpto(rng, 2) * 2 - 1;
+      let dy = 0;
       if (cls === 0) {
-        // Remove a random corner piece.
-        dx = randomUpto(rng, 2) * 2 - 1;
+        // A corner piece.
         dy = randomUpto(rng, 2) * 2 - 1;
         if (randomUpto(rng, 2)) dy *= 3;
         else dx *= 3;
-      } else if (cls === 1) {
-        // Remove a random piece two from the center.
-        dx = 2 * (randomUpto(rng, 2) * 2 - 1);
-        if (randomUpto(rng, 2)) dy = 0;
-        else {
-          dy = dx;
-          dx = 0;
-        }
       } else {
-        // Remove a random piece one from the center.
-        dx = randomUpto(rng, 2) * 2 - 1;
-        if (randomUpto(rng, 2)) dy = 0;
-        else {
+        // A piece two (class 1) or one (class 2) from the center.
+        if (cls === 1) dx *= 2;
+        if (!randomUpto(rng, 2)) {
           dy = dx;
           dx = 0;
         }
@@ -271,8 +188,6 @@ export function newDesc(p: PegsParams, rng: RandomState): { desc: string } {
 
   // Encode: P=peg, H=hole, O=obstacle.
   let desc = "";
-  for (let i = 0; i < w * h; i++) {
-    desc += grid[i] === GRID_PEG ? "P" : grid[i] === GRID_HOLE ? "H" : "O";
-  }
+  for (const v of grid) desc += v === GRID_PEG ? "P" : v === GRID_HOLE ? "H" : "O";
   return { desc };
 }

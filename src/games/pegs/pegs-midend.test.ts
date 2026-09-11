@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/midend.ts";
 import {
   CURSOR_DOWN,
+  CURSOR_LEFT,
+  CURSOR_RIGHT,
   CURSOR_SELECT,
   LEFT_BUTTON,
   LEFT_DRAG,
@@ -97,9 +99,7 @@ describe("Pegs midend integration — lifecycle", () => {
     // what its *generator* can build — a 3x1 cross board is not something
     // `newDesc` would ever produce. But `PPH` is a complete, legal board (two
     // pegs, one hole, and a legal jump), so nothing is generated and nothing
-    // is refused. Until `bound-abcd-generable-sizes` fixed the midend, `full`
-    // was a constant `true` and this id was rejected; the assertion here used
-    // to be that rejection.
+    // is refused.
     const h = harness();
     expect(h.m.newGameFromId("3x1cross:PPH")).toBeUndefined();
     expect(h.m.getParams()).toBe("3x1cross");
@@ -200,59 +200,53 @@ describe("Pegs midend integration — drag input", () => {
 });
 
 describe("Pegs midend integration — keyboard input", () => {
+  // The cursor starts on (2,0), the cross board's first playable cell. The
+  // midend keeps the cursor to itself, so these tests read its position off
+  // the jump it makes: from the peg at (3,1), down over (3,2) into the hole.
+
   it("cursor movement skips obstacle cells", () => {
     const h = harness();
     h.m.newGameFromId(CROSS_7x7);
 
-    // Show cursor: CURSOR_SELECT at any position.
-    // The default UI places the cursor at the first peg.
-    // Move cursor down — should skip obstacle cells.
-    const before = h.redraws();
-    expect(h.m.processInput(0, 0, CURSOR_SELECT)).toBe(true); // show cursor
-    expect(h.m.processInput(0, 0, CURSOR_DOWN)).toBe(true); // move down
-    expect(h.redraws()).toBeGreaterThan(before);
+    // (1,0) is an obstacle, so LEFT leaves the cursor on (2,0), and RIGHT,
+    // DOWN bring it to (3,1). Had it moved, the jump below would not exist.
+    for (const key of [CURSOR_LEFT, CURSOR_RIGHT, CURSOR_DOWN, CURSOR_SELECT]) {
+      expect(h.m.processInput(0, 0, key)).toBe(true);
+    }
+    expect(h.m.processInput(0, 0, CURSOR_DOWN)).toBe(true);
+    expect(h.state()?.currentMove).toBe(1);
   });
 
   it("cursor select on a peg enters jumping mode", () => {
     const h = harness();
     h.m.newGameFromId(CROSS_7x7);
 
-    // Show cursor and move to a peg.
-    h.m.processInput(0, 0, CURSOR_SELECT);
-    // Select the peg → enter jumping mode.
+    h.m.processInput(0, 0, CURSOR_RIGHT);
+    h.m.processInput(0, 0, CURSOR_DOWN);
+    // Select the peg at (3,1): the next arrow is a jump, not a cursor move.
     expect(h.m.processInput(0, 0, CURSOR_SELECT)).toBe(true);
-    // Arrow key in a valid jump direction should execute the jump.
-    // On the 7×7 cross, the cursor starts at the first playable cell.
-    // Moving down from (3,1) with a peg at (3,2) and hole at (3,3)
-    // is a valid jump — but we need to position the cursor first.
-    // This test just verifies the keyboard flow doesn't crash.
+    expect(h.m.processInput(0, 0, CURSOR_DOWN)).toBe(true);
+    expect(h.state()?.currentMove).toBe(1);
   });
 
   it("cursor select on a hole is a no-op", () => {
     const h = harness();
     h.m.newGameFromId(CROSS_7x7);
 
-    // Show cursor.
-    h.m.processInput(0, 0, CURSOR_SELECT);
-    // Move to the center hole (3,3). On the cross board, the cursor
-    // should skip over it. Selecting a hole should be a no-op.
-    // (This is hard to test without knowing exact cursor position,
-    // so we just verify the flow doesn't crash.)
-    h.m.processInput(0, 0, CURSOR_DOWN);
-    h.m.processInput(0, 0, CURSOR_DOWN);
-    h.m.processInput(0, 0, CURSOR_SELECT);
-    // No crash, no move applied.
+    // To the center hole at (3,3), where select is not consumed.
+    for (const key of [CURSOR_RIGHT, CURSOR_DOWN, CURSOR_DOWN, CURSOR_DOWN]) {
+      h.m.processInput(0, 0, key);
+    }
+    expect(h.m.processInput(0, 0, CURSOR_SELECT)).toBe(false);
     expect(h.state()?.currentMove).toBe(0);
   });
 });
 
 describe("Pegs midend integration — generator termination", () => {
   it("generator terminates for all board types (regression: updateMoves cost-mismatch)", () => {
-    // The generator used to infinite-loop when updateMoves tried to
-    // delete stale entries from the byCost index with the *new* cost
-    // as a probe — the comparator uses cost as primary key, so the
-    // delete was a no-op and stale entries accumulated forever.
-    // This test verifies the generator terminates for each board type.
+    // The generator's move set orders by cost first, so `updateMoves` must
+    // drop a stale entry by its *old* cost. A probe carrying the new cost
+    // misses it, and the stale entries keep the generator going for ever.
     const seeds = ["pegs-regression-1", "pegs-regression-2", "pegs-regression-3"];
     const types = [
       { w: 7, h: 7, type: 0 }, // cross

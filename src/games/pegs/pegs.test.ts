@@ -32,13 +32,10 @@ describe("Pegs params", () => {
   });
 
   it("decodes the bare square form to w === h", () => {
-    // Regression for the old `indexOf("x")` + slice path, which mis-sliced
-    // a square form with no "x" (dropping the last digit and leaving h
-    // undefined). The shared parseDimensions helper restores h = w.
+    // A square form has no "x", so nothing but the width names h.
     const decoded = G.decodeParams("7");
     expect(decoded.w).toBe(7);
     expect(decoded.h).toBe(7);
-    expect(decoded.h).toBe(decoded.w);
 
     // ...and still applies the board-type suffix after a bare square.
     const random = G.decodeParams("9random");
@@ -250,9 +247,8 @@ describe("Pegs colors", () => {
 describe("Pegs computeSize", () => {
   it("computes size for a 7x7 board", () => {
     const p = { w: 7, h: 7, type: 0 };
-    const size = G.computeSize(p, 33);
-    expect(size.w).toBeGreaterThan(0);
-    expect(size.h).toBeGreaterThan(0);
+    // Seven 33px tiles and a half-tile border on each side.
+    expect(G.computeSize(p, 33)).toEqual({ w: 263, h: 263 });
   });
 });
 

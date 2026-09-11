@@ -1,5 +1,5 @@
 /**
- * Pegs — native TS port of the classic Peg Solitaire game.
+ * Pegs — peg solitaire.
  *
  * Jump pegs over adjacent pegs into empty holes, removing the jumped
  * peg. Win when exactly one peg remains. Three board types: Cross
@@ -7,11 +7,9 @@
  * parity-safe starting hole), and Random (reverse-move generation
  * guaranteeing solubility).
  *
- * Idiomatic rendering of `puzzles/pegs.c` (deleted when this ships):
- * immutable state, discriminated `PegsMove`, GC instead of
- * dup/free, `SortedMultiset` standing in for `tree234` in the
- * RANDOM generator. The logic mirrors the C reference; it is not a
- * control-flow transliteration.
+ * Upstream's `pegs.c`, as idiomatic TS: immutable state, a `PegsMove`
+ * object, and `SortedMultiset` standing in for the Random generator's
+ * `tree234`.
  */
 
 import { rejectMove } from "../../engine/assert-never.ts";
@@ -44,11 +42,13 @@ import {
   setTileSize,
 } from "./render.ts";
 import {
+  BOARD_TYPE_NAMES,
   decodeParams,
   defaultParams,
   deserializeMove,
   encodeParams,
   GRID_HOLE,
+  GRID_OBST,
   GRID_PEG,
   newState,
   newUi,
@@ -65,6 +65,33 @@ import {
 } from "./state.ts";
 
 export type { PegsMove, PegsParams, PegsState, PegsUi };
+
+// --- jump legality ---------------------------------------------------
+
+function inGrid(s: PegsState, x: number, y: number): boolean {
+  return x >= 0 && x < s.w && y >= 0 && y < s.h;
+}
+
+/** Why `m` is not a legal jump on `s`, or null if it is. */
+function illegalJump(s: PegsState, m: PegsMove): string | null {
+  const { sx, sy, tx, ty } = m;
+  if (!inGrid(s, sx, sy)) return "Source out of range";
+  if (!inGrid(s, tx, ty)) return "Target out of range";
+  const dx = Math.abs(tx - sx);
+  const dy = Math.abs(ty - sy);
+  if (Math.max(dx, dy) !== 2 || Math.min(dx, dy) !== 0) {
+    return "Move length was wrong";
+  }
+  const { w } = s;
+  if (
+    s.grid[sy * w + sx] !== GRID_PEG ||
+    s.grid[((sy + ty) / 2) * w + (sx + tx) / 2] !== GRID_PEG ||
+    s.grid[ty * w + tx] !== GRID_HOLE
+  ) {
+    return "Grid contents were invalid for this move";
+  }
+  return null;
+}
 
 // --- interpretMove ---------------------------------------------------
 
@@ -109,74 +136,40 @@ function interpretMove(
     ui.dragging = false;
     const tx = fromCoordWithTileSize(p.x, ts);
     const ty = fromCoordWithTileSize(p.y, ts);
-    if (tx < 0 || tx >= w || ty < 0 || ty >= h) return UI_UPDATE;
-    const ddx = tx - ui.sx;
-    const ddy = ty - ui.sy;
-    if (
-      Math.max(Math.abs(ddx), Math.abs(ddy)) !== 2 ||
-      Math.min(Math.abs(ddx), Math.abs(ddy)) !== 0
-    ) {
-      return UI_UPDATE;
-    }
-    const mx = ui.sx + ddx / 2;
-    const my = ui.sy + ddy / 2;
-    if (
-      s.grid[ty * w + tx] !== GRID_HOLE ||
-      s.grid[my * w + mx] !== GRID_PEG ||
-      s.grid[ui.sy * w + ui.sx] !== GRID_PEG
-    ) {
-      return UI_UPDATE;
-    }
-    return { type: "jump", sx: ui.sx, sy: ui.sy, tx, ty };
+    const move: PegsMove = { type: "jump", sx: ui.sx, sy: ui.sy, tx, ty };
+    return illegalJump(s, move) ? UI_UPDATE : move;
   }
 
-  // Cursor movement.
   const cursorMove = cursorDelta(button);
   if (cursorMove) {
-    const { dx: ddx, dy: ddy } = cursorMove;
+    const { dx, dy } = cursorMove;
+    const { x, y } = ui.cursor;
     if (!ui.curJumping) {
-      // Normal cursor movement: try to move, skip OBST cells.
-      const cx = ui.cursor.x;
-      const cy = ui.cursor.y;
-      const nx = cx + ddx;
-      const ny = cy + ddy;
-      if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
-        const v = s.grid[ny * w + nx];
-        if (v === GRID_HOLE || v === GRID_PEG) {
-          ui.cursor.x = nx;
-          ui.cursor.y = ny;
-        }
+      // An obstacle cell refuses the cursor.
+      const nx = x + dx;
+      const ny = y + dy;
+      if (inGrid(s, nx, ny) && s.grid[ny * w + nx] !== GRID_OBST) {
+        ui.cursor.x = nx;
+        ui.cursor.y = ny;
       }
       ui.cursor.visible = true;
       return UI_UPDATE;
     }
 
-    // Jumping mode: attempt a jump in the given direction.
-    const mx = ui.cursor.x + ddx;
-    const my = ui.cursor.y + ddy;
-    const jx = mx + ddx;
-    const jy = my + ddy;
-
+    // Jumping mode: the arrow names the direction to jump in.
+    const tx = x + 2 * dx;
+    const ty = y + 2 * dy;
     ui.curJumping = false;
     if (
-      jx >= 0 &&
-      jx < w &&
-      jy >= 0 &&
-      jy < h &&
-      s.grid[my * w + mx] === GRID_PEG &&
-      s.grid[jy * w + jx] === GRID_HOLE
+      !inGrid(s, tx, ty) ||
+      s.grid[(y + dy) * w + (x + dx)] !== GRID_PEG ||
+      s.grid[ty * w + tx] !== GRID_HOLE
     ) {
-      ui.cursor.x = jx;
-      ui.cursor.y = jy;
-      return {
-        type: "jump",
-        sx: ui.cursor.x - 2 * ddx,
-        sy: ui.cursor.y - 2 * ddy,
-        tx: jx,
-        ty: jy,
-      };
+      return UI_UPDATE;
     }
-    return UI_UPDATE;
+    ui.cursor.x = tx;
+    ui.cursor.y = ty;
+    return { type: "jump", sx: x, sy: y, tx, ty };
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
@@ -192,10 +185,10 @@ function interpretMove(
       ui.curJumping = true;
       return UI_UPDATE;
     }
-    return null; // MOVE_NO_EFFECT
+    return null;
   }
 
-  return null; // MOVE_UNUSED
+  return null;
 }
 
 // --- executeMove -----------------------------------------------------
@@ -205,50 +198,22 @@ function executeMove(s: PegsState, m: PegsMove): PegsState {
   // to `never` here and there is no compile-time guarantee to be had; this is
   // the field check the dispatch below depends on (see `rejectMove`).
   if (m.type !== "jump") rejectMove(m, "pegs: executeMove");
+  const error = illegalJump(s, m);
+  if (error) throw new Error(error);
 
   const { w, h } = s;
   const { sx, sy, tx, ty } = m;
-
-  // Validate the move.
-  if (sx < 0 || sx >= w || sy < 0 || sy >= h) throw new Error("Source out of range");
-  if (tx < 0 || tx >= w || ty < 0 || ty >= h) throw new Error("Target out of range");
-
-  const ddx = tx - sx;
-  const ddy = ty - sy;
-  if (
-    Math.max(Math.abs(ddx), Math.abs(ddy)) !== 2 ||
-    Math.min(Math.abs(ddx), Math.abs(ddy)) !== 0
-  ) {
-    throw new Error("Move length was wrong");
-  }
-  const mx = sx + ddx / 2;
-  const my = sy + ddy / 2;
-
-  if (
-    s.grid[sy * w + sx] !== GRID_PEG ||
-    s.grid[my * w + mx] !== GRID_PEG ||
-    s.grid[ty * w + tx] !== GRID_HOLE
-  ) {
-    throw new Error("Grid contents were invalid for this move");
-  }
-
-  // Apply the move to a new state.
   const grid = new Uint8Array(s.grid);
   grid[sy * w + sx] = GRID_HOLE;
-  grid[my * w + mx] = GRID_HOLE;
+  grid[((sy + ty) / 2) * w + (sx + tx) / 2] = GRID_HOLE;
   grid[ty * w + tx] = GRID_PEG;
 
-  // Check completion: exactly one peg remains.
-  let completed = s.completed;
-  if (!completed) {
-    let count = 0;
-    for (let i = 0; i < w * h; i++) {
-      if (grid[i] === GRID_PEG) count++;
-    }
-    if (count === 1) completed = true;
+  // Won when exactly one peg remains.
+  let pegs = 0;
+  for (const v of grid) {
+    if (v === GRID_PEG) pegs++;
   }
-
-  return { w, h, completed, grid };
+  return { w, h, completed: s.completed || pegs === 1, grid };
 }
 // --- animation / flash -----------------------------------------------
 
@@ -265,9 +230,9 @@ export const pegsGame: Game<PegsParams, PegsState, PegsMove, PegsUi, PegsDrawSta
   isTimed: false,
   canSolve: false,
   canFormatAsText: true,
-  // The whole game is one press-and-drag, and the secondary button has no
-  // meaning — so promoting a held press was silently destroying the gesture of
-  // any touch player who paused to pick a landing square.
+  // The whole game is one press-and-drag and the secondary button means
+  // nothing, so a held press must not be promoted to it: that would destroy
+  // the gesture of a touch player who pauses to pick a landing square.
   ignoresSecondaryButton: true,
 
   defaultParams,
@@ -280,7 +245,7 @@ export const pegsGame: Game<PegsParams, PegsState, PegsMove, PegsUi, PegsDrawSta
       kw: "board-type",
       name: "Board type",
       type: "choices",
-      choices: ["Cross", "Octagon", "Random"],
+      choices: [...BOARD_TYPE_NAMES],
       get: (p) => p.type,
       set: (p, v) => {
         p.type = v;
@@ -290,7 +255,7 @@ export const pegsGame: Game<PegsParams, PegsState, PegsMove, PegsUi, PegsDrawSta
   ],
   describeParams: (p) => ({ "board-type": String(p.type) }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
