@@ -1,17 +1,15 @@
 /**
  * Gated C-vs-TS differential for ABCD.
  *
- * For each frozen C-reference fixture (see `puzzles/auxiliary/abcd-trace.c`),
- * the TS `newAbcdDesc`, replayed over the bit-identical `random.ts` seeded the
- * same way, must reproduce the C desc byte-for-byte. Because the generator is
- * solver-gated at every accept/reject and every hard-mode clue removal, this
- * one assertion validates the fill order, the deductive solver's every verdict,
- * and the codec together (design D6).
+ * For each frozen C-reference fixture, `newAbcdDesc`, replayed over the
+ * bit-identical `random.ts` seeded the same way, must reproduce the C desc
+ * byte-for-byte. Because the generator is solver-gated at every accept/reject
+ * and every hard-mode clue removal, this one assertion validates the fill
+ * order, the deductive solver's every verdict, and the codec together.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/abcd-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: it was captured by
+ * `puzzles/auxiliary/abcd-trace.c` against upstream's C, under an Emscripten
+ * build this repo does not have — see `engine/testing/differential.ts`.
  */
 
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

@@ -2,22 +2,19 @@
  * ABCD rendering — idiomatic port of `game_redraw` / the draw helpers from
  * `abcd.c`.
  *
- * The grid is drawn with the `A…` border letters in the top-left gutter, the
- * edge clues along the top and left borders (red when a clue is over- or
- * under-satisfiable), and a `w × h` block of beveled cells: each holds either
- * an entered letter (red on an adjacency violation, else the guess color) or,
- * when empty, its pencil-mark grid. A selected cell is highlighted; under
- * diagonal mode each interior cell carries a small corner cross as the
- * no-diagonal-touch cue. A solved board runs a diagonal-stripe flash.
+ * The `A…` border letters sit in the top-left gutter, the edge clues along the
+ * top and left borders (red when a clue is exceeded or can no longer be met),
+ * and a `w × h` block of cells: each holds an entered letter (red on an
+ * adjacency violation, else the guess color) or, when empty, its pencil marks.
+ * Under diagonal mode each interior corner carries a small cross as the
+ * no-diagonal-touch cue. A solved board runs a diagonal-stripe flash. The
+ * geometry is upstream's `NARROW_BORDERS` arm, which has no border.
  *
- * `webapp.cmake` defines `NARROW_BORDERS`, so the compiled arm is
- * `BORDER = 0`; `computeSize` carries upstream's `+1` tile-background allowance.
- *
- * Because a cell's pixels depend only on its own letter + pencil cube + a small
- * flag set (cursor / pencil-cursor / adjacency-error / flash phase), a single
- * per-tile `Int32Array` cache suffices — with the (fork) Check-&-Save mistake
- * overlay tracked in a sidecar so a mistaken-but-unchanged cell still repaints
- * (docs/games/rendering.md § "The tile cache and the diff key").
+ * A cell's pixels depend only on its own letter, pencil marks and a small flag
+ * set (cursor, pencil cursor, adjacency error, flash phase), so a per-tile
+ * `Int32Array` cache suffices, with the Check & Save overlay in a sidecar so a
+ * mistaken but unchanged cell still repaints (docs/games/rendering.md § "The
+ * tile cache and the diff key").
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -31,10 +28,10 @@ import {
 } from "../../engine/color/palette.ts";
 import { abcdBorderLetter } from "../../engine/color/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { fromCoord as geometryFromCoord } from "../../engine/geometry.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Color, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import {
   type AbcdState,
   type AbcdUi,
@@ -84,7 +81,7 @@ export function colors(defaultBackground: Color): Color[] {
   return out;
 }
 
-// --- geometry (NARROW_BORDERS ⇒ BORDER = 0) --------------------------------
+// --- geometry --------------------------------------------------------------
 
 const outerCoord = (v: number, ts: number): number => v * ts;
 const innerCoord = (v: number, ts: number, n: number): number => (v + n) * ts;
@@ -92,11 +89,11 @@ const innerCoord = (v: number, ts: number, n: number): number => (v + n) * ts;
 /** Pixel → grid cell along one axis (returns an out-of-range index off-grid).
  * The origin is `n` whole tiles: the clue rows and columns sit outside the grid. */
 export function fromCoord(px: number, ts: number, n: number): number {
-  return fromCoordE(px, ts, n * ts);
+  return geometryFromCoord(px, ts, n * ts);
 }
 
 export function computeSize(p: { w: number; h: number; n: number }, ts: number): Size {
-  // `NARROW_BORDERS` adds +1 to the width for the tile-background allowance.
+  // The +1 is upstream's `NARROW_BORDERS` tile-background allowance.
   return { w: (p.w + p.n) * ts + 1, h: (p.h + p.n) * ts };
 }
 
@@ -113,9 +110,6 @@ const K_PENCIL = 9; // bits 9+: the n-bit pencil-mark mask
 export interface AbcdDrawState {
   started: boolean;
   tilesize: number;
-  w: number;
-  h: number;
-  n: number;
   /** `w·h` last-drawn packed tile values (-1 = never drawn). */
   tiles: Int32Array;
   /** `(w+h)·n` last-drawn clue-error flags (-1 = never drawn). */
@@ -131,9 +125,6 @@ export function newDrawState(state: AbcdState): AbcdDrawState {
   return {
     started: false,
     tilesize: 0,
-    w,
-    h,
-    n,
     tiles: new Int32Array(w * h).fill(-1),
     clueErr: new Int8Array((w + h) * n).fill(-1),
     wrong: new OverlaySidecar(w * h),
@@ -209,45 +200,34 @@ function computeAdjacencyErrors(state: AbcdState): Uint8Array {
 
 // --- drawing helpers -------------------------------------------------------
 
-function drawBorderLetters(
+/** Draw `text` centered in the tile whose top-left is `(x, y)`, in the
+ * half-tile font of every letter and clue except the pencil marks. */
+function drawTileText(
   dr: GameDrawing,
+  x: number,
+  y: number,
   ts: number,
-  n: number,
   color: number,
+  text: string,
 ): void {
+  const half = (ts / 2) | 0;
+  dr.drawText(
+    { x: x + half, y: y + half },
+    { align: "center", baseline: "mathematical", fontType: "variable", size: half },
+    color,
+    text,
+  );
+}
+
+/** The `A…` letters along the bottom and right edges of the top-left gutter,
+ * sharing the corner letter. */
+function drawBorderLetters(dr: GameDrawing, ts: number, n: number): void {
+  const edge = outerCoord(n - 1, ts);
   for (let i = 0; i < n; i++) {
     const letter = String.fromCharCode(65 + i);
-    // horizontal
-    dr.drawText(
-      {
-        x: outerCoord(i, ts) + ((ts / 2) | 0),
-        y: outerCoord(n - 1, ts) + ((ts / 2) | 0),
-      },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: (ts / 2) | 0,
-      },
-      color,
-      letter,
-    );
-    if (i === n - 1) continue; // don't draw the corner letter twice
-    // vertical
-    dr.drawText(
-      {
-        x: outerCoord(n - 1, ts) + ((ts / 2) | 0),
-        y: outerCoord(i, ts) + ((ts / 2) | 0),
-      },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: (ts / 2) | 0,
-      },
-      color,
-      letter,
-    );
+    drawTileText(dr, outerCoord(i, ts), edge, ts, COL_BORDERLETTER, letter);
+    if (i < n - 1)
+      drawTileText(dr, edge, outerCoord(i, ts), ts, COL_BORDERLETTER, letter);
   }
 }
 
@@ -387,7 +367,7 @@ function drawTile(
       1,
     );
 
-  // Check-&-Save mistake overlay (fork addition): an inset red outline.
+  // Check & Save mistake overlay (fork addition): an inset red outline.
   if (wrong) {
     const l = tx;
     const t = ty;
@@ -426,9 +406,8 @@ function drawTile(
 
 // --- pencil-mode indicator -------------------------------------------------
 
-/** The shared CapsLock-style pencil-mode glyph, drawn in the empty top-left
- * gutter corner (above/left of the diagonal border letters, never overlapping a
- * cell or clue) — the same indicator Towers/Unequal/Mathrax use. */
+/** The shared CapsLock-style pencil-mode glyph, in the empty top-left gutter
+ * corner, clear of every cell and clue. */
 function drawPencilIndicator(dr: GameDrawing, ts: number, on: boolean): void {
   dr.drawRect({ x: 0, y: 0, w: ts, h: ts }, COL_OUTERBG);
   if (on) drawPencilGlyph(dr, 0, 0, ts, COL_PENCIL_BODY, COL_GRID);
@@ -447,7 +426,7 @@ export function redraw(
   _animTime: number,
   flashTime: number,
   _hint?: unknown,
-  mistakes?: readonly { x: number; y: number }[],
+  mistakes?: readonly Point[],
 ): void {
   const ts = ds.tilesize;
   const { w, h, n } = state.params;
@@ -456,7 +435,7 @@ export function redraw(
   if (!ds.started) {
     const size = computeSize(state.params, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_OUTERBG);
-    drawBorderLetters(dr, ts, n, COL_BORDERLETTER);
+    drawBorderLetters(dr, ts, n);
     dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
     ds.started = true;
   }
@@ -478,17 +457,8 @@ export function redraw(
         dr.drawRect({ x: ox, y: oy, w: ts - 1, h: ts - 1 }, COL_OUTERBG);
         const clue = state.numbers[pos];
         if (clue !== NO_NUMBER) {
-          dr.drawText(
-            { x: ox + ((ts / 2) | 0), y: oy + ((ts / 2) | 0) },
-            {
-              align: "center",
-              baseline: "mathematical",
-              fontType: "variable",
-              size: (ts / 2) | 0,
-            },
-            clueErr[pos] ? COL_ERROR : COL_TEXT,
-            String(clue),
-          );
+          const color = clueErr[pos] ? COL_ERROR : COL_TEXT;
+          drawTileText(dr, ox, oy, ts, color, String(clue));
         }
         dr.drawUpdate({ x: ox, y: oy, w: ts - 1, h: ts - 1 });
         ds.clueErr[pos] = clueErr[pos];

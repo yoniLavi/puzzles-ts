@@ -39,14 +39,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { ConfigValues, KeyLabel, Point } from "../../engine/types.ts";
 import { newAbcdDesc } from "./generator.ts";
 import {
   type AbcdDrawState,
@@ -82,10 +75,7 @@ import {
 } from "./state.ts";
 
 /** A player entry that contradicts the puzzle's unique solution. */
-export interface AbcdMistake {
-  x: number;
-  y: number;
-}
+export type AbcdMistake = Point;
 
 const KEY_M = 77;
 const KEY_m = 109;
@@ -117,12 +107,18 @@ function keyLetter(button: number, n: number): number | null | undefined {
   return undefined;
 }
 
+/** Cell `i`'s pencil marks: a view of its `n` contiguous slots in the cube. */
+function notesOf(state: AbcdState, i: number): Uint8Array {
+  const { n } = state.params;
+  return state.pencil.subarray(i * n, (i + 1) * n);
+}
+
 /**
  * Would writing `letter` into `(x, y)` leave the state exactly as it is?
  *
  * The two arms mirror `executeMove`'s two `enter` branches: placing a letter
  * touches only the grid, so it is a no-op iff that letter is already there;
- * clearing also wipes the cell's pencil cube, so it is a no-op only when the
+ * clearing also wipes the cell's pencil marks, so it is a no-op only when the
  * cell is empty *and* carries no notes.
  */
 function noOpEntry(
@@ -131,12 +127,9 @@ function noOpEntry(
   y: number,
   letter: number | null,
 ): boolean {
-  const { w, n } = state.params;
-  const cell = state.grid[y * w + x];
-  if (letter !== null) return cell === letter;
-  if (cell !== EMPTY) return false;
-  for (let z = 0; z < n; z++) if (state.pencil[cuboid(x, y, z, n, w)]) return false;
-  return true;
+  const i = y * state.params.w + x;
+  if (letter !== null) return state.grid[i] === letter;
+  return state.grid[i] === EMPTY && !notesOf(state, i).includes(1);
 }
 
 function interpretMove(
@@ -190,9 +183,8 @@ function interpretMove(
       return null;
 
     // Suppress an entry that would change nothing, so it costs no undo step
-    // (upstream's own `/* TODO Prevent operations which do nothing */`, which
-    // its `interpret_move` never got to). Locally decided, as the playbook
-    // requires — never by comparing serialized states.
+    // (upstream left this as a `TODO`), decided locally rather than by
+    // comparing states.
     if (!ui.pencilMode && noOpEntry(state, ui.cursor.x, ui.cursor.y, letter))
       return null;
 
@@ -208,23 +200,13 @@ function interpretMove(
     return move;
   }
 
-  // Adaptive mark-all (M), the collection-wide shared behavior: fill on the
-  // first press (any empty cell with *zero* notes), then subsequent presses only
-  // *strike* the obvious eliminations — never re-fill/reset (docs/games/mechanics.md § "Pencil marks: the full note-taking UX").
+  // Adaptive mark-all (M): fill while some empty cell has no notes, then only
+  // strike the obvious eliminations, never re-fill
+  // (docs/games/mechanics.md § "Pencil marks: the full note-taking UX").
   if (button === KEY_M || button === KEY_m) {
-    let needsFill = false;
-    for (let y = 0; y < p.h && !needsFill; y++) {
-      for (let x = 0; x < w && !needsFill; x++) {
-        if (state.grid[y * w + x] !== EMPTY) continue;
-        let hasNote = false;
-        for (let z = 0; z < n; z++)
-          if (state.pencil[cuboid(x, y, z, n, w)]) {
-            hasNote = true;
-            break;
-          }
-        if (!hasNote) needsFill = true;
-      }
-    }
+    const needsFill = state.grid.some(
+      (c, i) => c === EMPTY && !notesOf(state, i).includes(1),
+    );
     return adaptiveMarkAll<AbcdMove, AbcdMark>(needsFill, () =>
       abcdObviousMarks(p, state.grid, state.pencil, state.numbers),
     );
@@ -242,9 +224,9 @@ function executeMove(state: AbcdState, move: AbcdMove): AbcdState {
     case "enter": {
       const i = move.y * w + move.x;
       if (move.letter === null) {
-        // Clearing wipes the cell's pencil cube too (and never completes).
+        // Clearing wipes the cell's pencil marks too (and never completes).
         next.grid[i] = EMPTY;
-        for (let z = 0; z < n; z++) next.pencil[cuboid(move.x, move.y, z, n, w)] = 0;
+        notesOf(next, i).fill(0);
         return next;
       }
       next.grid[i] = move.letter;
@@ -257,24 +239,12 @@ function executeMove(state: AbcdState, move: AbcdMove): AbcdState {
       return next;
     }
     case "pencilAll": {
-      // Fill every *note-less* empty cell's whole candidate cube (the first
-      // mark-all press).
-      // Additive — fill only note-less empty cells, never reset a narrowed one:
-      // `candidate-hint.ts`'s `adaptiveMarkAll` § "The additive rule, stated once".
-      // "Has notes" is a cube scan here: `n` contiguous slots per cell.
-      for (let y = 0; y < p.h; y++) {
-        for (let x = 0; x < w; x++) {
-          if (next.grid[y * w + x] !== EMPTY) continue;
-          let hasNote = false;
-          for (let z = 0; z < n; z++) {
-            if (next.pencil[cuboid(x, y, z, n, w)]) {
-              hasNote = true;
-              break;
-            }
-          }
-          if (hasNote) continue;
-          for (let z = 0; z < n; z++) next.pencil[cuboid(x, y, z, n, w)] = 1;
-        }
+      // Fill every note-less empty cell with every candidate, never resetting a
+      // narrowed one: `candidate-hint.ts`'s `adaptiveMarkAll` § "The additive
+      // rule, stated once".
+      for (let i = 0; i < w * p.h; i++) {
+        const notes = notesOf(next, i);
+        if (next.grid[i] === EMPTY && !notes.includes(1)) notes.fill(1);
       }
       return next;
     }
@@ -307,11 +277,7 @@ function changedState(ui: AbcdUi, oldSt: AbcdState | null, newSt: AbcdState): vo
   if (oldSt && !oldSt.completed && newSt.completed) ui.cursor.visible = false;
 }
 
-function solve(
-  orig: AbcdState,
-  _curr: AbcdState,
-  _aux?: string,
-): SolveResult<AbcdMove> {
+function solve(orig: AbcdState): SolveResult<AbcdMove> {
   const res = solveAbcd(orig.params, orig.numbers);
   if (res.status === "contradiction")
     return { ok: false, error: "No solution exists for this puzzle." };
@@ -342,10 +308,6 @@ function requestKeys(p: AbcdParams): KeyLabel[] {
   return keys;
 }
 
-function flashLength(from: AbcdState, to: AbcdState): number {
-  return winFlash(from, to, FLASH_TIME);
-}
-
 export const abcdGame: Game<
   AbcdParams,
   AbcdState,
@@ -358,9 +320,7 @@ export const abcdGame: Game<
   wantsStatusbar: false,
   isTimed: false,
   canSolve: true,
-  // Param-dependent (a 2-digit clue on a ≥19-wide grid has no single-char
-  // rendering) — `textFormat` returns undefined there (upstream
-  // `game_can_format_as_text_now`).
+  // `textFormat` still declines a board whose clues could be two digits.
   canFormatAsText: true,
   canMarkAll: true,
 
@@ -397,7 +357,7 @@ export const abcdGame: Game<
       },
     },
     {
-      // The C exposes the *inverse* of the stored flag — port the inversion.
+      // The option is the inverse of the stored flag, as upstream's is.
       kw: "allow-diagonal-touching",
       name: "Allow diagonal touching",
       type: "boolean",
@@ -408,7 +368,7 @@ export const abcdGame: Game<
     },
   ],
 
-  newDesc: (p, rng) => newAbcdDesc(p, rng),
+  newDesc: newAbcdDesc,
   validateDesc,
   newState,
   newUi,
@@ -416,7 +376,7 @@ export const abcdGame: Game<
 
   interpretMove,
   executeMove,
-  status: (s): GameStatus => status(s),
+  status,
 
   solve,
   findMistakes,
@@ -425,15 +385,15 @@ export const abcdGame: Game<
 
   prefs: [stickyPencilPref<AbcdUi>(), pencilKeepHighlightPref<AbcdUi>()],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: AbcdParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(abcdGame);

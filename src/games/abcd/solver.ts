@@ -1,8 +1,8 @@
 /**
  * The ABCD deductive solver — idiomatic port of `abcd_solve_game` (`abcd.c`).
  *
- * It is a fixpoint of three deduction techniques over a working grid + a
- * per-cell candidate cube + a `remaining[]` count per (row/column, letter):
+ * A fixpoint of three deduction techniques over a working grid, a per-cell
+ * candidate cube and a `remaining[]` count per (row/column, letter):
  *
  *  1. **Satisfied clue** — when a line already holds its full count of a letter
  *     (`remaining === 0`), rule that letter out of every cell in that line.
@@ -15,17 +15,16 @@
  *     forced onto its even offsets.
  *
  * Techniques 1+2 rerun to a fixpoint before technique 3 is tried again
- * (upstream `if (busy) continue;`), then the grid is classified.
+ * (upstream's `if (busy) continue;`), then the grid is classified.
  *
- * **No leaf dependency.** `solver(abcd)` names none — this is self-contained
- * arithmetic over the candidate cube, *not* a Latin square (the constraint is a
- * per-line count + a no-touch rule, so `engine/latin.ts` does not apply).
+ * This is arithmetic over the candidate cube, not a Latin square: the
+ * constraint is a per-line count plus a no-touch rule, so `engine/latin.ts`
+ * does not apply.
  *
- * The one deliberate weakness upstream ships: there are no diagonal-specific
- * deduction techniques (the runs technique ignores diagonal adjacency). That is
- * a weaker-than-ideal solver — the difficulty curve upstream shipped — not a
- * defect to fix (playbook rule 3). It still generates valid diag puzzles
- * because {@link placeLetter} accounts for diagonal neighbors.
+ * Upstream has no diagonal-specific techniques (the runs technique ignores
+ * diagonal adjacency). That weaker solver is the difficulty curve it shipped,
+ * not a defect to fix, and it still generates valid diag puzzles because
+ * {@link placeLetter} rules out diagonal neighbors.
  */
 
 import {
@@ -46,18 +45,16 @@ export interface AbcdMark {
 }
 
 /**
- * The *obvious* pencil-mark eliminations, given the placed letters — the ABCD
- * analog of the Latin family's row/column duplicate strikes (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"'s
- * adaptive mark-all). A penciled candidate `c` in an empty cell is obviously
- * impossible, and so struck, when either:
- *   - a cell orthogonally (or, under `diag`, diagonally) adjacent already holds
- *     `c` — the no-touch rule; or
- *   - `c`'s row or column already holds its full clue count of `c` — a
- *     satisfied clue.
- * Both are exactly the solver's cheapest deductions (technique 1 +
+ * The *obvious* pencil-mark eliminations given the placed letters, for the
+ * adaptive mark-all — ABCD's analog of the Latin family's row/column duplicate
+ * strikes (docs/games/mechanics.md § "Pencil marks: the full note-taking UX").
+ * A penciled candidate `c` in an empty cell is struck when either:
+ *   - an orthogonal (or, under `diag`, diagonal) neighbor already holds `c`; or
+ *   - `c`'s row or column already holds its full clue count of `c`.
+ * Both are the solver's cheapest deductions (technique 1 and
  * {@link placeLetter}'s neighbor rule-outs), so a struck mark is never one a
- * legal solution could keep. Mirrors `obviousCandidateMarks`' guard: never
- * strike a cell's *last* remaining candidate (keep the lowest).
+ * legal solution could keep. Like `obviousCandidateMarks`, it never strikes a
+ * cell's last remaining candidate.
  */
 export function abcdObviousMarks(
   p: AbcdParams,
@@ -128,12 +125,11 @@ export interface AbcdSolveResult {
 }
 
 /**
- * Place letter `l` at `(x, y)`: set the grid cell, rule `l`'s rivals out of the
- * cell, rule `l` out of the cell's orthogonal (and, under `diag`, diagonal)
- * neighbors, and — when a `remaining` array is supplied — decrement this
- * letter's row and column counts. Shared with the generator (which passes no
- * `remaining`, using it purely to keep a partial fill no-touch-legal).
- * Mirrors `abcd_place_letter`.
+ * Place `letter` at `(x, y)`: set the grid cell, rule the other letters out of
+ * the cell and `letter` out of its orthogonal (and, under `diag`, diagonal)
+ * neighbors, and, when `remaining` is supplied, decrement the letter's row and
+ * column counts. The generator passes no `remaining`, using it only to keep a
+ * partial fill no-touch-legal. Upstream's `abcd_place_letter`.
  */
 export function placeLetter(
   p: AbcdParams,
@@ -141,30 +137,32 @@ export function placeLetter(
   cube: Uint8Array,
   x: number,
   y: number,
-  l: number,
+  letter: number,
   remaining?: Int32Array,
 ): void {
   const { w, h, n, diag } = p;
-  grid[y * w + x] = l;
+  grid[y * w + x] = letter;
 
   // Rule out all other letters in this square.
   for (let i = 0; i < n; i++) {
-    if (i !== l) cube[cuboid(x, y, i, n, w)] = 0;
+    if (i !== letter) cube[cuboid(x, y, i, n, w)] = 0;
   }
 
   // Rule out this letter for adjacent squares.
-  if (diag && x > 0 && y > 0) cube[cuboid(x - 1, y - 1, l, n, w)] = 0;
-  if (diag && x < w - 1 && y > 0) cube[cuboid(x + 1, y - 1, l, n, w)] = 0;
-  if (diag && x > 0 && y < h - 1) cube[cuboid(x - 1, y + 1, l, n, w)] = 0;
-  if (diag && x < w - 1 && y < h - 1) cube[cuboid(x + 1, y + 1, l, n, w)] = 0;
-  if (x > 0) cube[cuboid(x - 1, y, l, n, w)] = 0;
-  if (x < w - 1) cube[cuboid(x + 1, y, l, n, w)] = 0;
-  if (y > 0) cube[cuboid(x, y - 1, l, n, w)] = 0;
-  if (y < h - 1) cube[cuboid(x, y + 1, l, n, w)] = 0;
+  if (diag && x > 0 && y > 0) cube[cuboid(x - 1, y - 1, letter, n, w)] = 0;
+  if (diag && x < w - 1 && y > 0) cube[cuboid(x + 1, y - 1, letter, n, w)] = 0;
+  if (diag && x > 0 && y < h - 1) cube[cuboid(x - 1, y + 1, letter, n, w)] = 0;
+  if (diag && x < w - 1 && y < h - 1) cube[cuboid(x + 1, y + 1, letter, n, w)] = 0;
+  if (x > 0) cube[cuboid(x - 1, y, letter, n, w)] = 0;
+  if (x < w - 1) cube[cuboid(x + 1, y, letter, n, w)] = 0;
+  if (y > 0) cube[cuboid(x, y - 1, letter, n, w)] = 0;
+  if (y < h - 1) cube[cuboid(x, y + 1, letter, n, w)] = 0;
 
   if (remaining) {
-    if (remaining[horClue(y, l, n)] !== NO_NUMBER) remaining[horClue(y, l, n)]--;
-    if (remaining[verClue(x, l, n, h)] !== NO_NUMBER) remaining[verClue(x, l, n, h)]--;
+    const row = horClue(y, letter, n);
+    const col = verClue(x, letter, n, h);
+    if (remaining[row] !== NO_NUMBER) remaining[row]--;
+    if (remaining[col] !== NO_NUMBER) remaining[col]--;
   }
 }
 
@@ -181,8 +179,8 @@ function solverRuns(
   const { w, h, n } = p;
   const amx = horizontal ? h : w;
   const bmx = horizontal ? w : h;
-  const rslen = new Int32Array(bmx);
-  const rspos = new Int32Array(bmx);
+  const runLen = new Int32Array(bmx);
+  const runStart = new Int32Array(bmx);
   let action = false;
 
   for (let a = 0; a < amx; a++) {
@@ -192,32 +190,32 @@ function solverRuns(
     if (req === NO_NUMBER || req === 0) continue;
 
     // Collect maximal open runs where `c` is still a candidate.
-    let point = 0;
-    rslen.fill(0);
-    rspos.fill(0);
+    let runs = 0;
+    runLen.fill(0);
+    runStart.fill(0);
     for (let b = 0; b < bmx; b++) {
       const x = horizontal ? b : a;
       const y = horizontal ? a : b;
       if (cube[cuboid(x, y, c, n, w)] && grid[y * w + x] === EMPTY) {
-        if (rslen[point] === 0) rspos[point] = b;
-        rslen[point]++;
-      } else if (rslen[point] !== 0) {
-        point++;
+        if (runLen[runs] === 0) runStart[runs] = b;
+        runLen[runs]++;
+      } else if (runLen[runs] !== 0) {
+        runs++;
       }
     }
-    if (rslen[point] !== 0) point++;
+    if (runLen[runs] !== 0) runs++;
 
     // Max letters placeable = Σ ⌈len/2⌉.
     let maxletters = 0;
-    for (let i = 0; i < point; i++) maxletters += (rslen[i] >> 1) + (rslen[i] & 1);
+    for (let i = 0; i < runs; i++) maxletters += (runLen[i] + 1) >> 1;
 
     // If the maximum equals the requirement, every odd-length run is forced
     // onto its even offsets.
     if (maxletters === req) {
-      for (let i = 0; i < point; i++) {
-        if (rslen[i] & 1) {
+      for (let i = 0; i < runs; i++) {
+        if (runLen[i] & 1) {
           action = true;
-          for (let b = rspos[i]; b <= rspos[i] + rslen[i]; b += 2) {
+          for (let b = runStart[i]; b <= runStart[i] + runLen[i]; b += 2) {
             const x = horizontal ? b : a;
             const y = horizontal ? a : b;
             placeLetter(p, grid, cube, x, y, c, remaining);
@@ -229,10 +227,7 @@ function solverRuns(
   return action;
 }
 
-/**
- * Run the deductive solver on `numbers` from a blank board. Returns the verdict
- * and the working grid. Faithful to `abcd_solve_game`.
- */
+/** Run the deductive solver on `numbers` from a blank board. */
 export function solveAbcd(p: AbcdParams, numbers: Int32Array): AbcdSolveResult {
   const { w, h, n } = p;
   const a = w * h;

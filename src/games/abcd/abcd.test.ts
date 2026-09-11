@@ -102,11 +102,9 @@ describe("abcd params codec", () => {
   });
 });
 
-// `bound-abcd-generable-sizes`. Generation keeps a random fill only when the
-// solver finds its clues uniquely solvable, and that acceptance rate collapses
-// as the board grows — so a board can be perfectly legal and still have no
-// puzzle that will ever be found. Before this bound, 10x10 n4 from the Custom
-// dialog spent ~5.4 minutes of frozen worker and then threw.
+// Generation keeps a random fill only when the solver finds its clues uniquely
+// solvable, and that acceptance rate collapses as the board grows, so a board
+// can be perfectly legal and still have no puzzle that will ever be found.
 describe("abcd generable-size bound", () => {
   it("accepts every shipped preset", () => {
     // The bound must never bar a board the game itself offers. Tightening it
@@ -117,7 +115,7 @@ describe("abcd generable-size bound", () => {
   });
 
   it.each([
-    // Measured generable, so they must stay offered (design D1's table).
+    // Measured generable, so they must stay offered.
     [P(9, 9, 4), "9x9 n4 — 1.2 s"],
     [P(8, 10, 4), "8x10 n4 — 859 ms"],
     [P(11, 11, 3), "11x11 n3 — 296 ms"],
@@ -152,8 +150,8 @@ describe("abcd generable-size bound", () => {
   });
 
   it("refuses without running the generator, in well under a second", () => {
-    // The point of the bound: the refusal is a predicate, not a timeout. Before
-    // it, this configuration ran 5,000,000 attempts (~5.4 minutes) and threw.
+    // The refusal is a predicate, not a timeout: generating this configuration
+    // would spend minutes of frozen worker and then throw.
     const t0 = performance.now();
     expect(validateParams(P(10, 10, 4), true)).toMatch(/no ABCD puzzle/);
     expect(performance.now() - t0).toBeLessThan(100);
@@ -245,8 +243,8 @@ describe("abcd moves through a Midend", () => {
 
   it("costs no undo step for an entry that would change nothing", () => {
     // Upstream's own `TODO Prevent operations which do nothing`: re-typing the
-    // letter already in a cell, or clearing an already-empty one, used to be a
-    // committed move the player then had to undo.
+    // letter already in a cell, or clearing an already-empty one, must not
+    // commit a move the player then has to undo.
     const p = P(5, 5, 4);
     const ts = abcdGame.preferredTileSize ?? 36;
     const st = newState(p, newAbcdDesc(p, randomNew("noop-1")).desc);
@@ -485,14 +483,10 @@ describe("abcd textFormat", () => {
     const withA = abcdGame.executeMove(st, { type: "enter", x: 0, y: 0, letter: 0 });
     const text = abcdGame.textFormat?.(withA);
     expect(text).toBeDefined();
-    // Asserted as the WHOLE rendering, not as `toContain("A")` /
-    // `toContain(".")` / `toContain("-")` / `toContain("|")`, which is what this
-    // used to be and which could not fail on the defect it was written for.
-    // `toContain` of a single character is satisfied by any *superstring* of it,
-    // so rendering every empty cell as "./" instead of "." — the exact
-    // corruption `retire-native-directory`'s bulk rewriter produced here — left
-    // all 28 tests in this file green (re-verified 2026-08-03). One character is
-    // never a distinguishing assertion; see `docs/test-strength.md` §7.
+    // Asserted as the WHOLE rendering: `toContain("A")`, `toContain(".")` and
+    // the like are satisfied by any *superstring* of the character, so they
+    // stay green when every empty cell renders as "./" instead of ".". One
+    // character is never a distinguishing assertion; see `docs/test-strength.md`.
     expect(text).toMatchInlineSnapshot(`
       "      A 2 2 0 0 2 
             B 0 2 1 2 1 

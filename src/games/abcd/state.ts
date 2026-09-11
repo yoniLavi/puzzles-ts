@@ -1,25 +1,18 @@
-import type { GridCursor } from "../../engine/pointer.ts";
-import { newCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for ABCD — the state/codec parts of
  * `unreleased/abcd.c` (Lennard Sprong, 2011).
  *
- * Fill each cell of a `w × h` grid with one of `n` letters (`A`…). The numbers
- * on each row/column edge count how many of each letter that line holds, and
- * two identical letters may not be orthogonally adjacent (and, under `diag`
- * mode, not diagonally either). The puzzle has a unique solution by
- * construction.
+ * The *player state* is the grid of entered letters plus pencil marks; the
+ * *puzzle data* is the `(w+h)·n` edge clue numbers. The clues never change
+ * after `newState`, so every clone aliases the same `numbers` array and only
+ * `grid` and `pencil` are copied per move.
  *
- * The one fact the whole port turns on: the *player state* is the grid of
- * entered letters + pencil marks, while the *puzzle data* is the `(w+h)·n` edge
- * clue numbers. The clues never change after `newState`, so every clone aliases
- * the same frozen `numbers` array; only `grid` + `pencil` are copied per move.
- *
- * C uses one `clues[w·h·n]` boolean array for two unrelated jobs — the player's
- * pencil marks on the live state, and the solver's candidate cube on a scratch
- * state. We separate them: {@link AbcdState.pencil} here, a fresh cube local to
- * {@link ./solver.ts}.
+ * C uses one `clues[w·h·n]` array for two unrelated jobs, the player's pencil
+ * marks and the solver's candidate cube. Here they are separate:
+ * {@link AbcdState.pencil}, and a fresh cube local to {@link ./solver.ts}.
  */
+
+import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 
 // --- constants -------------------------------------------------------------
 
@@ -80,37 +73,17 @@ export function encodeParams(p: AbcdParams, full: boolean): string {
 }
 
 export function decodeParams(s: string): AbcdParams {
-  const p = defaultParams();
-  let i = 0;
-  const readInt = (): number => {
-    let d = "";
-    while (i < s.length && s[i] >= "0" && s[i] <= "9") d += s[i++];
-    return d ? Number.parseInt(d, 10) : 0;
+  // `W[xH][nN][D][R]`: a missing height is the width, and missing digits are 0.
+  const [, w, h, n, diag, removenums] =
+    /^(\d*)(?:x(\d*))?(?:n(\d*))?(D)?(R)?/.exec(s) ?? [];
+  const int = (d?: string): number => (d ? Number.parseInt(d, 10) : 0);
+  return {
+    w: int(w),
+    h: int(h ?? w),
+    n: n === undefined ? defaultParams().n : int(n),
+    diag: diag !== undefined,
+    removenums: removenums !== undefined,
   };
-  // Width (and default height to it).
-  p.w = p.h = readInt();
-  // Optional height.
-  if (s[i] === "x") {
-    i++;
-    p.h = readInt();
-  }
-  // Optional number of letters.
-  if (s[i] === "n") {
-    i++;
-    p.n = readInt();
-  }
-  // Optional flags.
-  p.diag = false;
-  if (s[i] === "D") {
-    p.diag = true;
-    i++;
-  }
-  p.removenums = false;
-  if (s[i] === "R") {
-    p.removenums = true;
-    i++;
-  }
-  return p;
 }
 
 /**
@@ -124,9 +97,9 @@ export function decodeParams(s: string): AbcdParams {
  * accepted **none in 454,144** (~30 s of trying). Upstream's author hit the same
  * wall and left it as a `TODO`, never having produced a 10x10 n4 board.
  *
- * The numbers are measured, not derived — see `bound-abcd-generable-sizes`
- * design D1 for the sweep (139 configurations) and D2 for why the two obvious
- * closed forms are both WRONG:
+ * The numbers are measured, not derived (the 139-configuration sweep is in
+ * `bound-abcd-generable-sizes`' design), and the two obvious closed forms are
+ * both WRONG:
  *
  *   - **Area alone cannot express it.** 10x10 n4 never generates; 2x50 n4, the
  *     same area, generates in 195 ms. Which is why the bound below applies only
@@ -175,9 +148,8 @@ export function validateParams(p: AbcdParams, full: boolean): string | null {
   if (p.n < 5 && p.diag) return "Letters for Diagonal mode must be at least 5";
   // Arbitrary ceiling that avoids clashing with midend hotkeys and fits the keypad.
   if (p.n > 9) return "Letters must be no more than 9";
-  // Generation only. A board that is already described — a shared game ID or a
-  // saved game — is handed over rather than searched for, so none of this
-  // applies to it and an id shared before this bound existed still opens.
+  // Generation only: a shared game ID or a saved game is handed over rather
+  // than searched for, so a described board outside the bound still opens.
   if (full) {
     const area = p.w * p.h;
     const thin = Math.min(p.w, p.h) < THIN_SIDE;
@@ -196,64 +168,37 @@ export function validateParams(p: AbcdParams, full: boolean): string | null {
 // --- desc codec ------------------------------------------------------------
 
 /**
- * Validate a description: a comma-separated list of `(w+h)·n` clue numbers in
- * `numbers`-array order, a bare `-` for a hidden clue. Faithful to
- * `validate_desc`: each number must fit its axis (a row clue `≤ 1 + w/2`, a
- * column clue `≤ 1 + h/2`), and the count must be exactly `(w+h)·n`.
+ * Validate a description: `(w+h)·n` clue numbers in `numbers`-array order,
+ * comma-separated, a bare `-` for a hidden clue. As upstream's `validate_desc`,
+ * each number must fit its axis (a row clue `≤ 1 + w/2`, a column clue
+ * `≤ 1 + h/2`).
  */
 export function validateDesc(p: AbcdParams, desc: string): string | null {
   const { w, h, n } = p;
-  const l = w + h;
   let i = 0; // clue index
-  let pos = 0; // string cursor
-  while (pos < desc.length) {
-    const c = desc[pos];
-    if (c >= "0" && c <= "9") {
-      let d = "";
-      while (pos < desc.length && desc[pos] >= "0" && desc[pos] <= "9")
-        d += desc[pos++];
-      const num = Number.parseInt(d, 10);
-      // A clue which can't possibly fit is rejected. `i < h·n` ⇒ a row clue.
-      if (
-        (i < h * n && num > 1 + ((w / 2) | 0)) ||
-        (i >= h * n && num > 1 + ((h / 2) | 0))
-      )
+  // Each token is a digit run or one other non-comma character.
+  for (const [token] of desc.matchAll(/\d+|[^,]/g)) {
+    if (/^\d/.test(token)) {
+      // A clue which can't possibly fit its line is rejected; `i < h·n` is a row.
+      const max = 1 + (((i < h * n ? w : h) / 2) | 0);
+      if (Number.parseInt(token, 10) > max)
         return "Description contains invalid number clue.";
-      i++;
-    } else if (c === "-") {
-      i++;
-      pos++;
-    } else if (c === ",") {
-      pos++;
-    } else {
+    } else if (token !== "-") {
       return "Invalid character in description.";
     }
+    i++;
   }
-  if (i < l * n) return "Description contains not enough clues.";
-  if (i > l * n) return "Description contains too many clues.";
+  if (i < (w + h) * n) return "Description contains not enough clues.";
+  if (i > (w + h) * n) return "Description contains too many clues.";
   return null;
 }
 
 /** Parse a description into the `numbers` array (`NO_NUMBER` for `-`). */
 export function parseNumbers(p: AbcdParams, desc: string): Int32Array {
-  const l = p.w + p.h;
-  const numbers = new Int32Array(l * p.n);
+  const numbers = new Int32Array((p.w + p.h) * p.n);
   let i = 0;
-  let pos = 0;
-  while (pos < desc.length) {
-    const c = desc[pos];
-    if (c >= "0" && c <= "9") {
-      let d = "";
-      while (pos < desc.length && desc[pos] >= "0" && desc[pos] <= "9")
-        d += desc[pos++];
-      numbers[i++] = Number.parseInt(d, 10);
-    } else if (c === "-") {
-      numbers[i++] = NO_NUMBER;
-      pos++;
-    } else {
-      pos++;
-    }
-  }
+  for (const [token] of desc.matchAll(/\d+|-/g))
+    numbers[i++] = token === "-" ? NO_NUMBER : Number.parseInt(token, 10);
   return numbers;
 }
 
@@ -297,11 +242,8 @@ export function cloneState(s: AbcdState): AbcdState {
 
 // --- win condition (abcd_validate_puzzle == 0) -----------------------------
 
-/**
- * Is `grid` fully solved for `numbers`? Faithful to `abcd_validate_puzzle`
- * returning 0: no clue over- or under-satisfied, no adjacency violation
- * (orthogonal, plus both diagonals under `diag`), and every cell filled.
- */
+/** Is the board solved: every clue met exactly, no two identical letters
+ * touching, and every cell filled? */
 export function isCompleted(state: AbcdState): boolean {
   return validatePuzzle(state.params, state.grid, state.numbers) === 0;
 }
@@ -319,18 +261,11 @@ export function validatePuzzle(
 ): -1 | 0 | 1 {
   const { w, h, diag } = p;
 
-  // Clue violations. Mirror the C's control flow exactly: if the horizontal
-  // pass reports "unsatisfied" (1) we still run the vertical pass to catch an
-  // overcrowded (-1) clue; if it reports "all satisfied" (0) we likewise run
-  // the vertical pass but keep its verdict as the running `invalid`.
-  let invalid = validateClues(p, grid, numbers, true);
-  if (invalid === -1) return -1;
-  if (invalid === 1) {
-    if (validateClues(p, grid, numbers, false) === -1) return -1;
-  } else {
-    invalid = validateClues(p, grid, numbers, false);
-    if (invalid === -1) return -1;
-  }
+  // Clue violations: an overcrowded clue in either direction is a contradiction.
+  const rows = validateClues(p, grid, numbers, true);
+  if (rows === -1) return -1;
+  const cols = validateClues(p, grid, numbers, false);
+  if (cols === -1) return -1;
 
   // Adjacency violations.
   if (!validateAdjacency(grid, w, 0, 0, w - 1, h, 1, 0)) return -1;
@@ -339,7 +274,7 @@ export function validatePuzzle(
   if (diag && !validateAdjacency(grid, w, 0, 1, w - 1, h, 1, -1)) return -1;
 
   // No contradiction, but a clue is still unsatisfied.
-  if (invalid === 1) return 1;
+  if (rows === 1 || cols === 1) return 1;
 
   // Finally, every square must be entered.
   for (let i = 0; i < w * h; i++) if (grid[i] === EMPTY) return 1;
@@ -378,21 +313,20 @@ function validateClues(
   const { w, h, n } = p;
   const amx = horizontal ? h : w;
   const bmx = horizontal ? w : h;
-  let error: -1 | 0 | 1 = 0;
+  let unsatisfied = false;
   for (let a = 0; a < amx; a++) {
     for (let i = 0; i < n; i++) {
       const clue = numbers[horizontal ? horClue(a, i, n) : verClue(a, i, n, h)];
       if (clue === NO_NUMBER) continue;
       let found = 0;
       for (let b = 0; b < bmx; b++) {
-        const gridpos = horizontal ? a * w + b : b * w + a;
-        if (grid[gridpos] === i) found++;
+        if (grid[horizontal ? a * w + b : b * w + a] === i) found++;
       }
-      if (found < clue) error = error === 0 ? 1 : error;
-      else if (found > clue) error = -1;
+      if (found > clue) return -1;
+      if (found < clue) unsatisfied = true;
     }
   }
-  return error;
+  return unsatisfied ? 1 : 0;
 }
 
 // --- moves -----------------------------------------------------------------
@@ -414,16 +348,14 @@ export type AbcdMove =
 // --- ui --------------------------------------------------------------------
 
 export interface AbcdUi {
-  /** Cursor position. */
   cursor: GridCursor;
-  /** Cursor is in pencil-mark mode. */
+  /** The cursor is in pencil-mark mode. */
   pencilMode: boolean;
-  /** Cursor came from the keyboard (so it survives an entry). */
+  /** The cursor came from the keyboard (so it survives an entry). */
   cursorFromKeyboard: boolean;
-  /** Preference (default on, the fork's shared convention): right-click toggles
-   * a *sticky* pencil mode that stays on until right-clicked again (a
-   * CapsLock-style toggle with an on-screen indicator), rather than upstream's
-   * per-cell pencil select. Matches Keen/Towers/Solo/Mathrax/Unequal/Undead. */
+  /** Preference (default on, the collection's convention): right-click toggles
+   * a *sticky* pencil mode, with an on-screen indicator, that stays on until
+   * right-clicked again, rather than upstream's per-cell pencil select. */
   pencilSticky: boolean;
   /** Preference (default on): keep the mouse highlight after a pencil change. */
   pencilKeepHighlight: boolean;
@@ -448,9 +380,8 @@ export function status(s: AbcdState): "solved" | "ongoing" {
  * the `A…` letters in the top-left gutter, the edge clues on the top and left
  * borders, an outlined `w × h` grid of entered letters (`.` for empty), and a
  * `+`/`*` corner cue for the no-diagonal-touch mode. Returns `undefined` when a
- * clue could be two digits (`w ≥ 19` or `h ≥ 19`) — the width the single-char
- * format can't hold — which is upstream's `game_can_format_as_text_now`
- * expressed through the widened `Game.textFormat` return (docs/games/rendering.md § "The palette: three layers, meaning first").
+ * clue could be two digits (`w ≥ 19` or `h ≥ 19`), which is upstream's
+ * `game_can_format_as_text_now` (docs/games/mechanics.md § "Capability flags").
  */
 export function textFormat(state: AbcdState): string | undefined {
   const { w, h, n } = state.params;
@@ -462,53 +393,48 @@ export function textFormat(state: AbcdState): string | undefined {
   const buf = new Array<string>(rw * rh).fill(" ");
   for (let i = 0; i < rh; i++) buf[rw * (i + 1) - 1] = "\n";
 
-  const put = (idx: number, ch: string): void => {
-    buf[idx] = ch;
-  };
   const digit = (num: number): string => String.fromCharCode(48 + num);
 
   // Letters in the top-left corner.
   for (let i = 0; i < n; i++) {
     const c = String.fromCharCode(65 + i);
-    put(rw * (n - 1) + i * 2, c); // horizontal
-    put(rw * i + (n - 1) * 2, c); // vertical
+    buf[rw * (n - 1) + i * 2] = c; // horizontal
+    buf[rw * i + (n - 1) * 2] = c; // vertical
   }
   // Top (column) clues.
   for (let x = 0; x < w; x++)
     for (let j = 0; j < n; j++) {
       const num = numbers[verClue(x, j, n, h)];
-      if (num !== NO_NUMBER) put(rw * j + n * 2 + x * 2, digit(num));
+      if (num !== NO_NUMBER) buf[rw * j + n * 2 + x * 2] = digit(num);
     }
   // Left (row) clues.
   for (let y = 0; y < h; y++)
     for (let j = 0; j < n; j++) {
       const num = numbers[horClue(y, j, n)];
-      if (num !== NO_NUMBER) put(rw * (y + n + 1) + j * 2, digit(num));
+      if (num !== NO_NUMBER) buf[rw * (y + n + 1) + j * 2] = digit(num);
     }
   // Outline corners (a subtle diag-vs-orthogonal cue).
   const corner = state.params.diag ? "*" : "+";
-  put(rw * n + n * 2 - 1, corner); // top-left
-  put(rw * (n + 1) - 2, corner); // top-right
-  put(rw * (n + h + 1) + n * 2 - 1, corner); // bottom-left
-  put(rw * (n + h + 2) - 2, corner); // bottom-right
+  buf[rw * n + n * 2 - 1] = corner; // top-left
+  buf[rw * (n + 1) - 2] = corner; // top-right
+  buf[rw * (n + h + 1) + n * 2 - 1] = corner; // bottom-left
+  buf[rw * (n + h + 2) - 2] = corner; // bottom-right
   // Horizontal borders.
   for (let i = 0; i < w * 2 - 1; i++) {
-    put(rw * n + n * 2 + i, "-"); // top
-    put(rw * (n + h + 1) + n * 2 + i, "-"); // bottom
+    buf[rw * n + n * 2 + i] = "-"; // top
+    buf[rw * (n + h + 1) + n * 2 + i] = "-"; // bottom
   }
   // Vertical borders.
   for (let y = 0; y < h; y++) {
-    put(rw * (n + y + 1) + n * 2 - 1, "|"); // left
-    put(rw * (n + y + 2) - 2, "|"); // right
+    buf[rw * (n + y + 1) + n * 2 - 1] = "|"; // left
+    buf[rw * (n + y + 2) - 2] = "|"; // right
   }
   // The entered letters.
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
       const c = grid[y * w + x];
-      put(
-        rw * (n + y + 1) + (n + x) * 2,
-        c !== EMPTY ? String.fromCharCode(65 + c) : ".",
-      );
+      buf[rw * (n + y + 1) + (n + x) * 2] =
+        c !== EMPTY ? String.fromCharCode(65 + c) : ".";
     }
 
   return buf.join("");
