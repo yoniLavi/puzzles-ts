@@ -1,21 +1,20 @@
 /**
  * Salad's solver — a consumer of the shared Latin framework
- * ([`engine/latin.ts`](../../engine/latin.ts)), per docs/games/solver-and-generator.md § "The Latin family".
+ * ([`engine/latin.ts`](../../engine/latin.ts)), per
+ * docs/games/solver-and-generator.md § "The Latin family".
  *
  * **The empty square is a symbol of the cube.** Salad wants "each of `nums`
  * symbols once per line, the other `order − nums` squares empty" — a
- * *pseudo*-Latin square. The cube expresses that directly: it is told its last
- * symbol, {@link holeSymbol} (`nums + 1`), repeats `order − nums` times per line
- * (`LatinRepeats`), and from there every generic deduction reasons about "the
- * empty square" as a value with a multiplicity — placed when exactly that many
- * cells of a line can still be empty, struck from a line once it holds all its
- * empties, weighed correctly by set elimination, never used as a forcing-chain
- * link. Upstream instead fakes the rule with a *full* order-`o` square whose
- * symbols above `nums` are reinterpreted as holes, and its solver spends its
- * time translating between the two views ("fairly messy", its author says in
- * `docs/salad.md`, wishing for exactly this support). That translation layer —
- * `latinholes_solver_sync`, `_count`, `_place_cross`, `_place_circle` — is gone;
- * what it computed by hand, the cube now knows.
+ * *pseudo*-Latin square. The cube expresses that directly: its last symbol,
+ * {@link holeSymbol} (`nums + 1`), repeats `order − nums` times per line
+ * (`LatinRepeats`), so every generic deduction reasons about "the empty square"
+ * as a value with a multiplicity — placed when exactly that many cells of a line
+ * can still be empty, struck from a line once it holds all its empties, weighed
+ * correctly by set elimination, never used as a forcing-chain link. Upstream
+ * instead fakes the rule with a *full* order-`o` square whose symbols above
+ * `nums` are reinterpreted as holes, and translates between the two views by
+ * hand (`latinholes_solver_sync`, `_count`, `_place_cross`, `_place_circle`);
+ * the cube makes that layer unnecessary.
  *
  * The player's two markers map onto the cube in one line each: a **cross**
  * (known empty) is the hole symbol *placed*; a **ball** (known to hold a symbol,
@@ -24,8 +23,7 @@
  * after a solve ({@link markersFromCube}).
  *
  * What stays Salad's own is the ABC End View border deduction
- * ({@link saladLettersSolverDir}), which reads the cube for "known empty" /
- * "known filled" where it used to read the marker array.
+ * ({@link saladLettersSolverDir}).
  *
  * Two difficulties, both **guess-free**: `diffRecursive = DIFF_IMPOSSIBLE`, so
  * the cube never recurses at either tier. Normal (`DIFF_EASY`) is the border
@@ -189,7 +187,7 @@ function saladLettersSolverDir(
   let found = false;
   let outofrange = false;
   // Hint-only provenance for the far arm: which square (if any) cut the reach
-  // short by being known to hold a symbol, and how many squares to walk back.
+  // short by being known to hold a symbol.
   let circleAt: number | null = null;
 
   for (let i = si; i !== ei; i += di) {
@@ -271,12 +269,10 @@ function saladLettersSolver(solver: LatinSolver, b: SaladBoard): number {
       const n = saladLettersSolverDir(solver, b, s.start, s.step, s.end, s.clue);
       nchanged += n;
       // **Hint path only**: one *clue's* scan is one firing, so stop after the
-      // first that fires and let the driver open a new `group`. Without this the
-      // whole sweep lands in one group and a hint step would gather strikes from
-      // unrelated clues in unrelated lines under one clue's narration (§3's
-      // group-per-firing-not-per-pass trap — caught here by a highlight test
-      // finding a "far" step whose targets spanned three rows). Gated, so the
-      // generator sweeps every clue exactly as upstream does.
+      // first that fires and let the driver open a new `group`. Without this a
+      // hint step would gather strikes from unrelated clues under one clue's
+      // narration (docs/games/hints.md § "Non-uniform value sets (Salad)").
+      // Gated, so the generator sweeps every clue exactly as upstream does.
       if (n && solver.recorder) return nchanged;
     }
   }
@@ -294,7 +290,7 @@ function saladSolverEasy(solver: LatinSolver, b: SaladBoard): number {
 
 /** Seed the cube with the fixed grid clues — a symbol placement, or the
  * ball/cross constraints, which place no *real* symbol and so cannot travel
- * through the seeded grid (this is why `latinSolver` grew its `seed` hook). */
+ * through the seeded grid. */
 function seedGridClues(solver: LatinSolver, b: SaladBoard): void {
   const o = b.order;
   for (let i = 0; i < o * o; i++) {
@@ -310,8 +306,9 @@ function seedGridClues(solver: LatinSolver, b: SaladBoard): void {
 /** Seed the cube from a board's *confirmed markers* — the hint path's analog
  * of {@link seedGridClues}. A cross or ball is a real entry (Check & Save flags a
  * wrong one), so it is a fact the working cube may assume; the player's *pencil
- * notes* never are (docs/games/hints.md § "The recorder and the soundness boundary"'s soundness boundary). Symbols need no
- * seeding here because they sit in `b.grid`, which `LatinSolver.alloc` places. */
+ * notes* never are (docs/games/hints.md § "The recorder and the soundness
+ * boundary"). Symbols need no seeding here because they sit in `b.grid`, which
+ * `LatinSolver.alloc` places. */
 function seedMarkers(solver: LatinSolver, b: SaladBoard): void {
   const o = b.order;
   for (let i = 0; i < o * o; i++) {
@@ -371,9 +368,6 @@ export interface SaladDeductions {
  * Run the solver over a copy of `b` at `maxdiff` with recording on, and report
  * everything it deduced (hint path only). Deductive only — both of Salad's tiers
  * pass `diffRecursive = DIFF_IMPOSSIBLE`, so there is nothing to cap.
- *
- * The generator/solve path never sets `cfg.recorder`, so every reason allocation
- * and record threaded through the deductions above is inert there.
  */
 export function recordSaladDeductions(b: SaladBoard, maxdiff: number): SaladDeductions {
   const o = b.order;
@@ -484,21 +478,39 @@ export interface SaladMistake {
 }
 
 /**
+ * The solved board as one entry per cell (a symbol `1..nums`, or 0 for a hole)
+ * — what `Game.solve` turns into a `solve` move. `null` when no solution is
+ * deducible.
+ *
+ * Solved at the top tier: Salad's Extreme rung only *adds* sound generic
+ * techniques to Normal's, so a Normal board still solves here (pinned by the
+ * "generate low, solve high" check, docs/games/solver-and-generator.md
+ * § "Solver-gated generation").
+ */
+export function saladSolution(s: SaladState): number[] | null {
+  const board = scratchBoard(s);
+  if (!saladSolve(board, DIFF_HARD)) return null;
+  const cells: number[] = [];
+  for (let i = 0; i < s.order * s.order; i++) {
+    cells.push(board.grid[i] <= s.nums ? board.grid[i] : 0);
+  }
+  return cells;
+}
+
+/**
  * Re-solve from the fixed clues alone and flag every player marking the unique
- * solution contradicts (docs/games/solver-and-generator.md § "The solvable-game contract"): a wrong symbol, a cross on a square
- * that holds one, a circle on a square that must stay empty, and — notes being
- * first-class markings (§3.7) — an empty square whose non-empty notes have
- * crossed out its solution value. Returns `[]` when the board is not uniquely
- * deducible, so Check & Save neither blesses nor blocks what it cannot judge.
+ * solution contradicts (docs/games/solver-and-generator.md § "The solvable-game
+ * contract"): a wrong symbol, a cross on a square that holds one, a circle on a
+ * square that must stay empty, and — notes being first-class markings — an
+ * empty square whose non-empty notes have crossed out its solution value.
+ * Returns `[]` when the board is not uniquely deducible, so Check & Save neither
+ * blesses nor blocks what it cannot judge.
  */
 export function findMistakes(s: SaladState): SaladMistake[] {
   const o = s.order;
   const nums = s.nums;
-  const board = scratchBoard(s);
-  // Solve at the top tier: Salad's Extreme rung only *adds* sound generic
-  // techniques to Normal's, so a Normal board still solves here (pinned by the
-  // "generate low, solve high" test — docs/games/solver-and-generator.md § "Solver-gated generation"'s monotonicity check).
-  if (!saladSolve(board, DIFF_HARD)) return [];
+  const sol = saladSolution(s);
+  if (!sol) return [];
 
   const out: SaladMistake[] = [];
   for (let i = 0; i < o * o; i++) {
@@ -507,9 +519,7 @@ export function findMistakes(s: SaladState): SaladMistake[] {
     // leaves the square's symbol up to the player.
     if (clue && clue !== CIRCLE) continue;
 
-    // The solution's value here: a symbol `1..nums`, or 0 for a hole (the
-    // cube's hole symbol, `nums + 1`).
-    const soln = board.grid[i] <= nums ? board.grid[i] : 0;
+    const soln = sol[i];
     const x = i % o;
     const y = (i / o) | 0;
 
@@ -530,19 +540,4 @@ export function findMistakes(s: SaladState): SaladMistake[] {
     if (s.pencil[i] !== 0 && !(s.pencil[i] & solnBit)) out.push({ kind: "note", x, y });
   }
   return out;
-}
-
-/**
- * The solved board as one entry per cell (a symbol `1..nums`, or 0 for a hole)
- * — what `Game.solve` turns into a `solve` move. `null` when no solution is
- * deducible.
- */
-export function saladSolution(s: SaladState): number[] | null {
-  const board = scratchBoard(s);
-  if (!saladSolve(board, DIFF_HARD)) return null;
-  const cells: number[] = [];
-  for (let i = 0; i < s.order * s.order; i++) {
-    cells.push(board.grid[i] <= s.nums ? board.grid[i] : 0);
-  }
-  return cells;
 }

@@ -44,16 +44,8 @@ import {
   MIDDLE_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { ConfigValues, GameStatus, KeyLabel, Point } from "../../engine/types.ts";
 import { newSaladDesc } from "./generator.ts";
 import { hint, hintKeepTrack, refreshHintStep } from "./hint.ts";
 import {
@@ -116,8 +108,8 @@ function presets(): PresetMenu<SaladParams> {
 // --- input -----------------------------------------------------------------
 
 /** Clear keys. Upstream binds only Backspace; the app's delete key, its
- * secondary-select key and **Space** (which `docs/salad.md` documents as a
- * clear but the C never wired up) are fork additions — see `design.md`. */
+ * secondary-select key and **Space** (which upstream's documentation calls a
+ * clear but its code never wired up) are fork additions. */
 function isClearKey(button: number): boolean {
   return isEraseKey(button) || button === 32 || button === CURSOR_SELECT2;
 }
@@ -147,16 +139,16 @@ function interpretMove(
   const gx = fromCoord(p.x, ts);
   const gy = fromCoord(p.y, ts);
   const pos = ui.cursor.x + o * ui.cursor.y;
+  // Only a blank square or one carrying a bare ball is the player's to fill.
+  const selectable = (i: number): boolean =>
+    state.gridclues[i] === 0 || state.gridclues[i] === CIRCLE;
 
   if (gx >= 0 && gx < o && gy >= 0 && gy < o) {
     const i = gy * o + gx;
-    // Only a blank square or one carrying a bare ball is the player's to fill.
-    const selectable = state.gridclues[i] === 0 || state.gridclues[i] === CIRCLE;
-
     if (
       pressNoteTakingCell(ui, button, gx, gy, {
-        canEnter: selectable,
-        canMark: selectable && state.grid[i] === 0,
+        canEnter: selectable(i),
+        canMark: selectable(i) && state.grid[i] === 0,
       }) !== null
     ) {
       return UI_UPDATE;
@@ -192,10 +184,7 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  if (
-    ui.cursor.visible &&
-    (state.gridclues[pos] === 0 || state.gridclues[pos] === CIRCLE)
-  ) {
+  if (ui.cursor.visible && selectable(pos)) {
     const type = ui.pencilMode ? "pencil" : "set";
     /** Upstream: a mouse-driven real entry drops the highlight afterwards. */
     const commit = (value: SaladEntry): SaladMove => {
@@ -225,10 +214,8 @@ function interpretMove(
 
   // 'M' / 'm' (and the toolbar's pencil-marks button): the collection's adaptive
   // Mark-all press — fill the squares that have no marks yet, else clear the
-  // candidates a placed symbol already rules out of its row or column. **Only
-  // ever adds or removes; never resets** (owner-directed 2026-07-29), so pressing
-  // it can't undo deductions the player has penciled. Upstream's resetting `M`
-  // (`markAll`) is no longer reachable from input.
+  // candidates a placed symbol already rules out of its row or column. It only
+  // ever adds or removes, never resets, so it can't undo the player's notes.
   if (button === 77 || button === 109) {
     return adaptiveMarkAll<SaladMove, SaladMark>(needsPencilFill(state), () =>
       obviousCandidateMarks(
@@ -269,10 +256,7 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
     case "pencilAll": {
       const allmarks = (1 << (nums + 1)) - 1;
       const marks = (1 << nums) - 1;
-      // `pencilAll` fills only the squares that carry no mark yet, so it can
-      // never throw away notes the player has narrowed; `markAll` (upstream's
-      // `M`) *resets* every fillable square and survives for replay of move logs
-      // saved before the button moved to the additive path.
+      // `pencilAll` skips a square that already carries marks; `markAll` resets it.
       const fillOnly = move.type === "pencilAll";
       for (let i = 0; i < o * o; i++) {
         if (!state.grid[i] && state.holes[i] !== CROSS) {
@@ -282,17 +266,9 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
       }
       return next;
     }
-    case "pencilStrike": {
-      // Only ever removes, so replaying it is idempotent (unlike the `pencil`
-      // toggle) and a partly-followed hint strike stays safe to re-apply. Mark
-      // `n = nums + 1` is the "might be empty" X, which `1 << (n − 1)` places at
-      // bit `nums` — the same formula as a symbol's bit.
+    case "pencilStrike":
       for (const { x, y, n } of move.marks) next.pencil[y * o + x] &= ~(1 << (n - 1));
       return next;
-    }
-    // Named rather than left as the `default`, which used to be this working
-    // arm: an unrecognized move fell into it and was read as an entry at
-    // `(undefined, undefined)`. The `default` below is now only a guard.
     case "set":
     case "pencil": {
       const i = move.y * o + move.x;
@@ -347,9 +323,7 @@ function solve(orig: SaladState): SolveResult<SaladMove> {
 
 /** Salad's difficulty contract (`engine/difficulty.ts`). `saladSolve` answers a
  * plain boolean — "did this come out a complete, valid board?" — and
- * `scratchBoard` seeds it with the clues only. `DIFF_HOLESONLY` (−1) is a
- * generator quality gate rather than a playable tier, which is one more reason
- * the tier list is declared and not counted off the `DIFF_*` family. */
+ * `scratchBoard` seeds it with the clues only. */
 const difficulty: DifficultyContract<SaladParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
@@ -366,13 +340,12 @@ export const saladGame: Game<
   SaladMistake
 > = {
   id: "salad",
-  // The C/WASM build compiles without STYLUS_BASED, so it shows the symbol
-  // range in the status bar; keep that.
+  // The symbol range, as upstream shows it in its non-stylus builds.
   wantsStatusbar: true,
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  canMarkAll: true, // handles 'M' (markAll) in interpretMove
+  canMarkAll: true, // the adaptive 'M' press in interpretMove
 
   defaultParams,
   presets,
@@ -428,7 +401,7 @@ export const saladGame: Game<
     difficulty: p.diff,
   }),
 
-  newDesc: (p: SaladParams, rng: RandomState) => newSaladDesc(p, rng),
+  newDesc: (p, rng) => newSaladDesc(p, rng),
   validateDesc,
   newState,
   newUi,
@@ -456,14 +429,13 @@ export const saladGame: Game<
     return keys;
   },
   textFormat,
-  statusbarText: (s) =>
-    symbolRange({ order: s.order, nums: s.nums, mode: s.mode, diff: s.diff }),
+  statusbarText: (s) => symbolRange(s),
 
   prefs: [stickyPencilPref<SaladUi>(), pencilKeepHighlightPref<SaladUi>()],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SaladParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

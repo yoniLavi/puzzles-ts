@@ -84,7 +84,7 @@ describe("salad render scenarios", () => {
   });
 
   it("does not let a border clue's erase wipe the grid's outline", () => {
-    // Regression (owner-reported): the four clue tiles abut the play area, and
+    // Regression: the four clue tiles abut the play area, and
     // the grid's outermost boundary lines are drawn by the neighboring *cells*
     // on the shared pixel. A clue that erases its whole tile therefore rubs out
     // the boundary — which happened on the right edge, so every row carrying a
@@ -192,8 +192,7 @@ describe("salad hint frames", () => {
   it("outlines the run a clue's symbol is confined to, and lights the clue", () => {
     // The far arm: the clue's own symbol can sit only within the line's hole
     // budget of the clue, so the squares beyond it lose that candidate. The
-    // outlined run is where it *can* be — the premise as an area, not one cell
-    // (§5.2).
+    // outlined run is where it *can* be — the premise as an area, not one cell.
     const { recording, hint } = hintFrame(LETTERS_ID, /has room for only/);
     expect(hint?.explanation).toMatch(/has room for only \d+ empty square/);
     // The run is a **contour**: a side wherever the neighbor across it is not
@@ -202,13 +201,13 @@ describe("salad hint frames", () => {
     const outline = markSides(recording.ops, COL_HINT_CELL);
     expect(outline.length).toBeGreaterThan(4);
     for (const s of outline) expect(isThin(s)).toBe(true);
-    // The premise is only visible if the clue glyph is part of the highlight
-    // (design D8): it is redrawn in COL_HINT rather than the usual clue color.
+    // The premise is only visible if the clue glyph is part of the highlight:
+    // it is redrawn in COL_HINT rather than the usual clue color.
     expect(recording.ops.some((o) => o.op === "text" && o.color === COL_HINT)).toBe(
       true,
     );
     // Each square acted on is ringed in COL_HINT, so its struck notes stay
-    // legible (§5.4).
+    // legible.
     expectRing(
       recording.ops,
       COL_HINT,
@@ -236,8 +235,8 @@ describe("salad hint frames", () => {
       /so every other square in it must be empty|must be empty\.$/,
     );
     expect(hint?.explanation).toMatch(/must be empty/);
-    // §5.1a: Salad writes three shapes, so the hint echoes the one it is asking
-    // for — here the two strokes of a cross, in COL_HINT.
+    // Salad writes three shapes, so the hint echoes the one it is asking for —
+    // here the two strokes of a cross, in COL_HINT.
     const strokes = recording.ops.filter(
       (o) => o.op === "line" && o.color === COL_HINT,
     );

@@ -4,8 +4,8 @@
  * Tier 1 — pure logic: the params and description codecs (both modes), the
  * solver's verdicts, generator quality across every preset, the move
  * transitions, completion, `findMistakes`, the keypad, and Solve through a real
- * `Midend`. Tier 2 — the paint-twice mistake-overlay regression (playbook
- * §3.2); the tier-2.5 render scenarios live in `salad-render.test.ts`.
+ * `Midend`. Tier 2 — the paint-twice mistake-overlay regression; the tier-2.5
+ * render scenarios live in `salad-render.test.ts`.
  *
  * The byte-for-byte C differential is `salad-differential.test.ts`.
  */
@@ -243,9 +243,9 @@ describe("salad generator", () => {
     }
   }
 
-  // The tier gate (grade-difficulty-tiers-honestly). Upstream had none, so
-  // Extreme was mostly Normal: 12 of its 13 frozen Extreme fixtures, and
-  // 71 of 80 freshly generated boards, fell to the Normal solver.
+  // The tier gate. Upstream has none, so its Extreme is mostly Normal: 12 of
+  // its 13 frozen Extreme fixtures, and 71 of 80 freshly generated boards, fall
+  // to the Normal solver.
   for (const preset of PRESETS) {
     const p = { ...preset, diff: DIFF_HARD };
     it(`generates an Extreme ${presetLabel(p)} that Normal cannot solve`, () => {
@@ -627,11 +627,11 @@ describe("salad input", () => {
   });
 
   it("'M' fills, then only ever removes — never resets the player's notes", () => {
-    // Owner-directed 2026-07-29: the Mark-all press is the collection's adaptive
-    // one (shared `adaptiveMarkAll`) — first press fills the squares with no
-    // marks, later presses clear the candidates a placed symbol already rules
-    // out. It must never reset a square the player has narrowed, which is what
-    // upstream's `M` (`markAll`, now legacy-replay-only) does.
+    // The Mark-all press is the collection's adaptive one (shared
+    // `adaptiveMarkAll`) — first press fills the squares with no marks, later
+    // presses clear the candidates a placed symbol already rules out. It must
+    // never reset a square the player has narrowed, as upstream's `M`
+    // (`markAll`, replay-only) does.
     const s = newState(NUMBERS.p, NUMBERS.desc);
     const ui = newUi(s);
     const press = (st: typeof s) =>

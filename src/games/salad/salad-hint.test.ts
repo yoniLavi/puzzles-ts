@@ -175,7 +175,7 @@ describe("salad hint — journeys and highlights", () => {
       for (const step of walk(LETTERS, seed).steps) {
         if (!/sees [A-C] first/.test(step.explanation)) continue;
         const hl = step.highlights as SaladHint;
-        // The premise is only visible if the clue itself is lit (design D8).
+        // The premise is only visible if the clue itself is lit.
         expect(hl.clues.length).toBe(1);
         expect(hl.area.length).toBeGreaterThan(0);
         const inArea = (t: { x: number; y: number }): boolean =>
@@ -246,7 +246,7 @@ describe("salad hint — narration arms", () => {
   });
 
   it("reads correctly where a line holds exactly one empty square", () => {
-    // §2.7's degenerate extreme: `nums = order − 1`.
+    // The degenerate extreme: `nums = order − 1`.
     const tight = { mode: GAMEMODE_NUMBERS, order: 4, nums: 3 };
     expect(narrate({ kind: "countHolesDone", line: "row", index: 0 }, [], tight)).toBe(
       "This row already has its one empty square, so every other square in it must hold a number.",
@@ -353,9 +353,9 @@ describe("salad hint — refusals and resumption", () => {
 
 describe("salad hint — the opener never destroys the player's own notes", () => {
   it("fills only the squares that carry no mark yet", () => {
-    // Owner-reported 2026-07-29: on a board with *some* penciled squares and
-    // *some* blank ones, the opener used upstream's `markAll`, which resets every
-    // fillable square — throwing away deductions the player had already made.
+    // On a board with *some* penciled squares and *some* blank ones, a resetting
+    // fill (upstream's `markAll`) would throw away deductions the player had
+    // already made.
     const state = board(LETTERS, "fill-1");
     const o = state.order;
     let s = saladGame.executeMove(state, { type: "markAll" });

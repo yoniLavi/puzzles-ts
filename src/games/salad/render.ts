@@ -28,6 +28,7 @@ import {
   pencilColor,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
+import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
@@ -39,7 +40,7 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Color, Size } from "../../engine/types.ts";
+import type { Color, DrawTextOptions, Size } from "../../engine/types.ts";
 import type { SaladHint } from "./hint.ts";
 import type { SaladMistake } from "./solver.ts";
 import {
@@ -148,9 +149,8 @@ const FD_HINT = 0x20;
 
 /** Bits 0–1 are the shared target/area flags and bits 2+ the struck candidates
  * (`hintMarkBit(n)`, `n` up to `nums + 1` ⇒ at most bit 11). The *entry* a step
- * asks for — Salad has three move shapes, and §5.1a wants each echoed in the
- * hint color — is packed above them: a symbol `1..9` verbatim, or one of the two
- * marker codes. */
+ * asks for — Salad has three move shapes, each echoed in the hint color — is
+ * packed above them: a symbol `1..9` verbatim, or one of the two marker codes. */
 const HINT_GHOST_SHIFT = 16;
 const HINT_GHOST_MASK = 0xf << HINT_GHOST_SHIFT;
 const GHOST_CROSS = 10;
@@ -174,7 +174,6 @@ export function computeSize(p: { order: number }, ts: number): Size {
 /** Upstream `FROMCOORD`: the one-tile clue margin means cell 0 starts at
  * `TILE_SIZE`, and a click in the margin lands outside the play area. */
 export function fromCoord(v: number, ts: number): number {
-  // The board's origin is a full tile: the clue ring sits outside the grid.
   return fromCoordE(v, ts, ts);
 }
 
@@ -322,6 +321,11 @@ function setDrawFlags(
 
 // --- tile painting ---------------------------------------------------------
 
+/** The one text style every glyph on the board is drawn in. */
+function glyphFont(size: number): DrawTextOptions {
+  return { align: "center", baseline: "mathematical", fontType: "variable", size };
+}
+
 function drawBall(
   dr: GameDrawing,
   ts: number,
@@ -331,10 +335,8 @@ function drawBall(
   flags: number,
   flash: number,
 ): void {
-  const o = s.order;
-  const i = x + y * o;
+  const i = x + y * s.order;
   if (s.mode === GAMEMODE_LETTERS && s.grid[i] !== 0) return;
-  if (s.holes[i] !== CIRCLE) return;
 
   const tx = (x + 1) * ts + Math.floor(ts / 2);
   const ty = (y + 1) * ts + Math.floor(ts / 2);
@@ -369,16 +371,23 @@ function drawCross(
   thick: number,
 ): void {
   const i = x + y * s.order;
-  if (s.holes[i] !== CROSS) return;
-
-  const tx = (x + 1) * ts;
-  const ty = (y + 1) * ts;
   const color = s.gridclues[i]
     ? COL_I_HOLE
     : flags & FD_ERROR
       ? COL_E_HOLE
       : COL_G_HOLE;
+  drawX(dr, (x + 1) * ts, (y + 1) * ts, ts, color, thick);
+}
 
+/** The two strokes of a cross over the tile at `(tx, ty)`. */
+function drawX(
+  dr: GameDrawing,
+  tx: number,
+  ty: number,
+  ts: number,
+  color: number,
+  thick: number,
+): void {
   dr.drawLine(
     { x: tx + ts * 0.2, y: ty + ts * 0.2 },
     { x: tx + ts * 0.8, y: ty + ts * 0.8 },
@@ -435,17 +444,7 @@ function drawPencilMarks(
     const ch = i === mmx - 1 ? "X" : String.fromCharCode(base + i + 1);
     const cx = tx + Math.floor(((4 * hx + 3) * ts) / (4 * hw + 2));
     const cy = ty + Math.floor(((4 * hy + 3) * ts) / (4 * hh + 2));
-    dr.drawText(
-      { x: cx, y: cy },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: fontsz,
-      },
-      COL_PENCIL,
-      ch,
-    );
+    dr.drawText({ x: cx, y: cy }, glyphFont(fontsz), COL_PENCIL, ch);
     // Candidate `i + 1` in the mark bitmap is candidate `i + 1` to the hint too.
     if (struck & (1 << (i + 1))) {
       const r = Math.max(2, Math.floor(fontsz / 3));
@@ -469,18 +468,7 @@ function drawGhost(
   const cx = tx + Math.floor(ts / 2);
   const cy = ty + Math.floor(ts / 2);
   if (code === GHOST_CROSS) {
-    dr.drawLine(
-      { x: tx + ts * 0.2, y: ty + ts * 0.2 },
-      { x: tx + ts * 0.8, y: ty + ts * 0.8 },
-      COL_HINT,
-      2.5,
-    );
-    dr.drawLine(
-      { x: tx + ts * 0.2, y: ty + ts * 0.8 },
-      { x: tx + ts * 0.8, y: ty + ts * 0.2 },
-      COL_HINT,
-      2.5,
-    );
+    drawX(dr, tx, ty, ts, COL_HINT, 2.5);
     return;
   }
   if (code === GHOST_CIRCLE) {
@@ -488,49 +476,16 @@ function drawGhost(
     dr.drawCircle({ x: cx, y: cy }, ts * 0.38, -1, COL_HINT);
     return;
   }
-  dr.drawText(
-    { x: cx, y: cy },
-    {
-      align: "center",
-      baseline: "mathematical",
-      fontType: "variable",
-      size: Math.floor(ts / 2),
-    },
-    COL_HINT,
-    String.fromCharCode(base + code),
-  );
+  const ch = String.fromCharCode(base + code);
+  dr.drawText({ x: cx, y: cy }, glyphFont(Math.floor(ts / 2)), COL_HINT, ch);
 }
 
 /** The fork's Check & Save marker: an inset red box, the same cue Towers uses,
  * so a wrong *empty* square (which has no glyph to recolor) is still visible. */
 function drawMistakeBox(dr: GameDrawing, tx: number, ty: number, ts: number): void {
-  const r = tx + ts - 1;
-  const b = ty + ts - 1;
   for (const inset of [2, 3]) {
-    dr.drawLine(
-      { x: tx + inset, y: ty + inset },
-      { x: r - inset, y: ty + inset },
-      COL_MISTAKE,
-      1,
-    );
-    dr.drawLine(
-      { x: r - inset, y: ty + inset },
-      { x: r - inset, y: b - inset },
-      COL_MISTAKE,
-      1,
-    );
-    dr.drawLine(
-      { x: r - inset, y: b - inset },
-      { x: tx + inset, y: b - inset },
-      COL_MISTAKE,
-      1,
-    );
-    dr.drawLine(
-      { x: tx + inset, y: b - inset },
-      { x: tx + inset, y: ty + inset },
-      COL_MISTAKE,
-      1,
-    );
+    const side = ts - 2 * inset;
+    drawRectOutline(dr, tx + inset, ty + inset, side, side, COL_MISTAKE);
   }
 }
 
@@ -591,8 +546,9 @@ export function redraw(
     for (let x = 0; x < o; x++) {
       const i = y * o + x;
       // Packed key: flags (5) | symbol (4) | marks (nums+1 ≤ 10) | flash (2).
-      // Every overlay is in here or in `ds.wrong` (docs/games/rendering.md § "Overlay sidecars"), so nothing
-      // can change on screen without the cell missing the cache.
+      // Every overlay is in here or in a sidecar (docs/games/rendering.md
+      // § "Overlay sidecars"), so nothing can change on screen without the cell
+      // missing the cache.
       const key =
         flags[i] | (s.grid[i] << 5) | (s.pencil[i] << 9) | ((flash + 1) << 19);
       if (ds.drawn[i] === key && !ds.wrong.stale(i) && !ds.hint.stale(i)) continue;
@@ -681,12 +637,7 @@ export function redraw(
               : COL_G_NUM;
         dr.drawText(
           { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
-          {
-            align: "center",
-            baseline: "mathematical",
-            fontType: "variable",
-            size: Math.floor(ts / 2),
-          },
+          glyphFont(Math.floor(ts / 2)),
           color,
           String.fromCharCode(base + s.grid[i]),
         );
@@ -697,7 +648,7 @@ export function redraw(
 
       // A forcing chain's place in the order it fires, so the narration can
       // cite the squares by number rather than asking the player to
-      // reconstruct the chain (`walk-tactic-hint-chains`).
+      // reconstruct the chain.
       if (ds.hint.order[i] > 0)
         drawHintOrdinal(dr, { x: tx, y: ty }, ts, ds.hint.order[i], COL_HINT_CELL);
 
@@ -733,18 +684,14 @@ export function redraw(
   // Border clues, in the one-tile margin.
   //
   // Each clue erases its own margin tile before drawing the letter, and the
-  // erase rect is **deliberately asymmetric on the right edge** (`inset`). A
-  // clue tile abuts the play area, and the grid's outermost boundary line is
-  // drawn *by the neighboring cell*, on the shared pixel — so an erase that
-  // includes that pixel wipes it. Only the right column is affected: the last
-  // cell's right edge sits at exactly `(o+1)·ts`, which is the right clue
-  // tile's own origin, whereas the top/left/bottom boundaries land at
-  // `ts − 1` / `ts` / `(o+1)·ts − 1`, all outside their clue tile's `ts − 1`
-  // erase. Upstream spells this as a one-off `tx+1, ty+1, TILE_SIZE-2` for the
-  // right clue only; keep it. (Flattening the four sides into one uniform rect
-  // is exactly the tidy-up that shipped a board missing the right-hand cell
-  // borders of every row that *had* a right clue — pinned below by
-  // `salad-render.test.ts`.)
+  // erase rect is **deliberately asymmetric on the right edge** (`inset`). The
+  // grid's outermost boundary line is drawn *by the neighboring cell*, and the
+  // last cell's right edge sits at exactly `(o+1)·ts`, the right clue tile's own
+  // origin — so a full erase there wipes it — whereas the top/left/bottom
+  // boundaries land at `ts − 1` / `ts` / `(o+1)·ts − 1`, all outside their clue
+  // tile's `ts − 1` erase. Upstream's one-off `tx+1, ty+1, TILE_SIZE-2` for the
+  // right clue; do not fold the four sides into one uniform rect
+  // (docs/games/rendering.md § "A clue-ring erase must not wipe the grid").
   for (let i = 0; i < o; i++) {
     const spots = [
       { j: i, tx: (i + 1) * ts, ty: 0, inset: 0 },
@@ -772,12 +719,7 @@ export function redraw(
       dr.drawRect(erase, COL_BACKGROUND);
       dr.drawText(
         { x: spot.tx + Math.floor(ts / 2), y: spot.ty + Math.floor(ts / 2) },
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: Math.floor(ts / 2),
-        },
+        glyphFont(Math.floor(ts / 2)),
         color,
         String.fromCharCode(64 + s.borderclues[spot.j]),
       );

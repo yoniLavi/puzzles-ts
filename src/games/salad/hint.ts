@@ -11,9 +11,9 @@
  * 1. **A square's emptiness is taught as a marker, not as a note strike.** The
  *    cube does place the hole symbol, and does strike it — but the player
  *    settles a square with a cross or a ball, so a cross/ball is emitted as a
- *    marker step whose *why* is re-derived from the board the player can see
- *    (§9.3a's rule, applied to markers): a line's counts first, then a note
- *    collapse, and only then the honest weaker "taking this row and column
+ *    marker step whose *why* is re-derived from the board the player can see:
+ *    a line's counts first, then a note collapse, and only then the honest
+ *    weaker "taking this row and column
  *    together" arm, which is the cube's own verdict read back as markers. The
  *    cube's eliminations *of* the hole symbol are dropped from the strike walk
  *    for the same reason: teaching one fact twice, as an X-mark strike and then
@@ -24,8 +24,8 @@
  *    (`solver.ts`), which is the one Salad deduction that strikes candidates the
  *    player holds notes for.
  * 3. **The walk terminates on {@link latinholesCheck}, not "the grid is full".**
- *    A solved board legitimately leaves `order − nums` squares per line blank
- *    (the port's finding F3), so a fill-the-grid loop would never end.
+ *    A solved board legitimately leaves `order − nums` squares per line blank,
+ *    so a fill-the-grid loop would never end.
  *
  * The reusable mechanics come from `engine/candidate-hint.ts` and
  * `engine/latin-hint.ts`; what lives here is the walk, the reason union and the
@@ -114,11 +114,11 @@ export type SaladReason =
    * strikes (file header, point 1), so it is reached only if that changes. */
   | LatinRepeatReason;
 
-/** What a Salad hint step draws (docs/games/hints.md § "The element-type color legend"'s element legend):
- * `area` is the deduction's evidence, `targets` the squares it acts on, `marks`
- * the notes it strikes, `clues` the border clues it reasons from, and `ghost`
- * the entry it is asking for, previewed in `COL_HINT` (§5.1a — Salad has three
- * move shapes and each echoes its own). */
+/** What a Salad hint step draws (docs/games/hints.md § "The element-type color
+ * legend"): `area` is the deduction's evidence, `targets` the squares it acts
+ * on, `marks` the notes it strikes, `clues` the border clues it reasons from,
+ * and `ghost` the entry it is asking for, previewed in `COL_HINT` in the shape
+ * of whichever of Salad's three moves it is. */
 export interface SaladHint extends CandidateHighlights {
   clues: number[];
   ghost?: "cross" | "circle" | number;
@@ -181,9 +181,9 @@ export function narrate(
 }
 
 /** The evidence to shade (`area`) and the border clues to light (`clues`) for a
- * reason — docs/games/hints.md § "Show the evidence as an area": show the premise as an area, not one cell. A
- * border deduction shades exactly the run of squares its argument is about, read
- * off the shared {@link borderScanFor} rather than re-derived. */
+ * reason (docs/games/hints.md § "Show the evidence as an area"). A border
+ * deduction shades exactly the run of squares its argument is about, read off
+ * the shared {@link borderScanFor} rather than re-derived. */
 function reasonEvidence(
   reason: SaladReason,
   o: number,
@@ -215,7 +215,6 @@ function reasonEvidence(
     }
     case "countHolesDone":
     case "countLettersDone":
-      return { area: hiddenSingleLine(reason.line, reason.index, o), clues: [] };
     case "hiddenSingle":
       return { area: hiddenSingleLine(reason.line, reason.index, o), clues: [] };
     // A forcing chain names the squares it ran through, **numbered**, so the
@@ -290,7 +289,7 @@ interface MarkerFiring {
 }
 
 /** The cheapest marker deduction available on the board *as the player sees it*
- * — a line's counts first (visible and countable, §2.8), then a note collapse.
+ * — a line's counts first (visible and countable), then a note collapse.
  * Returns `null` when neither applies; the caller then falls through to the
  * recorded strikes/placements and finally to the cube's own verdict. */
 function nextCheapMarker(w: Working, o: number, nums: number): MarkerFiring | null {
@@ -450,8 +449,7 @@ function pushStrike(
 }
 
 /** Emit a placement and apply it, then teach the row/column note cull it forces
- * as a continuation leg (Salad has no auto-pencil preference, so `autoClean` is
- * only ever set by a caller that has one). */
+ * as a continuation leg — or, under `autoClean`, apply the cull silently. */
 function pushPlacement(
   b: Builder,
   x: number,
@@ -545,23 +543,17 @@ function buildSteps(
 
   // The same predicate the Mark-all button's fill half uses, so the opener fires
   // exactly when a press of that button would fill something.
-  const working = { order: o, grid: w.grid, holes: w.holes, pencil: w.pencil };
-  let populated = !needsPencilFill(working);
+  let populated = !needsPencilFill({ order: o, ...w });
   let cleaned = false;
 
   const allMarks = (1 << (nums + 1)) - 1;
   const symbolMarks = (1 << nums) - 1;
   /**
    * The opener: pencil in the squares that carry no mark yet, and **only** those
-   * (the additive `pencilAll`, not upstream's resetting `markAll`).
-   *
-   * Owner-reported 2026-07-29: filling with `markAll` threw away notes the player
-   * had already narrowed, on any board with *some* penciled squares and *some*
-   * blank ones. The working copy has to mirror the additive fill exactly, or the
-   * plan would go on to teach strikes on candidates the player had already
-   * crossed out — a step whose mark is invisible on their board. (The shared
-   * `lazyPopulate` still fills every empty cell, which is the same defect in the
-   * rest of the family — see the change's design `F8`.)
+   * (the additive `pencilAll`, not the resetting `markAll`). The working copy has
+   * to mirror that fill exactly, or the plan would go on to teach strikes on
+   * candidates the player had already crossed out — a step whose mark is
+   * invisible on their board.
    */
   const populate = (): void => {
     for (let i = 0; i < o * o; i++) {
@@ -658,7 +650,7 @@ function buildSteps(
     }
 
     // 5. A forced placement — re-derive a generic `single`'s *why* from the
-    //    working board (§9.3a); Salad records no placement reasons of its own.
+    //    working board; Salad records no placement reasons of its own.
     const placeOps = ops.filter((op) => op.kind === "place" && op.n <= nums);
     const place = nextPlace(placeOps, probe, o);
     if (place) {
@@ -698,22 +690,18 @@ function splitStrike(
   live: SaladOp[],
   o: number,
 ): { marks: SaladMark[]; reason: SaladReason }[] {
-  const out: { marks: SaladMark[]; reason: SaladReason }[] = [];
   const byKey = new Map<string, SaladOp[]>();
   for (const op of live) {
-    const kind = (op.reason as { kind: string }).kind;
+    const kind = op.reason.kind;
     const key = kind === "borderFar" ? `far:${op.n}` : `${kind}:${op.y * o + op.x}`;
     const bucket = byKey.get(key);
     if (bucket) bucket.push(op);
     else byKey.set(key, [op]);
   }
-  for (const bucket of byKey.values()) {
-    out.push({
-      marks: bucket.map((op) => ({ x: op.x, y: op.y, n: op.n })),
-      reason: bucket[0].reason,
-    });
-  }
-  return out;
+  return [...byKey.values()].map((bucket) => ({
+    marks: bucket.map((op) => ({ x: op.x, y: op.y, n: op.n })),
+    reason: bucket[0].reason,
+  }));
 }
 
 // --- the Game hooks --------------------------------------------------------

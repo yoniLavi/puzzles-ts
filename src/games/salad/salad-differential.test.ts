@@ -1,6 +1,6 @@
 /**
  * Gated C-vs-TS differential for Salad: the **byte-for-byte desc match**
- * (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
+ * (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  *
  * Salad's generator is solver-gated at every clue removal — a clue stays only
  * while the puzzle still solves by pure deduction at the target difficulty — so
@@ -8,16 +8,10 @@
  * intermediate board. One byte-match assertion therefore validates the
  * generator's RNG draw order, the solver's exact deductive power (the ABC End
  * View border rule, and the generic cube's reasoning about the empty square)
- * and the run-length codec, all at once.
- *
- * **It also proved a rewrite.** `add-latin-repeats-support` replaced upstream's
- * hole translation — a full order-`o` square whose surplus symbols mean "empty",
- * plus a sync/count layer between the two views — with a cube that carries the
- * empty square as a repeated symbol. Every one of these 28 descriptions stayed
- * byte-identical across that rewrite, which is the strongest available statement
- * that the two encodings are deductively equivalent on every intermediate board
- * the generator asked about. Retiring this file was the plan; keeping it was the
- * finding.
+ * and the run-length codec, all at once. It is also the evidence that the
+ * cube's repeated-symbol encoding of the empty square is deductively equivalent
+ * to upstream's hole translation (a full order-`o` square whose surplus symbols
+ * mean "empty") on every board the generator asks about.
  *
  * **`upstreamLooseGate` is set here and nowhere else.** The shipped generator
  * rejects a board that the tier below already solves, which upstream never
@@ -30,10 +24,8 @@
  *
  * The fixtures span both game modes, both difficulties, every upstream preset,
  * and a size sweep either side of the `order < 8` "empty grid" quality rule.
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/salad-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C build and the
+ * trace harness that captured it are gone — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

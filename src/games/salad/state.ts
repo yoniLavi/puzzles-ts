@@ -13,12 +13,10 @@
  *   **ball** (circle) marks a square that must hold a number, a **cross** marks
  *   one that must stay empty.
  *
- * **The `'X'`/`'O'` sentinels keep their character codes**, exactly as upstream
- * stores them, because one `digit` array holds both the symbols (`1..nums`, and
- * `nums ≤ 9` is enforced by `validateParams`) and the two markers — and the
- * run-length desc codec is written against that mixed alphabet. Naming them
- * ({@link CROSS} / {@link CIRCLE}) is the whole idiomatic gain available here;
- * re-encoding them would buy nothing and make the codec harder to audit.
+ * **The `'X'`/`'O'` sentinels keep their character codes**, as upstream stores
+ * them: one array holds both the symbols (`1..nums`, `nums ≤ 9`) and the two
+ * markers, and the run-length desc codec is written against that mixed
+ * alphabet. Re-encoding them would make the codec harder to audit.
  */
 
 import type { NoteEncoding } from "../../engine/candidate-hint.ts";
@@ -244,31 +242,20 @@ export type SaladMove =
   /** Upstream `P x,y,c` — a pencil mark. `"circle"` is upstream's oddity: it
    * toggles the *real* circle marker without emptying the square. */
   | { type: "pencil"; x: number; y: number; value: SaladEntry }
-  /** Fork addition, for the hint (docs/games/hints.md § "Persist, populate, and the moves"): clear a list of pencil
-   * marks atomically. The per-square `pencil` move is a *toggle*, so a
-   * re-applied strike would put the mark back; this one only ever removes, which
-   * makes one deduction forcing several strikes a single idempotent,
-   * resume-safe step. Additive to the union, so saved move logs replay
-   * unchanged. */
+  /** Fork addition, for the hint (docs/games/hints.md § "Persist, populate, and
+   * the moves"): clear a list of pencil marks atomically. The per-square
+   * `pencil` move is a *toggle*, so a re-applied strike would put the mark back;
+   * this one only ever removes, which makes one deduction forcing several
+   * strikes a single idempotent, resume-safe step. */
   | { type: "pencilStrike"; marks: SaladMark[] }
-  /** Pencil in the candidates of every square that carries **no** mark yet,
-   * leaving the player's own narrowed notes alone — the collection-wide
-   * `pencilAll` (the fill half of the adaptive Mark-all press, and the hint's
-   * opener).
-   *
-   * Deliberately *not* upstream's resetting `markAll` below, and that is the
-   * whole point: resetting every square to the full candidate set silently threw
-   * away deductions the player had already penciled (owner-reported
-   * 2026-07-29, on the hint's opener and then on the Mark-all button itself).
-   * Additive, so it is idempotent and resume-safe. */
+  /** Pencil in the candidates of every square that carries **no** mark yet —
+   * the fill half of the adaptive Mark-all press, and the hint's opener.
+   * Deliberately not the resetting `markAll` below, which would throw away
+   * deductions the player has already penciled. */
   | { type: "pencilAll" }
   /** Upstream `M` — fill every empty square with all its candidate marks,
-   * *resetting* any the player had narrowed.
-   *
-   * **Legacy replay only.** No input emits it any more (the Mark-all button and
-   * the `M` key go through the adaptive, additive path above), but a saved move
-   * log recorded before that change replays through here, so its behavior must
-   * not drift. */
+   * *resetting* any the player had narrowed. **Replay only**: no input emits
+   * it, but a saved move log may contain it, so its behavior must not drift. */
   | { type: "markAll" }
   /** Upstream `S…` — the solved board, one entry per cell (0 = a hole). */
   | { type: "solve"; cells: number[] };
@@ -351,25 +338,22 @@ export function newUi(_state: SaladState): SaladUi {
 export function serialize(input: Uint8Array, base: number): string {
   let out = "";
   let run = 0;
-  for (let i = 0; i < input.length; i++) {
-    const v = input[i];
-    if (v !== 0) {
-      if (run) {
-        out += String.fromCharCode(96 + run);
-        run = 0;
-      }
-      if (v === CROSS) out += "X";
-      else if (v === CIRCLE) out += "O";
-      else out += String.fromCharCode(v + base);
-    } else {
-      if (run === 26) {
-        out += String.fromCharCode(96 + run);
-        run = 0;
-      }
+  const flush = (): void => {
+    if (run) out += String.fromCharCode(96 + run);
+    run = 0;
+  };
+  for (const v of input) {
+    if (v === 0) {
+      if (run === 26) flush();
       run++;
+      continue;
     }
+    flush();
+    if (v === CROSS) out += "X";
+    else if (v === CIRCLE) out += "O";
+    else out += String.fromCharCode(v + base);
   }
-  if (run) out += String.fromCharCode(96 + run);
+  flush();
   return out;
 }
 
@@ -380,10 +364,18 @@ interface Decoded {
   holes: Uint8Array;
 }
 
+/** The symbol a desc character names: `'1'..'9'` or `'A'..'I'` as `1..9`, else 0. */
+function descSymbol(c: number): number {
+  if (c >= 49 && c <= 57) return c - 48;
+  if (c >= 65 && c <= 73) return c - 64;
+  return 0;
+}
+
 /**
  * Upstream `load_game`: decode `desc` into the four fixed arrays, or report the
  * failure message `validate_desc` surfaces. A letters description is
- * `<border>,<grid>`; a numbers description is `<grid>` alone.
+ * `<border>,<grid>`; a numbers description is `<grid>` alone. In both, `'a'..'z'`
+ * is a run of 1..26 blank entries.
  */
 function loadGame(
   p: SaladParams,
@@ -405,20 +397,16 @@ function loadGame(
   if (p.mode === GAMEMODE_LETTERS) {
     while (i < desc.length && desc[i] !== ",") {
       const c = desc.charCodeAt(i++);
-      let d = 0;
       if (pos >= ox4) return { ok: false, error: "Border description is too long." };
-
-      if (c >= 97 && c <= 122)
-        pos += c - 97 + 1; // 'a'..'z': a run of blank clues
-      else if (c >= 49 && c <= 57)
-        d = c - 48; // '1'..'9'
-      else if (c >= 65 && c <= 73)
-        d = c - 65 + 1; // 'A'..'I'
-      else
+      if (c >= 97 && c <= 122) {
+        pos += c - 96;
+        continue;
+      }
+      const d = descSymbol(c);
+      if (!d)
         return { ok: false, error: "Border description contains invalid characters." };
-
-      if (d > 0 && d <= nums) borderclues[pos++] = d;
-      else if (d > nums) return { ok: false, error: "Border clue is out of range." };
+      if (d > nums) return { ok: false, error: "Border clue is out of range." };
+      borderclues[pos++] = d;
     }
 
     if (pos < ox4) return { ok: false, error: "Description is too short." };
@@ -428,34 +416,20 @@ function loadGame(
   pos = 0;
   while (i < desc.length) {
     const c = desc.charCodeAt(i++);
-    let d = 0;
     if (pos >= o2) return { ok: false, error: "Grid description is too long." };
-
     if (c >= 97 && c <= 122) {
-      pos += c - 97 + 1;
-    } else if (c >= 49 && c <= 57) {
-      d = c - 48;
-    } else if (c >= 65 && c <= 73) {
-      d = c - 65 + 1;
-    } else if (c === CIRCLE) {
-      gridclues[pos] = CIRCLE;
-      holes[pos] = CIRCLE;
-      pos++;
-    } else if (c === CROSS) {
-      gridclues[pos] = CROSS;
-      holes[pos] = CROSS;
-      pos++;
+      pos += c - 96;
+    } else if (c === CIRCLE || c === CROSS) {
+      gridclues[pos] = c;
+      holes[pos++] = c;
     } else {
-      return { ok: false, error: "Grid description contains invalid characters." };
-    }
-
-    if (d > 0 && d <= nums) {
+      const d = descSymbol(c);
+      if (!d)
+        return { ok: false, error: "Grid description contains invalid characters." };
+      if (d > nums) return { ok: false, error: "Grid clue is out of range." };
       gridclues[pos] = d;
       grid[pos] = d;
-      holes[pos] = CIRCLE;
-      pos++;
-    } else if (d > nums) {
-      return { ok: false, error: "Grid clue is out of range." };
+      holes[pos++] = CIRCLE;
     }
   }
 
@@ -501,11 +475,11 @@ export function latinholesCheck(b: SaladBoard): boolean {
   const cols = new Int32Array(o * nums);
   const hrows = new Int32Array(o);
   const hcols = new Int32Array(o);
-  let fail = false;
 
   for (let x = 0; x < o; x++) {
     for (let y = 0; y < o; y++) {
       const d = b.grid[y * o + x];
+      if (d === 0 && b.holes[y * o + x] === CIRCLE) return false;
       if (d === 0 || d > nums) {
         hrows[y]++;
         hcols[x]++;
@@ -513,18 +487,16 @@ export function latinholesCheck(b: SaladBoard): boolean {
         rows[y * nums + d - 1]++;
         cols[x * nums + d - 1]++;
       }
-      if (d === 0 && b.holes[y * o + x] === CIRCLE) fail = true;
     }
   }
 
   for (let i = 0; i < o; i++) {
-    if (hrows[i] !== o - nums || hcols[i] !== o - nums) fail = true;
+    if (hrows[i] !== o - nums || hcols[i] !== o - nums) return false;
   }
   for (let i = 0; i < o * nums; i++) {
-    if (rows[i] !== 1 || cols[i] !== 1) fail = true;
+    if (rows[i] !== 1 || cols[i] !== 1) return false;
   }
-
-  return !fail;
+  return true;
 }
 
 /**
@@ -577,22 +549,17 @@ export function borderScanFor(
   return borderScans(cd % o, o)[(cd / o) | 0];
 }
 
+const CLUE_SIDES = [
+  { side: "top", axis: "column" },
+  { side: "left", axis: "row" },
+  { side: "bottom", axis: "column" },
+  { side: "right", axis: "row" },
+] as const;
+
 /** Which side of the board clue `cd` sits on, and therefore which kind of line
  * it looks along. */
-export function clueSide(
-  cd: number,
-  o: number,
-): { side: "top" | "left" | "bottom" | "right"; axis: "row" | "column" } {
-  switch ((cd / o) | 0) {
-    case 0:
-      return { side: "top", axis: "column" };
-    case 1:
-      return { side: "left", axis: "row" };
-    case 2:
-      return { side: "bottom", axis: "column" };
-    default:
-      return { side: "right", axis: "row" };
-  }
+export function clueSide(cd: number, o: number): (typeof CLUE_SIDES)[number] {
+  return CLUE_SIDES[(cd / o) | 0];
 }
 
 /** Upstream `salad_checkborders`: every border clue matches the first symbol
@@ -624,7 +591,7 @@ export function textFormat(s: SaladState): string {
   for (let i = 0; i < o + 4; i++) rows.push(new Array<string>(lr - 1).fill(" "));
 
   const put = (row: number, col: number, ch: string): void => {
-    if (row >= 0 && row < rows.length && col >= 0 && col < lr - 1) rows[row][col] = ch;
+    rows[row][col] = ch;
   };
 
   // Corners and the box.

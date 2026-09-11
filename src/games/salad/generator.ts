@@ -7,21 +7,18 @@
  * empties per line — turn that into a full clue set, and then remove clues one
  * at a time in a shuffled order, keeping each removal only while the puzzle
  * still solves by pure deduction at the target difficulty. Because every
- * removal is gated on the solver's verdict, the published description depends
- * on the solver's answer to every intermediate board — which is exactly what
- * makes the byte-match differential (docs/games/solver-and-generator.md § "Solver-gated generation") validate generator, solver and codec at once,
- * and what let it prove that the solver's rewrite onto the repeated-symbol cube
- * (`solver.ts`) is deductively equivalent to upstream's hole translation.
+ * removal is gated on the solver's verdict, the byte-match differential
+ * validates generator, solver and codec at once
+ * (docs/games/solver-and-generator.md § "Solver-gated generation").
  *
  * Two upstream quality rules are reproduced verbatim:
  *
  * - **Number Ball** throws the whole puzzle away when every hole can be placed
  *   without entering a single number (`DIFF_HOLESONLY`) — such a board never
- *   exercises the concept. Its author notes in `docs/salad.md` that this mode
- *   still "doesn't create puzzles that make good use of the concept"; the
- *   solver can now reason about the empties directly, which is the prerequisite
- *   he named, but a better *generator* for the mode is still a redesign nobody
- *   has made (`add-latin-repeats-support`, tasks).
+ *   exercises the concept. Upstream's documentation says this mode still
+ *   "doesn't create puzzles that make good use of the concept"; the solver
+ *   reasons about the empties directly, which is the prerequisite it names, but
+ *   a better *generator* for the mode is still unwritten.
  * - **ABC End View** below 8×8 forces an *empty* grid (border clues only), and
  *   simply retries when that is not solvable.
  */
@@ -77,9 +74,8 @@ function blankBoard(p: SaladParams): SaladBoard {
   };
 }
 
-/** Does the puzzle described by `base`'s clues still solve at `diff`? Upstream
- * clears the working grid/holes before every such attempt; a fresh scratch
- * board is the same thing without the `memset`. */
+/** Does the puzzle described by `base`'s clues still solve at `diff`, from a
+ * blank working board? */
 function solvesAt(base: SaladBoard, diff: number): boolean {
   return saladSolve(scratchBoard(base), diff);
 }
@@ -109,15 +105,13 @@ function stripClues(
   base: SaladBoard,
   rs: RandomState,
   clues: Uint8Array,
-  m: number,
   diff: number,
 ): void {
   const spaces: number[] = [];
-  for (let i = 0; i < m; i++) spaces.push(i);
+  for (let i = 0; i < clues.length; i++) spaces.push(i);
   shuffle(spaces, rs);
 
-  for (let i = 0; i < m; i++) {
-    const j = spaces[i];
+  for (const j of spaces) {
     const temp = clues[j];
     if (temp === 0) continue;
     clues[j] = 0;
@@ -146,8 +140,7 @@ function newNumbersDesc(p: SaladParams, rs: RandomState, loose: boolean): string
     for (let i = 0; i < o2; i++) spaces.push(i);
     shuffle(spaces, rs);
 
-    for (let i = 0; i < o2; i++) {
-      const j = spaces[i];
+    for (const j of spaces) {
       let temp = gridclues[j];
       if (temp === 0) continue;
 
@@ -179,7 +172,6 @@ function newNumbersDesc(p: SaladParams, rs: RandomState, loose: boolean): string
 function newLettersDesc(p: SaladParams, rs: RandomState, loose: boolean): string {
   const o = p.order;
   const o2 = o * o;
-  const ox4 = o * 4;
   const nums = p.nums;
   const diff = p.diff;
   // Quality check: with a small grid, force the puzzle to be border-clues-only.
@@ -206,9 +198,9 @@ function newLettersDesc(p: SaladParams, rs: RandomState, loose: boolean): string
       gridclues.fill(0);
       if (!solvesAt(base, diff)) continue;
     } else {
-      stripClues(base, rs, gridclues, o2, diff);
+      stripClues(base, rs, gridclues, diff);
     }
-    stripClues(base, rs, borderclues, ox4, diff);
+    stripClues(base, rs, borderclues, diff);
 
     // Tier gate (the divergence): it must *need* the difficulty requested.
     if (tooEasy(base, diff, loose)) continue;
@@ -223,19 +215,17 @@ export interface SaladGenerateOptions {
    *
    * Upstream strips clues while the board still solves at the target tier and
    * publishes whatever that leaves, never asking whether an easier tier would
-   * have done. So Extreme does not mean Extreme: measured over this game's own
-   * frozen C fixtures, **12 of its 13 Extreme boards are solvable at Normal**,
-   * and over 80 freshly generated boards the rate is 71/80 — at 5×5 and 6×6 it
-   * is every single board. A difficulty that is a coin-flip away from being the
-   * one below it is a plain player-visible defect, so {@link newSaladDesc}
-   * rejects such a candidate and generates another.
+   * have done. So its Extreme does not mean Extreme: measured over this game's
+   * own frozen C fixtures, **12 of its 13 Extreme boards are solvable at
+   * Normal**, and over 80 freshly generated boards the rate is 71/80 — at 5×5
+   * and 6×6 it is every single board. {@link newSaladDesc} therefore rejects
+   * such a candidate and generates another.
    *
-   * Because generation is solver-gated at every clue removal, that changes
-   * every Extreme description — which would cost the byte-match differential
-   * that validates the generator, the solver and the codec together. This flag
-   * keeps that oracle: `salad-differential.test.ts` sets it, so the fixtures
-   * still match the C byte-for-byte and the only lines the oracle no longer
-   * covers are the two `tooEasy` calls. Nothing else should ever set it.
+   * That changes every Extreme description, which would cost the byte-match
+   * differential. This flag keeps that oracle: `salad-differential.test.ts`
+   * sets it, so the fixtures still match the C byte-for-byte and the only lines
+   * the oracle does not cover are the two `tooEasy` calls. Nothing else should
+   * ever set it.
    */
   readonly upstreamLooseGate?: boolean;
 }

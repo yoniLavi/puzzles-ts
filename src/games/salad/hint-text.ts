@@ -41,6 +41,17 @@ function clueName(side: string): string {
 type Side = "top" | "left" | "bottom" | "right";
 type Line = "row" | "col";
 
+const axisName = (line: Line): string => (line === "row" ? "row" : "column");
+
+/** A line's full quota of `k` empty squares, as the object of "already has".
+ * Reads correctly at the degenerate extreme too: `nums = order − 1` leaves
+ * exactly one empty square per line. */
+function allItsHoles(k: number): string {
+  if (k === 1) return "its one empty square";
+  if (k === 2) return "both of its empty squares";
+  return `all ${k} of its empty squares`;
+}
+
 /** Salad's sentences, in the vocabulary of the mode being played. */
 export function say(mode: number) {
   const vocab = saladVocab(mode);
@@ -49,9 +60,9 @@ export function say(mode: number) {
   const list = (xs: number[]): string => joinWith(xs.map(sym));
 
   return {
-    populate: `Start by penciling every candidate ${vocab.noun} into each empty square that has none yet, so there is something to cross out.`,
+    populate: `Start by penciling every candidate ${noun} into each empty square that has none yet, so there is something to cross out.`,
 
-    cleanObvious: cleanObviousText(vocab.noun, "placed", "row or column", "square"),
+    cleanObvious: cleanObviousText(noun, "placed", "row or column", "square"),
 
     /** The clue on `side` sees `clueVal` first, and the `skipped` squares
      * between it and this one are empty: only `clueVal` can go here, so `ns`
@@ -87,7 +98,7 @@ export function say(mode: number) {
     }): string => {
       const clue = sym(p.clueVal);
       if (p.blocked) {
-        return `${clueName(p.side)} sees ${clue} first, and the outlined square furthest from it already holds ${vocab.noun === "letter" ? "a letter" : "a number"}, so the ${clue} must sit somewhere in the outlined run. We must cross out the ${clue} past it.`;
+        return `${clueName(p.side)} sees ${clue} first, and the outlined square furthest from it already holds a ${noun}, so the ${clue} must sit somewhere in the outlined run. We must cross out the ${clue} past it.`;
       }
       const bound =
         p.reach === 0
@@ -101,26 +112,16 @@ export function say(mode: number) {
     },
 
     /** This line already has all `k` of its empty squares. */
-    countHolesDone: (line: Line, k: number): string => {
-      const axis = line === "row" ? "row" : "column";
-      // Reads correctly at the degenerate extreme too (§2.7): `nums = order − 1`
-      // leaves exactly one empty square per line.
-      const has =
-        k === 1
-          ? "its one empty square"
-          : k === 2
-            ? "both of its empty squares"
-            : `all ${k} of its empty squares`;
-      return `This ${axis} already has ${has}, so every other square in it must hold a ${noun}.`;
-    },
+    countHolesDone: (line: Line, k: number): string =>
+      `This ${axisName(line)} already has ${allItsHoles(k)}, so every other square in it must hold a ${noun}.`,
 
     /** This line's `nums` symbols are all placed (`allPlaced`), or at least
      * their squares are known. */
     countLettersDone: (line: Line, allPlaced: boolean, nums: number): string => {
-      const axis = line === "row" ? "row" : "column";
+      const axis = axisName(line);
       // The two halves of one firing: either the line's symbols are all written
       // in, or we merely know *which* squares hold them (a line of balls). Each
-      // claims only what it has (§2.6).
+      // claims only what it has.
       return allPlaced
         ? `${nums === 1 ? `The one ${noun}` : nums === 2 ? `Both ${noun}s` : `All ${count(nums, noun)}`} of this ${axis} ${nums === 1 ? "is" : "are"} already placed, so every other square in it must be empty.`
         : `We already know which ${nums === 1 ? "square" : count(nums, "square")} of this ${axis} ${nums === 1 ? `holds its ${noun}` : `hold its ${noun}s`}, so every other square in it must be empty.`;
@@ -141,15 +142,7 @@ export function say(mode: number) {
 
     /** This line already has all `times` of its empty squares, so this one
      * cannot be empty. */
-    repeatFull: (line: Line, times: number): string => {
-      const axis = line === "row" ? "row" : "column";
-      const has =
-        times === 1
-          ? "its one empty square"
-          : times === 2
-            ? "both of its empty squares"
-            : `all ${times} of its empty squares`;
-      return `This ${axis} already has ${has}, so this square cannot be empty; we must cross out its empty-square mark.`;
-    },
+    repeatFull: (line: Line, times: number): string =>
+      `This ${axisName(line)} already has ${allItsHoles(times)}, so this square cannot be empty; we must cross out its empty-square mark.`,
   };
 }
