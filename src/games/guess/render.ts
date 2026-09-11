@@ -1,9 +1,7 @@
 /**
  * Guess — palette, geometry, and rendering (the blitter drag sprite
- * included). Faithful imperative port of `guess.c`'s drawing routines,
- * with the per-row caches and PEG_* overlay flags kept exactly as
- * upstream, plus the explicit full-canvas background fill our engine
- * contract requires (the engine emits no pixels of its own).
+ * included). A port of upstream's drawing routines, keeping its per-row
+ * caches and PEG_* overlay flags.
  */
 
 import { BLACK, PINK_WASH, TEAL_WASH, TEN, WHITE } from "../../engine/color/colors.ts";
@@ -52,7 +50,10 @@ const idiv = (a: number, b: number): number => Math.trunc(a / b);
 
 // --- geometry ---------------------------------------------------------
 
-export interface Geom {
+/** The params the layout depends on, which a draw state carries too. */
+type LayoutParams = Pick<GuessParams, "ncolors" | "npegs" | "nguesses">;
+
+interface Geom {
   ncolors: number;
   npegs: number;
   nguesses: number;
@@ -66,29 +67,28 @@ export interface Geom {
   coly: number;
   guessx: number;
   guessy: number;
-  solnx: number;
   solny: number;
   hintw: number;
   w: number;
   h: number;
 }
 
-export function computeSize(p: GuessParams, tilesize: number): Size {
+export function computeSize(p: LayoutParams, tilesize: number): Size {
   const hintw = idiv(p.npegs + 1, 2);
   const hmul =
-    BORDER * 2.0 +
-    1.0 * 2.0 +
-    1.0 * p.npegs +
+    BORDER * 2 +
+    2 +
+    p.npegs +
     PEG_GAP * p.npegs +
     PEG_HINT * hintw +
     PEG_GAP * (hintw - 1);
-  const vmulC = BORDER * 2.0 + 1.0 * p.ncolors + PEG_GAP * (p.ncolors - 1);
-  const vmulG = BORDER * 2.0 + 1.0 * (p.nguesses + 1) + PEG_GAP * (p.nguesses + 1);
+  const vmulC = BORDER * 2 + p.ncolors + PEG_GAP * (p.ncolors - 1);
+  const vmulG = BORDER * 2 + (p.nguesses + 1) + PEG_GAP * (p.nguesses + 1);
   const vmul = Math.max(vmulC, vmulG);
   return { w: Math.ceil(tilesize * hmul), h: Math.ceil(tilesize * vmul) };
 }
 
-export function computeGeometry(p: GuessParams, tilesize: number): Geom {
+function computeGeometry(p: LayoutParams, tilesize: number): Geom {
   const pegsz = tilesize;
   const hintsz = Math.floor(pegsz * PEG_HINT);
   const gapsz = Math.floor(pegsz * PEG_GAP);
@@ -103,7 +103,6 @@ export function computeGeometry(p: GuessParams, tilesize: number): Geom {
   const colx = border;
   const coly = idiv(h - colh, 2);
   const guessx = border + pegsz * 2;
-  const solnx = guessx;
   const guessy = idiv(h - guessh, 2);
   const solny = guessy + (pegsz + gapsz) * p.nguesses + gapsz;
   const hintw = idiv(p.npegs + 1, 2);
@@ -122,7 +121,6 @@ export function computeGeometry(p: GuessParams, tilesize: number): Geom {
     coly,
     guessx,
     guessy,
-    solnx,
     solny,
     hintw,
     w,
@@ -136,19 +134,15 @@ export const pegOff = (g: Geom): number => g.pegsz + g.gapsz;
 const hintOff = (g: Geom): number => g.hintsz + g.gapsz;
 const cgap = (g: Geom): number => Math.max(idiv(g.gapsz, 2), 1);
 
-export const COL_OX = (g: Geom): number => g.colx;
-export const COL_OY = (g: Geom): number => g.coly;
 const colX = (g: Geom): number => g.colx;
 const colY = (g: Geom, c: number): number => g.coly + c * pegOff(g);
-export const COL_W = (g: Geom): number => pegOff(g);
-export const COL_H = (g: Geom): number => g.ncolors * pegOff(g);
 
-export const GUESS_OX = (g: Geom): number => g.guessx;
-export const GUESS_OY = (g: Geom): number => g.guessy;
-export const guessX = (g: Geom, p: number): number => g.guessx + p * pegOff(g);
-export const guessY = (g: Geom, gi: number): number => g.guessy + gi * pegOff(g);
-export const GUESS_W = (g: Geom): number => g.npegs * pegOff(g);
-export const GUESS_H = (g: Geom): number => g.nguesses * pegOff(g);
+const GUESS_OX = (g: Geom): number => g.guessx;
+const GUESS_OY = (g: Geom): number => g.guessy;
+const guessX = (g: Geom, p: number): number => g.guessx + p * pegOff(g);
+const guessY = (g: Geom, gi: number): number => g.guessy + gi * pegOff(g);
+const GUESS_W = (g: Geom): number => g.npegs * pegOff(g);
+const GUESS_H = (g: Geom): number => g.nguesses * pegOff(g);
 
 const HINT_OX = (g: Geom): number => GUESS_OX(g) + GUESS_W(g) + g.gapsz;
 const HINT_OY = (g: Geom): number =>
@@ -202,13 +196,7 @@ export function newDrawState(s: GuessState): GuessDrawState {
 
 export function setTileSize(ds: GuessDrawState, tilesize: number): void {
   if (ds.pegsz === tilesize) return;
-  Object.assign(
-    ds,
-    computeGeometry(
-      { ncolors: ds.ncolors, npegs: ds.npegs, nguesses: ds.nguesses } as GuessParams,
-      tilesize,
-    ),
-  );
+  Object.assign(ds, computeGeometry(ds, tilesize));
   ds.started = false;
   // Drop the cached pegrows and the now-wrongly-sized drag blitter so
   // the next paint rebuilds both (we have no GameDrawing here to free).

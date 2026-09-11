@@ -14,6 +14,7 @@ import {
   type GuessMove,
   type GuessState,
   type GuessUi,
+  markPegs,
   newDesc,
   newState,
   status,
@@ -152,18 +153,17 @@ describe("hint (compute_hint)", () => {
   it("the hint row is consistent with every prior guess's feedback", () => {
     const params = defaultParams();
     const { state: s0, ui } = freshGame("hint-consistency", params);
-    // Submit one deliberate wrong guess to create feedback.
-    const wrong = [1, 2, 3, 4];
-    const s1 = guessGame.executeMove(s0, submit(wrong));
+    const s1 = guessGame.executeMove(s0, submit([1, 2, 3, 4]));
+    expect(s1.nextGo).toBe(1); // scored, not won
     guessGame.changedState?.(ui, s0, s1);
     guessGame.interpretMove(s1, ui, sizedDrawState(guessGame, s1), ZERO, 0x68);
-    // Re-score the hint row against the prior guess; it must reproduce
-    // that guess's feedback (the definition of "consistent").
-    // Use the same maxcolor bound compute_hint uses (here ncolors).
+    // Consistent: had the hint row been the answer, every prior guess
+    // would have scored exactly as it did.
     const hintRow = ui.currPegs.slice();
-    // markPegs(hintRow, priorGuessPegs) equals priorGuess feedback.
-    // (compute_hint guarantees this for the recorded feedback.)
-    expect(hintRow.every((c) => c >= 1 && c <= params.ncolors)).toBe(true);
+    for (const prior of s1.guesses.slice(0, s1.nextGo)) {
+      const { feedback } = markPegs(prior.pegs, hintRow, params.ncolors);
+      expect(feedback).toEqual(prior.feedback);
+    }
   });
 });
 

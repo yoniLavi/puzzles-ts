@@ -1,10 +1,9 @@
 /**
  * Guess — state, params, desc codec, and the scoring/markability logic.
  *
- * Idiomatic rendering of `puzzles/guess.c`: the *live editing* state
- * (working row, holds, drag, cursor) lives in `GuessUi` exactly as
- * upstream keeps it in `game_ui`; `GuessState` holds only the submitted
- * guesses (with feedback), the hidden solution, and the play cursor.
+ * The *live editing* state (working row, holds, drag, cursor) lives in
+ * `GuessUi`, as upstream keeps it in `game_ui`; `GuessState` holds only the
+ * submitted guesses (with feedback), the hidden solution, and the play cursor.
  */
 
 import { bin2hex, hex2bin, obfuscateBitmap } from "../../engine/obfuscate.ts";
@@ -66,10 +65,8 @@ export interface GuessUi {
   currPegs: number[];
   /** Live holds, length `npegs`. */
   holds: boolean[];
-  /** The picker cursor: `x` is the left-right peg position, `0..npegs`
-   * (`npegs` = the submit button); `y` is the up-down color, `0..ncolors-1`.
-   * It runs over the picker rather than a board, but it is the same cursor the
-   * rest of the collection has, so it is the same shape. */
+  /** The picker cursor: `x` is the peg position, `0..npegs` (`npegs` = the
+   * submit button); `y` is the color, `0..ncolors-1`. */
   cursor: GridCursor;
   markable: boolean;
   /** `0` = not dragging, else a color `1..ncolors`. */
@@ -119,38 +116,14 @@ export function defaultParams(): GuessParams {
   };
 }
 
-export interface GuessPreset {
-  name: string;
-  params: GuessParams;
-}
-
-export const GUESS_PRESETS: GuessPreset[] = [
-  {
-    name: "Standard",
-    params: {
-      ncolors: 6,
-      npegs: 4,
-      nguesses: 10,
-      allowBlank: false,
-      allowMultiple: true,
-    },
-  },
-  {
-    name: "Super",
-    params: {
-      ncolors: 8,
-      npegs: 5,
-      nguesses: 12,
-      allowBlank: false,
-      allowMultiple: true,
-    },
-  },
-];
-
 export function presets() {
+  const standard = defaultParams();
   return {
     title: "Type",
-    submenu: GUESS_PRESETS.map((p) => ({ title: p.name, params: { ...p.params } })),
+    submenu: [
+      { title: "Standard", params: standard },
+      { title: "Super", params: { ...standard, ncolors: 8, npegs: 5, nguesses: 12 } },
+    ],
   };
 }
 
@@ -161,46 +134,23 @@ export function encodeParams(p: GuessParams, _full: boolean): string {
   );
 }
 
-function isDigit(ch: string): boolean {
-  return ch >= "0" && ch <= "9";
-}
-
 export function decodeParams(s: string): GuessParams {
   // Lenient, like upstream `decode_params`: scan letter-prefixed fields,
   // ignore anything unrecognized.
   const p = defaultParams();
   let i = 0;
+  const readInt = (): number => {
+    const n = Number.parseInt(s.slice(i), 10) || 0;
+    while (i < s.length && s[i] >= "0" && s[i] <= "9") i++;
+    return n;
+  };
   while (i < s.length) {
     const ch = s[i++];
-    switch (ch) {
-      case "c":
-        p.ncolors = Number.parseInt(s.slice(i), 10) || 0;
-        while (i < s.length && isDigit(s[i])) i++;
-        break;
-      case "p":
-        p.npegs = Number.parseInt(s.slice(i), 10) || 0;
-        while (i < s.length && isDigit(s[i])) i++;
-        break;
-      case "g":
-        p.nguesses = Number.parseInt(s.slice(i), 10) || 0;
-        while (i < s.length && isDigit(s[i])) i++;
-        break;
-      case "b":
-        p.allowBlank = true;
-        break;
-      case "B":
-        p.allowBlank = false;
-        break;
-      case "m":
-        p.allowMultiple = true;
-        break;
-      case "M":
-        p.allowMultiple = false;
-        break;
-      default:
-        // ignore
-        break;
-    }
+    if (ch === "c") p.ncolors = readInt();
+    else if (ch === "p") p.npegs = readInt();
+    else if (ch === "g") p.nguesses = readInt();
+    else if (ch === "b" || ch === "B") p.allowBlank = ch === "b";
+    else if (ch === "m" || ch === "M") p.allowMultiple = ch === "m";
   }
   return p;
 }
@@ -306,13 +256,11 @@ export function validateDesc(p: GuessParams, desc: string): string | null {
 export function newState(p: GuessParams, desc: string): GuessState {
   const bmp = hex2bin(desc, p.npegs);
   obfuscateBitmap(bmp, p.npegs * 8, true);
-  const solution = Array.from({ length: p.npegs }, (_, i) => bmp[i]);
-  const guesses = Array.from({ length: p.nguesses }, () => blankRow(p.npegs));
   return {
     params: p,
-    guesses,
+    guesses: Array.from({ length: p.nguesses }, () => blankRow(p.npegs)),
     holds: new Array(p.npegs).fill(false),
-    solution,
+    solution: Array.from(bmp),
     nextGo: 0,
     solved: 0,
   };
@@ -320,8 +268,6 @@ export function newState(p: GuessParams, desc: string): GuessState {
 
 // --- status -----------------------------------------------------------
 
-/** `solved > 0` → win; `solved < 0` → lost/revealed (also the
- * give-up "Solve"); else ongoing. */
 export function status(s: GuessState): GameStatus {
   if (s.solved > 0) return "solved";
   if (s.solved < 0) return "lost";

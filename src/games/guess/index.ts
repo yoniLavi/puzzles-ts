@@ -1,14 +1,11 @@
 /**
- * Guess — native TS port of the Mastermind clone (`puzzles/guess.c`,
- * deleted when this ships).
+ * Guess — the Mastermind clone, ported from upstream's `guess.c`.
  *
- * Deduce a hidden combination of `npegs` color pegs drawn from
- * `ncolors` colors within `nguesses` rows; each submitted row is
- * scored with Knuth's black/white feedback. Win on all-correct-place,
- * lose (and reveal) when the rows run out. The live editing state
- * (working row, holds, drag, cursor) lives in `GuessUi` exactly as
- * upstream keeps it in `game_ui`, reconciled across transitions by the
- * `changedState` engine hook this port introduces.
+ * Deduce a hidden combination of `npegs` color pegs drawn from `ncolors`
+ * colors within `nguesses` rows; each submitted row is scored with Knuth's
+ * black/white feedback. Win on all-correct-place, lose (and reveal) when the
+ * rows run out. The working row lives in `GuessUi`, rebuilt by
+ * `changedState` after every transition.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -28,12 +25,10 @@ import {
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import {
-  colors as colorsImpl,
-  computeGeometry,
-  computeSize as computeSizeImpl,
-  type Geom,
+  colors,
+  computeSize,
   type GuessDrawState,
   newDrawState,
   PREFERRED_TILE_SIZE,
@@ -79,27 +74,18 @@ function newUi(state: GuessState): GuessUi {
   };
 }
 
-/** Upstream `game_changed_state`: reconstruct the working row from the
- * current state's holds after every transition (drop the cached hint on
- * an undo). */
-function changedState(
-  ui: GuessUi,
-  oldState: GuessState | null,
-  newState_: GuessState,
-): void {
-  if (oldState && newState_.nextGo < oldState.nextGo) ui.hint = null;
+/** Upstream `game_changed_state`: rebuild the working row from the state's
+ * holds after every transition, and drop the cached hint on an undo. */
+function changedState(ui: GuessUi, prev: GuessState | null, next: GuessState): void {
+  if (prev && next.nextGo < prev.nextGo) ui.hint = null;
 
-  const npegs = newState_.solution.length;
-  const solved = newState_.solved !== 0;
+  const { npegs } = next.params;
+  const lastRow = next.nextGo > 0 ? next.guesses[next.nextGo - 1] : null;
   for (let i = 0; i < npegs; i++) {
-    ui.holds[i] = solved ? false : newState_.holds[i];
-    if (solved || newState_.nextGo === 0 || !ui.holds[i]) {
-      ui.currPegs[i] = 0;
-    } else {
-      ui.currPegs[i] = newState_.guesses[newState_.nextGo - 1].pegs[i];
-    }
+    ui.holds[i] = !next.solved && next.holds[i];
+    ui.currPegs[i] = ui.holds[i] && lastRow ? lastRow.pegs[i] : 0;
   }
-  ui.markable = isMarkable(newState_.params, ui.currPegs);
+  ui.markable = isMarkable(next.params, ui.currPegs);
   if (!ui.markable && ui.cursor.x === npegs) ui.cursor.x = 0;
 }
 
@@ -116,100 +102,61 @@ function buildGuessMove(ui: GuessUi): GuessMove {
 
 /** Fill the working row with the lexicographically-first combination
  * consistent with every prior scored guess (a `game_ui` mutation, not a
- * state transition). Caches its progress in `ui.hint`, narrowed across
- * calls and rebuilt after an undo (`changedState` clears it). */
+ * state transition). A candidate once ruled out stays ruled out, so the
+ * search resumes from `ui.hint` on the next call; `changedState` clears it
+ * on an undo. */
 function computeHint(state: GuessState, ui: GuessUi): void {
   const { npegs, ncolors, allowMultiple } = state.params;
-  const guesses = state.guesses;
-  const nextGo = state.nextGo;
+  const past = state.guesses.slice(0, state.nextGo);
 
-  let mincolor = 1;
+  // Bound the colors worth trying. Past feedback cannot tell unguessed
+  // colors apart, so `maxcolor` admits one of them (`npegs` without
+  // duplicates); `mincolor` skips any color proven absent, a past guess
+  // made entirely of it that scored nothing.
   let maxcolor = 0;
-  for (let i = 0; i < nextGo; i++) {
-    for (let j = 0; j < npegs; j++) {
-      if (guesses[i].pegs[j] > maxcolor) maxcolor = guesses[i].pegs[j];
-    }
-  }
-  maxcolor = allowMultiple
-    ? Math.min(maxcolor + 1, ncolors)
-    : Math.min(maxcolor + npegs, ncolors);
+  for (const g of past) maxcolor = Math.max(maxcolor, ...g.pegs);
+  maxcolor = Math.min(maxcolor + (allowMultiple ? 1 : npegs), ncolors);
+  let mincolor = 1;
+  const provenAbsent = (c: number): boolean =>
+    past.some((g) => !g.feedback[0] && g.pegs.every((v) => v === c));
+  while (provenAbsent(mincolor)) mincolor++;
 
-  // Raise `mincolor` past any color proven absent (a past guess made
-  // entirely of `mincolor` that scored nothing).
-  for (;;) {
-    let advanced = false;
-    for (let i = 0; i < nextGo; i++) {
-      if (guesses[i].feedback[0]) continue;
-      let allMin = true;
+  if (!ui.hint) ui.hint = new Array(npegs).fill(1);
+  const hint = ui.hint;
+  const consistent = (): boolean => {
+    for (let i = 0; i < past.length; i++) {
+      const { feedback } = markPegs(hint, past[i].pegs, maxcolor);
       for (let j = 0; j < npegs; j++) {
-        if (guesses[i].pegs[j] !== mincolor) {
-          allMin = false;
-          break;
-        }
+        if (feedback[j] !== past[i].feedback[j]) return false;
       }
-      if (!allMin) continue;
-      mincolor++;
-      advanced = true;
-      break;
     }
-    if (!advanced) break;
-  }
-
-  let hint = ui.hint;
-  if (!hint) {
-    hint = new Array(npegs).fill(1);
-    ui.hint = hint;
-  }
-
-  const increment = (): void => {
-    let i = npegs;
-    for (;;) {
-      i--;
-      hint[i]++;
-      if (i !== 0 && hint[i] > maxcolor) {
-        hint[i] = mincolor;
-        continue;
-      }
-      break;
-    }
+    return true;
   };
 
   while (hint[0] <= ncolors) {
-    if (!isMarkable(state.params, hint)) {
-      increment();
-      continue;
+    if (isMarkable(state.params, hint) && consistent()) {
+      for (let i = 0; i < npegs; i++) ui.currPegs[i] = hint[i];
+      ui.markable = true;
+      ui.cursor.x = npegs;
+      ui.cursor.visible = true;
+      return;
     }
-    let consistent = true;
-    for (let i = 0; i < nextGo; i++) {
-      const { feedback } = markPegs(hint, guesses[i].pegs, maxcolor);
-      for (let j = 0; j < npegs; j++) {
-        if (feedback[j] !== guesses[i].feedback[j]) {
-          consistent = false;
-          break;
-        }
-      }
-      if (!consistent) break;
+    // Next candidate, odometer-style; peg 0 never wraps, which ends the search.
+    let i = npegs - 1;
+    hint[i]++;
+    while (i > 0 && hint[i] > maxcolor) {
+      hint[i] = mincolor;
+      i--;
+      hint[i]++;
     }
-    if (!consistent) {
-      increment();
-      continue;
-    }
-    // A compatible guess: install it in the working row.
-    for (let i = 0; i < npegs; i++) ui.currPegs[i] = hint[i];
-    ui.markable = true;
-    ui.cursor.x = npegs;
-    ui.cursor.visible = true;
-    return;
   }
 
-  // No combination is compatible (only reachable with a corrupted
-  // solution). Fiddle the UI to signal futility, mirroring upstream.
+  // Nothing is compatible, which only a corrupted solution allows: nudge
+  // the cursor to signal futility, as upstream does.
   if (!ui.cursor.visible) ui.cursor.visible = true;
   else if (npegs === 1) ui.cursor.visible = false;
   else ui.cursor.x = (ui.cursor.x + 1) % npegs;
 }
-
-// --- cursor movement (upstream move_cursor) ---------------------------
 
 // --- input ------------------------------------------------------------
 
@@ -230,10 +177,8 @@ function interpretMove(
   }
   if (from.solved) return null;
 
-  const g: Geom = ds ?? computeGeometry(params, PREFERRED_TILE_SIZE);
-  const off = pegOff(g);
-  const x = p.x;
-  const y = p.y;
+  const off = pegOff(ds);
+  const { x, y } = p;
 
   // Hit-test the four regions (upstream interpret_move).
   let overCol = 0; // one-indexed color, 0 = none
@@ -242,18 +187,23 @@ function interpretMove(
   let overPastGuessX = -1;
   let overHint = false;
 
-  const guessOx = g.guessx;
-  const guessOy = g.guessy + from.nextGo * off;
+  const guessOx = ds.guessx;
+  const guessOy = ds.guessy + from.nextGo * off;
   const guessW = npegs * off;
   const guessH = params.nguesses * off;
 
-  if (x >= g.colx && x < g.colx + off && y >= g.coly && y < g.coly + ncolors * off) {
-    overCol = Math.floor((y - g.coly) / off) + 1;
+  if (
+    x >= ds.colx &&
+    x < ds.colx + off &&
+    y >= ds.coly &&
+    y < ds.coly + ncolors * off
+  ) {
+    overCol = Math.floor((y - ds.coly) / off) + 1;
   } else if (x >= guessOx && y >= guessOy && y < guessOy + guessH) {
     if (x < guessOx + guessW) overGuess = Math.floor((x - guessOx) / off);
     else overHint = true;
-  } else if (x >= guessOx && x < guessOx + guessW && y >= g.guessy && y < guessOy) {
-    overPastGuessY = Math.floor((y - g.guessy) / off);
+  } else if (x >= guessOx && x < guessOx + guessW && y >= ds.guessy && y < guessOy) {
+    overPastGuessY = Math.floor((y - ds.guessy) / off);
     overPastGuessX = Math.floor((x - guessOx) / off);
   }
 
@@ -306,8 +256,8 @@ function interpretMove(
     return null;
   }
   if (button === LEFT_RELEASE && overHint && ui.markable) {
-    // NB deliberately not on the end of a drag (handled above), so an
-    // accidental drop doesn't submit.
+    // Not on the end of a drag (handled above), so an accidental drop
+    // never submits.
     return buildGuessMove(ui);
   }
 
@@ -356,12 +306,8 @@ function interpretMove(
 // --- moves ------------------------------------------------------------
 
 function executeMove(s: GuessState, m: GuessMove): GuessState {
-  if (m.type === "solve") {
-    const ret = cloneState(s);
-    return { ...ret, solved: -1 };
-  }
+  if (m.type === "solve") return { ...cloneState(s), solved: -1 };
   if (m.type !== "guess") return assertNever(m, "guess: executeMove");
-
   if (s.solved) throw new Error("No guesses allowed once the game is over");
 
   const { npegs, ncolors, nguesses, allowBlank } = s.params;
@@ -376,15 +322,11 @@ function executeMove(s: GuessState, m: GuessMove): GuessState {
   for (let i = 0; i < npegs; i++) row.pegs[i] = m.pegs[i];
   row.feedback = feedback;
 
-  let solved = ret.solved;
-  let nextGo = ret.nextGo;
-  if (ncPlace === npegs) {
-    solved = 1; // win
-  } else {
-    nextGo = s.nextGo + 1;
-    if (nextGo >= nguesses) solved = -1; // lose, reveal
-  }
-  return { ...ret, holds: m.holds.slice(), nextGo, solved };
+  const holds = m.holds.slice();
+  if (ncPlace === npegs) return { ...ret, holds, solved: 1 };
+  // Running out of rows loses, and reveals the answer.
+  const nextGo = s.nextGo + 1;
+  return { ...ret, holds, nextGo, solved: nextGo >= nguesses ? -1 : 0 };
 }
 
 // --- Game object ------------------------------------------------------
@@ -462,7 +404,7 @@ export const guessGame: Game<
     "allow-duplicates": p.allowMultiple,
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -473,14 +415,13 @@ export const guessGame: Game<
   status,
 
   solve() {
-    // Upstream solve_game returns "S": reveal the answer (a give-up,
-    // scored as a loss-reveal, exactly as upstream).
+    // A give-up, as upstream's "S": reveal the answer, scored as a loss.
     return { ok: true, move: { type: "solve" } };
   },
 
-  colors: (defaultBackground: Color): Color[] => colorsImpl(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: GuessParams, ts: number): Size => computeSizeImpl(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

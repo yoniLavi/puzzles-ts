@@ -1,21 +1,16 @@
 /**
- * Guess — gated differential check against a frozen snapshot of
- * C-generated reference descriptions (`__fixtures__/guess-c-reference.json`).
+ * Guess — differential check against a frozen snapshot of C-generated
+ * descriptions (`__fixtures__/guess-c-reference.json`).
  *
- * C-free: this test does not link the C build. Guess's secret is just a
- * random color sequence run through the SHA-1 obfuscation codec, so the
- * strongest meaningful bar is that the TS generator reproduces the C
- * engine's **whole** game description for the same seed — proving both
- * that `random.ts` is bit-identical end-to-end (the color picks, incl.
- * the no-duplicates re-roll) and that the obfuscation matches C
- * byte-for-byte. An identical desc is the cleanest possible Guess
- * differential. Every C desc must also pass `validateDesc` and recover a
- * legal solution.
+ * Guess's secret is a random color sequence run through the SHA-1
+ * obfuscation codec, so reproducing upstream's **whole** desc for the same
+ * seed proves both that `random.ts` is bit-identical (the color picks,
+ * including the no-duplicates re-roll) and that the obfuscation matches byte
+ * for byte. Every C desc must also pass `validateDesc` and decode to a legal
+ * solution.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/guess-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated** (upstream's
+ * `auxiliary/guess-trace.c` captured it); see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
