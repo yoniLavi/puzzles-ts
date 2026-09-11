@@ -1,14 +1,10 @@
 /**
  * Mines (Minesweeper) — native TS port of `puzzles/mines.c`.
  *
- * The headline feature this port exists to prove is desc supersession
- * (`Game.supersededDesc`, the `add-desc-supersede-hook` consumer): Mines
- * generates its mine layout on the *first click*, so the desc the player starts
- * from names no layout at all, and must be replaced once the real board exists
- * (design D1/D2). It is also the first game the TS engine runs with a live
- * timer (`isTimed`, design D3).
- *
- * Logic mirrors the C reference; not a control-flow transliteration.
+ * Mines is the collection's exemplar of desc supersession
+ * (`Game.supersededDesc`): it generates its mine layout on the *first click*,
+ * so the desc the player starts from names no layout at all, and must be
+ * replaced once the real board exists. It also runs a live timer (`isTimed`).
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -28,7 +24,6 @@ import { minesLowlight, minesUnclearedFace } from "../../engine/color/palette-ga
 import { fromCoord } from "../../engine/geometry.ts";
 import {
   type Game,
-  type HintStep,
   registerGame,
   type SolveResult,
   type SupersededDesc,
@@ -39,7 +34,6 @@ import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
@@ -47,17 +41,16 @@ import {
   MIDDLE_BUTTON,
   MIDDLE_DRAG,
   MIDDLE_RELEASE,
+  moveCursor,
   newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
-import { type RandomState, randomUpto } from "../../engine/random/index.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import {
+  type RandomState,
+  randomStateEncode,
+  randomUpto,
+} from "../../engine/random/index.ts";
+import type { Color, ConfigValues, GameStatus, Point } from "../../engine/types.ts";
 import { minegen } from "./generator.ts";
 import {
   borderFor,
@@ -82,6 +75,7 @@ import {
   COL_QUERY,
   COL_WRONGNUMBER,
   computeSize,
+  FLASH_FRAME,
   type MinesDrawState,
   NCOLORS,
   newDrawState,
@@ -90,6 +84,7 @@ import {
   setTileSize,
 } from "./render.ts";
 import {
+  around,
   COVERED,
   cloneState,
   decodeDesc,
@@ -108,32 +103,28 @@ import {
   type MinesState,
   type MinesUi,
   QUERY,
-  randomStateEncode,
+  TODO,
   validateDesc,
   validateParams,
   WRONGFLAG,
 } from "./state.ts";
-
-const FLASH_FRAME = 0.13;
 
 // --- the flood-open + first-click layout generation (open_square) ------
 
 /**
  * Open square (x, y), generating the mine layout on the first click if it does
  * not yet exist (upstream `open_square`, mines.c:2135). Mutates `state` (a
- * fresh clone from `executeMove`) — and, on the first click only, the *shared*
- * {@link MinesState.layout} box (design D1): the sole controlled impurity of
- * this port, deterministic in `(desc RNG state, click)` so a move-log replay
- * always rebuilds the identical board.
+ * fresh clone from `executeMove`) and, on the first click only, the *shared*
+ * {@link MinesState.layout} box.
  */
 function openSquare(state: MinesState, x: number, y: number): void {
-  const { w, h } = state;
-  const layout = state.layout;
+  const { w, h, grid, layout } = state;
 
   if (!layout.mines) {
-    // === the single deliberate mutation of a shared object (design D1) ===
-    // The layout is a memoization of a deterministic function of the desc's RNG
-    // state and this click, so replaying the move log reproduces it exactly.
+    // The single deliberate mutation of a shared object. The layout memoizes a
+    // deterministic function of the desc's RNG state and this click, so
+    // replaying the move log reproduces it exactly. The engine then pulls the
+    // new desc from `supersededDesc`; the game never pushes into the midend.
     layout.mines = minegen(
       w,
       h,
@@ -146,63 +137,36 @@ function openSquare(state: MinesState, x: number, y: number): void {
     layout.startx = x;
     layout.starty = y;
     layout.rs = null;
-    // The engine pulls the superseded desc from `supersededDesc` after this
-    // move commits — the game never pushes into the midend (design D1/D2).
   }
+  const mines = layout.mines;
 
   // Record the first click on the *state* whether or not the layout was
-  // generated here (design D2): a save restored from the private desc has the
-  // layout but not the click, and this replayed open must put it back.
+  // generated here: a save restored from the private desc has the layout but
+  // not the click, and this replayed open must put it back.
   if (state.clickedAt === null) state.clickedAt = { x, y };
 
-  if (layout.mines[y * w + x]) {
+  if (mines[y * w + x]) {
     // Trodden on a mine. Expose only it (so an undo can carry on).
     state.dead = true;
-    state.grid[y * w + x] = KILLED;
+    grid[y * w + x] = KILLED;
     return;
   }
 
-  state.grid[y * w + x] = -10; // internal `todo` marker
-  while (true) {
-    let doneSomething = false;
-    for (let yy = 0; yy < h; yy++) {
-      for (let xx = 0; xx < w; xx++) {
-        if (state.grid[yy * w + xx] === -10) {
-          let v = 0;
-          for (let dx = -1; dx <= 1; dx++) {
-            for (let dy = -1; dy <= 1; dy++) {
-              if (
-                xx + dx >= 0 &&
-                xx + dx < w &&
-                yy + dy >= 0 &&
-                yy + dy < h &&
-                layout.mines[(yy + dy) * w + (xx + dx)]
-              ) {
-                v++;
-              }
-            }
-          }
-          state.grid[yy * w + xx] = v;
-          if (v === 0) {
-            for (let dx = -1; dx <= 1; dx++) {
-              for (let dy = -1; dy <= 1; dy++) {
-                if (
-                  xx + dx >= 0 &&
-                  xx + dx < w &&
-                  yy + dy >= 0 &&
-                  yy + dy < h &&
-                  state.grid[(yy + dy) * w + (xx + dx)] === COVERED
-                ) {
-                  state.grid[(yy + dy) * w + (xx + dx)] = -10;
-                }
-              }
-            }
-          }
-          doneSomething = true;
-        }
+  // Flood: a square with no neighboring mines opens its covered neighbors.
+  const todo: Point[] = [{ x, y }];
+  grid[y * w + x] = TODO;
+  while (todo.length > 0) {
+    const sq = todo.pop() as Point;
+    const near = around(w, h, sq.x, sq.y);
+    const v = near.filter((q) => mines[q.y * w + q.x]).length;
+    grid[sq.y * w + sq.x] = v;
+    if (v > 0) continue;
+    for (const q of near) {
+      if (grid[q.y * w + q.x] === COVERED) {
+        grid[q.y * w + q.x] = TODO;
+        todo.push(q);
       }
     }
-    if (!doneSomething) break;
   }
 
   if (state.dead) return;
@@ -211,11 +175,11 @@ function openSquare(state: MinesState, x: number, y: number): void {
   let nmines = 0;
   let ncovered = 0;
   for (let i = 0; i < w * h; i++) {
-    if (state.grid[i] < 0) ncovered++;
-    if (layout.mines[i]) nmines++;
+    if (grid[i] < 0) ncovered++;
+    if (mines[i]) nmines++;
   }
   if (ncovered === nmines) {
-    for (let i = 0; i < w * h; i++) if (state.grid[i] < 0) state.grid[i] = FLAG;
+    for (let i = 0; i < w * h; i++) if (grid[i] < 0) grid[i] = FLAG;
     state.completed = true;
   }
 }
@@ -223,12 +187,10 @@ function openSquare(state: MinesState, x: number, y: number): void {
 // --- Game object -------------------------------------------------------
 
 const mk = (w: number, h: number, n: number): MinesParams => ({
+  ...defaultParams(),
   w,
   h,
   n,
-  unique: true,
-  firstClickX: -1,
-  firstClickY: -1,
 });
 
 export const minesGame: Game<
@@ -297,13 +259,12 @@ export const minesGame: Game<
   ],
 
   newDesc(p: MinesParams, rng: RandomState): { desc: string } {
-    // Burn two `random_upto` draws (design D6.1): the interactive path discards
-    // an initial click location it never uses, purely to keep the RNG stream in
-    // step with batch generation so shared seeds reproduce.
+    // Burn the two `random_upto` draws batch generation spends on a first
+    // click, purely to keep the RNG stream in step with it so shared seeds
+    // reproduce.
     randomUpto(rng, p.w);
     randomUpto(rng, p.h);
-    const rsHex = randomStateEncode(rng);
-    return { desc: `r${p.n},${p.unique ? "u" : "a"},${rsHex}` };
+    return { desc: `r${p.n},${p.unique ? "u" : "a"},${randomStateEncode(rng)}` };
   },
   validateDesc,
   newState(p: MinesParams, desc: string): MinesState {
@@ -335,9 +296,7 @@ export const minesGame: Game<
     };
   },
   encodeUi,
-  decodeUi(ui: MinesUi, encoded: string): void {
-    decodeUi(ui, encoded);
-  },
+  decodeUi,
   changedState(ui: MinesUi, _old: MinesState | null, newState: MinesState): void {
     if (newState.completed) ui.everCompleted = true;
   },
@@ -357,41 +316,20 @@ export const minesGame: Game<
     let cx = fromCoord(p.x, tileSize, border);
     let cy = fromCoord(p.y, tileSize, border);
 
-    /** The `uncover` chord path (upstream `goto uncover`, mines.c:2682): if the
-     * clicked number's flags match, either open all covered neighbors (`C`),
-     * or — if a to-open square is really a mine (mis-flagged) — reveal *only*
-     * those mines and count a death (design D7). */
+    /** Chord the number at (cx, cy) (upstream `goto uncover`, mines.c:2682): if
+     * its flags match its count, open every covered neighbor (`C`) — unless one
+     * of them is really a mine (a misplaced flag), in which case reveal *only*
+     * those mines and count a death. */
     const uncover = (): MinesMove | null | UiUpdate => {
       if (s.grid[cy * w + cx] > 0 && ui.validradius === 1) {
-        let n = 0;
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            if (
-              cx + dx >= 0 &&
-              cx + dx < w &&
-              cy + dy >= 0 &&
-              cy + dy < h &&
-              s.grid[(cy + dy) * w + (cx + dx)] === FLAG
-            ) {
-              n++;
-            }
-          }
-        }
-        if (n === s.grid[cy * w + cx]) {
-          const ops: MineOp[] = [];
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              if (cx + dx >= 0 && cx + dx < w && cy + dy >= 0 && cy + dy < h) {
-                if (
-                  s.grid[(cy + dy) * w + (cx + dx)] !== FLAG &&
-                  s.layout.mines &&
-                  s.layout.mines[(cy + dy) * w + (cx + dx)]
-                ) {
-                  ops.push({ op: "O", x: cx + dx, y: cy + dy });
-                }
-              }
-            }
-          }
+        const near = around(w, h, cx, cy);
+        const flags = near.filter((q) => s.grid[q.y * w + q.x] === FLAG).length;
+        if (flags === s.grid[cy * w + cx]) {
+          const ops: MineOp[] = near
+            .filter(
+              (q) => s.grid[q.y * w + q.x] !== FLAG && s.layout.mines?.[q.y * w + q.x],
+            )
+            .map((q) => ({ op: "O", x: q.x, y: q.y }));
           if (ops.length > 0) {
             ui.deaths++;
             return { type: "ops", ops };
@@ -403,19 +341,7 @@ export const minesGame: Game<
     };
 
     if (isCursorMove(button)) {
-      const wasVisible = ui.cursor.visible;
-      const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h);
-      const ox = ui.cursor.x;
-      const oy = ui.cursor.y;
-      if (moved) {
-        ui.cursor.x = moved.x;
-        ui.cursor.y = moved.y;
-      }
-      if (!wasVisible) {
-        ui.cursor.visible = true;
-        return UI_UPDATE;
-      }
-      return ui.cursor.x !== ox || ui.cursor.y !== oy ? UI_UPDATE : null;
+      return moveCursor(ui.cursor, button, w, h) ? UI_UPDATE : null;
     }
 
     if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
@@ -446,25 +372,19 @@ export const minesGame: Game<
       button === MIDDLE_DRAG
     ) {
       if (cx < 0 || cx >= w || cy < 0 || cy >= h) return null;
-      // Mouse-downs/drags move the highlight (design D8). The highlight *radius*
-      // is what previews a chord: `hradius = 1` lights the whole 3×3 around a
-      // number, `hradius = 0` lights only the pressed cell.
+      // A press moves the highlight, whose *radius* previews a chord: 1 lights
+      // the 3×3 around a number, 0 only the pressed cell. A plain LEFT press on
+      // a number shows no preview: pressed cells render like opened ones, so on
+      // an unsatisfied number it flashed a false "uncover" that reverted on
+      // release. Upstream shows none for a left-click either; the deliberate
+      // chord gesture (middle button / Shift+left) keeps the 3×3 preview.
       const onNumber = s.grid[cy * w + cx] >= 0;
       const isMiddle = button === MIDDLE_BUTTON || button === MIDDLE_DRAG;
       ui.hx = cx;
       ui.hy = cy;
-      // Suppress the 3×3 chord preview on a plain LEFT press over a number
-      // (owner report 2026-07-15): a left-click still chords on release, but the
-      // pressed-preview cells render identically to opened cells, so on a
-      // not-yet-satisfied number the preview flashed a false "uncover" that
-      // reverted on release — reading as "uncovered blocks re-covered" while
-      // solving by clicking numbers. Upstream/MS shows no preview for a
-      // left-click either; the deliberate chord gesture (middle button /
-      // Shift+left) keeps the 3×3 preview. A left-press over a *covered* cell
-      // keeps its single-cell "about to open" highlight.
       ui.hradius = isMiddle && onNumber ? 1 : 0;
-      // validradius still records chord-vs-open intent so the release chords a
-      // number (1) and opens a covered square (0), preview or no preview.
+      // validradius records chord-vs-open intent, preview or no preview: the
+      // release chords a number (1) and opens a covered square (0).
       if (button === LEFT_BUTTON) ui.validradius = onNumber ? 1 : 0;
       else if (button === MIDDLE_BUTTON) ui.validradius = 1;
       ui.cursor.visible = false;
@@ -498,38 +418,23 @@ export const minesGame: Game<
   },
 
   executeMove(s: MinesState, m: MinesMove): MinesState {
+    const { w, h } = s;
     if (m.type === "solve") {
       if (!s.layout.mines) throw new Error("Game has not been started yet");
       const ret = cloneState(s);
-      const mines = ret.layout.mines as Int8Array;
+      const mines = s.layout.mines;
       if (!ret.dead) {
         // Expose the entire grid as a completed solution.
-        for (let yy = 0; yy < ret.h; yy++) {
-          for (let xx = 0; xx < ret.w; xx++) {
-            if (mines[yy * ret.w + xx]) {
-              ret.grid[yy * ret.w + xx] = FLAG;
-            } else {
-              let v = 0;
-              for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
-                  if (
-                    xx + dx >= 0 &&
-                    xx + dx < ret.w &&
-                    yy + dy >= 0 &&
-                    yy + dy < ret.h &&
-                    mines[(yy + dy) * ret.w + (xx + dx)]
-                  ) {
-                    v++;
-                  }
-                }
-              }
-              ret.grid[yy * ret.w + xx] = v;
-            }
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            ret.grid[y * w + x] = mines[y * w + x]
+              ? FLAG
+              : around(w, h, x, y).filter((q) => mines[q.y * w + q.x]).length;
           }
         }
       } else {
         // A full corrections grid, standard-Minesweeper style (mines.c:2788).
-        for (let i = 0; i < ret.w * ret.h; i++) {
+        for (let i = 0; i < w * h; i++) {
           if ((ret.grid[i] === COVERED || ret.grid[i] === QUERY) && mines[i]) {
             ret.grid[i] = MINE;
           } else if (ret.grid[i] === FLAG && !mines[i]) {
@@ -546,10 +451,10 @@ export const minesGame: Game<
     const ret = cloneState(s);
     for (const op of m.ops) {
       const { x, y } = op;
-      if (x < 0 || x >= ret.w || y < 0 || y >= ret.h) {
+      if (x < 0 || x >= w || y < 0 || y >= h) {
         throw new Error(`move out of range: ${op.op}${x},${y}`);
       }
-      const i = y * ret.w + x;
+      const i = y * w + x;
       if (op.op === "F") {
         if (ret.grid[i] === FLAG || ret.grid[i] === COVERED) {
           ret.grid[i] ^= COVERED ^ FLAG; // toggle -2 <-> -1
@@ -559,19 +464,9 @@ export const minesGame: Game<
       } else if (op.op === "O") {
         openSquare(ret, x, y);
       } else if (op.op === "C") {
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            if (
-              x + dx >= 0 &&
-              x + dx < ret.w &&
-              y + dy >= 0 &&
-              y + dy < ret.h &&
-              (ret.grid[(y + dy) * ret.w + (x + dx)] === COVERED ||
-                ret.grid[(y + dy) * ret.w + (x + dx)] === QUERY)
-            ) {
-              openSquare(ret, x + dx, y + dy);
-            }
-          }
+        for (const q of around(w, h, x, y)) {
+          const v = ret.grid[q.y * w + q.x];
+          if (v === COVERED || v === QUERY) openSquare(ret, q.x, q.y);
         }
       } else {
         // `op` is one shape with a three-value `op` field, not a union of
@@ -584,7 +479,7 @@ export const minesGame: Game<
 
   supersededDesc(s: MinesState): SupersededDesc | null {
     // Answer "nothing to say" until the layout exists AND the first click is
-    // recorded — both happen together on the first open (design D2).
+    // recorded — both happen together on the first open.
     if (!s.layout.mines || !s.clickedAt) return null;
     const hex = encodeLayoutHex(s.layout.mines, s.w * s.h);
     return { desc: `${s.clickedAt.x},${s.clickedAt.y},m${hex}`, privDesc: `m${hex}` };
@@ -707,24 +602,10 @@ export const minesGame: Game<
     ret[COL_CURSOR] = PINK;
     return ret;
   },
-  computeSize(p: MinesParams, tileSize: number): Size {
-    return computeSize(p, tileSize);
-  },
+  computeSize,
   setTileSize,
   newDrawState,
-  redraw(
-    dr,
-    ds,
-    prev,
-    s,
-    dir,
-    ui,
-    animTime,
-    flashTime,
-    _hint?: HintStep<MinesMove>,
-  ): void {
-    redraw(dr, ds, prev, s, dir, ui, animTime, flashTime);
-  },
+  redraw,
 };
 
 registerGame(minesGame);

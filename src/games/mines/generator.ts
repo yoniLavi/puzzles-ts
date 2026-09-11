@@ -2,17 +2,16 @@
  * Mine-layout generator (`minegen` + `mineperturb`, mines.c:1447/1863), which
  * drives {@link minesolve} to guarantee a `unique` board is deducible without
  * guessing — the mechanism behind this fork's guess-free policy for every
- * preset (design D5).
+ * preset.
  *
- * Byte-match-critical (design D6): the sort is the total-order `squarecmp`
+ * Byte-match-critical: the sort is the total-order `squarecmp`
  * (type / random / y / x), and several quirks are ported *verbatim* or the
  * layouts diverge from the C for a given seed —
- *   1. the two burned `random_upto` draws in the interactive desc path (D6.1),
+ *   1. the two burned `random_upto` draws in the interactive desc path,
  *      handled in `index.ts`;
- *   2. the double-increment livelock guard here (D6.2);
- *   3. `ss_overlap`'s scan order feeding the perturb target (D6.3), in
- *      `solver.ts`;
- *   4. the never-updated `prevret` in the solve-and-perturb loop (below).
+ *   2. the double-increment livelock guard here;
+ *   3. `ss_overlap`'s scan order feeding the perturb target, in `solver.ts`;
+ *   4. the never-assigned `prevret` in the solve-and-perturb loop (below).
  */
 
 import { type RandomState, randomBits, randomUpto } from "../../engine/random/index.ts";
@@ -69,7 +68,7 @@ interface Square {
 
 /** `(type, random, y, x)` total order (upstream `squarecmp`, mines.c:1408) — a
  * genuine total order, which is why the perturb candidate list is deterministic
- * and a byte-match differential is achievable (design D6). */
+ * and a byte-match differential is achievable. */
 function squarecmp(a: Square, b: Square): number {
   if (a.type !== b.type) return a.type - b.type;
   if (a.random !== b.random) return a.random - b.random;
@@ -94,10 +93,10 @@ function mineperturb(
 ): Perturbation[] | null {
   if (!mask && !ctx.allowBigPerturbs) return null;
 
-  // Livelock guard, ported VERBATIM including the double increment (design
-  // D6.2): the counter increments twice when the first test fails. It is
-  // almost certainly an upstream typo — we keep it so the RNG stream and the
-  // give-up point match the C exactly.
+  // Livelock guard, ported VERBATIM including the double increment: the
+  // counter increments twice when the first test fails. It is almost certainly
+  // an upstream typo — we keep it so the RNG stream and the give-up point match
+  // the C exactly.
   if (
     ctx.nperturbsSinceLastNewOpen++ > ctx.w ||
     ctx.nperturbsSinceLastNewOpen++ > ctx.h
@@ -218,22 +217,14 @@ function mineperturb(
   }
 
   // Build the change list: either fill each empty in the set (+1) and empty a
-  // matching outside square (-1), or the reverse.
+  // matching outside square (-1), or the reverse (as the partial fill does).
+  const fill = tofill.length === nfull;
+  const dtodo = fill ? +1 : -1;
+  const dset = -dtodo;
   const changes: Perturbation[] = [];
-  let todo: Square[];
-  let dtodo: number;
-  let dset: number;
-  if (tofill.length === nfull) {
-    todo = tofill;
-    dtodo = +1;
-    dset = -1;
-  } else {
-    // (Also the partial-fill case.)
-    todo = toempty;
-    dtodo = -1;
-    dset = +1;
+  for (const sq of fill ? tofill : toempty) {
+    changes.push({ x: sq.x, y: sq.y, delta: dtodo });
   }
-  for (const sq of todo) changes.push({ x: sq.x, y: sq.y, delta: dtodo });
 
   if (setlist) {
     const ntoempty = toempty.length;
@@ -338,7 +329,6 @@ export function minegen(
   do {
     attempt();
 
-    success = false;
     ntries++;
     ret.fill(0);
 
@@ -375,14 +365,11 @@ export function minegen(
       const perturb: PerturbCb = (g, sx, sy, m) => mineperturb(ctx, g, sx, sy, m);
 
       const solvegrid = new Int8Array(w * h);
-      // `prevret` is declared -2 and, VERBATIM with upstream (mines.c:1940),
-      // NEVER reassigned — so the `prevret >= 0` guard is permanently false and
-      // the loop breaks only on a full solve (0) or an unsolvable board (-1).
-      // "Fixing" it to track the previous perturb count would change the
-      // give-up point and diverge the byte-match desc (design D6, trap 4).
-      const prevret = -2;
-      // A guard of its own, deliberately: bounding this loop via `prevret`
-      // would resurrect the dead give-up above and change the desc.
+      // Only a full solve (0) or an unsolvable board (-1) ends this loop.
+      // Upstream (mines.c:1940) also gives up once the perturb count stops
+      // falling, but compares against a `prevret` it never assigns, so that
+      // never fires; honoring it would move the give-up point and diverge the
+      // byte-match desc. Hence a guard of its own.
       const round = retryLimit("mines: solve/perturb", MAX_SOLVE_ROUNDS);
       while (true) {
         round();
@@ -391,11 +378,8 @@ export function minegen(
         solvegrid[y * w + x] = mineopen(ctx, x, y); // 0 by deliberate arrangement
 
         const solveret = minesolve(w, h, n, solvegrid, open, perturb, rs);
-        if (solveret < 0 || (prevret >= 0 && solveret >= prevret)) {
-          success = false;
-          break;
-        } else if (solveret === 0) {
-          success = true;
+        if (solveret <= 0) {
+          success = solveret === 0;
           break;
         }
       }
@@ -410,13 +394,13 @@ export function minegen(
 /**
  * Reproduce `new_game_desc(interactive = false)` (mines.c:2033): pick (or take
  * the forced) first click, generate the layout, and return the *public* desc
- * `x,y,m<hex>`. This is the byte-match subject of the differential (design D6) —
- * the running game uses the preliminary `r…` form; this batch form is what the
- * C's `--generate` path and the trace harness produce.
+ * `x,y,m<hex>`. This is the byte-match subject of the differential — the
+ * running game uses the preliminary `r…` form; this batch form is what the C's
+ * `--generate` path produced.
  */
 export function newGameDescBatch(p: MinesParams, rs: RandomState): string {
-  // Two draws for the initial click, consumed whether or not they are used
-  // (design D6.1). Forced first-click params override the values, not the draws.
+  // Two draws for the initial click, consumed whether or not they are used.
+  // Forced first-click params override the values, not the draws.
   const x0 = randomUpto(rs, p.w);
   const y0 = randomUpto(rs, p.h);
   const x = p.firstClickX >= 0 ? p.firstClickX : x0;

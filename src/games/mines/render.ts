@@ -1,15 +1,15 @@
 /**
  * Rendering for Mines (`game_redraw` + `draw_tile`, mines.c:2976/3119).
  *
- * Palette index-for-index with the C `enum` (design/task 6.1). Geometry uses
- * the **web build's** `NARROW_BORDERS` variant (`BORDER = max(ts*3/20, 1)`,
- * docs/games/rendering.md § "The tile cache and the diff key") since that is what the browser actually showed.
+ * The palette is index-for-index with the C `enum`. Geometry uses the web
+ * build's `NARROW_BORDERS` variant (see {@link borderFor}), since that is what
+ * the browser actually showed.
  *
  * The two ui-derived overlays — the mouse-down highlight radius and the "too
  * many flags" wrong-number tint — are folded into each tile's cache value `v`
  * (exactly as the C does), so they live *in* the diff key and repaint/clear on
- * their own frames (design D8, docs/games/rendering.md § "Prove the overlay repaints"). The paint-twice test in
- * `mines.test.ts` guards that.
+ * their own frames (docs/games/rendering.md § "Prove the overlay repaints"). The
+ * paint-twice test in `mines.test.ts` guards that.
  */
 
 import {
@@ -19,7 +19,18 @@ import {
 } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord } from "../../engine/geometry.ts";
-import { FLAG, KILLED, type MinesState, type MinesUi } from "./state.ts";
+import type { Point } from "../../engine/types.ts";
+import {
+  around,
+  COVERED,
+  FLAG,
+  KILLED,
+  MINE,
+  type MinesState,
+  type MinesUi,
+  QUERY,
+  WRONGFLAG,
+} from "./state.ts";
 
 // --- palette (upstream enum order, mines.c:24) -------------------------
 export const COL_BACKGROUND = 0;
@@ -45,17 +56,16 @@ export const COL_CURSOR = 19;
 export const NCOLORS = 20;
 
 export const PREFERRED_TILE_SIZE = 20;
-const FLASH_FRAME = 0.13;
+export const FLASH_FRAME = 0.13;
+
+/** A covered square's tile value when it shows the "start here" cross. */
+const START = -4;
 
 /** The web build defines `NARROW_BORDERS`, so `BORDER = max(ts*3/20, 1)`
  * (mines.c:37) — not the desktop default of `ts*3/2`. */
 export function borderFor(tileSize: number): number {
   return Math.max(Math.floor((tileSize * 3) / 20), 1);
 }
-function outerHighlightWidth(border: number): number {
-  return Math.max(border - 1, 1);
-}
-const highlightWidth = raisedBevelWidth;
 
 export interface MinesDrawState {
   w: number;
@@ -111,8 +121,8 @@ function setcoord(
   coords[n * 2 + 1] = y + Math.trunc(ts * dy);
 }
 
-function poly(flat: number[], count: number): { x: number; y: number }[] {
-  const pts: { x: number; y: number }[] = [];
+function poly(flat: number[], count: number): Point[] {
+  const pts: Point[] = [];
   for (let i = 0; i < count; i++) pts.push({ x: flat[i * 2], y: flat[i * 2 + 1] });
   return pts;
 }
@@ -125,7 +135,7 @@ function drawTile(
   v: number,
   bg: number,
 ): void {
-  const hw = highlightWidth(ts);
+  const hw = raisedBevelWidth(ts);
   if (v < 0) {
     const coords: number[] = [];
     if (v === -22 || v === -23 || v === -24) {
@@ -146,7 +156,6 @@ function drawTile(
     }
 
     if (v === FLAG) {
-      // A flag.
       setcoord(coords, 0, x, y, ts, 0.6, 0.35);
       setcoord(coords, 1, x, y, ts, 0.6, 0.7);
       setcoord(coords, 2, x, y, ts, 0.8, 0.8);
@@ -158,7 +167,7 @@ function drawTile(
       setcoord(coords, 1, x, y, ts, 0.6, 0.5);
       setcoord(coords, 2, x, y, ts, 0.2, 0.35);
       dr.drawPolygon(poly(coords, 3), COL_FLAG, COL_FLAG);
-    } else if (v === -3) {
+    } else if (v === QUERY) {
       // A question mark (this frontend never sets one, but be faithful).
       dr.drawText(
         { x: x + Math.floor(ts / 2), y: y + Math.floor(ts / 2) },
@@ -171,7 +180,7 @@ function drawTile(
         COL_QUERY,
         "?",
       );
-    } else if (v === -4) {
+    } else if (v === START) {
       // The 'click here' cross marking the safe first-click location.
       const c0 = Math.floor(ts / 4);
       const c1 = ts - 1 - c0;
@@ -204,7 +213,7 @@ function drawTile(
         COL_1 - 1 + v,
         String(v),
       );
-    } else if (v >= 64) {
+    } else if (v >= MINE) {
       const cx = x + Math.floor(ts / 2);
       const cy = y + Math.floor(ts / 2);
       const r = Math.floor(ts / 2) - 3;
@@ -237,7 +246,7 @@ function drawTile(
         COL_HIGHLIGHT,
       );
 
-      if (v === 66) {
+      if (v === WRONGFLAG) {
         // Cross out an incorrectly-flagged mine.
         for (let dx = -1; dx <= 1; dx++) {
           dr.drawLine(
@@ -287,7 +296,7 @@ export function redraw(
 
   if (!ds.started) {
     // Recessed area framing the whole puzzle.
-    const ohw = outerHighlightWidth(border);
+    const ohw = Math.max(border - 1, 1); // upstream's OUTER_HIGHLIGHT_WIDTH
     drawRecessedBorder(
       dr,
       {
@@ -312,29 +321,15 @@ export function redraw(
       let v = s.grid[y * ds.w + x];
 
       if (v >= 0 && v <= 8) {
-        // Too-many-flags: count flags around, tint if more than the clue.
-        let flags = 0;
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            const nx = x + dx;
-            const ny = y + dy;
-            if (
-              nx >= 0 &&
-              nx < ds.w &&
-              ny >= 0 &&
-              ny < ds.h &&
-              s.grid[ny * ds.w + nx] === FLAG
-            )
-              flags++;
-          }
-        }
-        if (flags > v) v |= 32;
+        // Too many flags around a number: tint it.
+        const near = around(ds.w, ds.h, x, y);
+        if (near.filter((q) => s.grid[q.y * ds.w + q.x] === FLAG).length > v) v |= 32;
       }
 
-      if (v === -2 && x === s.layout.startx && y === s.layout.starty) v = -4;
+      if (v === COVERED && x === s.layout.startx && y === s.layout.starty) v = START;
 
       if (
-        (v === -2 || v === -3 || v === -4) &&
+        (v === COVERED || v === QUERY || v === START) &&
         Math.abs(x - ui.hx) <= ui.hradius &&
         Math.abs(y - ui.hy) <= ui.hradius
       ) {
@@ -361,5 +356,4 @@ export function redraw(
   ds.bg = bg;
   ds.curX = cursorX;
   ds.curY = cursorY;
-  // (Mine count for the status bar is computed by `statusbarText` in index.ts.)
 }

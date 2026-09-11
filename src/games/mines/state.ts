@@ -7,29 +7,38 @@
  * does not exist until the first click generates it (so the first click is
  * never a mine), and once generated it survives undo — clicking a *different*
  * square after undoing to the start uses the *old* layout. That is not a wart:
- * it is what stops the player rerolling the board (design D1). The engine
- * cannot see this history in `(state, move)`, so we mirror the C with an
- * explicit shared box and let `index.ts` document the single mutation site.
+ * it is what stops the player rerolling the board. `(state, move)` cannot carry
+ * that history, so the box is explicit and `index.ts`'s `openSquare` is its
+ * single mutation site.
  */
 
 import { obfuscateBitmap } from "../../engine/obfuscate.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
-import {
-  type RandomState,
-  randomStateDecode,
-  randomStateEncode,
-} from "../../engine/random/index.ts";
+import { type RandomState, randomStateDecode } from "../../engine/random/index.ts";
+import type { Point } from "../../engine/types.ts";
 
 // --- grid value encoding (upstream `signed char *grid`) ----------------
 // 0..8 : open, that many neighboring mines
 export const FLAG = -1; // marked as a mine
 export const COVERED = -2; // unknown / covered
-export const QUERY = -3; // question mark (unused by this frontend, kept for text format)
+export const QUERY = -3; // question mark (this frontend never sets one)
 export const MINE = 64; // a mine revealed on loss
 export const KILLED = 65; // the mine the player trod on
 export const WRONGFLAG = 66; // a crossed-out incorrectly-flagged square
-/** Internal `todo` marker used only inside the flood-open loop. */
+/** A square queued to open, seen only inside `openSquare`'s flood. */
 export const TODO = -10;
+
+/** The in-bounds squares of the 3×3 block centered on (x, y), itself included,
+ * row by row. */
+export function around(w: number, h: number, x: number, y: number): Point[] {
+  const out: Point[] = [];
+  for (let ny = Math.max(y - 1, 0); ny <= Math.min(y + 1, h - 1); ny++) {
+    for (let nx = Math.max(x - 1, 0); nx <= Math.min(x + 1, w - 1); nx++) {
+      out.push({ x: nx, y: ny });
+    }
+  }
+  return out;
+}
 
 // --- params ------------------------------------------------------------
 
@@ -38,14 +47,13 @@ export interface MinesParams {
   h: number;
   n: number;
   unique: boolean;
-  /** Forced first-click location for non-interactive generation; -1 = unset
-   * (the `X`/`Y` desc/param letters). The running game never sets these, but
-   * they are load-bearing for the byte-match differential (design D6). */
+  /** A forced first click for batch generation (the `X`/`Y` param letters,
+   * read by `newGameDescBatch`); -1 = unset. The running game never sets them. */
   firstClickX: number;
   firstClickY: number;
 }
 
-// --- the shared mine-layout box (design D1) ----------------------------
+// --- the shared mine-layout box ----------------------------------------
 
 export interface MineLayout {
   /** The real mine positions (1 = mine), or `null` while the layout has not
@@ -72,19 +80,17 @@ export interface MinesState {
   dead: boolean;
   completed: boolean;
   cheated: boolean;
-  /** Shared by reference across every clone (design D1). */
+  /** Shared by reference across every clone. */
   layout: MineLayout;
-  /** Where the first click landed, recorded on the *state* on the first open
-   * whether or not the layout was generated there (design D2) — a save
-   * restored from the private desc has the layout but not the click, and the
-   * replayed click must put it back. Drives `index.ts`'s `supersededDesc`. */
-  clickedAt: { x: number; y: number } | null;
+  /** Where the first click landed, as this state knows it (see `openSquare`
+   * for why that is not `layout.startx`). Drives `supersededDesc`. */
+  clickedAt: Point | null;
   /** Player knowledge (the grid value encoding above); cloned per move. */
   grid: Int8Array;
 }
 
 export interface MinesUi {
-  /** Mouse-down highlight center / radius (a render-only overlay, design D8). */
+  /** Mouse-down highlight center / radius (a render-only overlay). */
   hx: number;
   hy: number;
   hradius: number;
@@ -92,18 +98,16 @@ export interface MinesUi {
   validradius: number;
   /** Whether the pending flash is a death (vs a win) — set by `flashLength`. */
   flashIsDeath: boolean;
-  /** Persistent death counter, survives undo and a save (design D7). */
+  /** Death counter; survives undo and a save. */
   deaths: number;
-  /** Set once the game was ever won; stops the clock permanently (design D3).
-   * Distinct from `MinesState.completed`, which is *currently* won: this one
-   * survives an undo, and is what `encodeUi` persists as the `C` flag. */
+  /** Set once the game was ever won; stops the clock permanently. Unlike
+   * `MinesState.completed` it survives an undo, and `encodeUi` saves it as `C`. */
   everCompleted: boolean;
   cursor: GridCursor;
 }
 
-/** One elementary grid operation in a move. `F` toggles a flag, `O` opens
- * (with flood), `C` chords a satisfied number. A player move is a `;`-separated
- * list of these (upstream's move string), here a discriminated union. */
+/** One grid operation: `F` toggles a flag, `O` opens (with flood), `C` chords a
+ * satisfied number. A player move is a list of these. */
 export type MineOp = { op: "F" | "O" | "C"; x: number; y: number };
 export type MinesMove = { type: "solve" } | { type: "ops"; ops: MineOp[] };
 
@@ -113,55 +117,44 @@ export function defaultParams(): MinesParams {
   return { w: 9, h: 9, n: 10, unique: true, firstClickX: -1, firstClickY: -1 };
 }
 
-/** Faithful port of `decode_params` (mines.c:168): `WxH`, optional `nN` mine
- * count (defaulting to area/10), then `a`/`X`/`Y` flags. */
+const isDigit = (c: string | undefined) => c !== undefined && c >= "0" && c <= "9";
+
+/** The decimal number starting at `s[start]` (0 if there is none), and the
+ * index just past it. */
+function readInt(s: string, start: number): [number, number] {
+  let v = 0;
+  let i = start;
+  while (isDigit(s[i])) v = v * 10 + (s.charCodeAt(i++) - 48);
+  return [v, i];
+}
+
+/** Upstream's `decode_params` (mines.c:168): `WxH`, optional `nN` mine count
+ * (defaulting to area/10), then `a`/`X`/`Y` flags. */
 export function decodeParams(s: string): MinesParams {
   const p = defaultParams();
-  let i = 0;
-  const readInt = (): number => {
-    let v = 0;
-    let seen = false;
-    while (i < s.length && s[i] >= "0" && s[i] <= "9") {
-      v = v * 10 + (s.charCodeAt(i) - 48);
-      i++;
-      seen = true;
-    }
-    return seen ? v : 0;
-  };
-  p.w = readInt();
-  if (s[i] === "x") {
-    i++;
-    p.h = readInt();
-  } else {
-    p.h = p.w;
-  }
+  let i: number;
+  [p.w, i] = readInt(s, 0);
+  if (s[i] === "x") [p.h, i] = readInt(s, i + 1);
+  else p.h = p.w;
   if (s[i] === "n") {
-    i++;
-    p.n = readInt();
+    [p.n, i] = readInt(s, i + 1);
     // upstream also skips '.' inside the mine count (a percentage form)
-    while (i < s.length && (s[i] === "." || (s[i] >= "0" && s[i] <= "9"))) i++;
+    while (s[i] === "." || isDigit(s[i])) i++;
   } else if (p.h > 0 && p.w > 0) {
     p.n = Math.floor((p.w * p.h) / 10);
   }
   while (i < s.length) {
-    if (s[i] === "a") {
-      i++;
-      p.unique = false;
-    } else if (s[i] === "X") {
-      i++;
-      p.firstClickX = readInt();
-    } else if (s[i] === "Y") {
-      i++;
-      p.firstClickY = readInt();
-    } else {
-      i++; // skip any other gunk
-    }
+    const c = s[i++];
+    if (c === "a") p.unique = false;
+    else if (c === "X") [p.firstClickX, i] = readInt(s, i);
+    else if (c === "Y") [p.firstClickY, i] = readInt(s, i);
+    // anything else is gunk, skipped
   }
   return p;
 }
 
-/** Faithful port of `encode_params` (mines.c:208). The mine count and the
- * `a`/`X`/`Y` flags are generation-time (`full`) parameters only. */
+/** Upstream's `encode_params` (mines.c:208). The mine count and the `a`/`X`/`Y`
+ * flags are generation-time (`full`) parameters only. */
 export function encodeParams(p: MinesParams, full: boolean): string {
   let s = `${p.w}x${p.h}`;
   if (full) s += `n${p.n}`;
@@ -171,7 +164,7 @@ export function encodeParams(p: MinesParams, full: boolean): string {
   return s;
 }
 
-/** Faithful port of `validate_params` (mines.c:279). */
+/** Upstream's `validate_params` (mines.c:279). */
 export function validateParams(p: MinesParams, full: boolean): string | null {
   if (full && p.unique && (p.w <= 2 || p.h <= 2))
     return "Width and height must both be greater than two";
@@ -236,42 +229,29 @@ export function decodeLayoutBitmap(
 export function validateDesc(p: MinesParams, desc: string): string | null {
   const wh = p.w * p.h;
   let i = 0;
-  const isDigit = (c: string | undefined) => c !== undefined && c >= "0" && c <= "9";
   if (desc[0] === "r") {
-    i = 1;
-    if (!isDigit(desc[i])) return "No initial mine count in game description";
-    let n = 0;
-    while (isDigit(desc[i])) {
-      n = n * 10 + (desc.charCodeAt(i) - 48);
-      i++;
-    }
+    if (!isDigit(desc[1])) return "No initial mine count in game description";
+    let n: number;
+    [n, i] = readInt(desc, 1);
     if (n > wh - 9) return "Too many mines for grid size";
     if (desc[i] !== ",") return "No ',' after initial x-coordinate in game description";
-    i++;
-    if (desc[i] !== "u" && desc[i] !== "a")
+    if (desc[i + 1] !== "u" && desc[i + 1] !== "a")
       return "No uniqueness specifier in game description";
-    i++;
-    if (desc[i] !== ",") return "No ',' after uniqueness specifier in game description";
+    if (desc[i + 2] !== ",")
+      return "No ',' after uniqueness specifier in game description";
     // rest (the encoded RNG state) is ignored
     return null;
   }
   // Public/private desc: optional `x,y,` prefix, optional `m`/`u`, then hex.
-  if (isDigit(desc[i])) {
-    let x = 0;
-    while (isDigit(desc[i])) {
-      x = x * 10 + (desc.charCodeAt(i) - 48);
-      i++;
-    }
-    if (x < 0 || x >= p.w) return "Initial x-coordinate was out of range";
+  if (isDigit(desc[0])) {
+    let x: number;
+    let y: number;
+    [x, i] = readInt(desc, 0);
+    if (x >= p.w) return "Initial x-coordinate was out of range";
     if (desc[i] !== ",") return "No ',' after initial x-coordinate in game description";
-    i++;
-    if (!isDigit(desc[i])) return "No initial y-coordinate in game description";
-    let y = 0;
-    while (isDigit(desc[i])) {
-      y = y * 10 + (desc.charCodeAt(i) - 48);
-      i++;
-    }
-    if (y < 0 || y >= p.h) return "Initial y-coordinate was out of range";
+    if (!isDigit(desc[i + 1])) return "No initial y-coordinate in game description";
+    [y, i] = readInt(desc, i + 1);
+    if (y >= p.h) return "Initial y-coordinate was out of range";
     if (desc[i] !== ",") return "No ',' after initial y-coordinate in game description";
     i++;
   }
@@ -283,15 +263,13 @@ export function validateDesc(p: MinesParams, desc: string): string | null {
 // --- initial state construction (mines.c new_game:2264) ----------------
 
 /** The parsed shape of a desc: the shared layout box, plus the first click
- * to open (a public desc bakes one in). `index.ts`'s `newState` builds the
- * covered grid, then opens `openXY` if present. */
+ * to open (a public desc bakes one in). */
 export interface DecodedDesc {
   layout: MineLayout;
-  openXY: { x: number; y: number } | null;
+  openXY: Point | null;
 }
 
 export function decodeDesc(p: MinesParams, desc: string): DecodedDesc {
-  const wh = p.w * p.h;
   const layout: MineLayout = {
     mines: null,
     n: p.n,
@@ -301,14 +279,9 @@ export function decodeDesc(p: MinesParams, desc: string): DecodedDesc {
     starty: -1,
   };
 
+  let i: number;
   if (desc[0] === "r") {
-    let i = 1;
-    let n = 0;
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") {
-      n = n * 10 + (desc.charCodeAt(i) - 48);
-      i++;
-    }
-    layout.n = n;
+    [layout.n, i] = readInt(desc, 1);
     if (desc[i]) i++; // eat comma
     layout.unique = desc[i] !== "a";
     i++;
@@ -318,52 +291,32 @@ export function decodeDesc(p: MinesParams, desc: string): DecodedDesc {
   }
 
   // Public/private desc: optional x,y prefix, optional m/u, then hex.
-  let i = 0;
-  let openXY: { x: number; y: number } | null = null;
-  if (desc[i] >= "0" && desc[i] <= "9") {
-    let x = 0;
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") {
-      x = x * 10 + (desc.charCodeAt(i) - 48);
-      i++;
-    }
+  i = 0;
+  let openXY: Point | null = null;
+  if (isDigit(desc[0])) {
+    let x: number;
+    let y: number;
+    [x, i] = readInt(desc, 0);
     if (desc[i]) i++;
-    let y = 0;
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") {
-      y = y * 10 + (desc.charCodeAt(i) - 48);
-      i++;
-    }
+    [y, i] = readInt(desc, i);
     if (desc[i]) i++;
     openXY = { x, y };
   }
-  let masked = false;
-  if (desc[i] === "m") {
-    masked = true;
-    i++;
-  } else if (desc[i] === "u") {
-    i++;
-  }
-  layout.mines = decodeLayoutBitmap(desc.slice(i), wh, masked);
+  const masked = desc[i] === "m";
+  if (masked || desc[i] === "u") i++;
+  layout.mines = decodeLayoutBitmap(desc.slice(i), p.w * p.h, masked);
   return { layout, openXY };
 }
 
+/** The next move's state: its own `grid`, the same shared `layout`. */
 export function cloneState(s: MinesState): MinesState {
-  return {
-    w: s.w,
-    h: s.h,
-    n: s.n,
-    dead: s.dead,
-    completed: s.completed,
-    cheated: s.cheated,
-    layout: s.layout, // shared by reference — design D1
-    clickedAt: s.clickedAt,
-    grid: new Int8Array(s.grid),
-  };
+  return { ...s, grid: new Int8Array(s.grid) };
 }
 
 // --- ui serialization (mines.c encode_ui/decode_ui:2492) ---------------
 
 /** `D<deaths>` optionally followed by `C` (completed) — the only two ui
- * fields upstream preserves across a save (design D7). */
+ * fields upstream preserves across a save. */
 export function encodeUi(ui: MinesUi): string {
   return `D${ui.deaths}${ui.everCompleted ? "C" : ""}`;
 }
@@ -374,6 +327,3 @@ export function decodeUi(ui: MinesUi, encoded: string): void {
   ui.deaths = Number(m[1]);
   if (m[2] === "C") ui.everCompleted = true;
 }
-
-// re-export so index.ts and the differential can build the preliminary desc
-export { randomStateEncode };

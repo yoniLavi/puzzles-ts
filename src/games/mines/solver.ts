@@ -7,7 +7,7 @@
  * is ordered by `setcmp = (y, x, mask)` and the square-todo is a FIFO, because
  * the generator picks its perturbation target by positional index into the
  * store at the deductive fixpoint (mines.c:1244) — so the deduction order is
- * byte-match surface (design D6.3), not a tidy convention.
+ * byte-match surface, not a tidy convention.
  */
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
@@ -126,7 +126,7 @@ class SetStore {
 
   /** All sets overlapping the input (x, y, mask) set, in store order
    * (upstream `ss_overlap`, mines.c:543 — its scan order feeds deduction
-   * order, design D6.3). */
+   * order). */
   overlap(x: number, y: number, mask: number): MineSet[] {
     const ret: MineSet[] = [];
     for (let xx = x - 3; xx < x + 3; xx++) {
@@ -252,6 +252,8 @@ export function minesolve(
 ): number {
   const ss = new SetStore();
   const std = new SquareTodo(w * h);
+  const known = (x: number, y: number, mask: number, mine: boolean) =>
+    knownSquares(w, std, grid, open, x, y, mask, mine);
   let nperturbs = 0;
 
   // Seed the square-todo with every already-known square.
@@ -294,14 +296,11 @@ export function minesolve(
 
       // Whether empty or full, replace every set containing this square with
       // one that does not.
-      {
-        const list = ss.overlap(x, y, 1);
-        for (const s of list) {
-          const newmask = setmunge(s.x, s.y, s.mask, x, y, 1, true);
-          const newmines = s.mines - (grid[i] === -1 ? 1 : 0);
-          if (newmask) ss.add(s.x, s.y, newmask, newmines);
-          ss.remove(s);
-        }
+      for (const s of ss.overlap(x, y, 1)) {
+        const newmask = setmunge(s.x, s.y, s.mask, x, y, 1, true);
+        const newmines = s.mines - (grid[i] === -1 ? 1 : 0);
+        if (newmask) ss.add(s.x, s.y, newmask, newmines);
+        ss.remove(s);
       }
 
       doneSomething = true;
@@ -312,13 +311,12 @@ export function minesolve(
     if (s !== null) {
       // Mine count of zero or of its full cardinality → mark everything.
       if (s.mines === 0 || s.mines === bitcount16(s.mask)) {
-        knownSquares(w, std, grid, open, s.x, s.y, s.mask, s.mines !== 0);
+        known(s.x, s.y, s.mask, s.mines !== 0);
         continue;
       }
 
       // Otherwise search the sets overlapping this one.
-      const list = ss.overlap(s.x, s.y, s.mask);
-      for (const s2 of list) {
+      for (const s2 of ss.overlap(s.x, s.y, s.mask)) {
         const swing = setmunge(s.x, s.y, s.mask, s2.x, s2.y, s2.mask, true);
         const s2wing = setmunge(s2.x, s2.y, s2.mask, s.x, s.y, s.mask, true);
         const swc = bitcount16(swing);
@@ -327,17 +325,8 @@ export function minesolve(
         // If the extra-mine count equals a wing's cardinality, that wing is
         // all mines and the other wing all clear.
         if (swc === s.mines - s2.mines || s2wc === s2.mines - s.mines) {
-          knownSquares(w, std, grid, open, s.x, s.y, swing, swc === s.mines - s2.mines);
-          knownSquares(
-            w,
-            std,
-            grid,
-            open,
-            s2.x,
-            s2.y,
-            s2wing,
-            s2wc === s2.mines - s.mines,
-          );
+          known(s.x, s.y, swing, swc === s.mines - s2.mines);
+          known(s2.x, s2.y, s2wing, s2wc === s2.mines - s.mines);
           continue;
         }
 
@@ -366,18 +355,7 @@ export function minesolve(
       // Simple case: no mines left, or as many mines as squares.
       if (minesleft === 0 || minesleft === squaresleft) {
         for (let i = 0; i < w * h; i++) {
-          if (grid[i] === -2) {
-            knownSquares(
-              w,
-              std,
-              grid,
-              open,
-              i % w,
-              Math.floor(i / w),
-              1,
-              minesleft !== 0,
-            );
-          }
+          if (grid[i] === -2) known(i % w, Math.floor(i / w), 1, minesleft !== 0);
         }
         continue;
       }
@@ -433,9 +411,7 @@ export function minesolve(
                       break;
                     }
                   }
-                  if (outside) {
-                    knownSquares(w, std, grid, open, xx, yy, 1, minesleft !== 0);
-                  }
+                  if (outside) known(xx, yy, 1, minesleft !== 0);
                 }
               }
               doneSomething = true;
@@ -475,8 +451,7 @@ export function minesolve(
           if (change.delta < 0 && grid[change.y * w + change.x] !== -2) {
             std.add(change.y * w + change.x);
           }
-          const list = ss.overlap(change.x, change.y, 1);
-          for (const set of list) {
+          for (const set of ss.overlap(change.x, change.y, 1)) {
             set.mines += change.delta;
             ss.addTodo(set);
           }
@@ -490,12 +465,5 @@ export function minesolve(
   }
 
   // Any unknown squares left ⇒ we failed to complete.
-  for (let i = 0; i < w * h; i++) {
-    if (grid[i] === -2) {
-      nperturbs = -1;
-      break;
-    }
-  }
-
-  return nperturbs;
+  return grid.includes(-2) ? -1 : nperturbs;
 }

@@ -215,7 +215,7 @@ describe("mines generator", () => {
   }, 30_000);
 });
 
-// --- game / supersede / midend (design D1, D2) -------------------------
+// --- game / supersede / midend -----------------------------------------
 
 describe("mines supersede + midend", () => {
   it("the first click generates a layout and supersedes the desc", () => {
@@ -373,8 +373,8 @@ describe("mines supersede + midend", () => {
     const solved = minesGame.executeMove(alive, { type: "solve" });
     expect(solved.cheated).toBe(true);
     expect(solved.grid[0]).toBe(-1); // the mine, flagged
-    // every non-mine square carries its neighbor count (not covered)
-    for (let i = 1; i < 9; i++) expect(solved.grid[i]).toBeGreaterThanOrEqual(0);
+    // every non-mine square carries its neighbor count
+    expect(Array.from(solved.grid)).toEqual([-1, 1, 0, 1, 1, 0, 0, 0, 0]);
   });
 
   it("Solve after death paints a standard corrections grid", () => {
@@ -413,7 +413,7 @@ describe("mines supersede + midend", () => {
   });
 });
 
-// --- chord preview (owner report 2026-07-15) ---------------------------
+// --- chord preview -----------------------------------------------------
 
 describe("mines chord preview", () => {
   // A hand-built board: '1' at (1,1) satisfied by a flag at (0,0), one covered
@@ -454,7 +454,7 @@ describe("mines chord preview", () => {
   it("a LEFT press over a number shows NO 3x3 chord preview but still records chord intent", () => {
     const { s, ui, ds, at } = board();
     minesGame.interpretMove(s, ui, ds as never, at(1, 1), LEFT_BUTTON);
-    // No preview flash (the false "uncover" the owner saw): hradius 0, not 1.
+    // No preview flash (a false "uncover"): hradius 0, not 1.
     expect(ui.hradius).toBe(0);
     // …but the release still chords a number.
     expect(ui.validradius).toBe(1);
@@ -485,37 +485,27 @@ describe("mines chord preview", () => {
   });
 });
 
-// --- timer (design D3) -------------------------------------------------
+// --- timer -------------------------------------------------------------
 
 describe("mines timer", () => {
   it("does not run before the first click, runs after, stops on win/completed", () => {
     const p = decodeParams("9x9n10");
     // Before any layout: clock stopped.
-    const pre = decodeDesc(p, "r10,u,00");
-    const preState = {
-      ...pre,
-      w: 9,
-      h: 9,
-      n: 10,
-      dead: false,
-      completed: false,
-      cheated: false,
-      layout: pre.layout,
-      clickedAt: null,
-      grid: new Int8Array(81).fill(COVERED),
-    } as never;
+    const preState = minesGame.newState(
+      p,
+      minesGame.newDesc(p, randomNew("timer")).desc,
+    );
     const ui = minesGame.newUi(preState);
     expect(minesGame.timingState?.(preState, ui)).toBe(false);
 
-    // After a real first click through the midend the clock runs.
-    const h = fresh(seedId("9x9n10", "timer"));
-    h.m.playMoves([openMove(4, 4)]);
-    // The midend drives timing via timingState — accumulate a second.
-    h.m.timer(1);
-    // A win stops it: completed flag set by changedState.
-    const wonUi = minesGame.newUi(preState);
+    // After the first click the clock runs…
+    const started = minesGame.executeMove(preState, openMove(4, 4));
+    expect(started.completed).toBe(false);
+    expect(minesGame.timingState?.(started, ui)).toBe(true);
+    // …and a game ever won (the ui flag `changedState` sets) stops it for good.
+    const wonUi = minesGame.newUi(started);
     wonUi.everCompleted = true;
-    expect(minesGame.timingState?.(preState, wonUi)).toBe(false);
+    expect(minesGame.timingState?.(started, wonUi)).toBe(false);
   });
 });
 
@@ -538,9 +528,9 @@ describe("mines render", () => {
   });
 
   it("repaints the mouse-down highlight on press AND on release (paint twice, D8)", () => {
-    // The highlight radius is folded into each tile's cache value `v` (design
-    // D8), so it must repaint the affected covered tile both when pressed and
-    // when released — a cold-frame test could not catch a missing one.
+    // The highlight radius is folded into each tile's cache value `v`, so it
+    // must repaint the affected covered tile both when pressed and when
+    // released — a cold-frame test could not catch a missing one.
     const p = decodeParams("9x9n10");
     const { desc } = minesGame.newDesc(p, randomNew("hl"));
     const s = minesGame.newState(p, desc); // blank pre-click board, all covered
