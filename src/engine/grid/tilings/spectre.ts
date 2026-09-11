@@ -101,8 +101,6 @@ const ROT_CACHE = new Map<number, Point>();
  * called once per vertex of every tile placed.
  */
 export function pointRot(s: number): Point {
-  // C's `%` truncates toward zero, and so does JS's, so a negative `s` lands in
-  // (-12, 0] and needs the same correction. Do not "fix" this into a floor-mod.
   let n = s % 12;
   if (n < 0) n += 12;
 
@@ -150,16 +148,11 @@ export function pointY(p: Point): Coord {
  * compared by squaring, which is exact because √3 is irrational and the two
  * squares can therefore never tie.
  *
- * **Deliberately plain JS numbers — no `| 0`, no `Math.imul`.** This inverts
- * the rule the rest of this port follows, so it is worth being explicit about
- * why. In C these products are `int` multiplications that can overflow for a
- * large enough patch, which is a real (if remote) upstream fragility; masking
- * to 32 bits here would faithfully *reproduce* that overflow rather than avoid
- * it. JS doubles are exact to 2⁵³, far beyond anything a grid produces, so the
- * wider intermediate can only ever make this predicate right more often. It is
- * safe to diverge here specifically because this is a *predicate on exact
- * values* — nothing downstream can observe it except through the bounds test,
- * unlike a coordinate that feeds a desc or an RNG draw.
+ * **Deliberately plain JS numbers — no `| 0`, no `Math.imul`.** C's `int`
+ * products can overflow for a large enough patch; doubles are exact to 2⁵³,
+ * far beyond anything a grid produces. This is a *predicate on exact values*,
+ * observable only through the bounds test, never a coordinate that feeds a desc
+ * or an RNG draw, so the wider intermediate can only make it right more often.
  */
 export function coordSign(x: Coord): number {
   // `-0 === 0`, so a negative zero in either part is handled by these first
@@ -233,12 +226,11 @@ function hexToLetter(h: Hex): string {
 /**
  * Pick a weighted-random entry from a possibility table.
  *
- * **The draw is unconditional, and that matters even when `poss` has a single
- * entry** (`poss_J` and `poss_L` both do). Consuming the random number is an
- * observable side effect: skipping it when the answer is forced desynchronizes
- * the stream from the C's, and the result is not an error but a *different,
- * perfectly valid tiling* — no assertion fires, nothing looks wrong, and a
- * shared game ID silently stops reproducing. Do not optimize this.
+ * **The draw is unconditional, even when `poss` has a single entry** (`poss_J`
+ * and `poss_L` both do). Skipping it when the answer is forced desynchronizes
+ * the stream, and the result is not an error but a *different, perfectly valid
+ * tiling*: nothing looks wrong, and a shared game ID silently stops
+ * reproducing. Do not optimize this.
  */
 function choosePoss(rs: RandomState, poss: readonly Possibility[]): Possibility {
   let limit = 0;
@@ -262,35 +254,31 @@ function choosePoss(rs: RandomState, poss: readonly Possibility[]): Possibility 
  * the whole patch remains consistent.
  */
 export class SpectreContext {
-  /**
-   * The randomness source, or `null` when replaying a stored desc.
-   *
-   * Not `readonly`: replay installs a fallback here on demand — see
-   * {@link extendCoords}.
-   */
-  private rs: RandomState | null;
-
-  readonly prototype: SpectreCoords;
   /** Vertices 0 and 1 of the starting spectre; everything else follows. */
-  private startVertices: [Point, Point] = [
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-  ];
-  /** The starting spectre's orientation, in twelfths of a turn. */
-  orientation = 0;
+  private readonly startVertices: [Point, Point];
 
-  private constructor(rs: RandomState | null, prototype: SpectreCoords) {
-    this.rs = rs;
-    this.prototype = prototype;
+  private constructor(
+    /** The randomness source; `null` when replaying a stored desc, until
+     * {@link extendCoords} installs its fallback. */
+    private rs: RandomState | null,
+    readonly prototype: SpectreCoords,
+    /** The starting spectre's orientation, in twelfths of a turn. */
+    readonly orientation: number,
+  ) {
+    const minusSqrt3 = pointAdd(pointRot(5), pointRot(-5));
+    const basicEdge = pointMul(
+      pointAdd(pointRot(0), pointRot(-3)),
+      pointRot(orientation),
+    );
+    const diagonal = pointAdd(basicEdge, pointMul(basicEdge, pointRot(-3)));
+    const v0 = pointMul(diagonal, minusSqrt3);
+    this.startVertices = [v0, pointAdd(v0, basicEdge)];
   }
 
-  /** Begin a fresh random patch. Draws from `rs`; see the draw order below. */
+  /** Begin a fresh random patch: two draws, the starting spectre and then its
+   * orientation. */
   static random(rs: RandomState): SpectreContext {
     const poss = choosePoss(rs, POSS_SPECTRE);
-    const ctx = new SpectreContext(rs, {
-      index: poss.lo,
-      c: [{ index: UNDECIDED, type: poss.hi }],
-    });
 
     /*
      * Choose the starting spectre's orientation.
@@ -304,8 +292,12 @@ export class SpectreContext {
      * expanded from a G hex at index 1, which are the only spectres with a
      * nonzero index at all.
      */
-    ctx.setStartVertices(randomUpto(rs, 6) * 2 + ctx.prototype.index);
-    return ctx;
+    const orientation = randomUpto(rs, 6) * 2 + poss.lo;
+    return new SpectreContext(
+      rs,
+      { index: poss.lo, c: [{ index: UNDECIDED, type: poss.hi }] },
+      orientation,
+    );
   }
 
   /** Replay the patch a desc describes. Consumes no randomness up front. */
@@ -325,21 +317,7 @@ export class SpectreContext {
       c[i].type = HEX_DATA[c[i + 1].type].subhexes[c[i].index];
     }
 
-    const ctx = new SpectreContext(null, { index: params.coords[0], c });
-    ctx.setStartVertices(params.orientation);
-    return ctx;
-  }
-
-  private setStartVertices(orientation: number): void {
-    const minusSqrt3 = pointAdd(pointRot(5), pointRot(-5));
-    const basicEdge = pointMul(
-      pointAdd(pointRot(0), pointRot(-3)),
-      pointRot(orientation),
-    );
-    const diagonal = pointAdd(basicEdge, pointMul(basicEdge, pointRot(-3)));
-    const v0 = pointMul(diagonal, minusSqrt3);
-    this.startVertices = [v0, pointAdd(v0, basicEdge)];
-    this.orientation = orientation;
+    return new SpectreContext(null, { index: params.coords[0], c }, params.orientation);
   }
 
   /** The starting spectre, placed, with a private copy of the address. */
@@ -362,16 +340,14 @@ export class SpectreContext {
    * edge being traversed can turn into another copy of itself one level up, for
    * ever. A pseudo-random choice breaks that symmetry.
    *
-   * So a fixed-seed generator is conjured here instead, and three details of it
+   * So a fixed-seed generator is conjured here instead, and two details of it
    * are load-bearing for reproducing the C bit-for-bit:
    *
    * - the seed is the five bytes `"dummy"` (upstream's `random_new("dummy", 5)`
    *   passes the string's *length*, not a second seed component);
-   * - it is created **lazily, at this call site** — an eager one constructed at
-   *   context creation would be at a different point in nobody's stream, but
-   *   one that gets *used* earlier would draw differently;
-   * - it is **stored on the context and shared** by every later extension, so
-   *   the whole patch continues down one stream rather than restarting it.
+   * - it is created once, **stored on the context and shared** by every later
+   *   extension, so the whole patch continues down one stream rather than
+   *   restarting it.
    *
    * Divergence here is silent in the worst way: the patch stays valid and
    * self-consistent, so nothing throws — the same desc simply yields a
@@ -381,11 +357,7 @@ export class SpectreContext {
     while (this.prototype.c.length < n) {
       const top = this.prototype.c[this.prototype.c.length - 1];
       const h = HEX_DATA[top.type];
-
-      if (this.rs === null) {
-        this.rs = randomNew("dummy");
-      }
-
+      if (this.rs === null) this.rs = randomNew("dummy");
       const poss = choosePoss(this.rs, h.poss);
       top.index = poss.lo;
       this.prototype.c.push({ index: UNDECIDED, type: poss.hi });
@@ -635,8 +607,6 @@ interface Bounds {
 }
 
 function boundsFor(w: number, h: number): Bounds {
-  // C integer division; w and h are positive here, but truncation is the rule
-  // this port follows everywhere.
   const xoff = Math.trunc(w / 2);
   const yoff = Math.trunc(h / 2);
   return {
@@ -653,15 +623,11 @@ function boundsFor(w: number, h: number): Bounds {
  * Convert a placed spectre to output coordinates, or return `null` if any
  * vertex falls outside `bounds`.
  *
- * This is the tiling→grid boundary: exact ℤ[d] arithmetic stops here and
- * integers headed for pixels begin. **It is therefore the one place negative
- * zero is normalized.** The y axis is flipped (screens count downwards), so
- * `-y.cr3` produces `-0` whenever `y.cr3` is `0` — a value that compares equal
- * to `0` under `===`, keys identically in a `Map`, and stringifies the same, so
- * it can travel all the way into a dot coordinate and produce a grid that is
- * structurally perfect and still not what the C built. Normalizing once, here,
- * beats scattering `|| 0` through arithmetic where it is easy to under-apply
- * and impossible to review.
+ * This is the tiling→grid boundary, and so **the one place negative zero is
+ * normalized**. The y axis is flipped (screens count downwards), so `-y.cr3`
+ * is `-0` whenever `y.cr3` is `0` — a value that passes `===`, keys identically
+ * in a `Map` and stringifies the same, so it can reach a dot coordinate and
+ * make a grid that is structurally perfect and still not what the C built.
  */
 function tileCoords(spec: Spectre, bounds: Bounds): SpectreTileCoords | null {
   const out: number[] = new Array(4 * SPECTRE_NVERTICES);

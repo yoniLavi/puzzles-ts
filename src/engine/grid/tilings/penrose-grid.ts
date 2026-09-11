@@ -13,7 +13,7 @@
  * √5, but the x and y components are in *different* scale units (1/4 and
  * sin(π/5)/2 respectively), whose ratio 2·sin(π/5) ≈ 1.1756 is irrational.
  * Upstream fudges that into a rational approximation by picking a pair of
- * integer scale factors — {@link P2_XUNIT} and friends — which distorts the
+ * integer scale factors — {@link UNITS} — which distorts the
  * tiling very slightly but *consistently*, so nothing drifts out of place
  * across a large patch. The combination of 1 and √5 is still evaluated
  * exactly, via {@link nTimesRootK}, because an approximate √5 could put two
@@ -52,17 +52,11 @@ import {
 
 export type { PenroseWhich } from "./penrose.ts";
 
-const P2_XUNIT = 37;
-const P2_YUNIT = 44;
-const P3_XUNIT = 30;
-const P3_YUNIT = 35;
-
-function xUnit(which: PenroseWhich): number {
-  return which === "p2" ? P2_XUNIT : P3_XUNIT;
-}
-function yUnit(which: PenroseWhich): number {
-  return which === "p2" ? P2_YUNIT : P3_YUNIT;
-}
+/** Grid units per unit of the tiling's x and y components. */
+const UNITS: Record<PenroseWhich, { readonly x: number; readonly y: number }> = {
+  p2: { x: 37, y: 44 },
+  p3: { x: 30, y: 35 },
+};
 
 /**
  * The size of patch to ask the generator for, in its own units.
@@ -78,25 +72,20 @@ function apiSizePenrose(
   which: PenroseWhich,
 ): { w: number; h: number } {
   return {
-    w: Math.trunc((width * PENROSE_TILESIZE) / yUnit(which)),
-    h: Math.trunc((height * PENROSE_TILESIZE) / xUnit(which)),
+    w: Math.trunc((width * PENROSE_TILESIZE) / UNITS[which].y),
+    h: Math.trunc((height * PENROSE_TILESIZE) / UNITS[which].x),
   };
 }
 
 /**
  * Rejection of the pre-2023 Penrose description format.
  *
- * Upstream still carries `penrose-legacy.c`, which generates a patch by
- * selecting part of the expansion of one big triangle, and routes to it
- * whenever a description begins with `'G'`. This port drops it (design D9):
- * it is reachable *only* through that letter, the modern generator can never
- * emit one (its first character is always a digit), and dropping it makes the
- * whole Penrose path exact-integer with no floating point anywhere.
- *
- * The cost is that a pre-fork saved game carrying a legacy description will
- * not load, which this project's stated position on old saves accepts. Say so
- * explicitly rather than falling through to the generic "expected digit"
- * error, which is survivable but misleading to whoever hits it.
+ * Upstream's `penrose-legacy.c` generates a patch from the expansion of one big
+ * triangle whenever a description begins with `'G'`. It is not ported: the
+ * modern generator never emits one (its first character is always a digit),
+ * and without it the whole Penrose path is exact-integer. A pre-fork saved game
+ * carrying a legacy description therefore does not load, and says so rather
+ * than failing with the generic, misleading "expected digit" error.
  */
 const LEGACY_DESC_ERROR =
   "This is a legacy Penrose grid description ('G...'), which is no longer " +
@@ -111,12 +100,9 @@ type ParseResult =
  * Parse `[orientation digit][start-vertex digit][tile letters]`, e.g.
  * `"50ABUAAVBUUAB"` (P2) or `"50CXYYCXYYY"` (P3).
  *
- * Upstream computes `strlen(desc) - 2` **before** validating the length,
- * underflowing `size_t` on a one-character description. Checking the two
- * leading characters first — as this does — makes the count trivially
- * non-negative and reaches the same error messages by the same route: a
- * one-character desc fails on its missing second character, exactly as the C
- * does when it reads the terminating NUL.
+ * The two leading characters are checked before any letters are counted, which
+ * avoids upstream's `size_t` underflow on a one-character description while
+ * reaching the same error: it fails on its missing second character.
  */
 function parseDesc(desc: string, which: PenroseWhich): ParseResult {
   if (desc.length === 0) return { ok: false, error: "empty grid description" };
@@ -201,8 +187,7 @@ export function gridNewPenrose(
     throw new Error(`grid: invalid penrose description (${parsed.error})`);
   }
 
-  const xunit = xUnit(which);
-  const yunit = yUnit(which);
+  const { x: xunit, y: yunit } = UNITS[which];
   const builder = new TilingBuilder(PENROSE_TILESIZE);
 
   const size = apiSizePenrose(width, height, which);
@@ -216,12 +201,11 @@ export function gridNewPenrose(
         // happens and quietly defeats the exact-arithmetic bridge.
         const gx = y.c1 * yunit + nTimesRootK(y.cr5 * yunit, 5);
         const gy = x.c1 * xunit + nTimesRootK(x.cr5 * xunit, 5);
-        // The one negative-zero choke point (design D8). Signed basis vectors
-        // run through the whole tiling, and `-0` survives `===` *and* the
-        // dot-dedup key, so a grid carrying one is structurally perfect and
-        // visible only to a comparison like the differential's `toEqual`.
-        // Normalize here, where exact arithmetic becomes a pixel, rather than
-        // sprinkling `|| 0` through code where it cannot be reviewed.
+        // The one negative-zero choke point. Signed basis vectors run through
+        // the whole tiling, and `-0` survives `===` *and* the dot-dedup key, so
+        // a grid carrying one is structurally perfect and visible only to a
+        // comparison like the differential's `toEqual`. Normalize here, where
+        // exact arithmetic becomes a pixel.
         return [gx === 0 ? 0 : gx, gy === 0 ? 0 : gy];
       }),
     );

@@ -22,8 +22,8 @@ import {
 const WHICHES: PenroseWhich[] = ["p2", "p3"];
 
 describe("penrose transition tables", () => {
-  // Upstream's two nested switches are the one place in this change a human
-  // types the data, so assert the *shape* of what was typed. The counts come
+  // Upstream's two nested switches are hand-transcribed, so assert the *shape*
+  // of what was typed. The counts come
   // from the C: 60 leaves in `transition` (penrose.c:100-266) and 36 in
   // `transition_in` (penrose.c:275-361). A dropped or duplicated row moves a
   // count; the differential then says which row.
@@ -165,9 +165,9 @@ describe("penrose descriptions", () => {
       });
 
       it("rejects a legacy 'G' description by name", () => {
-        // `penrose-legacy.c` is deliberately not ported (design D9). Falling
-        // through to the generic "expected digit" error would be survivable
-        // but misleading.
+        // `penrose-legacy.c` is deliberately not ported. Falling through to
+        // the generic "expected digit" error would be survivable but
+        // misleading.
         const legacy = "G3,4,5";
         expect(penroseValidateDesc(which, 6, 6, legacy)).toMatch(/legacy/i);
         expect(() => gridNewPenrose(which, 6, 6, legacy)).toThrow(/legacy/i);
@@ -233,9 +233,9 @@ describe('penrose "dummy" replay RNG', () => {
       const second = gridNewPenrose(which, 20, 20, desc);
 
       // The description is far too short for a 20×20 patch, so the extra
-      // levels came from the fallback RNG. Both builds must agree exactly: a
-      // fallback created eagerly, per-triangle, or re-seeded per call would
-      // still produce a valid tiling here, but not the same one twice.
+      // levels came from the fallback RNG. Both builds must agree exactly,
+      // which pins only that the fallback is deterministic: a different seed
+      // or a per-call stream would still pass here.
       expect(first.numFaces).toBeGreaterThan(0);
       expect(second.dots.map((d) => [d.x, d.y])).toEqual(
         first.dots.map((d) => [d.x, d.y]),

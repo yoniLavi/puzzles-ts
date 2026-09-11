@@ -49,14 +49,10 @@ function descToHatParams(desc: string): ParseResult {
     const start = p;
     while (isDigit(p)) p++;
     if (desc[p] !== ",") return { error: "expected ',' in grid description" };
-    const n = Number(desc.slice(start, p));
-    // Two guards, both upstream's: at most two digits, and at most one byte —
-    // the C stores each coordinate in an `unsigned char`.
-    if (p - start > 2 || n > 0xff) {
-      return { error: "too-large coordinate in grid description" };
-    }
+    // Upstream allows at most two digits.
+    if (p - start > 2) return { error: "too-large coordinate in grid description" };
+    coords.push(Number(desc.slice(start, p)));
     p++; /* eat the comma */
-    coords.push(n);
   }
 
   const letter = desc[p] ?? "";
@@ -64,7 +60,7 @@ function descToHatParams(desc: string): ParseResult {
     return { error: "invalid character in grid description" };
   }
 
-  return { params: { ncoords: coords.length, coords, finalMetatile: letter } };
+  return { params: { coords, finalMetatile: letter } };
 }
 
 /** Generate a random hat patch description covering `width × height` squares. */

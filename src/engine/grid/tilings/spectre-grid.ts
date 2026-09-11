@@ -4,12 +4,6 @@
  * Turns the tiling engine in `spectre.ts` into a `Grid` — the `grid.c` side of
  * the port (`grid_new_desc_spectres`, `grid_desc_to_spectre_params`,
  * `grid_validate_desc_spectres`, `grid_spectres_callback`, `grid_new_spectres`).
- *
- * Three things here are easy to get subtly wrong and are called out at their
- * sites below: the patch is generated at **seven times** the requested size, the
- * rational and irrational parts of each coordinate are scaled **separately**
- * before being summed, and the recentering divides with `Math.trunc` because its
- * numerator can be negative.
  */
 
 import { nTimesRootK } from "../../n-times-root-k.ts";
@@ -31,44 +25,35 @@ import {
   spectreValidHexLetter,
 } from "./spectre.ts";
 
+/** Orientations 0–11 as one desc character each: the digits, then `A`,`B`. */
+const ORIENTATION_CHARS = "0123456789AB";
+
 /**
  * Parse a desc into patch parameters, or return an error message.
  *
  * The format is `[orientation][coordinate digits…][final hex letter]`, e.g.
- * `"0003047Y"`: one character of orientation (`0`–`9`, then `A`,`B` for 10 and
- * 11), then one decimal digit per coordinate, then one of `GDJLXPSFY`.
+ * `"0003047Y"`: one of {@link ORIENTATION_CHARS}, then one decimal digit per
+ * coordinate, then one of `GDJLXPSFY`.
  *
- * Upstream computes `strlen(desc) - 2` *before* checking the length, which
- * underflows `size_t` on a one-character desc and then reads far off the end of
- * the string. Descs arrive from saved games and shared game IDs — untrusted
- * input — so the length is checked up front here instead. A two-character desc
- * is still legal to *parse* (it simply has zero coordinates); it is rejected a
- * step later by the range check, with upstream's own message.
+ * The length is checked up front, where upstream's `strlen(desc) - 2`
+ * underflows `size_t` on a one-character desc and reads off the end of the
+ * string. A two-character desc still *parses* (with zero coordinates) and is
+ * rejected a step later by the range check, with upstream's own message.
  */
 function descToParams(desc: string): SpectrePatchParams | string {
   if (desc.length === 0) return "empty grid description";
   if (desc.length < 2) return "grid description too short";
 
-  const ncoords = desc.length - 2;
-
-  let orientation: number;
-  const first = desc[0];
-  if (first >= "0" && first <= "9") {
-    orientation = first.charCodeAt(0) - "0".charCodeAt(0);
-  } else if (first === "A" || first === "B") {
-    orientation = 10 + first.charCodeAt(0) - "A".charCodeAt(0);
-  } else {
-    return "expected digit or A,B at start of grid description";
-  }
+  const orientation = ORIENTATION_CHARS.indexOf(desc[0]);
+  if (orientation < 0) return "expected digit or A,B at start of grid description";
 
   const coords: number[] = [];
-  for (let i = 0; i < ncoords; i++) {
-    const c = desc[i + 1];
+  for (const c of desc.slice(1, -1)) {
     if (c < "0" || c > "9") return "expected digit in grid description";
-    coords.push(c.charCodeAt(0) - "0".charCodeAt(0));
+    coords.push(Number(c));
   }
 
-  return { orientation, coords, finalHex: desc[ncoords + 1] };
+  return { orientation, coords, finalHex: desc[desc.length - 1] };
 }
 
 /**
@@ -86,18 +71,15 @@ export function spectresNewDesc(
     rng,
   );
 
-  const orientation =
-    params.orientation < 10
-      ? String.fromCharCode("0".charCodeAt(0) + params.orientation)
-      : String.fromCharCode("A".charCodeAt(0) + params.orientation - 10);
-
   // Every coordinate is a single digit: the widest hexagon expands to eight
   // children, so the largest legal value is 7. Upstream asserts the same thing.
   for (const c of params.coords) {
     if (c >= 10) throw new Error(`spectre: coordinate ${c} is not a single digit`);
   }
 
-  return orientation + params.coords.join("") + params.finalHex;
+  return (
+    ORIENTATION_CHARS[params.orientation] + params.coords.join("") + params.finalHex
+  );
 }
 
 /**
@@ -106,12 +88,10 @@ export function spectresNewDesc(
  * constrains the substitution hierarchy rather than the area covered.
  */
 export function spectresValidateDesc(
-  width: number,
-  height: number,
+  _width: number,
+  _height: number,
   desc: string | null,
 ): string | null {
-  void width;
-  void height;
   if (desc === null) return "Missing grid description string.";
 
   const parsed = descToParams(desc);

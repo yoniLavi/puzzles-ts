@@ -33,16 +33,15 @@
  *
  * ## Rules that must not be "tidied"
  *
- * 1. **{@link chooseRandom} always draws**, even from a one-entry list. A
- *    random draw is an observable side effect: skipping it desynchronizes the
- *    stream and yields a different — entirely valid, entirely plausible —
- *    tiling, with nothing asserting.
+ * 1. **{@link chooseRandom} always draws**, even from a one-entry list.
  * 2. **The weights are verbatim Fibonacci integers**, not recomputed from √5.
  * 3. **{@link PenroseContext.extendCoords}'s `"dummy"` fallback** is a
- *    bit-exact replay target; see its doc comment.
+ *    bit-exact replay target.
  * 4. **The two transition tables are hand-transcribed control flow**, keyed on
  *    a string-literal `Letter` union so TypeScript checks the transcription
- *    exhaustively. That exhaustiveness is the main defense against a typo.
+ *    exhaustively.
+ *
+ * Each is explained where it lives.
  */
 
 import { type RandomState, randomNew, randomUpto } from "../../random/index.ts";
@@ -52,13 +51,10 @@ import { type RandomState, randomNew, randomUpto } from "../../random/index.ts";
 // ---------------------------------------------------------------------------
 
 /**
- * Which half-tile types may appear as a child of each half-tile type — i.e.
- * the subdivision rule, as a type.
- *
- * This exists to make {@link TRANSITIONS} *exhaustively* type-checked in both
- * dimensions: a missing parent, a missing child, or a child that does not
- * belong to that parent is a compile error rather than a runtime `FAIL` found
- * by a differential three days later.
+ * Which half-tile types may appear as a child of each half-tile type: the
+ * subdivision rule as a type, so that {@link TRANSITIONS} is exhaustively
+ * checked in both dimensions. A missing parent, a missing child, or a child
+ * that does not belong to that parent is a compile error.
  */
 interface Children {
   A: "A" | "B" | "U";
@@ -101,14 +97,8 @@ export function penroseValidLetter(c: string, which: PenroseWhich): c is Letter 
   return (LETTERS_FOR[which] as readonly string[]).includes(c);
 }
 
-/**
- * Which half-tile types a given type may sit inside. Upstream's
- * `penrose_valid_parents` returns `NULL` for an unrecognized letter and the
- * caller feeds that straight to `strchr` — safe there only because
- * `penrose_valid_letter` happens to run first in the same loop iteration. A
- * `Record<Letter, …>` is **total** by construction, so the ordering of those
- * two checks stops being load-bearing.
- */
+/** Which half-tile types a given type may sit inside (upstream
+ * `penrose_valid_parents`). */
 const VALID_PARENTS: Record<Letter, readonly Letter[]> = {
   A: ["A", "B", "V"],
   B: ["A", "B", "U"],
@@ -154,9 +144,9 @@ function siblingEdgeIndex(c: Letter): number {
  * Coefficients may carry **negative zero** — `pointMulByT` negates, and
  * multiplication by a zero coefficient produces `-0`. That is harmless
  * *inside* this module (`-0 === 0`, and `` `${-0}` === "0" `` so it cannot
- * split a visited-set key), and it is deliberately normalized at one reviewable
- * choke point instead: the tiling→grid callback in `penrose-grid.ts`, per the
- * change's D8. Do not sprinkle `|| 0` through the arithmetic here.
+ * split a visited-set key), and it is normalized at one reviewable choke point
+ * instead: the tiling→grid callback in `penrose-grid.ts`. Do not sprinkle
+ * `|| 0` through the arithmetic here.
  */
 type Point = readonly [number, number, number, number];
 
@@ -203,10 +193,6 @@ function pointRot(sIn: number): Point {
   let r: Point = [1, 0, 0, 0];
   let tpower: Point = [0, 1, 0, 0];
 
-  // Reduce to a sensible range. C's `%` truncates toward zero and so does
-  // JS's, so this pair of lines is *already* a floor-mod for the negative
-  // case — do not "fix" it into `((s % 10) + 10) % 10`, which is the same
-  // thing spelled longer, nor into `Math.floor`-based arithmetic.
   let s = sIn % 10;
   if (s < 0) s += 10;
 
@@ -246,15 +232,10 @@ function pointY(p: Point): Coord {
  *
  * When the two terms disagree in sign the comparison `c1² > 5·cr5²` decides
  * it. **These squares deliberately stay JS doubles — no `| 0`, no
- * `Math.imul`.** In C they are `int` multiplications that can overflow for a
- * large enough patch (a real, if remote, upstream fragility); JS numbers are
- * exact to 2⁵³, far beyond anything a grid produces, so masking them to 32
- * bits would *introduce* the overflow this port naturally avoids.
- *
- * This inverts the usual rule for this port, which is to match C's integer
- * semantics. The difference is that this is a *predicate on exact values*,
- * never a value that reaches a description or an RNG draw: nothing downstream
- * can observe the wider intermediate except by being right more often.
+ * `Math.imul`.** C's `int` products can overflow for a large enough patch;
+ * doubles are exact to 2⁵³, far beyond anything a grid produces. This is a
+ * *predicate on exact values*, never a value that reaches a description or an
+ * RNG draw, so the wider intermediate can only make it right more often.
  */
 function coordSign(x: Coord): number {
   if (x.c1 === 0 && x.cr5 === 0) return 0;
@@ -271,8 +252,7 @@ function coordCmp(a: Coord, b: Coord): number {
 }
 
 // ---------------------------------------------------------------------------
-// The transition tables: hand-transcribed from penrose.c's two nested
-// switches. This is the one place in the change a human types the data.
+// The transition tables, hand-transcribed from penrose.c's two nested switches.
 // ---------------------------------------------------------------------------
 
 /**
@@ -284,11 +264,10 @@ function coordCmp(a: Coord, b: Coord): number {
  * parent we left by — plus, if that edge is divided in two, which end of it
  * (`-1` left, `+1` right; `0` when the edge is undivided).
  *
- * Upstream has a third variant, `FAIL`, for a child type that does not exist
- * in that parent or an `end` inconsistent with whether the edge is divided.
- * It "shouldn't ever come up" and upstream asserts on it in production, so
- * here it is a thrown {@link PenroseTransitionError} rather than a value —
- * which also keeps every call site free of a case it can do nothing with.
+ * Upstream's third variant, `FAIL` (a child type that does not exist in that
+ * parent, or an `end` inconsistent with whether the edge is divided), is an
+ * assertion failure there and a thrown {@link PenroseTransitionError} here,
+ * which keeps every call site free of a case it can do nothing with.
  */
 export type TransitionResult =
   | { readonly kind: "internal"; readonly newChild: Letter; readonly newEdge: number }
@@ -322,14 +301,10 @@ function external(parentEdge: number, end: -1 | 0 | 1): TransitionResult {
  * and `edge` (0, 1 or 2) the edge we are crossing.
  *
  * Transcribed from `penrose.c:100-266` (60 leaves). The mapped type below
- * makes the transcription exhaustive: every parent must appear, every parent
- * must list exactly the children {@link Children} allows it, and every child
- * must give all three edges.
- *
- * Upstream's inner `switch (edge)` blocks have **no `default`**, so an
- * out-of-range edge silently falls through into the *next child's* dispatch.
- * That is unreachable in practice (edges are always 0-2); the lookup below
- * throws instead of reproducing the fallthrough.
+ * makes the transcription exhaustive: every parent must list exactly the
+ * children {@link Children} allows it, and every child must give all three
+ * edges. An out-of-range edge throws in {@link transition}, where upstream's
+ * `switch (edge)` has no `default` and falls through into the next child's.
  */
 const TRANSITIONS: {
   [P in Letter]: {
@@ -554,15 +529,10 @@ function place(tri: PenroseTriangle, u: Point, v: Point, indexOfU: number): void
 }
 
 /**
- * The key under which a triangle is held in the visited set.
- *
- * Upstream's `penrose_cmp` compares only the first two vertices, "because
- * those force the rest" — so this key must too, or two descriptions of the
- * same triangle could fail to match. The tree's *ordering* is never observed
- * (membership is the only query), which is what lets a `Map` replace it
- * exactly.
- *
- * Negative-zero coefficients stringify as `"0"`, so they cannot split a key.
+ * The key under which a triangle is held in the visited set: its first two
+ * vertices, which force the rest (upstream's `penrose_cmp` compares only
+ * those). Membership is the only query, so a `Map` replaces upstream's tree
+ * exactly. Negative-zero coefficients stringify as `"0"`, so cannot split a key.
  */
 function triangleKey(tri: PenroseTriangle): string {
   const [a, b] = tri.vertices;
@@ -578,8 +548,8 @@ function triangleKey(tri: PenroseTriangle): string {
  *
  * Penrose tile probability ratios are always φ, approximated here by two
  * consecutive Fibonacci numbers. **Transcribe these integers verbatim**: they
- * are what the C build draws against, so recomputing them from √5 — however
- * "cleaner" — changes the RNG stream and therefore every generated tiling.
+ * define the RNG draw, so recomputing them from √5 changes every generated
+ * tiling.
  */
 const RELATIVE_PROBABILITY: Record<Letter, number> = {
   A: 63245986,
@@ -631,12 +601,9 @@ export interface PenrosePatchParams {
 }
 
 /**
- * A step out of a triangle may recurse one level up the metatile hierarchy,
- * and the hierarchy is grown lazily, so there is no structural bound. It is
- * nonetheless O(log area) in practice — a handful of levels for any grid we
- * generate. This cap only exists so a divergence that broke the recursion
- * fails loudly instead of exhausting the JS stack (or, worse, spinning
- * synchronously in a browser worker).
+ * A step may recurse one level up the lazily grown metatile hierarchy, so
+ * there is no structural bound, though it is O(log area) in practice. The cap
+ * only makes a broken recursion fail loudly instead of exhausting the stack.
  */
 const MAX_RECURSION_DEPTH = 100;
 
@@ -651,28 +618,18 @@ const MAX_RECURSION_DEPTH = 100;
  * per-triangle choice would produce a torn tiling.
  */
 class PenroseContext {
-  /** `null` only transiently: replaced by the `"dummy"` RNG on first need. */
-  private rs: RandomState | null;
-  readonly prototype: Letter[];
-  readonly startVertex: number;
-  readonly orientation: number;
-
   private constructor(
-    rs: RandomState | null,
-    prototype: Letter[],
-    startVertex: number,
-    orientation: number,
-  ) {
-    this.rs = rs;
-    this.prototype = prototype;
-    this.startVertex = startVertex;
-    this.orientation = orientation;
-  }
+    /** `null` when replaying, until the `"dummy"` RNG is first needed. */
+    private rs: RandomState | null,
+    readonly prototype: Letter[],
+    readonly startVertex: number,
+    readonly orientation: number,
+  ) {}
 
   /**
    * Invent a fresh patch. **The three draws happen in this order** — starting
-   * tile, then start vertex, then orientation — and the order is part of the
-   * description format's contract with the C.
+   * tile, then start vertex, then orientation — and the order decides which
+   * patch a seed names.
    */
   static initRandom(rng: RandomState, which: PenroseWhich): PenroseContext {
     const first = chooseRandom(LETTERS_FOR[which], rng);
@@ -691,11 +648,6 @@ class PenroseContext {
     );
   }
 
-  /** A copy of the starting triangle's coordinates. */
-  initialCoords(): Letter[] {
-    return [...this.prototype];
-  }
-
   /**
    * Ensure `pc` has at least `n` levels of coordinates, growing the shared
    * prototype first if it is itself too short.
@@ -710,16 +662,15 @@ class PenroseContext {
    * step function, and a fixed-seed PRNG breaks the symmetry without that
    * risk.
    *
-   * All three details here are load-bearing, and getting any of them wrong is
-   * **silent** — the result is a valid, self-consistent patch that simply is
-   * not the one the description names, so a saved Loopy game reloads with its
-   * clues on the wrong faces:
+   * Both details here are load-bearing, and getting either wrong is **silent**
+   * — the result is a valid, self-consistent patch that simply is not the one
+   * the description names, so a saved Loopy game reloads with its clues on the
+   * wrong faces:
    *
-   * - the seed is the four-character string `"dummy"` (C's `random_new("dummy",
+   * - the seed is the five-character string `"dummy"` (C's `random_new("dummy",
    *   5)` passes the *byte length*, not a second seed component);
-   * - it is created **lazily, here**, not eagerly at context construction — an
-   *   RNG created earlier and used later has drawn different bytes;
-   * - it is **shared** by every later extension, not recreated per call.
+   * - it is created once and **shared** by every later extension, never
+   *   recreated per call.
    */
   extendCoords(pc: Letter[], n: number): void {
     while (this.prototype.length < n) {
@@ -731,14 +682,11 @@ class PenroseContext {
   }
 
   /**
-   * Step across `edge` of the triangle at `pc`, rewriting `pc` in place to the
-   * neighbor's coordinates and returning which of *its* edges we entered by.
+   * Step across `edge` of the triangle at level `depth` of `pc`, rewriting
+   * `pc` in place to the neighbor's coordinates and returning which of *its*
+   * edges we entered by.
    */
-  step(pc: Letter[], edge: number): number {
-    return this.stepRecurse(pc, 0, edge);
-  }
-
-  private stepRecurse(pc: Letter[], depth: number, edge: number): number {
+  step(pc: Letter[], edge: number, depth = 0): number {
     if (depth > MAX_RECURSION_DEPTH) {
       throw new PenroseTransitionError(
         `step recursed past depth ${MAX_RECURSION_DEPTH}`,
@@ -751,17 +699,13 @@ class PenroseContext {
     if (tr.kind === "external") {
       // We left the parent. Recurse to find which triangle we landed in one
       // size up, then come back down into the right child of it.
-      const parentOutEdge = this.stepRecurse(pc, depth + 1, tr.parentEdge);
-      // NOTE: `pc[depth + 1]` is re-read *after* the recursion, which has just
-      // rewritten it — the parent we are entering is generally not the parent
-      // we left. Hoisting this read above the recursive call is a subtle and
-      // entirely silent bug.
+      const parentOutEdge = this.step(pc, tr.parentEdge, depth + 1);
+      // `pc[depth + 1]` is re-read *after* the recursion, which has just
+      // rewritten it: the parent we are entering is generally not the parent
+      // we left, and hoisting this read is a silent bug.
       tr = transitionIn(pc[depth + 1], parentOutEdge, tr.end);
     }
 
-    if (tr.kind !== "internal") {
-      throw new PenroseTransitionError("step ended outside any parent");
-    }
     pc[depth] = tr.newChild;
     return tr.newEdge;
   }
@@ -771,7 +715,7 @@ class PenroseContext {
     const type = this.prototype[0];
     const tri: PenroseTriangle = {
       vertices: [ORIGIN, ORIGIN, ORIGIN],
-      pc: this.initialCoords(),
+      pc: [...this.prototype],
       reported: false,
     };
 
@@ -883,10 +827,9 @@ function generate(
 
   const first = ctx.initialTriangle();
   placed.set(triangleKey(first), first);
-  // If the seed triangle is already out of bounds the queue stays empty and no
-  // tile is ever emitted. That happens for small patches, and it is upstream's
-  // behavior too (it then aborts in `dsf_new(0)`); here the empty grid is
-  // caught by `gridTrimVigorously`, which is the better failure.
+  // A seed triangle already out of bounds (a small enough patch) leaves the
+  // queue empty. Upstream then aborts in `dsf_new(0)`; here
+  // `gridTrimVigorously` reports the empty grid, which is the better failure.
   if (inBounds(bounds, first)) queue.push(first);
 
   for (let i = 0; i < queue.length; i++) {
@@ -899,20 +842,14 @@ function generate(
 
       const found = placed.get(triangleKey(neighbor));
       if (found !== undefined) {
-        /*
-         * We have met a triangle we already know. If we reached it across our
-         * *sibling* edge then it is the other half of our own tile, and — this
-         * being the branch where both halves are known to be in bounds and in
-         * the set — the tile is complete and can be emitted.
-         *
-         * Both `reported` flags are tested, and that symmetry is the point: it
-         * makes the emission independent of which half the search reached
-         * first, so the tile comes out the same regardless of BFS order.
-         */
+        // A triangle we already know, reached across our *sibling* edge, is the
+        // other half of our own tile, and with both halves in bounds the tile
+        // is complete. Testing both `reported` flags makes the emission
+        // independent of which half the search reached first.
         if (edge === siblingEdge && !tri.reported && !found.reported) {
-          // Recompute the sibling edge for the *other* half. The two halves of
-          // a tile are frequently different letters (an A pairs with a B), so
-          // reusing `siblingEdge` here would take the wrong two corners.
+          // The other half's sibling edge is its own: the two halves are often
+          // different letters (an A pairs with a B), so reusing `siblingEdge`
+          // would take the wrong two corners.
           const foundSiblingEdge = siblingEdgeIndex(found.pc[0]);
           // The four corners in this order are the tile's boundary, walked
           // from our half round to the other's. The winding is observable

@@ -171,7 +171,7 @@ describe("exact arithmetic", () => {
     // 2 - √3 > 0 but 1 - √3 < 0: the squaring branch, which is the whole point.
     expect(coordSign({ c1: 2, cr3: -1 })).toBe(+1);
     expect(coordSign({ c1: 1, cr3: -1 })).toBe(-1);
-    // 7² = 49 < 3·4² = 48? No — 49 > 48, so 7 - 4√3 > 0, just barely.
+    // 7² = 49 > 3·4² = 48, so 7 - 4√3 > 0, just barely.
     expect(coordSign({ c1: 7, cr3: -4 })).toBe(+1);
     expect(coordSign({ c1: -7, cr3: 4 })).toBe(-1);
     // Negative zero must not be read as a sign.
@@ -315,9 +315,8 @@ describe('the random_new("dummy") replay fallback', () => {
   });
 
   it("matches the C bit-for-bit once the fallback has fired", () => {
-    // Recorded from `grid-trace spectres 26 26 0003047Y` while the C build
-    // still existed; frozen since `retire-c-engine`.
-    // Recorded as counts, a bounding box, the ends of the dot list and a digest
+    // Recorded from the C build's `grid-trace spectres 26 26 0003047Y`, as
+    // counts, a bounding box, the ends of the dot list and a digest
     // of the whole incidence dump — the same comparison the differential makes,
     // without carrying a second megabyte of fixture for one test.
     const g = gridNewSpectres(26, 26, desc);

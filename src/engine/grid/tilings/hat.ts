@@ -126,9 +126,9 @@ const kiteForwardRight = (k: Kite): Kite => ({
  * you are ever unsure which is which. On a *reflected* hat they mirror, which
  * costs nothing here because {@link Kite} names its vertices (see its comment).
  *
- * This definition is the one thing in upstream's `auxiliary/doc/hats.html` that
- * its published write-up (linked at the top of this file) does not restate; the
- * page was deleted by `refile-misplaced-artefacts` and this is where it went.
+ * Upstream's `auxiliary/doc/hats.html` defined these names; the write-up linked
+ * at the top of this file does not, so this comment is the definition's only
+ * copy.
  */
 enum KiteStep {
   Left = 0,
@@ -137,18 +137,12 @@ enum KiteStep {
   ForwardRight = 3,
 }
 
-function kiteStep(k: Kite, step: KiteStep): Kite {
-  switch (step) {
-    case KiteStep.Left:
-      return kiteLeft(k);
-    case KiteStep.Right:
-      return kiteRight(k);
-    case KiteStep.ForwardLeft:
-      return kiteForwardLeft(k);
-    case KiteStep.ForwardRight:
-      return kiteForwardRight(k);
-  }
-}
+const KITE_STEPS: Record<KiteStep, (k: Kite) => Kite> = {
+  [KiteStep.Left]: kiteLeft,
+  [KiteStep.Right]: kiteRight,
+  [KiteStep.ForwardLeft]: kiteForwardLeft,
+  [KiteStep.ForwardRight]: kiteForwardRight,
+};
 
 // ---------------------------------------------------------------------------
 // The serpentine kite enumerator.
@@ -183,9 +177,6 @@ class KiteEnum {
   private readonly recent: Kite[] = [START_KITE, START_KITE, START_KITE];
 
   currIndex = 0;
-  /** C reads `last_index`/`last_step` before ever writing them (`hat.c:54`).
-   * That is benign — only states 5 and 11 consume the stale value and neither
-   * can run first — but it is undefined behavior on paper, so initialize. */
   lastIndex = 0;
   lastStep: KiteStep = KiteStep.Left;
 
@@ -321,7 +312,9 @@ class KiteEnum {
         return false;
     }
 
-    this.recent[this.currIndex] = kiteStep(this.recent[this.lastIndex], this.lastStep);
+    this.recent[this.currIndex] = KITE_STEPS[this.lastStep](
+      this.recent[this.lastIndex],
+    );
     return true;
   }
 }
@@ -365,16 +358,15 @@ interface PossibleParent {
 }
 
 /*
- * The probabilities below are **not** uniform over the legal parents, and that
- * is deliberate: we want a patch distributed as if cut from a uniformly random
+ * The probabilities below are deliberately **not** uniform over the legal
+ * parents: a patch should be distributed as if cut from a uniformly random
  * point of the infinite tiling. Upstream derives the weights from the leading
- * eigenvector of the metatile substitution matrix — see the long comment at
- * `hat.c:204`, which is worth reading and is not reproduced here.
+ * eigenvector of the metatile substitution matrix (the long comment at
+ * `hat.c:204` is worth reading).
  *
- * These integers are exact transcriptions of upstream's approximations, scaled
- * by 10^7. Do not recompute them from √5: they define the RNG draw, so any
- * rounding difference silently produces a different (still valid-looking)
- * tiling and breaks byte-match with the C.
+ * These are upstream's approximations scaled by 10^7, transcribed exactly. Do
+ * not recompute them from √5: they define the RNG draw, so any rounding
+ * difference silently produces a different (still valid-looking) tiling.
  */
 const PROB_H = 10000000;
 const PROB_T = 1458980;
@@ -423,9 +415,9 @@ const POSSIBLE_PARENTS: readonly (readonly PossibleParent[])[] = [
  * The absolute starting hat, weighted the same way but scaled by the number of
  * hats in each metatile.
  *
- * NOTE the `TT_T` row uses **`PROB_P`**, not `PROB_T`. That is verbatim from
- * `hat.c:374`. Whether it is an upstream typo is irrelevant here: it is what
- * the C draws against, so "correcting" it changes every hat desc we generate.
+ * NOTE the `TT_T` row uses **`PROB_P`**, not `PROB_T`, verbatim from
+ * `hat.c:374`. Typo or not, it weights the draw, so "correcting" it changes
+ * every hat desc we generate.
  */
 const STARTING_HATS: readonly PossibleParent[] = [
   { type: TT_H, index: 0, probability: PROB_H },
@@ -442,12 +434,10 @@ const STARTING_HATS: readonly PossibleParent[] = [
 /**
  * Pick one weighted candidate.
  *
- * **The `randomUpto` call is unconditional, and must stay that way.** Guarding
- * it with `if (parents.length > 1)` looks like a free optimization and is a
- * silent bug: `PARENTS_T` has exactly one entry, so skipping its draw would
- * desynchronize the RNG stream from the C's and yield a different — entirely
- * valid, entirely plausible — tiling that nothing would flag
- * (`add-aperiodic-tilings` design D2).
+ * **The `randomUpto` call is unconditional, and must stay that way.**
+ * `PARENTS_T` has exactly one entry, and skipping its draw would desynchronize
+ * the RNG stream and yield a different — entirely valid, entirely plausible —
+ * tiling that nothing would flag.
  */
 function chooseMpp(
   rs: RandomState,
@@ -488,14 +478,10 @@ const metamapIndex = (meta: number, meta2: number): number =>
  * {@link extendCoords}).
  */
 class HatContext {
-  prototype: HatCoords;
-
   private constructor(
     readonly rs: RandomState | null,
-    prototype: HatCoords,
-  ) {
-    this.prototype = prototype;
-  }
+    readonly prototype: HatCoords,
+  ) {}
 
   /** Generation: choose a random starting hat and kite. Two draws, in this
    * order — `chooseMpp` then the kite index — and the order is observable. */
@@ -511,11 +497,10 @@ class HatContext {
 
   /** Replay: rebuild the prototype from a validated desc. */
   static fromParams(hp: HatPatchParams): HatContext {
-    const { coords, ncoords } = hp;
-    if (ncoords < 3) throw new Error("hat: fewer than three coordinates");
+    const { coords } = hp;
+    if (coords.length < 3) throw new Error("hat: fewer than three coordinates");
 
-    const prototype: HatCoords = [];
-    for (let i = 0; i < ncoords; i++) prototype.push({ index: coords[i], type: -1 });
+    const prototype: HatCoords = coords.map((index) => ({ index, type: -1 }));
     prototype.push({ type: metatileCharToType(hp.finalMetatile), index: -1 });
 
     prototype[0].type = TT_KITE;
@@ -524,7 +509,7 @@ class HatContext {
     // Walk down from the outermost metatile: each level's type is determined by
     // its parent's type and its own index. Descending, `i > 1`, because levels
     // 0 and 1 are the kite and hat set above.
-    for (let i = ncoords - 1; i > 1; i--) {
+    for (let i = coords.length - 1; i > 1; i--) {
       const metatile = prototype[i + 1].type;
       if (coords[i] >= nchildren[metatile]) {
         throw new Error("hat: metatile index out of range");
@@ -589,9 +574,8 @@ function tryStepKitemap(
   const hat = hcIn[1].index;
   const meta = hcIn[2].index;
   if (kite < 0 || hat < 0 || meta < 0) {
-    // The C reads these into `unsigned` from fields that legitimately hold -1
-    // elsewhere, relying on `extend_coords(…, 4)` above having filled them in.
-    // Check it rather than inherit the latent UB.
+    // `extendCoords(…, 4)` above must have decided all three; an undecided -1
+    // would index the kitemap silently wrong.
     throw new Error("hat: kitemap step on undecided coordinates");
   }
   const meta2type = hcIn[3].type;
@@ -675,18 +659,40 @@ function hatctxStep(ctx: HatContext, hcIn: HatCoords, step: KiteStep): HatCoords
   const direct = tryStepKitemap(ctx, hcIn, step);
   if (direct) return direct;
 
-  // Upstream's loop is `for (depth = 2;; depth++)` with no exit condition. It
-  // terminates because each iteration invents a new enclosing metatile and at
-  // sufficient depth a rewrite always exists — real depth is O(log area), tens
-  // at most. We still bound it: this code is synchronous, so a divergence that
-  // stopped it converging would hang a browser tab outright rather than fail
-  // (`add-aperiodic-tilings` design D5). Exhaustion throws, so the cap can
-  // never quietly move a generated grid.
+  // Upstream's loop has no exit condition. It terminates because each iteration
+  // invents a new enclosing metatile and at sufficient depth a rewrite always
+  // exists — real depth is O(log area). The bound turns a divergence that
+  // stopped it converging into a throw rather than a hung tab, and since
+  // exhaustion throws, the cap can never quietly move a generated grid.
   const attempt = retryLimit("hat: coordinate step", MAX_REGENERATE);
   for (let depth = 2; ; depth++) {
     attempt();
     const hcOut = tryStepMetamap(ctx, hcIn, step, depth);
     if (hcOut) return hcOut;
+  }
+}
+
+/** Walk every kite of the `w × h` region, passing each to `visit` with its
+ * coordinates. Only the last few coordinate lists are kept: every step
+ * starts from one of them. */
+function walkKites(
+  ctx: HatContext,
+  w: number,
+  h: number,
+  visit: (kite: Kite, hc: HatCoords) => void,
+): void {
+  const coords: (HatCoords | null)[] = [null, null, null];
+  const s = new KiteEnum(w, h);
+  const first = ctx.initialCoords();
+  coords[s.currIndex] = first;
+  visit(s.curr, first);
+
+  while (s.next()) {
+    const from = coords[s.lastIndex];
+    if (!from) throw new Error("hat: enumerator stepped from an unvisited kite");
+    const to = hatctxStep(ctx, from, s.lastStep);
+    coords[s.currIndex] = to;
+    visit(s.curr, to);
   }
 }
 
@@ -705,9 +711,7 @@ export type HatTileCallback = (nvertices: number, coords: readonly number[]) => 
  * survives everything that would normally catch it: `===`, the dot-dedup key
  * (`` `${-0}` === "0" ``), and `Map` lookup. The grid comes out structurally
  * perfect and only a structural comparison such as the differential's `toEqual`
- * disagrees — which is precisely how floret's version of this bug was found in
- * `extend-grid-tilings`. One choke point beats scattered `|| 0`
- * (`add-aperiodic-tilings` design D8).
+ * disagrees.
  */
 const normalizeZero = (n: number): number => (n === 0 ? 0 : n);
 
@@ -798,7 +802,6 @@ function maybeReportHat(
  * corner kite plus the type of the outermost metatile reached.
  */
 export interface HatPatchParams {
-  readonly ncoords: number;
   readonly coords: readonly number[];
   /** One of `H`, `T`, `P`, `F`. */
   readonly finalMetatile: string;
@@ -826,44 +829,33 @@ export function hatTilingRandomize(
   rs: RandomState,
 ): HatPatchParams {
   const ctx = HatContext.random(rs);
-  const coords: (HatCoords | null)[] = [null, null, null];
+  walkKites(ctx, w, h, () => {});
 
-  const s = new KiteEnum(w, h);
-  coords[s.currIndex] = ctx.initialCoords();
-
-  while (s.next()) {
-    const from = coords[s.lastIndex];
-    if (!from) throw new Error("hat: enumerator stepped from an unvisited kite");
-    coords[s.currIndex] = hatctxStep(ctx, from, s.lastStep);
-  }
-
-  const ncoords = ctx.prototype.length - 1;
+  const top = ctx.prototype.length - 1;
   return {
-    ncoords,
-    coords: ctx.prototype.slice(0, ncoords).map((c) => c.index),
-    finalMetatile: TILE_CHARS[ctx.prototype[ncoords].type],
+    coords: ctx.prototype.slice(0, top).map((c) => c.index),
+    finalMetatile: TILE_CHARS[ctx.prototype[top].type],
   };
 }
 
 /** Validate patch params. Returns an error message, or null if acceptable. */
 export function hatTilingParamsInvalid(hp: HatPatchParams): string | null {
-  if (hp.ncoords < 3) return "Grid parameters require at least three coordinates";
+  const { coords } = hp;
+  if (coords.length < 3) return "Grid parameters require at least three coordinates";
   if (metatileCharToType(hp.finalMetatile) < 0) {
     return "Grid parameters contain an invalid final metatile";
   }
-  if (hp.coords[0] >= 8) return "Grid parameters contain an invalid kite index";
+  if (coords[0] >= HAT_KITES) return "Grid parameters contain an invalid kite index";
 
-  // The descending walk must stay *after* the `ncoords < 3` check above: with
-  // fewer than three coordinates it would index below the start of the array.
   let metatile = metatileCharToType(hp.finalMetatile);
-  for (let i = hp.ncoords - 1; i > 1; i--) {
-    if (hp.coords[i] >= nchildren[metatile]) {
+  for (let i = coords.length - 1; i > 1; i--) {
+    if (coords[i] >= nchildren[metatile]) {
       return "Grid parameters contain an invalid metatile index";
     }
-    metatile = children[metatile][hp.coords[i]];
+    metatile = children[metatile][coords[i]];
   }
 
-  if (hp.coords[1] >= hatsInMetatile[metatile]) {
+  if (coords[1] >= hatsInMetatile[metatile]) {
     return "Grid parameters contain an invalid hat index";
   }
   return null;
@@ -881,18 +873,7 @@ export function hatTilingGenerate(
   h: number,
   cb: HatTileCallback,
 ): void {
-  const ctx = HatContext.fromParams(hp);
-  const coords: (HatCoords | null)[] = [null, null, null];
-
-  const s = new KiteEnum(w, h);
-  coords[s.currIndex] = ctx.initialCoords();
-  maybeReportHat(w, h, s.curr, coords[s.currIndex] as HatCoords, cb);
-
-  while (s.next()) {
-    const from = coords[s.lastIndex];
-    if (!from) throw new Error("hat: enumerator stepped from an unvisited kite");
-    const to = hatctxStep(ctx, from, s.lastStep);
-    coords[s.currIndex] = to;
-    maybeReportHat(w, h, s.curr, to, cb);
-  }
+  walkKites(HatContext.fromParams(hp), w, h, (kite, hc) =>
+    maybeReportHat(w, h, kite, hc, cb),
+  );
 }
