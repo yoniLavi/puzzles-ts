@@ -53,14 +53,13 @@ export function newSticksDesc(p: SticksParams, rng: RandomState): { desc: string
 
     for (let i = 0; i < s; i++) {
       if (!(grid[i] & F_BLOCK)) grid[i] = randomUpto(rng, 2) ? F_HOR : F_VER;
-      else grid[i] = F_BLOCK;
     }
 
     sticksMakeDsf(grid, null, w, h, dsf, null);
 
-    // dsf_minimal ≡ the smallest index in a class; the shared Dsf doesn't
-    // track it, so precompute after all merges (docs/games/solver-and-generator.md § "The Latin family"). Byte-safe:
-    // membership-determined, independent of the root choice.
+    // Upstream's dsf_minimal (a class's smallest index), which the shared Dsf
+    // doesn't track, so precompute it after all merges. Independent of the root
+    // choice (docs/games/solver-and-generator.md § "The Latin family").
     minimal.fill(-1);
     for (let i = 0; i < s; i++) {
       const r = dsf.canonify(i);
@@ -93,12 +92,11 @@ export function newSticksDesc(p: SticksParams, rng: RandomState): { desc: string
   // while the board still solves to completion.
   const spaces = Array.from({ length: s }, (_, i) => i);
   shuffle(spaces, rng);
-  for (let j = 0; j < s; j++) {
-    const i = spaces[j];
-    const temp = numbers[i];
-    if (temp === -1) continue;
+  for (const i of spaces) {
+    const clue = numbers[i];
+    if (clue === -1) continue;
     numbers[i] = -1;
-    if (sticksSolveGame(grid, numbers, w, h) !== "complete") numbers[i] = temp;
+    if (sticksSolveGame(grid, numbers, w, h) !== "complete") numbers[i] = clue;
   }
 
   return { desc: encodeDesc(grid, numbers, w, h) };

@@ -12,6 +12,7 @@
  */
 
 import type { PresetMenu } from "../../engine/game.ts";
+import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { SYMM_MAX, SYMM_ROT2, SYMM_ROT4 } from "../../engine/symmetric-blacks.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -117,39 +118,21 @@ export function encodeParams(p: SticksParams, full: boolean): string {
   return full ? `${p.w}x${p.h}b${p.blackpc}s${p.symm}` : `${p.w}x${p.h}`;
 }
 
-/** atoi at `s[pos]`: parse a leading run of digits, 0 when there are none. */
-function eatNum(s: string, pos: number): { value: number; next: number } {
-  let next = pos;
-  while (next < s.length && s[next] >= "0" && s[next] <= "9") next++;
-  return { value: next > pos ? Number.parseInt(s.slice(pos, next), 10) : 0, next };
-}
-
 export function decodeParams(s: string): SticksParams {
-  // Lenient, matching upstream decode_params (which mutates a copy of the
-  // current params; a fresh decode starts from the default preset).
+  // Lenient like upstream decode_params: a missing field keeps the default
+  // preset's value. Upstream's fix-up of a default ROT4 on a non-square grid
+  // has nothing to fix, since that default is ROT2.
   const p = defaultParams();
-  let r = eatNum(s, 0);
-  p.w = r.value;
-  let pos = r.next;
-  p.h = p.w;
-  if (s[pos] === "x") {
-    r = eatNum(s, pos + 1);
-    p.h = r.value;
-    pos = r.next;
-  }
+  const { w, h, next } = parseDimensions(s);
+  p.w = w;
+  p.h = h;
+  let pos = next;
   if (s[pos] === "b") {
-    r = eatNum(s, pos + 1);
+    const r = parseLeadingInt(s, pos + 1);
     p.blackpc = r.value;
     pos = r.next;
   }
-  if (s[pos] === "s") {
-    r = eatNum(s, pos + 1);
-    p.symm = r.value;
-  } else if (p.symm === SYMM_ROT4 && p.w !== p.h) {
-    // Cope with user input such as '18x10' by ensuring symmetry is not
-    // selected by default to be incompatible with dimensions (upstream).
-    p.symm = SYMM_ROT2;
-  }
+  if (s[pos] === "s") p.symm = parseLeadingInt(s, pos + 1).value;
   return p;
 }
 
@@ -212,10 +195,8 @@ export function newState(p: SticksParams, desc: string): SticksState {
   let i = 0;
   while (i < desc.length) {
     const c = desc[i];
-    if (c >= "a" && c < "z") {
+    if (c >= "a" && c <= "z") {
       pos += c.charCodeAt(0) - CODE_a + 1;
-    } else if (c === "z") {
-      pos += 26;
     } else if (c === "B") {
       grid[pos] = F_BLOCK;
       if (!isDigit(desc[i + 1])) pos++;
@@ -248,31 +229,22 @@ export function encodeDesc(
 ): string {
   let out = "";
   let run = 0;
+  const flushRun = (): void => {
+    for (; run > 26; run -= 26) out += "z";
+    if (run) out += String.fromCharCode(CODE_a + run - 1);
+    run = 0;
+  };
   for (let i = 0; i < w * h; i++) {
     if (numbers[i] !== -1 || grid[i] & F_BLOCK) {
-      if (run) {
-        while (run > 26) {
-          out += "z";
-          run -= 26;
-        }
-        out += String.fromCharCode(CODE_a + run - 1);
-        run = 0;
-      } else if (i !== 0 && !(grid[i] & F_BLOCK)) {
-        out += "_";
-      }
+      if (run) flushRun();
+      else if (i !== 0 && !(grid[i] & F_BLOCK)) out += "_";
       if (grid[i] & F_BLOCK) out += "B";
       if (numbers[i] !== -1) out += String(numbers[i]);
     } else {
       run++;
     }
   }
-  if (run) {
-    while (run > 26) {
-      out += "z";
-      run -= 26;
-    }
-    out += String.fromCharCode(CODE_a + run - 1);
-  }
+  flushRun();
   return out;
 }
 

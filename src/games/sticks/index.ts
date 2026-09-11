@@ -50,10 +50,9 @@ import {
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { SYMMETRY_CHOICES } from "../../engine/symmetric-blacks.ts";
-import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, Point } from "../../engine/types.ts";
 import { newSticksDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -133,6 +132,12 @@ function interpretMove(
   // C's FROMCOORD is truncating integer division, so a pointer slightly
   // inside the border still maps to row/column 0 — keep trunc, not floor.
   const fromC = (v: number): number => Math.trunc((v - b) / ts);
+  /** The cell under pixel (px, py), or -1 off the grid. */
+  const cellAt = (px: number, py: number): number => {
+    const hx = fromC(px);
+    const hy = fromC(py);
+    return hx >= 0 && hx < w && hy >= 0 && hy < h ? hy * w + hx : -1;
+  };
   const dragDelta = ts * 0.4;
 
   if (isMouseDown(button) || isMouseDrag(button)) ui.cursor.visible = false;
@@ -199,15 +204,10 @@ function interpretMove(
     else if (dy > dx && dy > dragDelta) dragMove = F_VER;
     else return null;
 
-    const hx = fromC((ui.minX + ui.maxX) / 2);
-    const hy = fromC((ui.minY + ui.maxY) / 2);
-
+    const i = cellAt((ui.minX + ui.maxX) / 2, (ui.minY + ui.maxY) / 2);
     ui.minX = ui.maxX = p.x;
     ui.minY = ui.maxY = p.y;
-
-    if (hx < 0 || hx >= w || hy < 0 || hy >= h) return null;
-    const i = hy * w + hx;
-    if (grid[i] & F_BLOCK) return null;
+    if (i === -1 || grid[i] & F_BLOCK) return null;
 
     if (ui.dragType === "start" && grid[i] & dragMove) {
       // Starting on a matching line: the drag clears instead of draws.
@@ -261,13 +261,11 @@ function interpretMove(
   if (isMouseRelease(button)) {
     // --- a click (release without a qualifying drag) cycles the cell -------
     if (ui.dragType === "start") {
-      const hx = fromC((ui.minX + ui.maxX) / 2);
-      const hy = fromC((ui.minY + ui.maxY) / 2);
-      if (hx < 0 || hx >= w || hy < 0 || hy >= h) {
+      const i = cellAt((ui.minX + ui.maxX) / 2, (ui.minY + ui.maxY) / 2);
+      if (i === -1) {
         ui.dragType = "none";
         return UI_UPDATE;
       }
-      const i = hy * w + hx;
       const old = grid[i];
       let value = 0;
       if (button === LEFT_RELEASE) value = old === 0 ? F_VER : old & F_VER ? F_HOR : 0;
@@ -317,13 +315,7 @@ function interpretMove(
       line = old === 0 ? "ver" : old & F_VER ? "hor" : "none";
 
     // Don't put no-ops on the undo chain (upstream comment).
-    if (
-      (old & F_HOR && line === "hor") ||
-      (old & F_VER && line === "ver") ||
-      (old === 0 && line === "none")
-    ) {
-      return null;
-    }
+    if (old === lineBits(line)) return null;
     return { kind: "set", changes: [{ index: i, line }] };
   }
 
@@ -358,24 +350,23 @@ function solve(orig: SticksState): SolveResult<SticksMove> {
   const result = sticksSolveGame(grid, orig.numbers, orig.w, orig.h);
   if (result === "invalid") return { ok: false, error: "Puzzle is invalid." };
   // An unfinished solve still emits the partial deduction (upstream).
-  const lines: SticksLine[] = Array.from(grid, (t) => bitsLine(t));
-  return { ok: true, move: { kind: "solve", grid: lines } };
+  return { ok: true, move: { kind: "solve", grid: Array.from(grid, bitsLine) } };
 }
 
 // --- hint (a second projection of the one contradiction technique) ----------
 
 /**
  * The cells a reason reasons over. Each list is exactly what its sentence
- * claims, so the player can count the picture against the words (§5.2).
+ * claims, so the player can count the picture against the words.
  *
  * The forced square is deliberately **kept** in the three length arguments and
  * left out of the two black-clue ones, because that is where it honestly
  * belongs: the run a length argument measures does contain the square being
  * decided ("would run the 2's line to 3 squares" shades all three, with the
  * blue bar on the one to act on), while the lines a black clue already counts
- * do not include the one being ruled out. Dropping it everywhere — the obvious
- * first cut — left an `unreachable` step whose whole evidence *was* the target
- * with nothing at all on the board (§5.2's Range `connect` case).
+ * do not include the one being ruled out. Dropping it everywhere leaves an
+ * `unreachable` step whose whole evidence *is* the target with nothing on the
+ * board (docs/games/hints.md § "Show the evidence as an area").
  */
 function evidenceOf(reason: SticksReason, target: number): number[] {
   switch (reason.kind) {
@@ -422,14 +413,12 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
 
 function hint(state: SticksState): HintResult<SticksMove, SticksHint> {
   // A wrong line makes every deduction from here worthless, so refuse and let
-  // the midend light the offenders through findMistakes (§4).
+  // the midend light the offenders through findMistakes.
   const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
   if (refusal) return refusal;
 
   const plan = deduceSticksPlan(state);
-  if (plan.length === 0) {
-    return { ok: false, error: DEDUCTION_EXHAUSTED };
-  }
+  if (plan.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
 
   const steps: HintStep<SticksMove, SticksHint>[] = [];
   for (const group of plan) {
@@ -458,7 +447,7 @@ function hint(state: SticksState): HintResult<SticksMove, SticksHint> {
  * so there is no partial-subset `"onTrack"` case; a drag that sweeps the target
  * still completes it, and any move that leaves the target alone is off-plan.
  *
- * No `refreshHintStep` (§7.3): Sticks has no pencil notes and no preference
+ * No `refreshHintStep`: Sticks has no pencil notes and no preference
  * that edits the board, so a kept step cannot be silently resolved by a side
  * effect — only by the player making its own move, which the midend sees.
  */
@@ -473,15 +462,6 @@ function hintKeepTrack(
     if (c.index === hl.target) return c.line === hl.to ? "completed" : "off";
   }
   return "off";
-}
-
-function flashLength(
-  from: SticksState,
-  to: SticksState,
-  _dir: number,
-  _ui: SticksUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
 }
 
 export const sticksGame: Game<
@@ -533,7 +513,7 @@ export const sticksGame: Game<
     },
   ],
 
-  newDesc: (p: SticksParams, rng: RandomState) => newSticksDesc(p, rng),
+  newDesc: newSticksDesc,
   validateDesc,
   newState,
   newUi,
@@ -548,15 +528,15 @@ export const sticksGame: Game<
   hintKeepTrack,
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SticksParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(sticksGame);

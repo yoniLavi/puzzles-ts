@@ -9,7 +9,7 @@
  * `continues` is a later leg of the same firing — the same clue and the same
  * rule ruling out a further square — so it says so and drops the premise the
  * opening leg has already taught, while keeping its own numbers and the
- * necessity modal (§5.6b, Slant's leg convention).
+ * necessity modal (Slant's leg convention).
  */
 
 import type { SticksFiring, SticksReason } from "./solver.ts";
@@ -39,7 +39,7 @@ export const say = {
 
   // Leads with the clue, not with the ruled-out move: the signal a player has
   // to learn to look for here is a number running out of room, which they will
-  // not spot from the square being acted on (§2.2).
+  // not spot from the square being acted on.
   unreachable: (
     reason: R<"unreachable">,
     to: To,
@@ -70,8 +70,8 @@ export const say = {
   },
 
   // No "as well" on the continuation: at a black 0 nothing runs into it yet,
-  // so the word would be false exactly where the rule is starkest (§2.7 —
-  // re-read every clue narration at its degenerate value).
+  // so the word would be false exactly where the rule is starkest
+  // (docs/games/hints.md § "Sanity-read at the degenerate extremes").
   overConnected: (
     reason: R<"overConnected">,
     to: To,

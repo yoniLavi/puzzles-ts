@@ -1,8 +1,7 @@
 /**
- * Gated C-vs-TS differential for Sticks (design D6 of add-sticks-ts-port):
- * for each frozen fixture recorded from `puzzles/unreleased/sticks.c` via
- * `puzzles/auxiliary/sticks-trace.c`, the TS `newSticksDesc` over the
- * bit-identical RNG must reproduce the C desc byte-for-byte.
+ * Gated C-vs-TS differential for Sticks: for each fixture frozen from
+ * upstream's `sticks.c`, `newSticksDesc` over the bit-identical RNG must
+ * reproduce the C desc byte-for-byte.
  *
  * Because generation gates every fill attempt and every clue removal on
  * `sticksSolveGame`, one byte-match validates the generator (the symmetric

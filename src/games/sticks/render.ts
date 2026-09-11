@@ -12,9 +12,9 @@
  * part of the diff key so Check & Save repaints an otherwise-unchanged
  * frame).
  *
- * Sticks is compiled with `NARROW_BORDERS` (cmake/platforms/webapp.cmake),
- * so `BORDER = tilesize / 10` — not the desktop `tilesize / 2` — and
- * `computeSize` subtracts 1 to meet the outer grid line.
+ * The border is upstream's `NARROW_BORDERS` one, `tilesize / 10` (its web
+ * build's, not the desktop `tilesize / 2`), and `computeSize` subtracts 1 to
+ * meet the outer grid line.
  */
 
 import { GREEN, PURPLE } from "../../engine/color/colors.ts";
@@ -69,9 +69,8 @@ export function colors(defaultBackground: Color): Color[] {
   out[COL_NUMBER] = PAPER;
   out[COL_ERROR] = ERROR;
   // Purple, because Sticks has spent the usual two: its lines are green and the
-  // hint's forced square is blue (upstream's cursor was that same blue, which
-  // `add-sticks-hint` could not leave standing — a cursor and a hint bar in one
-  // square would have been one hue for two roles).
+  // hint's forced square is blue. Upstream's cursor was that blue, which would
+  // give one hue two roles in a square holding both.
   out[COL_CURSOR] = PURPLE;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
@@ -158,34 +157,17 @@ function drawTile(
     black ? COL_GRID : COL_BACKGROUND,
   );
 
-  if (tile & F_HOR) {
-    dr.drawRect(
-      { x: px, y: py + Math.floor((ts * 2) / 5), w: ts - 1, h: Math.floor(ts / 5) },
-      COL_LINE,
-    );
-  }
-  if (tile & F_VER) {
-    dr.drawRect(
-      { x: px + Math.floor((ts * 2) / 5), y: py, w: Math.floor(ts / 5), h: ts - 1 },
-      COL_LINE,
-    );
-  }
-
+  const bar = (bits: number, color: number): void => {
+    const off = Math.floor((ts * 2) / 5);
+    const thick = Math.floor(ts / 5);
+    if (bits & F_HOR) dr.drawRect({ x: px, y: py + off, w: ts - 1, h: thick }, color);
+    if (bits & F_VER) dr.drawRect({ x: px + off, y: py, w: thick, h: ts - 1 }, color);
+  };
+  bar(tile, COL_LINE);
   // The forced line, in the game's own bar shape and the hint color — a tint
-  // could not say *which* orientation, which is the whole of the move (§5.1a).
-  // Drawn, never placed: the player still makes the move.
-  if (hintLine & F_HOR) {
-    dr.drawRect(
-      { x: px, y: py + Math.floor((ts * 2) / 5), w: ts - 1, h: Math.floor(ts / 5) },
-      COL_HINT,
-    );
-  }
-  if (hintLine & F_VER) {
-    dr.drawRect(
-      { x: px + Math.floor((ts * 2) / 5), y: py, w: Math.floor(ts / 5), h: ts - 1 },
-      COL_HINT,
-    );
-  }
+  // could not say *which* orientation, which is the whole of the move. Drawn,
+  // never placed: the player still makes the move.
+  bar(hintLine, COL_HINT);
 
   if (evidence) {
     const m = Math.floor(ts / 12);

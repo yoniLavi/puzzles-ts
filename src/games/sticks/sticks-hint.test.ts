@@ -1,5 +1,5 @@
 /**
- * Sticks hint tests (add-sticks-hint §5): the five contradiction kinds and
+ * Sticks hint tests: the five contradiction kinds and
  * their narrations, the evidence areas counting out against the sentences,
  * journey grouping on a generated board, resume from a self-played position,
  * refusal on a wrong board, and tier-2.5 render frames for every kind.
@@ -33,8 +33,8 @@ import {
 const PARAMS = defaultParams();
 const PARAM_STR = `${PARAMS.w}x${PARAMS.h}b${PARAMS.blackpc}s${PARAMS.symm}`;
 
-/** A fixed-seed board and its plan — deterministic, so every test below names
- * a real generated position rather than a crafted one (§8's second gotcha). */
+/** A fixed-seed board — deterministic, so every test below names a real
+ * generated position rather than a crafted one. */
 function board(seed: number): { id: string; state: SticksState } {
   const { desc } = newSticksDesc(PARAMS, randomNew(String(seed)));
   return { id: `${PARAM_STR}:${desc}`, state: newState(PARAMS, desc) };
@@ -49,7 +49,7 @@ const KINDS = [
 ] as const;
 
 /** Phrases only one narration branch ever utters — a loose predicate stops a
- * `hintUntil` walk on the wrong frame (§8). */
+ * `hintUntil` walk on the wrong frame. */
 const PHRASE: Record<SticksReason["kind"], RegExp> = {
   tooLong: /too long for it/,
   unreachable: /needs a longer line/,
@@ -70,7 +70,7 @@ const SEED_FOR: Record<SticksReason["kind"], number> = (() => {
 
 describe("sticks hint — technique coverage", () => {
   it("every one of the five contradiction kinds fires on generated boards", () => {
-    // A rung that never fires is a rung nothing tests (§5.6a′). Sticks' five
+    // A rung that never fires is a rung nothing tests. Sticks' five
     // are the whole of `sticksValidate`'s vocabulary, so this is also the
     // check that the classifier is total.
     expect(Object.keys(SEED_FOR).sort()).toEqual([...KINDS].sort());
@@ -112,8 +112,8 @@ describe("sticks hint — narration", () => {
   });
 
   it("a black 0's continuation never claims another line already runs into it", () => {
-    // §2.7: "as well" was true at every clue value except the one where the
-    // rule is starkest — a black 0 has no line running into it at all.
+    // "As well" is true at every clue value except the one where the rule is
+    // starkest: a black 0 has no line running into it at all.
     for (let seed = 0; seed < 12; seed++) {
       for (const s of stepsFor(seed)) {
         if (/The black 0/.test(s.explanation))
@@ -165,7 +165,7 @@ describe("sticks hint — evidence counts out against the words", () => {
 
   it("a reachability argument shades exactly the span the walk covered", () => {
     // The span is the premise, so an approximated one would make the sentence
-    // false (§2.3). It is also the *quirked* walk's span, deliberately.
+    // false. It is also the *quirked* walk's span, deliberately.
     for (let seed = 0; seed < 12; seed++) {
       for (const r of reasons(seed)) {
         if (r.kind === "unreachable") {
@@ -200,7 +200,7 @@ describe("sticks hint — evidence counts out against the words", () => {
 
 describe("sticks hint — grouping", () => {
   it("groups one firing into one journey, on a generated board", () => {
-    // Validated by scanning seeds, not by reading the solver (§8, design D5):
+    // Validated by scanning seeds, not by reading the solver:
     // ~a fifth of firings decide more than one square, and a black clue that
     // has run out of lines is the commonest.
     let journeys = 0;
@@ -236,7 +236,7 @@ describe("sticks hint — lifecycle", () => {
   it("resumes from a position the player reached by their own moves", () => {
     // Sticks rescans every blank square on every call rather than propagating
     // from what it changed, so it needs no cascade priming — the assumption
-    // Singles shipped a bug on (§7.1), so it is evidenced rather than assumed.
+    // Singles shipped a bug on, so it is evidenced rather than assumed.
     const { state } = board(3);
     let cur = state;
     // Play the first few forced squares by hand, out of the plan's order.
@@ -269,7 +269,7 @@ describe("sticks hint — lifecycle", () => {
     const r = sticksGame.hint?.(bad);
     expect(r?.ok).toBe(false);
     if (r?.ok === false) expect(r.error).toMatch(/mistakes/);
-    // The refusal is only useful because findMistakes lights the square (§4).
+    // The refusal is only useful because findMistakes lights the square.
     expect(sticksGame.findMistakes?.(bad)).toContainEqual({ index: wrong.index });
   });
 
@@ -340,14 +340,14 @@ describe("sticks hint — render frames (tier 2.5)", () => {
       expect(result.hint?.explanation).toMatch(PHRASE[kind]);
       const ops = result.recording.ops;
       // The forced square is drawn as a bar in the hint color — the game's own
-      // line shape, which a plain tint could not give an orientation (§5.1a).
+      // line shape, which a plain tint could not give an orientation.
       const bars = ops.filter((o) => o.op === "rect" && o.color === COL_HINT);
       expect(bars.length).toBe(1);
       const bar = bars[0];
       if (bar.op !== "rect") throw new Error("unreachable");
       // A bar, not a square: its long axis *is* the orientation being hinted.
       expect(bar.w === bar.h).toBe(false);
-      // …and the evidence as an area, not a single premise square (§5.2), drawn
+      // …and the evidence as an area, not a single premise square, drawn
       // as a **ring per square** — never a wash, on a white square or a black
       // one: a white evidence square carries the clue the deduction counts with.
       const evidence = markSides(ops, COL_HINT_CELL);
@@ -361,7 +361,7 @@ describe("sticks hint — render frames (tier 2.5)", () => {
   }
 
   it("never draws the forced line in the placed-line color", () => {
-    // §5.1: the hint shows where and which, it does not perform the move. On a
+    // The hint shows where and which, it does not perform the move. On a
     // fresh board no line is placed, so any COL_LINE bar would be a preview.
     const { id } = board(SEED_FOR.tooLong);
     const result = renderScenario({ game: sticksGame, id, showHint: true });

@@ -1,9 +1,8 @@
 /**
- * Behavioral tests for the Sticks port (add-sticks-ts-port §8.2): the desc
- * codec, the contradiction solver, the drag/click/keyboard input machine,
- * `findMistakes`, completion through `executeMove` (the mark=true path the
- * differential never exercises — docs/games/testing.md § "The test tiers"), the midend lifecycle + save
- * round-trip, and tier-2.5 render scenarios with snapshots.
+ * Behavioral tests for Sticks: the desc codec, the contradiction solver, the
+ * drag/click/keyboard input machine, `findMistakes`, completion through
+ * `executeMove` (the path the differential never exercises), the midend
+ * lifecycle + save round-trip, and tier-2.5 render scenarios with snapshots.
  */
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
@@ -24,7 +23,7 @@ import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { seedBudget } from "../../engine/testing/slow.ts";
-import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
+import type { ChangeNotification, GameStatus, Point } from "../../engine/types.ts";
 import cReference from "./__fixtures__/sticks-c-reference.json" with { type: "json" };
 import { newSticksDesc } from "./generator.ts";
 import { sticksGame } from "./index.ts";
@@ -115,7 +114,7 @@ function press(
 }
 
 /** Pixel center of cell (x, y) at the default tile size. */
-const center = (x: number, y: number): { x: number; y: number } => ({
+const center = (x: number, y: number): Point => ({
   x: x * 48 + 4 + 24,
   y: y * 48 + 4 + 24,
 });
@@ -199,12 +198,9 @@ describe("sticks params", () => {
  *
  * Test-only, and deliberately *not* built out of the shipped solver's verdict:
  * "the solver reached a complete board" says the solver found *a* solution by
- * forced steps, which is a different claim from "the board has only one". The
- * distinction is not academic — it is exactly the one that made
- * `add-sticks-difficulty-tiers`' first two measurements meaningless, because
- * most boards the solver declines are ambiguous rather than hard, and counting
- * declines as "too hard" measures how often boards are ambiguous while claiming
- * to measure deductive power.
+ * forced steps, which is a different claim from "the board has only one". Most
+ * boards the solver declines are ambiguous rather than hard, so counting
+ * declines as "too hard" measures ambiguity, not deductive power.
  */
 function countSolutions(
   grid0: Uint8Array,
@@ -287,11 +283,9 @@ describe("sticks solver", () => {
     // only report on the line of play it followed. `countSolutions` is the
     // independent witness.
     //
-    // This guard is what `add-sticks-difficulty-tiers` produced. That change
-    // asked whether a second tier was possible; the answer was no, and the
-    // reason is the property asserted here — the shipped solver already decides
-    // every uniquely-solvable board this generator makes, so there is no
-    // headroom for a harder rung to work in (that change's `design.md` S1).
+    // It is also why Sticks has no second tier: the shipped solver already
+    // decides every uniquely-solvable board this generator makes, so a harder
+    // rung has no headroom to work in.
     // The oracle must be able to say "more than one", or asserting 1 proves
     // nothing. A 2x2 board with no clues at all has many solutions.
     expect(countSolutions(new Uint8Array(4), new Int16Array(4).fill(-1), 2, 2)).toBe(2);
@@ -435,19 +429,20 @@ describe("sticks input", () => {
   it("Shift+arrow draws a line across the two cells", () => {
     const state = newState(FIX_PARAMS, FIX.desc);
     const ui = newUi();
-    press(state, ui, CURSOR_RIGHT, 0, 0); // reveal cursor at (0,0)... may move
-    const ox = ui.cursor.x;
-    const oy = ui.cursor.y;
+    press(state, ui, CURSOR_RIGHT, 0, 0); // reveals the cursor
+    const from = ui.cursor.y * 4 + ui.cursor.x;
     const move = press(state, ui, CURSOR_RIGHT | MOD_SHFT, 0, 0);
+    const to = ui.cursor.y * 4 + ui.cursor.x;
+    expect(to).toBe(from + 1);
     // Shift+horizontal-arrow paints vertical lines on both cells (upstream
-    // mapping); black or already-set cells are skipped.
-    if (move !== UI_UPDATE && move !== null) {
-      const set = move as Extract<SticksMove, { kind: "set" }>;
-      for (const ch of set.changes) {
-        expect(ch.line).toBe("ver");
-        expect([oy * 4 + ox, ui.cursor.y * 4 + ui.cursor.x]).toContain(ch.index);
-      }
-    }
+    // mapping); both are blank white cells on the fixture's top row.
+    expect(move).toEqual({
+      kind: "set",
+      changes: [
+        { index: from, line: "ver" },
+        { index: to, line: "ver" },
+      ],
+    });
   });
 });
 
@@ -523,18 +518,13 @@ describe("sticks completion and solve (through a real Midend)", () => {
 describe("sticks text format", () => {
   it("renders the four cell glyphs", () => {
     const state = newState(FIX_PARAMS, FIX.desc);
-    // Place one of each line so all four glyphs are actually on the board. The
-    // test claimed four and rendered three: it set only a vertical, so `-` never
-    // appeared and nothing said so — an assertion per character cannot notice a
-    // character that is missing.
+    // Place one of each line so all four glyphs are actually on the board.
     state.grid[whiteCellSolved(F_VER)] = F_VER;
     state.grid[whiteCellSolved(F_HOR)] = F_HOR;
     const text = textFormat(state);
-    // The WHOLE rendering, not `toContain("#")` / `toContain("|")` /
-    // `toContain(".")`. Those three were the only assertion of this board, and a
-    // one-character needle cannot tell its glyph from a superstring of it — the
-    // exact hole that let a bulk rewriter turn abcd's blank cell from "." into
-    // "./" with 28 tests green (`docs/test-strength.md` §7).
+    // The WHOLE rendering, not a `toContain` per glyph: a one-character needle
+    // cannot notice a missing glyph, nor tell its glyph from a superstring of
+    // it (`docs/test-strength.md` §7).
     expect(text).toMatchInlineSnapshot(`
       "| - . #
       . . . .

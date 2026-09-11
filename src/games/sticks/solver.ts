@@ -36,13 +36,13 @@ export type SticksStatus = "complete" | "unfinished" | "invalid";
 /**
  * *Why* a board is invalid, recorded at the point {@link sticksValidate}
  * detects it — one variant per branch the validator can fail on, which is the
- * whole of its vocabulary (docs/games/hints.md § "Read the reason off the validator": the classifier must be
- * total, and it is total here because it is written *inside* the oracle rather
- * than re-derived from its verdict).
+ * whole of its vocabulary. The classifier must be total, and it is total here
+ * because it is written *inside* the oracle rather than re-derived from its
+ * verdict (docs/games/hints.md § "Read the reason off the validator").
  *
  * Each variant carries the clue that broke, its value, and the cells the
  * argument reasons over — the hint's evidence area, so the picture cannot
- * disagree with the words (§5.2).
+ * disagree with the words.
  */
 export type SticksReason =
   /** The clue's line would run longer than its number. */
@@ -113,7 +113,7 @@ export function sticksMakeDsf(
  *
  * `span`, when given, collects the cells walked (`idx` first) — the hint's
  * `unreachable` evidence, which must be *this* walk's bounds and not an
- * approximation of them, or the narrated count is a lie (§2.3).
+ * approximation of them, or the narrated count is a lie.
  */
 function maxSizeHorizontal(
   grid: Uint8Array,
@@ -245,8 +245,8 @@ function blackSides(
  *
  * When `violations` is given, each failure additionally records **which**
  * clause broke and the cells it reasons over ({@link SticksReason}) — the
- * hint's reason source. Every allocation that costs is behind that check, so
- * the generator's calls (which pass neither out-param) run exactly as before.
+ * hint's reason source. Every costly allocation is behind that check, so the
+ * generator's calls, which pass neither out-param, allocate nothing for it.
  */
 export function sticksValidate(
   grid: Uint8Array,
@@ -339,23 +339,13 @@ export function sticksValidate(
                 segment: segmentCells(grid, dsf, c, s),
               });
             }
-          } else if (size < target && grid[i] & F_HOR) {
+          } else if (size < target) {
             const span = violations ? [] : undefined;
-            if (maxSizeHorizontal(grid, w, dsf, lengths, i, span) < target) {
-              error = true;
-              if (span) {
-                violations?.push({
-                  kind: "unreachable",
-                  clue: i,
-                  value: target,
-                  max: span.length,
-                  span,
-                });
-              }
-            }
-          } else if (size < target && grid[i] & F_VER) {
-            const span = violations ? [] : undefined;
-            if (maxSizeVertical(grid, w, h, dsf, lengths, i, span) < target) {
+            const max =
+              grid[i] & F_HOR
+                ? maxSizeHorizontal(grid, w, dsf, lengths, i, span)
+                : maxSizeVertical(grid, w, h, dsf, lengths, i, span);
+            if (max < target) {
               error = true;
               if (span) {
                 violations?.push({
@@ -477,8 +467,7 @@ function classifyTrial(
   }
   // Unreachable: the caller only classifies a board `sticksValidate` has
   // already called invalid, and every one of its `error = true` branches
-  // records a reason (docs/games/hints.md § "Read the reason off the validator" — the classifier is total because
-  // it lives inside the oracle).
+  // records a reason.
   throw new Error("sticks hint: invalid board produced no reason");
 }
 
@@ -524,12 +513,12 @@ function reasonKey(r: SticksReason): string {
  * **this** board, in cell order, or `null` when the deduction is exhausted.
  *
  * Deliberately a **parallel** function rather than a recorder threaded through
- * `sticksTry` (docs/games/hints.md § "Read the reason off the validator"): the generator's deduction is then
- * untouched by construction, so the frozen differential cannot drift. It runs
- * from whatever board it is handed — unlike {@link sticksSolveGame}, which
- * wipes every white cell first and so can never be a hint's engine — and
- * rescans every blank cell on every call, which is why a mid-game board needs
- * no cascade priming (§7.1).
+ * `sticksTry`: the generator's deduction is then untouched by construction, so
+ * the frozen differential cannot drift. It runs from whatever board it is
+ * handed — unlike {@link sticksSolveGame}, which wipes every white cell first
+ * and so can never be a hint's engine — and rescans every blank cell on every
+ * call, which is why a mid-game board needs no cascade priming
+ * (docs/games/hints.md § "A hint must resume from any position").
  *
  * Where `sticksTry` returns at its first success, this keeps scanning: a black
  * clue that has run out of lines to give rules out *all* its open neighbors at
@@ -538,7 +527,7 @@ function reasonKey(r: SticksReason): string {
  * more than one cell (mean 1.2, max 5), and the black-clue rules cluster hardest
  * (mean 1.5). Every cell in the returned group is forced on the board *as
  * handed in*, so the group is simultaneous, not a chain — a chain would stay
- * separate steps (§3).
+ * separate steps.
  */
 export function nextSticksFiring(
   grid: Uint8Array,
@@ -592,11 +581,6 @@ export function deduceSticksPlan(state: SticksState): SticksFiring[][] {
 }
 
 // --- play-facing wrappers over immutable state ------------------------------
-
-/** The current verdict on a play state (no marking, no mutation). */
-export function sticksStatus(state: SticksState): SticksStatus {
-  return sticksValidate(state.grid, state.numbers, state.w, state.h);
-}
 
 /** Clue cells currently violating a constraint — the live red-number
  * highlight (upstream's `F_ERROR` bit, recomputed pure per frame). */
