@@ -1,7 +1,7 @@
 // Tier-1 midend integration: drive the real `Midend` with Same Game
 // through a selection (status bar must update on the selection-only
-// UI_UPDATE — design R2), a removal that scores and compacts, undo, and a
-// win that reports "solved".
+// UI_UPDATE), a removal that scores and compacts, undo, and a win that
+// reports "solved".
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/midend.ts";
 import { LEFT_BUTTON } from "../../engine/pointer.ts";

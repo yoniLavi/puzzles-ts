@@ -13,10 +13,11 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   colors,
   computeSize,
+  FLASH_FRAME,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
@@ -43,8 +44,6 @@ import {
   validateParams,
 } from "./state.ts";
 
-const FLASH_FRAME = 0.13;
-
 // --- UI / selection ---------------------------------------------------
 
 function newUi(state: SamegameState): SamegameUi {
@@ -62,7 +61,7 @@ function selClear(ui: SamegameUi): void {
 }
 
 /** Upstream `game_changed_state` → `sel_clear`: the picked region resets
- * across every real transition (design D2). */
+ * across every real transition. */
 function changedState(
   ui: SamegameUi,
   _old: SamegameState | null,
@@ -76,8 +75,8 @@ function changedState(
  * removed, so the selection collapses. */
 function selExpand(ui: SamegameUi, state: SamegameState, tx: number, ty: number): void {
   const { w, h, tiles } = state;
-  const c = tiles[ty * w + tx];
   const start = ty * w + tx;
+  const c = tiles[start];
   ui.selected[start] = true;
   const queue = [start];
   let qi = 0;
@@ -168,15 +167,12 @@ export function executeMove(state: SamegameState, move: SamegameMove): SamegameS
   }
 
   const { w, h } = state;
-  const area = w * h;
   const tiles = state.tiles.slice();
-  let n = 0;
   for (const idx of move.tiles) {
-    if (idx < 0 || idx >= area) throw new Error(`Move index ${idx} out of range`);
-    n++;
+    if (idx < 0 || idx >= w * h) throw new Error(`Move index ${idx} out of range`);
     tiles[idx] = 0;
   }
-  const score = state.score + npoints(state.scoresub, n);
+  const score = state.score + npoints(state.scoresub, move.tiles.length);
   snuggle(tiles, w, h); // shift blanks down and to the left
   const { complete, impossible } = check(tiles, w, h);
   return { ...state, tiles, score, completed: complete, impossible };
@@ -241,8 +237,7 @@ export const samegameGame: Game<
       },
     },
     {
-      // Upstream C_CHOICES: `scoresub = selected + 1` (index 0 = "(n-1)²",
-      // index 1 = "(n-2)²"), mirroring describeParams' `scoresub - 1`.
+      // Upstream's C_CHOICES: the choice index is `scoresub - 1`.
       kw: "scoring-system",
       name: "Scoring system",
       type: "choices",
@@ -264,12 +259,11 @@ export const samegameGame: Game<
   ],
   describeParams: (p) => ({
     "no-of-colors": String(p.ncols),
-    // C_CHOICES `selected = scoresub - 1` (0 = "(n-1)^2", 1 = "(n-2)^2").
     "scoring-system": p.scoresub - 1,
     "ensure-solubility": p.soluble,
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -282,9 +276,9 @@ export const samegameGame: Game<
   textFormat,
   statusbarText,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SamegameParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

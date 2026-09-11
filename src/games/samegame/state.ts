@@ -25,20 +25,20 @@ export interface SamegameState {
   readonly score: number;
   readonly completed: boolean;
   /** No two orthogonally-adjacent tiles share a color (no move remains).
-   * NOT a loss — upstream treats it as rescuable by Undo (design D8). */
+   * NOT a loss: upstream leaves it rescuable by Undo. */
   readonly impossible: boolean;
 }
 
 /** Remove the listed grid indices (upstream's `M12,13,...` string). The
  * indices are a connected same-color region of size ≥ 2, enforced at
- * `interpretMove` time; `executeMove` only range-checks (design D3).
- * Plain JSON-safe data → the default move codec suffices. */
+ * `interpretMove` time; `executeMove` only range-checks. Plain JSON data, so
+ * the default move codec suffices. */
 export type SamegameMove = { type: "remove"; tiles: number[] };
 
 /** The picked-but-not-yet-removed selection lives here, not in the game
  * state (upstream `game_ui`): selecting a region then changing your mind
  * is not an undoable move, and the selection resets across every real
- * transition via `changedState` (design D2). */
+ * transition via `changedState`. */
 export interface SamegameUi {
   /** Per-cell selected flag, length `w*h`. */
   selected: boolean[];
@@ -71,24 +71,18 @@ export function encodeParams(p: SamegameParams, full: boolean): string {
 
 export function decodeParams(s: string): SamegameParams {
   // Faithful to upstream `decode_params`: `W[xH][cN][sS][r]`, lenient.
-  const ret = defaultParams();
-  const dims = parseDimensions(s);
-  ret.w = dims.w;
-  ret.h = dims.h;
-  let i = dims.next;
+  const { w, h, next } = parseDimensions(s);
+  const ret = { ...defaultParams(), w, h };
+  let i = next;
   if (s[i] === "c") {
     i++;
     ret.ncols = Number.parseInt(s.slice(i), 10) || 0;
     while (isDigit(s[i])) i++;
-  } else {
-    ret.ncols = 3;
   }
   if (s[i] === "s") {
     i++;
     ret.scoresub = Number.parseInt(s.slice(i), 10) || 0;
     while (isDigit(s[i])) i++;
-  } else {
-    ret.scoresub = 2;
   }
   // `r` selects the not-guaranteed-soluble generator; absent ⇒ soluble.
   ret.soluble = s[i] !== "r";
@@ -133,16 +127,15 @@ export function presets() {
 // --- guaranteed-soluble generator -------------------------------------
 
 /**
- * Faithful port of upstream `gen_grid`: build a soluble board by playing
- * the game backwards. Repeatedly insert a verified connected two-square
- * blob whose removal would reproduce the previous grid, so the computer's
- * intended solution always receives the minimum possible score.
+ * Upstream `gen_grid`: build a soluble board by playing the game backwards,
+ * repeatedly inserting a verified connected two-square blob whose removal
+ * reproduces the previous grid, so the intended solution always receives the
+ * minimum possible score.
  *
- * Every `randomUpto` call happens in the same order as C — the blob-color
- * seed, the shuffle-and-consume of the insertion list, the
- * neighbor-excluding color pick, and the extension-direction pick — so
- * the generated grid reproduces bit-for-bit (the differential anchor,
- * design D6/R1). Returns the grid as a flat color array.
+ * The `randomUpto` calls (the blob-color seed, the shuffle-and-consume of the
+ * insertion list, the neighbor-excluding color pick, the extension direction)
+ * happen in C's order, so the grid matches the frozen differential bit for
+ * bit. Returns the grid as a flat color array.
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: grid generation with color-run constraints and solvability retry.
 function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
@@ -178,7 +171,7 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
       for (let i = 0; i < w; i++) {
         if (grid[(h - 1) * w + i] === 0) break; // no more columns
         if (grid[i] !== 0) continue; // this column is full
-        for (let jj = h; jj-- > 0; ) {
+        for (let jj = h - 1; jj >= 0; jj--) {
           list[n++] = jj * w + i;
           if (grid[jj * w + i] === 0) break; // this column is exhausted
         }
@@ -196,7 +189,6 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
         const x = pos % w;
         let y = Math.floor(pos / w);
 
-        grid2.length = 0;
         for (let i = 0; i < wh; i++) grid2[i] = grid[i];
 
         if (y === h) {
@@ -212,40 +204,21 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
         // above y up by one).
         for (let i = 0; i + 1 <= y; i++) grid2[i * w + x] = grid2[(i + 1) * w + x];
 
-        // Pick a color distinct from all neighbors of (x,y).
-        {
-          const wrongcol: number[] = [];
-          if (x > 0) wrongcol.push(grid2[y * w + (x - 1)]);
-          if (x + 1 < w) wrongcol.push(grid2[y * w + (x + 1)]);
-          if (y > 0) wrongcol.push(grid2[(y - 1) * w + x]);
-          if (y + 1 < h) wrongcol.push(grid2[(y + 1) * w + x]);
-          // Sort ascending + dedupe in place via selection (matches C so
-          // the color-skip arithmetic below stays identical).
-          let nwrong = wrongcol.length;
-          let jdst = 0;
-          for (let i = 0; ; i++) {
-            let selpos = -1;
-            const min = jdst > 0 ? wrongcol[jdst - 1] : 0;
-            for (let k = i; k < nwrong; k++)
-              if (
-                wrongcol[k] > min &&
-                (selpos === -1 || wrongcol[k] < wrongcol[selpos])
-              )
-                selpos = k;
-            if (selpos >= 0) {
-              const v = wrongcol[selpos];
-              wrongcol[selpos] = wrongcol[jdst];
-              wrongcol[jdst++] = v;
-            } else break;
-          }
-          nwrong = jdst;
-
-          if (nwrong === nc) continue; // no color will go here
-          c = 1 + randomUpto(rng, nc - nwrong);
-          for (let i = 0; i < nwrong; i++) {
-            if (c >= wrongcol[i]) c++;
-            else break;
-          }
+        // Pick a color distinct from all neighbors of (x,y): skipping the
+        // neighbors' colors needs them sorted and deduplicated.
+        const neighbors: number[] = [];
+        if (x > 0) neighbors.push(grid2[y * w + (x - 1)]);
+        if (x + 1 < w) neighbors.push(grid2[y * w + (x + 1)]);
+        if (y > 0) neighbors.push(grid2[(y - 1) * w + x]);
+        if (y + 1 < h) neighbors.push(grid2[(y + 1) * w + x]);
+        const wrongcol = [...new Set(neighbors)]
+          .filter((col) => col > 0)
+          .sort((a, b) => a - b);
+        if (wrongcol.length === nc) continue; // no color will go here
+        c = 1 + randomUpto(rng, nc - wrongcol.length);
+        for (const col of wrongcol) {
+          if (c >= col) c++;
+          else break;
         }
 
         // Place the new square provisionally as the sentinel color `tc`.
@@ -279,8 +252,7 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
         ) {
           // Added twice so a vertical domino is about as likely as a
           // horizontal one (debias).
-          dirs.push(0);
-          dirs.push(0);
+          dirs.push(0, 0);
         }
 
         if (dirs.length === 0) continue;
@@ -352,8 +324,8 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
           if (usedcol) x1++;
         }
 
-        // Upstream asserts this never happens; without NDEBUG it loops
-        // and hopes to avoid the offending move. We do the same.
+        // Upstream asserts this never happens; its NDEBUG build skips the
+        // placement and hopes the next one avoids the fault. So does this.
         if (!ok) continue;
 
         // BFS-fill the `tc` region as color `c` (also proves connectivity).
@@ -380,13 +352,7 @@ function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
     }
 
     // Retry the whole board if any cell stayed empty.
-    let complete = true;
-    for (let i = 0; i < wh; i++)
-      if (grid[i] === 0) {
-        complete = false;
-        break;
-      }
-    if (complete) break;
+    if (!grid.includes(0)) break;
   }
 
   return grid;
@@ -468,20 +434,20 @@ export function newState(p: SamegameParams, desc: string): SamegameState {
  * Mutates `tiles` in place (the caller owns the copy). */
 export function snuggle(tiles: number[], w: number, h: number): void {
   // Make all unsupported tiles fall down.
-  let ndone: boolean;
+  let moved: boolean;
   do {
-    ndone = false;
+    moved = false;
     for (let x = 0; x < w; x++) {
       for (let y = h - 1; y > 0; y--) {
         if (tiles[y * w + x] !== 0) continue;
         if (tiles[(y - 1) * w + x] !== 0) {
           tiles[y * w + x] = tiles[(y - 1) * w + x];
           tiles[(y - 1) * w + x] = 0;
-          ndone = true;
+          moved = true;
         }
       }
     }
-  } while (ndone);
+  } while (moved);
 
   // Shuffle all columns as far left as they can go.
   const emptyCol = (x: number): boolean => {
@@ -489,17 +455,17 @@ export function snuggle(tiles: number[], w: number, h: number): void {
     return true;
   };
   do {
-    ndone = false;
+    moved = false;
     for (let x = 0; x < w - 1; x++) {
       if (emptyCol(x) && !emptyCol(x + 1)) {
-        ndone = true;
+        moved = true;
         for (let y = 0; y < h; y++) {
           tiles[y * w + x] = tiles[y * w + (x + 1)];
           tiles[y * w + (x + 1)] = 0;
         }
       }
     }
-  } while (ndone);
+  } while (moved);
 }
 
 /** Upstream `sg_check`: `complete` iff the grid is empty; `impossible`
@@ -527,23 +493,18 @@ export function check(
 
 /** Upstream `game_status`: solved when complete; otherwise ongoing. A
  * no-moves-left (`impossible`) position is NOT a loss — it is rescuable by
- * Undo (design D8), so this never returns `"lost"`. */
+ * Undo, so this never returns `"lost"`. */
 export function status(state: SamegameState): GameStatus {
   return state.completed ? "solved" : "ongoing";
 }
 
-export function textFormat(state: SamegameState): string {
-  const { w, h, tiles } = state;
-  const lines: string[] = [];
+/** One digit per tile, a space for an empty cell. Upstream also spells
+ * colors from 10 as letters, which `validateParams` puts out of reach. */
+export function textFormat({ w, h, tiles }: SamegameState): string {
+  let out = "";
   for (let y = 0; y < h; y++) {
-    let row = "";
-    for (let x = 0; x < w; x++) {
-      const t = tiles[y * w + x];
-      if (t <= 0) row += " ";
-      else if (t < 10) row += String.fromCharCode(48 + t);
-      else row += String.fromCharCode(97 + (t - 10));
-    }
-    lines.push(row);
+    for (let x = 0; x < w; x++) out += tiles[y * w + x] || " ";
+    out += "\n";
   }
-  return `${lines.join("\n")}\n`;
+  return out;
 }

@@ -1,7 +1,7 @@
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { TEN } from "../../engine/color/colors.ts";
 import { INK, PAPER } from "../../engine/color/palette.ts";
-import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
+import { drawRecessedBorder } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import type { SamegameState, SamegameUi } from "./state.ts";
@@ -10,7 +10,7 @@ import type { SamegameState, SamegameUi } from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 32;
 const HIGHLIGHT_WIDTH = 2;
-const FLASH_FRAME = 0.13;
+export const FLASH_FRAME = 0.13;
 
 /** `TILE_GAP` for a given full tile size (`game_set_size`). */
 const gap = (ts: number) => Math.floor((ts + 8) / 16);
@@ -52,7 +52,6 @@ export function colors(defaultBackground: Color): Color[] {
 }
 
 export function computeSize(p: { w: number; h: number }, ts: number): Size {
-  // game_compute_size: TILE_SIZE*n + 2*BORDER - TILE_GAP.
   return {
     w: ts * p.w + 2 * border(ts) - gap(ts),
     h: ts * p.h + 2 * border(ts) - gap(ts),
@@ -67,8 +66,6 @@ export interface SamegameDrawState {
   tilesize: number;
   tileinner: number;
   tilegap: number;
-  w: number;
-  h: number;
   /** Last-drawn background color index (flash drives this globally). */
   bgcolor: number;
   /** Per-cell cache of the last-drawn packed tile value; `-1` forces a
@@ -82,8 +79,6 @@ export function newDrawState(state: SamegameState): SamegameDrawState {
     tilesize: 0,
     tileinner: 0,
     tilegap: 0,
-    w: state.w,
-    h: state.h,
     bgcolor: -1,
     grid: new Int32Array(state.w * state.h).fill(-1),
   };
@@ -181,15 +176,14 @@ function tileRedraw(
 
 /** The recessed bevel around the whole playfield (cloned from fifteen). */
 function drawRecessedFrame(dr: GameDrawing, w: number, h: number, ts: number): void {
-  const HW = HIGHLIGHT_WIDTH;
   const g = gap(ts);
-  drawBevel(
+  drawRecessedBorder(
     dr,
     {
-      left: coord(0, ts) - HW,
-      top: coord(0, ts) - HW,
-      right: coord(w, ts) + HW - 1 - g,
-      bottom: coord(h, ts) + HW - 1 - g,
+      left: coord(0, ts) - HIGHLIGHT_WIDTH,
+      top: coord(0, ts) - HIGHLIGHT_WIDTH,
+      right: coord(w, ts) + HIGHLIGHT_WIDTH - 1 - g,
+      bottom: coord(h, ts) + HIGHLIGHT_WIDTH - 1 - g,
     },
     ts,
     COL_HIGHLIGHT,

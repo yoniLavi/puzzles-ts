@@ -13,6 +13,7 @@ import {
   newDesc,
   newState,
   npoints,
+  type SamegameMove,
   type SamegameParams,
   type SamegameState,
   type SamegameUi,
@@ -23,8 +24,24 @@ import {
 } from "./state.ts";
 
 const TS = 32; // matches PREFERRED_TILE_SIZE; border = 16.
-/** Pixel near the center of cell (cx,cy) for a null-drawstate click. */
+/** A pixel inside cell (cx,cy). */
 const at = (cx: number, cy: number) => ({ x: cx * TS + 16 + 10, y: cy * TS + 16 + 10 });
+
+/** Press `button` on cell (cx,cy) through the game's own `interpretMove`. */
+const click = (
+  s: SamegameState,
+  ui: SamegameUi,
+  cx: number,
+  cy: number,
+  button = LEFT_BUTTON,
+) =>
+  samegameGame.interpretMove(
+    s,
+    ui,
+    sizedDrawState(samegameGame, s),
+    at(cx, cy),
+    button,
+  );
 
 function state3x3(desc: string, params?: Partial<SamegameParams>): SamegameState {
   const p: SamegameParams = {
@@ -136,14 +153,7 @@ describe("Same Game selection + execution", () => {
     const s = state3x3(DESC, { scoresub: 1 });
     const ui = freshUi(s);
     // Click the color-3 group (cell (0,1) = index 3).
-    const first = samegameGame.interpretMove(
-      s,
-      ui,
-      sizedDrawState(samegameGame, s),
-      at(0, 1),
-      LEFT_BUTTON,
-    );
-    expect(first).toBe(UI_UPDATE);
+    expect(click(s, ui, 0, 1)).toBe(UI_UPDATE);
     expect(ui.nselected).toBe(3);
     expect([ui.selected[3], ui.selected[4], ui.selected[5]]).toEqual([
       true,
@@ -152,17 +162,11 @@ describe("Same Game selection + execution", () => {
     ]);
 
     // Click again to confirm removal.
-    const move = samegameGame.interpretMove(
-      s,
-      ui,
-      sizedDrawState(samegameGame, s),
-      at(0, 1),
-      LEFT_BUTTON,
-    );
+    const move = click(s, ui, 0, 1);
     expect(move).toEqual({ type: "remove", tiles: [3, 4, 5] });
     expect(ui.nselected).toBe(0); // selection cleared after the move
 
-    const next = executeMove(s, move as { type: "remove"; tiles: number[] });
+    const next = executeMove(s, move as SamegameMove);
     expect(next.score).toBe(s.score + npoints(1, 3)); // (3-1)² = 4
     expect(s.tiles).toEqual([1, 1, 2, 3, 3, 3, 1, 2, 2]); // source unmutated
     // The cleared row's neighbors fell down.
@@ -173,49 +177,23 @@ describe("Same Game selection + execution", () => {
     const s = state3x3(DESC);
     const ui = freshUi(s);
     // Cell (2,0) = index 2 (color 2) has no same-color orthogonal neighbor.
-    const res = samegameGame.interpretMove(
-      s,
-      ui,
-      sizedDrawState(samegameGame, s),
-      at(2, 0),
-      LEFT_BUTTON,
-    );
-    expect(res).toBe(UI_UPDATE);
+    expect(click(s, ui, 2, 0)).toBe(UI_UPDATE);
     expect(ui.nselected).toBe(0);
   });
 
   it("right-clicking a selection deselects it", () => {
     const s = state3x3(DESC);
     const ui = freshUi(s);
-    samegameGame.interpretMove(
-      s,
-      ui,
-      sizedDrawState(samegameGame, s),
-      at(0, 1),
-      LEFT_BUTTON,
-    ); // select group
+    click(s, ui, 0, 1); // select group
     expect(ui.nselected).toBe(3);
-    const res = samegameGame.interpretMove(
-      s,
-      ui,
-      sizedDrawState(samegameGame, s),
-      at(0, 1),
-      RIGHT_BUTTON,
-    );
-    expect(res).toBe(UI_UPDATE);
+    expect(click(s, ui, 0, 1, RIGHT_BUTTON)).toBe(UI_UPDATE);
     expect(ui.nselected).toBe(0);
   });
 
   it("clears the selection across a real transition (changedState)", () => {
     const s = state3x3(DESC);
     const ui = freshUi(s);
-    samegameGame.interpretMove(
-      s,
-      ui,
-      sizedDrawState(samegameGame, s),
-      at(0, 1),
-      LEFT_BUTTON,
-    );
+    click(s, ui, 0, 1);
     expect(ui.nselected).toBe(3);
     samegameGame.changedState?.(ui, s, s);
     expect(ui.nselected).toBe(0);
@@ -226,21 +204,8 @@ describe("Same Game selection + execution", () => {
     const p: SamegameParams = { w: 2, h: 1, ncols: 3, scoresub: 2, soluble: true };
     const s = newState(p, "1,1");
     const ui = freshUi(s);
-    samegameGame.interpretMove(
-      s,
-      ui,
-      sizedDrawState(samegameGame, s),
-      at(0, 0),
-      LEFT_BUTTON,
-    ); // select the pair
-    const move = samegameGame.interpretMove(
-      s,
-      ui,
-      sizedDrawState(samegameGame, s),
-      at(0, 0),
-      LEFT_BUTTON,
-    );
-    const next = executeMove(s, move as { type: "remove"; tiles: number[] });
+    click(s, ui, 0, 0); // select the pair
+    const next = executeMove(s, click(s, ui, 0, 0) as SamegameMove);
     expect(next.completed).toBe(true);
     expect(status(next)).toBe("solved");
     // A stuck board is "ongoing", never "lost".
@@ -251,13 +216,7 @@ describe("Same Game selection + execution", () => {
     const s = state3x3(DESC);
     const ui = freshUi(s);
     expect(samegameGame.statusbarText?.(s, ui)).toBe("Score: 0");
-    samegameGame.interpretMove(
-      s,
-      ui,
-      sizedDrawState(samegameGame, s),
-      at(0, 1),
-      LEFT_BUTTON,
-    ); // select 3, scoresub 2
+    click(s, ui, 0, 1); // select 3, scoresub 2
     expect(samegameGame.statusbarText?.(s, ui)).toBe("Score: 0  Selected: 3 (1)");
     expect(
       samegameGame.statusbarText?.({ ...s, completed: true, score: 7 }, freshUi(s)),
