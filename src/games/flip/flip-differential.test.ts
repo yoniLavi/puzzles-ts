@@ -1,11 +1,6 @@
 /*
- * Frozen differential check (behavioral, gating): asserts the Flip TS
- * port's generator against a committed snapshot of the C reference
- * (`__fixtures__/flip-c-reference.json`, produced by the deleted
- * `puzzles/flip-trace.c` before flip.c was removed). This is the
- * reproducible, C-free form of the differential spot-check; the live
- * C-vs-TS comparison lives in `scripts/diff-flip.test.ts` (advisory,
- * on-demand, not gated).
+ * Frozen differential (gating): Flip's generator against a committed snapshot
+ * of upstream C's output, `__fixtures__/flip-c-reference.json`.
  *
  * Per the `flip` spec: CROSSES is deterministic and `random.ts` is
  * bit-identical, so the TS desc MUST equal the C reference exactly;

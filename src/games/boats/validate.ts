@@ -11,14 +11,14 @@
  * depend on that side effect — several deductions test for a specific shape,
  * and the fleet inventory only counts boats it can see a `LEFT`…`RIGHT` or
  * `TOP`…`BOTTOM` pair for. Porting `validateFullState` as a pure predicate
- * would silently disable half the solver (docs/games/solver-and-generator.md § "Solver-gated generation"'s mutating-validate
- * hazard). It is why the solver works on a mutable {@link BoatsBoard} rather
- * than on a `BoatsState`.
+ * would silently disable half the solver (the mutating-validator hazard in
+ * docs/games/solver-and-generator.md § "Solver-gated generation"). It is why
+ * the solver works on a mutable {@link BoatsBoard} rather than on a
+ * `BoatsState`.
  *
  * Each `errs` parameter is optional and, when given, is *filled in* with the
- * per-slot or per-cell error flags the renderer paints — upstream computes
- * these on every redraw, and this port reuses the same functions for both the
- * live error overlay and `findMistakes`.
+ * per-slot or per-cell error flags the renderer paints (and the hint reads back
+ * to name the rule a refuted trial breaks); the solver passes none.
  */
 
 import type { Dsf } from "../../engine/dsf.ts";
@@ -426,12 +426,13 @@ export function validateGridClues(b: BoatsBoard, errs?: Int32Array): number {
  * exactly the partially-drawn boats.
  *
  * **This is why the shared {@link Dsf} must not be swapped for another
- * union-find** (docs/games/solver-and-generator.md § "Solver-gated generation"). The finished-boat tests read
- * `grid[dsf.canonify(i)]` as an *element* — upstream's comment is "the
- * canonical index always points to the first square of a boat" — so the
- * deduction branches on which square union-by-size happened to make the root,
- * not merely on connectivity. The shared `Dsf` is aligned to `dsf.c`'s root
- * choice for exactly this case; the byte-match differential is what proves it.
+ * union-find** (docs/games/solver-and-generator.md § "Solver-gated
+ * generation"). The finished-boat tests read `grid[dsf.canonify(i)]` as an
+ * *element* — upstream's comment is "the canonical index always points to the
+ * first square of a boat" — so the deduction branches on which square
+ * union-by-size happened to make the root, not merely on connectivity. The
+ * shared `Dsf` is aligned to `dsf.c`'s root choice for exactly this case; the
+ * byte-match differential is what proves it.
  */
 export function checkDsf(b: BoatsBoard, dsf: Dsf, fleetCount: Int32Array): number {
   const { w, h, fleet, grid, fleetData } = b;
@@ -514,9 +515,4 @@ export function validateFullState(
     return STATUS_INVALID;
 
   return status;
-}
-
-/** Upstream `boats_validate_state` — the short form. Mutates `b`. */
-export function validateState(b: BoatsBoard): number {
-  return validateFullState(b);
 }

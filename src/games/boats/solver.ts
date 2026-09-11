@@ -13,9 +13,9 @@
  * and there is no "Unreasonable" guessing tier to exempt. Don't add a knob.
  *
  * **The loop is ported directly rather than onto the shared
- * `runDeductionFixpoint`** (docs/games/solver-and-generator.md § "Where the fixpoint does not fit", "check what a shared runner's
- * bookkeeping actually decides"). Three pieces of this loop's bookkeeping feed
- * back into which puzzles exist, and none of them fits the shared runner:
+ * `runDeductionFixpoint`** (docs/games/solver-and-generator.md § "Where the
+ * fixpoint does not fit"). Three pieces of this loop's bookkeeping feed back
+ * into which puzzles exist, and none of them fits the shared runner:
  *
  *  - `hasCenters` / `hasNoClue` are *latching* optimization flags. Once
  *    `centersTrivial` reports every center clue satisfied, the three
@@ -33,11 +33,13 @@
  */
 
 import { Dsf } from "../../engine/dsf.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   type BoatsBoard,
-  type BoatsParams,
   type BoatsState,
+  boardOf,
   CORRUPT,
+  cloneBoard,
   DIFF_EASY,
   DIFF_HARD,
   DIFF_NORMAL,
@@ -60,9 +62,9 @@ import {
 import {
   type BoatsRun,
   collectRuns,
+  fleetShipCount,
   neighbors,
   validateFullState,
-  validateState,
 } from "./validate.ts";
 
 /**
@@ -106,11 +108,10 @@ export function placeWater(b: BoatsBoard, x: number, y: number): number {
  * **Divergence (deliberate, and free):** upstream `assert`s that the square is
  * in bounds where this port returns 0. A release build compiles that assert
  * out and then indexes out of bounds, so the C has no defined behavior there
- * — docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1, "divergence is free where C has no defined behavior".
- * It is not reachable from a generated board (`centersTrivial` is the only
- * caller that could pass an off-board square, and only for a center clue on an
- * edge row whose boat cannot be perpendicular), but a hand-written game ID can
- * reach it, and a silent out-of-bounds read is the worse answer.
+ * (docs/games/solver-and-generator.md § "Divergence and what it costs", rule
+ * 1). No generated board reaches it (`centersTrivial` is the only caller that
+ * could pass an off-board square, and only for a center clue on an edge row
+ * whose boat cannot be perpendicular), but a hand-written game ID can.
  */
 export function placeShip(b: BoatsBoard, x: number, y: number): number {
   const { w, h, grid } = b;
@@ -215,8 +216,7 @@ function solverInitial(b: BoatsBoard): number {
  */
 function checkFill(b: BoatsBoard, blankCounts: Int32Array): number {
   const { w, h } = b;
-  let count = 0;
-  for (let i = 0; i < b.fleet; i++) count += b.fleetData[i] * (i + 1);
+  let count = fleetShipCount(b);
   for (let i = 0; i < w; i++) count += blankCounts[i];
 
   if (count !== w * h) return 0;
@@ -433,6 +433,13 @@ function minExpandDsf(b: BoatsBoard, fleetCount: Int32Array, dsf: Dsf): number {
   return 0;
 }
 
+/** The zero-based size of the largest boat the fleet still owes, or −1. */
+export function largestMissing(b: BoatsBoard, fleetCount: Int32Array): number {
+  let max = -1;
+  for (let i = 0; i < b.fleet; i++) if (b.fleetData[i] - fleetCount[i] !== 0) max = i;
+  return max;
+}
+
 /**
  * Upstream `boats_solver_max_expand_dsf`: an empty square that would join its
  * neighboring runs into a boat longer than any the fleet still owes must be
@@ -440,8 +447,7 @@ function minExpandDsf(b: BoatsBoard, fleetCount: Int32Array, dsf: Dsf): number {
  */
 function maxExpandDsf(b: BoatsBoard, fleetCount: Int32Array, dsf: Dsf): number {
   const { w, h, grid } = b;
-  let max = -1;
-  for (let i = 0; i < b.fleet; i++) if (b.fleetData[i] - fleetCount[i] !== 0) max = i;
+  const max = largestMissing(b, fleetCount);
 
   let ret = 0;
   for (let y = 0; y < h; y++) {
@@ -480,8 +486,7 @@ function findMaxFleet(
   simple: boolean,
 ): number {
   const { w, borderClues } = b;
-  let max = -1;
-  for (let i = 0; i < b.fleet; i++) if (b.fleetData[i] - fleetCount[i] !== 0) max = i;
+  const max = largestMissing(b, fleetCount);
   if (max === -1) return 0;
 
   let bc = b.fleetData[max] - fleetCount[max];
@@ -659,8 +664,7 @@ function borderCluesFill(
  */
 export function borderCluesLast(b: BoatsBoard): number {
   const { w, h, borderClues } = b;
-  let maxShips = 0;
-  for (let i = 0; i < b.fleet; i++) maxShips += b.fleetData[i] * (i + 1);
+  const maxShips = fleetShipCount(b);
   let ret = 0;
 
   let found = -1;
@@ -697,12 +701,32 @@ export function borderCluesLast(b: BoatsBoard): number {
 // --- Hard tier: single-square refutation -----------------------------------
 
 /**
+ * End a single-square trial: restore the board from `tmpGrid`, and when the
+ * trial was contradictory, `place` the opposite at (x, y) and make that the
+ * new baseline. Returns how many squares the conclusion changed.
+ */
+function concludeTrial(
+  b: BoatsBoard,
+  tmpGrid: Int8Array,
+  place: typeof placeWater,
+  x: number,
+  y: number,
+): number {
+  const refuted = validateFullState(b) === STATUS_INVALID;
+  b.grid.set(tmpGrid);
+  if (!refuted) return 0;
+  const ret = place(b, x, y);
+  tmpGrid.set(b.grid);
+  return ret;
+}
+
+/**
  * Upstream `boats_solver_attempt_ship_rows`: in a line needing exactly one more
  * water square, try that square as the water. If completing the line then
  * *immediately* contradicts the board, the square is a ship instead.
  *
  * This is refutation, not guessing: nothing is kept unless its negation is
- * provably impossible, and `validateState` looks only one step ahead.
+ * provably impossible, and `validateFullState` looks only one step ahead.
  */
 function attemptShipRows(
   b: BoatsBoard,
@@ -726,14 +750,7 @@ function attemptShipRows(
       fillRow(b, 0, y, w - 1, y, SHIP_VAGUE);
       // Also fill the column when this square sits at an intersection.
       if (lineNeedsOneWater(x, h)) fillRow(b, x, 0, x, h - 1, SHIP_VAGUE);
-
-      if (validateState(b) === STATUS_INVALID) {
-        grid.set(tmpGrid);
-        ret += placeShip(b, x, y);
-        tmpGrid.set(grid);
-      } else {
-        grid.set(tmpGrid);
-      }
+      ret += concludeTrial(b, tmpGrid, placeShip, x, y);
     }
   }
 
@@ -745,18 +762,10 @@ function attemptShipRows(
 
       placeWater(b, x, y);
       fillRow(b, x, 0, x, h - 1, SHIP_VAGUE);
-
-      if (validateState(b) === STATUS_INVALID) {
-        grid.set(tmpGrid);
-        ret += placeShip(b, x, y);
-        tmpGrid.set(grid);
-      } else {
-        grid.set(tmpGrid);
-      }
+      ret += concludeTrial(b, tmpGrid, placeShip, x, y);
     }
   }
 
-  grid.set(tmpGrid);
   return ret;
 }
 
@@ -785,14 +794,7 @@ function attemptWaterRows(
       placeShip(b, x, y);
       fillRow(b, 0, y, w - 1, y, WATER);
       if (lineNeedsOneShip(x)) fillRow(b, x, 0, x, h - 1, WATER);
-
-      if (validateState(b) === STATUS_INVALID) {
-        grid.set(tmpGrid);
-        ret += placeWater(b, x, y);
-        tmpGrid.set(grid);
-      } else {
-        grid.set(tmpGrid);
-      }
+      ret += concludeTrial(b, tmpGrid, placeWater, x, y);
     }
   }
 
@@ -804,18 +806,10 @@ function attemptWaterRows(
 
       placeShip(b, x, y);
       fillRow(b, x, 0, x, h - 1, WATER);
-
-      if (validateState(b) === STATUS_INVALID) {
-        grid.set(tmpGrid);
-        ret += placeWater(b, x, y);
-        tmpGrid.set(grid);
-      } else {
-        grid.set(tmpGrid);
-      }
+      ret += concludeTrial(b, tmpGrid, placeWater, x, y);
     }
   }
 
-  grid.set(tmpGrid);
   return ret;
 }
 
@@ -823,10 +817,6 @@ function attemptWaterRows(
  * Upstream `boats_solver_centers_attempt`: try each orientation of an
  * unsatisfied center clue; an orientation that immediately contradicts the
  * board rules itself out, leaving water past the center on that axis.
- *
- * Note there is no final restore here (unlike the two above): every branch
- * restores `grid` from `tmpGrid` before the next clue, so the board is already
- * back to its entry contents plus whatever water was deduced.
  */
 function centersAttempt(b: BoatsBoard, tmpGrid: Int8Array): number {
   const { w, h, grid, gridClues } = b;
@@ -841,7 +831,7 @@ function centersAttempt(b: BoatsBoard, tmpGrid: Int8Array): number {
 
       placeShip(b, x - 1, y);
       placeShip(b, x + 1, y);
-      if (validateState(b) === STATUS_INVALID) {
+      if (validateFullState(b) === STATUS_INVALID) {
         grid.set(tmpGrid);
         ret += placeWater(b, x + 1, y);
         tmpGrid.set(grid);
@@ -851,7 +841,7 @@ function centersAttempt(b: BoatsBoard, tmpGrid: Int8Array): number {
 
       placeShip(b, x, y - 1);
       placeShip(b, x, y + 1);
-      if (validateState(b) === STATUS_INVALID) {
+      if (validateFullState(b) === STATUS_INVALID) {
         grid.set(tmpGrid);
         ret += placeWater(b, x, y + 1);
         tmpGrid.set(grid);
@@ -872,8 +862,8 @@ function centersAttempt(b: BoatsBoard, tmpGrid: Int8Array): number {
  * `CORRUPT`, which ends the solve on the next validation) or reveal a hidden
  * border number (of which there are at most `w + h`), so the real bound is
  * `w·h + w + h`. The factor of two leaves room without letting a genuine
- * divergence hang the browser — docs/games/testing.md § "Seed-deterministic, never clock-gated", "bound non-termination in the
- * code, where it can actually be caught".
+ * divergence hang the browser (docs/games/testing.md § "Seed-deterministic,
+ * never clock-gated": bound non-termination in the code).
  */
 function iterationBudget(b: BoatsBoard): number {
   return (b.w * b.h + b.w + b.h) * 2 + 16;
@@ -891,15 +881,12 @@ export function solveBoats(b: BoatsBoard, maxDiff: number): BoatsSolveResult {
   const shipCounts = new Int32Array(w + h);
   const fleetCount = new Int32Array(b.fleet);
 
-  let dsf: Dsf | undefined;
-  if (maxDiff >= DIFF_NORMAL) dsf = new Dsf(w * h + 1);
+  const dsf = maxDiff >= DIFF_NORMAL ? new Dsf(w * h + 1) : undefined;
 
   let diff = DIFF_EASY;
   // Optimization latches — see the module header; both are load-bearing.
   let hasCenters = true;
-  let hasNoClue = false;
-  for (let i = 0; i < w + h && !hasNoClue; i++)
-    if (b.borderClues[i] === NO_CLUE) hasNoClue = true;
+  let hasNoClue = b.borderClues.includes(NO_CLUE);
 
   // The Tricky tier writes deduced numbers into the board; keep the originals.
   const savedBorderClues =
@@ -997,29 +984,25 @@ export function solveBoats(b: BoatsBoard, maxDiff: number): BoatsSolveResult {
  * seeds each: **13–17 of 20 Easy boards are stuck at the maximum cap** while
  * solving fine at Easy, and no board at Normal or above is affected (an
  * Easy board is the only kind never gated against these techniques). Not one
- * stuck board had a wrong square — the solver stops, it does not err. Verified
- * identical in the C via a throwaway `boats-dbg` harness, so this is upstream's
+ * stuck board had a wrong square — the solver stops, it does not err. A
+ * throwaway harness against the C showed the same, so this is upstream's
  * behavior and not a porting divergence.
  *
- * **The repair is here rather than in `checkDsf`** (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3). A false
- * *abort* only ever makes the solver weaker, never wrong, and the generator
- * re-verifies every board with the same solver — so generated puzzles are
- * correct and uniquely solvable as they stand, and "fixing" the solver would
- * change which boards exist while buying nothing. Asking each cap in turn costs
- * at most four solves, leaves the solver byte-exact against the C, and restores
- * Solve and Check & Save on the Easy presets, where both were silently broken:
- * `findMistakes` returning `[]` makes Check & Save degrade to a plain save and
- * happily store a wrong board, which is exactly the failure the hook exists to
- * prevent (docs/games/solver-and-generator.md § "The solvable-game contract").
+ * **The repair is here rather than in `checkDsf`**
+ * (docs/games/solver-and-generator.md § "Divergence and what it costs", rule
+ * 3). A false *abort* only ever makes the solver weaker, never wrong, and the
+ * generator re-verifies every board with the same solver — so generated
+ * puzzles are correct and uniquely solvable as they stand, and "fixing" the
+ * solver would change which boards exist while buying nothing. Asking each cap
+ * in turn costs at most four solves and leaves the solver byte-exact against
+ * the C. Without it, Solve fails on most Easy boards and `findMistakes` returns
+ * `[]`, so Check & Save would store a wrong board
+ * (docs/games/solver-and-generator.md § "The solvable-game contract").
  */
 export function solveAtAnyTier(b: BoatsBoard): BoatsSolveResult {
   let sawInvalid = false;
   for (let maxDiff = DIFF_EASY; maxDiff < DIFFCOUNT; maxDiff++) {
-    const attempt = {
-      ...b,
-      grid: Int8Array.from(b.grid),
-      borderClues: Int32Array.from(b.borderClues),
-    };
+    const attempt = cloneBoard(b);
     const result = solveBoats(attempt, maxDiff);
     if (result.kind === "solved") {
       b.grid.set(attempt.grid);
@@ -1033,23 +1016,13 @@ export function solveAtAnyTier(b: BoatsBoard): BoatsSolveResult {
 /**
  * Solve from the given clues alone and return the completed grid. Upstream
  * `solve_game`: any square the deduction never decided is filled with water, so
- * the returned move describes the whole board.
+ * the returned move describes the whole board. The player's own marks play no
+ * part, because `solveBoats` starts by wiping the grid.
  */
 export function solveToGrid(
-  params: BoatsParams,
-  gridClues: Int8Array,
-  borderClues: Int32Array,
+  state: BoatsState,
 ): { ok: true; grid: Int8Array } | { ok: false; error: string } {
-  const b: BoatsBoard = {
-    w: params.w,
-    h: params.h,
-    fleet: params.fleet,
-    fleetData: params.fleetData,
-    gridClues,
-    borderClues: Int32Array.from(borderClues),
-    grid: new Int8Array(params.w * params.h),
-  };
-
+  const b = boardOf(state);
   const result = solveAtAnyTier(b);
   if (result.kind === "invalid") return { ok: false, error: "Puzzle is invalid." };
   if (result.kind === "stuck")
@@ -1060,16 +1033,14 @@ export function solveToGrid(
 }
 
 /** A cell the player has decided that the unique solution contradicts. */
-export interface BoatsMistake {
-  x: number;
-  y: number;
-}
+export type BoatsMistake = Point;
 
 /**
  * Re-solve the puzzle from its clues to the unique solution and report every
- * square the player has decided differently — the docs/games/solver-and-generator.md § "The solvable-game contract" Check & Save
- * basis. Returns `[]` when the board is not uniquely deducible, so a puzzle the
- * solver cannot finish never accuses the player.
+ * square the player has decided differently — the Check & Save basis
+ * (docs/games/solver-and-generator.md § "The solvable-game contract"). Returns
+ * `[]` when the board is not uniquely deducible, so a puzzle the solver cannot
+ * finish never accuses the player.
  *
  * A re-solve is the right basis here rather than the live rule checks, which
  * this game also renders: a player can place a locally-legal boat on a square
@@ -1078,7 +1049,7 @@ export interface BoatsMistake {
  */
 export function findMistakes(state: BoatsState): readonly BoatsMistake[] {
   const { w, h } = state.params;
-  const solved = solveToGrid(state.params, state.gridClues, state.borderClues);
+  const solved = solveToGrid(state);
   if (!solved.ok) return [];
 
   const out: BoatsMistake[] = [];

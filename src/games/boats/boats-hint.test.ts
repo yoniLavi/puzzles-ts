@@ -27,13 +27,14 @@ import {
   type BoatsMove,
   type BoatsState,
   boardOf,
-  cloneState,
+  EMPTY,
   encodeParams,
   fillOf,
   isShip,
   newState,
   presetParams,
   STATUS_COMPLETE,
+  STATUS_INVALID,
 } from "./state.ts";
 import { validateFullState } from "./validate.ts";
 
@@ -136,12 +137,12 @@ function scan(
           for (let i = 0; i < at; i++) applyBoatsFiring(b, plan.firings[i]);
           return {
             firing: plan.firings[at],
-            state: { ...cloneState(state), grid: b.grid },
+            state: { ...state, grid: b.grid },
           };
         }
         const b = boardOf(state);
         applyBoatsFiring(b, plan.firings[0]);
-        state = { ...cloneState(state), grid: b.grid };
+        state = { ...state, grid: b.grid };
       }
     }
   }
@@ -154,7 +155,7 @@ describe("boats hint — soundness", () => {
     for (const [preset] of TIERS) {
       for (let s = 0; s < 4; s++) {
         const state = board(preset, `sound-${preset}-${s}`, s % 2 === 0);
-        const truth = solveToGrid(state.params, state.gridClues, state.borderClues);
+        const truth = solveToGrid(state);
         expect(truth.ok).toBe(true);
         if (!truth.ok) continue;
 
@@ -211,9 +212,10 @@ describe("boats hint — convergence", () => {
     // Every third turn, ignore the hint and play a correct square of the
     // player's own choosing instead, so the board keeps arriving at positions
     // no plan proposed. A recording solver written to run from empty is not
-    // automatically resumable (docs/games/hints.md § "A hint must resume from any position") — this is what catches it.
+    // automatically resumable (docs/games/hints.md § "A hint must resume from
+    // any position"); this is what catches it.
     let state = board(4, "resume-own-play");
-    const truth = solveToGrid(state.params, state.gridClues, state.borderClues);
+    const truth = solveToGrid(state);
     expect(truth.ok).toBe(true);
     if (!truth.ok) return;
     const { w, h } = state.params;
@@ -223,7 +225,7 @@ describe("boats hint — convergence", () => {
         // The player's own move: the last still-undecided square of the grid.
         let played = false;
         for (let i = w * h - 1; i >= 0 && !played; i--) {
-          if (state.gridClues[i] !== 0 || fillOf(state.grid[i]) !== "-") continue;
+          if (state.gridClues[i] !== EMPTY || fillOf(state.grid[i]) !== "-") continue;
           state = play(state, {
             kind: "fill",
             x0: i % w,
@@ -248,7 +250,7 @@ describe("boats hint — convergence", () => {
   it("replays at the board's own difficulty, not at the maximum", () => {
     // The solver is not monotone in its cap, so a hint that replayed at
     // DIFFCOUNT would strand most Easy boards *and* teach a harder technique
-    // than the board needs (design D2).
+    // than the board needs.
     const easy = deduceBoatsPlan(board(0, "tier-easy"));
     expect(easy.diff).toBe(0);
     expect(easy.firings.length).toBeGreaterThan(0);
@@ -305,9 +307,9 @@ describe("boats hint — narration", () => {
   });
 
   it("never narrates the never-touch water as a deduction of its own", () => {
-    // Owner decision 2026-07-28: the water a placement drags along is shown as
-    // part of the same step, not explained again — a rule of the game belongs in
-    // the help (docs/games/hints.md § "Rules belong in the help").
+    // The water a placement drags along is shown as part of the same step, not
+    // explained again — a rule of the game belongs in the help
+    // (docs/games/hints.md § "Rules belong in the help").
     const { state } = findFiring("lineForced");
     const r = hintOf(state);
     expect(r.ok).toBe(true);
@@ -338,16 +340,39 @@ describe("boats hint — one deduction is one hint", () => {
 
   it("fills a whole deduced line with a single move where it can", () => {
     const { firing, state } = findFiring("lineSatisfied");
+    expect(firing.squares.length).toBeGreaterThan(1);
     const r = hintOf(state);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    const step = r.steps.find((s) => /must be water/.test(s.explanation));
-    expect(step).toBeDefined();
-    if (!step || step.move.kind !== "fill") return;
-    // The move is a rectangle, so several squares of one firing are one move.
-    const span = (step.move.x1 - step.move.x0 + 1) * (step.move.y1 - step.move.y0 + 1);
-    expect(span).toBeGreaterThanOrEqual(1);
-    expect(firing.squares.length).toBeGreaterThan(0);
+
+    // The journey whose marked squares are exactly this firing's.
+    const key = (c: { x: number; y: number }) => `${c.x},${c.y}`;
+    const want = firing.squares.map(key).sort().join(" ");
+    const at = r.steps.findIndex(
+      (s) =>
+        !s.continuesPrevious &&
+        (s.highlights as BoatsHint).targets.map(key).sort().join(" ") === want,
+    );
+    expect(at).toBeGreaterThanOrEqual(0);
+    // One move: no continuation leg follows it.
+    expect(r.steps[at + 1]?.continuesPrevious ?? false).toBe(false);
+
+    const move = r.steps[at].move;
+    if (move.kind !== "fill") throw new Error("expected a fill move");
+    const { w } = state.params;
+    // The rectangle covers every square the deduction decides…
+    for (const s of firing.squares)
+      expect(
+        s.x >= move.x0 && s.x <= move.x1 && s.y >= move.y0 && s.y <= move.y1,
+        `${key(s)} outside the move`,
+      ).toBe(true);
+    // …and nothing else it could change: its other squares were already decided
+    // on the board as the firing fired, so a `from: "-"` fill leaves them alone.
+    let undecided = 0;
+    for (let y = move.y0; y <= move.y1; y++)
+      for (let x = move.x0; x <= move.x1; x++)
+        if (firing.grid[y * w + x] === EMPTY) undecided++;
+    expect(undecided).toBe(firing.squares.length);
   });
 
   it("never asks for a square the step did not claim", () => {
@@ -396,14 +421,14 @@ describe("boats hint — refusals", () => {
     // The whole point of basing the refusal on a re-solve: this square breaks
     // no rule yet, so a live rule check would happily let the hint reason on.
     const state = board(0, "refuse-wrong");
-    const truth = solveToGrid(state.params, state.gridClues, state.borderClues);
+    const truth = solveToGrid(state);
     expect(truth.ok).toBe(true);
     if (!truth.ok) return;
 
     const { w, h } = state.params;
     let wrong: BoatsState | null = null;
     for (let i = 0; i < w * h && !wrong; i++) {
-      if (state.gridClues[i] !== 0 || isShip(truth.grid[i])) continue;
+      if (state.gridClues[i] !== EMPTY || isShip(truth.grid[i])) continue;
       const candidate = play(state, {
         kind: "fill",
         x0: i % w,
@@ -414,7 +439,7 @@ describe("boats hint — refusals", () => {
         to: "B",
       });
       // Keep only a placement the live rules still accept.
-      if (validateFullState(boardOf(candidate)) !== 2) wrong = candidate;
+      if (validateFullState(boardOf(candidate)) !== STATUS_INVALID) wrong = candidate;
     }
     expect(wrong).not.toBeNull();
     if (!wrong) return;
@@ -434,10 +459,9 @@ describe("boats hint — refusals", () => {
     const blank = newState(p, "-,".repeat(p.w + p.h));
     const r = hintOf(blank);
     expect(r.ok).toBe(false);
-    // The constant, not a substring of it. `/deduce/i` matched "can be deduced"
-    // and stopped matching when the collection settled on one out-of-deduction
-    // wording that says "by deduction" — a regex over a message is a second,
-    // weaker statement of what the message is (`refuse-honestly-at-every-tier`).
+    // The constant, not a substring of it: a regex over a message is a second,
+    // weaker statement of what the message is, and goes stale when the wording
+    // changes.
     if (!r.ok) expect(r.error).toBe(DEDUCTION_EXHAUSTED);
   });
 });
@@ -533,13 +557,13 @@ describe("boats hint — rendering", () => {
     const hl = result.hint?.highlights as BoatsHint | undefined;
     expect(hl?.targets.length).toBeGreaterThan(0);
     // The mark is drawn in the game's own vocabulary — a segment for a boat,
-    // the water tildes for water — recolored `COL_HINT` (§5.1a).
+    // the water tildes for water — recolored `COL_HINT`.
     expect(usesColor(result.recording.ops, COL_HINT)).toBe(true);
   });
 
   it("shades or rings the evidence the deduction reasons over", () => {
     // Find a tier whose opening hint actually carries evidence; `allWaterPlaced`
-    // is the one honestly-global technique and declares none (§5.6).
+    // is the one honestly-global technique and declares none.
     for (const [preset] of TIERS) {
       const result = frame(preset, true);
       const hl = result.hint?.highlights as BoatsHint | undefined;
@@ -562,7 +586,8 @@ describe("boats hint — rendering", () => {
 });
 
 /** Guards the two placement marks stay distinct — a single color standing for
- * "place a boat" and "place water" would read as one action (§5.1a). */
+ * "place a boat" and "place water" would read as one action
+ * (docs/games/hints.md § "Echo the move's shape in the hint color"). */
 describe("boats hint — the two move shapes", () => {
   it("carries both placement shapes on the step that forces both", () => {
     // A line filled with boats drags its never-touch water along, so one step

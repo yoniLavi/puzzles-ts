@@ -1,10 +1,8 @@
 /**
- * Pattern rendering — faithful port of `game_redraw` / `grid_square` /
- * `draw_numbers` in pattern.c. Per-cell `Int32Array` cache keyed on the
- * cell's displayed value (drag- and flash-adjusted) plus cursor/mistake
- * overlay bits; a per-line cache of the last clue-number color, recolored
- * red when a completed line contradicts its clue (`check_errors`). The
- * palette mirrors the C color enum index-for-index.
+ * Pattern rendering, a port of `game_redraw` / `grid_square` / `draw_numbers`
+ * in pattern.c. A per-cell cache keyed on the displayed value (drag- and
+ * flash-adjusted) plus overlay bits, and a per-line cache of the clue color,
+ * which turns red when a completed line contradicts its clue (`check_errors`).
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -51,13 +49,10 @@ export const COL_GRID = 5;
 export const COL_CURSOR = 6;
 export const COL_ERROR = 7;
 export const COL_CURSOR_GUIDE = 8;
-// Hint colors — appended past the C color enum (0–8) so the dark-mode
-// palette overrides (which target the C indices) leave them unchanged. The
-// forced cell is **ringed** COL_HINT (blue); the reasoned line's still-undecided
-// cells shade COL_HINT_CELL — the evidence wash, which is right here because
-// nothing is drawn on an undecided square; cited black / white marks ring
-// COL_HINT_BLACKREF (teal) / COL_HINT_WHITEREF (violet) — the cross-game
-// element-type legend.
+// Hint colors, appended past the C enum (0–8). The forced cell is ringed
+// COL_HINT, the reasoned line's undecided cells shade COL_HINT_CELL, and cited
+// black / white marks ring COL_HINT_BLACKREF / COL_HINT_WHITEREF (the
+// cross-game element-type legend).
 export const COL_HINT = 9;
 export const COL_HINT_CELL = 10;
 export const COL_HINT_BLACKREF = 11;
@@ -173,12 +168,11 @@ function gridSquare(
   const dw = ts - xl - xr - 1;
   const dh = ts - yt - yb - 1;
 
-  // A hint target is **ringed** below — it never pre-fills the black/white the
-  // move will place, and in a game whose move is exactly "make this square black
-  // or white" a solid fill says with the board what the narration is proposing.
-  // An undecided cell of the reasoned line *shades*: nothing is drawn on it, so
-  // the wash covers nothing. A cited mark keeps its own color (the premise) and
-  // gets a ring below.
+  // A hint target is ringed below, never filled: where the move is exactly
+  // "make this square black or white", a fill would state the answer the
+  // narration is proposing. An undecided cell of the reasoned line shades,
+  // since nothing is drawn on it for the wash to cover. A cited mark keeps its
+  // own color (the premise) and gets a ring below.
   const baseFill =
     val === GRID_FULL ? COL_FULL : val === GRID_EMPTY ? COL_EMPTY : COL_UNKNOWN;
   const fill = hintBits & K_HINT_SHADE ? COL_HINT_CELL : baseFill;
@@ -270,11 +264,10 @@ function drawNumbers(
     if (i < w) {
       const nfit = Math.max(rowlen, tlborder(h)) - 1;
       for (let j = 0; j < rowlen; j++) {
-        const x = rx;
         let yy = border(ts) + ts * (tlborder(h) - 1);
         yy -= Math.floor(((rowlen - j - 1) * ts * (tlborder(h) - 1)) / nfit);
         dr.drawText(
-          { x: x + half, y: yy + half },
+          { x: rx + half, y: yy + half },
           {
             align: "center",
             baseline: "mathematical",

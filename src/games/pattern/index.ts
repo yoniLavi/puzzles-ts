@@ -38,7 +38,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newPatternDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -331,8 +331,7 @@ function cellsChangedBy(m: PatternMove, state: PatternState): Map<number, GridVa
     }
     return out;
   }
-  // Loop-invariant, so read once. `w`/`h` here are the grid's, hence the
-  // renames: the rectangle carries its own.
+  // `w`/`h` already name the grid's size, hence the renames.
   const { x: rx, y: ry, w: rw, h: rh, value, onlyBlank } = m;
   for (let yy = ry; yy < ry + rh; yy++) {
     for (let xx = rx; xx < rx + rw; xx++) {
@@ -386,8 +385,7 @@ export const patternGame: Game<
   canFormatAsText: true,
   // Pattern wants the raw MOD_STYLUS bit: with no right button to hand, a touch
   // press cycles the cell through its three states instead of just filling it.
-  // (Loopy asks for the same bit for the same reason, one rung down — it cycles
-  // an edge. `touch-input.test.ts` holds this declaration to an actual read.)
+  // `touch-input.test.ts` holds this declaration to an actual read.
   wantsStylusModifier: true,
 
   defaultParams,
@@ -397,7 +395,7 @@ export const patternGame: Game<
   validateParams,
   paramConfig,
 
-  newDesc: (p, rng) => newPatternDesc(p, rng),
+  newDesc: newPatternDesc,
   validateDesc,
   newState,
   newUi,
@@ -418,9 +416,9 @@ export const patternGame: Game<
   findMistakes,
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: PatternParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },

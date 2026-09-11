@@ -2,34 +2,34 @@
  * Boats — the recording deduction pass behind the explained hint.
  *
  * The hint is a **second projection of the same deduction engine as the
- * solver** (docs/games/hints.md § "Re-derive the named technique"): `solveBoats` runs the techniques to a
- * fixpoint and reports a difficulty; this module runs the *same* techniques one
- * **firing** at a time and reports what each one forced, why, and from what
- * evidence. Every deduction Boats knows is a named, teachable Battleships
- * technique, and the game guesses at no tier, so no step ever falls back on an
- * unexplained "this is the only possibility".
+ * solver** (docs/games/hints.md § "Re-derive the named technique"):
+ * `solveBoats` runs the techniques to a fixpoint and reports a difficulty; this
+ * module runs the *same* techniques one **firing** at a time and reports what
+ * each one forced, why, and from what evidence. Every deduction Boats knows is
+ * a named, teachable Battleships technique, and the game guesses at no tier, so
+ * no step ever falls back on an unexplained "this is the only possibility".
  *
- * **Deliberately a separate file from `solver.ts`, not an addition to it.** The
- * C is gone — `puzzles/unreleased/boats.c` was deleted at stage-2 acceptance —
- * so the 34-fixture differential now runs against a frozen fixture and is the
- * only guard left on `solveBoats`. Keeping the recording pass in its own module
- * makes "the solver is untouched" a property you can check by looking at the
- * file list rather than by reading a diff.
+ * **Deliberately a separate file from `solver.ts`.** The frozen differential is
+ * the only guard on `solveBoats`, so keeping the recording pass in its own
+ * module makes "hint work leaves the solver untouched" checkable from the file
+ * list rather than from a diff.
  *
  * Three things this pass does that `solveBoats` does not, each load-bearing:
  *
  *  - **It resumes from the player's board.** `solveBoats` opens with
  *    `solverInitial`, which *wipes the grid* and re-derives it from the given
  *    clues — fine for a solver, useless for a hint, which must start from what
- *    the player has actually placed (docs/games/hints.md § "A hint must resume from any position"). So the clue
- *    derivations upstream folds into that wipe become an ordinary narratable
- *    technique here ({@link BoatsTechnique} `givenClue`), and the never-touch
- *    water that `placeShip` applies as a side effect becomes `neverTouch` — the
- *    player's own placements need it too, and seeding it silently would put
- *    water on the deduction's board that the player cannot see, making a later
- *    narration describe a board that isn't theirs (§2.8).
- *  - **It orders goal-first, not solver-first** (§2.10): placements before
- *    rule-outs, cheaper tier before dearer.
+ *    the player has actually placed (docs/games/hints.md § "A hint must resume
+ *    from any position"). So the clue derivations upstream folds into that
+ *    wipe become an ordinary narratable technique here ({@link BoatsTechnique}
+ *    `givenClue`), and the never-touch water that `placeShip` applies as a
+ *    side effect becomes `neverTouch` — the player's own placements need it
+ *    too, and seeding it silently would put water on the deduction's board
+ *    that the player cannot see, making a later narration describe a board
+ *    that isn't theirs.
+ *  - **It orders goal-first, not solver-first** (docs/games/hints.md § "Hint
+ *    the move that advances the goal"): placements before rule-outs, cheaper
+ *    tier before dearer.
  *  - **It never consults the dsf for the board's *status*.** `checkDsf` is the
  *    source of the solver's non-monotonicity (see `solveAtAnyTier`): it can
  *    report a contradiction the board does not have, which inside `solveBoats`
@@ -42,9 +42,11 @@
 import { Dsf } from "../../engine/dsf.ts";
 import { deduceHintPlan } from "../../engine/hint-plan.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   borderCluesLast,
   fillRow,
+  largestMissing,
   placeShip,
   placeWater,
   solveBoats,
@@ -54,6 +56,7 @@ import {
   type BoatsState,
   boardOf,
   CORRUPT,
+  cloneBoard,
   DIFF_EASY,
   DIFF_HARD,
   DIFF_NORMAL,
@@ -114,7 +117,8 @@ export interface BoatsLine {
 }
 
 /** Why the board rejected a Hard tier's trial — read straight off the
- * validators' own error arrays (docs/games/hints.md § "Read the reason off the validator"). */
+ * validators' own error arrays (docs/games/hints.md § "Read the reason off the
+ * validator"). */
 export type BoatsBreach =
   /** Two boats would touch, if only at a corner. */
   | { kind: "collision" }
@@ -168,14 +172,14 @@ export type BoatsTechnique =
   | { kind: "runTooShort"; length: number }
   /** The runs that can still hold the largest missing boat are exactly as many
    * as there are such boats, so every one of them is used. */
-  | { kind: "onlyRunsLeft"; size: number; missing: number; runs: number }
+  | { kind: "onlyRunsLeft"; size: number; runs: number }
   // --- Tricky ---
   /** Two squares in a nearly-full line share diagonal neighbors; one of them is
    * a ship either way, so the shared neighbors are water. */
   | { kind: "sharedDiagonal"; line: BoatsLine; room: number }
   // --- Hard ---
   /** The opposite placement immediately contradicts the board. */
-  | { kind: "refuted"; trialShip: boolean; breach: BoatsBreach; local: boolean };
+  | { kind: "refuted"; trialShip: boolean; breach: BoatsBreach };
 
 /** One deduction: what it forces, what follows from that by the never-touch
  * rule, and the squares it reasons over. */
@@ -187,18 +191,18 @@ export interface BoatsFiring {
    * Water that follows from this firing's own placements because boats never
    * touch. Shown as part of the step so the player sees the rule doing its
    * work, but never narrated separately and never part of the move: the next
-   * recompute re-derives it from the placed segment either way (owner decision,
-   * 2026-07-28).
+   * recompute re-derives it from the placed segment either way.
    */
   consequences: BoatsSquare[];
   /** The cells the deduction reasons over, for the `COL_HINT_CELL` area. */
-  evidence: { x: number; y: number }[];
+  evidence: Point[];
   /**
    * The grid **as this firing fired** — every earlier firing applied, this one
    * not yet. The step's move is built against it (a `fill` move is a rectangle
    * that sets every still-empty cell in its span, so "which cells in this span
    * are already decided?" must be asked of the right board), and it is the
-   * board the narration and the shaded area describe (docs/games/hints.md § "Show the evidence as an area").
+   * board the narration and the shaded area describe (docs/games/hints.md §
+   * "Show the evidence as an area").
    */
   grid: Int8Array;
 }
@@ -206,7 +210,7 @@ export interface BoatsFiring {
 /** Runaway/UX cap on plan length, matching Spokes and Bricks: a player rarely
  * follows more than a few steps before diverging, and a recompute yields the
  * next batch. */
-export const HINT_PLAN_MAX = 40;
+const HINT_PLAN_MAX = 40;
 
 // --- working state ----------------------------------------------------------
 
@@ -222,14 +226,6 @@ interface Ctx {
   deduced: boolean[];
   /** False once every hidden number has been recovered (upstream's latch). */
   hasNoClue: boolean;
-}
-
-function cloneBoard(b: BoatsBoard): BoatsBoard {
-  return {
-    ...b,
-    grid: Int8Array.from(b.grid),
-    borderClues: Int32Array.from(b.borderClues),
-  };
 }
 
 /**
@@ -251,8 +247,8 @@ function lineOf(ctx: Ctx, horizontal: boolean, index: number): BoatsLine {
 }
 
 /** Every cell of a line, for the evidence area. */
-function lineCells(b: BoatsBoard, horizontal: boolean, index: number) {
-  const out: { x: number; y: number }[] = [];
+function lineCells(b: BoatsBoard, horizontal: boolean, index: number): Point[] {
+  const out: Point[] = [];
   const n = horizontal ? b.w : b.h;
   for (let k = 0; k < n; k++)
     out.push(horizontal ? { x: k, y: index } : { x: index, y: k });
@@ -270,7 +266,7 @@ function firing(
   ctx: Ctx,
   technique: BoatsTechnique,
   forced: BoatsSquare[],
-  evidence: { x: number; y: number }[],
+  evidence: Point[],
 ): BoatsFiring | null {
   const { b } = ctx;
   const fresh = forced.filter(
@@ -431,8 +427,7 @@ function findLineCount(ctx: Ctx, wantShips: boolean): BoatsFiring | null {
  * own squares already account for the whole grid. */
 function findAllWaterPlaced(ctx: Ctx): BoatsFiring | null {
   const { b, blankCounts } = ctx;
-  let count = 0;
-  for (let i = 0; i < b.fleet; i++) count += b.fleetData[i] * (i + 1);
+  let count = fleetShipCount(b);
   for (let i = 0; i < b.w; i++) count += blankCounts[i];
   if (count !== b.w * b.h) return null;
 
@@ -583,25 +578,17 @@ function findCenterCount(ctx: Ctx): BoatsFiring | null {
   return null;
 }
 
-/** The largest boat size the fleet is still missing, or −1 when none is. */
-function largestMissing(ctx: Ctx): number {
-  let max = -1;
-  for (let i = 0; i < ctx.b.fleet; i++)
-    if (ctx.b.fleetData[i] - ctx.fleetCount[i] !== 0) max = i;
-  return max;
-}
-
 /** Upstream `boats_solver_max_expand_dsf`. */
 function findGrowTooLong(ctx: Ctx): BoatsFiring | null {
   const { b, dsf } = ctx;
-  const max = largestMissing(ctx);
+  const max = largestMissing(b, ctx.fleetCount);
 
   for (let y = 0; y < b.h; y++) {
     for (let x = 0; x < b.w; x++) {
       if (b.grid[y * b.w + x] !== EMPTY) continue;
 
       let count = 1;
-      const evidence: { x: number; y: number }[] = [];
+      const evidence: Point[] = [];
       const arm = (nx: number, ny: number): void => {
         if (nx < 0 || ny < 0 || nx >= b.w || ny >= b.h) return;
         if (b.grid[ny * b.w + nx] !== SHIP_VAGUE) return;
@@ -630,8 +617,8 @@ function findGrowTooLong(ctx: Ctx): BoatsFiring | null {
 }
 
 /** Every cell of the unfinished boat whose dsf root is `root`. */
-function boatCells(b: BoatsBoard, dsf: Dsf, root: number) {
-  const out: { x: number; y: number }[] = [];
+function boatCells(b: BoatsBoard, dsf: Dsf, root: number): Point[] {
+  const out: Point[] = [];
   for (let i = 0; i < b.w * b.h; i++)
     if (isShip(b.grid[i]) && dsf.canonify(i) === root)
       out.push({ x: i % b.w, y: Math.floor(i / b.w) });
@@ -699,8 +686,8 @@ function findMustGrow(ctx: Ctx): BoatsFiring | null {
   );
 }
 
-const runCells = (run: BoatsRun) => {
-  const out: { x: number; y: number }[] = [];
+const runCells = (run: BoatsRun): Point[] => {
+  const out: Point[] = [];
   for (let k = 0; k < run.len; k++)
     out.push(
       run.horizontal
@@ -741,7 +728,7 @@ function findOnlyRunsLeft(
   simple: boolean,
 ): BoatsFiring | null {
   const { b, shipCounts, fleetCount } = ctx;
-  const max = largestMissing(ctx);
+  const max = largestMissing(b, fleetCount);
   if (max === -1) return null;
 
   let bc = b.fleetData[max] - fleetCount[max];
@@ -799,7 +786,7 @@ function findOnlyRunsLeft(
 
     const f = firing(
       ctx,
-      { kind: "onlyRunsLeft", size: max + 1, missing: idx.length, runs: r },
+      { kind: "onlyRunsLeft", size: max + 1, runs: r },
       forced,
       idx.flatMap((n) => runCells(runs[n])),
     );
@@ -823,32 +810,21 @@ function findSharedDiagonal(ctx: Ctx): BoatsFiring | null {
       const target = span - (b.borderClues[slot] + blankCounts[slot]);
       if (target !== 1 && target !== 2) continue;
 
+      // A square at `along` in this line, or beside it when `across` is not `i`.
+      const cellAt = (along: number, across = i): Point =>
+        horizontal ? { x: along, y: across } : { x: across, y: along };
+      const emptyAt = (k: number): boolean => {
+        const c = cellAt(k);
+        return b.grid[c.y * b.w + c.x] === EMPTY;
+      };
+
       for (let k = 0; k < span; k++) {
-        const cellAt = (kk: number) => (horizontal ? { x: kk, y: i } : { x: i, y: kk });
-        const at = (kk: number) => {
-          const c = cellAt(kk);
-          return b.grid[c.y * b.w + c.x];
-        };
         const crossSlot = horizontal ? k : k + b.w;
-
-        const front = k > 0 && at(k - 1) === EMPTY ? 1 : 0;
+        const front = k > 0 && emptyAt(k - 1) ? 1 : 0;
         const center =
-          at(k) === EMPTY && b.borderClues[crossSlot] - shipCounts[crossSlot] === 1
-            ? 1
-            : 0;
-        const back = k < span - 1 && at(k + 1) === EMPTY ? 1 : 0;
+          emptyAt(k) && b.borderClues[crossSlot] - shipCounts[crossSlot] === 1 ? 1 : 0;
+        const back = k < span - 1 && emptyAt(k + 1) ? 1 : 0;
         if (front + center + back <= target) continue;
-
-        const here = cellAt(k);
-        const forced: BoatsSquare[] = horizontal
-          ? [
-              { x: here.x, y: here.y - 1, ship: false },
-              { x: here.x, y: here.y + 1, ship: false },
-            ]
-          : [
-              { x: here.x - 1, y: here.y, ship: false },
-              { x: here.x + 1, y: here.y, ship: false },
-            ];
 
         const evidence = [cellAt(k)];
         if (front) evidence.push(cellAt(k - 1));
@@ -857,7 +833,10 @@ function findSharedDiagonal(ctx: Ctx): BoatsFiring | null {
         const f = firing(
           ctx,
           { kind: "sharedDiagonal", line: lineOf(ctx, horizontal, i), room: target },
-          forced,
+          [
+            { ...cellAt(k, i - 1), ship: false },
+            { ...cellAt(k, i + 1), ship: false },
+          ],
           evidence,
         );
         if (f) return f;
@@ -900,22 +879,21 @@ function recoverHiddenNumbers(ctx: Ctx): void {
 /**
  * Classify *why* a trial board is contradictory by re-running the validation
  * family with its own error arrays and reading the flags back — the Bricks
- * pattern (docs/games/hints.md § "Read the reason off the validator"). A fixed priority picks the clearest reason
- * when several fire at once.
+ * pattern (docs/games/hints.md § "Read the reason off the validator"). A fixed
+ * priority picks the clearest reason when several fire at once.
  *
  * **Total by construction, and that is the whole difficulty.** `validateFullState`
  * says INVALID through paths that flag *nothing*: `checkFleet` marks cells only
  * for a boat the fleet has no room for at all, never for the second copy of a
  * size it holds one of, and `adjustShips`' ship-total check marks nothing ever.
  * A classifier that returned "no reason" for those would make the caller skip a
- * perfectly good refutation — which is exactly how the Hard tier first shipped
- * producing zero firings. Every branch below therefore ends in a reason, with
+ * perfectly good refutation, so every branch below ends in a reason, with
  * `unfinishable` as the honest catch-all rather than an invented cause.
  */
 function classifyBreach(
   ctx: Ctx,
   trial: BoatsBoard,
-): { breach: BoatsBreach; cells: { x: number; y: number }[] } {
+): { breach: BoatsBreach; cells: Point[] } {
   const { w, h } = trial;
   const cellErrs = new Int32Array(w * h);
   const lineErrs = new Int32Array(w + h);
@@ -926,7 +904,7 @@ function classifyBreach(
   validateGridClues(trial, cellErrs);
 
   const cellsAt = (pred: (i: number) => boolean) => {
-    const out: { x: number; y: number }[] = [];
+    const out: Point[] = [];
     for (let i = 0; i < w * h; i++)
       if (pred(i)) out.push({ x: i % w, y: Math.floor(i / w) });
     return out;
@@ -1042,16 +1020,9 @@ function findRefuted(ctx: Ctx): BoatsFiring | null {
           if (validateFullState(trial) !== STATUS_INVALID) continue;
 
           const found = classifyBreach(ctx, trial);
-
-          // Honesty about locality (docs/games/hints.md § "Honest non-local evidence"): a refutation can
-          // break three rows away, and ringing a distant cause as though it
-          // were adjacent misleads.
-          const local = found.cells.some(
-            (c) => Math.abs(c.x - x) <= 1 && Math.abs(c.y - y) <= 1,
-          );
           const f = firing(
             ctx,
-            { kind: "refuted", trialShip, breach: found.breach, local },
+            { kind: "refuted", trialShip, breach: found.breach },
             [{ x, y, ship: !trialShip }],
             found.cells,
           );
@@ -1083,12 +1054,9 @@ function findRefuted(ctx: Ctx): BoatsFiring | null {
         const forced: BoatsSquare = vertical
           ? { x, y: y + 1, ship: false }
           : { x: x + 1, y, ship: false };
-        const local = found.cells.some(
-          (c) => Math.abs(c.x - x) <= 1 && Math.abs(c.y - y) <= 1,
-        );
         const f = firing(
           ctx,
-          { kind: "refuted", trialShip: true, breach: found.breach, local },
+          { kind: "refuted", trialShip: true, breach: found.breach },
           [forced],
           [{ x, y }, ...found.cells],
         );
@@ -1103,12 +1071,13 @@ function findRefuted(ctx: Ctx): BoatsFiring | null {
 // --- the firing order -------------------------------------------------------
 
 /**
- * The next firing, **goal-first** (docs/games/hints.md § "Hint the move that advances the goal"): within each tier the
- * placements — the moves that build the fleet — run before the rule-outs, and a
- * cheaper tier always runs before a dearer one, so an Easy board is taught the
- * Easy technique that suffices rather than a Hard refutation that reaches the
- * same square. This deliberately reorders `solveBoats`' internal rungs; the
- * hint only needs each firing to be *forced*, not to match the solver's order.
+ * The next firing, **goal-first** (docs/games/hints.md § "Hint the move that
+ * advances the goal"): within each tier the placements — the moves that build
+ * the fleet — run before the rule-outs, and a cheaper tier always runs before a
+ * dearer one, so an Easy board is taught the Easy technique that suffices
+ * rather than a Hard refutation that reaches the same square. This deliberately
+ * reorders `solveBoats`' internal rungs; the hint only needs each firing to be
+ * *forced*, not to match the solver's order.
  */
 function nextBoatsFiring(ctx: Ctx): BoatsFiring | null {
   const { b, maxDiff } = ctx;
@@ -1138,13 +1107,9 @@ function nextBoatsFiring(ctx: Ctx): BoatsFiring | null {
     findRunTooShort(ctx, runs) ??
     // Last in the rung deliberately: `mustGrow` is a **safety net, not a
     // preferred technique**. Measured over 200 generated boards spanning every
-    // preset and both "remove numbers" settings it never fires — its position
-    // (an unfinished boat with a resolved end cap, every boat of that length
-    // already found) is reliably reached first by a cheaper rung, most often
-    // `allWaterPlaced`, whose precondition it very nearly implies. It stays in
-    // because dropping it could strand a board none of that sample covered, and
-    // because a technique that only fires when nothing else can is exactly what
-    // belongs at the bottom of a rung.
+    // preset and both "remove numbers" settings it never fires — a cheaper
+    // rung, most often `allWaterPlaced`, reliably reaches its position first.
+    // It stays because dropping it could strand a board that sample missed.
     findMustGrow(ctx);
   if (normal) return normal;
   if (maxDiff < DIFF_TRICKY) return null;
@@ -1165,7 +1130,7 @@ export interface BoatsPlan {
   /** The board's status when deduction stopped. */
   status: number;
   firings: BoatsFiring[];
-  /** The difficulty cap the plan was replayed at (design D2). */
+  /** The difficulty cap the plan was replayed at. */
   diff: number;
 }
 
@@ -1176,15 +1141,13 @@ export interface BoatsPlan {
  * "just replay at the maximum" is wrong twice over: it would inherit the
  * false-contradiction abort that strands most Easy boards, and it would teach a
  * Hard refutation on a board whose own difficulty admits a one-line count.
- * Derived from the puzzle's clues alone, so it does not move as the player
- * plays — a hint plan must be recompute-stable, not merely correct (§6.3).
+ * Derived from the puzzle's clues alone (`solveBoats` wipes the grid first), so
+ * it does not move as the player plays — a hint plan must be recompute-stable,
+ * not merely correct (docs/games/hints.md § "Recompute-stable plans").
  */
 function lowestSolvingDiff(state: BoatsState): number {
-  for (let maxDiff = DIFF_EASY; maxDiff < DIFFCOUNT; maxDiff++) {
-    const attempt = boardOf(state);
-    attempt.grid.fill(EMPTY);
-    if (solveBoats(attempt, maxDiff).kind === "solved") return maxDiff;
-  }
+  for (let maxDiff = DIFF_EASY; maxDiff < DIFFCOUNT; maxDiff++)
+    if (solveBoats(boardOf(state), maxDiff).kind === "solved") return maxDiff;
   return DIFF_HARD;
 }
 
@@ -1198,7 +1161,7 @@ function planAt(state: BoatsState, maxDiff: number): BoatsPlan {
     fleetCount: new Int32Array(b.fleet),
     dsf: new Dsf(b.w * b.h + 1),
     deduced: new Array(b.w + b.h).fill(false),
-    hasNoClue: b.borderClues.some((c) => c === NO_CLUE),
+    hasNoClue: b.borderClues.includes(NO_CLUE),
   };
 
   const { status, plan } = deduceHintPlan<Ctx, BoatsFiring, number>({

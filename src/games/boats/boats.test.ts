@@ -5,8 +5,9 @@
  * generator, the solver and the codec against the C. What it cannot reach is
  * everything downstream of `newDesc`: input mapping, `executeMove`'s shape
  * resolution and completion check, the mistake overlay, and the frame the
- * player actually sees. That is what this file is for (docs/games/testing.md § "The test tiers", "a
- * byte-match differential does NOT exercise the interactive completion path").
+ * player actually sees. That is what this file is for (docs/games/testing.md §
+ * "The test tiers": a byte-match differential does not exercise the
+ * interactive completion path).
  */
 
 import { describe, expect, it } from "vitest";
@@ -269,7 +270,7 @@ describe("boats solver", () => {
   it("solves to a grid whose fleet inventory matches the params", () => {
     const p = params({ w: 8, h: 8, fleet: 4, fleetData: defaultFleet(4) });
     const state = generated(p, "boats-inventory-1");
-    const solved = solveToGrid(p, state.gridClues, state.borderClues);
+    const solved = solveToGrid(state);
     expect(solved.ok).toBe(true);
     if (!solved.ok) return;
 
@@ -351,12 +352,12 @@ describe("boats input", () => {
     let state = blankState();
     const ui = newUi();
 
-    for (const expected of [3 /* SHIP_VAGUE-ish */, WATER, EMPTY]) {
+    for (const expected of [SHIP_VAGUE, WATER, EMPTY]) {
       expect(press(state, ui, 2, 2, LEFT_BUTTON)).toBe(UI_UPDATE);
       const move = press(state, ui, 2, 2, LEFT_RELEASE);
       expect(move).not.toBe(UI_UPDATE);
       state = boatsGame.executeMove(state, move as BoatsMove);
-      if (expected === 3) expect(isShip(state.grid[2 * 6 + 2])).toBe(true);
+      if (expected === SHIP_VAGUE) expect(isShip(state.grid[2 * 6 + 2])).toBe(true);
       else expect(state.grid[2 * 6 + 2]).toBe(expected);
     }
   });
@@ -414,8 +415,6 @@ describe("boats input", () => {
     const state = blankState();
     const ui = newUi();
     // Clearing an already-empty square changes nothing.
-    press(state, ui, 0, 0, RIGHT_BUTTON);
-    press(state, ui, 0, 0, RIGHT_BUTTON); // from "-" -> "W"; second press cycles back
     ui.dragFrom = "-";
     ui.dragTo = "-";
     ui.dragOk = true;
@@ -435,8 +434,7 @@ describe("boats input", () => {
     state = boatsGame.executeMove(state, place);
     expect(isShip(state.grid[1])).toBe(true);
 
-    const water = press(state, ui, 0, 0, CURSOR_DOWN) as unknown;
-    expect(water).toBe(UI_UPDATE);
+    expect(press(state, ui, 0, 0, CURSOR_DOWN)).toBe(UI_UPDATE);
     const fill = press(state, ui, 0, 0, CURSOR_DOWN | MOD_CTRL) as BoatsMove;
     expect(fill).toMatchObject({ kind: "fill", to: "B" });
   });
@@ -503,7 +501,7 @@ describe("boats moves", () => {
     // water, so the last boat resolves the shapes and the board is complete.
     const p = params({ w: 8, h: 8, fleet: 4, fleetData: defaultFleet(4) });
     const state = generated(p, "boats-win-without-water");
-    const solved = solveToGrid(p, state.gridClues, state.borderClues);
+    const solved = solveToGrid(state);
     expect(solved.ok).toBe(true);
     if (!solved.ok) return;
 
@@ -532,7 +530,7 @@ describe("boats moves", () => {
   it("completes and flashes when the fleet is found", () => {
     const p = params({ w: 8, h: 8, fleet: 4, fleetData: defaultFleet(4) });
     const state = generated(p, "boats-complete-1");
-    const solved = solveToGrid(p, state.gridClues, state.borderClues);
+    const solved = solveToGrid(state);
     expect(solved.ok).toBe(true);
     if (!solved.ok) return;
 
@@ -557,8 +555,9 @@ describe("boats solve", () => {
     expect(midend.newGameFromId(`${encodeParams(p, true)}:${desc}`)).toBeUndefined();
 
     expect(midend.solve()).toBeUndefined();
-    // Solve must actually finish the game and mark it solved-with-help
-    // (docs/games/solver-and-generator.md § "Solve and the generator's aux"), not merely fill some squares in.
+    // Solve must actually finish the game and mark it solved-with-help, not
+    // merely fill some squares in (docs/games/solver-and-generator.md § "Solve
+    // and the generator's aux").
     expect(stateOf(midend).completed).toBe(true);
     expect(stateOf(midend).cheated).toBe(true);
   });
@@ -593,7 +592,7 @@ describe("boats findMistakes", () => {
   it("flags a square the unique solution contradicts, and only that square", () => {
     const p = params({ w: 8, h: 8, fleet: 4, fleetData: defaultFleet(4) });
     const state = generated(p, "boats-mistake-1");
-    const solved = solveToGrid(p, state.gridClues, state.borderClues);
+    const solved = solveToGrid(state);
     expect(solved.ok).toBe(true);
     if (!solved.ok) return;
 
@@ -706,7 +705,7 @@ describe("boats rendering", () => {
     const p = presetParams(0);
     const { desc } = newBoatsDesc(p, randomNew("boats-flash-1"));
     const state = newState(p, desc);
-    const solved = solveToGrid(p, state.gridClues, state.borderClues);
+    const solved = solveToGrid(state);
     expect(solved.ok).toBe(true);
     if (!solved.ok) return;
 
@@ -746,8 +745,8 @@ describe("boats rendering", () => {
     // Walk the flash in half-frame steps and count the boats drawn on each.
     // The guarantee that matters is that it *alternates* — upstream draws no
     // boat on the "off" half — not which half comes first, so assert both
-    // phases occur rather than pinning one to a timestamp (docs/games/testing.md § "Seed-deterministic, never clock-gated":
-    // assert a load-independent property, not a clock reading).
+    // phases occur rather than pinning one to a timestamp (docs/games/testing.md
+    // § "Seed-deterministic, never clock-gated").
     const palette = boatsGame.colors([1, 1, 1]);
     const counts: number[] = [];
     for (let i = 0; i < 12; i++) {
@@ -763,12 +762,13 @@ describe("boats rendering", () => {
     expect(counts.some((n) => n > 0)).toBe(true);
   });
   it("highlights a mistake on a board that was already drawn", () => {
-    // The paint-twice test (docs/games/rendering.md § "Prove the overlay repaints"): a cold frame proves nothing,
-    // because every cell misses the cache on frame 1 anyway.
+    // The paint-twice test (docs/games/rendering.md § "Prove the overlay
+    // repaints"): a cold frame proves nothing, because every cell misses the
+    // cache on frame 1 anyway.
     const p = params({ w: 8, h: 8, fleet: 4, fleetData: defaultFleet(4) });
     const { desc } = newBoatsDesc(p, randomNew("boats-render-mistake"));
     const state = newState(p, desc);
-    const solved = solveToGrid(p, state.gridClues, state.borderClues);
+    const solved = solveToGrid(state);
     expect(solved.ok).toBe(true);
     if (!solved.ok) return;
 

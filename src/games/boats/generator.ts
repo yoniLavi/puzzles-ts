@@ -7,8 +7,7 @@
  *
  *  1. place a random fleet, and derive the border numbers from it;
  *  2. keep adding a random given clue until the **Easy** solver is no longer
- *     stuck (note: "no longer stuck" includes "contradictory", faithfully —
- *     upstream tests `!= -1`, not `== solved`);
+ *     stuck;
  *  3. try removing each given clue, keeping the removal only while the board
  *     still solves at the target difficulty;
  *  4. if "remove numbers" is on, do the same for the border numbers, then
@@ -32,18 +31,18 @@
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
-import { borderCluesLast, solveBoats } from "./solver.ts";
+import { borderCluesLast, fillRow, placeWater, solveBoats } from "./solver.ts";
 import {
   type BoatsBoard,
   type BoatsParams,
   blankBoard,
   DIFF_EASY,
+  DIFFCOUNT,
   EMPTY,
   encodeDesc,
   isShip,
   NO_CLUE,
   SHIP_VAGUE,
-  validateParamsBasic,
   WATER,
 } from "./state.ts";
 import { adjustShips, collectRuns } from "./validate.ts";
@@ -58,9 +57,8 @@ const MAX_ATTEMPTS = 1000;
  * at most five times (once for `strip`, then once per difficulty step) and then
  * `assert`s — which a release build compiles out, leaving a genuine infinite
  * loop. Ten thousand attempts is far past any legitimate generation (the
- * fixtures converge in tens of milliseconds) so this only fires on a porting
- * divergence, and it throws rather than returning a fallback, so no seed that
- * used to converge can quietly change its desc.
+ * fixtures converge in tens of milliseconds), and it throws rather than
+ * returning a fallback, so no seed that converges can quietly change its desc.
  */
 const MAX_GENERATE_ATTEMPTS = 10_000;
 
@@ -69,6 +67,10 @@ const MAX_GENERATE_ATTEMPTS = 10_000;
  * randomly chosen run that can still take it. With no random state it places
  * each boat in the first possible run at the first possible position — that is
  * the deterministic fit test `validateParams` uses.
+ *
+ * It places through the solver's own primitives, whose contradiction
+ * (`CORRUPT`) arm is unreachable here: a boat only ever goes into a run with no
+ * ship in it, and every earlier boat is already ringed with water.
  *
  * Returns false when some boat has nowhere to go; the caller retries from an
  * empty grid.
@@ -91,20 +93,20 @@ export function generateFleet(b: BoatsBoard, rng: RandomState | null): boolean {
         const pos = run.start + (rng ? randomUpto(rng, run.len - f) : 0);
 
         if (run.horizontal) {
-          fillBlockVague(b, pos, run.row, pos + f, run.row);
-          placeWaterAt(b, pos - 1, run.row);
-          placeWaterAt(b, pos + f + 1, run.row);
+          fillRow(b, pos, run.row, pos + f, run.row, SHIP_VAGUE);
+          placeWater(b, pos - 1, run.row);
+          placeWater(b, pos + f + 1, run.row);
           if (f === 0) {
-            placeWaterAt(b, pos, run.row - 1);
-            placeWaterAt(b, pos, run.row + 1);
+            placeWater(b, pos, run.row - 1);
+            placeWater(b, pos, run.row + 1);
           }
         } else {
-          fillBlockVague(b, run.row, pos, run.row, pos + f);
-          placeWaterAt(b, run.row, pos - 1);
-          placeWaterAt(b, run.row, pos + f + 1);
+          fillRow(b, run.row, pos, run.row, pos + f, SHIP_VAGUE);
+          placeWater(b, run.row, pos - 1);
+          placeWater(b, run.row, pos + f + 1);
           if (f === 0) {
-            placeWaterAt(b, run.row - 1, pos);
-            placeWaterAt(b, run.row + 1, pos);
+            placeWater(b, run.row - 1, pos);
+            placeWater(b, run.row + 1, pos);
           }
         }
 
@@ -119,42 +121,6 @@ export function generateFleet(b: BoatsBoard, rng: RandomState | null): boolean {
 
   for (let i = 0; i < w * h; i++) if (grid[i] === EMPTY) grid[i] = WATER;
   return true;
-}
-
-// The generator's own placement primitives. They are upstream's
-// `boats_solver_place_ship`/`_place_water` reached through `fill_row`, but the
-// generator only ever writes onto empty squares of a consistent board, so the
-// contradiction (`CORRUPT`) arm is unreachable here.
-function placeShipAt(b: BoatsBoard, x: number, y: number): void {
-  const { w, h, grid } = b;
-  if (x < 0 || x >= w || y < 0 || y >= h) return;
-  if (grid[y * w + x] !== EMPTY) return;
-  grid[y * w + x] = SHIP_VAGUE;
-  // Boats never touch, so the diagonals are water.
-  placeWaterAt(b, x - 1, y - 1);
-  placeWaterAt(b, x + 1, y - 1);
-  placeWaterAt(b, x - 1, y + 1);
-  placeWaterAt(b, x + 1, y + 1);
-}
-
-function placeWaterAt(b: BoatsBoard, x: number, y: number): void {
-  const { w, h, grid } = b;
-  if (x < 0 || x >= w || y < 0 || y >= h) return;
-  if (grid[y * w + x] === EMPTY) grid[y * w + x] = WATER;
-}
-
-/** Upstream `boats_solver_fill_row` with a ship fill — an axis-aligned block,
- * so it serves a horizontal and a vertical boat alike. */
-function fillBlockVague(
-  b: BoatsBoard,
-  sx: number,
-  sy: number,
-  ex: number,
-  ey: number,
-): void {
-  for (let x = sx; x <= ex; x++)
-    for (let y = sy; y <= ey; y++)
-      if (b.grid[y * b.w + x] === EMPTY) placeShipAt(b, x, y);
 }
 
 /** Upstream `boats_create_borderclues`: count the ships in each line. */
@@ -187,12 +153,28 @@ export function fleetFits(p: BoatsParams): boolean {
   return generateFleet(board, null);
 }
 
-/** Upstream `validate_params` in full: the cheap numeric checks, then the fit
- * test. Lives here rather than with the other param code because the fit test
- * *is* the generator. */
+/**
+ * Upstream `validate_params`, check for check in upstream's order (the order
+ * decides which message a doubly-invalid parameter set reports). Lives here
+ * rather than with the other param code because the last check, the fleet fit,
+ * *is* the generator.
+ */
 export function validateParams(p: BoatsParams, full: boolean): string | null {
-  const basic = validateParamsBasic(p, full);
-  if (basic !== null) return basic;
+  const { w, h, fleet } = p;
+
+  if (full && p.diff >= DIFFCOUNT) return "Unknown difficulty level";
+  if (w > 99) return "Width is too high";
+  if (h > 99) return "Height is too high";
+  if (fleet < 1) return "Fleet size must be at least 1";
+  if (fleet > w && fleet > h)
+    return "Fleet size must be smaller than the width and height";
+  if (fleet > 9) return "Fleet size must be no more than 9";
+
+  if (!p.fleetData.slice(0, fleet).some((n) => n !== 0))
+    return "Fleet must contain at least 1 boat";
+
+  if (w < 2) return "Width must be at least 2";
+  if (h < 2) return "Height must be at least 2";
   if (!fleetFits(p)) return "Fleet does not fit into the grid";
   return null;
 }
@@ -207,10 +189,6 @@ export function newBoatsDesc(p: BoatsParams, rng: RandomState): { desc: string }
   let strip = p.strip;
   let attempts = 0;
   const guard = retryLimit("boats: generation", MAX_GENERATE_ATTEMPTS);
-
-  // The permutation the two clue-removal passes walk. Allocated once, because
-  // the second `shuffle` deliberately permutes what the first one left.
-  const spaces: number[] = [];
 
   for (;;) {
     guard();
@@ -231,21 +209,19 @@ export function newBoatsDesc(p: BoatsParams, rng: RandomState): { desc: string }
     createBorderClues(board);
     solution.set(board.grid);
 
-    // Add random given clues until the Easy solver is no longer stuck. (A
-    // *contradictory* verdict also ends this loop — upstream tests `!= -1`.)
-    spaces.length = 0;
-    for (let i = 0; i < w * h; i++) spaces.push(i);
+    // The permutation both clue passes walk; the second `shuffle` permutes what
+    // this one left.
+    const spaces = Array.from({ length: w * h }, (_, i) => i);
     shuffle(spaces, rng);
 
+    // Add random given clues until the Easy solver is no longer stuck. (A
+    // *contradictory* verdict also ends this loop — upstream tests `!= -1`.)
     const clueGuard = retryLimit("boats: seeding grid clues", w * h + 1);
     for (;;) {
       clueGuard();
       if (solveBoats(board, DIFF_EASY).kind !== "stuck") break;
-      for (const j of spaces) {
-        if (board.grid[j] !== EMPTY) continue;
-        board.gridClues[j] = solution[j];
-        break;
-      }
+      const j = spaces.find((i) => board.grid[i] === EMPTY);
+      if (j !== undefined) board.gridClues[j] = solution[j];
     }
 
     // Remove each given clue that the target difficulty can do without.
@@ -258,8 +234,7 @@ export function newBoatsDesc(p: BoatsParams, rng: RandomState): { desc: string }
     }
 
     if (strip) {
-      const lines: number[] = [];
-      for (let i = 0; i < w + h; i++) lines.push(i);
+      const lines = Array.from({ length: w + h }, (_, i) => i);
       shuffle(lines, rng);
 
       for (const j of lines) {
@@ -272,7 +247,7 @@ export function newBoatsDesc(p: BoatsParams, rng: RandomState): { desc: string }
       // Don't ship a puzzle that hides only one number — it is derivable from
       // the fleet's total, so it isn't hidden at all.
       borderCluesLast(board);
-      if (!board.borderClues.some((c) => c === NO_CLUE)) continue;
+      if (!board.borderClues.includes(NO_CLUE)) continue;
     }
 
     // Finally: it must need the target difficulty, not merely permit it.

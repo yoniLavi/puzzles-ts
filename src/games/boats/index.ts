@@ -22,7 +22,8 @@
  * [`validate.ts`](./validate.ts) (the shared status passes),
  * [`solver.ts`](./solver.ts) (the four deduction tiers + `findMistakes`),
  * [`generator.ts`](./generator.ts) (solver-gated generation + `validateParams`),
- * [`render.ts`](./render.ts).
+ * [`hint-solver.ts`](./hint-solver.ts) and [`hint-text.ts`](./hint-text.ts)
+ * (the explained hint), [`render.ts`](./render.ts).
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -57,13 +58,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { ConfigValues, GameStatus, Point } from "../../engine/types.ts";
 import { newBoatsDesc, validateParams } from "./generator.ts";
 import { type BoatsFiring, type BoatsSquare, deduceBoatsPlan } from "./hint-solver.ts";
 import { say } from "./hint-text.ts";
@@ -80,14 +75,13 @@ import {
 } from "./render.ts";
 import { type BoatsMistake, findMistakes, solveBoats, solveToGrid } from "./solver.ts";
 import {
-  type BoatsBoard,
   type BoatsFill,
   type BoatsFillFrom,
   type BoatsMove,
   type BoatsParams,
   type BoatsState,
   type BoatsUi,
-  cloneState,
+  boardOf,
   DIFF_NAMES,
   decodeFleet,
   decodeParams,
@@ -109,7 +103,7 @@ import {
   validateDesc,
   WATER,
 } from "./state.ts";
-import { adjustShips, validateState } from "./validate.ts";
+import { adjustShips, validateFullState } from "./validate.ts";
 
 function presets(): PresetMenu<BoatsParams> {
   return {
@@ -146,28 +140,26 @@ function interpretMove(
   if (gx === w) gx = w - 1;
   if (gy === h) gy = h - 1;
 
-  if (isMouseDown(button)) {
-    if (gx >= 0 && gy >= 0 && gx < w && gy < h) {
-      let from: BoatsFillFrom = fillOf(state.grid[gy * w + gx]);
-      let to: BoatsFill = "-";
+  if (isMouseDown(button) && gx >= 0 && gy >= 0 && gx < w && gy < h) {
+    let from: BoatsFillFrom = fillOf(state.grid[gy * w + gx]);
+    let to: BoatsFill = "-";
 
-      if (button === LEFT_BUTTON) {
-        to = leftCycle(from);
-        // Clearing to water applies to the whole dragged line regardless of
-        // what each square currently holds.
-        if (to === "W") from = "*";
-      }
-      if (button === RIGHT_BUTTON) to = from === "-" ? "W" : "-";
-      if (button === MIDDLE_BUTTON) from = "*";
-
-      ui.dragFrom = from;
-      ui.dragTo = to;
-      ui.dragOk = true;
-      ui.dsx = ui.dex = gx;
-      ui.dsy = ui.dey = gy;
-      ui.cursor.visible = false;
-      return UI_UPDATE;
+    if (button === LEFT_BUTTON) {
+      to = leftCycle(from);
+      // Clearing to water applies to the whole dragged line regardless of
+      // what each square currently holds.
+      if (to === "W") from = "*";
     }
+    if (button === RIGHT_BUTTON) to = from === "-" ? "W" : "-";
+    if (button === MIDDLE_BUTTON) from = "*";
+
+    ui.dragFrom = from;
+    ui.dragTo = to;
+    ui.dragOk = true;
+    ui.dsx = ui.dex = gx;
+    ui.dsy = ui.dey = gy;
+    ui.cursor.visible = false;
+    return UI_UPDATE;
   }
 
   if ((isMouseDrag(button) || isMouseRelease(button)) && ui.dragTo !== "") {
@@ -247,54 +239,44 @@ function interpretMove(
 // --- moves -----------------------------------------------------------------
 
 function executeMove(state: BoatsState, move: BoatsMove): BoatsState {
-  const { w } = state.params;
-  const next = cloneState(state);
+  const b = boardOf(state);
+  const { w, grid } = b;
 
   if (move.kind === "fill") {
-    // Bounds and both fill values are loop-invariant: read them once rather
-    // than re-reading the move on every cell of the rectangle.
     const { x0, x1, y0, y1, from, to } = move;
     const fill = to === "B" ? SHIP_VAGUE : to === "W" ? WATER : EMPTY;
     for (let x = x0; x <= x1; x++) {
       for (let y = y0; y <= y1; y++) {
         const i = y * w + x;
         if (state.gridClues[i] !== EMPTY) continue; // a given square is fixed
-        if (from !== "*" && fillOf(next.grid[i]) !== from) continue;
-        next.grid[i] = fill;
+        if (from !== "*" && fillOf(grid[i]) !== from) continue;
+        grid[i] = fill;
       }
     }
   } else if (move.kind === "solve") {
-    if (move.grid.length !== w * state.params.h)
+    if (move.grid.length !== grid.length)
       throw new Error("boats: solve move has the wrong grid size");
-    next.grid.set(move.grid);
+    grid.set(move.grid);
   } else {
     return assertNever(move, "boats: executeMove");
   }
 
   // Resolve every segment's shape from its neighbors, then see whether that
   // finished the puzzle.
-  const board = {
-    w,
-    h: state.params.h,
-    fleet: state.params.fleet,
-    fleetData: state.params.fleetData,
-    gridClues: next.gridClues,
-    borderClues: next.borderClues,
-    grid: next.grid,
-  };
-  adjustShips(board);
-  const completed = validateState(board) === STATUS_COMPLETE;
+  adjustShips(b);
+  const completed = validateFullState(b) === STATUS_COMPLETE;
 
   return {
-    ...next,
+    ...state,
+    grid,
     completed,
     // A solve that did not actually finish the grid is not cheating.
-    cheated: move.kind === "solve" ? completed : next.cheated,
+    cheated: move.kind === "solve" ? completed : state.cheated,
   };
 }
 
 function solve(orig: BoatsState): SolveResult<BoatsMove> {
-  const result = solveToGrid(orig.params, orig.gridClues, orig.borderClues);
+  const result = solveToGrid(orig);
   if (!result.ok) return { ok: false, error: result.error };
   return { ok: true, move: { kind: "solve", grid: Array.from(result.grid) } };
 }
@@ -309,12 +291,13 @@ function status(s: BoatsState): GameStatus {
  * What a Boats hint step marks on the board. `targets` are the squares to
  * decide — drawn in `COL_HINT` in the shape of the action each one is (a boat
  * mark for a segment, a water mark for water), because a single color standing
- * for two different actions reads as one action (docs/games/hints.md § "Echo the move's shape in the hint color").
- * `evidence` is the area the deduction reasons over, shaded `COL_HINT_CELL`.
+ * for two different actions reads as one action (docs/games/hints.md § "Echo
+ * the move's shape in the hint color"). `evidence` is the area the deduction
+ * reasons over, shaded `COL_HINT_CELL`.
  */
 export interface BoatsHint {
   targets: BoatsSquare[];
-  evidence: { x: number; y: number }[];
+  evidence: Point[];
 }
 
 /** Which sentence a firing speaks, and with what values: the counts of boat
@@ -398,8 +381,9 @@ function legMoves(f: BoatsFiring, w: number, squares: BoatsSquare[]): BoatsMove[
  * One firing is **one journey**: a deduction that forces several squares is a
  * single hint whose continuation legs are flagged `continuesPrevious`, so the
  * midend keeps it displayed across the legs and auto-play walks them as one
- * (docs/games/hints.md § "Group one firing into one step"). The narration rides on the opening leg; the rest carry
- * the same highlight so the picture never shrinks mid-journey.
+ * (docs/games/hints.md § "Group one firing into one step"). The narration
+ * rides on the opening leg; the rest carry the same highlight so the picture
+ * never shrinks mid-journey.
  */
 function stepsFor(f: BoatsFiring, w: number): HintStep<BoatsMove, BoatsHint>[] {
   // The never-touch water a placement drags along is part of *this* step — it
@@ -508,33 +492,19 @@ function fleetConfigString(p: BoatsParams): string {
  *
  * `checkDsf`, which runs from Normal upward, counts an unfinished run of length
  * `k` as a completed size-`k` boat, so it can report a contradiction the board
- * does not have: measured across the twelve presets, 13–17 of every 20 Easy
- * boards are *stuck at the maximum cap* while solving fine at Easy. The
- * workaround every consumer applies is `solveAtAnyTier` — ask each cap in turn
- * and take the first success — and declaring `nonMonotone` here is what points
- * the cross-game guard at that property instead of at monotonicity. See the
- * `boats` spec and `solveAtAnyTier`'s own header for the full measurement.
- *
- * `solveBoats` reports `{ kind: "solved" | "stuck" | "invalid" }`; a fresh board
- * is built from the clues alone, exactly as `solveToGrid` does, so the player's
- * own marks never leak into the verdict.
+ * does not have and leave most Easy boards *stuck at the maximum cap* while
+ * they solve fine at Easy. The workaround every consumer applies is
+ * `solveAtAnyTier` — ask each cap in turn and take the first success — and
+ * declaring `nonMonotone` here is what points the cross-game guard at that
+ * property instead of at monotonicity. `solveAtAnyTier`'s header has the
+ * measurement.
  */
 const difficulty: DifficultyContract<BoatsParams> = {
   nonMonotone: true,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {
-    const s = newState(p, desc);
-    const b: BoatsBoard = {
-      w: p.w,
-      h: p.h,
-      fleet: p.fleet,
-      fleetData: p.fleetData,
-      gridClues: s.gridClues,
-      borderClues: Int32Array.from(s.borderClues),
-      grid: new Int8Array(p.w * p.h),
-    };
-    const result = solveBoats(b, cap);
+    const result = solveBoats(boardOf(newState(p, desc)), cap);
     return result.kind === "solved"
       ? "solved"
       : result.kind === "invalid"
@@ -555,9 +525,7 @@ export const boatsGame: Game<
   wantsStatusbar: false,
   isTimed: false,
   canSolve: true,
-  // Param-dependent: the text grid gives each row one character per column and
-  // one for its number, which only works up to 10×10 (upstream
-  // `game_can_format_as_text_now`). `textFormat` returns undefined past that.
+  // Param-dependent: `textFormat` returns undefined past 10×10.
   canFormatAsText: true,
 
   defaultParams,
@@ -619,10 +587,10 @@ export const boatsGame: Game<
     },
   ],
 
-  newDesc: (p, rng) => newBoatsDesc(p, rng),
+  newDesc: newBoatsDesc,
   validateDesc,
   newState,
-  newUi: () => newUi(),
+  newUi,
 
   interpretMove,
   executeMove,
@@ -635,9 +603,9 @@ export const boatsGame: Game<
   hintKeepTrack,
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: BoatsParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

@@ -11,9 +11,12 @@
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
 
-// --- RANDOM matrix generator (flip.c new_game_desc RANDOM branch) ---
+// --- RANDOM matrix generator ------------------------------------------
 
-interface Sq {
+/** A proposal to add output cell (x, y) to the lights input cell (cx, cy)
+ * flips. `coverage` counts the cells already flipping (x, y); `ominosize`
+ * counts the lights (cx, cy) already flips. */
+interface Candidate {
   cx: number;
   cy: number;
   x: number;
@@ -25,8 +28,10 @@ interface Sq {
 function cmp(a: number, b: number): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
-// sqcmp_pick: coverage, ominosize, cy, cx, y, x.
-function sqcmpPick(a: Sq, b: Sq): number {
+
+// Upstream's sqcmp_pick, sqcmp_cov and sqcmp_osize, exactly: `randomUpto`
+// indexes the pick order, so these orders decide the board.
+function pickOrder(a: Candidate, b: Candidate): number {
   return (
     cmp(a.coverage, b.coverage) ||
     cmp(a.ominosize, b.ominosize) ||
@@ -36,8 +41,7 @@ function sqcmpPick(a: Sq, b: Sq): number {
     cmp(a.x, b.x)
   );
 }
-// sqcmp_cov: coverage, y, x, ominosize, cy, cx.
-function sqcmpCov(a: Sq, b: Sq): number {
+function coverageOrder(a: Candidate, b: Candidate): number {
   return (
     cmp(a.coverage, b.coverage) ||
     cmp(a.y, b.y) ||
@@ -47,8 +51,7 @@ function sqcmpCov(a: Sq, b: Sq): number {
     cmp(a.cx, b.cx)
   );
 }
-// sqcmp_osize: ominosize, cy, cx, coverage, y, x.
-function sqcmpOsize(a: Sq, b: Sq): number {
+function sizeOrder(a: Candidate, b: Candidate): number {
   return (
     cmp(a.ominosize, b.ominosize) ||
     cmp(a.cy, b.cy) ||
@@ -59,165 +62,111 @@ function sqcmpOsize(a: Sq, b: Sq): number {
   );
 }
 
-interface Trees {
-  pick: SortedMultiset<Sq>;
-  cov: SortedMultiset<Sq>;
-  osize: SortedMultiset<Sq>;
-}
-
-function addsq(
-  t: Trees,
-  w: number,
-  h: number,
-  cx: number,
-  cy: number,
-  x: number,
-  y: number,
-  matrix: Uint8Array,
-): void {
-  const wh = w * h;
-  if (x < 0 || x >= w || y < 0 || y >= h) return;
-  if (Math.abs(x - cx) > 1 || Math.abs(y - cy) > 1) return;
-  if (matrix[(cy * w + cx) * wh + y * w + x]) return;
-
-  let coverage = 0;
-  let ominosize = 0;
-  for (let i = 0; i < wh; i++) {
-    if (matrix[i * wh + y * w + x]) coverage++;
-    if (matrix[(cy * w + cx) * wh + i]) ominosize++;
-  }
-  const sq: Sq = { cx, cy, x, y, coverage, ominosize };
-  // The three trees share the one object (a candidate is identified by
-  // (cx,cy,x,y); all three comparators tie only on the same candidate).
-  if (t.pick.add(sq)) {
-    t.cov.add(sq);
-    t.osize.add(sq);
-  }
-}
-
-function addneighbors(
-  t: Trees,
-  w: number,
-  h: number,
-  cx: number,
-  cy: number,
-  x: number,
-  y: number,
-  matrix: Uint8Array,
-): void {
-  addsq(t, w, h, cx, cy, x - 1, y, matrix);
-  addsq(t, w, h, cx, cy, x + 1, y, matrix);
-  addsq(t, w, h, cx, cy, x, y - 1, matrix);
-  addsq(t, w, h, cx, cy, x, y + 1, matrix);
-}
-
 export function genRandomMatrix(w: number, h: number, rng: RandomState): Uint8Array {
   const wh = w * h;
   const matrix = new Uint8Array(wh * wh);
   for (;;) {
-    const t: Trees = {
-      pick: new SortedMultiset<Sq>(sqcmpPick),
-      cov: new SortedMultiset<Sq>(sqcmpCov),
-      osize: new SortedMultiset<Sq>(sqcmpOsize),
+    const pick = new SortedMultiset(pickOrder);
+    const cov = new SortedMultiset(coverageOrder);
+    const osize = new SortedMultiset(sizeOrder);
+    const remove = (c: Candidate) => {
+      pick.delete(c);
+      cov.delete(c);
+      osize.delete(c);
     };
+    const insert = (c: Candidate) => {
+      pick.add(c);
+      cov.add(c);
+      osize.add(c);
+    };
+    const addCandidate = (cx: number, cy: number, x: number, y: number) => {
+      if (x < 0 || x >= w || y < 0 || y >= h) return;
+      if (Math.abs(x - cx) > 1 || Math.abs(y - cy) > 1) return;
+      if (matrix[(cy * w + cx) * wh + y * w + x]) return;
+      let coverage = 0;
+      let ominosize = 0;
+      for (let i = 0; i < wh; i++) {
+        if (matrix[i * wh + y * w + x]) coverage++;
+        if (matrix[(cy * w + cx) * wh + i]) ominosize++;
+      }
+      const c: Candidate = { cx, cy, x, y, coverage, ominosize };
+      // The three sets share the one object (a candidate is identified by
+      // (cx,cy,x,y); all three comparators tie only on the same candidate).
+      if (pick.add(c)) {
+        cov.add(c);
+        osize.add(c);
+      }
+    };
+    const addNeighbors = (cx: number, cy: number, x: number, y: number) => {
+      addCandidate(cx, cy, x - 1, y);
+      addCandidate(cx, cy, x + 1, y);
+      addCandidate(cx, cy, x, y - 1);
+      addCandidate(cx, cy, x, y + 1);
+    };
+
     matrix.fill(0);
     for (let i = 0; i < wh; i++) matrix[i * wh + i] = 1;
     for (let i = 0; i < wh; i++) {
       const ix = i % w;
       const iy = (i / w) | 0;
-      addneighbors(t, w, h, ix, iy, ix, iy, matrix);
+      addNeighbors(ix, iy, ix, iy);
     }
 
     let limit = 4 * wh - 2 * (w + h);
-    while (limit-- > 0 && t.pick.size > 0) {
+    while (limit-- > 0 && pick.size > 0) {
       // Lowest pick element; then the run of equal (coverage,ominosize).
-      const low = t.pick.get(0);
-      const probe: Sq = {
-        coverage: low.coverage,
-        ominosize: low.ominosize,
-        cx: wh,
-        cy: wh,
-        x: wh,
-        y: wh,
-      };
-      const k = t.pick.lastIndexLessThan(probe);
-      const pos = randomUpto(rng, k + 1);
-      const sq = t.pick.removeAt(pos);
-      t.cov.delete(sq);
-      t.osize.delete(sq);
+      const low = pick.get(0);
+      const k = pick.lastIndexLessThan({ ...low, cx: wh, cy: wh, x: wh, y: wh });
+      const chosen = pick.removeAt(randomUpto(rng, k + 1));
+      cov.delete(chosen);
+      osize.delete(chosen);
 
-      matrix[(sq.cy * w + sq.cx) * wh + (sq.y * w + sq.x)] = 1;
+      matrix[(chosen.cy * w + chosen.cx) * wh + (chosen.y * w + chosen.x)] = 1;
 
       // Bump coverage of every candidate pointing at this output cell.
-      const covProbe: Sq = {
-        coverage: sq.coverage,
-        x: sq.x,
-        y: sq.y,
-        cx: -1,
-        cy: -1,
-        ominosize: -1,
-      };
+      const covProbe = { ...chosen, cx: -1, cy: -1, ominosize: -1 };
       for (;;) {
-        const sq2 = t.cov.firstGreaterThan(covProbe);
-        if (!sq2 || sq2.coverage !== sq.coverage || sq2.x !== sq.x || sq2.y !== sq.y) {
-          break;
-        }
-        t.pick.delete(sq2);
-        t.cov.delete(sq2);
-        t.osize.delete(sq2);
-        sq2.coverage++;
-        t.pick.add(sq2);
-        t.cov.add(sq2);
-        t.osize.add(sq2);
-      }
-
-      // Bump omino size of every candidate from this input cell.
-      const osizeProbe: Sq = {
-        ominosize: sq.ominosize,
-        cx: sq.cx,
-        cy: sq.cy,
-        x: -1,
-        y: -1,
-        coverage: -1,
-      };
-      for (;;) {
-        const sq2 = t.osize.firstGreaterThan(osizeProbe);
+        const c = cov.firstGreaterThan(covProbe);
         if (
-          !sq2 ||
-          sq2.ominosize !== sq.ominosize ||
-          sq2.cx !== sq.cx ||
-          sq2.cy !== sq.cy
+          !c ||
+          c.coverage !== chosen.coverage ||
+          c.x !== chosen.x ||
+          c.y !== chosen.y
         ) {
           break;
         }
-        t.pick.delete(sq2);
-        t.cov.delete(sq2);
-        t.osize.delete(sq2);
-        sq2.ominosize++;
-        t.pick.add(sq2);
-        t.cov.add(sq2);
-        t.osize.add(sq2);
+        remove(c);
+        c.coverage++;
+        insert(c);
       }
 
-      addneighbors(t, w, h, sq.cx, sq.cy, sq.x, sq.y, matrix);
+      // Bump omino size of every candidate from this input cell.
+      const osizeProbe = { ...chosen, x: -1, y: -1, coverage: -1 };
+      for (;;) {
+        const c = osize.firstGreaterThan(osizeProbe);
+        if (
+          !c ||
+          c.ominosize !== chosen.ominosize ||
+          c.cx !== chosen.cx ||
+          c.cy !== chosen.cy
+        ) {
+          break;
+        }
+        remove(c);
+        c.ominosize++;
+        insert(c);
+      }
+
+      addNeighbors(chosen.cx, chosen.cy, chosen.x, chosen.y);
     }
 
     // Reject if any two matrix rows are identical (flip.c does the same).
     let dup = false;
-    outer: for (let i = 0; i < wh && !dup; i++) {
-      for (let j = 0; j < wh; j++) {
-        if (i === j) continue;
-        let same = true;
-        for (let c = 0; c < wh; c++) {
-          if (matrix[i * wh + c] !== matrix[j * wh + c]) {
-            same = false;
-            break;
-          }
-        }
-        if (same) {
-          dup = true;
-          break outer;
-        }
+    for (let i = 0; i < wh && !dup; i++) {
+      for (let j = i + 1; j < wh && !dup; j++) {
+        let c = 0;
+        while (c < wh && matrix[i * wh + c] === matrix[j * wh + c]) c++;
+        dup = c === wh;
       }
     }
     if (!dup) return matrix;

@@ -1,10 +1,6 @@
 /**
  * Flip's data model: params, state, moves, the `Ui`, and the hex bitmap codec
  * its desc is written in.
- *
- * The matrix is shared by reference across every state of one game — upstream
- * reference-counts it, we share it and let GC free it — so a move clones only
- * the grid.
  */
 
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -22,8 +18,9 @@ export interface FlipParams {
 export interface FlipState {
   readonly w: number;
   readonly h: number;
-  /** wh×wh GF(2) toggle matrix, shared by reference across all states
-   * of one game (C reference-counts it; we just share + let GC free). */
+  /** wh×wh GF(2) toggle matrix: row i is the set of lights cell i flips. It is
+   * fixed for the game and shared by reference across its states (upstream
+   * reference-counts it), so a move clones only the grid. */
   readonly matrix: Uint8Array;
   /** wh cells; bit 0 = lit ("wrong"), bit 1 = solver-hint marker. */
   readonly grid: Uint8Array;
@@ -39,10 +36,6 @@ export type FlipMove =
 
 export interface FlipUi {
   cursor: GridCursor;
-}
-
-export function dupGrid(g: Uint8Array): Uint8Array {
-  return g.slice();
 }
 
 // --- bitmap hex codec (flip.c encode_bitmap/decode_bitmap) ----------
@@ -65,12 +58,7 @@ export function encodeBitmap(bmp: Uint8Array, len: number): string {
 export function decodeBitmap(bmp: Uint8Array, len: number, hex: string): void {
   const slen = (len + 3) >> 2;
   for (let i = 0; i < slen; i++) {
-    const c = hex[i];
-    let v: number;
-    if (c >= "0" && c <= "9") v = c.charCodeAt(0) - 48;
-    else if (c >= "A" && c <= "F") v = c.charCodeAt(0) - 65 + 10;
-    else if (c >= "a" && c <= "f") v = c.charCodeAt(0) - 97 + 10;
-    else v = 0;
+    const v = Number.parseInt(hex[i], 16) || 0;
     for (let j = 0; j < 4; j++) {
       if (i * 4 + j < len) bmp[i * 4 + j] = v & (8 >> j) ? 1 : 0;
     }

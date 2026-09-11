@@ -1,11 +1,6 @@
 /**
  * Boats — params, cell model, immutable state, and the description codec.
  *
- * Boats is *Battleships* (© 2012 Lennard Sprong, `puzzles/unreleased/boats.c`):
- * locate a known fleet in a grid where the edge numbers count the occupied
- * cells of each row and column, a handful of boat segments are given with
- * their orientation, and no two boats touch — not even diagonally.
- *
  * **Cell values keep upstream's numeric order.** `IS_SHIP(x)` is `x >=
  * SHIP_VAGUE`, i.e. a `>=` test over the enum, and both the solver and the
  * codec lean on it, so the constants below are ordered exactly as the C enum
@@ -14,11 +9,11 @@
  * per-cell array.
  *
  * **Two grids, two lifetimes.** `gridClues` and `borderClues` never change once
- * a game is created, so every state shares the one instance by reference (the
- * docs/games/mechanics.md § "Idiomatic state, not a C transliteration" shared-immutable pattern) and a move clones only `grid`. The
- * *solver* needs both mutable — it fills in hidden border numbers and restores
- * them afterwards — so it works on a separate {@link BoatsBoard} scratch, never
- * on a `BoatsState`.
+ * a game is created, so every state shares the one instance by reference
+ * (docs/games/mechanics.md § "Idiomatic state, not a C transliteration") and a
+ * move replaces only `grid`. The *solver* needs both mutable — it fills in
+ * hidden border numbers and restores them afterwards — so it works on a
+ * separate {@link BoatsBoard} scratch, never on a `BoatsState`.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
@@ -41,10 +36,9 @@ const DIFF_CHARS = "enth";
 // --- cell values (upstream's enum order; `isShip` is a `>=` test) ----------
 
 export const EMPTY = 0;
-/** Written by the solver when a deduction contradicts the board. Never
- * reachable through play — it is how `boats_solver_place_*` reports "this
- * square already holds the opposite", which the validator then sees as
- * `STATUS_INVALID`. */
+/** How the solver's placements report "this square already holds the
+ * opposite"; the validator sees it as `STATUS_INVALID`. Never reachable
+ * through play. */
 export const CORRUPT = 1;
 export const WATER = 2;
 /** A ship segment whose shape is not yet determined. */
@@ -91,9 +85,7 @@ export interface BoatsParams {
 /** Upstream `boats_default_fleet`: the classic pyramid — `fleet` boats of size
  * 1, `fleet − 1` of size 2, …, one of size `fleet`. */
 export function defaultFleet(fleet: number): number[] {
-  const out: number[] = [];
-  for (let i = 0; i < fleet; i++) out.push(fleet - i);
-  return out;
+  return Array.from({ length: fleet }, (_, i) => fleet - i);
 }
 
 /** Upstream `boats_decode_fleet`: read `fleet` counts out of a string,
@@ -222,33 +214,6 @@ export function decodeParams(s: string): BoatsParams {
   return p;
 }
 
-/**
- * The cheap half of upstream `validate_params` — every check that reads only
- * the numbers, in upstream's order (the order decides which message a
- * doubly-invalid parameter set reports). The expensive half is the fleet-fit
- * test, which literally runs the generator, so the whole function is assembled
- * in `generator.ts`; this half is exported for the tests that only need it.
- */
-export function validateParamsBasic(p: BoatsParams, full: boolean): string | null {
-  const { w, h, fleet } = p;
-
-  if (full && p.diff >= DIFFCOUNT) return "Unknown difficulty level";
-  if (w > 99) return "Width is too high";
-  if (h > 99) return "Height is too high";
-  if (fleet < 1) return "Fleet size must be at least 1";
-  if (fleet > w && fleet > h)
-    return "Fleet size must be smaller than the width and height";
-  if (fleet > 9) return "Fleet size must be no more than 9";
-
-  if (!p.fleetData.slice(0, fleet).some((n) => n !== 0))
-    return "Fleet must contain at least 1 boat";
-
-  if (w < 2) return "Width must be at least 2";
-  if (h < 2) return "Height must be at least 2";
-
-  return null;
-}
-
 // --- board (the solver's and generator's mutable working object) -----------
 
 /**
@@ -299,10 +264,6 @@ export interface BoatsState {
   readonly cheated: boolean;
 }
 
-export function cloneState(s: BoatsState): BoatsState {
-  return { ...s, grid: Int8Array.from(s.grid) };
-}
-
 /** A mutable working copy of `s` for the solver / a move application. */
 export function boardOf(s: BoatsState): BoatsBoard {
   return {
@@ -316,13 +277,21 @@ export function boardOf(s: BoatsState): BoatsBoard {
   };
 }
 
+/** A copy of `b` whose `grid` and `borderClues` can be written freely. */
+export function cloneBoard(b: BoatsBoard): BoatsBoard {
+  return {
+    ...b,
+    grid: Int8Array.from(b.grid),
+    borderClues: Int32Array.from(b.borderClues),
+  };
+}
+
 // --- moves and UI ----------------------------------------------------------
 
 /**
- * What a fill move requires a square to be, and what it sets it to. Upstream
- * encodes these as the characters of its `P…` move string; the port keeps the
- * characters because they are the natural four-valued alphabet here — ship,
- * water, cleared, and (for `from` only) "whatever it is now".
+ * What a fill move requires a square to be, and what it sets it to: upstream's
+ * `P…` move-string characters, kept because they are the natural alphabet —
+ * ship, water, cleared, and (for `from` only) "whatever it is now".
  */
 export type BoatsFill = "-" | "B" | "W";
 export type BoatsFillFrom = BoatsFill | "*";
@@ -397,8 +366,7 @@ export function fillChangesAnything(
       const i = y * w + x;
       if (s.gridClues[i] !== EMPTY) continue; // a given square is never editable
       if (from !== "*" && fillOf(s.grid[i]) !== from) continue;
-      if (fillOf(s.grid[i]) === to) continue;
-      return true;
+      if (fillOf(s.grid[i]) !== to) return true;
     }
   }
   return false;
@@ -567,9 +535,8 @@ const TEXT_CHARS: Readonly<Record<number, string>> = {
 /**
  * Upstream `game_text_format`, gated by `game_can_format_as_text_now`
  * (`w <= 10 && h <= 10` — an 11-wide board's counts would not fit the
- * single-character columns). The static `Game.canFormatAsText` flag cannot
- * express a param-dependent format, so this returns `undefined` for the params
- * it cannot render (docs/games/rendering.md § "The palette: three layers, meaning first").
+ * single-character columns), so this returns `undefined` for the params it
+ * cannot render (docs/games/mechanics.md § "Capability flags").
  */
 export function textFormat(s: BoatsState): string | undefined {
   const { w, h } = s.params;
@@ -591,6 +558,6 @@ export function textFormat(s: BoatsState): string | undefined {
     out[(i % w) * 2 + Math.floor(i / w) * lineLen] = TEXT_CHARS[cell] ?? "?";
   }
 
-  // The C's buffer ends with a NUL where the last newline's slot would be.
-  return out.slice(0, out.length - 1).join("");
+  // No trailing newline: upstream's buffer ends with a NUL in that slot.
+  return out.slice(0, -1).join("");
 }

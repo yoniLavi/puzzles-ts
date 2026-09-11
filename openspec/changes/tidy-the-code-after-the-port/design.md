@@ -56,19 +56,36 @@ they show whether the rubric produces the same kind of diff at both ends of the
 range. The rubric may be revised after the pilot.
 
 **Subagents in waves, editing disjoint directories in the main tree.** Each
-agent owns one game's directory and runs only that game's tests under `nice`.
-It does not commit. Between waves, with nothing mid-edit, the orchestrator
-reviews each game's diff and commits it separately, so each commit's gate run
-sees only finished work. A wave is a handful of agents, sized to the memory
-headroom. Worktrees were rejected: they create branches, and this repo is
-trunk-based.
+agent owns one game's directory and runs its own tests plus the cross-game
+guards filtered to its game, under `nice` with a capped worker pool. It does not
+commit. Between waves, with nothing mid-edit, the orchestrator reviews the
+diffs and commits. A wave is three agents, sized to the memory headroom.
+Worktrees were rejected: they create branches, and this repo is trunk-based.
+
+**Each agent works in its own shared clone, and each game is one commit.**
+The gate typechecks and tests the working tree, not the index, so an agent
+editing the main tree blocks every commit until it finishes; the first wave
+ran that way and spent most of its time waiting. A `git clone --shared` in the
+scratchpad takes a second and 30 MB, sits on `main` with no new branch, and
+runs the gate's tools against the repo's own `node_modules`. The orchestrator
+applies a finished clone's diff to the main tree (refusing any path outside
+the agent's scope, and any new file) and commits it at once, while the other
+agents keep working. Three agents run at a time, the memory ceiling, and a
+slot is refilled as soon as it frees.
 
 **Verification per unit.** The game's tests pass with its differentials and
 snapshots unchanged, no snapshot is re-recorded, and the diff removes more than
 it adds. A pure rename is checked with `scripts/check-rename-shape.mjs --fold`.
 A renamed function cited in `docs/` is repointed in the same commit.
 
-**The engine goes last and is done more carefully.** It is what every game
+**The app shell and the build tooling follow the engine.** The owner's ask
+was all of the code, and the shell carries the same 19% comment share as the
+games. Its pins are different: custom element names, public properties and
+event names are the app's DOM vocabulary, and the gate scripts are the gate.
+Most tests assert state rather than a template's output, so the shell's pass is
+checked by its component tests and then by opening the app at close.
+
+**The engine goes after the games and is done more carefully.** It is what every game
 reads, it is probe-anchored, and a rename there reaches every game. Games first
 also means any engine name the games have already worked around is visible by
 the time the engine is touched.
@@ -90,3 +107,13 @@ the time the engine is touched.
   catches the guide case, as part of each unit.
 - [Parallel test runs push the machine further into swap] → Small waves,
   targeted test runs, and stopping rather than re-running on a contention flake.
+- [A simplification slows a hot loop, which no test notices] → A solver or
+  generator loop is restructured only with a paired, interleaved timing
+  against HEAD and an A/A pair for the noise. The Slide pilot's tidied solver
+  passed every test and ran 13% slower, from dropping a cache that looked dead;
+  it was reverted. The same harness asserts identical output over seeds the
+  fixtures do not cover, which matters where a differential checks only the
+  solver's verdicts and never the generator's boards.
+- [A game's own tests pass and the commit still fails] → Cross-game guards
+  check a game's input, save, params and source text from outside its
+  directory. Agents run the whole guard list filtered to their game.

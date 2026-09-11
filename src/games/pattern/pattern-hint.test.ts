@@ -1,13 +1,10 @@
 /**
- * Tier-1 behavioral tests for the Pattern (Nonograms) explained hint.
- *
- * The cross-game guarantees (a hint solves from any mid-game position; a plan
- * step is never a no-op; `hint()` is pure) live in
- * `engine/hint-resume.test.ts`, which already includes `patternGame`. This file
- * covers the Pattern-specific bar: the plan completes the board, every forced
- * cell agrees with the unique solution, the narration teaches (indication-led,
- * necessity voice), the color-legend roles are disjoint, and refusal +
- * keep-track behave.
+ * Tier-1 tests for Pattern's explained hint. The cross-game guarantees (a hint
+ * solves from any mid-game position, a plan step is never a no-op, `hint()` is
+ * pure) live in `engine/hint-resume.test.ts`. This file covers Pattern's own
+ * bar: the plan completes the board, every forced cell agrees with the unique
+ * solution, the narration teaches (indication-led, necessity voice), the
+ * color-legend roles are disjoint, and refusal and keep-track behave.
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
@@ -141,7 +138,7 @@ describe("pattern hint — narration", () => {
   it("the intersection bottom rung narrates as an explained technique", () => {
     // Find a board whose plan reaches the intersection bottom rung, then confirm
     // the displayed step reads as a named necessity-voice deduction (never the
-    // retired "only one arrangement fits" wording).
+    // misleading "only one arrangement fits").
     let saw = false;
     outer: for (let i = 0; i < 40 && !saw; i++) {
       const P: PatternParams = { w: 30, h: 30 };

@@ -30,10 +30,19 @@
 - [ ] 4.1 Apply the pass to `src/engine/`, re-anchoring the probe where lines
       moved, and verify `npm run probe -- --verify` and the engine tests pass.
 
-## 5. Close
+## 5. App shell and tooling
 
-- [ ] 5.1 Re-measure against `baseline.txt`, and verify the total and every
+- [ ] 5.1 Apply the pass to `src/puzzle/`, `src/screens/`, `src/dialogs/`,
+      `src/components/`, `src/utils/`, `src/store/` and the `src/` root, and
+      verify their tests pass with custom element names, public properties
+      and event names unchanged.
+- [ ] 5.2 Apply the pass to `scripts/` and `vite-plugins/`, and verify every
+      gate step still runs green on the full tree.
+
+## 6. Close
+
+- [ ] 6.1 Re-measure against `baseline.txt`, and verify the total and every
       game's count went down or did not move.
-- [ ] 5.2 Run the full gate, open a handful of games in the running app, and
-      verify each plays and renders.
-- [ ] 5.3 Archive the change.
+- [ ] 6.2 Run the full gate, open a handful of games and every dialog in the
+      running app, and verify each plays and renders.
+- [ ] 6.3 Archive the change.

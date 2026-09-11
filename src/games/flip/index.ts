@@ -1,21 +1,13 @@
 /**
- * Flip — native TS port (the pattern-establishing first game; change
- * `add-flip-ts-port`). Light-toggling over GF(2): clicking a cell
- * toggles an overlapping set of lights defined by a per-cell matrix;
- * win when every light is off.
- *
- * Idiomatic rendering of `puzzles/flip.c` (deleted when this ships):
- * immutable state, discriminated `FlipMove`, GC instead of
- * dup/free, the `random.ts` we already ported for `random_upto`, and
- * the on-demand `SortedMultiset` standing in for `tree234` in the
- * RANDOM matrix generator. The logic mirrors the C reference; it is
- * not a control-flow transliteration.
+ * Flip: clicking a cell toggles a set of lights, given by a per-cell matrix
+ * over GF(2); the puzzle is won when every light is off. Upstream's `flip.c`,
+ * ported idiomatically rather than line for line.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
 import {
   dimensionParamConfig,
-  fromCoord as fromCoordE,
+  fromCoord,
   type Game,
   registerGame,
   type SolveResult,
@@ -46,7 +38,6 @@ import {
 } from "./render.ts";
 import {
   decodeBitmap,
-  dupGrid,
   encodeBitmap,
   type FlipMove,
   type FlipParams,
@@ -100,11 +91,8 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
   },
 
   decodeParams(s): FlipParams {
-    const { w, h, next: i } = parseDimensions(s);
-    let matrixType: MatrixType = "crosses";
-    if (s[i] === "r") matrixType = "random";
-    else if (s[i] === "c") matrixType = "crosses";
-    return { w, h, matrixType };
+    const { w, h, next } = parseDimensions(s);
+    return { w, h, matrixType: s[next] === "r" ? "random" : "crosses" };
   },
 
   validateParams(p): string | null {
@@ -149,22 +137,14 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     // input space and pushing through the matrix is equiprobable over
     // the image space (flip.c's vector-space argument).
     const grid = new Uint8Array(wh);
-    for (;;) {
+    do {
       grid.fill(0);
       for (let i = 0; i < wh; i++) {
         if (randomUpto(rng, 2)) {
           for (let j = 0; j < wh; j++) grid[j] ^= matrix[i * wh + j];
         }
       }
-      let any = false;
-      for (let i = 0; i < wh; i++) {
-        if (grid[i]) {
-          any = true;
-          break;
-        }
-      }
-      if (any) break;
-    }
+    } while (!grid.includes(1));
 
     return { desc: `${encodeBitmap(matrix, wh * wh)},${encodeBitmap(grid, wh)}` };
   },
@@ -218,37 +198,26 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
 
   interpretMove(s, ui, ds, point, button): FlipMove | null | UiUpdate {
     const { w, h } = s;
-    const wh = w * h;
-    const tile = ds.tileSize;
-    const fromCoord = (v: number) => fromCoordE(v, tile, border(tile));
-
     const isSelect = button === CURSOR_SELECT || button === CURSOR_SELECT2;
-
     if (button === LEFT_BUTTON || isSelect) {
       let tx: number;
       let ty: number;
       if (button === LEFT_BUTTON) {
-        tx = fromCoord(point.x);
-        ty = fromCoord(point.y);
+        const b = border(ds.tileSize);
+        tx = fromCoord(point.x, ds.tileSize, b);
+        ty = fromCoord(point.y, ds.tileSize, b);
         ui.cursor.visible = false;
       } else {
         tx = ui.cursor.x;
         ty = ui.cursor.y;
         ui.cursor.visible = true;
       }
-      if (tx >= 0 && tx < w && ty >= 0 && ty < h) {
-        const i = ty * w + tx;
-        let makeMove = false;
-        for (let j = 0; j < wh; j++) {
-          if (s.matrix[i * wh + j]) {
-            makeMove = true;
-            break;
-          }
-        }
-        if (makeMove) return { kind: "flip", x: tx, y: ty };
-        return null; // square does nothing (MOVE_NO_EFFECT)
-      }
-      return UI_UPDATE;
+      if (tx < 0 || tx >= w || ty < 0 || ty >= h) return UI_UPDATE;
+      // A cell with an empty matrix row flips nothing (upstream's MOVE_NO_EFFECT).
+      const wh = w * h;
+      const i = ty * w + tx;
+      if (!s.matrix.subarray(i * wh, (i + 1) * wh).includes(1)) return null;
+      return { kind: "flip", x: tx, y: ty };
     }
 
     const d = cursorDelta(button);
@@ -267,17 +236,9 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     const { w, h } = from;
     const wh = w * h;
     if (move.kind === "solve") {
-      const grid = dupGrid(from.grid);
-      for (let i = 0; i < wh; i++) {
-        grid[i] &= ~2;
-        if (move.mask[i]) grid[i] |= 2;
-      }
-      return {
-        ...from,
-        grid,
-        hintsActive: true,
-        cheated: true,
-      };
+      const grid = from.grid.slice();
+      for (let i = 0; i < wh; i++) grid[i] = (grid[i] & ~2) | (move.mask[i] ? 2 : 0);
+      return { ...from, grid, hintsActive: true, cheated: true };
     }
     if (move.kind !== "flip") return assertNever(move, "flip: executeMove");
 
@@ -285,7 +246,7 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     if (x < 0 || x >= w || y < 0 || y >= h) {
       throw new Error(`Flip: move out of range (${x},${y})`);
     }
-    const grid = dupGrid(from.grid);
+    const grid = from.grid.slice();
     const moves = from.completed ? from.moves : from.moves + 1;
     const i = y * w + x;
     let done = true;
@@ -308,9 +269,7 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
   },
 
   solve(_orig, curr): SolveResult<FlipMove> {
-    const w = curr.w;
-    const h = curr.h;
-    const wh = w * h;
+    const wh = curr.w * curr.h;
     // equations[i] : wh coefficients + 1 value, over GF(2).
     const stride = wh + 1;
     const eq = new Uint8Array(stride * wh);

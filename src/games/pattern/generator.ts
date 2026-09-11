@@ -1,18 +1,18 @@
 /**
- * Pattern generator — faithful port of `generate` + `generate_soluble` in
- * pattern.c. Splatter random values, smooth them with one cellular-automaton
- * averaging pass, threshold at the median to make ~half the cells black,
- * then keep regenerating until the board is both non-trivial (no monochrome
- * row/column) and uniquely line-solvable by the ported solver.
+ * Pattern generator, a port of `generate` + `generate_soluble` in pattern.c.
+ * Splatter random values, smooth them with one cellular-automaton averaging
+ * pass, threshold at the median to make about half the cells black, then
+ * regenerate until the board is non-trivial (no monochrome row or column) and
+ * uniquely line-solvable.
  *
- * Byte-match note: upstream computes the value grid in **single-precision
- * `float`**, and the median threshold then decides each cell with a `>=`,
- * so reproducing the C desc bit-for-bit requires single-precision
- * arithmetic. We round every intermediate through `Math.fround`. A division
- * is computed in double then rounded to float (JS has no native single
- * divide), so a double-rounding ULP difference *could* in principle flip a
- * cell on a knife-edge value; the gated differential test is what proves the
- * match holds on real boards (see design D4 / docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
+ * Byte-match note: upstream computes the value grid in single-precision
+ * `float`, and the median threshold decides each cell with a `>=`, so
+ * reproducing the C desc bit-for-bit needs single-precision arithmetic: every
+ * intermediate goes through `Math.fround`. A division is computed in double
+ * then rounded (JS has no single-precision divide), so a double-rounding ULP
+ * difference could in principle flip a knife-edge cell; the differential is
+ * what shows the match holds on real boards (docs/games/testing.md
+ * § "Byte-match: fidelity where there is a right answer").
  */
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { isSoluble } from "./solver.ts";
@@ -33,40 +33,39 @@ const MAX_REGENERATE = 100000;
  * written into `grid` as GRID_FULL / GRID_EMPTY. */
 function generate(rs: RandomState, w: number, h: number, grid: Uint8Array): void {
   const n = w * h;
-  let fgrid = new Float64Array(n); // holds float32-valued samples
+  const noise = new Float64Array(n); // holds float32-valued samples
   for (let i = 0; i < n; i++) {
-    fgrid[i] = f(f(randomUpto(rs, 100000000)) / f(100000000));
+    noise[i] = f(f(randomUpto(rs, 100000000)) / f(100000000));
   }
 
   // One averaging pass: each cell becomes the mean of its (up to) nine
-  // neighbors. Special case: along a dimension of size 2 we don't average
-  // (else a 2×2 grid would be four identical cells).
-  const fgrid2 = new Float64Array(n);
+  // neighbors, except along a dimension of size 2 (else a 2×2 grid would be
+  // four identical cells).
+  const smooth = new Float64Array(n);
   for (let i = 0; i < h; i++) {
     for (let j = 0; j < w; j++) {
       let cnt = 0;
-      let sx = 0;
+      let sum = 0;
       for (let p = -1; p <= 1; p++) {
         for (let q = -1; q <= 1; q++) {
           if (i + p < 0 || i + p >= h || j + q < 0 || j + q >= w) continue;
           if ((h === 2 && p !== 0) || (w === 2 && q !== 0)) continue;
           cnt++;
-          sx = f(sx + fgrid[(i + p) * w + (j + q)]);
+          sum = f(sum + noise[(i + p) * w + (j + q)]);
         }
       }
-      fgrid2[i * w + j] = f(sx / cnt);
+      smooth[i * w + j] = f(sum / cnt);
     }
   }
-  fgrid = fgrid2;
 
   // Choose the threshold that makes (about) half the cells black.
-  const sorted = Float64Array.from(fgrid).sort();
+  const sorted = Float64Array.from(smooth).sort();
   let index = Math.floor((w * h) / 2);
   if (w & h & 1) index += randomUpto(rs, 2);
   const threshold = index < n ? sorted[index] : f(sorted[n - 1] + 1);
 
   for (let i = 0; i < n; i++) {
-    grid[i] = fgrid[i] >= threshold ? GRID_FULL : GRID_EMPTY;
+    grid[i] = smooth[i] >= threshold ? GRID_FULL : GRID_EMPTY;
   }
 }
 

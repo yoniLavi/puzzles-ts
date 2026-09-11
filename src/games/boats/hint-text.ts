@@ -6,8 +6,8 @@
  * indication, reasoning, conclusion in the necessity voice
  * (docs/games/hints.md § "Writing the narration"). The never-touch water a
  * placement drags along is deliberately **not** narrated — it is a rule of the
- * game, shown by the highlight rather than restated every step (§2.9, owner
- * decision 2026-07-28).
+ * game, shown by the highlight rather than restated every step
+ * (docs/games/hints.md § "Rules belong in the help").
  */
 
 import type { BoatsBreach, BoatsLine, BoatsTechnique } from "./hint-solver.ts";
@@ -24,9 +24,9 @@ function lineName(line: BoatsLine): string {
 
 /**
  * A hidden occupancy number the deduction recovered is not a number the player
- * can see, so a narration citing it says where it came from first (§2.8: name a
- * board element by what the player can see or count). Only reachable with
- * "Remove numbers" on.
+ * can see, so a narration citing it says where it came from first
+ * (docs/games/hints.md § "Name elements by what the player can see"). Only
+ * reachable with "Remove numbers" on.
  */
 function lineIntro(line: BoatsLine): string {
   return line.deduced
@@ -79,8 +79,9 @@ export const say = {
   neverTouch: (waters: number): string =>
     `Boats never touch, not even at a corner, so the square${plural(waters)} diagonally beside this segment must be water.`,
 
-  // Read at both extremes (§2.7): "shows the 0 ships its number allows" is
-  // nonsense, and a 0 line is the common case worth its own sentence.
+  // Read at both extremes (docs/games/hints.md § "Sanity-read at the
+  // degenerate extremes"): "shows the 0 ships its number allows" is nonsense,
+  // and a 0 line is the common case worth its own sentence.
   lineSatisfied: (t: T<"lineSatisfied">): string =>
     t.line.clue === 0
       ? `${lineName(t.line)}'s ${t.line.deduced ? "hidden number can only be" : "number is"} 0, so every square in it must be water.`

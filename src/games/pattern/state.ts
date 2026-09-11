@@ -139,11 +139,11 @@ export function validateParams(p: PatternParams, _full: boolean): string | null 
 }
 
 // --- desc codec ----------------------------------------------------------
-// Desc: `w` column clue lines then `h` row clue lines, slash-separated;
-// each line a `.`-separated list of positive run lengths (empty line = an
-// empty section). An OPTIONAL `,`-suffix encodes pre-filled immutable clue
-// squares (run-length alphabet) — produced only by upstream's picture
-// generator, never our `generate_soluble`, but parsed so such IDs round-trip.
+// Desc: `w` column clue lines then `h` row clue lines, slash-separated; each
+// line a `.`-separated list of positive run lengths (an empty line is an empty
+// section). An optional `,`-suffix encodes pre-filled immutable clue squares
+// (run-length alphabet): only upstream's picture generator produces one, never
+// this one, but it is parsed so such IDs round-trip.
 
 const isDigit = (ch: string): boolean => ch >= "0" && ch <= "9";
 
@@ -247,7 +247,7 @@ export function newState(p: PatternParams, desc: string): PatternState {
     }
   }
 
-  const fontLarge = chooseFontLarge(w, h, clues);
+  const fontLarge = chooseFontLarge(w, clues);
   const common: PatternCommon = { w, h, clues, immutable, fontLarge };
   return { common, grid, completed: false, cheated: false };
 }
@@ -255,11 +255,7 @@ export function newState(p: PatternParams, desc: string): PatternState {
 /** Upstream's font-size heuristic: switch to the small font if any column
  * clue is multi-digit, or if any column has so many row clues they would
  * not fit the top border at the large size. */
-function chooseFontLarge(
-  w: number,
-  _h: number,
-  clues: readonly (readonly number[])[],
-): boolean {
+function chooseFontLarge(w: number, clues: readonly (readonly number[])[]): boolean {
   for (let i = 0; i < w; i++) {
     for (const n of clues[i]) if (n >= 10) return false;
   }
@@ -277,10 +273,6 @@ export function encodeClues(clues: readonly (readonly number[])[]): string {
 }
 
 // --- moves / completion --------------------------------------------------
-
-export function clonePatternState(s: PatternState): PatternState {
-  return { ...s, grid: Uint8Array.from(s.grid) };
-}
 
 /** Run lengths of `GRID_FULL` cells along a line, or `null` if any cell is
  * still `GRID_UNKNOWN` (upstream `compute_rowdata` returning -1). */
@@ -327,7 +319,7 @@ export function isComplete(state: PatternState): boolean {
 }
 
 export function executeMove(state: PatternState, move: PatternMove): PatternState {
-  const { w, h } = state.common;
+  const { w, h, immutable } = state.common;
   const s = w * h;
 
   if (move.type === "solve") {
@@ -341,40 +333,33 @@ export function executeMove(state: PatternState, move: PatternMove): PatternStat
     return { ...state, grid, completed: true, cheated: true };
   }
 
+  const grid = Uint8Array.from(state.grid);
   if (move.type === "fillCells") {
-    const next = clonePatternState(state);
     for (const i of move.cells) {
       if (i < 0 || i >= s) throw new Error("Move out of bounds");
-      if (next.common.immutable[i]) continue;
-      next.grid[i] = move.value;
+      if (immutable[i]) continue;
+      grid[i] = move.value;
     }
-    if (!next.completed && isComplete(next)) {
-      return { ...next, completed: true };
+  } else if (move.type === "fill") {
+    const { value, x, y } = move;
+    const rw = move.w;
+    const rh = move.h;
+    if (x < 0 || y < 0 || rw < 0 || rh < 0 || x + rw > w || y + rh > h) {
+      throw new Error("Move out of bounds");
     }
-    return next;
-  }
-  if (move.type !== "fill") return assertNever(move, "pattern: executeMove");
-
-  const { value, x, y } = move;
-  const rw = move.w;
-  const rh = move.h;
-  if (x < 0 || y < 0 || rw < 0 || rh < 0 || x + rw > w || y + rh > h) {
-    throw new Error("Move out of bounds");
-  }
-
-  const next = clonePatternState(state);
-  for (let yy = y; yy < y + rh; yy++) {
-    for (let xx = x; xx < x + rw; xx++) {
-      const i = yy * w + xx;
-      if (next.common.immutable[i]) continue;
-      if (move.onlyBlank && next.grid[i] !== GRID_UNKNOWN) continue;
-      next.grid[i] = value;
+    for (let yy = y; yy < y + rh; yy++) {
+      for (let xx = x; xx < x + rw; xx++) {
+        const i = yy * w + xx;
+        if (immutable[i]) continue;
+        if (move.onlyBlank && grid[i] !== GRID_UNKNOWN) continue;
+        grid[i] = value;
+      }
     }
+  } else {
+    return assertNever(move, "pattern: executeMove");
   }
-  if (!next.completed && isComplete(next)) {
-    return { ...next, completed: true };
-  }
-  return next;
+  const next = { ...state, grid };
+  return !next.completed && isComplete(next) ? { ...next, completed: true } : next;
 }
 
 // --- status / text -------------------------------------------------------

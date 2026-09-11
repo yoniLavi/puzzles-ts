@@ -98,8 +98,7 @@ describe("Flip generation", () => {
 
 describe("Flip button codes", () => {
   it("shared button consts still match PuzzleButton", () => {
-    // Flip mirrors these as plain consts (enum-free import graph); pin
-    // the upstream codes so any drift is caught here, not silently.
+    // The tests below write button codes as literals; pin them here.
     expect(PuzzleButton.LEFT_BUTTON).toBe(0x0200);
     expect(PuzzleButton.CURSOR_UP).toBe(0x0200 + 9);
     expect(PuzzleButton.CURSOR_DOWN).toBe(0x0200 + 10);
@@ -330,16 +329,10 @@ describe("Flip redraw", () => {
 });
 
 describe("Flip reshape (regression: black canvas when shapes share a tile size)", () => {
-  // The bug owner reported: switching to a new board shape rendered
-  // full black until the first click. Root cause: `Drawing.resize`
-  // clears the canvas to opaque black (alpha:false), and on a reshape
-  // where the per-tile size happens to stay the same, Flip's
-  // cache-invalidating `setTileSize` was a no-op — so the next redraw
-  // skipped the grid lines + border and the canvas stayed mostly
-  // black. The architectural fix: the engine treats `resizeDrawing`
-  // (via `canvasCleared`) as the only real canvas-invalidation
-  // signal; Flip's `!ds.started` branch paints the bg + grid lines
-  // from scratch on the recreated drawstate.
+  // `Drawing.resize` clears the canvas to opaque black, and a reshape that
+  // keeps the tile size gives `setTileSize` nothing to invalidate. So the
+  // engine treats `canvasCleared` as the one canvas-invalidation signal, and
+  // Flip's `!ds.started` branch repaints the background and grid lines on it.
   it("canvasCleared after a same-tile reshape repaints bg + grid lines", () => {
     const p3: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
     const p5: FlipParams = { w: 5, h: 5, matrixType: "crosses" };
@@ -356,11 +349,8 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
     //
     // The slot is the board's own size at tile 48, so `size()` resolves to
     // exactly 48 — and the same is done for the 5x5 below, which is what makes
-    // this a *same-tile* reshape and so reproduces the bug. It used to hand
-    // both shapes a flat 1000x1000 viewport, where the binary search picks 250
-    // and then 166: two different tiles, so `setTileSize` was not a no-op and
-    // the trigger the test is named for never fired
-    // (`audit-vestigial-contract-surface`).
+    // this a *same-tile* reshape. One shared viewport would give the two boards
+    // different tiles, and `setTileSize` would then do the invalidating.
     expect(me.newGameFromId(`3x3c:${desc3}`)).toBeUndefined();
     me.size(flipGame.computeSize(p3, TILE));
     const first = recordingDrawing();
@@ -370,8 +360,8 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
     ).length;
     expect(firstGridLines).toBeGreaterThan(0); // grid drawn once
 
-    // Switch to 5x5 at the *same* tile size — the bug-1 trigger, since
-    // `setTileSize` then has nothing to change. `newGameFromId` builds a fresh
+    // Switch to 5x5 at the *same* tile size, so `setTileSize` has nothing to
+    // change. `newGameFromId` builds a fresh
     // drawstate for the new game; the app's reshape would then call
     // `resizeDrawing` → engine.canvasCleared (we invoke it directly here since
     // this is a midend-level test).
@@ -384,10 +374,8 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
     // Before `canvasCleared`, the drawstate must be a *live cache* — otherwise
     // the assertion after it is vacuous. This paint is the one that arms it:
     // `newGameFromId` builds a fresh drawstate, so this first paint of the 5x5
-    // board draws the grid whatever `canvasCleared` does, and every version of
-    // this test until `audit-vestigial-contract-surface` stopped here and
-    // credited the result to `canvasCleared`. It passed with `canvasCleared`
-    // gutted to a bare `return`.
+    // board draws the grid whatever `canvasCleared` does. Without it the test
+    // passes with `canvasCleared` gutted to a bare `return`.
     const armed = recordingDrawing();
     me.redraw(armed.dr);
     const idle = recordingDrawing();
@@ -411,16 +399,10 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
 });
 
 describe("Flip flash-overlay isolation (regression: wave through every cell)", () => {
-  // The owner reported (2026-05-20) "a wave causing every single
-  // cell to briefly switch between white and black before settling
-  // back to its original value" on every animated move. Root cause:
-  // Midend.timer was incrementing flashTime on every tick during
-  // animation, even when flashLength === 0 (non-solving moves).
-  // Flip's redraw checks `flashTime ? Math.floor(... / FLASH_FRAME)
-  // : -1` and activated its flash-ring overlay whenever flashTime >
-  // 0, drawing the solve-celebration wave across every cell during
-  // every animation. The fix mirrors `midend.c` lines 1429-1432:
-  // reset flashTime when the flash is done OR was never armed.
+  // `Midend.timer` must not advance flashTime while flashLength is 0: Flip's
+  // redraw shows the win flash for any positive flashTime, which would sweep
+  // a wave through every cell on every animated move. Like upstream's
+  // midend.c, the timer resets flashTime when the flash ends or was never armed.
   it("flashTime stays 0 throughout a non-solving move's animation", () => {
     const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
     const { desc } = flipGame.newDesc(params, randomNew("flip-flash-iso"));
@@ -431,23 +413,16 @@ describe("Flip flash-overlay isolation (regression: wave through every cell)", (
     );
     expect(me.newGameFromId(`3x3c:${desc}`)).toBeUndefined();
 
-    // Pick a cell that does NOT solve the puzzle. We click (0,0)
-    // and verify the state is still ongoing — the specific seed
-    // shouldn't matter for a 3x3 Crosses where a single click
-    // rarely solves it.
+    // Click (0,0), which must not solve this seed's board (so flashLength
+    // stays 0); if a changed seed ever makes it solve, pick another seed.
     const tile = flipGame.preferredTileSize ?? 32;
     const border = tile >> 1;
     expect(me.processInput(border + 1, border + 1, 0x0200)).toBe(true);
-    // Sanity: the click didn't solve (so flashLength should be 0).
-    // If it did solve, pick a different seed for this test.
     const state = me as unknown as { history: FlipState[]; pos: number };
     expect(state.history[state.pos].completed).toBe(false);
 
-    // Drive the animation timer through its whole 0.25s lifecycle.
-    // After each tick, midend's flashTime/flashLength must both
-    // remain 0 — Flip's redraw computes
-    // `flashFrame = flashTime ? ... : -1`, so any positive
-    // flashTime would activate the flash-ring overlay.
+    // Drive the animation timer through its whole 0.25s; flashTime and
+    // flashLength must stay 0 on every tick.
     const internals = me as unknown as {
       flashTime: number;
       flashLength: number;
@@ -460,11 +435,8 @@ describe("Flip flash-overlay isolation (regression: wave through every cell)", (
   });
 
   it("flashTime accumulates only for a solving move", () => {
-    // Solve a 3x3 Crosses puzzle to completion, then verify the
-    // final solving click activates flashLength > 0 — the
-    // overlay is *supposed* to fire here (it's the
-    // solve-celebration wave). This is the positive case the
-    // regression test above is the complement of.
+    // The complement of the test above: the click that solves the board
+    // does arm the win flash.
     const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
     const { desc } = flipGame.newDesc(params, randomNew("flip-flash-solve"));
     const me = new Midend(flipGame);
@@ -539,8 +511,8 @@ describe("Flip animation/redraw lifecycle (regression: clicks not rendered)", ()
     const border = tile >> 1;
     // Click cell (0,0): a crosses cell always toggles ⇒ a real move.
     expect(me.processInput(border + 1, border + 1, 0x0200)).toBe(true);
-    // An animated move does NOT paint synchronously (that frame-0 paint
-    // is the flicker we removed); it arms the rAF timer instead.
+    // An animated move does NOT paint synchronously (a frame-0 paint
+    // flickers); it arms the rAF timer instead.
     expect(redraws).toBe(afterLoad);
     expect(timerActive).toBe(true); // ANIM_TIME>0 ⇒ rAF loop requested
 

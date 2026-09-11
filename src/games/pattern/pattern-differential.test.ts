@@ -1,21 +1,16 @@
 /**
- * Gated C-vs-TS differential for the Pattern port. Reads the committed
- * fixture recorded from upstream pattern.c (puzzles/auxiliary/pattern-trace.c)
- * and asserts that TS `newPatternDesc` over the same seed reproduces the C
- * desc **byte-for-byte** — the generator is a faithful port and the RNG is
- * bit-identical, so the value grids (computed in single precision via
- * `Math.fround`) and the resulting clue descs must agree exactly.
+ * C-vs-TS differential for the Pattern port: over each fixture's seed,
+ * `newPatternDesc` must reproduce upstream's desc byte-for-byte. The RNG is
+ * bit-identical and the value grid is computed in single precision via
+ * `Math.fround`, so the clue descs agree exactly.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/pattern-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is frozen and cannot be regenerated; see
+ * `engine/testing/differential.ts`.
  */
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
 import cReference from "./__fixtures__/pattern-c-reference.json" with { type: "json" };
 import { newPatternDesc } from "./generator.ts";
-import type { PatternParams } from "./state.ts";
-import { validateDesc } from "./state.ts";
+import { type PatternParams, validateDesc } from "./state.ts";
 
 interface Fixture {
   seed: string;

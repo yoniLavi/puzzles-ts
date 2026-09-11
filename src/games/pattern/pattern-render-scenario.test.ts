@@ -1,10 +1,8 @@
 /**
- * Tier-2.5 render scenario + snapshot for the Pattern hint: drive a real
- * Midend to a displayed hint step and capture `redraw`. Targeted op assertions
- * (the `COL_HINT` target, the `COL_HINT_CELL` line-of-sight shade, the clue
- * text, the grid frame) plus a snapshot so a render regression is a reviewable
- * text diff. `vitest -u` re-baselines an intended change — keep the targeted
- * assertions so a careless `-u` can't silently erase them.
+ * Tier-2.5 render scenarios for the Pattern hint: drive a real Midend to a
+ * displayed hint step and capture `redraw`. The targeted op assertions (the
+ * `COL_HINT` ring, the `COL_HINT_CELL` shade, the clue text, the grid frame)
+ * stand beside the snapshot so a careless `vitest -u` cannot erase them.
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";

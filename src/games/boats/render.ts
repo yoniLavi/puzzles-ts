@@ -12,7 +12,7 @@
  * the same two primitives clipped differently, so there is one `drawSegment`
  * for the board and the fleet list alike.
  *
- * **Two error layers, deliberately** (design D5):
+ * **Two error layers, deliberately:**
  *  - the *live* rule violations upstream already draws as you play — a line
  *    whose number is exceeded, a segment contradicting its given clue, a boat
  *    the fleet cannot accommodate, and the warning diamond between two boats
@@ -22,10 +22,11 @@
  *    placement no solution permits, which is exactly the board a live-only
  *    check would let Check & Save bless.
  *
- * The per-tile cache is an `Int32Array` (docs/games/rendering.md § "The tile cache and the diff key") holding the drawn
- * segment plus the live error/cursor flags plus the flash phase; the Check &
- * Save overlay rides in an `OverlaySidecar`, so it repaints a cell whose
- * contents are otherwise unchanged (the frame after the move that drew it).
+ * The per-tile cache is an `Int32Array` holding the drawn segment, the live
+ * error/cursor flags, the flash phase and the hint role (docs/games/rendering.md
+ * § "The tile cache and the diff key"); the Check & Save overlay rides in an
+ * `OverlaySidecar`, so it repaints a cell whose contents are otherwise
+ * unchanged (the frame after the move that drew it).
  *
  * Palette indices are **index-for-index with the upstream `COL_*` enum**, so a
  * reader can check this table against upstream's slot by slot. Boats has no
@@ -48,7 +49,7 @@ import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { BoatsHint } from "./index.ts";
 import type { BoatsMistake } from "./solver.ts";
 import {
@@ -104,11 +105,9 @@ export const COL_COUNT_ERROR = 12;
 export const COL_COLLISION_ERROR = 13;
 export const COL_COLLISION_TEXT = 14;
 /**
- * The hint colors are appended **past** the upstream enum, which keeps the
- * indices above index-for-index with it. Boats has no dark-mode
- * `paletteOverrides`, so nothing addresses a slot by number and an appended
- * index cannot collide with one
- * (docs/games/rendering.md § "The palette: three layers, meaning first").
+ * The hint colors are appended **past** the upstream enum, keeping the indices
+ * above index-for-index with it. Boats has no dark-mode `paletteOverrides`, so
+ * an appended index cannot collide with one.
  */
 export const COL_HINT = 15;
 export const COL_HINT_CELL = 16;
@@ -141,7 +140,7 @@ export function colors(defaultBackground: Color): Color[] {
 // --- geometry --------------------------------------------------------------
 
 /** The web build compiles `NARROW_BORDERS`, so there is no outer margin
- * (docs/games/rendering.md § "Sizing": check the define, don't port the desktop default). */
+ * (docs/games/rendering.md § "Sizing"). */
 export const BORDER = 0;
 
 /** Vertical gap between the number row and the fleet display. */
@@ -183,13 +182,12 @@ export const fleetRowLimit = (p: BoatsParams): number => p.w + 2;
  * two cannot disagree about how many rows there are.
  *
  * Upstream breaks a row **between whole batches**, keeping one size's boats
- * together. That is kept. What it lacks is a break *within* a batch, so a fleet
+ * together, and that is kept. It has no break *within* a batch, so a fleet
  * holding more boats of one size than fit on a row — nine size-1 boats on a
- * 5-wide board, say — ran straight off the right edge of the canvas, which is
- * the author's own `TODO ui: Certain custom fleets don't fit in the UI`. The
- * second test below is that break. It is a pure repair rather than a relayout:
- * whenever the batch-level test let a batch through, every boat in it fits too,
- * so the per-boat test cannot fire and the layout is unchanged.
+ * 5-wide board, say — runs off the right edge of its canvas (the author's own
+ * `TODO ui: Certain custom fleets don't fit in the UI`). The second test below
+ * is that break, and a pure repair: whenever the batch-level test lets a batch
+ * through, every boat in it fits too, so the per-boat test cannot fire.
  */
 export function* fleetLayout(p: BoatsParams): Generator<FleetSlot> {
   const limit = fleetRowLimit(p);
@@ -249,8 +247,8 @@ export interface BoatsDrawState {
   border: Int32Array;
   /** Last-drawn count of completed boats per size. */
   fleetCount: Int32Array;
-  /** The Check & Save mistake overlay (docs/games/rendering.md § "Overlay sidecars" — it must be in the diff
-   * key or it never repaints). */
+  /** The Check & Save mistake overlay; it must be in the diff key or it never
+   * repaints (docs/games/rendering.md § "Overlay sidecars"). */
   wrong: OverlaySidecar;
 }
 
@@ -384,31 +382,29 @@ function drawFleet(
   const slope =
     (FLEET_SIZE * ts - STRIPE_SIZE * 2) / (fleet * FLEET_SIZE * ts - STRIPE_SIZE * 2);
 
-  for (const { size: i, copy: j, fx: startFx, width: boatWidth, row } of fleetLayout(
-    p,
-  )) {
-    if (!full && fleetCount[i] === ds.fleetCount[i]) continue;
+  for (const { size, copy, fx: startFx, width, row } of fleetLayout(p)) {
+    if (!full && fleetCount[size] === ds.fleetCount[size]) continue;
 
     const rect = {
       x: fxCoord(startFx),
       y: fyCoord(row),
-      w: boatWidth * ts,
+      w: width * ts,
       h: FLEET_SIZE * ts,
     };
     dr.drawUpdate(rect);
     dr.drawRect(rect, COL_BACKGROUND);
 
-    const found = j < fleetCount[i];
+    const found = copy < fleetCount[size];
     const color = found ? COL_SHIP_FLEET_DONE : COL_SHIP_FLEET;
 
     let fx = startFx;
-    for (let k = 0; k <= i; k++) {
+    for (let k = 0; k <= size; k++) {
       const ship =
-        i === 0
+        size === 0
           ? SHIP_SINGLE
           : k === 0
             ? SHIP_LEFT
-            : k === i
+            : k === size
               ? SHIP_RIGHT
               : SHIP_CENTER;
       drawSegment(dr, fxCoord(fx), fyCoord(row), ts * FLEET_SIZE, ship, color);
@@ -419,9 +415,9 @@ function drawFleet(
       // Red rather than black when more boats of this size are on the board
       // than the fleet holds.
       const stripe =
-        fleetData[i] >= fleetCount[i] ? COL_SHIP_FLEET_STRIPE : COL_COUNT_ERROR;
+        fleetData[size] >= fleetCount[size] ? COL_SHIP_FLEET_STRIPE : COL_COUNT_ERROR;
       const cy = fyCoord(row) + (FLEET_SIZE * ts) / 2;
-      const stripeH = slope * ((i + 1) * FLEET_SIZE * ts - STRIPE_SIZE * 2);
+      const stripeH = slope * ((size + 1) * FLEET_SIZE * ts - STRIPE_SIZE * 2);
       dr.drawLine(
         { x: fxCoord(startFx) + STRIPE_SIZE, y: cy + stripeH / 2 },
         { x: fxCoord(fx) - STRIPE_SIZE, y: cy - stripeH / 2 },
@@ -437,8 +433,8 @@ function drawFleet(
 // --- the frame -------------------------------------------------------------
 
 // Hint bits, folded into the per-tile cache key so the overlay both paints and
-// clears (docs/games/rendering.md § "The tile cache and the diff key" — a hint bit outside the key is a hint that never
-// repaints a warm frame).
+// clears: a hint bit outside the key never repaints a warm frame
+// (docs/games/rendering.md § "The tile cache and the diff key").
 const HINT_SHIP = 1 << 9; // a square the step asks for a boat segment on
 const HINT_WATER = 1 << 10; // …or for water
 const HINT_EVID = 1 << 11; // a square the deduction reasons over
@@ -469,7 +465,7 @@ function hintBits(
 
 /** The two tildes Boats draws for a *given* water square — reused in the hint
  * color so a "place water here" suggestion speaks the game's own vocabulary
- * rather than a shape the player would have to translate (§5.1a). */
+ * (docs/games/hints.md § "Echo the move's shape in the hint color"). */
 function drawWaves(
   dr: GameDrawing,
   tx: number,
@@ -532,57 +528,30 @@ export function redraw(
 
   ds.wrong.packCells(mistakes, (x, y) => y * w + x);
 
-  // --- the border numbers ---
-  {
-    const ty = BORDER + (h + 1) * ts;
-    for (let x = 0; x < w; x++) {
-      if (state.borderClues[x] === NO_CLUE) continue;
-      if (!full && borderStatus[x] === ds.border[x]) continue;
+  // --- the border numbers: columns along the bottom, then rows down the right ---
+  const half = (ts / 2) | 0;
+  for (let i = 0; i < w + h; i++) {
+    if (state.borderClues[i] === NO_CLUE) continue;
+    if (!full && borderStatus[i] === ds.border[i]) continue;
 
-      const tx = BORDER + x * ts + ((ts / 2) | 0);
-      const color = borderStatus[x] === STATUS_INVALID ? COL_COUNT_ERROR : COL_COUNT;
-      const cell: Point = { x: tx - ((ts / 2) | 0), y: ty - ((ts / 2) | 0) };
-      dr.drawRect({ x: cell.x, y: cell.y, w: ts, h: ts }, COL_BACKGROUND);
-      dr.drawUpdate({ x: cell.x, y: cell.y, w: ts, h: ts });
-      dr.drawText(
-        { x: tx, y: ty },
-        {
-          align: "center",
-          baseline: "alphabetic",
-          fontType: "variable",
-          size: (ts / 2) | 0,
-        },
-        color,
-        String(state.borderClues[x]),
-      );
-      ds.border[x] = borderStatus[x];
-    }
-  }
-  {
-    const tx = BORDER + (w + 1) * ts;
-    for (let y = 0; y < h; y++) {
-      if (state.borderClues[y + w] === NO_CLUE) continue;
-      if (!full && borderStatus[y + w] === ds.border[y + w]) continue;
-
-      const ty = BORDER + y * ts + ((ts / 2) | 0);
-      const color =
-        borderStatus[y + w] === STATUS_INVALID ? COL_COUNT_ERROR : COL_COUNT;
-      const cell: Point = { x: tx - ((ts / 2) | 0), y: ty - ((ts / 2) | 0) };
-      dr.drawRect({ x: cell.x, y: cell.y, w: ts, h: ts }, COL_BACKGROUND);
-      dr.drawUpdate({ x: cell.x, y: cell.y, w: ts, h: ts });
-      dr.drawText(
-        { x: tx, y: ty },
-        {
-          align: "right",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: (ts / 2) | 0,
-        },
-        color,
-        String(state.borderClues[y + w]),
-      );
-      ds.border[y + w] = borderStatus[y + w];
-    }
+    const column = i < w;
+    const tx = BORDER + (column ? i * ts + half : (w + 1) * ts);
+    const ty = BORDER + (column ? (h + 1) * ts : (i - w) * ts + half);
+    const cell = { x: tx - half, y: ty - half, w: ts, h: ts };
+    dr.drawRect(cell, COL_BACKGROUND);
+    dr.drawUpdate(cell);
+    dr.drawText(
+      { x: tx, y: ty },
+      {
+        align: column ? "center" : "right",
+        baseline: column ? "alphabetic" : "mathematical",
+        fontType: "variable",
+        size: half,
+      },
+      borderStatus[i] === STATUS_INVALID ? COL_COUNT_ERROR : COL_COUNT,
+      String(state.borderClues[i]),
+    );
+    ds.border[i] = borderStatus[i];
   }
 
   // A collision diamond straddles the corner of four cells, so a change to one
@@ -662,14 +631,12 @@ export function redraw(
         drawWaves(dr, tx, ty, ts, COL_GRID);
       }
 
-      // The hint marks *where and which action*, in the game's own vocabulary
-      // and the hint color — it never performs the move (§5.1/§5.1a). A boat
-      // suggestion is the unresolved-segment square; a water suggestion is the
-      // same waves a given water square carries.
-      if (hintBit & (HINT_SHIP | HINT_WATER)) {
-        if (hintBit & HINT_SHIP) drawSegment(dr, tx, ty, ts + 1, SHIP_VAGUE, COL_HINT);
-        else drawWaves(dr, tx, ty, ts, COL_HINT);
-      }
+      // The hint marks *where and which action* in the game's own vocabulary,
+      // recolored, and never performs the move (docs/games/hints.md §
+      // "Highlight, never perform"): an unresolved segment for a boat, the
+      // given-water waves for water.
+      if (hintBit & HINT_SHIP) drawSegment(dr, tx, ty, ts + 1, SHIP_VAGUE, COL_HINT);
+      else if (hintBit & HINT_WATER) drawWaves(dr, tx, ty, ts, COL_HINT);
 
       // Every evidence square keeps its own color and gets an inset ring —
       // undecided or not, one mark for one role. A fill over water or a segment

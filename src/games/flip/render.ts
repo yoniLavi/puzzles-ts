@@ -1,32 +1,26 @@
 /**
  * Flip's renderer: the two-faced tiles, the diagonal marks that show which
  * neighbors a click will flip, the cursor ring and the win flash.
- *
- * The board's pixel origin lives here as {@link border} and `interpretMove`
- * imports it — one function, both callers (`docs/games/mechanics.md`). It was
- * written out four times inside `index.ts` before this split: once for input,
- * once for `computeSize`, once for `redraw` and once for `drawTile`. Four
- * copies in **one file** is why `unify-the-board-origin`'s sweep did not see
- * it — that scan keyed on "defined in more than one file", and this is the
- * shape the key missed.
  */
 
 import { CURSOR, GRID_MID, HINT_ACTION, PAPER } from "../../engine/color/palette.ts";
 import { flipWrongFace } from "../../engine/color/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
-import type { FlipParams, FlipState, FlipUi } from "./index.ts";
+import type { FlipParams, FlipState, FlipUi } from "./state.ts";
 
 export interface FlipDrawState {
-  w: number;
-  h: number;
   started: boolean;
   tileSize: number;
-  /** Per-cell render cache; -1 = never drawn, 255 = animating. */
+  /** Per-cell render cache: the bits `drawTile` last drew (the grid's, plus 4
+   * for the cursor); -1 = never drawn, {@link ANIMATING} mid-flip. */
   tiles: Int16Array;
 }
 
-// Color palette indices (mirror flip.c's enum).
+/** The cache entry of a tile mid-flip, which repaints on every frame. */
+const ANIMATING = 255;
+
+// Color palette indices (upstream's enum).
 const COL_BACKGROUND = 0;
 const COL_WRONG = 1;
 const COL_RIGHT = 2;
@@ -40,16 +34,14 @@ export const PREFERRED_TILE_SIZE = 48;
 export const ANIM_TIME = 0.25;
 export const FLASH_FRAME = 0.07;
 
-/** The board's pixel origin — half a tile on every side. One function, both
- * callers: `interpretMove`, `computeSize`, `redraw` and `drawTile` all read it. */
+/** The board's pixel origin: half a tile on every side. `interpretMove` reads it
+ * too, so input and drawing cannot disagree. */
 export function border(tileSize: number): number {
   return tileSize >> 1;
 }
 
 export function newDrawState(s: FlipState): FlipDrawState {
   return {
-    w: s.w,
-    h: s.h,
     started: false,
     tileSize: PREFERRED_TILE_SIZE,
     tiles: new Int16Array(s.w * s.h).fill(-1),
@@ -103,14 +95,9 @@ export function redraw(
   const b = border(tile);
 
   if (!ds.started) {
-    // First paint of this drawstate: own the background. The
-    // engine's redraw deliberately paints no pixels of its own
-    // (we don't want the framework to overpaint cached tiles), so
-    // any time the drawstate is fresh — initial setup, canvas
-    // resize, palette replacement — this branch is responsible
-    // for clearing the whole window to the puzzle's background
-    // color. (Mirrors `midend.c`'s first-draw rect, just located
-    // where it belongs: in the game.)
+    // A fresh draw state (first paint, resize, palette change) clears the whole
+    // window: the engine paints nothing of its own, so that it never overpaints
+    // cached tiles. Upstream's midend.c drew this first rect itself.
     const winW = tile * w + 2 * b;
     const winH = tile * h + 2 * b;
     dr.drawRect({ x: 0, y: 0, w: winW, h: winH }, COL_BACKGROUND);
@@ -135,9 +122,9 @@ export function redraw(
   }
 
   const flashFrame = flashTime ? Math.floor(flashTime / FLASH_FRAME) : -1;
-  const anim = animTime / ANIM_TIME;
-  // The engine renders statically until it drives timed redraws; with
-  // animTime 0 the prior state is irrelevant (final state is drawn).
+  const progress = animTime / ANIM_TIME;
+  // A light that changed since `prev` is mid-flip, keyed 255 so it redraws every
+  // frame; with animTime 0 the final state is drawn and `prev` is irrelevant.
   const animating = animTime > 0 && prev != null;
 
   for (let i = 0; i < wh; i++) {
@@ -154,10 +141,10 @@ export function redraw(
     if (!s.hintsActive) v &= ~2;
     if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y) v |= 4;
 
-    const vv = animating && prev && (s.grid[i] ^ prev.grid[i]) & ~2 ? 255 : v;
-    if (ds.tiles[i] === 255 || vv === 255 || ds.tiles[i] !== vv) {
-      drawTile(dr, ds, s, x, y, v, vv === 255, anim);
-      ds.tiles[i] = vv;
+    const drawn = animating && prev && (s.grid[i] ^ prev.grid[i]) & ~2 ? ANIMATING : v;
+    if (ds.tiles[i] === ANIMATING || drawn === ANIMATING || ds.tiles[i] !== drawn) {
+      drawTile(dr, ds, s, x, y, v, drawn === ANIMATING, progress);
+      ds.tiles[i] = drawn;
     }
   }
 }
@@ -168,33 +155,33 @@ function drawTile(
   s: FlipState,
   x: number,
   y: number,
-  tile: number,
+  v: number,
   anim: boolean,
-  animTime: number,
+  progress: number,
 ): void {
   const { w, h } = s;
   const wh = w * h;
   const ts = ds.tileSize;
   const bx = x * ts + border(ts);
   const by = y * ts + border(ts);
-  const dcol = tile & 4 ? COL_CURSOR : COL_DIAG;
+  const dcol = v & 4 ? COL_CURSOR : COL_DIAG;
 
   dr.clip({ x: bx + 1, y: by + 1, w: ts - 1, h: ts - 1 });
   dr.drawRect(
     { x: bx + 1, y: by + 1, w: ts - 1, h: ts - 1 },
-    anim ? COL_BACKGROUND : tile & 1 ? COL_WRONG : COL_RIGHT,
+    anim ? COL_BACKGROUND : v & 1 ? COL_WRONG : COL_RIGHT,
   );
 
   if (anim) {
-    const at = Math.floor(ts * animTime);
+    const at = Math.floor(ts * progress);
     const coords: Point[] = [
       { x: bx + ts, y: by },
       { x: bx + at, y: by + at },
       { x: bx, y: by + ts },
       { x: bx + ts - at, y: by + ts - at },
     ];
-    let color = tile & 1 ? COL_WRONG : COL_RIGHT;
-    if (animTime < 0.5) color = COL_WRONG + COL_RIGHT - color;
+    let color = v & 1 ? COL_WRONG : COL_RIGHT;
+    if (progress < 0.5) color = COL_WRONG + COL_RIGHT - color;
     dr.drawPolygon(coords, color, COL_GRID);
   }
 
@@ -227,7 +214,7 @@ function drawTile(
     }
   }
 
-  if (tile & 2) {
+  if (v & 2) {
     let x1 = bx + ((ts / 20) | 0);
     let x2 = bx + ts - ((ts / 20) | 0);
     let y1 = by + ((ts / 20) | 0);

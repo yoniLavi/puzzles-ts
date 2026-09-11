@@ -1,9 +1,9 @@
 /**
  * Gated C-vs-TS differential for Boats.
  *
- * For each frozen C-reference fixture (see `puzzles/auxiliary/boats-trace.c`),
- * the TS `newBoatsDesc`, replayed over the bit-identical `random.ts` seeded the
- * same way, must reproduce the C description byte-for-byte.
+ * For each frozen C-reference fixture, the TS `newBoatsDesc`, replayed over the
+ * bit-identical `random.ts` seeded the same way, must reproduce the C
+ * description byte-for-byte.
  *
  * That single assertion is unusually strong. `new_game_desc` is solver-gated at
  * every stage — it seeds given clues while the Easy solver is stuck, removes
@@ -13,12 +13,10 @@
  * published description depends on the solver's verdict on every intermediate
  * board, and matching it validates the generator, all four solver tiers, the
  * `Dsf` root choice that `checkDsf` reads as an element, and the codec, all at
- * once (design D6, docs/games/solver-and-generator.md § "Solver-gated generation").
+ * once (docs/games/solver-and-generator.md § "Solver-gated generation").
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/boats-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C build and the
+ * trace harness that captured it are gone (see `engine/testing/differential.ts`).
  */
 
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
@@ -36,8 +34,9 @@ interface Fixture {
   fleetdata: string;
   seed: string;
   desc: string;
-  /** What the C build took, in ms — carried for comparison, never asserted
-   * (a wall-clock assertion measures the box, not the code — docs/games/testing.md § "Seed-deterministic, never clock-gated"). */
+  /** What the C build took, in ms — carried for comparison, never asserted: a
+   * wall-clock assertion measures the box, not the code (docs/games/testing.md
+   * § "Seed-deterministic, never clock-gated"). */
   genMs: number;
 }
 

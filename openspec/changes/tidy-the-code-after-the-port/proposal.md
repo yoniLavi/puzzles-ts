@@ -16,7 +16,8 @@ outlived the port, not in restatement of the code.
 
 ## What Changes
 
-- A pass over every game, then over the engine, that:
+- A pass over every game, then the engine, then the app shell and the build
+  tooling, that:
   - removes comments that restate the code, annotate a past diff, or justify a
     constraint that no longer binds, and shortens the ones that stay;
   - renames an identifier only where a reader had to ask what it stands for and
@@ -49,8 +50,11 @@ None.
 ## Impact
 
 - Every file under `src/games/` and `src/engine/`, excluding the frozen fixture
-  data. Test files are in scope where the same issues appear, verified by test
-  count as the existing comment-sweep scenario requires.
+  data and the aperiodic tilings' data tables; then the app shell (`src/puzzle/`,
+  `src/screens/`, `src/dialogs/`, `src/components/`, `src/utils/`,
+  `src/store/` and the `src/` root) and the build tooling (`scripts/`,
+  `vite-plugins/`). Test files are in scope where the same issues appear,
+  verified by test count as the existing comment-sweep scenario requires.
 - `docs/games/` guides that cite a renamed function are repointed in the same
   commit.
 - The local-feedback probe anchors on engine source lines, so engine edits
