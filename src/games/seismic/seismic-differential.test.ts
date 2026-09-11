@@ -2,34 +2,28 @@
  * Gated C-vs-TS differential for Seismic: the TS generator reproduces the
  * upstream description **byte for byte** for every recorded `(params, seed)`.
  *
- * This is the strongest bar available here, and it validates far more than the
- * codec. Generation is solver-gated twice over — a clue is stripped only while
- * the board still solves at the target difficulty, and the finished board is
- * kept only if it solves at that difficulty and *not* one tier easier — so a
- * matching description proves the TS solver reaches C's verdict on every
- * intermediate board, that the region-merge draws the same RNG values in the
- * same order, and that the two-part run-length codec agrees. One assertion,
- * generator + solver + codec (docs/games/solver-and-generator.md § "Solver-gated generation").
+ * This validates far more than the codec. Generation is solver-gated twice over
+ * — a clue is stripped only while the board still solves at the target
+ * difficulty, and the finished board is kept only if it solves at that
+ * difficulty and *not* one tier easier — so a matching description proves the TS
+ * solver reaches C's verdict on every intermediate board, that the region-merge
+ * draws the same RNG values in the same order, and that the two-part run-length
+ * codec agrees (docs/games/solver-and-generator.md § "Solver-gated generation").
  *
  * The fixtures span all twelve of upstream's presets, both modes, both
  * difficulties and a non-square size sweep. They stop at 7×7 because upstream's
  * generator does: its region stage succeeds roughly once in 200,000 attempts
  * there and never above ~50 cells.
  *
- * **These run against the retained upstream region grower, not the shipped
- * one.** `replace-seismic-region-generator` replaced upstream's fill-then-merge
- * stages (the cause of that 1-in-200,000), but kept them reachable behind
- * `upstreamRegionGrower` precisely so this differential survives: everything
- * downstream of the regions — the solver's verdict on every intermediate board,
- * the clue-stripping loop, the codec — keeps its byte-exact oracle. The shipped
- * partition-and-fill is covered by property tests in `seismic.test.ts` instead,
- * along with an assertion that this flag still *changes* the output, so the
- * oracle cannot decay into re-testing the shipped path.
+ * **These run against the retained upstream region grower
+ * (`upstreamRegionGrower`), not the shipped one**, so everything downstream of
+ * the regions keeps its byte-exact oracle. The shipped partition-and-fill is
+ * covered by property tests in `seismic.test.ts`, along with an assertion that
+ * this flag still *changes* the output, so the oracle cannot decay into
+ * re-testing the shipped path.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/seismic-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C harness that
+ * captured it is gone — see `engine/testing/differential.ts`.
  */
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
 import cReference from "./__fixtures__/seismic-c-reference.json" with { type: "json" };

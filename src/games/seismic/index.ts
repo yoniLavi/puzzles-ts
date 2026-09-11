@@ -42,16 +42,8 @@ import {
   isEraseKey,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { maxGeneratedRegionSize, newSeismicDesc } from "./generator.ts";
 import {
   colors,
@@ -68,12 +60,12 @@ import { SOLVE_FAILED, STATUS_COMPLETE, solveGame, validateGame } from "./solver
 import {
   areaBits,
   cloneState,
+  DIFF_EASY,
   DIFF_NAMES,
+  DIFF_NORMAL,
   DIFFCOUNT,
   decodeParams,
   defaultParams,
-  diffFromLevel,
-  diffToLevel,
   encodeParams,
   FM_FIXED,
   MODE_NAMES,
@@ -93,10 +85,10 @@ import {
   validateParams,
 } from "./state.ts";
 
-/** A player marking that contradicts the unique solution:
- * - `"cell"` — a placed number that is wrong;
- * - `"note"` — an empty cell whose non-empty pencil notes have crossed out the
- *   cell's solution number (docs/games/mechanics.md § "Pencil marks: the full note-taking UX": notes are first-class markings). */
+/** A player marking that contradicts the unique solution: a wrong placed number
+ * (`"cell"`), or an empty cell whose notes have crossed out its solution number
+ * (`"note"` — notes are first-class markings, docs/games/mechanics.md § "Pencil
+ * marks: the full note-taking UX"). */
 export interface SeismicMistake {
   kind: "cell" | "note";
   x: number;
@@ -180,14 +172,9 @@ function interpretMove(
   }
 
   // 'M' / 'm': fill every empty cell's notes with its region's candidates.
-  //
-  // Deliberately *fill-only*, not the adaptive fill-then-clean variant the
-  // square Latin games use (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"). The shared
-  // `adaptiveMarkAllMove`/`obviousCandidateMarks` helper is written for a square
-  // board — it walks `w * w` cells and caps candidates at `w` — whereas Seismic's
-  // grid is rectangular and its candidate range is per *region*. Widening a
-  // helper five games share for this one game is not worth it; upstream's `M` is
-  // fill-only too, so this is also the C's behavior.
+  // Fill-only, like upstream's `M`, not the adaptive fill-then-clean the square
+  // Latin games use: `adaptiveMarkAllMove` assumes a square board with
+  // candidates capped at `w`, while Seismic's candidates are per region.
   if (button === 0x4d || button === 0x6d) {
     // The fill is additive, so the gate is "some empty cell has *no* notes" —
     // not "some cell differs from its region's full set", which would keep
@@ -216,8 +203,8 @@ function executeMove(state: SeismicState, move: SeismicMove): SeismicState {
       } else {
         next.grid[i] = move.n;
       }
-      // Upstream refreshes the live error flags (and re-tests completion) after
-      // both a real entry and a pencil change.
+      // `validateGame` also refreshes the live error flags, which upstream does
+      // after a pencil change too.
       if (validateGame(next) === STATUS_COMPLETE) next.completed = true;
       return next;
     }
@@ -243,10 +230,6 @@ function executeMove(state: SeismicState, move: SeismicMove): SeismicState {
     default:
       return assertNever(move, "seismic: executeMove");
   }
-}
-
-function status(state: SeismicState): GameStatus {
-  return state.completed ? "solved" : "ongoing";
 }
 
 // --- solving ---------------------------------------------------------------
@@ -291,32 +274,17 @@ function findMistakes(state: SeismicState): readonly SeismicMistake[] {
   return out;
 }
 
-function flashLength(
-  from: SeismicState,
-  to: SeismicState,
-  _dir: number,
-  _ui: SeismicUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
-}
-
 // --- the game --------------------------------------------------------------
 
-/** Seismic's difficulty contract (`engine/difficulty.ts`). `solveGame` returns
- * the difficulty actually needed, or `SOLVE_FAILED` when the board did not come
- * out complete and valid — and, as `solveFromGivens` records, a valid grid was
- * forced the whole way, so there is no separate ambiguity verdict to consult.
- * Non-fixed cells are cleared first so the player's entries never count. */
+/** Seismic's difficulty contract (`engine/difficulty.ts`). A board `newState`
+ * deals holds only its givens, and — as `solveFromGivens` records — a grid the
+ * solver completes was forced the whole way, so there is no separate ambiguity
+ * verdict to consult. */
 const difficulty: DifficultyContract<SeismicParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
-  solveAtCap: (p, desc, cap) => {
-    const board = cloneState(newState(p, desc));
-    for (let i = 0; i < board.w * board.h; i++) {
-      if (!(board.flags[i] & FM_FIXED)) board.grid[i] = 0;
-    }
-    return solveGame(board, cap) === SOLVE_FAILED ? "unsolved" : "solved";
-  },
+  solveAtCap: (p, desc, cap) =>
+    solveGame(newState(p, desc), cap) === SOLVE_FAILED ? "unsolved" : "solved",
 };
 
 export const seismicGame: Game<
@@ -347,9 +315,9 @@ export const seismicGame: Game<
       name: "Difficulty",
       type: "choices",
       choices: [...DIFF_NAMES],
-      get: (p) => diffToLevel(p.diff),
+      get: (p) => p.diff,
       set: (p, v) => {
-        p.diff = diffFromLevel(v);
+        p.diff = v === DIFF_NORMAL ? DIFF_NORMAL : DIFF_EASY;
       },
     },
     {
@@ -363,46 +331,42 @@ export const seismicGame: Game<
       },
     },
   ],
-  describeParams: (p): ConfigValues => ({
+  describeParams: (p) => ({
     width: String(p.w),
     height: String(p.h),
-    difficulty: diffToLevel(p.diff),
+    difficulty: p.diff,
     "game-mode": p.mode,
   }),
 
-  newDesc: (p: SeismicParams, rng: RandomState) => newSeismicDesc(p, rng),
+  newDesc: (p, rng) => newSeismicDesc(p, rng),
   validateDesc,
   newState,
   newUi,
 
   interpretMove,
   executeMove,
-  status,
+  status: (state) => (state.completed ? "solved" : "ongoing"),
 
   solve,
   difficulty,
   findMistakes,
-  // Tectonic's regions are always five cells, so five is the widest number it
-  // can ever want; Seismic allows regions up to nine.
-  // Sized to what the generator *makes*, not to what the format admits: entry
-  // is capped at the cell's region size, so a digit no region can hold is a
-  // button that does nothing — and on touch the panel is the only way to type.
-  requestKeys: (p): KeyLabel[] => digitKeys(maxGeneratedRegionSize(p.mode)),
+  // Sized to the regions the generator *makes*, not the nine the format admits:
+  // entry is capped at the cell's region size, so a digit no region can hold is
+  // a button that does nothing — and on touch the panel is the only way to type.
+  requestKeys: (p) => digitKeys(maxGeneratedRegionSize(p.mode)),
   textFormat,
 
   prefs: [stickyPencilPref<SeismicUi>(), pencilKeepHighlightPref<SeismicUi>()],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SeismicParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(seismicGame);
-
-export { MODE_SEISMIC, MODE_TECTONIC };

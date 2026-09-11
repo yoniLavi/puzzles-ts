@@ -11,7 +11,7 @@
  * Two deduction rungs:
  *  - **Easy** — a *naked single* (a cell down to one candidate) and a *hidden
  *    single in a region* (a candidate with only one home in its region).
- *  - **Hard** — a *trial placement*: tentatively place a candidate and, if that
+ *  - **Normal** — a *trial placement*: tentatively place a candidate and, if that
  *    alone leaves some region unable to house one of the numbers it owes, rule
  *    the candidate out.
  *
@@ -29,7 +29,7 @@ import {
 import {
   areaBits,
   DIFF_EASY,
-  DIFF_HARD,
+  DIFF_NORMAL,
   FM_ERRORDIST,
   FM_ERRORDUP,
   MODE_SEISMIC,
@@ -172,7 +172,7 @@ function solverAreas(board: SeismicBoard): number {
 }
 
 /**
- * **Hard rung, trial placement**: tentatively place each remaining candidate and
+ * **Normal rung, trial placement**: tentatively place each remaining candidate and
  * check whether that alone starves a region — if some region can then no longer
  * house one of the numbers it owes, the candidate is impossible.
  *
@@ -180,7 +180,7 @@ function solverAreas(board: SeismicBoard): number {
  * effect is striking the refuted candidate.
  */
 function solverAttempt(board: SeismicBoard): number {
-  const { w, h, grid, pencil, dsf } = board;
+  const { w, h, grid, pencil } = board;
   const s = w * h;
   const gridBackup = new Uint8Array(s);
   const marksBackup = new Uint16Array(s);
@@ -195,18 +195,8 @@ function solverAttempt(board: SeismicBoard): number {
 
       gridBackup.set(grid);
       marksBackup.set(pencil);
-      areas.fill(0);
-
       placeNumber(board, i % w, (i / w) | 0, n);
-
-      for (let j = 0; j < s; j++) areas[dsf.canonify(j)] |= pencil[j];
-
-      let valid = true;
-      for (let j = 0; j < s && valid; j++) {
-        if (j !== dsf.canonify(j)) continue;
-        if (areas[j] !== areaBits(dsf.size(j))) valid = false;
-      }
-
+      const valid = regionsViable(board, areas);
       grid.set(gridBackup);
       pencil.set(marksBackup);
 
@@ -215,6 +205,23 @@ function solverAttempt(board: SeismicBoard): number {
   }
 
   return changes;
+}
+
+/**
+ * Can every region still house every number it owes? `areas` is `w·h` scratch.
+ * Candidate sets only ever shrink from `areaBits(size)`, so anything short of
+ * equality means some number has lost every home. The Normal rung's test; the
+ * generator's fill prunes by it too.
+ */
+export function regionsViable(board: SeismicBoard, areas: Int32Array): boolean {
+  const { w, h, pencil, dsf } = board;
+  const s = w * h;
+  areas.fill(0);
+  for (let j = 0; j < s; j++) areas[dsf.canonify(j)] |= pencil[j];
+  for (let j = 0; j < s; j++) {
+    if (j === dsf.canonify(j) && areas[j] !== areaBits(dsf.size(j))) return false;
+  }
+  return true;
 }
 
 /**
@@ -296,6 +303,17 @@ export function validateGame(board: SeismicBoard): number {
   return status;
 }
 
+/** The three rungs, easiest first. A factory because every rung closes over the
+ * board; the ids are what `runDeductionFixpoint` names when a step budget trips
+ * and what `seismic-ladder.test.ts` takes its firing census over. */
+function seismicLadder(board: SeismicBoard): DeductionTechnique[] {
+  return [
+    { id: "marks", tier: DIFF_EASY, run: () => solverMarks(board) },
+    { id: "areas", tier: DIFF_EASY, run: () => solverAreas(board) },
+    { id: "attempt", tier: DIFF_NORMAL, run: () => solverAttempt(board) },
+  ];
+}
+
 /**
  * Run the rungs to a fixpoint, no harder than `maxDiff`. Returns the difficulty
  * actually needed, or {@link SOLVE_FAILED} if the board did not come out
@@ -304,57 +322,35 @@ export function validateGame(board: SeismicBoard): number {
  * Mutates `board` into whatever the solver could establish — callers that need
  * the original back (the generator's clue-stripping loop) snapshot it first.
  */
-/** The three rungs, easiest first — the ladder {@link solveGame} runs.
- *
- * A factory because every rung closes over the board; the ids are what
- * `runDeductionFixpoint` names when a step budget trips and what
- * `seismic-ladder.test.ts` takes its firing census over. */
-function seismicLadder(board: SeismicBoard): DeductionTechnique[] {
-  return [
-    { id: "marks", tier: DIFF_EASY, run: () => solverMarks(board) },
-    { id: "areas", tier: DIFF_EASY, run: () => solverAreas(board) },
-    { id: "attempt", tier: DIFF_HARD, run: () => solverAttempt(board) },
-  ];
-}
-
 export function solveGame(
   board: SeismicBoard,
   maxDiff: number,
   firings?: FiringTally,
 ): number {
   solverInit(board);
-  const ladder = seismicLadder(board);
-
-  const { grade: diff } = runDeductionFixpoint({
-    techniques: ladder,
+  const { grade } = runDeductionFixpoint({
+    techniques: seismicLadder(board),
     firings,
     maxTier: maxDiff,
     baseGrade: DIFF_EASY,
     settled: () => validateGame(board) !== STATUS_UNFINISHED,
   });
-
-  if (validateGame(board) !== STATUS_COMPLETE) return SOLVE_FAILED;
-  return diff;
+  return validateGame(board) === STATUS_COMPLETE ? grade : SOLVE_FAILED;
 }
 
 /**
- * The hand-written ladder this solver ran until
- * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
- * `seismic-ladder.test.ts` proves the adoption against (the rungs are
- * module-private, so the comparison lives on this side of the file).
+ * The hand-written ladder, kept as the oracle `seismic-ladder.test.ts` proves
+ * {@link solveGame} against (the rungs are module-private, so the comparison
+ * lives on this side of the file).
  *
- * **Its grade bookkeeping is the interesting part, and it is why this game
- * needed an argument rather than a transcription.** `diff = Math.max(diff,
- * DIFF_HARD)` sits *before* the Hard rung, so it bumps on **reaching** the tier
- * rather than on firing it — literally the distinction that keeps Boats out of
- * the runner, whose grade means "highest tier that fired". Here the two
- * coincide, and the reason is that reaching the bump and not firing is
- * unreachable-with-a-grade: the loop's first line breaks out unless the board is
- * `UNFINISHED`, so a pass that reaches the bump has an unfinished board; if
- * `solverAttempt` then returns 0 the loop breaks with the board unchanged and
- * still unfinished, and `solveGame` returns {@link SOLVE_FAILED} — discarding
- * `diff` entirely. Every path that *returns* a grade of `DIFF_HARD` fired the
- * Hard rung at least once.
+ * **Its grade bookkeeping is why the equivalence needed an argument.** `diff =
+ * Math.max(diff, DIFF_NORMAL)` sits *before* the Normal rung, so it bumps on
+ * **reaching** the tier rather than on firing it — the distinction that keeps
+ * Boats out of the runner, whose grade means "highest tier that fired". Here the
+ * two coincide: the loop breaks unless the board is `UNFINISHED`, so a pass that
+ * reaches the bump has an unfinished board; if `solverAttempt` then returns 0
+ * the loop breaks with the board still unfinished, and {@link SOLVE_FAILED}
+ * discards `diff`. Every path that *returns* `DIFF_NORMAL` fired the Normal rung.
  */
 export function solveGameLegacy(board: SeismicBoard, maxDiff: number): number {
   let diff = DIFF_EASY;
@@ -367,8 +363,8 @@ export function solveGameLegacy(board: SeismicBoard, maxDiff: number): number {
     if (solverMarks(board)) continue;
     if (solverAreas(board)) continue;
 
-    if (maxDiff < DIFF_HARD) break;
-    diff = Math.max(diff, DIFF_HARD);
+    if (maxDiff < DIFF_NORMAL) break;
+    diff = Math.max(diff, DIFF_NORMAL);
 
     if (solverAttempt(board)) continue;
 

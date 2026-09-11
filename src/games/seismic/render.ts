@@ -9,25 +9,21 @@
  * them.
  *
  * That geometry depends only on the region partition, which never changes for
- * the life of a game — so the per-tile cache (`Int32Array`, docs/games/rendering.md § "The tile cache and the diff key") keys
- * on the cell's *contents* alone: its digit, pencil marks, error flags and the
- * background color the cursor/flash chose. The Check-&-Save mistake overlay
- * rides in an `OverlaySidecar` so it repaints a cell whose contents are
- * otherwise unchanged.
+ * the life of a game — so the per-tile cache (docs/games/rendering.md § "The tile
+ * cache and the diff key") keys on the cell's *contents* alone: its digit,
+ * pencil marks, error flags and the background color the cursor/flash chose.
+ * The Check-&-Save mistake overlay rides in an `OverlaySidecar` so it repaints a
+ * cell whose contents are otherwise unchanged.
  *
- * **Two deliberate divergences, both display-only** (byte-parity was never in
- * scope for drawing — docs/games/solver-and-generator.md § "Divergence and what it costs"):
- *  - upstream stores the 9-bit pencil bitmask in a `char` before drawing it, so
- *    a penciled **9** is truncated away and never appears. Fixed here (§3.2's
- *    "a display-only value with the wrong type is a bug you may just fix");
- *  - upstream repaints every cell every frame (its own "optimize drawing
- *    routines" TODO) and its `game_drawstate` is a literal `int FIXME`. This
- *    port caches per tile, like every other port.
+ * Upstream stores the 9-bit pencil bitmask in a `char` before drawing it, so a
+ * penciled **9** is truncated away and never appears; this draws it (a
+ * display-only divergence, docs/games/solver-and-generator.md § "Divergence and
+ * what it costs").
  *
  * The canvas also gains a half-tile strip below the board for the pencil-mode
- * indicator (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): the web build compiles `NARROW_BORDERS`, so the
- * black board rectangle covers the canvas edge to edge and there is nowhere else
- * to put it. The grid's own geometry is untouched.
+ * indicator (docs/games/mechanics.md § "Pencil marks: the full note-taking
+ * UX"): the web build compiles `NARROW_BORDERS`, so the black board rectangle
+ * covers the canvas edge to edge and there is nowhere else to put it.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -127,8 +123,6 @@ export function fromCoord(v: number, ts: number): number {
 export interface SeismicDrawState {
   started: boolean;
   tilesize: number;
-  w: number;
-  h: number;
   /** Per-tile last-drawn contents (−1 = never drawn): the digit in bits 0–3, the
    * pencil bitmask in bits 4–12, the cell flags in 13–15, the chosen background
    * color in 16–17 and the pencil-cursor marker in bit 18. */
@@ -140,14 +134,12 @@ export interface SeismicDrawState {
 }
 
 export function newDrawState(state: SeismicState): SeismicDrawState {
-  const { w, h } = state;
+  const cells = state.w * state.h;
   return {
     started: false,
     tilesize: 0,
-    w,
-    h,
-    tiles: new Int32Array(w * h).fill(-1),
-    wrong: new OverlaySidecar(w * h),
+    tiles: new Int32Array(cells).fill(-1),
+    wrong: new OverlaySidecar(cells),
     pencilModeShown: false,
   };
 }

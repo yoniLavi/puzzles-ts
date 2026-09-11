@@ -6,20 +6,15 @@
  * region of size `N` holds one each of `1..N`, and two equal numbers are kept
  * apart — at least `Z` cells between two `Z`s on a row or column (**Seismic**
  * mode), or never orthogonally/diagonally adjacent (**Tectonic** mode, whose
- * regions are always five cells).
+ * regions hold at most five cells).
  *
- * **Regions live in the shared {@link Dsf} and need no minimal-element map.**
- * Unlike Keen (which stores a cage's clue *at* its minimal cell), Seismic reads
- * `dsf_canonify` only as a region *identifier* — the wall layout is emitted from
- * a membership comparison (`canonify(a) !== canonify(b)`), the solver indexes
- * `w·h`-sized scratch arrays by the canonical element and always re-reads them
+ * **Regions live in the shared {@link Dsf}, with no minimal-element map.**
+ * Seismic reads `canonify` only as a region *identifier*: walls come from a
+ * membership comparison, the solver re-reads its root-indexed scratch arrays
  * through `canonify`, and every clue is per-cell. So union-by-size's root choice
- * is unobservable here and the shared `Dsf` is byte-match faithful as-is
- * (docs/games/solver-and-generator.md § "The Latin family"). Don't "restore fidelity" by adding a min-dsf variant.
- *
- * The `Dsf` never changes after `newState`, so every state shares the one
- * instance by reference (the §3.1 shared-immutable pattern); a move clones only
- * the three per-cell arrays.
+ * is unobservable and the shared `Dsf` is byte-match faithful as-is
+ * (docs/games/solver-and-generator.md § "The Latin family"). Don't add a
+ * min-dsf variant to "restore fidelity".
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
@@ -33,7 +28,7 @@ import { newCursor } from "../../engine/pointer.ts";
 /** Naked singles + hidden-single-in-region only. */
 export const DIFF_EASY = 0;
 /** Adds the trial-placement deduction. */
-export const DIFF_HARD = 1;
+export const DIFF_NORMAL = 1;
 export const DIFFCOUNT = 2;
 
 export const DIFF_NAMES: readonly string[] = tierNames(2);
@@ -71,7 +66,7 @@ export const ALL_MARKS = areaBits(9);
 export interface SeismicParams {
   w: number;
   h: number;
-  /** {@link DIFF_EASY} or {@link DIFF_HARD}. */
+  /** {@link DIFF_EASY} or {@link DIFF_NORMAL}. */
   diff: number;
   /** {@link MODE_SEISMIC} or {@link MODE_TECTONIC}. */
   mode: number;
@@ -80,24 +75,23 @@ export interface SeismicParams {
 export const PRESETS: readonly SeismicParams[] = [
   { w: 4, h: 4, diff: DIFF_EASY, mode: MODE_SEISMIC },
   { w: 4, h: 4, diff: DIFF_EASY, mode: MODE_TECTONIC },
-  { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_SEISMIC },
-  { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_TECTONIC },
+  { w: 4, h: 4, diff: DIFF_NORMAL, mode: MODE_SEISMIC },
+  { w: 4, h: 4, diff: DIFF_NORMAL, mode: MODE_TECTONIC },
   { w: 6, h: 6, diff: DIFF_EASY, mode: MODE_SEISMIC },
   { w: 6, h: 6, diff: DIFF_EASY, mode: MODE_TECTONIC },
-  { w: 6, h: 6, diff: DIFF_HARD, mode: MODE_SEISMIC },
-  { w: 6, h: 6, diff: DIFF_HARD, mode: MODE_TECTONIC },
+  { w: 6, h: 6, diff: DIFF_NORMAL, mode: MODE_SEISMIC },
+  { w: 6, h: 6, diff: DIFF_NORMAL, mode: MODE_TECTONIC },
   { w: 7, h: 7, diff: DIFF_EASY, mode: MODE_SEISMIC },
   { w: 7, h: 7, diff: DIFF_EASY, mode: MODE_TECTONIC },
-  { w: 7, h: 7, diff: DIFF_HARD, mode: MODE_SEISMIC },
-  { w: 7, h: 7, diff: DIFF_HARD, mode: MODE_TECTONIC },
-  // The one size `replace-seismic-region-generator` unlocked: upstream's
-  // generator stopped at 7×7 because nothing above ~50 cells arrived at all.
-  // 8×8 is the largest board whose *worst* observed generation stays near two
-  // seconds — see `MAX_CELLS`, which is set by the tail and not the median.
+  { w: 7, h: 7, diff: DIFF_NORMAL, mode: MODE_SEISMIC },
+  { w: 7, h: 7, diff: DIFF_NORMAL, mode: MODE_TECTONIC },
+  // Past upstream's range (its generator stopped at 7×7): the largest board whose
+  // *worst* observed generation stays near two seconds — see `MAX_CELLS_SEISMIC`,
+  // which is set by the tail and not the median.
   { w: 8, h: 8, diff: DIFF_EASY, mode: MODE_SEISMIC },
   { w: 8, h: 8, diff: DIFF_EASY, mode: MODE_TECTONIC },
-  { w: 8, h: 8, diff: DIFF_HARD, mode: MODE_SEISMIC },
-  { w: 8, h: 8, diff: DIFF_HARD, mode: MODE_TECTONIC },
+  { w: 8, h: 8, diff: DIFF_NORMAL, mode: MODE_SEISMIC },
+  { w: 8, h: 8, diff: DIFF_NORMAL, mode: MODE_TECTONIC },
 ];
 
 const DEFAULT_PRESET = 4;
@@ -154,20 +148,14 @@ export function decodeParams(s: string): SeismicParams {
 }
 
 /**
- * The largest board each mode's generator will be asked for, in cells.
- *
- * **Re-derived by measurement after `replace-seismic-region-generator`** (it was
- * `49` while the port still used upstream's fill-then-merge stages, which never
- * produced anything above ~50 cells at all).
- *
- * Two different questions decide these two numbers, and conflating them is the
+ * The largest board each mode's generator will be asked for, in cells. Two
+ * different questions decide these two numbers, and conflating them is the
  * mistake this comment exists to prevent.
  *
  * **Tectonic's bound answers "how long is too long?"** Every Tectonic size up to
  * 100 cells is *reachable* — an exhaustive sweep of the accepted `(w, h,
- * difficulty)` combinations had zero failures. But reachable is not the same as
- * pleasant: repeating the slow sizes over nine seeds each showed medians that
- * look fine hiding tails that do not.
+ * difficulty)` combinations had zero failures — but nine seeds per slow size
+ * showed medians that look fine hiding tails that do not:
  *
  * | Tectonic    | median      | worst of 9 seeds |
  * |-------------|-------------|------------------|
@@ -176,38 +164,34 @@ export function decodeParams(s: string): SeismicParams {
  * | 9×9  (81)   | 1.1–1.5 s   | 16.2 s           |
  * | 10×10 (100) | 4.9–6.2 s   | 18.3 s           |
  *
- * The **owner's answer, 2026-08-01: a long wait in the Custom dialog is fine.**
- * So Tectonic's bound is the reachability limit, 100 cells, and 10×10 — the size
- * upstream's own TODO names ("10x10 is a common size for Hakyuu puzzles") — is
- * available there. `PRESETS` still stops at 8×8, because a preset is handed out
- * to anyone opening the Type menu whereas a Custom size is one the player typed:
- * a wait you chose is a different thing from a wait sprung on you.
+ * A long wait in the Custom dialog is acceptable (owner decision), so Tectonic's
+ * bound is the reachability limit, 100 cells, which admits 10×10 — the size
+ * upstream's own TODO names ("10x10 is a common size for Hakyuu puzzles").
+ * `PRESETS` still stops at 8×8: a preset is a wait sprung on anyone opening the
+ * Type menu, whereas a Custom size is a wait the player chose.
  *
- * **Seismic's bound answers a different question — "is it possible at all?" — and
- * no wait fixes it.** 10×10 Seismic does not generate: measured on the shipped
- * code, six attempts across both difficulties each ran ~16 s and then threw
- * `RetryLimitExceeded`. Nine region-size distributions were measured against it
- * and the best managed 34 fills per 100 partitions, only by pushing mean region
- * size to 4.45 against upstream's 2.62 — visibly changing the puzzle at every
- * size. Small-region distributions are *provably* infeasible there: mean size
- * 2.26 puts 44 `1`s on a 10×10 against a hard ceiling of 50 (no two `1`s
- * orthogonally adjacent). Reaching it needs a different fill algorithm, not a
- * tuned constant, and the audit archived with `audit-author-known-issues` §3a
- * records the one experiment that would say whether that is even worth costing.
+ * **Seismic's bound answers "is it possible at all?", and no wait fixes it.**
+ * 10×10 Seismic does not generate: six attempts across both difficulties each
+ * ran ~16 s and then threw `RetryLimitExceeded`. Nine region-size distributions
+ * were measured against it, and the best managed 34 fills per 100 partitions
+ * only by pushing mean region size to 4.45 against upstream's 2.62 — visibly
+ * changing the puzzle at every size. Small-region distributions are *provably*
+ * infeasible there: mean size 2.26 puts 44 `1`s on a 10×10 against a hard
+ * ceiling of 50 (no two `1`s orthogonally adjacent). Reaching it needs a
+ * different fill algorithm, not a tuned constant (`audit-author-known-issues`
+ * §3a names the experiment that would cost one).
  *
- * Seismic therefore stays at **64**, the largest area whose worst observed run
- * stays near two seconds. Its exhaustive sweep passed at up to 72 cells, but on
- * single-seed timings already reaching 5.5 s and with no tail measurement to
- * stand behind — and 72 cells buys 9×8, which nobody asked for. Do not raise it
- * without repeating the slow sizes over several seeds; a median-based bound is
- * exactly the error `replace-seismic-region-generator` shipped and retracted.
+ * So Seismic stays at **64**, the largest area whose worst observed run stays
+ * near two seconds. Its exhaustive sweep passed up to 72 cells, but on
+ * single-seed timings already reaching 5.5 s, with no tail measurement behind
+ * them. Do not raise it without repeating the slow sizes over several seeds: a
+ * median-based bound has been shipped here and retracted once already.
  *
- * Rejecting sizes rather than letting them run is docs/games/solver-and-generator.md § "Unlucky, impossible, and load-bearing validation"'s prescribed
- * handling: refuse in `validateParams`, where the Custom dialog can show a
- * reason, instead of letting the player press "New game" and wait. The trade-off
- * it carries: a hand-authored Seismic `10x10:⟨desc⟩` game ID is refused, since
- * this engine validates params the same way for a `:desc` id as for a `#seed`
- * one.
+ * Refusing in `validateParams`, where the Custom dialog can show a reason, is
+ * docs/games/solver-and-generator.md § "Unlucky, impossible, and load-bearing
+ * validation"'s prescribed handling. Its cost: a hand-authored Seismic
+ * `10x10:⟨desc⟩` game ID is refused too, since params are validated the same
+ * way for a `:desc` id as for a `#seed` one.
  */
 export const MAX_CELLS_SEISMIC = 64;
 
@@ -225,14 +209,6 @@ export function validateParams(p: SeismicParams, _full: boolean): string | null 
     return `Width times height must be at most ${max} in ${MODE_NAMES[p.mode]} mode (the generator cannot reliably build a larger board)`;
   if (p.diff >= DIFFCOUNT) return "Unknown difficulty rating";
   return null;
-}
-
-export function diffToLevel(diff: number): number {
-  return diff;
-}
-
-export function diffFromLevel(level: number): number {
-  return level === DIFF_HARD ? DIFF_HARD : DIFF_EASY;
 }
 
 // --- state -----------------------------------------------------------------
@@ -334,11 +310,6 @@ export function borderCount(w: number, h: number): number {
   return (w - 1) * h + w * (h - 1);
 }
 
-const VALID = 0;
-const INVALID_WALLS = 1;
-const INVALID_REGION = 2;
-const INVALID_CLUESIZE = 3;
-
 /**
  * Encode the border list as upstream's alternating run-length scheme: a decimal
  * count for a run of walls, and a letter for a run of non-walls **plus the one
@@ -349,80 +320,58 @@ const INVALID_CLUESIZE = 3;
  * run, which at `erun === 26` produces `'z'` — a character its decoder reads as
  * "26 gaps and **no** following wall", losing a wall — and past 26 produces
  * characters outside `'a'..'z'` that the decoder rejects outright. Gap runs of
- * 26+ therefore have no defined behavior upstream (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1), so this
- * chunks them into `'z'` units (26 gaps, no wall — exactly what the reader
- * already means by `'z'`) and lets the residue, or the following wall run, carry
- * the wall. Output is character-for-character identical to the C for every run
- * of ≤ 25, which is every run a generated puzzle has produced.
+ * 26+ therefore have no defined behavior upstream
+ * (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1),
+ * so this chunks them into `'z'` units (26 gaps, no wall — exactly what the
+ * reader already means by `'z'`) and lets the residue, or the following wall
+ * run, carry the wall. Output is character-for-character identical to the C for
+ * every run of ≤ 25, which is every run a generated puzzle has produced.
  */
 export function encodeWalls(walls: ArrayLike<number>, ws: number): string {
   let out = "";
   let erun = 0;
   let wrun = 0;
-
-  /** Emit the pending gap run; returns the wall count to continue from. */
-  const flushGaps = (): number => {
-    while (erun >= 26) {
-      out += "z";
-      erun -= 26;
-    }
-    if (erun > 0) {
-      out += String.fromCharCode(0x61 + erun - 1);
-      erun = 0;
-      // The letter already spoke for the wall that ended the run, so start the
-      // wall count one below zero: the increment below brings it back to zero.
-      return -1;
-    }
-    // A whole number of 'z' chunks absorbs no wall; count this one normally.
-    return 0;
-  };
-
   for (let i = 0; i < ws; i++) {
-    if (!walls[i] && wrun > 0) {
-      out += String(wrun);
+    if (!walls[i]) {
+      if (wrun > 0) out += String(wrun);
       wrun = 0;
+      erun++;
+    } else if (erun > 0) {
+      out += gapLetters(erun);
+      // A closing letter already speaks for this wall; a bare run of 'z's does not.
+      wrun = erun % 26 === 0 ? 1 : 0;
       erun = 0;
-    } else if (walls[i] && erun > 0) {
-      wrun = flushGaps();
+    } else {
+      wrun++;
     }
-
-    if (!walls[i]) erun++;
-    else wrun++;
   }
-
   if (wrun > 0) out += String(wrun);
-  while (erun >= 26) {
-    out += "z";
-    erun -= 26;
-  }
   // A trailing gap run has no wall after it; the letter's implied wall falls off
   // the end of the border list, exactly as upstream.
-  if (erun > 0) out += String.fromCharCode(0x61 + erun - 1);
-
-  return out;
+  return out + gapLetters(erun);
 }
 
-/** Encode the clue grid: letter runs for empty cells (chunked in `'z'` = 26),
- * the digit itself for a given. */
+/** Encode the clue grid: letter runs for empty cells, the digit itself for a
+ * given. */
 export function encodeClues(grid: ArrayLike<number>, s: number): string {
   let out = "";
   let erun = 0;
-  const flush = () => {
-    while (erun >= 26) {
-      out += "z";
-      erun -= 26;
-    }
-    if (erun > 0) out += String.fromCharCode(0x61 + erun - 1);
-    erun = 0;
-  };
   for (let i = 0; i < s; i++) {
-    const c = grid[i];
-    if (erun > 0 && c !== 0) flush();
-    if (c > 0) out += String(c);
-    else erun++;
+    if (grid[i] === 0) {
+      erun++;
+    } else {
+      out += gapLetters(erun) + String(grid[i]);
+      erun = 0;
+    }
   }
-  flush();
-  return out;
+  return out + gapLetters(erun);
+}
+
+/** A run of `n` gaps as letters: a `'z'` per 26, then one letter for the rest
+ * (`'a'` = 1). */
+function gapLetters(n: number): string {
+  const rest = n % 26;
+  return "z".repeat((n - rest) / 26) + (rest ? String.fromCharCode(0x60 + rest) : "");
 }
 
 /** The wall list plus the clue grid — upstream's `⟨walls⟩,⟨clues⟩` description. */
@@ -446,17 +395,17 @@ export function encodeDesc(board: SeismicBoard): string {
   return `${encodeWalls(walls, ws)},${encodeClues(grid, w * h)}`;
 }
 
-/** Decode a description into a fresh board, reporting upstream's verdict code
- * rather than throwing (`validateDesc` turns it into a message). */
+/** Decode a description into a fresh board, reporting whether the wall list
+ * parsed rather than throwing (`validateDesc` turns that into a message). */
 function readDesc(
   p: SeismicParams,
   desc: string,
-): { board: SeismicBoard; valid: number } {
+): { board: SeismicBoard; wallsValid: boolean } {
   const { w, h } = p;
   const ws = borderCount(w, h);
   const board = blankBoard(w, h, p.mode);
   const walls = new Uint8Array(ws);
-  let valid = VALID;
+  let wallsValid = true;
 
   let at = 0;
   let erun = 0;
@@ -477,7 +426,7 @@ function readDesc(
         erun = 26;
         at++;
       } else {
-        valid = INVALID_WALLS;
+        wallsValid = false;
       }
     }
     if (erun > 0) {
@@ -518,31 +467,24 @@ function readDesc(
     if (c >= "1" && c <= "9") {
       board.grid[i] = c.charCodeAt(0) - 0x30;
       board.flags[i] = FM_FIXED;
-    } else {
-      board.grid[i] = 0;
-      board.flags[i] = 0;
     }
   }
 
-  return { board, valid };
+  return { board, wallsValid };
 }
 
 export function validateDesc(p: SeismicParams, desc: string): string | null {
-  const { board, valid: readValid } = readDesc(p, desc);
-  let valid = readValid;
+  const { board, wallsValid } = readDesc(p, desc);
+  if (!wallsValid) return "Region description contains invalid characters";
 
-  if (valid === VALID) {
-    for (let i = 0; i < p.w * p.h; i++) {
-      const size = board.dsf.size(i);
-      if (size > 9) valid = INVALID_REGION;
-      if (board.grid[i] > size) valid = INVALID_CLUESIZE;
-    }
+  // The last offending cell decides the message, as upstream.
+  let error: string | null = null;
+  for (let i = 0; i < p.w * p.h; i++) {
+    const size = board.dsf.size(i);
+    if (size > 9) error = "A region is too large";
+    if (board.grid[i] > size) error = "A clue is too large";
   }
-
-  if (valid === INVALID_WALLS) return "Region description contains invalid characters";
-  if (valid === INVALID_REGION) return "A region is too large";
-  if (valid === INVALID_CLUESIZE) return "A clue is too large";
-  return null;
+  return error;
 }
 
 export function newState(p: SeismicParams, desc: string): SeismicState {

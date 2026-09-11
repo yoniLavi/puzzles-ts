@@ -1,15 +1,12 @@
 /*
- * Seismic's adoption of `runDeductionFixpoint`, proved by equivalence
- * (`adopt-the-deduction-runner-where-it-rewires`). The harness and the argument
- * for it are `engine/testing/ladder-equivalence.ts`; this file is the
- * declaration.
+ * Seismic's `runDeductionFixpoint` ladder, proved equivalent to the hand-written
+ * `solveGameLegacy`. The harness and the argument for it are
+ * `engine/testing/ladder-equivalence.ts`; this file is the declaration.
  *
- * **Seismic is the game the "same grade?" check was written for.** Its
- * hand-written loop bumped `diff` *before* the Hard rung — on **reaching** the
- * tier, not on firing it — which is the distinction that keeps Boats out of the
- * runner. `solveGameLegacy`'s doc comment carries the argument that the two
- * coincide here; this file is the check that they do, on real boards, at every
- * cap.
+ * **Seismic is the game the "same grade?" check was written for**: its
+ * hand-written loop bumps the grade on *reaching* the second tier, not on firing
+ * it. `solveGameLegacy`'s doc comment argues the two coincide here; this file
+ * checks that they do, on real boards, at every cap.
  */
 import { randomNew } from "../../engine/random/index.ts";
 import { describeLadderEquivalence } from "../../engine/testing/ladder-equivalence.ts";
@@ -17,7 +14,7 @@ import { newSeismicDesc } from "./generator.ts";
 import { solveGame, solveGameLegacy } from "./solver.ts";
 import {
   DIFF_EASY,
-  DIFF_HARD,
+  DIFF_NORMAL,
   MODE_SEISMIC,
   MODE_TECTONIC,
   newState,
@@ -28,10 +25,10 @@ import {
  * over, and the tier is what gates the Hard rung. */
 const SHAPES: SeismicParams[] = [
   { w: 4, h: 4, diff: DIFF_EASY, mode: MODE_SEISMIC },
-  { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_TECTONIC },
+  { w: 4, h: 4, diff: DIFF_NORMAL, mode: MODE_TECTONIC },
   { w: 6, h: 6, diff: DIFF_EASY, mode: MODE_TECTONIC },
-  { w: 6, h: 6, diff: DIFF_HARD, mode: MODE_SEISMIC },
-  { w: 7, h: 7, diff: DIFF_HARD, mode: MODE_TECTONIC },
+  { w: 6, h: 6, diff: DIFF_NORMAL, mode: MODE_SEISMIC },
+  { w: 7, h: 7, diff: DIFF_NORMAL, mode: MODE_TECTONIC },
 ];
 
 const SEEDS = ["lad-a", "lad-b", "lad-c"];
@@ -48,7 +45,7 @@ describeLadderEquivalence({
   game: "seismic",
   rungs: ["marks", "areas", "attempt"],
   unreached: {},
-  caps: [DIFF_EASY, DIFF_HARD],
+  caps: [DIFF_EASY, DIFF_NORMAL],
   cases,
   viaRunner: solveGame,
   viaLegacy: solveGameLegacy,

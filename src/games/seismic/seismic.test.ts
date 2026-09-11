@@ -1,12 +1,12 @@
 /**
  * Behavioral tests for the Seismic port.
  *
- * Tiers (docs/games/testing.md § "The test tiers"): tier 1 for params / codec / solver / moves / mistakes,
- * tier 2 and 2.5 for every frame the renderer can reach.
+ * Tiers (docs/games/testing.md § "The test tiers"): tier 1 for params / codec /
+ * solver / moves / mistakes, tier 2 and 2.5 for every frame the renderer can
+ * reach.
  *
  * The boards are the C-reference descriptions the differential already pins, so
- * every test runs against a real upstream puzzle without paying to generate one
- * (7×7 boards cost tens of seconds — see `MAX_CELLS` in `state.ts`).
+ * every test runs against a real upstream puzzle without generating one.
  */
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
@@ -48,8 +48,8 @@ import {
   borderCount,
   cloneState,
   DIFF_EASY,
-  DIFF_HARD,
   DIFF_NAMES,
+  DIFF_NORMAL,
   decodeParams,
   encodeDesc,
   encodeParams,
@@ -145,11 +145,11 @@ describe("seismic params", () => {
       encodeParams({ w: 6, h: 6, diff: DIFF_EASY, mode: MODE_SEISMIC }, true),
     ).toBe("6x6de");
     expect(
-      encodeParams({ w: 6, h: 6, diff: DIFF_HARD, mode: MODE_TECTONIC }, true),
+      encodeParams({ w: 6, h: 6, diff: DIFF_NORMAL, mode: MODE_TECTONIC }, true),
     ).toBe("6x6Tdh");
     // Without `full` the difficulty is omitted, as upstream.
     expect(
-      encodeParams({ w: 7, h: 4, diff: DIFF_HARD, mode: MODE_SEISMIC }, false),
+      encodeParams({ w: 7, h: 4, diff: DIFF_NORMAL, mode: MODE_SEISMIC }, false),
     ).toBe("7x4");
   });
 
@@ -207,10 +207,9 @@ describe("seismic params", () => {
 
   it("names presets mode-first, with the game's own tier word", () => {
     // The tier word comes from `DIFF_NAMES` rather than being restated here: it
-    // is the collection's, by position (`adopt-conventional-tier-names`), and a
-    // literal would be a second copy to rot. What this pins is the *shape* —
-    // mode, then size, then tier — which is what upstream's menu does and what
-    // the config-summary template below reads.
+    // is the collection's, by position, and a literal would be a second copy to
+    // rot. What this pins is the *shape* — mode, then size, then tier — which is
+    // what upstream's menu does and what the config-summary template reads.
     expect(presetName(PRESETS[4])).toBe(`Seismic: 6x6 ${DIFF_NAMES[0]}`);
     expect(presetName(PRESETS[3])).toBe(`Tectonic: 4x4 ${DIFF_NAMES[1]}`);
   });
@@ -228,11 +227,11 @@ describe("seismic params", () => {
   });
 
   it("describes params with the keys the config-summary template reads", () => {
-    // augmentation.ts: "{game-mode:Seismic|Tectonic}: {width}x{height} {difficulty:Easy|Hard}"
+    // augmentation.ts: "{game-mode}: {width}x{height} {difficulty}"
     expect(seismicGame.describeParams?.(PRESETS[7])).toEqual({
       width: "6",
       height: "6",
-      difficulty: DIFF_HARD,
+      difficulty: DIFF_NORMAL,
       "game-mode": MODE_TECTONIC,
     });
   });
@@ -357,7 +356,7 @@ describe("seismic solver", () => {
 
       if (f.diff > DIFF_EASY) {
         // The generator accepts a board only if it is *not* solvable one tier
-        // easier, so a Hard board must defeat the Easy rungs.
+        // easier, so a Normal board must defeat the Easy rungs.
         const easier = stateOf(f);
         expect(solveGame(easier, f.diff - 1)).toBe(SOLVE_FAILED);
       }
@@ -442,7 +441,7 @@ describe("seismic generator", () => {
 
   it("produces a board solvable at the requested difficulty", () => {
     for (const p of [
-      { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_SEISMIC },
+      { w: 4, h: 4, diff: DIFF_NORMAL, mode: MODE_SEISMIC },
       { w: 5, h: 4, diff: DIFF_EASY, mode: MODE_TECTONIC },
     ]) {
       const { desc } = newSeismicDesc(p, randomNew(`gen-${p.w}x${p.h}-${p.mode}`));
@@ -458,12 +457,10 @@ describe("seismic generator", () => {
 /**
  * These are what **replaces the byte-match** for the shipped region generator.
  *
- * `replace-seismic-region-generator` inverted upstream's first two stages
- * (partition first, then fill), which necessarily leaves the frozen C
- * descriptions behind — upstream's stages survive only behind
- * `upstreamRegionGrower`, where the differential still runs them. So everything
- * the byte-match was implicitly guaranteeing about the *regions* has to be
- * stated and checked directly here (design D4): the structure, the mode's
+ * The shipped generator partitions first and fills second, so it leaves the
+ * frozen C descriptions behind (the differential runs upstream's stages behind
+ * `upstreamRegionGrower`). Everything the byte-match guaranteed about the
+ * *regions* is therefore checked directly here: the structure, the mode's
  * keep-apart rule, unique solubility at the requested band, and determinism.
  *
  * Every case is a fixed seed, so the work and the verdict are identical on every
@@ -474,11 +471,11 @@ describe("seismic constructive generator", () => {
    * both modes, both difficulties, square and oblong. */
   const SWEEP: SeismicParams[] = [
     { w: 4, h: 4, diff: DIFF_EASY, mode: MODE_SEISMIC },
-    { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_SEISMIC },
+    { w: 4, h: 4, diff: DIFF_NORMAL, mode: MODE_SEISMIC },
     { w: 4, h: 4, diff: DIFF_EASY, mode: MODE_TECTONIC },
-    { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_TECTONIC },
+    { w: 4, h: 4, diff: DIFF_NORMAL, mode: MODE_TECTONIC },
     { w: 6, h: 5, diff: DIFF_EASY, mode: MODE_SEISMIC },
-    { w: 5, h: 6, diff: DIFF_HARD, mode: MODE_TECTONIC },
+    { w: 5, h: 6, diff: DIFF_NORMAL, mode: MODE_TECTONIC },
   ];
   const SEEDS = ["p0", "p1", "p2"];
 
@@ -624,7 +621,7 @@ describe("seismic constructive generator", () => {
     // The differential runs `upstreamRegionGrower: true`. If the flag ever
     // stopped changing anything, those 28 byte-match assertions would silently
     // become a test of the shipped path against itself — and the whole point of
-    // keeping upstream's stages alive would be lost. Design D3.
+    // keeping upstream's stages alive would be lost.
     let differences = 0;
     for (const p of SWEEP) {
       const shipped = newSeismicDesc(p, randomNew("oracle-check")).desc;
