@@ -22,7 +22,8 @@ import {
 } from "./state.ts";
 
 /** Make every forced link. Reads `state`, writes links into `copy`;
- * returns the number of links made, or -1 if a contradiction is found. */
+ * returns the number of links made, or -1 if a contradiction is found.
+ * `from[j]` collects the sole cell that may link to j (-1 none, -2 several). */
 function solveSingle(
   state: SignpostState,
   copy: SignpostState,
@@ -38,7 +39,7 @@ function solveSingle(
     if (state.nums[i] === n) continue; // no next from the last number
 
     const d = state.dirs[i];
-    let poss = -1;
+    let poss = -1; // -1 none, -2 several
     const sx = i % w;
     const sy = Math.floor(i / w);
     let x = sx;
@@ -67,12 +68,11 @@ function solveSingle(
       poss = poss === -1 ? j : -2;
       from[j] = from[j] === -1 ? i : -2;
     }
-    if (poss === -2) {
-      // multiple candidates — no deduction
-    } else if (poss === -1) {
+    if (poss === -1) {
       copy.impossible = true;
       return -1;
-    } else {
+    }
+    if (poss !== -2) {
       makeLink(copy, i, poss);
       nlinks++;
     }
@@ -87,9 +87,7 @@ function solveSingle(
       copy.impossible = true;
       return -1;
     }
-    if (from[i] === -2) {
-      // multiple candidates — no deduction
-    } else {
+    if (from[i] !== -2) {
       makeLink(copy, from[i], i);
       nlinks++;
     }
@@ -106,15 +104,11 @@ export function solveState(state: SignpostState): number {
   const copy = cloneState(state);
   const scratch = new Int32Array(state.n);
 
-  for (;;) {
+  do {
     updateNumbers(state);
-    if (solveSingle(state, copy, scratch)) {
-      assignStateInto(state, copy);
-      if (state.impossible) break;
-      continue;
-    }
-    break;
-  }
+    if (!solveSingle(state, copy, scratch)) break;
+    assignStateInto(state, copy);
+  } while (!state.impossible);
 
   updateNumbers(state);
   if (state.impossible) return -1;

@@ -24,42 +24,34 @@ import {
  * `execute_move`). Throws if the move is illegal. */
 export function executeMove(s: SignpostState, move: SignpostMove): SignpostState {
   const { w } = s;
-  let ret: SignpostState;
+  const ret = cloneState(s);
 
   switch (move.type) {
-    case "link": {
+    case "link":
       if (!isValidMove(s, false, move.fromX, move.fromY, move.toX, move.toY)) {
         throw new Error("signpost: illegal link move");
       }
-      ret = cloneState(s);
       makeLink(ret, move.fromY * w + move.fromX, move.toY * w + move.toX);
       break;
-    }
-    case "unlinkNext": {
+    case "unlinkNext":
       // Upstream 'C': always sever just this cell.
-      ret = cloneState(s);
       unlinkCell(ret, move.y * w + move.x);
       break;
-    }
     case "unlinkPrev": {
       // Upstream 'X': sever this cell if it is in a real-numbered region
       // (color 0), else sever every cell in its color set.
       const si = move.y * w + move.x;
       const sset = colorOf(s, s.nums[si]);
-      ret = cloneState(s);
       if (sset === 0) {
         unlinkCell(ret, si);
       } else {
         for (let i = 0; i < s.n; i++) {
-          if (s.nums[i] === 0) continue;
-          if (colorOf(s, s.nums[i]) !== sset) continue;
-          unlinkCell(ret, i);
+          if (colorOf(s, s.nums[i]) === sset) unlinkCell(ret, i);
         }
       }
       break;
     }
-    case "solve": {
-      ret = cloneState(s);
+    case "solve":
       ret.next.set(move.next);
       ret.prev.fill(-1);
       for (let i = 0; i < ret.n; i++) {
@@ -67,7 +59,6 @@ export function executeMove(s: SignpostState, move: SignpostMove): SignpostState
       }
       ret.cheated = true;
       break;
-    }
     default:
       return assertNever(move, "signpost: executeMove");
   }

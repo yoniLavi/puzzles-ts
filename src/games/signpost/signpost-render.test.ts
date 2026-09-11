@@ -12,7 +12,13 @@ import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { newSignpostDesc } from "./generator.ts";
 import { signpostGame } from "./index.ts";
 import { solveState } from "./solver.ts";
-import { cloneState, type SignpostMove, type SignpostParams } from "./state.ts";
+import {
+  cloneState,
+  FLAG_ERROR,
+  FLAG_IMMUTABLE,
+  type SignpostMove,
+  type SignpostParams,
+} from "./state.ts";
 
 const COL_GRID = 3;
 const COL_ERROR = 5;
@@ -44,7 +50,9 @@ describe("Signpost render scenarios", () => {
 
   it("mistake overlay: a wrong link recolors a number COL_ERROR", () => {
     const p: SignpostParams = { w: 5, h: 5, forceCornerStart: true };
-    // Find a seed + a legal-but-wrong link from the '1' cell.
+    // Find a seed + a legal-but-wrong link out of a free cell that the
+    // board's own error check leaves alone, so only the overlay can color
+    // its number. (A clue's number keeps its own color under the overlay.)
     let scenarioId = "";
     let wrongMove: SignpostMove | null = null;
     for (let attempt = 0; attempt < 20 && !wrongMove; attempt++) {
@@ -52,40 +60,43 @@ describe("Signpost render scenarios", () => {
       const s0 = signpostGame.newState(p, desc);
       const solved = cloneState(s0);
       if (solveState(solved) !== 1) continue;
-      const one = s0.nums.indexOf(1);
-      for (let target = 0; target < s0.n; target++) {
-        if (target === solved.next[one]) continue;
-        const m: SignpostMove = {
-          type: "link",
-          fromX: one % s0.w,
-          fromY: Math.floor(one / s0.w),
-          toX: target % s0.w,
-          toY: Math.floor(target / s0.w),
-        };
-        try {
-          signpostGame.executeMove(s0, m);
-          wrongMove = m;
-          scenarioId = `${signpostGame.encodeParams(p, true)}:${desc}`;
-          break;
-        } catch {
-          // illegal — keep scanning
+      for (let from = 0; from < s0.n && !wrongMove; from++) {
+        if (s0.flags[from] & FLAG_IMMUTABLE) continue;
+        for (let target = 0; target < s0.n; target++) {
+          if (target === solved.next[from]) continue;
+          const m: SignpostMove = {
+            type: "link",
+            fromX: from % s0.w,
+            fromY: Math.floor(from / s0.w),
+            toX: target % s0.w,
+            toY: Math.floor(target / s0.w),
+          };
+          try {
+            const after = signpostGame.executeMove(s0, m);
+            if (after.impossible || after.flags[from] & FLAG_ERROR) continue;
+            wrongMove = m;
+            scenarioId = `${signpostGame.encodeParams(p, true)}:${desc}`;
+            break;
+          } catch {
+            // illegal — keep scanning
+          }
         }
       }
     }
     expect(wrongMove).not.toBeNull();
     if (!wrongMove) return;
 
-    const { recording, mistakeCount } = renderScenario({
-      game: signpostGame,
-      id: scenarioId,
-      moves: [wrongMove],
-      showMistakes: true,
-    });
+    const scenario = { game: signpostGame, id: scenarioId, moves: [wrongMove] };
+    const shown = renderScenario({ ...scenario, showMistakes: true });
+    const hidden = renderScenario(scenario);
+    const errorTexts = (ops: typeof shown.recording.ops) =>
+      ops.filter((o) => o.op === "text" && o.color === COL_ERROR).length;
 
-    expect(mistakeCount).toBeGreaterThan(0);
-    // The offending cell's number is drawn in the error color.
-    expect(recording.ops.some((o) => o.op === "text" && o.color === COL_ERROR)).toBe(
-      true,
+    expect(shown.mistakeCount).toBeGreaterThan(0);
+    // The offending cell's number is drawn in the error color, and only
+    // because of the overlay.
+    expect(errorTexts(shown.recording.ops)).toBeGreaterThan(
+      errorTexts(hidden.recording.ops),
     );
   });
 });

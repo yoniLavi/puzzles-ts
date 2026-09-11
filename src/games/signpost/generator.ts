@@ -30,10 +30,8 @@ import {
   whichDirI,
 } from "./state.ts";
 
-/** Draws allowed when picking two distinct cells. The 1x1 grid — the only board
- * with no distinct pair — returns before this runs, so the rejection sampling
- * ends with probability 1; "probably" is not a bound (see
- * engine/retry-limit.ts). */
+/** Draws allowed when picking two distinct cells. The 1x1 grid, the only board
+ * with no distinct pair, returns before this runs (see engine/retry-limit.ts). */
 const MAX_DISTINCT_PICKS = 1_000_000;
 
 /** Fill `ai`/`ad` with all non-numbered cells reachable from cell `i`
@@ -123,14 +121,12 @@ function newGameStrip(s: SignpostState, rng: RandomState): boolean {
   stripNums(copy);
   if (solveState(copy) > 0) return true;
 
-  const scratch: number[] = [];
-  for (let i = 0; i < s.n; i++) scratch.push(i);
-  shuffle(scratch, rng);
+  const order = Array.from({ length: s.n }, (_, i) => i);
+  shuffle(order, rng);
 
   let solved = false;
   // Add set numbers to empty squares until it becomes solvable.
-  for (let i = 0; i < s.n; i++) {
-    const j = scratch[i];
+  for (const j of order) {
     if (copy.nums[j] > 0 && copy.nums[j] <= s.n) continue; // already solved here
     copy.nums[j] = s.nums[j];
     copy.flags[j] |= FLAG_IMMUTABLE;
@@ -143,17 +139,14 @@ function newGameStrip(s: SignpostState, rng: RandomState): boolean {
   }
   if (!solved) return false;
 
-  // Try to remove numbers again and keep them out where still solvable
+  // Try to remove numbers again, keeping them out where still solvable
   // (never the anchors 1 and n).
-  for (let i = 0; i < s.n; i++) {
-    const j = scratch[i];
+  for (const j of order) {
     if (s.flags[j] & FLAG_IMMUTABLE && s.nums[j] !== 1 && s.nums[j] !== s.n) {
       s.flags[j] &= ~FLAG_IMMUTABLE;
       assignStateInto(copy, s);
       stripNums(copy);
-      if (solveState(copy) > 0) {
-        // removal OK — leave it removed
-      } else {
+      if (solveState(copy) <= 0) {
         copy.nums[j] = s.nums[j];
         s.flags[j] |= FLAG_IMMUTABLE;
       }
@@ -197,6 +190,6 @@ export function newSignpostDesc(p: SignpostParams, rng: RandomState): { desc: st
 
     if (!newGameStrip(s, rng)) continue; // regenerate
     stripNums(s);
-    return { desc: generateDesc(s, false) };
+    return { desc: generateDesc(s) };
   }
 }

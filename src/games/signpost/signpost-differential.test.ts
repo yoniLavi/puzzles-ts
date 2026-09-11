@@ -1,17 +1,13 @@
 /**
- * Gated C-vs-TS differential for the Signpost port. Reads the committed
- * fixture recorded from upstream signpost.c
- * (puzzles/auxiliary/signpost-trace.c) and asserts that TS `newSignpostDesc`
- * over the same seed reproduces the C desc **byte-for-byte** — the
- * generator is a faithful port (the head+tail random walk, the
+ * Gated C-vs-TS differential for the Signpost port: TS `newSignpostDesc`
+ * must reproduce upstream's desc **byte-for-byte** for each recorded seed —
+ * the generator is a faithful port (the head+tail random walk, the
  * shuffle-and-solver-gated clue selection), the clue-removal loop is
  * decided by identical solver verdicts, and the RNG is bit-identical.
  * The `extra` step also asserts each C desc parses and re-encodes.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/signpost-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C harness that
+ * recorded it is gone (see `engine/testing/differential.ts`).
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
@@ -47,7 +43,7 @@ describeDescDifferential<Fixture, SignpostParams>({
     const r = unpickDesc(p, f.desc);
     expect("state" in r).toBe(true);
     if ("state" in r) {
-      expect(generateDesc(r.state, false)).toBe(f.desc);
+      expect(generateDesc(r.state)).toBe(f.desc);
     }
   },
 });

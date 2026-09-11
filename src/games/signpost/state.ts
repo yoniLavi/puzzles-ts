@@ -1,13 +1,11 @@
 /**
  * Types and pure state helpers for Signpost — the linked-chain model.
  *
- * Idiomatic port of the state core of `puzzles/signpost.c`: the
- * `next`/`prev` chain links, the `Dsf` binding linked cells into
- * regions, and the derived per-cell sequence-number + 16-way region
- * coloring (`update_numbers` / `head_number` / `connect_numbers`) that
- * renders each partial chain as a colored gradient. The state is a
- * mutable record cloned per move (`cloneState`); the engine boundary
- * treats it immutably (executeMove clones, then mutates the copy).
+ * Port of the state core of upstream `signpost.c`: the `next`/`prev` chain
+ * links, the `Dsf` binding linked cells into regions, and the derived
+ * per-cell sequence number + 16-way region coloring (`update_numbers`) that
+ * renders each partial chain as a colored gradient. The engine treats the
+ * state immutably: `executeMove` clones, then mutates the copy.
  */
 
 import { Dsf } from "../../engine/dsf.ts";
@@ -198,21 +196,17 @@ export const isReal = (s: SignpostState, num: number): boolean => num > 0 && num
 export const inGrid = (s: SignpostState, x: number, y: number): boolean =>
   x >= 0 && x < s.w && y >= 0 && y < s.h;
 
+/** The direction from one cell to another in line with it, or -1. */
 export function whichDir(
   fromx: number,
   fromy: number,
   tox: number,
   toy: number,
 ): number {
-  let dx = tox - fromx;
-  let dy = toy - fromy;
+  const dx = tox - fromx;
+  const dy = toy - fromy;
   if (dx && dy && Math.abs(dx) !== Math.abs(dy)) return -1;
-  if (dx) dx = dx / Math.abs(dx);
-  if (dy) dy = dy / Math.abs(dy);
-  for (let i = 0; i < DIR_MAX; i++) {
-    if (dx === DXS[i] && dy === DYS[i]) return i;
-  }
-  return -1;
+  return DXS.findIndex((x, d) => x === Math.sign(dx) && DYS[d] === Math.sign(dy));
 }
 
 export function whichDirI(s: SignpostState, fromi: number, toi: number): number {
@@ -336,72 +330,43 @@ interface HeadMeta {
   i: number;
   sz: number;
   start: number;
-  preference: number; // 0 = none, 1 = has preference, -1 = was duplicate
+  /** The chain has a start it wants to keep: fixed by a clue, or its color. */
+  preferred: boolean;
 }
 
+/** The start number the chain headed at `i` asks for (upstream `head_number`). */
 function headNumber(s: SignpostState, i: number): HeadMeta {
-  const head: HeadMeta = { i, sz: s.dsf.size(i), start: 0, preference: 0 };
-  let off = 0;
-  let j = i;
+  const sz = s.dsf.size(i);
 
   // Search the chain for immutable numbers, checking consistency.
-  while (j !== -1) {
-    if (s.flags[j] & FLAG_IMMUTABLE) {
-      const ss = s.nums[j] - off;
-      if (!head.preference) {
-        head.start = ss;
-        head.preference = 1;
-      } else if (head.start !== ss) {
-        s.impossible = true;
-      }
-    }
-    off++;
-    j = s.next[j];
+  let fixed: number | null = null;
+  for (let j = i, off = 0; j !== -1; j = s.next[j], off++) {
+    if (!(s.flags[j] & FLAG_IMMUTABLE)) continue;
+    if (fixed === null) fixed = s.nums[j] - off;
+    else if (fixed !== s.nums[j] - off) s.impossible = true;
   }
-  if (head.preference) return head;
+  if (fixed !== null) return { i, sz, start: fixed, preferred: true };
 
   if (s.nums[i] === 0 && s.nums[s.next[i]] > s.n) {
-    head.start = startOf(s, colorOf(s, s.nums[s.next[i]]));
-    head.preference = 1;
-  } else if (s.nums[i] <= s.n) {
-    head.start = 0;
-    head.preference = 0;
-  } else {
-    const c = colorOf(s, s.nums[i]);
-    let nn = 1;
-    const sz = s.dsf.size(i);
-    j = i;
-    while (s.next[j] !== -1) {
-      j = s.next[j];
-      if (s.nums[j] === 0 && s.next[j] === -1) {
-        head.start = startOf(s, c);
-        head.preference = 1;
-        return head;
-      }
-      if (colorOf(s, s.nums[j]) === c) {
-        nn++;
-      } else {
-        const startAlternate = startOf(s, colorOf(s, s.nums[j]));
-        if (nn < sz - nn) {
-          head.start = startAlternate;
-          head.preference = 1;
-        } else {
-          head.start = startOf(s, c);
-          head.preference = 1;
-        }
-        return head;
-      }
-    }
-    // May have split a region; avoid re-using a color.
-    if (c === 0) {
-      head.start = 0;
-      head.preference = 0;
-    } else {
-      head.start = startOf(s, c);
-      head.preference = 1;
+    return { i, sz, start: startOf(s, colorOf(s, s.nums[s.next[i]])), preferred: true };
+  }
+  if (s.nums[i] <= s.n) return { i, sz, start: 0, preferred: false };
+
+  // A colored chain keeps the head's color, unless the head's run of it is
+  // the shorter part of the chain. Both halves of a split region keep it;
+  // `updateNumbers` recolors the duplicate.
+  const c = colorOf(s, s.nums[i]);
+  let color = c;
+  let nn = 1;
+  for (let j = s.next[i]; j !== -1; j = s.next[j], nn++) {
+    if (s.nums[j] === 0 && s.next[j] === -1) break;
+    const cj = colorOf(s, s.nums[j]);
+    if (cj !== c) {
+      if (nn < sz - nn) color = cj;
+      break;
     }
   }
-  return head;
+  return { i, sz, start: startOf(s, color), preferred: true };
 }
 
 function connectNumbers(s: SignpostState): void {
@@ -416,24 +381,15 @@ function connectNumbers(s: SignpostState): void {
   }
 }
 
+/** Preferred heads first, then low colors, then large regions, then the
+ * higher index (as upstream). */
 function compareHeads(a: HeadMeta, b: HeadMeta): number {
-  // Heads with preferred colors first...
-  if (a.preference && !b.preference) return -1;
-  if (b.preference && !a.preference) return 1;
-  // ...then low colors first...
-  if (a.start < b.start) return -1;
-  if (a.start > b.start) return 1;
-  // ...then large regions first...
-  if (a.sz > b.sz) return -1;
-  if (a.sz < b.sz) return 1;
-  // ...then position (higher index first, matching upstream).
-  if (a.i > b.i) return -1;
-  if (a.i < b.i) return 1;
-  return 0;
+  if (a.preferred !== b.preferred) return a.preferred ? -1 : 1;
+  return a.start - b.start || b.sz - a.sz || b.i - a.i;
 }
 
-function lowestStart(s: SignpostState, heads: HeadMeta[]): number {
-  // NB start at 1: color 0 is real numbers.
+/** The lowest color no head uses; color 0 is the real numbers. */
+function lowestFreeColor(s: SignpostState, heads: HeadMeta[]): number {
   for (let c = 1; c < s.n; c++) {
     let used = false;
     for (const head of heads) {
@@ -462,32 +418,25 @@ export function updateNumbers(s: SignpostState): void {
   // Heads of all current regions (has a next but no prev).
   const heads: HeadMeta[] = [];
   for (let i = 0; i < s.n; i++) {
-    if (s.prev[i] !== -1 || s.next[i] === -1) continue;
-    heads.push(headNumber(s, i));
+    if (s.prev[i] === -1 && s.next[i] !== -1) heads.push(headNumber(s, i));
   }
-
   heads.sort(compareHeads);
 
-  // Remove duplicate-colored regions (order matters: back to front).
+  // Recolor duplicate-colored and unpreferred regions (back to front: order
+  // matters).
   for (let m = heads.length - 1; m >= 0; m--) {
-    if (m !== 0 && heads[m].start === heads[m - 1].start) {
-      heads[m].start = startOf(s, lowestStart(s, heads));
-      heads[m].preference = -1;
-    } else if (!heads[m].preference) {
-      heads[m].start = startOf(s, lowestStart(s, heads));
+    const duplicate = m !== 0 && heads[m].start === heads[m - 1].start;
+    if (duplicate || !heads[m].preferred) {
+      heads[m].start = startOf(s, lowestFreeColor(s, heads));
     }
   }
 
   for (const head of heads) {
     let nnum = head.start;
-    let j = head.i;
-    while (j !== -1) {
-      if (!(s.flags[j] & FLAG_IMMUTABLE)) {
-        if (nnum > 0 && nnum <= s.n) s.numsi[nnum] = j;
-        s.nums[j] = nnum;
-      }
-      nnum++;
-      j = s.next[j];
+    for (let j = head.i; j !== -1; j = s.next[j], nnum++) {
+      if (s.flags[j] & FLAG_IMMUTABLE) continue;
+      if (isReal(s, nnum)) s.numsi[nnum] = j;
+      s.nums[j] = nnum;
     }
   }
 }
@@ -505,7 +454,7 @@ export function checkCompletion(s: SignpostState, markErrors: boolean): boolean 
 
   // Repeated real numbers.
   for (let j = 0; j < s.n; j++) {
-    if (s.nums[j] > 0 && s.nums[j] <= s.n) {
+    if (isReal(s, s.nums[j])) {
       for (let k = j + 1; k < s.n; k++) {
         if (s.nums[k] === s.nums[j]) {
           if (markErrors) {
@@ -533,11 +482,11 @@ export function checkCompletion(s: SignpostState, markErrors: boolean): boolean 
     }
   }
 
-  // Numbers < 0, or 0 with links.
-  for (let n = 1; n < s.n; n++) {
-    if (s.nums[n] < 0 || (s.nums[n] === 0 && (s.next[n] !== -1 || s.prev[n] !== -1))) {
+  // Cells numbered < 0, or 0 with links (from cell 1, as upstream).
+  for (let i = 1; i < s.n; i++) {
+    if (s.nums[i] < 0 || (s.nums[i] === 0 && (s.next[i] !== -1 || s.prev[i] !== -1))) {
       error = true;
-      if (markErrors) s.flags[n] |= FLAG_ERROR;
+      if (markErrors) s.flags[i] |= FLAG_ERROR;
     }
   }
 
@@ -547,13 +496,12 @@ export function checkCompletion(s: SignpostState, markErrors: boolean): boolean 
 
 // --- desc codec ------------------------------------------------------
 
-/** Encode a fully-numbered / clued state as an upstream desc. */
-export function generateDesc(s: SignpostState, isSolve: boolean): string {
-  let ret = isSolve ? "S" : "";
+/** Encode a clued state as a desc: each cell's number, if any, then its
+ * direction letter. */
+export function generateDesc(s: SignpostState): string {
+  let ret = "";
   for (let i = 0; i < s.n; i++) {
-    const dirLetter = String.fromCharCode(s.dirs[i] + 97); // 'a' + dir
-    if (s.nums[i]) ret += `${s.nums[i]}${dirLetter}`;
-    else ret += dirLetter;
+    ret += `${s.nums[i] || ""}${String.fromCharCode(97 + s.dirs[i])}`; // 97 = 'a'
   }
   return ret;
 }

@@ -1,8 +1,7 @@
 /**
  * Signpost renderer — imperative per-tile draw with a packed-word cache,
- * a blitter-backed drag sprite, and the spin win-flash. Faithful port of
- * `game_redraw` / `tile_redraw` / `game_colours`. Byte-parity scope is
- * the generator/solver only, so this uses idiomatic rounding.
+ * a blitter-backed drag sprite, and the spin win-flash (upstream
+ * `game_redraw` / `tile_redraw` / `game_colours`).
  */
 
 import { BLUE_BOLD, PURPLE } from "../../engine/color/colors.ts";
@@ -16,7 +15,7 @@ import {
   signpostWashedRegion,
 } from "../../engine/color/palette-games.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Color, Point } from "../../engine/types.ts";
 import { dragReleaseMove, executeMove } from "./moves.ts";
 import {
@@ -25,6 +24,7 @@ import {
   isPointing,
   type SignpostDrawState,
   type SignpostMistake,
+  type SignpostMove,
   type SignpostState,
   type SignpostUi,
   whichDir,
@@ -71,13 +71,9 @@ const F_DIM = 0x040;
 // --- palette ----------------------------------------------------------
 
 /**
- * Port of `game_colours`: 12 named colors + four 16-entry ramps.
- *
- * Every value comes from the token table. Upstream builds all seventy-six
- * entries by arithmetic on eight hex constants; here the arithmetic that does not
- * involve the host background has moved into `palette-games.ts`, so what is left
- * is the *index mapping* — which slot each token occupies — which is the part
- * that has to match the C enum and the part a renderer actually needs.
+ * Port of `game_colours`: 12 named colors + four 16-entry ramps. Every value
+ * is a token (the arithmetic that does not involve the host background lives
+ * in `palette-games.ts`); what is left here is which slot each one occupies.
  */
 export function buildPalette(
   background: Color,
@@ -115,23 +111,21 @@ export function buildPalette(
 
 // --- primitive helpers ------------------------------------------------
 
-const iround = (v: number): number => Math.round(v);
-
+/** An arrow centered on (cx,cy), pointing `ang` radians clockwise from up. */
 function drawArrow(
   dr: GameDrawing,
   cx: number,
   cy: number,
   sz: number,
   ang: number,
-  cfill: number,
-  cout: number,
+  color: number,
 ): void {
   const s = Math.sin(ang);
   const c = Math.cos(ang);
-  const xdx3 = iround(sz * (c / 3 + 1)) - sz;
-  const xdy3 = iround(sz * (s / 3 + 1)) - sz;
-  const xdx = iround(sz * (c + 1)) - sz;
-  const xdy = iround(sz * (s + 1)) - sz;
+  const xdx3 = Math.round(sz * (c / 3 + 1)) - sz;
+  const xdy3 = Math.round(sz * (s / 3 + 1)) - sz;
+  const xdx = Math.round(sz * (c + 1)) - sz;
+  const xdy = Math.round(sz * (s + 1)) - sz;
   const ydx = -xdy;
   const ydy = xdx;
 
@@ -144,20 +138,7 @@ function drawArrow(
     { x: cx - xdx3, y: cy - xdy3 },
     { x: cx - xdx, y: cy - xdy },
   ];
-  dr.drawPolygon(coords, cfill, cout);
-}
-
-function drawArrowDir(
-  dr: GameDrawing,
-  cx: number,
-  cy: number,
-  sz: number,
-  dir: number,
-  cfill: number,
-  cout: number,
-  angleOffset: number,
-): void {
-  drawArrow(dr, cx, cy, sz, (TWO_PI * dir) / 8 + angleOffset, cfill, cout);
+  dr.drawPolygon(coords, color, color);
 }
 
 function drawStar(
@@ -166,17 +147,19 @@ function drawStar(
   cy: number,
   rad: number,
   npoints: number,
-  cfill: number,
-  cout: number,
+  color: number,
   angleOffset: number,
 ): void {
   const coords: Point[] = [];
   for (let n = 0; n < npoints * 2; n++) {
     const a = (TWO_PI * n) / (npoints * 2) + angleOffset;
     const r = n % 2 ? rad / 2 : rad;
-    coords.push({ x: cx + iround(r * Math.sin(a)), y: cy + iround(-r * Math.cos(a)) });
+    coords.push({
+      x: cx + Math.round(r * Math.sin(a)),
+      y: cy + Math.round(-r * Math.cos(a)),
+    });
   }
-  dr.drawPolygon(coords, cfill, cout);
+  dr.drawPolygon(coords, color, color);
 }
 
 function num2col(n: number, num: number): number {
@@ -197,11 +180,11 @@ function dimbg(bg: number): number {
   return bg === COL_BACKGROUND ? COL_BACKGROUND : bg + COL_X0 - COL_B0;
 }
 
-/** Build the display string for a cell's number (upstream `tile_redraw`
- * text block). */
+/** A cell's number as displayed: the real number, or its color set's
+ * letters plus the offset into it ("b+3"). */
 function numString(n: number, num: number): string {
-  const set = num <= 0 ? 0 : Math.floor(num / (n + 1));
-  if (set === 0 || num <= 0) return String(num);
+  const set = Math.floor(num / (n + 1));
+  if (num <= 0 || set === 0) return String(num);
   const rem = num % (n + 1);
   const suffix = rem !== 0 ? `+${rem}` : "";
   let letters = "";
@@ -260,9 +243,9 @@ function tileRedraw(
   const acx = tx + Math.floor(ts / 2) + asz;
   const acy = ty + Math.floor(ts / 2) + asz;
   if (num === n && f & F_IMMUTABLE) {
-    drawStar(dr, acx, acy, asz, 5, arrowcol, arrowcol, angleOffset);
+    drawStar(dr, acx, acy, asz, 5, arrowcol, angleOffset);
   } else {
-    drawArrowDir(dr, acx, acy, asz, dir, arrowcol, arrowcol, angleOffset);
+    drawArrow(dr, acx, acy, asz, (TWO_PI * dir) / 8 + angleOffset, arrowcol);
   }
   if (f & F_CUR) drawRectCorners(dr, acx, acy, asz + 1, COL_CURSOR);
 
@@ -337,7 +320,7 @@ function drawDragIndicator(
     }
     if (!ui.dragIsFrom) ang += Math.PI; // point to the origin, not away
   }
-  drawArrow(dr, ui.dx, ui.dy, asz, ang, COL_ARROW, COL_ARROW);
+  drawArrow(dr, ui.dx, ui.dy, asz, ang, COL_ARROW);
 }
 
 // --- main redraw ------------------------------------------------------
@@ -351,6 +334,7 @@ export function redrawSignpost(
   ui: SignpostUi,
   _animTime: number,
   flashTime: number,
+  _hint?: HintStep<SignpostMove>,
   mistakes?: readonly SignpostMistake[],
 ): void {
   const ts = ds.tileSize;

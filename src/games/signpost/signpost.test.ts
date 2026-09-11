@@ -56,7 +56,7 @@ describe("signpost desc codec", () => {
     const r = unpickDesc(p, desc);
     expect("state" in r).toBe(true);
     if ("state" in r) {
-      expect(generateDesc(r.state, false)).toBe(desc);
+      expect(generateDesc(r.state)).toBe(desc);
     }
   });
 
@@ -113,11 +113,9 @@ describe("signpost findMistakes", () => {
     if (!res?.ok) return;
     const solvedNext = (res.move as { type: "solve"; next: number[] }).next;
 
-    // Find the '1' cell and a legal link it can make that is NOT the
-    // solution link, then assert it is reported as a mistake.
+    // Link the '1' cell to any legal target that is not its solution
+    // successor, and expect that link reported as a mistake.
     const one = s0.nums.indexOf(1);
-    // Build a wrong board: link the '1' cell to any cell it points at that
-    // is not its solution successor.
     let found = false;
     for (let target = 0; target < s0.n && !found; target++) {
       if (target === solvedNext[one]) continue;
@@ -130,7 +128,6 @@ describe("signpost findMistakes", () => {
           toY: Math.floor(target / s0.w),
         });
         const mistakes = signpostGame.findMistakes?.(wrong) ?? [];
-        // Any wrongly-linked cell should be flagged.
         expect(mistakes.length).toBeGreaterThan(0);
         found = true;
       } catch {

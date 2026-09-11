@@ -1,13 +1,8 @@
 /**
- * Signpost — native TS port of `puzzles/signpost.c` (the "arrow path"
- * puzzle). Every cell carries an arrow and some cells carry immutable
- * sequence numbers; link the cells into a single chain 1..n where every
- * link follows its cell's arrow and the numbers run consecutively.
- *
- * Idiomatic port: immutable state cloned per move, a discriminated
- * `SignpostMove`, the `Dsf` engine leaf for region binding, a
- * blitter-backed drag sprite (as Pegs). The logic mirrors the C
- * reference; it is not a control-flow transliteration.
+ * Signpost — port of upstream `signpost.c` (the "arrow path" puzzle).
+ * Every cell carries an arrow and some cells carry immutable sequence
+ * numbers; link the cells into a single chain 1..n where every link
+ * follows its cell's arrow and the numbers run consecutively.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -16,8 +11,6 @@ import type { GamePref } from "../../engine/game.ts";
 import {
   fromCoord as fromCoordE,
   type Game,
-  type GameDrawing,
-  type HintStep,
   type ParamConfigItem,
   registerGame,
   type SolveResult,
@@ -39,7 +32,6 @@ import {
   RIGHT_DRAG,
   RIGHT_RELEASE,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
 import { newSignpostDesc } from "./generator.ts";
 import { dragReleaseMove, executeMove } from "./moves.ts";
@@ -188,11 +180,7 @@ function interpretMove(
     }
     if (ui.dragging) {
       ui.dragging = false;
-      if (ui.sx === ui.cursor.x && ui.sy === ui.cursor.y) return UI_UPDATE;
-      const m = ui.dragIsFrom
-        ? linkIfValid(s, ui.sx, ui.sy, ui.cursor.x, ui.cursor.y)
-        : linkIfValid(s, ui.cursor.x, ui.cursor.y, ui.sx, ui.sy);
-      return m ?? UI_UPDATE;
+      return dragReleaseMove(s, ui, ui.cursor.x, ui.cursor.y) ?? UI_UPDATE;
     }
     ui.dragging = true;
     ui.sx = ui.cursor.x;
@@ -250,23 +238,6 @@ function interpretMove(
   }
 
   return null;
-}
-
-/** A forward-link move (from → to) if valid, else null. Reuses the
- * drag-release logic with a synthetic forward drag. */
-function linkIfValid(
-  s: SignpostState,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-): SignpostMove | null {
-  return dragReleaseMove(
-    s,
-    { sx: fromX, sy: fromY, dragIsFrom: true } as SignpostUi,
-    toX,
-    toY,
-  );
 }
 
 // --- solve / mistakes ------------------------------------------------
@@ -424,9 +395,7 @@ export const signpostGame: Game<
   paramConfig,
   describeParams: (p) => ({ "start-and-end-in-corners": p.forceCornerStart }),
 
-  newDesc(p: SignpostParams, rng: RandomState) {
-    return newSignpostDesc(p, rng);
-  },
+  newDesc: newSignpostDesc,
   validateDesc,
   newState,
   newUi,
@@ -448,20 +417,7 @@ export const signpostGame: Game<
   computeSize,
   setTileSize,
   newDrawState,
-  redraw(
-    dr: GameDrawing,
-    ds: SignpostDrawState,
-    prev: SignpostState | null,
-    s: SignpostState,
-    dir: number,
-    ui: SignpostUi,
-    animTime: number,
-    flashTime: number,
-    _hint?: HintStep<SignpostMove>,
-    mistakes?: readonly SignpostMistake[],
-  ): void {
-    redrawSignpost(dr, ds, prev, s, dir, ui, animTime, flashTime, mistakes);
-  },
+  redraw: redrawSignpost,
   flashLength,
   animLength: () => 0,
 };
