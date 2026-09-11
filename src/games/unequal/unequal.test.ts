@@ -345,8 +345,7 @@ describe("unequal render", () => {
   });
 
   it("renders pencil marks on a partially-filled board", () => {
-    const { p, desc, st } = gen(5, "unequal", "easy", "render-p");
-    void p;
+    const { desc, st } = gen(5, "unequal", "easy", "render-p");
     const size = computeSize({ order: st.order }, PREFERRED_TILE_SIZE);
     expect(size.w).toBeGreaterThan(0);
     const r = renderScenario({

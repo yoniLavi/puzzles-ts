@@ -1,6 +1,3 @@
-import { tierNames } from "../../engine/difficulty.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
-import { digitOf, newCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Unequal — the state/codec parts of
  * `unequal.c`.
@@ -15,6 +12,9 @@ import { digitOf, newCursor } from "../../engine/pointer.ts";
  * they have used (the `spent` flags, mutable).
  */
 
+import { tierNames } from "../../engine/difficulty.ts";
+import { digitOf, type GridCursor, newCursor } from "../../engine/pointer.ts";
+
 // --- difficulty ------------------------------------------------------------
 
 export type Difficulty = "trivial" | "easy" | "tricky" | "extreme" | "recursive";
@@ -24,15 +24,12 @@ export const DIFF_EASY = 1;
 export const DIFF_SET = 2;
 export const DIFF_EXTREME = 3;
 export const DIFF_RECURSIVE = 4;
-export const DIFF_COUNT = 5;
 
-// unequal_diffchars / unequal_diffnames, indexed by level.
+// unequal_diffchars, indexed by level.
 const DIFF_CHARS = "tekxr";
-// The top tier is `Unreasonable`, not upstream's `Recursive`
-// (`audit-guessing-tier-names`, design D7): it is the tier that may require
-// guessing, and the collection says one word for that. The difficulty
-// *character* is untouched (`r`), so game IDs, saved games and shared links
-// are unaffected — only the menu label moves.
+// The top tier is `Unreasonable`, not upstream's `Recursive`: it is the tier
+// that may require guessing. Its character stays `r`, so game IDs and saved
+// games are unaffected.
 export const DIFF_NAMES = tierNames(5, { search: true });
 const DIFFS: Difficulty[] = ["trivial", "easy", "tricky", "extreme", "recursive"];
 
@@ -70,11 +67,6 @@ export const F_SPENT_RIGHT = 2048;
 export const F_SPENT_DOWN = 4096;
 export const F_SPENT_LEFT = 8192;
 
-export const F_ADJ_MASK = F_ADJ_UP | F_ADJ_RIGHT | F_ADJ_DOWN | F_ADJ_LEFT;
-export const F_ERROR_MASK =
-  F_ERROR | F_ERROR_UP | F_ERROR_RIGHT | F_ERROR_DOWN | F_ERROR_LEFT;
-export const F_SPENT_MASK = F_SPENT_UP | F_SPENT_RIGHT | F_SPENT_DOWN | F_SPENT_LEFT;
-
 /** `ADJ_TO_SPENT(F_ADJ_*) = F_ADJ_* << 9`. */
 export function adjToSpent(f: number): number {
   return f << 9;
@@ -83,8 +75,7 @@ export function adjToSpent(f: number): number {
 /**
  * The four orthogonal directions, in upstream `adjthan[]` order (up, right,
  * down, left). `f` is the clue flag toward the neighbor; `fo` the reciprocal
- * flag on the neighbor; `fe` the error flag; `dx`/`dy` the step; `c` the
- * Unequal glyph, `ac` the Adjacent glyph (text format).
+ * flag on the neighbor; `fe` the error flag; `dx`/`dy` the step.
  */
 export const ADJTHAN: ReadonlyArray<{
   f: number;
@@ -92,13 +83,11 @@ export const ADJTHAN: ReadonlyArray<{
   fe: number;
   dx: number;
   dy: number;
-  c: string;
-  ac: string;
 }> = [
-  { f: F_ADJ_UP, fo: F_ADJ_DOWN, fe: F_ERROR_UP, dx: 0, dy: -1, c: "^", ac: "-" },
-  { f: F_ADJ_RIGHT, fo: F_ADJ_LEFT, fe: F_ERROR_RIGHT, dx: 1, dy: 0, c: ">", ac: "|" },
-  { f: F_ADJ_DOWN, fo: F_ADJ_UP, fe: F_ERROR_DOWN, dx: 0, dy: 1, c: "v", ac: "-" },
-  { f: F_ADJ_LEFT, fo: F_ADJ_RIGHT, fe: F_ERROR_LEFT, dx: -1, dy: 0, c: "<", ac: "|" },
+  { f: F_ADJ_UP, fo: F_ADJ_DOWN, fe: F_ERROR_UP, dx: 0, dy: -1 },
+  { f: F_ADJ_RIGHT, fo: F_ADJ_LEFT, fe: F_ERROR_RIGHT, dx: 1, dy: 0 },
+  { f: F_ADJ_DOWN, fo: F_ADJ_UP, fe: F_ERROR_DOWN, dx: 0, dy: 1 },
+  { f: F_ADJ_LEFT, fo: F_ADJ_RIGHT, fe: F_ERROR_LEFT, dx: -1, dy: 0 },
 ];
 
 // --- params ----------------------------------------------------------------
@@ -143,7 +132,6 @@ export function decodeParams(s: string): UnequalParams {
   while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
   if (digits) p.order = Number.parseInt(digits, 10);
 
-  p.mode = "unequal";
   if (s[i] === "a") {
     i++;
     p.mode = "adjacent";
@@ -159,7 +147,6 @@ export function decodeParams(s: string): UnequalParams {
 
 export function validateParams(p: UnequalParams, _full: boolean): string | null {
   if (p.order < 3 || p.order > 32) return "Order must be between 3 and 32";
-  if (diffToLevel(p.diff) >= DIFF_COUNT) return "Unknown difficulty rating";
   if (p.order < 5 && p.mode === "adjacent" && diffToLevel(p.diff) >= DIFF_SET)
     return "Order must be at least 5 for Adjacent puzzles of this difficulty.";
   return null;
@@ -220,8 +207,8 @@ export function cloneState(s: UnequalState): UnequalState {
     order: s.order,
     mode: s.mode,
     diff: s.diff,
-    immutable: s.immutable, // immutable, shared
-    clueFlags: s.clueFlags, // immutable, shared
+    immutable: s.immutable,
+    clueFlags: s.clueFlags,
     grid: s.grid.slice(),
     pencil: s.pencil.slice(),
     spent: s.spent.slice(),
@@ -263,11 +250,11 @@ export interface UnequalUi {
   cursor: GridCursor;
   pencilMode: boolean;
   cursorFromKeyboard: boolean;
-  /** Preference (default off): keep the mouse highlight after a pencil change. */
+  /** Preference (default on): keep the mouse highlight after a pencil change. */
   pencilKeepHighlight: boolean;
   /** Preference (default on): right-click toggles a *sticky* pencil mode. */
   pencilSticky: boolean;
-  /** Preference (default on): placing a number strikes it from the pencil marks
+  /** Preference (default off): placing a number strikes it from the pencil marks
    * of every other cell in its row and column. */
   autoPencil: boolean;
 }
@@ -279,9 +266,8 @@ export function newUi(_state: UnequalState): UnequalUi {
     cursorFromKeyboard: false,
     pencilKeepHighlight: true,
     pencilSticky: true,
-    // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its
-    // row/column notes. Notes clear only via the mark-all button or a hint; opt
-    // back in through the "auto-pencil" pref.
+    // Off by default, so notes clear only via Mark-all or a hint unless the
+    // player opts in.
     autoPencil: false,
   };
 }
@@ -293,8 +279,7 @@ function parseDesc(
   order: number,
   desc: string,
 ): { nums: Int8Array; flags: Int32Array } {
-  const o = order;
-  const a = o * o;
+  const a = order * order;
   const nums = new Int8Array(a);
   const flags = new Int32Array(a);
   let i = 0; // cell index
@@ -311,26 +296,12 @@ function parseDesc(
     let num = "";
     while (p < desc.length && desc[p] >= "0" && desc[p] <= "9") num += desc[p++];
     const n = Number.parseInt(num, 10);
-    if (n < 0 || n > o) throw new Error("Out-of-range number in game description");
+    if (n < 0 || n > order) throw new Error("Out-of-range number in game description");
     nums[i] = n;
 
-    while (p < desc.length && "URDL".includes(desc[p])) {
-      switch (desc[p]) {
-        case "U":
-          flags[i] |= F_ADJ_UP;
-          break;
-        case "R":
-          flags[i] |= F_ADJ_RIGHT;
-          break;
-        case "D":
-          flags[i] |= F_ADJ_DOWN;
-          break;
-        case "L":
-          flags[i] |= F_ADJ_LEFT;
-          break;
-      }
-      p++;
-    }
+    // The direction letters, in `ADJTHAN` order.
+    while (p < desc.length && "URDL".includes(desc[p]))
+      flags[i] |= ADJTHAN["URDL".indexOf(desc[p++])].f;
     i++;
     if (i < a && desc[p] !== ",") throw new Error("Missing separator");
     if (desc[p] === ",") p++;
@@ -350,13 +321,10 @@ function checkFlags(order: number, mode: Mode, flags: Int32Array): string | null
           const nx = x + ADJTHAN[n].dx;
           const ny = y + ADJTHAN[n].dy;
           if (nx < 0 || ny < 0 || nx >= o || ny >= o) return "Flags go off grid";
-          if (mode === "adjacent") {
-            if (!(flags[ny * o + nx] & ADJTHAN[n].fo))
-              return "Flags contradicting each other";
-          } else {
-            if (flags[ny * o + nx] & ADJTHAN[n].fo)
-              return "Flags contradicting each other";
-          }
+          // A bar is flagged from both ends; a sign from its greater end only.
+          const reciprocal = (flags[ny * o + nx] & ADJTHAN[n].fo) !== 0;
+          if (reciprocal !== (mode === "adjacent"))
+            return "Flags contradicting each other";
         }
       }
     }
@@ -379,22 +347,13 @@ export function newState(p: UnequalParams, desc: string): UnequalState {
   const a = o * o;
   const { nums, flags } = parseDesc(o, desc);
 
-  const immutable = new Int8Array(a);
-  const grid = new Int8Array(a);
-  for (let i = 0; i < a; i++) {
-    if (nums[i] !== 0) {
-      immutable[i] = nums[i];
-      grid[i] = nums[i];
-    }
-  }
-
   return {
     order: o,
     mode: p.mode,
     diff: p.diff,
-    immutable,
+    immutable: nums,
     clueFlags: flags,
-    grid,
+    grid: nums.slice(),
     pencil: new Int32Array(a),
     spent: new Int32Array(a),
     completed: false,
@@ -446,17 +405,13 @@ export function checkComplete(state: UnequalState, errFlags?: Int32Array): numbe
         const dn = grid[ny * o + nx];
         if (dn === 0) continue;
         const adj = (f & ADJTHAN[d].f) !== 0;
-        if (state.mode === "adjacent") {
-          const gd = Math.abs(val - dn);
-          if ((adj && gd !== 1) || (!adj && gd === 1)) {
-            ret = -1;
-            if (errFlags) errFlags[i] |= ADJTHAN[d].fe;
-          }
-        } else {
-          if (adj && val <= dn) {
-            ret = -1;
-            if (errFlags) errFlags[i] |= ADJTHAN[d].fe;
-          }
+        const violated =
+          state.mode === "adjacent"
+            ? adj !== (Math.abs(val - dn) === 1)
+            : adj && val <= dn;
+        if (violated) {
+          ret = -1;
+          if (errFlags) errFlags[i] |= ADJTHAN[d].fe;
         }
       }
     }

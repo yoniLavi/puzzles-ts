@@ -161,8 +161,8 @@ describe("unequal hint", () => {
   });
 
   it("differ-by-1 narration reads correctly at the value extremes", () => {
-    // §2.7: the adjacency clue must never say "N−1 or N+1" (wrong at N=1 or N=o);
-    // it says "one away from N".
+    // The adjacency clue must never say "N−1 or N+1" (wrong at N=1 or N=o); it
+    // says "one away from N".
     const { st } = gen(ADJ, "adj-extreme");
     const populated = unequalGame.executeMove(st, { type: "pencilAll" });
     const res = unequalGame.hint?.(populated);

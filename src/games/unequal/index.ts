@@ -2,8 +2,8 @@
  * Unequal — native TS port of `unequal.c`. Fill an `order × order` grid so every
  * row and column holds each number `1..order` once, subject to clues between
  * adjacent cells: greater-than signs (Unequal mode) or differ-by-1 bars
- * (Adjacent mode). Left-click / cursor select highlights a cell for a real
- * entry; right-click / select2 toggles pencil mode; a digit enters (or
+ * (Adjacent mode). Left-click selects a cell for an entry and right-click for
+ * pencil marks; on the keyboard, select toggles pencil mode; a digit enters (or
  * pencil-toggles) that number; clicking a clue sign in the gap between two cells
  * grays it out ("spent"). Rule violations highlight live; Check & Save
  * additionally flags cells that contradict the unique solution.
@@ -69,17 +69,9 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { ConfigValues, KeyLabel, Point } from "../../engine/types.ts";
 import { newUnequalDesc } from "./generator.ts";
 import { say, unequalVocab } from "./hint-text.ts";
 import {
@@ -159,10 +151,6 @@ function presets(): PresetMenu<UnequalParams> {
   };
 }
 
-function inGrid(o: number, x: number, y: number): boolean {
-  return x >= 0 && x < o && y >= 0 && y < o;
-}
-
 function interpretMove(
   state: UnequalState,
   ui: UnequalUi,
@@ -177,8 +165,9 @@ function interpretMove(
 
   const tx = fromCoord(p.x, ts);
   const ty = fromCoord(p.y, ts);
+  const inGrid = tx >= 0 && tx < o && ty >= 0 && ty < o;
 
-  if (inGrid(o, tx, ty) && (button === LEFT_BUTTON || button === RIGHT_BUTTON)) {
+  if (inGrid && (button === LEFT_BUTTON || button === RIGHT_BUTTON)) {
     // A click in the gap below/right of a cell toggles that clue's spent flag.
     const gapBelow = p.y - coord(ty, ts) > ts;
     const gapRight = p.x - coord(tx, ts) > ts;
@@ -229,6 +218,8 @@ function interpretMove(
       const there = state.clueFlags[ny * o + nx];
       if (!(here & ADJTHAN[i].f || there & ADJTHAN[i].fo)) return UI_UPDATE; // no clue
 
+      // A sign's spent flag sits on its greater end; a bar's, which both ends
+      // flag, on the cell above or left of it.
       const self =
         state.mode === "adjacent"
           ? ADJTHAN[i].dx >= 0 && ADJTHAN[i].dy >= 0
@@ -374,7 +365,7 @@ function solve(
     return { ok: false, error: "No solution exists for this puzzle" };
   if (ret === DIFF_AMBIGUOUS)
     return { ok: false, error: "Multiple solutions exist for this puzzle" };
-  return { ok: true, move: { type: "solve", grid: Array.from(soln, (v) => v) } };
+  return { ok: true, move: { type: "solve", grid: Array.from(soln) } };
 }
 
 function findMistakes(state: UnequalState): readonly UnequalMistake[] {
@@ -423,10 +414,7 @@ function narrate(reason: HintReason, ns: number[], o: number): string {
  * names the acted-on cell *and* the cell across the sign/bar that constrains it,
  * so the player sees the pair; the generic Latin techniques have no clean local
  * area (the struck notes carry the premise). */
-function reasonArea(
-  reason: HintReason,
-  target: { x: number; y: number },
-): OrderedCell[] {
+function reasonArea(reason: HintReason, target: Point): OrderedCell[] {
   switch (reason.kind) {
     case "greater":
     case "lesser":
@@ -442,10 +430,6 @@ function reasonArea(
   }
 }
 
-/** Index of the first recorded placement whose cell is *not yet* on the working
- * grid: every op before it is valid against the current working grid (placements
- * before it are already reflected), so a strike there can be surfaced now with a
- * premise the player's board supports. */
 /** The next clue-deduction strike whose marks are still live, considering only
  * eliminations valid against the current grid. `dup` strikes are excluded (those
  * are placement bookkeeping). One returned strike groups the marks of a single
@@ -555,6 +539,14 @@ function buildSteps(
   const wGrid = Int8Array.from(state.grid);
   const wPen = Int32Array.from(state.pencil);
   const maxdiff = Math.min(diffToLevel(state.diff), DIFF_EXTREME);
+  const record = () =>
+    recordUnequalDeductions(
+      o,
+      state.mode,
+      state.clueFlags,
+      Uint8Array.from(wGrid),
+      maxdiff,
+    );
 
   const pop = lazyPopulate<UnequalMove, UnequalHint>(
     state,
@@ -568,13 +560,7 @@ function buildSteps(
   // (just populated, or already present on a pre-noted board) — see step 3.
   let cleaned = false;
 
-  let ops = recordUnequalDeductions(
-    o,
-    state.mode,
-    state.clueFlags,
-    Uint8Array.from(wGrid),
-    maxdiff,
-  );
+  let ops = record();
   const budget = stepBudget("unequal hint plan");
   const cap = o * o * o * 4 + 4;
   // The firing whose strike the previous step emitted, so a same-firing strike of
@@ -582,9 +568,7 @@ function buildSteps(
   let lastStrikeGroup = Number.NaN;
   for (let guard = 0; guard < cap; guard++) {
     budget.tick();
-    let filled = true;
-    for (let i = 0; i < o * o; i++) if (!wGrid[i]) filled = false;
-    if (filled) break;
+    if (!wGrid.includes(0)) break;
 
     // 1. A naked single — the next move a human makes.
     const ns = nakedSingle(wGrid, wPen, o);
@@ -600,13 +584,7 @@ function buildSteps(
         { kind: "single" },
         autoClean,
       );
-      ops = recordUnequalDeductions(
-        o,
-        state.mode,
-        state.clueFlags,
-        Uint8Array.from(wGrid),
-        maxdiff,
-      );
+      ops = record();
       lastStrikeGroup = Number.NaN;
       continue;
     }
@@ -668,13 +646,7 @@ function buildSteps(
           ? singlePlacementReason(wGrid, wPen, pl.x, pl.y, pl.n, o)
           : pl.reason;
       emitPlacement(steps, wGrid, wPen, o, pl.x, pl.y, pl.n, reason, autoClean);
-      ops = recordUnequalDeductions(
-        o,
-        state.mode,
-        state.clueFlags,
-        Uint8Array.from(wGrid),
-        maxdiff,
-      );
+      ops = record();
       lastStrikeGroup = Number.NaN;
       continue;
     }
@@ -808,15 +780,14 @@ export const unequalGame: Game<
       },
     },
   ],
-  // Keys/shape match the `unequal` config template in augmentation.ts
-  // ("{mode:Unequal|Adjacent}: {size}x{size} {difficulty:...}").
+  // Keys match the `unequal` config template in `puzzle/augmentation.ts`.
   describeParams: (p): ConfigValues => ({
     mode: p.mode === "adjacent" ? 1 : 0,
     size: String(p.order),
     difficulty: diffToLevel(p.diff),
   }),
 
-  newDesc: (p, rng: RandomState) => newUnequalDesc(p, rng),
+  newDesc: newUnequalDesc,
   validateDesc,
   newState,
   newUi,
@@ -824,7 +795,7 @@ export const unequalGame: Game<
 
   interpretMove,
   executeMove,
-  status: (s): GameStatus => status(s),
+  status,
 
   solve,
   difficulty,
@@ -843,9 +814,9 @@ export const unequalGame: Game<
     pencilKeepHighlightPref<UnequalUi>(),
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: UnequalParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

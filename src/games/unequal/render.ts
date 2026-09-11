@@ -38,7 +38,7 @@ import {
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import { type GridCursor, newCursor } from "../../engine/pointer.ts";
-import type { Color, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { UnequalMove } from "./state.ts";
 import {
   checkComplete,
@@ -88,8 +88,7 @@ export const COL_FLASH = 11;
 export const COL_CURSOR = 12;
 
 export function colors(defaultBackground: Color): Color[] {
-  const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const bg = background;
+  const { background: bg, highlight, lowlight } = mkhighlight(defaultBackground);
   const out: Color[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = GRID_MID;
@@ -124,7 +123,7 @@ export interface UnequalHint {
    * chain's cells additionally carry their place in it, drawn as an ordinal. */
   area: OrderedCell[];
   /** The cell(s) the deduction acts on, marked `COL_HINT`. */
-  targets: { x: number; y: number }[];
+  targets: Point[];
   /** The candidate number(s) ruled out, shown struck among the pencil marks. */
   marks: { x: number; y: number; n: number }[];
 }
@@ -435,7 +434,6 @@ function drawCell(
   let bg = hflash ? COL_FLASH : COL_BACKGROUND;
   if (hon && !ui.pencilMode) bg = COL_CURSOR;
 
-  // Clear the square.
   dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, bg);
 
   // Pencil-mode cursor: a top-left triangle.
@@ -451,7 +449,6 @@ function drawCell(
     );
   }
 
-  // Box outline (also the cursor).
   rectOutline(dr, ox, oy, ts, ts, COL_GRID);
   dr.drawUpdate({ x: ox, y: oy, w: ts, h: ts });
 
@@ -491,8 +488,7 @@ function drawCell(
   }
 
   // A forcing chain's place in the order it fires, so the narration can cite
-  // the cells by number rather than asking the player to reconstruct the chain
-  // (`walk-tactic-hint-chains`).
+  // the cells by number rather than asking the player to reconstruct the chain.
   if (hintOrder > 0)
     drawHintOrdinal(dr, { x: ox, y: oy }, ts, hintOrder, COL_HINT_CELL);
 }
@@ -514,11 +510,8 @@ function drawHints(
   for (let i = 0; i < o; i++) if (pencil & (1 << (i + 1))) nhints++;
   if (nhints === 0) return;
 
-  let hw = 1;
-  while (hw * hw < nhints) hw++;
-  if (hw < 3) hw = 3;
-  let hh = Math.floor((nhints + hw - 1) / hw);
-  if (hh < 2) hh = 2;
+  const hw = Math.max(3, Math.ceil(Math.sqrt(nhints)));
+  const hh = Math.max(2, Math.ceil(nhints / hw));
   const hmax = Math.max(hw, hh);
   const fontsz = Math.floor(ts / ((hmax * (11 - hmax)) / 8));
 
@@ -577,7 +570,7 @@ export function redraw(
   _animTime: number,
   flashTime: number,
   hint?: HintStep<UnequalMove, UnequalHint>,
-  mistakes?: readonly { x: number; y: number }[],
+  mistakes?: readonly Point[],
 ): void {
   const ts = ds.tilesize;
   const o = state.order;

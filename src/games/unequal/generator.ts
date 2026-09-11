@@ -11,7 +11,12 @@
  * the same seed.
  */
 
-import { latinGenerate } from "../../engine/latin.ts";
+import {
+  DIFF_AMBIGUOUS,
+  DIFF_IMPOSSIBLE,
+  DIFF_UNFINISHED,
+  latinGenerate,
+} from "../../engine/latin.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
@@ -20,6 +25,10 @@ import {
   ADJTHAN,
   DIFF_RECURSIVE,
   diffToLevel,
+  F_ADJ_DOWN,
+  F_ADJ_LEFT,
+  F_ADJ_RIGHT,
+  F_ADJ_UP,
   type Mode,
   n2c,
   type UnequalParams,
@@ -46,6 +55,16 @@ function blankGen(o: number, mode: Mode): GenState {
   };
 }
 
+function cloneGen(g: GenState): GenState {
+  return {
+    o: g.o,
+    mode: g.mode,
+    nums: g.nums.slice(),
+    flags: g.flags.slice(),
+    hints: g.hints.slice(),
+  };
+}
+
 /**
  * Run the graded solver on a copy of `g`'s givens, writing the deductions back
  * into `g.nums` and the final candidate cube into `g.hints` (upstream aliases
@@ -54,9 +73,9 @@ function blankGen(o: number, mode: Mode): GenState {
  */
 function solverState(g: GenState, maxdiff: number): number {
   const ret = solveUnequal(g.o, g.mode, g.flags, g.nums, maxdiff, g.hints);
-  if (ret === 10) return -1; // DIFF_IMPOSSIBLE
-  if (ret === 12) return 0; // DIFF_UNFINISHED
-  if (ret === 11) return 2; // DIFF_AMBIGUOUS
+  if (ret === DIFF_IMPOSSIBLE) return -1;
+  if (ret === DIFF_UNFINISHED) return 0;
+  if (ret === DIFF_AMBIGUOUS) return 2;
   return 1;
 }
 
@@ -76,18 +95,15 @@ function ggPlaceClue(
   const y = (loc / o) | 0;
 
   if (which === 4) {
-    // add number
     if (g.nums[loc] !== 0) return false;
     if (!checkonly) g.nums[loc] = latin[loc];
   } else {
-    // add flag
     if (g.mode === "adjacent") return false; // flags always all present
-    if (g.flags[loc] & ADJTHAN[which].f) return false; // already has flag
+    if (g.flags[loc] & ADJTHAN[which].f) return false;
     const lx = x + ADJTHAN[which].dx;
     const ly = y + ADJTHAN[which].dy;
-    if (lx < 0 || ly < 0 || lx >= o || ly >= o) return false; // off grid
-    const lloc = loc + ADJTHAN[which].dx + ADJTHAN[which].dy * o;
-    if (latin[loc] <= latin[lloc]) return false; // flag would be incorrect
+    if (lx < 0 || ly < 0 || lx >= o || ly >= o) return false;
+    if (latin[loc] <= latin[ly * o + lx]) return false; // flag would be incorrect
     if (!checkonly) g.flags[loc] |= ADJTHAN[which].f;
   }
   return true;
@@ -118,12 +134,11 @@ function ggRemoveClue(g: GenState, ccode: number, checkonly: boolean): boolean {
  */
 function ggBestClue(g: GenState, scratch: Int32Array, latin: Int32Array): number {
   const o = g.o;
-  const ls = o * o * 5;
   let maxposs = 0;
   let minclues = 5;
   let best = -1;
 
-  for (let i = ls; i-- > 0; ) {
+  for (let i = scratch.length; i-- > 0; ) {
     if (!ggPlaceClue(g, scratch[i], latin, true)) continue;
     const loc = (scratch[i] / 5) | 0;
     let nposs = 0;
@@ -152,13 +167,7 @@ function gameAssemble(
   if (difficulty >= DIFF_RECURSIVE) difficulty = DIFF_RECURSIVE - 1;
 
   // `copy` accumulates the solver's deductions (upstream aliases state->nums).
-  const copy: GenState = {
-    o: g.o,
-    mode: g.mode,
-    nums: g.nums.slice(),
-    flags: g.flags.slice(),
-    hints: g.hints.slice(),
-  };
+  const copy = cloneGen(g);
 
   while (true) {
     if (solverState(copy, difficulty) === 1) break;
@@ -175,18 +184,15 @@ function gameStrip(
   latin: Int32Array,
   difficulty: number,
 ): void {
-  const o = g.o;
-  const o2 = o * o;
-  const lscratch = o2 * 5;
-  const copy = blankGen(o, g.mode);
+  const copy = blankGen(g.o, g.mode);
 
-  for (let i = 0; i < lscratch; i++) {
-    if (!ggRemoveClue(g, scratch[i], false)) continue;
+  for (const ccode of scratch) {
+    if (!ggRemoveClue(g, ccode, false)) continue;
     copy.nums.set(g.nums);
     copy.flags.set(g.flags);
     if (solverState(copy, difficulty) !== 1) {
       // Can't solve without it — put it back.
-      const ok = ggPlaceClue(g, scratch[i], latin, false);
+      const ok = ggPlaceClue(g, ccode, latin, false);
       if (!ok) throw new Error("unequal: failed to restore a required clue");
     }
   }
@@ -198,12 +204,12 @@ function addAdjacentFlags(g: GenState, latin: Int32Array): void {
   for (let y = 0; y < o; y++) {
     for (let x = 0; x < o; x++) {
       if (x < o - 1 && Math.abs(latin[y * o + x] - latin[y * o + x + 1]) === 1) {
-        g.flags[y * o + x] |= ADJTHAN[1].f; // F_ADJ_RIGHT
-        g.flags[y * o + x + 1] |= ADJTHAN[3].f; // F_ADJ_LEFT
+        g.flags[y * o + x] |= F_ADJ_RIGHT;
+        g.flags[y * o + x + 1] |= F_ADJ_LEFT;
       }
       if (y < o - 1 && Math.abs(latin[y * o + x] - latin[(y + 1) * o + x]) === 1) {
-        g.flags[y * o + x] |= ADJTHAN[2].f; // F_ADJ_DOWN
-        g.flags[(y + 1) * o + x] |= ADJTHAN[0].f; // F_ADJ_UP
+        g.flags[y * o + x] |= F_ADJ_DOWN;
+        g.flags[(y + 1) * o + x] |= F_ADJ_UP;
       }
     }
   }
@@ -216,25 +222,23 @@ export function newUnequalDesc(
   const o = p.order;
   const o2 = o * o;
   let diff = diffToLevel(p.diff);
-  const lscratch = o2 * 5;
 
   // Clue codes, randomized later. Numbers (which == 4) come before the
   // inequalities (which 0..3), in `(i%o2)*5 + 4 - (i/o2)` order.
-  const scratch = new Int32Array(lscratch);
-  for (let i = 0; i < lscratch; i++) scratch[i] = (i % o2) * 5 + 4 - ((i / o2) | 0);
+  const scratch = new Int32Array(o2 * 5);
+  for (let i = 0; i < scratch.length; i++)
+    scratch[i] = (i % o2) * 5 + 4 - ((i / o2) | 0);
 
-  let sq!: ReturnType<typeof latinGenerate>;
   let ntries = 1;
-
   const attempt = retryLimit(`unequal: generation (${o}${p.mode})`, 2000);
   while (true) {
     attempt();
 
-    sq = latinGenerate(o, rng);
+    const sq = latinGenerate(o, rng);
 
     // Separately shuffle the numeric (first o²) and inequality (rest) codes.
     shuffleRange(scratch, 0, o2, rng);
-    shuffleRange(scratch, o2, lscratch - o2, rng);
+    shuffleRange(scratch, o2, scratch.length - o2, rng);
 
     const state = blankGen(o, p.mode);
     if (p.mode === "adjacent") addAdjacentFlags(state, sq);
@@ -242,23 +246,13 @@ export function newUnequalDesc(
     gameAssemble(state, scratch, sq, diff);
     gameStrip(state, scratch, sq, diff);
 
-    if (diff > 0) {
-      const copy: GenState = {
-        o,
-        mode: state.mode,
-        nums: state.nums.slice(),
-        flags: state.flags.slice(),
-        hints: state.hints.slice(),
-      };
-      const nsol = solverState(copy, diff - 1);
-      if (nsol > 0) {
-        // Too easy — try again, then drop a level after MAXTRIES (faithful).
-        if (ntries < MAXTRIES) {
-          ntries++;
-          continue;
-        }
-        diff--;
+    if (diff > 0 && solverState(cloneGen(state), diff - 1) > 0) {
+      // Too easy — try again, then drop a level after MAXTRIES (faithful).
+      if (ntries < MAXTRIES) {
+        ntries++;
+        continue;
       }
+      diff--;
     }
 
     return { desc: encodeDesc(state), aux: encodeAux(sq, o) };
@@ -273,25 +267,18 @@ function shuffleRange(
   len: number,
   rng: RandomState,
 ): void {
-  const slice: number[] = [];
-  for (let i = 0; i < len; i++) slice[i] = arr[start + i];
+  const slice = Array.from(arr.subarray(start, start + len));
   shuffle(slice, rng);
-  for (let i = 0; i < len; i++) arr[start + i] = slice[i];
+  arr.set(slice, start);
 }
 
 function encodeDesc(g: GenState): string {
-  const o = g.o;
   let ret = "";
-  for (let y = 0; y < o; y++) {
-    for (let x = 0; x < o; x++) {
-      const f = g.flags[y * o + x];
-      ret += String(g.nums[y * o + x]);
-      if (f & ADJTHAN[0].f) ret += "U";
-      if (f & ADJTHAN[1].f) ret += "R";
-      if (f & ADJTHAN[2].f) ret += "D";
-      if (f & ADJTHAN[3].f) ret += "L";
-      ret += ",";
-    }
+  for (let i = 0; i < g.o * g.o; i++) {
+    ret += String(g.nums[i]);
+    // The direction letters, in `ADJTHAN` order.
+    for (let d = 0; d < 4; d++) if (g.flags[i] & ADJTHAN[d].f) ret += "URDL"[d];
+    ret += ",";
   }
   return ret;
 }

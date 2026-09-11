@@ -75,9 +75,8 @@ interface SolverLink {
 }
 
 /** Shared, immutable solver context (upstream `struct solver_ctx`). The links
- * are derived once from the (fixed) adjacency flags; nothing mutates during
- * solving, so the one ctx is shared across the fixpoint and recursion (the C
- * `clone_ctx` rebuilds an identical list). */
+ * are derived once from the fixed adjacency flags, so one ctx serves the
+ * fixpoint and every recursion level (where the C's `clone_ctx` rebuilds it). */
 export interface UnequalCtx {
   o: number;
   mode: Mode;
@@ -176,12 +175,10 @@ function solverLinks(solver: LatinSolver, ctx: UnequalCtx): number {
       }
     }
 
-    // On the hint-recording path, return as soon as one link fires so each
-    // recorded firing (one `solver.group`) covers a single `>` sign — otherwise
-    // a pass would lump several links' eliminations under one group and a hint
-    // step would narrate one clue while struck marks bled in from another (the
-    // Towers "bleed across clues" bug). The generate/solve path (no recorder)
-    // keeps accumulating across links, byte-identical to the C reference.
+    // On the hint-recording path, return as soon as one link fires, so each
+    // recorded firing (one `solver.group`) covers a single `>` sign and a hint
+    // step never narrates one clue while striking marks from another. Without a
+    // recorder it accumulates across links, as the C does.
     if (solver.recorder && nchanged) return nchanged;
     total += nchanged;
   }
@@ -336,9 +333,10 @@ function unequalValid(solver: LatinSolver, ctx: UnequalCtx): boolean {
  * Solve the `o × o` Unequal board (with adjacency `flags`) into `soln`
  * (0 = blank), up to difficulty `maxdiff`. Returns the difficulty level reached,
  * or a `DIFF_IMPOSSIBLE`/`DIFF_AMBIGUOUS`/`DIFF_UNFINISHED` sentinel. Mirrors
- * `unequal.c`'s `solver_state` → `latin_solver_main`: Trivial→simple,
- * Tricky→set₀, Extreme→set₁+forcing, Recursive→recursion. When `cubeOut` is
- * given it receives the final candidate cube (the generator grades clues by it).
+ * `unequal.c`'s `solver_state` → `latin_solver_main`, by tier: Easy→simple,
+ * Normal→the clue deductions, Tricky→set₀, Hard→set₁+forcing,
+ * Unreasonable→recursion. When `cubeOut` is given it receives the final
+ * candidate cube (the generator grades clues by it).
  */
 export function solveUnequal(
   o: number,
@@ -370,9 +368,8 @@ export function solveUnequal(
  * placed givens/entries only — never the player's notes), up to `maxdiff`, and
  * return every candidate elimination and cell placement it makes, in solver
  * order, each tagged with the rule + premise that forced it. This is the raw
- * deduction script a hint narrates; the recorder-off path (`solveUnequal`
- * without a callback) is byte-for-byte unchanged. `grid` is treated read-only
- * (a working copy is solved internally).
+ * deduction script a hint narrates. `grid` is treated read-only (a working copy
+ * is solved internally).
  */
 export function recordUnequalDeductions(
   o: number,
