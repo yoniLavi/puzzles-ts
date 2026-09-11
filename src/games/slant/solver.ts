@@ -1,22 +1,24 @@
 /**
  * Slant solver — faithful port of `slant_solve` in slant.c.
  *
- * Byte-match discipline (docs/games/solver-and-generator.md § "Solver-gated generation"): the generator removes clues while
- * this solver still reports a unique solution, so the published clue set —
- * and hence the desc — is decided entirely by this solver's verdict on every
- * intermediate board. Every deduction, its sweep order, and its exact
- * bookkeeping must match C's, including the per-difficulty technique gating
- * and the release-build `fillSquare` semantics (see below).
+ * Byte-match discipline (docs/games/solver-and-generator.md § "Solver-gated
+ * generation"): the generator removes clues while this solver still reports a
+ * unique solution, so the published clue set — and hence the desc — is decided
+ * entirely by this solver's verdict on every intermediate board. Every
+ * deduction, its sweep order, and its exact bookkeeping must match C's,
+ * including the per-difficulty technique gating and the release-build
+ * `fillSquare` semantics (see below).
  *
  * Techniques, per difficulty:
- * - Easy: clue-point counting (fill/empty around a clue whose remaining
+ * - `DIFF_EASY`: clue-point counting (fill/empty around a clue whose remaining
  *   lines are 0 or equal its undecided neighbors) + immediate loop
  *   avoidance (the square pass).
- * - Hard adds: single-pair equivalence tracking around clue points,
+ * - `DIFF_HARD` adds: single-pair equivalence tracking around clue points,
  *   slash-value propagation through equivalence classes, dead-end avoidance
  *   over the vertex-connectivity DSF, and the v-shape bitmap deductions.
  */
 import { Dsf } from "../../engine/dsf.ts";
+import type { Point } from "../../engine/types.ts";
 import { DIFF_EASY, DIFF_HARD, type Slash } from "./state.ts";
 
 /** Solver verdicts (upstream's 0 / 1 / 2 return codes). */
@@ -43,7 +45,7 @@ export interface SlantPlacement {
   v: Slash;
 }
 
-/** A single deduction firing, recorded for the hint (D1). */
+/** A single deduction firing, recorded for the hint. */
 export interface SlantFiring {
   technique: SlantTechnique;
   /** The square(s) this one firing forces (1, or up to 4 for a clue). */
@@ -51,9 +53,9 @@ export interface SlantFiring {
   /** Driving clue vertex + value (clue-fill / clue-empty). */
   clue?: { x: number; y: number; c: number };
   /** A same-class already-filled square (equivalence anchor). */
-  anchor?: { x: number; y: number };
-  /** Snapshot of `soln` just after this firing (stale-safe evidence — the
-   * Range `HintMove.grid` pattern). */
+  anchor?: Point;
+  /** Snapshot of `soln` just after this firing, so its evidence is read from
+   * the board it fired on rather than the one the step is shown on. */
   grid: Int8Array;
 }
 
@@ -75,7 +77,7 @@ function findEquivAnchor(
   h: number,
   x: number,
   y: number,
-): { x: number; y: number } | undefined {
+): Point | undefined {
   const cls = sc.equiv.canonify(y * w + x);
   for (let i = 0; i < w * h; i++) {
     if (soln[i] !== 0 && sc.equiv.canonify(i) === cls) {
@@ -151,14 +153,13 @@ function decrExits(sc: SolverScratch, i: number) {
  *
  * RELEASE-BUILD SEMANTICS, deliberately: upstream's "already filled with the
  * opposite value" and "would make a loop" early-outs `return false` only
- * under `SOLVER_DIAGNOSTICS`, which neither the shipped build nor the trace
- * harness defines — so in the build we are byte-matching, `fill_square`
- * never fails and will overwrite. Porting the diagnostics semantics would
- * change solver verdicts (design D2).
+ * under `SOLVER_DIAGNOSTICS`, which neither the shipped build nor the one the
+ * differential fixture was recorded from defines — so `fill_square` never
+ * fails and will overwrite. Porting the diagnostics semantics would change
+ * solver verdicts.
  */
 export function fillSquare(
   w: number,
-  _h: number,
   x: number,
   y: number,
   v: number,
@@ -167,7 +168,7 @@ export function fillSquare(
   sc: SolverScratch | null,
 ): void {
   const W = w + 1;
-  if (soln[y * w + x] === v) return; // do nothing
+  if (soln[y * w + x] === v) return;
 
   let ci1: number;
   let ci2: number; // vertices the new slash connects
@@ -255,7 +256,7 @@ export function slantSolve(
     for (let i = 0; i < w * h; i++) {
       const v = opts.seedFrom[i];
       if (v !== 0) {
-        fillSquare(w, h, i % w, Math.floor(i / w), v, soln, sc.connected, sc);
+        fillSquare(w, i % w, Math.floor(i / w), v, soln, sc.connected, sc);
       }
     }
   }
@@ -297,7 +298,7 @@ export function slantSolve(
         const nneighbors = nPos.length;
 
         // Count undecided neighbors (nu) and remaining lines (nl). Above
-        // Easy, also track ONE pair of adjacent undecided squares in the
+        // `DIFF_EASY`, also track ONE pair of adjacent undecided squares in the
         // same equivalence class — they share a slash value, so exactly one
         // of them connects: count them jointly as one line.
         let nu = 0;
@@ -345,7 +346,7 @@ export function slantSolve(
             const s = nSlash[i];
             if (soln[j] === 0 && j !== mj1 && j !== mj2) {
               const sv = (nl ? s : -s) as Slash;
-              fillSquare(w, h, j % w, Math.floor(j / w), sv, soln, sc.connected, sc);
+              fillSquare(w, j % w, Math.floor(j / w), sv, soln, sc.connected, sc);
               if (record) placed.push({ x: j % w, y: Math.floor(j / w), v: sv });
             }
           }
@@ -390,7 +391,7 @@ export function slantSolve(
     if (doneSomething) continue;
 
     /*
-     * Square pass: no square may complete a loop; above Easy, also dead-end
+     * Square pass: no square may complete a loop; above `DIFF_EASY`, also dead-end
      * avoidance and equivalence-class slash values.
      */
     for (let y = 0; y < h; y++) {
@@ -461,7 +462,7 @@ export function slantSolve(
             record && reason === "equiv"
               ? findEquivAnchor(sc, soln, w, h, x, y)
               : undefined;
-          fillSquare(w, h, x, y, sv, soln, sc.connected, sc);
+          fillSquare(w, x, y, sv, soln, sc.connected, sc);
           record?.({
             technique: reason,
             moves: [{ x, y, v: sv }],
@@ -475,7 +476,7 @@ export function slantSolve(
 
     if (doneSomething) continue;
 
-    // All vbitmap deductions are disabled at Easy.
+    // All vbitmap deductions are disabled at `DIFF_EASY`.
     if (difficulty <= DIFF_EASY) continue;
 
     for (let y = 0; y < h; y++) {
@@ -581,12 +582,8 @@ export function slantSolve(
   return soln.includes(0) ? SOLVE_NOT_CONVERGED : SOLVE_UNIQUE;
 }
 
-/**
- * Run the Hard solver from the player's current marks, recording every
- * remaining forced firing in deduction order (the Range `deduceHintPlan`
- * pattern). Returns the ordered firings the player has not yet made — the
- * raw material for the hint plan.
- */
+/** Run the full (`DIFF_HARD`) solver from the player's current marks,
+ * returning every remaining forced firing in deduction order. */
 export function deduceHintPlan(
   w: number,
   h: number,
@@ -603,11 +600,8 @@ export function deduceHintPlan(
   return firings;
 }
 
-/**
- * Solve a board's clues from scratch at Hard (the full solver), as
- * `solve()` and `findMistakes` need. Returns the solution array on a
- * unique solve, or the failure kind.
- */
+/** Solve a board's clues from scratch with the full (`DIFF_HARD`) solver, as
+ * `solve()` and `findMistakes` need. */
 export function solveFromClues(
   w: number,
   h: number,

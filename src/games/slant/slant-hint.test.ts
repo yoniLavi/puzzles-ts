@@ -1,5 +1,5 @@
 /**
- * Slant hint (add-slant-hint) — tier-1 behavioral tests: refusal coupling,
+ * Slant hint — tier-1 behavioral tests: refusal coupling,
  * plan completeness, narration quality (indication-first, necessity voice),
  * visible evidence, and keep-track.
  */

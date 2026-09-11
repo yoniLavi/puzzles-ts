@@ -22,10 +22,11 @@ import {
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
 import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
+import type { Point } from "../../engine/types.ts";
 import cReference from "./__fixtures__/slant-c-reference.json" with { type: "json" };
 import { newDesc, slantGenerate } from "./generator.ts";
 import { slantGame } from "./index.ts";
-import { COL_ERROR, COL_GROUNDED, newDrawState } from "./render.ts";
+import { COL_ERROR, COL_GROUNDED } from "./render.ts";
 import { SOLVE_UNIQUE, SolverScratch, slantSolve } from "./solver.ts";
 import {
   computeErrors,
@@ -73,6 +74,9 @@ function ui(over: Partial<SlantUi> = {}): SlantUi {
 function center(x: number, y: number) {
   return { x: 11 + x * 32 + 16, y: 11 + y * 32 + 16 };
 }
+
+const input = (s: SlantState, u: SlantUi, p: Point, button: number) =>
+  slantGame.interpretMove(s, u, sizedDrawState(slantGame, s), p, button);
 
 const set = (x: number, y: number, v: -1 | 0 | 1): SlantMove => ({
   type: "set",
@@ -193,174 +197,56 @@ describe("slant input", () => {
 
   it("left-click cycles blank -> \\ -> / -> blank", () => {
     const u = ui();
-    const m1 = slantGame.interpretMove(
-      state,
-      u,
-      sizedDrawState(slantGame, state),
-      center(0, 0),
-      LEFT_BUTTON,
-    );
+    const m1 = input(state, u, center(0, 0), LEFT_BUTTON);
     expect(m1).toEqual(set(0, 0, -1));
     const s1 = executeMove(state, m1 as SlantMove);
-    const m2 = slantGame.interpretMove(
-      s1,
-      u,
-      sizedDrawState(slantGame, s1),
-      center(0, 0),
-      LEFT_BUTTON,
-    );
+    const m2 = input(s1, u, center(0, 0), LEFT_BUTTON);
     expect(m2).toEqual(set(0, 0, 1));
     const s2 = executeMove(s1, m2 as SlantMove);
-    const m3 = slantGame.interpretMove(
-      s2,
-      u,
-      sizedDrawState(slantGame, s2),
-      center(0, 0),
-      LEFT_BUTTON,
-    );
-    expect(m3).toEqual(set(0, 0, 0));
+    expect(input(s2, u, center(0, 0), LEFT_BUTTON)).toEqual(set(0, 0, 0));
   });
 
   it("right-click cycles the other way", () => {
-    const m = slantGame.interpretMove(
-      state,
-      ui(),
-      sizedDrawState(slantGame, state),
-      center(1, 1),
-      RIGHT_BUTTON,
-    );
-    expect(m).toEqual(set(1, 1, 1));
+    expect(input(state, ui(), center(1, 1), RIGHT_BUTTON)).toEqual(set(1, 1, 1));
   });
 
   it("swap-buttons preference swaps the directions", () => {
-    const m = slantGame.interpretMove(
-      state,
-      ui({ swapButtons: true }),
-      sizedDrawState(slantGame, state),
-      center(0, 0),
-      LEFT_BUTTON,
-    );
+    const m = input(state, ui({ swapButtons: true }), center(0, 0), LEFT_BUTTON);
     expect(m).toEqual(set(0, 0, 1));
   });
 
   it("ignores clicks outside the grid and hides the cursor on a click", () => {
-    expect(
-      slantGame.interpretMove(
-        state,
-        ui(),
-        sizedDrawState(slantGame, state),
-        { x: 2, y: 2 },
-        LEFT_BUTTON,
-      ),
-    ).toBe(null);
+    expect(input(state, ui(), { x: 2, y: 2 }, LEFT_BUTTON)).toBe(null);
     const u = ui({ cursor: newCursor(0, 0, true) });
-    slantGame.interpretMove(
-      state,
-      u,
-      sizedDrawState(slantGame, state),
-      center(0, 0),
-      LEFT_BUTTON,
-    );
+    input(state, u, center(0, 0), LEFT_BUTTON);
     expect(u.cursor.visible).toBe(false);
   });
 
   it("cursor keys reveal and move the cursor", () => {
     const u = ui();
-    expect(
-      slantGame.interpretMove(
-        state,
-        u,
-        sizedDrawState(slantGame, state),
-        { x: 0, y: 0 },
-        CURSOR_RIGHT,
-      ),
-    ).toBe(UI_UPDATE);
+    expect(input(state, u, { x: 0, y: 0 }, CURSOR_RIGHT)).toBe(UI_UPDATE);
     expect(u.cursor).toEqual({ x: 1, y: 0, visible: true });
     // Clamped at the edge, still a UI update.
-    expect(
-      slantGame.interpretMove(
-        state,
-        u,
-        sizedDrawState(slantGame, state),
-        { x: 0, y: 0 },
-        CURSOR_RIGHT,
-      ),
-    ).toBe(UI_UPDATE);
+    expect(input(state, u, { x: 0, y: 0 }, CURSOR_RIGHT)).toBe(UI_UPDATE);
     expect(u.cursor.x).toBe(1);
-    expect(
-      slantGame.interpretMove(
-        state,
-        u,
-        sizedDrawState(slantGame, state),
-        { x: 0, y: 0 },
-        CURSOR_LEFT,
-      ),
-    ).toBe(UI_UPDATE);
+    expect(input(state, u, { x: 0, y: 0 }, CURSOR_LEFT)).toBe(UI_UPDATE);
     expect(u.cursor.x).toBe(0);
   });
 
   it("select reveals the cursor first, then cycles", () => {
     const u = ui();
-    expect(
-      slantGame.interpretMove(
-        state,
-        u,
-        sizedDrawState(slantGame, state),
-        { x: 0, y: 0 },
-        CURSOR_SELECT,
-      ),
-    ).toBe(UI_UPDATE);
+    expect(input(state, u, { x: 0, y: 0 }, CURSOR_SELECT)).toBe(UI_UPDATE);
     expect(u.cursor.visible).toBe(true);
-    expect(
-      slantGame.interpretMove(
-        state,
-        u,
-        sizedDrawState(slantGame, state),
-        { x: 0, y: 0 },
-        CURSOR_SELECT,
-      ),
-    ).toEqual(set(0, 0, -1));
-    expect(
-      slantGame.interpretMove(
-        state,
-        u,
-        sizedDrawState(slantGame, state),
-        { x: 0, y: 0 },
-        CURSOR_SELECT2,
-      ),
-    ).toEqual(set(0, 0, 1));
+    expect(input(state, u, { x: 0, y: 0 }, CURSOR_SELECT)).toEqual(set(0, 0, -1));
+    expect(input(state, u, { x: 0, y: 0 }, CURSOR_SELECT2)).toEqual(set(0, 0, 1));
   });
 
   it("direct keys place at the cursor; a no-op returns null", () => {
     const u = ui({ cursor: newCursor(1, 0, true) });
-    expect(
-      slantGame.interpretMove(
-        state,
-        u,
-        sizedDrawState(slantGame, state),
-        { x: 0, y: 0 },
-        92,
-      ),
-    ).toEqual(set(1, 0, -1));
-    expect(
-      slantGame.interpretMove(
-        state,
-        u,
-        sizedDrawState(slantGame, state),
-        { x: 0, y: 0 },
-        47,
-      ),
-    ).toEqual(set(1, 0, 1));
+    expect(input(state, u, { x: 0, y: 0 }, 92)).toEqual(set(1, 0, -1));
+    expect(input(state, u, { x: 0, y: 0 }, 47)).toEqual(set(1, 0, 1));
     // Backspace on an already-blank square: no effect.
-    expect(
-      slantGame.interpretMove(
-        state,
-        u,
-        sizedDrawState(slantGame, state),
-        { x: 0, y: 0 },
-        8,
-      ),
-    ).toBe(null);
+    expect(input(state, u, { x: 0, y: 0 }, 8)).toBe(null);
   });
 });
 
@@ -493,10 +379,8 @@ describe("slant rendering", () => {
     const wrong0 = FIXTURE.aux[0] === "\\" ? 1 : -1;
     s = executeMove(s, set(0, 0, wrong0 as -1 | 1));
 
-    const palette = slantGame.colors(DEFAULT_BACKGROUND);
-    const dr = new RecordingDrawing(palette);
-    const ds = newDrawState(s);
-    slantGame.setTileSize?.(ds, 32);
+    const dr = new RecordingDrawing(slantGame.colors(DEFAULT_BACKGROUND));
+    const ds = sizedDrawState(slantGame, s, 32);
     const u = ui();
     slantGame.redraw?.(dr, ds, null, s, 1, u, 0, 0, undefined, undefined);
     dr.ops.length = 0;
@@ -512,8 +396,7 @@ describe("slant rendering", () => {
     const palette = slantGame.colors(DEFAULT_BACKGROUND);
     for (const fade of [false, true]) {
       const dr = new RecordingDrawing(palette);
-      const ds = newDrawState(s);
-      slantGame.setTileSize?.(ds, 32);
+      const ds = sizedDrawState(slantGame, s, 32);
       slantGame.redraw?.(dr, ds, null, s, 1, ui({ fadeGrounded: fade }), 0, 0);
       const groundedLines = dr.ops.filter(
         (o) => o.op === "line" && o.color === COL_GROUNDED,

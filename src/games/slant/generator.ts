@@ -3,13 +3,13 @@
  * slant.c. Byte-match critical: every RNG draw (one shuffle of the square
  * order, one `random_upto(rs, 2)` per unforced square, one shuffle of the
  * clue order) and every solver verdict in the clue-removal loop must match C
- * exactly for the desc to reproduce byte-for-byte (design D2).
+ * exactly for the desc to reproduce byte-for-byte.
  */
 import { Dsf } from "../../engine/dsf.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { fillSquare, SOLVE_UNIQUE, SolverScratch, slantSolve } from "./solver.ts";
-import { DIFF_EASY, encodeClues, type SlantParams } from "./state.ts";
+import { DIFF_EASY, encodeClues, type SlantParams, vertexDegree } from "./state.ts";
 
 /**
  * Generate a random filled grid (upstream `slant_generate`): visit the
@@ -42,23 +42,17 @@ export function slantGenerate(
     if (fs && bs) throw new Error("slant generator: both diagonals forced");
 
     const v = fs ? 1 : bs ? -1 : 2 * randomUpto(rs, 2) - 1;
-    fillSquare(w, h, x, y, v, soln, connected, null);
+    fillSquare(w, x, y, v, soln, connected, null);
   }
 }
 
-/** Derive the full clue set of a filled grid. */
+/** The full clue set of a filled grid: every vertex's degree. */
 function deriveClues(w: number, h: number, soln: Int8Array): Int8Array {
   const W = w + 1;
-  const H = h + 1;
-  const clues = new Int8Array(W * H);
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      let v = 0;
-      if (x > 0 && y > 0 && soln[(y - 1) * w + (x - 1)] === -1) v++;
-      if (x > 0 && y < h && soln[y * w + (x - 1)] === 1) v++;
-      if (x < w && y > 0 && soln[(y - 1) * w + x] === 1) v++;
-      if (x < w && y < h && soln[y * w + x] === -1) v++;
-      clues[y * W + x] = v;
+  const clues = new Int8Array(W * (h + 1));
+  for (let y = 0; y <= h; y++) {
+    for (let x = 0; x <= w; x++) {
+      clues[y * W + x] = vertexDegree(w, h, soln, x, y, false);
     }
   }
   return clues;
@@ -81,15 +75,15 @@ export function newDesc(
     slantGenerate(w, h, soln, rs);
     clues = deriveClues(w, h, soln);
 
-    // With all clue points filled in, every puzzle is Easy-solvable
+    // With all clue points filled in, every puzzle is solvable at `DIFF_EASY`
     // (upstream asserts this; its solve consumes no RNG).
     if (slantSolve(w, h, clues, tmpsoln, sc, DIFF_EASY) !== SOLVE_UNIQUE) {
       throw new Error("slant generator: full clue set not Easy-solvable");
     }
 
-    // Remove as many clues as possible while retaining solubility. In Hard
-    // mode, remove the obvious starting points (4s, 0s, border 2s, corner
-    // 1s) in a first pass, so as few of them as possible survive.
+    // Remove as many clues as possible while retaining solubility. Above
+    // `DIFF_EASY`, remove the obvious starting points (4s, 0s, border 2s,
+    // corner 1s) in a first pass, so as few of them as possible survive.
     const clueIndices = Array.from({ length: W * H }, (_, i) => i);
     shuffle(clueIndices, rs);
     for (let j = 0; j < 2; j++) {
@@ -121,10 +115,11 @@ export function newDesc(
 
     // Verify the board is of at least the requested difficulty: the solver
     // one level down must fail to converge.
-  } while (diff > 0 && slantSolve(w, h, clues, tmpsoln, sc, diff - 1) <= SOLVE_UNIQUE);
+  } while (
+    diff > DIFF_EASY &&
+    slantSolve(w, h, clues, tmpsoln, sc, diff - 1) <= SOLVE_UNIQUE
+  );
 
-  let aux = "";
-  for (let i = 0; i < w * h; i++) aux += soln[i] < 0 ? "\\" : "/";
-
+  const aux = Array.from(soln, (s) => (s < 0 ? "\\" : "/")).join("");
   return { desc: encodeClues(clues), aux };
 }

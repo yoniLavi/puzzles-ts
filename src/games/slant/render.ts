@@ -3,12 +3,11 @@
  * `draw_clue` in slant.c. The drawstate diffs a `(w+2)×(h+2)` packed
  * `Int32Array` covering tiles −1…w × −1…h (the border ring draws border
  * clue circles and the grid's outer corner dots); every overlay — errors,
- * cursor, flash, grounded fade, the findMistakes outline — lives in the
- * packed word, so the diff key covers it by construction.
+ * cursor, flash, grounded fade, the findMistakes outline, the hint marks —
+ * lives in the packed word, so the diff key covers it by construction.
  *
- * Geometry note: the web C build defines `NARROW_BORDERS`
- * (cmake/platforms/webapp.cmake), so the border is `CLUE_RADIUS + 1`, not a
- * full tile — parity is with what the browser actually showed.
+ * The border is `CLUE_RADIUS + 1`, not a full tile: upstream's web build
+ * defined `NARROW_BORDERS`, and parity is with what the browser showed.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -109,10 +108,8 @@ const HINT_BR = 0x08000000;
 // --- geometry -------------------------------------------------------------
 const clueRadius = (ts: number) => Math.floor(ts / 3);
 const clueTextSize = (ts: number) => Math.floor(ts / 2);
-/** The board's pixel origin — a clue circle plus a pixel (NARROW_BORDERS).
- * Exported so `interpretMove` reads the same number the painter does — one
- * function, both callers
- * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+/** The board's pixel origin, a clue circle plus a pixel. Shared with
+ * `interpretMove` so pointer mapping and drawing agree. */
 export const border = (ts: number) => clueRadius(ts) + 1;
 const coord = (n: number, ts: number) => n * ts + border(ts);
 
@@ -125,8 +122,6 @@ export function computeSize(p: SlantParams, ts: number): Size {
 export interface SlantDrawState {
   started: boolean;
   tilesize: number;
-  w: number;
-  h: number;
   /** Last-drawn packed word per tile of the (w+2)×(h+2) ring-extended grid;
    * −1 forces a draw. */
   grid: Int32Array;
@@ -139,8 +134,6 @@ export function newDrawState(state: SlantState): SlantDrawState {
   return {
     started: false,
     tilesize: 0,
-    w: state.w,
-    h: state.h,
     grid: new Int32Array(n).fill(-1),
     todraw: new Int32Array(n).fill(-1),
   };
@@ -197,7 +190,7 @@ function drawTile(
   dr.clip({ x: coord(x, ts), y: coord(y, ts), w: ts, h: ts });
 
   // No hint role in the background. The target is ringed and the evidence
-  // outlined, at the end of this function: a Slant evidence square is one of the
+  // outlined, further down: a Slant evidence square is one of the
   // clue's *already-decided* neighbors by construction, so it carries the very
   // diagonal the deduction is reasoning from, and a fill over that hides the
   // premise. The target keeps its own color for the same reason the move does —
@@ -474,12 +467,11 @@ export function redraw(
   }
 
   // findMistakes overlay.
-  if (mistakes) {
-    for (const m of mistakes) todraw[ti(m.x, m.y)] |= MISTAKE;
-  }
+  for (const m of mistakes ?? []) todraw[ti(m.x, m.y)] |= MISTAKE;
 
-  // Hint overlay: target square(s) blue, evidence shaded, anchor ringed, the
-  // driving clue's digit recolored in the four tiles that draw it.
+  // Hint overlay: target square(s) ringed, evidence outlined, anchor
+  // double-ringed, the driving clue's digit recolored in the four tiles that
+  // draw it.
   const hl = hint?.highlights;
   if (hl) {
     todraw[ti(hl.target.x, hl.target.y)] |= HINT_TARGET;

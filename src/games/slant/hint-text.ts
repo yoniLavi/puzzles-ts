@@ -3,8 +3,7 @@
  *
  * The deduction decides which sentence and with what values (`index.ts`'s
  * `narrate`); this file decides only how it reads: indication first, the
- * necessity voice, terse, and the honest locked-slant voice for equivalence
- * (D3).
+ * necessity voice, terse, and the honest locked-slant voice for equivalence.
  */
 
 /** How a slant reads, by its sign. */

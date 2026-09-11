@@ -16,10 +16,11 @@ import type {
   HintResult,
   HintStep,
   HintTrackVerdict,
+  SolveResult,
   UiUpdate,
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
-import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { fromCoord } from "../../engine/geometry.ts";
 import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import {
   CURSOR_SELECT,
@@ -35,7 +36,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -85,20 +86,15 @@ function newUi(_state: SlantState): SlantUi {
   };
 }
 
-// Keyboard char codes handled directly.
 const KEY_BACKSLASH = 92;
 const KEY_SLASH = 47;
 
 /** Cycle a square's value: left-click runs blank→`\`→`/`→blank
  * ("clockwise"), right-click the reverse. */
 function cycle(current: number, clockwise: boolean): Slash {
-  if (clockwise) {
-    let v = current - 1;
-    if (v === -2) v = 1;
-    return v as Slash;
-  }
-  let v = current + 1;
-  if (v === 2) v = -1;
+  const v = clockwise ? current - 1 : current + 1;
+  if (v < -1) return 1;
+  if (v > 1) return -1;
   return v as Slash;
 }
 
@@ -111,31 +107,24 @@ function interpretMove(
 ): SlantMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w, h } = state;
-  const ts = ds.tilesize;
-  const b = border(ts);
-  const fromCoord = (v: number) => fromCoordE(v, ts, b);
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    let effective = button;
-    if (ui.swapButtons) {
-      effective = button === LEFT_BUTTON ? RIGHT_BUTTON : LEFT_BUTTON;
-    }
-    const x = fromCoord(p.x);
-    const y = fromCoord(p.y);
+    const ts = ds.tilesize;
+    const x = fromCoord(p.x, ts, border(ts));
+    const y = fromCoord(p.y, ts, border(ts));
     if (x < 0 || y < 0 || x >= w || y >= h) return null;
     hideCursor(ui.cursor);
     return {
       type: "set",
       x,
       y,
-      v: cycle(state.soln[y * w + x], effective === LEFT_BUTTON),
+      v: cycle(state.soln[y * w + x], (button === LEFT_BUTTON) !== ui.swapButtons),
     };
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
     if (showCursor(ui.cursor)) return UI_UPDATE;
-    const x = ui.cursor.x;
-    const y = ui.cursor.y;
+    const { x, y } = ui.cursor;
     return {
       type: "set",
       x,
@@ -150,30 +139,20 @@ function interpretMove(
   }
 
   if (button === KEY_BACKSLASH || button === KEY_SLASH || isEraseKey(button)) {
-    const x = ui.cursor.x;
-    const y = ui.cursor.y;
+    const { x, y } = ui.cursor;
     const v: Slash = button === KEY_BACKSLASH ? -1 : button === KEY_SLASH ? 1 : 0;
-    if (state.soln[y * w + x] === v) return null; // no effect
+    if (state.soln[y * w + x] === v) return null;
     return { type: "set", x, y, v };
   }
 
   return null;
 }
 
-function flashLength(
-  oldState: SlantState,
-  newState_: SlantState,
-  _dir: number,
-  _ui: SlantUi,
-): number {
-  return winFlash(oldState, newState_, FLASH_TIME);
-}
-
 function solve(
   orig: SlantState,
   _curr: SlantState,
   aux?: string,
-): ReturnType<NonNullable<Game<SlantParams, SlantState, SlantMove>["solve"]>> {
+): SolveResult<SlantMove> {
   if (aux && aux.length === orig.w * orig.h) {
     return { ok: true, move: { type: "solve", grid: aux } };
   }
@@ -187,17 +166,14 @@ function solve(
           : "Unable to find a unique solution for this puzzle",
     };
   }
-  let grid = "";
-  for (let i = 0; i < orig.w * orig.h; i++) {
-    grid += result.soln[i] < 0 ? "\\" : "/";
-  }
+  const grid = Array.from(result.soln, (s) => (s < 0 ? "\\" : "/")).join("");
   return { ok: true, move: { type: "solve", grid } };
 }
 
-/** Boards this fork generates are uniquely solvable at Hard or below:
- * re-solve the clues and flag every placed diagonal that contradicts the
- * unique solution. Blank squares are never mistakes; a non-uniquely-solvable
- * (hand-typed) board degrades to "no detectable mistakes". */
+/** Generated boards are uniquely solvable by the full solver: re-solve the
+ * clues and flag every placed diagonal that contradicts the unique solution.
+ * Blank squares are never mistakes; a non-uniquely-solvable (hand-typed)
+ * board degrades to "no detectable mistakes". */
 function findMistakes(state: SlantState): readonly SlantMistake[] {
   const { w, h } = state;
   const result = solveFromClues(w, h, state.clues);
@@ -215,53 +191,26 @@ function findMistakes(state: SlantState): readonly SlantMistake[] {
 // --- hint ------------------------------------------------------------------
 
 /** Highlight data for a Slant hint step. `target` is the square this leg
- * forces (blue `COL_HINT`, no slash preview); `siblings` are the same
- * firing's still-to-do squares (also blue — they share its fate); `area`
- * is the deduction's evidence to shade light-blue (a clue's decided
- * neighbors, a loop chain, the trapped dead-end components); `ref` rings a
- * cited already-filled square (an equivalence anchor); `clue` recolors a
- * driving clue's digit. */
+ * forces and `siblings` the same firing's still-to-do squares, all ringed
+ * `COL_HINT` with no slash preview (they share its fate); `area` is the
+ * deduction's evidence to outline (a clue's decided neighbors, a loop chain,
+ * the trapped dead-end components); `ref` rings a cited already-filled square
+ * (an equivalence anchor); `clue` recolors a driving clue's digit. */
 export interface SlantHint {
-  target: { x: number; y: number };
-  siblings?: { x: number; y: number }[];
-  area?: { x: number; y: number }[];
-  ref?: { x: number; y: number };
-  clue?: { x: number; y: number };
+  target: Point;
+  siblings?: Point[];
+  area?: Point[];
+  ref?: Point;
+  clue?: Point;
 }
 
-/** The up-to-four square indices around a clue vertex, geometrically. */
-function clueNeighborSquares(
-  cx: number,
-  cy: number,
-  w: number,
-  h: number,
-): { x: number; y: number }[] {
-  const out: { x: number; y: number }[] = [];
-  if (cx > 0 && cy > 0) out.push({ x: cx - 1, y: cy - 1 });
-  if (cx > 0 && cy < h) out.push({ x: cx - 1, y: cy });
-  if (cx < w && cy < h) out.push({ x: cx, y: cy });
-  if (cx < w && cy > 0) out.push({ x: cx, y: cy - 1 });
-  return out;
-}
-
-/** The up-to-four squares touching a grid point (its "neighborhood"). */
-function incidentSquares(
-  px: number,
-  py: number,
-  w: number,
-  h: number,
-): { x: number; y: number }[] {
-  const out: { x: number; y: number }[] = [];
-  for (const [dx, dy] of [
-    [-1, -1],
-    [-1, 0],
-    [0, -1],
-    [0, 0],
-  ]) {
-    const x = px + dx;
-    const y = py + dy;
-    if (x >= 0 && x < w && y >= 0 && y < h) out.push({ x, y });
-  }
+/** The up-to-four squares touching a grid point. */
+function incidentSquares(px: number, py: number, w: number, h: number): Point[] {
+  const out: Point[] = [];
+  if (px > 0 && py > 0) out.push({ x: px - 1, y: py - 1 });
+  if (px > 0 && py < h) out.push({ x: px - 1, y: py });
+  if (px < w && py > 0) out.push({ x: px, y: py - 1 });
+  if (px < w && py < h) out.push({ x: px, y: py });
   return out;
 }
 
@@ -273,7 +222,7 @@ function componentSquares(
   w: number,
   h: number,
   points: number[],
-): { x: number; y: number }[] {
+): Point[] {
   const W = w + 1;
   const dsf = new Dsf(W * (h + 1));
   for (let y = 0; y < h; y++) {
@@ -284,7 +233,7 @@ function componentSquares(
     }
   }
   const roots = new Set(points.map((p) => dsf.canonify(p)));
-  const out: { x: number; y: number }[] = [];
+  const out: Point[] = [];
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const s = grid[y * w + x];
@@ -322,9 +271,8 @@ function buildHighlights(
   h: number,
 ): SlantHint {
   const m = firing.moves[leg];
-  const target = { x: m.x, y: m.y };
+  const hint: SlantHint = { target: { x: m.x, y: m.y } };
   const siblings = firing.moves.slice(leg + 1).map((s) => ({ x: s.x, y: s.y }));
-  const hint: SlantHint = { target };
   if (siblings.length) hint.siblings = siblings;
 
   switch (firing.technique) {
@@ -332,10 +280,10 @@ function buildHighlights(
     case "clue-empty": {
       if (firing.clue) {
         hint.clue = { x: firing.clue.x, y: firing.clue.y };
-        // Evidence: the clue's already-decided neighbors (its context) —
-        // the squares NOT being placed by this firing.
+        // Evidence: the clue's already-decided neighbors, not the squares
+        // this firing places.
         const inFiring = new Set(firing.moves.map((s) => s.y * w + s.x));
-        hint.area = clueNeighborSquares(firing.clue.x, firing.clue.y, w, h).filter(
+        hint.area = incidentSquares(firing.clue.x, firing.clue.y, w, h).filter(
           (s) => !inFiring.has(s.y * w + s.x) && firing.grid[s.y * w + s.x] !== 0,
         );
       }
@@ -343,31 +291,29 @@ function buildHighlights(
     }
     case "loop":
     case "deadend": {
-      const W = w + 1;
       // The ruled-out diagonal is −v; its two corners are the points at
-      // issue. Shade the chain / components they belong to (from the board
-      // with this square removed) plus their incident squares — so a
-      // dead-end point that carries no diagonal yet is still located.
+      // issue. Outline the chain / components they belong to (from the board
+      // with this square removed) plus their incident squares, so a dead-end
+      // point that carries no diagonal yet is still located.
       const grid = firing.grid.slice();
       grid[m.y * w + m.x] = 0;
-      const [pa, pb] =
-        m.v === 1
-          ? [
-              [m.x, m.y],
-              [m.x + 1, m.y + 1],
-            ] // backslash corners
-          : [
-              [m.x + 1, m.y],
-              [m.x, m.y + 1],
-            ]; // forward corners
-      const pts = [pa[1] * W + pa[0], pb[1] * W + pb[0]];
-      const byKey = new Map<number, { x: number; y: number }>();
+      // A ruled-out `\` runs from (x, y), a ruled-out `/` from (x+1, y).
+      const dx = m.v === 1 ? 0 : 1;
+      const corners: Point[] = [
+        { x: m.x + dx, y: m.y },
+        { x: m.x + 1 - dx, y: m.y + 1 },
+      ];
+      const byKey = new Map<number, Point>();
       for (const s of [
-        ...componentSquares(grid, w, h, pts),
-        ...incidentSquares(pa[0], pa[1], w, h),
-        ...incidentSquares(pb[0], pb[1], w, h),
+        ...componentSquares(
+          grid,
+          w,
+          h,
+          corners.map((p) => p.y * (w + 1) + p.x),
+        ),
+        ...corners.flatMap((p) => incidentSquares(p.x, p.y, w, h)),
       ]) {
-        if (s.x === m.x && s.y === m.y) continue; // target owns its blue cell
+        if (s.x === m.x && s.y === m.y) continue; // the target carries its own ring
         byKey.set(s.y * w + s.x, s);
       }
       hint.area = [...byKey.values()];
@@ -385,19 +331,12 @@ function hint(state: SlantState): HintResult<SlantMove, SlantHint> {
   const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
   if (refusal) return refusal;
   const plan = deduceHintPlan(state.w, state.h, state.clues, state.soln);
-  if (plan.length === 0) {
-    return { ok: false, error: DEDUCTION_EXHAUSTED };
-  }
+  if (plan.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
   const steps: HintStep<SlantMove, SlantHint>[] = [];
   for (const firing of plan) {
     for (let leg = 0; leg < firing.moves.length; leg++) {
       steps.push({
-        move: {
-          type: "set",
-          x: firing.moves[leg].x,
-          y: firing.moves[leg].y,
-          v: firing.moves[leg].v,
-        },
+        move: { type: "set", ...firing.moves[leg] },
         explanation: narrate(firing, leg),
         ...(leg > 0 ? { continuesPrevious: true } : {}),
         highlights: buildHighlights(firing, leg, state.w, state.h),
@@ -420,10 +359,6 @@ function hintKeepTrack(
     : "off";
 }
 
-/** Slant's difficulty contract (`engine/difficulty.ts`). `slantSolve` returns
- * `SOLVE_UNIQUE` / `SOLVE_IMPOSSIBLE` / `SOLVE_NOT_CONVERGED`, and takes a fresh
- * `SolverScratch` per call — its dsf and equivalence classes carry state across
- * a solve. */
 const difficulty: DifficultyContract<SlantParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
@@ -462,7 +397,7 @@ export const slantGame: Game<
     difficulty: p.diff,
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -501,16 +436,16 @@ export const slantGame: Game<
     },
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SlantParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },
   newDrawState,
   redraw,
 
-  flashLength,
+  flashLength: (a, b) => winFlash(a, b, FLASH_TIME),
 };
 
 registerGame(slantGame);

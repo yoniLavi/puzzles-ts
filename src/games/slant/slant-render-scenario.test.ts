@@ -1,10 +1,9 @@
 /**
  * Tier-2.5 render scenarios for the Slant hint: drive a real Midend to a
- * displayed hint step and capture `redraw`. Targeted op assertions (the blue
- * `COL_HINT` target fill, the recolored clue digit, the `COL_HINT_CELL`
- * evidence shade) plus one snapshot so a render regression is a reviewable
- * text diff (`vitest -u` re-baselines an intended change; the targeted
- * assertions survive a careless `-u`).
+ * displayed hint step and capture `redraw`. Targeted op assertions (the ringed
+ * `COL_HINT` target, the recolored clue digit, the outlined `COL_HINT_CELL`
+ * evidence) plus one snapshot, so a render regression is a reviewable text
+ * diff.
  */
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";

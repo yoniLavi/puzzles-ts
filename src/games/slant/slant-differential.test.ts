@@ -1,7 +1,6 @@
 /**
- * Gated C-vs-TS differential for the Slant port. Reads the committed
- * fixture recorded from upstream slant.c (puzzles/auxiliary/slant-trace.c)
- * and asserts:
+ * Gated C-vs-TS differential for the Slant port, against the committed
+ * fixture recorded from upstream's slant.c. Asserts:
  *
  *  1. TS `newDesc` over the same seed reproduces the C desc **byte-for-byte**
  *     — the generator is a faithful port, the clue-removal loop is decided
@@ -9,12 +8,10 @@
  *  2. The same call reproduces the C aux solution byte-for-byte (the
  *     filled-grid generator path, checked directly).
  *  3. The TS solver solves the C-generated board uniquely at the recorded
- *     difficulty, and a Hard board is NOT solvable one level down.
+ *     difficulty, and a `DIFF_HARD` board is NOT solvable one level down.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/slant-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated** — see
+ * `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
@@ -72,7 +69,7 @@ describe("Slant C-vs-TS differential — aux + solver agreement (gated)", () => 
       let got = "";
       for (let i = 0; i < f.w * f.h; i++) got += soln[i] < 0 ? "\\" : "/";
       expect(got).toBe(f.aux);
-      // A Hard board must genuinely need Hard techniques.
+      // A `DIFF_HARD` board must genuinely need its techniques.
       if (f.diff === DIFF_HARD) {
         expect(slantSolve(f.w, f.h, clues, soln, sc, f.diff - 1)).toBe(
           SOLVE_NOT_CONVERGED,

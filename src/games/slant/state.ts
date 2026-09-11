@@ -19,9 +19,9 @@ import { dimensionParamConfig } from "../../engine/params.ts";
 import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
-import type { GameStatus } from "../../engine/types.ts";
+import type { GameStatus, Point } from "../../engine/types.ts";
 
-// --- difficulty (upstream DIFFLIST: Easy, Hard) ---------------------------
+// --- difficulty (upstream's DIFFLIST: Easy, Hard; shown as tierNames(2)) ---
 export const DIFF_EASY = 0;
 export const DIFF_HARD = 1;
 export const DIFF_COUNT = 2;
@@ -73,12 +73,8 @@ export interface SlantUi {
   fadeGrounded: boolean;
 }
 
-/** A placed diagonal that contradicts the unique solution (the
- * mistake-checking divergence; surfaced by Check & Save). */
-export interface SlantMistake {
-  x: number;
-  y: number;
-}
+/** A placed diagonal that contradicts the unique solution. */
+export type SlantMistake = Point;
 
 // --- params --------------------------------------------------------------
 
@@ -128,7 +124,7 @@ export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
 ]);
 
 export function validateParams(p: SlantParams, _full: boolean): string | null {
-  // Grids of dimension 1 can't be made Hard, so upstream forbids them.
+  // A grid of width or height 1 can't reach `DIFF_HARD`, so upstream forbids it.
   if (p.w < 2 || p.h < 2) return "Width and height must both be at least two";
   if (p.w > Number.MAX_SAFE_INTEGER / p.h) {
     return "Width times height must not be unreasonably large";
@@ -179,15 +175,13 @@ export function encodeClues(clues: Int8Array): string {
 
 export function newState(p: SlantParams, desc: string): SlantState {
   const { w, h } = p;
-  const W = w + 1;
-  const H = h + 1;
   return {
     w,
     h,
     clues: decodeClues(p, desc),
     soln: new Int8Array(w * h),
     loopErrors: new Uint8Array(w * h),
-    vertexErrors: new Uint8Array(W * H),
+    vertexErrors: new Uint8Array((w + 1) * (h + 1)),
     grounded: new Uint8Array(w * h),
     completed: false,
     cheated: false,
@@ -219,20 +213,8 @@ export function vertexDegree(
   return anti ? 4 - ret : ret;
 }
 
-export interface SlantErrors {
-  loopErrors: Uint8Array;
-  vertexErrors: Uint8Array;
-  grounded: Uint8Array;
-  complete: boolean;
-}
-
 /** Recompute the full error overlay + completion verdict for a board. */
-export function computeErrors(
-  w: number,
-  h: number,
-  clues: Int8Array,
-  soln: Int8Array,
-): SlantErrors {
+export function computeErrors(w: number, h: number, clues: Int8Array, soln: Int8Array) {
   const W = w + 1;
   const H = h + 1;
   const loopErrors = new Uint8Array(w * h);
@@ -336,8 +318,8 @@ export function executeMove(state: SlantState, move: SlantMove): SlantState {
     return assertNever(move, "slant: executeMove");
   }
 
-  // Always re-run the completion check — it also recomputes the error
-  // overlays. The completed flag latches, as upstream.
+  // The completion check also recomputes the error overlays. `completed`
+  // latches, as upstream.
   const errors = computeErrors(w, h, state.clues, soln);
   return {
     ...state,
