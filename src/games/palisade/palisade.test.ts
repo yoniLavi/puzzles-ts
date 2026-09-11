@@ -363,9 +363,9 @@ describe("palisade hint", () => {
   });
 
   it("equivalentEdges opens a journey stating the shared-fate coupling", () => {
-    // equivalentEdges shades a region (cells > 1, vs numberExhausted's
+    // equivalentEdges references a region (cells > 1, vs numberExhausted's
     // single clue cell) and pairs two edges into one journey; its opener
-    // leg must spell out the coupling the earlier narration omitted.
+    // leg must spell out the shared-fate coupling.
     const steps = scanPlan((ss) =>
       ss.some(
         (s, k) =>

@@ -114,9 +114,6 @@ const PALETTE: BorderGridColors = {
 
 // --- geometry -------------------------------------------------------------
 
-export { fromCoord, margin } from "../../engine/border-grid.ts";
-export { center, tileWidth } from "../../engine/border-grid-render.ts";
-
 export function computeSize(p: PalisadeParams, ts: number): Size {
   return borderGridSize(p.w, p.h, ts);
 }
@@ -155,12 +152,9 @@ export function redraw(
   const wh = w * h;
   const flash = Math.floor((flashTime * 5) / FLASH_TIME) % 2;
 
-  // Fold the displayed hint step into per-tile hint channels. The action
-  // edge and the firing's other forced edges (`hl.edges`) all paint
-  // COL_HINT — they share a fate, so they share a color — so both are
-  // marked into the one edge mask; the referenced cells (the clue pair /
-  // region) shade COL_HINT_CELL. Both sides of each edge are marked (same
-  // pixels).
+  // Fold the displayed hint step into per-tile hint channels. The action edge
+  // and the firing's other forced edges (`hl.edges`) share a fate, so they
+  // share one mask and one color; each edge is marked on both of its cells.
   const hintEdgeMask = new Int32Array(wh);
   const hintCellMask = new Int32Array(wh);
   const hl = hint?.highlights;
@@ -186,11 +180,10 @@ export function redraw(
   const yellowDsf = buildDsf(w, h, borders, false);
 
   // Completed-and-correct regions: a wall-bounded (black) component of exactly
-  // `k` cells, every clue in it satisfied, and no wall interior to it. These
-  // shade with the shared completed-region color (Rect's convention), the same
-  // feedback Galaxies/Rect give (a *local* correctness check, not a
-  // global-solution check). Start each right-sized component valid, then
-  // invalidate on a clue mismatch or an interior (dangling) wall.
+  // `k` cells, every clue in it satisfied, and no wall interior to it: a
+  // *local* check, as in Galaxies and Rect, not a comparison with the solution.
+  // Start each right-sized component valid, then invalidate on a clue mismatch
+  // or an interior (dangling) wall.
   const validRoot = new Map<number, boolean>();
   for (let i = 0; i < wh; i++) {
     const r = blackDsf.canonify(i);
@@ -224,14 +217,11 @@ export function redraw(
       if (ds.cache[i] !== flags) {
         ds.cache[i] = flags;
         drawBorderTile(dr, ts, r, c, flags, PALETTE, (body, o) => {
-          // The referenced cells are **outlined**, not washed. Two reasons, and
-          // the second is Palisade's own: a referenced cell carries the clue
-          // digit the deduction counts with, and the wash also took the cell's
-          // background from `F_CORRECT`, so a hint over a finished region hid
-          // the fact that it was finished. The outline is **inset inside the
-          // cell body** rather than on its border, because in Palisade that
-          // border is a *wall* — it is where the hint's own forced edges are
-          // drawn, in `COL_HINT`.
+          // The referenced cells are outlined, not washed: a wash would cover
+          // the clue digit the deduction counts with, and the `F_CORRECT`
+          // background that shows a region is finished. The outline is inset in
+          // the cell body because the cell's border is a wall, where the hint's
+          // own forced edges are drawn.
           if (flags & F_HINT_CELL) {
             drawMarkSides(
               dr,

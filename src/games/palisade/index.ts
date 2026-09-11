@@ -4,10 +4,8 @@
  * so the grid divides into connected regions of exactly `k` cells, each
  * clue equal to its cell's wall count.
  *
- * Edges are three-valued (wall / no-wall-mark / unknown) and shared
- * between two cells, so each edit records both sides; input picks the
- * edge nearest the click (left toggles wall, right toggles no-wall mark)
- * and there is a half-grid keyboard cursor.
+ * Input picks the edge nearest the click (left toggles wall, right toggles
+ * no-wall mark), and there is a half-grid keyboard cursor.
  */
 
 import {
@@ -31,7 +29,7 @@ import {
 import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, Point } from "../../engine/types.ts";
 import { say } from "./hint-text.ts";
 import {
   colors,
@@ -68,8 +66,6 @@ import {
   validateParams,
 } from "./state.ts";
 
-// Edge states for the click toggle cycle.
-
 function newUi(_state: PalisadeState): PalisadeUi {
   return { cursor: newCursor(1, 1) };
 }
@@ -98,22 +94,6 @@ function interpretMove(
   return r === "ui" ? UI_UPDATE : { type: "edges", edits: r };
 }
 
-// --- flash -----------------------------------------------------------------
-
-// Palisade's flash rule *is* the collection's — `winFlash` adopted it rather
-// than the reverse (`unify-cross-game-vocabulary`). What Palisade still does
-// differently is upstream of the flash: `executeMove` recomputes `completed`
-// every move instead of latching it, so breaking and re-solving a board is a
-// genuine unsolved→solved transition and the celebration fires again.
-function flashLength(
-  oldState: PalisadeState,
-  newState_: PalisadeState,
-  _dir: number,
-  _ui: PalisadeUi,
-): number {
-  return winFlash(oldState, newState_, FLASH_TIME);
-}
-
 // --- mistakes --------------------------------------------------------------
 
 function findMistakes(state: PalisadeState): readonly PalisadeMistake[] {
@@ -137,12 +117,10 @@ function findMistakes(state: PalisadeState): readonly PalisadeMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-/** Narrate one leg of a deduction. `leg`/`groupSize` describe the firing this
- * edge belongs to: a multi-edge deduction (`equivalentEdges` pair,
- * `numberExhausted` sweep) narrates the coupling on its first leg and a
- * short continuation on the rest. The referenced cells/edges are
- * highlighted alongside (see `buildStep`). The words, and why each reads as
- * it does, are [`hint-text.ts`](./hint-text.ts)'s. */
+/** Narrate one leg of a deduction. A multi-edge firing (`equivalentEdges`
+ * pair, `numberExhausted` sweep) narrates the coupling on its first leg and a
+ * short continuation on the rest. The words, and why each reads as it does,
+ * are [`hint-text.ts`](./hint-text.ts)'s. */
 function explain(
   fe: ForcedEdge,
   clues: Int8Array,
@@ -151,9 +129,8 @@ function explain(
   leg: number,
   groupSize: number,
 ): string {
-  const c = clues[fe.y * w + fe.x];
   if (leg > 0) return say.continuation(fe.kind);
-
+  const c = clues[fe.y * w + fe.x];
   const multi = groupSize > 1;
   switch (fe.rule) {
     case "cluesVersusRegionSize": {
@@ -255,9 +232,8 @@ function hintKeepTrack(
   step: HintStep<PalisadeMove>,
   state: PalisadeState,
 ): HintTrackVerdict {
-  if (m.type !== "edges" || step.move.type !== "edges") return "off";
-  const hl = step.highlights as PalisadeHint | undefined;
-  if (!hl) return "off";
+  if (m.type !== "edges") return "off";
+  const hl = step.highlights as PalisadeHint;
   const i = hl.y * state.w + hl.x;
   const bit = hl.kind === "wall" ? BORDER(hl.dir) : DISABLED(BORDER(hl.dir));
   for (const e of m.edits) {
@@ -296,7 +272,7 @@ export const palisadeGame: Game<
     "region-size": String(p.k),
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -319,9 +295,9 @@ export const palisadeGame: Game<
   textFormat,
   statusbarText: (s) => `Region size: ${s.k}`,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: PalisadeParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },
@@ -329,7 +305,7 @@ export const palisadeGame: Game<
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (a, b) => winFlash(a, b, FLASH_TIME),
 };
 
 registerGame(palisadeGame);

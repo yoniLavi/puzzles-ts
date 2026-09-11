@@ -1,15 +1,9 @@
-// Seed for the in-process render-snapshot harness, on Palisade.
+// Seed for the in-process render-snapshot harness, on Palisade: frames reached
+// through the real Midend and asserted with no browser and no human eyeball.
 //
-// These are the exact frames that were painful to verify in the browser
-// harness (OffscreenCanvas blocked getImageData, right-click marks did
-// not register, stopping on a mid-plan hint step needed Auto-Hint
-// timing). Here they are reached in-process via the real Midend and
-// asserted with no browser and no human eyeball:
-//
-//  1. the `equivalentEdges` hint frame — action edge COL_HINT, the
-//     sibling edge COL_HINT_SIBLING, the shaded region COL_HINT_CELL,
-//     clue digits still drawn (the spec's "hint frame asserted without
-//     a browser" scenario);
+//  1. the `equivalentEdges` hint frame — both forced edges COL_HINT, the
+//     referenced region outlined in COL_HINT_CELL, clue digits still drawn
+//     (the spec's "hint frame asserted without a browser" scenario);
 //  2. a fixed opener frame snapshot — a render regression is a
 //     reviewable text diff (the spec's "render regression is a snapshot
 //     diff" scenario).
@@ -21,10 +15,9 @@ import { COL_HINT, COL_HINT_CELL } from "./render.ts";
 import { newDesc } from "./solver.ts";
 import type { PalisadeHint } from "./state.ts";
 
-// The equivalentEdges frame: a sibling edge AND a shaded *region* (more
-// than one referenced cell). numberExhausted legs now also carry a sibling
-// (they're grouped into a journey too), but reference a single clue cell —
-// so the multi-cell region distinguishes the rule we're hunting.
+// The equivalentEdges frame: a sibling edge AND a referenced *region* (more
+// than one cell). numberExhausted journeys carry siblings too, but reference a
+// single clue cell, so the multi-cell region distinguishes the rule.
 const isEquivalentEdgesFrame = (hl: PalisadeHint | undefined): boolean =>
   (hl?.edges?.length ?? 0) > 0 && (hl?.cells?.length ?? 0) > 1;
 
@@ -79,11 +72,11 @@ describe("Palisade render scenarios", () => {
       ops.filter((o) => o.op === "rect" && o.color === color).length;
 
     // Both forced edges paint COL_HINT (they share a fate, so they share a
-    // color) — at least two blue rects — over a COL_HINT_CELL-shaded region.
+    // color) — at least two blue rects — over a COL_HINT_CELL-outlined region.
     expect(rectsOf(COL_HINT)).toBeGreaterThanOrEqual(2);
     expect(rectsOf(COL_HINT_CELL)).toBeGreaterThan(0);
 
-    // Shading the region does not erase the clues: digits are still drawn.
+    // Outlining the region does not erase the clues: digits are still drawn.
     expect(ops.some((o) => o.op === "text")).toBe(true);
 
     // The displayed step really is the equivalentEdges one (a sibling
@@ -95,10 +88,9 @@ describe("Palisade render scenarios", () => {
 
   it("matches the opener-frame snapshot", () => {
     // A fixed descriptive board → a stable frame, exercising a different
-    // rule than equivalentEdges. This board's opening deduction forces
-    // more than one edge, so its first leg surfaces a COL_HINT_SIBLING
-    // edge (the firing's other edge) alongside the COL_HINT action edge —
-    // the grouped-journey rendering.
+    // rule than equivalentEdges. Its opening deduction forces more than one
+    // edge, so the first leg paints the firing's other edges in COL_HINT
+    // alongside the action edge: the grouped-journey rendering.
     const P = { w: 5, h: 5, k: 5 };
     const id = `5x5n5:${newDesc(P, randomNew("palisade-render-opener")).desc}`;
     const { recording, hint } = renderScenario({

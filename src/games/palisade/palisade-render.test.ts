@@ -1,6 +1,6 @@
 // Tier-2 render-ops: drive Palisade's `redraw` against a recording
 // `GameDrawing` double — first-draw grid dots, per-edge colors, the
-// live error reddening for an over-large region, the findMistakes
+// live error reddening for a wrong-sized region, the findMistakes
 // overlay edge, the clue text, and the cursor outline.
 import { describe, expect, it } from "vitest";
 import { BORDER } from "../../engine/border-grid.ts";
@@ -92,14 +92,8 @@ describe("Palisade redraw", () => {
     expect(ops.some((o) => o.op === "drawRect" && o.color === COL_GRID)).toBe(true);
   });
 
-  it("reddens the walls of an over-large region", () => {
+  it("reddens the walls of an undersized region", () => {
     const state = makeState();
-    // Wall off a 2x1 strip in the interior but leave it attached to a
-    // larger region elsewhere is hard to hand-build; instead box in a
-    // region larger than k by enclosing the whole top-left 2x3 (=6 > 5)
-    // is also fiddly. Simpler: take a fully-walled single cell — a
-    // size-1 region is "too small", which also reddens. Assert the
-    // error color appears once we create an obviously-wrong division.
     const s = { ...state, borders: state.borders.slice() };
     // Enclose cell (1,1) entirely → a size-1 region (too small) ⇒ error.
     const i = 1 * P.w + 1;
@@ -167,9 +161,17 @@ describe("Palisade redraw", () => {
     redraw(dr, freshDs(state), null, state, 0, freshUi(), 0, 0, hint);
     // The action edge AND its sibling both paint COL_HINT (they share a
     // fate, so they share a color); referenced cells get a COL_HINT_CELL
-    // fill. The two distinct edges → at least two COL_HINT rects.
-    const hintRects = ops.filter((o) => o.op === "drawRect" && o.color === COL_HINT);
-    expect(hintRects.length).toBeGreaterThanOrEqual(2);
+    // outline. Each edge paints on both of its cells, so a bare count cannot
+    // tell one edge from two: compare against the action edge alone.
+    const hintRects = (o: Op[]) =>
+      o.filter((op) => op.op === "drawRect" && op.color === COL_HINT).length;
+    const alone = recordingDrawing();
+    redraw(alone.dr, freshDs(state), null, state, 0, freshUi(), 0, 0, {
+      ...hint,
+      highlights: { x: 1, y: 1, dir: 1, kind: "nowall" },
+    });
+    expect(hintRects(alone.ops)).toBeGreaterThan(0);
+    expect(hintRects(ops)).toBeGreaterThan(hintRects(alone.ops));
     expect(ops.some((o) => o.op === "drawRect" && o.color === COL_HINT_CELL)).toBe(
       true,
     );

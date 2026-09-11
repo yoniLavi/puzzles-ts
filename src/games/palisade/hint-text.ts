@@ -37,10 +37,10 @@ export const say = {
     if (c === 3 && d === 3) {
       return `Two 3s each keep just one side open, and it has to be the one they share, so their region would be exactly 2 cells. Regions here hold ${k}, so the edge between them must be a wall.`;
     }
-    // The side-counting behind the bound is left to the outlined clues: the
-    // owner chose the shorter sentence (2026-09-10) for an arm that fires only
-    // on small-region boards. The two-3s arm above keeps its count, because
-    // there the bound is exact and the count is the whole argument.
+    // The side-counting behind the bound is left to the outlined clues: this
+    // arm fires only on small-region boards, and takes the shorter sentence by
+    // the owner's choice. The two-3s arm keeps its count, because there the
+    // bound is exact and the count is the whole argument.
     return `These clues would need a shared region of at least ${8 - c - d} cells, but regions here hold ${k}, so the edge between them must be a wall.`;
   },
 
@@ -88,7 +88,7 @@ export const say = {
     // so the clue cell is either inside all of it (both edges open) or
     // walled off from all of it (both walled), and it can't do one of
     // each. That coupling is what makes the clue's count force the
-    // edges; an earlier narration omitted it and read as a non-sequitur.
+    // edges; without it the sentence reads as a non-sequitur.
     if (multi) {
       return kind === "wall"
         ? `Both edges border the same region, so they share a fate: both walls or both open. Leaving both open would leave clue ${c} short of walls, so both must be walls.`
