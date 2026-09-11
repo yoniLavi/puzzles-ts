@@ -1,10 +1,11 @@
 /**
  * Tents generator — faithful port of `new_game_desc` in tents.c. Byte-match
- * critical (design D1 / docs/games/testing.md § "Byte-match: fidelity where there is a right answer"–4.4): every RNG draw must reproduce C
+ * critical, and the differential checks it: every RNG draw must reproduce C
  * exactly — the `random_upto` tent-placement permutation and the bipartite
  * `matching`'s own internal draws (RNG-faithful in `engine/latin.ts`) — and
  * the solver's verdict must match C on every candidate board (the difficulty
- * gate rejects any board solvable one level down).
+ * gate rejects any board solvable one level down). See docs/games/testing.md
+ * § "Byte-match: fidelity where there is a right answer".
  *
  * Generation strategy: place `w*h/5` tents at random non-adjacent squares,
  * place trees by matching each tent to a distinct orthogonally-adjacent
@@ -31,11 +32,10 @@ export function newTentsDesc(
   params: TentsParams,
   rs: RandomState,
 ): { desc: string; aux: string } {
-  let { w, h, diff } = params;
+  const { w, h } = params;
   const ntrees = Math.floor((w * h) / 5);
-
   // Downgrade tiny grids to prevent a tight loop.
-  if (diff > DIFF_EASY && w <= 4 && h <= 4) diff = DIFF_EASY;
+  const diff = w <= 4 && h <= 4 ? DIFF_EASY : params.diff;
 
   const grid = new Int8Array(w * h);
   const order = new Int32Array(w * h);
@@ -110,50 +110,31 @@ export function newTentsDesc(
       adjsizes.push(list.length);
     }
 
-    // Place the trees via matching. `matching` returns the left→right
-    // assignment; invert to the right→left form C reads as `outr`.
+    // Place the trees on the potential-tree squares the matching claims.
     const ltoR = matching(ntrees, nr, adjlists, adjsizes, rs);
-    const outr = new Int32Array(nr).fill(-1);
-    let matched = 0;
-    for (let L = 0; L < ntrees; L++) {
-      if (ltoR[L] !== -1) {
-        outr[ltoR[L]] = L;
-        matched++;
+    if (ltoR.includes(-1)) continue; // couldn't place all the trees
+    const claimed = new Uint8Array(nr);
+    for (const r of ltoR) claimed[r] = 1;
+    for (let i = 0; i < w * h; i++) {
+      if (treemap[i] !== -1 && claimed[treemap[i]]) grid[i] = TREE;
+    }
+
+    // Derive the edge numbers, and reject a completely empty row or column
+    // (looks ugly; gives nothing away). `col` and `row` index the clue list.
+    const filled = new Int32Array(w + h);
+    numbers.fill(0);
+    for (let i = 0; i < w * h; i++) {
+      if (grid[i] === BLANK) continue;
+      const col = i % w;
+      const row = w + Math.floor(i / w);
+      filled[col]++;
+      filled[row]++;
+      if (grid[i] === TENT) {
+        numbers[col]++;
+        numbers[row]++;
       }
     }
-    if (matched < ntrees) continue; // couldn't place all the trees
-
-    for (let i = 0; i < w * h; i++) {
-      if (treemap[i] !== -1 && outr[treemap[i]] !== -1) grid[i] = TREE;
-    }
-
-    // Reject a completely empty row or column (looks ugly; gives nothing away).
-    let emptyColumn = false;
-    for (let i = 0; i < w && !emptyColumn; i++) {
-      let jj = 0;
-      for (; jj < h; jj++) if (grid[jj * w + i] !== BLANK) break;
-      if (jj === h) emptyColumn = true;
-    }
-    if (emptyColumn) continue;
-    let emptyRow = false;
-    for (let jj = 0; jj < h && !emptyRow; jj++) {
-      let i = 0;
-      for (; i < w; i++) if (grid[jj * w + i] !== BLANK) break;
-      if (i === w) emptyRow = true;
-    }
-    if (emptyRow) continue;
-
-    // Edge numbers.
-    for (let i = 0; i < w; i++) {
-      let n = 0;
-      for (let jj = 0; jj < h; jj++) if (grid[jj * w + i] === TENT) n++;
-      numbers[i] = n;
-    }
-    for (let i = 0; i < h; i++) {
-      let n = 0;
-      for (let jj = 0; jj < w; jj++) if (grid[i * w + jj] === TENT) n++;
-      numbers[w + i] = n;
-    }
+    if (filled.includes(0)) continue;
 
     // Solve at diff-1 (must fail: ambiguous) and diff (must succeed: unique).
     const puzzle = new Int8Array(w * h);

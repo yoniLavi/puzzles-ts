@@ -1,11 +1,10 @@
 /**
- * Tents state, params, and desc codec — idiomatic TS port of the state half
- * of `tents.c` (place tents next to trees so each row/column tent count
- * matches its edge clue, no two tents are even diagonally adjacent, and the
- * trees and tents admit a one-to-one orthogonal-adjacency matching).
+ * Tents state, params, and desc codec — the state half of `tents.c` (place
+ * tents next to trees so each row/column tent count matches its edge clue, no
+ * two tents are even diagonally adjacent, and the trees and tents admit a
+ * one-to-one orthogonal-adjacency matching).
  *
- * Grid conventions (upstream's): `w`/`h` are the grid dimensions; a cell is
- * one of BLANK / TREE / TENT / NONTENT (MAGIC is a solver-only sentinel).
+ * A cell is BLANK / TREE / TENT / NONTENT (MAGIC is a solver-only sentinel).
  * Trees are fixed givens; the player marks squares tent / non-tent / blank.
  * `numbers` holds the `w + h` edge clues — columns `0..w-1` then rows
  * `0..h-1` — shared (frozen) across a game's states.
@@ -27,14 +26,14 @@ export const TENT = 2;
 export const NONTENT = 3;
 export const MAGIC = 4;
 
-// --- difficulty (upstream DIFFLIST: Easy, Tricky) -------------------------
+// --- difficulty (constants named for upstream's tiers; players see DIFF_NAMES)
 export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFF_COUNT = 2;
 export const DIFF_NAMES: readonly string[] = tierNames(2);
 export const DIFF_CHARS = "et"; // ENCODE chars, indexed by difficulty
 
-// --- link directions (upstream N,U,L,R,D) ---------------------------------
+// --- link directions (upstream N,U,L,R,D; N is "no link") ------------------
 // The solver walks orthogonal neighbors in this fixed order; the generator
 // and completion check reuse dx/dy so byte-order-sensitive loops match.
 export const N = 0;
@@ -169,8 +168,7 @@ export function encodeDesc(
   let out = "";
   let j = 0;
   for (let i = 0; i <= w * h; i++) {
-    const c = i < w * h ? grid[i] === TREE : true;
-    if (c) {
+    if (i === w * h || grid[i] === TREE) {
       out += j === 0 ? "_" : String.fromCharCode(j - 1 + 97);
       j = 0;
     } else {
@@ -211,17 +209,15 @@ export function validateDesc(p: TentsParams, desc: string): string | null {
   return null;
 }
 
-/** Parse a desc into a fresh tree grid + numbers array. */
+/** Parse a validated desc into a fresh tree grid + numbers array. */
 export function decodeDesc(
   p: TentsParams,
   desc: string,
 ): { grid: Int8Array; numbers: Int32Array } {
   const { w, h } = p;
-  const grid = new Int8Array(w * h).fill(BLANK);
-  const numbers = new Int32Array(w + h);
-  let i = 0;
+  const grid = new Int8Array(w * h);
   let pos = 0;
-  for (; i < desc.length && desc[i] !== ","; i++) {
+  for (let i = 0; i < desc.length && desc[i] !== ","; i++) {
     const ch = desc[i];
     let run: number;
     let type = TREE;
@@ -239,17 +235,8 @@ export function decodeDesc(
     if (pos === w * h) break; // terminal tree-past-the-end
     if (type !== BLANK) grid[pos++] = type;
   }
-  // Numbers.
-  for (let k = 0; k < w + h; k++) {
-    while (i < desc.length && desc[i] !== ",") i++;
-    i++; // skip the comma
-    let n = 0;
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") {
-      n = n * 10 + (desc.charCodeAt(i) - 48);
-      i++;
-    }
-    numbers[k] = n;
-  }
+  // The grid part holds no comma, so the numbers are everything after the first.
+  const numbers = Int32Array.from(desc.slice(desc.indexOf(",") + 1).split(","), Number);
   return { grid, numbers };
 }
 
@@ -260,87 +247,65 @@ export function newState(p: TentsParams, desc: string): TentsState {
 
 // --- completion check (upstream execute_move tail) ------------------------
 
-/** True iff the trees and tents in `grid` admit a perfect one-to-one
- * orthogonal-adjacency matching (upstream's `matching(m, m, …, NULL)`: left =
- * trees, right = adjacent tents; count == m ⇒ a perfect matching). Neighbor
- * order U,L,R,D exactly as upstream. */
-function tentsTreesMatch(w: number, h: number, grid: Int8Array): boolean {
-  const gridids = new Int32Array(w * h);
-  let n = 0;
-  for (let i = 0; i < w * h; i++) if (grid[i] === TENT) gridids[i] = n++;
-  const nTents = n;
-  n = 0;
-  for (let i = 0; i < w * h; i++) if (grid[i] === TREE) gridids[i] = n++;
-  const m = n;
-  if (nTents !== m) return false;
-
-  const adjlists: number[][] = [];
-  const adjsizes: number[] = [];
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (grid[y * w + x] !== TREE) continue;
-      const treeid = gridids[y * w + x];
-      const list: number[] = [];
-      for (let d = 1; d < MAXDIR; d++) {
-        const x2 = x + DX(d);
-        const y2 = y + DY(d);
-        if (x2 >= 0 && x2 < w && y2 >= 0 && y2 < h && grid[y2 * w + x2] === TENT) {
-          list.push(gridids[y2 * w + x2]);
-        }
-      }
-      adjlists[treeid] = list;
-      adjsizes[treeid] = list.length;
-    }
-  }
-  const ltoR = matching(m, m, adjlists, adjsizes); // rs omitted ⇒ deterministic
-  let count = 0;
-  for (let i = 0; i < m; i++) if (ltoR[i] !== -1) count++;
-  return count === m;
-}
-
-/** Upstream `execute_move`'s completion test: right number of tents, every
- * edge number met, no two tents adjacent (orthogonally or diagonally), and a
- * valid tree↔tent matching. */
+/** Upstream `execute_move`'s completion test: every edge number met, no two
+ * tents adjacent (orthogonally or diagonally), and a one-to-one matching of
+ * trees to orthogonally adjacent tents. */
 export function checkCompletion(
   w: number,
   h: number,
   grid: Int8Array,
   numbers: Int32Array,
 ): boolean {
+  // Tents and trees are numbered separately, in reading order, for the matching.
+  const ids = new Int32Array(w * h);
+  const counts = new Int32Array(w + h);
   let nTents = 0;
   let nTrees = 0;
-  for (let i = 0; i < w * h; i++) {
-    if (grid[i] === TENT) nTents++;
-    else if (grid[i] === TREE) nTrees++;
-  }
-  if (nTents !== nTrees) return false;
-
-  for (let x = 0; x < w; x++) {
-    let n = 0;
-    for (let y = 0; y < h; y++) if (grid[y * w + x] === TENT) n++;
-    if (numbers[x] !== n) return false;
-  }
-  for (let y = 0; y < h; y++) {
-    let n = 0;
-    for (let x = 0; x < w; x++) if (grid[y * w + x] === TENT) n++;
-    if (numbers[w + y] !== n) return false;
-  }
-
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const t = grid[y * w + x] === TENT;
-      if (x + 1 < w && t && grid[y * w + x + 1] === TENT) return false;
-      if (y + 1 < h && t && grid[(y + 1) * w + x] === TENT) return false;
-      if (x + 1 < w && y + 1 < h) {
-        if (t && grid[(y + 1) * w + (x + 1)] === TENT) return false;
-        if (grid[(y + 1) * w + x] === TENT && grid[y * w + (x + 1)] === TENT) {
-          return false;
+      if (grid[y * w + x] === TREE) ids[y * w + x] = nTrees++;
+      if (grid[y * w + x] !== TENT) continue;
+      ids[y * w + x] = nTents++;
+      counts[x]++;
+      counts[w + y]++;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          const x2 = x + dx;
+          const y2 = y + dy;
+          if (x2 >= 0 && x2 < w && y2 >= 0 && y2 < h && grid[y2 * w + x2] === TENT) {
+            return false;
+          }
         }
       }
     }
   }
+  if (nTents !== nTrees) return false;
+  for (let i = 0; i < w + h; i++) if (counts[i] !== numbers[i]) return false;
 
-  return tentsTreesMatch(w, h, grid);
+  const adjlists: number[][] = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (grid[y * w + x] !== TREE) continue;
+      const list: number[] = [];
+      for (let d = 1; d < MAXDIR; d++) {
+        const x2 = x + DX(d);
+        const y2 = y + DY(d);
+        if (x2 >= 0 && x2 < w && y2 >= 0 && y2 < h && grid[y2 * w + x2] === TENT) {
+          list.push(ids[y2 * w + x2]);
+        }
+      }
+      adjlists.push(list);
+    }
+  }
+  // No `rs`: upstream's deterministic existence check.
+  const ltoR = matching(
+    nTrees,
+    nTrees,
+    adjlists,
+    adjlists.map((l) => l.length),
+  );
+  return !ltoR.includes(-1);
 }
 
 // --- moves ---------------------------------------------------------------
@@ -388,33 +353,19 @@ export function textFormat(state: TentsState): string {
   const gh = (h + 1) * ch + 1;
   const len = gw * gh;
   const board = new Array<string>(len).fill(" ");
-  const put = (idx: number, s: string) => {
-    for (let k = 0; k < s.length; k++) board[idx + k] = s[k];
-  };
 
   for (let r = 0; r <= h; r++) {
     for (let c = 0; c <= w; c++) {
       const cell = r * ch * gw + cw * c;
       const center = cell + (gw * ch) / 2 + cw / 2;
-      const i = r * w + c;
       let n = 1000;
-      if (r === h && c === w) {
-        // NOP
-      } else if (c === w) n = numbers[w + r];
-      else if (r === h) n = numbers[c];
-      else {
-        switch (grid[i]) {
-          case BLANK:
-            board[center] = ".";
-            break;
-          case TREE:
-            board[center] = "T";
-            break;
-          case TENT:
-            put(center - 1, "//\\");
-            break;
-        }
-      }
+      if (r < h && c < w) {
+        const v = grid[r * w + c];
+        if (v === BLANK) board[center] = ".";
+        else if (v === TREE) board[center] = "T";
+        else if (v === TENT) board.splice(center - 1, 3, ..."//\\");
+      } else if (c < w) n = numbers[c];
+      else if (r < h) n = numbers[w + r];
       if (n < 100) {
         board[center] = String(n % 10);
         if (n >= 10) board[center - 1] = String(Math.floor(n / 10));

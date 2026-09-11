@@ -1,18 +1,19 @@
 /**
- * Tents rendering — faithful port of `game_redraw` / `draw_tile` /
- * `find_errors` in tents.c. Non-blank tiles are grass-filled; trees draw a
- * trunk + leaf circles, tents a triangle; the edge numbers sit on the bottom
- * (columns) and right (rows) borders. Live error highlighting (adjacency
- * diamonds, over/under-committed numbers, over-committed tent/tree groups via
- * two `dsf` passes) is computed each frame over a drag-transformed grid (D3).
+ * Tents rendering — `game_redraw` / `draw_tile` / `find_errors` from tents.c.
+ * Non-blank tiles are grass-filled; trees draw a trunk + leaf circles, tents a
+ * triangle; the edge numbers sit on the bottom (columns) and right (rows)
+ * borders. Live error highlighting (adjacency diamonds, over/under-committed
+ * numbers, over-committed tent/tree groups via two `dsf` passes) is computed
+ * each frame over a drag-transformed grid, which is why it lives here and not
+ * in state.
  *
- * Geometry note: the web C build defines `NARROW_BORDERS`
- * (cmake/platforms/webapp.cmake), so `TLBORDER = 1` and `BRBORDER = TS + 2`
- * (number room only on the bottom/right) — parity is with the browser build.
+ * Geometry is upstream's web build (`NARROW_BORDERS`): a 1px top/left border,
+ * and `TS + 2` bottom/right to hold the numbers.
  *
  * The per-tile cache packs the square value plus every error / cursor / flash
  * / mistake overlay bit into one `Int32Array` word, so the diff key covers
- * every overlay (docs/games/rendering.md § "Overlay sidecars"). Edge numbers diff a parallel error-flag array.
+ * every overlay (docs/games/rendering.md § "Overlay sidecars"). Edge numbers
+ * diff a parallel error-flag array.
  */
 
 import {
@@ -26,7 +27,7 @@ import { ERROR, ERROR_TEXT, INK } from "../../engine/color/palette.ts";
 import { drawThickRectOutline } from "../../engine/draw.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
+import { LEFT_BUTTON } from "../../engine/pointer.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import {
   BLANK,
@@ -43,7 +44,7 @@ import {
 export const PREFERRED_TILE_SIZE = 32;
 export const FLASH_TIME = 0.3;
 
-// --- palette (mirrors the tents.c color enum index-for-index) ------------
+// --- palette (the tents.c color enum, index for index) -------------------
 export const COL_BACKGROUND = 0;
 export const COL_GRID = 1;
 export const COL_GRASS = 2;
@@ -53,8 +54,7 @@ export const COL_TENT = 5;
 export const COL_ERROR = 6;
 export const COL_ERRTEXT = 7;
 export const COL_ERRTRUNK = 8;
-// Fork mistake overlay, appended past the upstream enum so tents' dark-mode
-// override (index 2, COL_GRASS) never touches it.
+// The findMistakes overlay, appended past upstream's enum.
 export const COL_MISTAKE = 9;
 
 export function colors(defaultBackground: Color): Color[] {
@@ -72,27 +72,23 @@ export function colors(defaultBackground: Color): Color[] {
   return out;
 }
 
-// --- packed tile bits (v in the low nibble, error/overlay flags above) -----
-// Error bits mirror the upstream ERR_ADJ_* / ERR_OVERCOMMITTED enum (4..12),
-// so `v & ~15` recovers them exactly as C's `err = v & ~15`.
-const ERR_ADJ_TOPLEFT = 4;
-const ERR_ADJ_TOP = 5;
-const ERR_ADJ_TOPRIGHT = 6;
-const ERR_ADJ_LEFT = 7;
-const ERR_ADJ_RIGHT = 8;
-const ERR_ADJ_BOTLEFT = 9;
-const ERR_ADJ_BOT = 10;
-const ERR_ADJ_BOTRIGHT = 11;
-const ERR_OVERCOMMITTED = 12;
-// Fork overlay / render-only bits, above the upstream error range.
+// --- packed tile word: v in the low nibble, error and overlay bits above ---
+const ERR_ADJ_TOPLEFT = 1 << 4;
+const ERR_ADJ_TOP = 1 << 5;
+const ERR_ADJ_TOPRIGHT = 1 << 6;
+const ERR_ADJ_LEFT = 1 << 7;
+const ERR_ADJ_RIGHT = 1 << 8;
+const ERR_ADJ_BOTLEFT = 1 << 9;
+const ERR_ADJ_BOT = 1 << 10;
+const ERR_ADJ_BOTRIGHT = 1 << 11;
+const ERR_OVERCOMMITTED = 1 << 12;
 const CURSOR_BIT = 1 << 13;
 const FLASH_BIT = 1 << 14;
 const MISTAKE_BIT = 1 << 15;
 
 // --- geometry (NARROW_BORDERS) --------------------------------------------
-/** The board's pixel origin (NARROW_BORDERS). Exported so `interpretMove` reads
- * the same number the painter does — one function, both callers
- * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
+/** The board's pixel origin. Exported so `interpretMove` reads the same number
+ * the painter does ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
 export const TLBORDER = 1;
 const brBorder = (ts: number) => ts + 2;
 const coord = (n: number, ts: number) => n * ts + TLBORDER;
@@ -109,8 +105,6 @@ export function computeSize(p: TentsParams, ts: number): Size {
 export interface TentsDrawState {
   started: boolean;
   tilesize: number;
-  w: number;
-  h: number;
   /** Last-drawn packed word per tile; -1 forces a draw. */
   drawn: Int32Array;
   /** Last-drawn error flag per edge number; -1 forces a draw. */
@@ -121,8 +115,6 @@ export function newDrawState(state: TentsState): TentsDrawState {
   return {
     started: false,
     tilesize: 0,
-    w: state.w,
-    h: state.h,
     drawn: new Int32Array(state.w * state.h).fill(-1),
     numbersDrawn: new Int32Array(state.w + state.h).fill(-1),
   };
@@ -145,149 +137,100 @@ export function findErrors(
 ): TentsErrors {
   const cell = new Int32Array(w * h);
   const num = new Uint8Array(w + h);
-  const isTent = (v: number) => v === TENT;
 
-  // Tent-adjacency violations.
+  // Tent-adjacency violations: a diamond on the shared edge or corner.
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
+      const i = y * w + x;
       if (
         y + 1 < h &&
         x + 1 < w &&
-        ((isTent(grid[y * w + x]) && isTent(grid[(y + 1) * w + (x + 1)])) ||
-          (isTent(grid[(y + 1) * w + x]) && isTent(grid[y * w + (x + 1)])))
+        ((grid[i] === TENT && grid[i + w + 1] === TENT) ||
+          (grid[i + w] === TENT && grid[i + 1] === TENT))
       ) {
-        cell[y * w + x] |= 1 << ERR_ADJ_BOTRIGHT;
-        cell[(y + 1) * w + x] |= 1 << ERR_ADJ_TOPRIGHT;
-        cell[y * w + (x + 1)] |= 1 << ERR_ADJ_BOTLEFT;
-        cell[(y + 1) * w + (x + 1)] |= 1 << ERR_ADJ_TOPLEFT;
+        cell[i] |= ERR_ADJ_BOTRIGHT;
+        cell[i + w] |= ERR_ADJ_TOPRIGHT;
+        cell[i + 1] |= ERR_ADJ_BOTLEFT;
+        cell[i + w + 1] |= ERR_ADJ_TOPLEFT;
       }
-      if (y + 1 < h && isTent(grid[y * w + x]) && isTent(grid[(y + 1) * w + x])) {
-        cell[y * w + x] |= 1 << ERR_ADJ_BOT;
-        cell[(y + 1) * w + x] |= 1 << ERR_ADJ_TOP;
+      if (y + 1 < h && grid[i] === TENT && grid[i + w] === TENT) {
+        cell[i] |= ERR_ADJ_BOT;
+        cell[i + w] |= ERR_ADJ_TOP;
       }
-      if (x + 1 < w && isTent(grid[y * w + x]) && isTent(grid[y * w + (x + 1)])) {
-        cell[y * w + x] |= 1 << ERR_ADJ_RIGHT;
-        cell[y * w + (x + 1)] |= 1 << ERR_ADJ_LEFT;
+      if (x + 1 < w && grid[i] === TENT && grid[i + 1] === TENT) {
+        cell[i] |= ERR_ADJ_RIGHT;
+        cell[i + 1] |= ERR_ADJ_LEFT;
       }
     }
   }
 
-  // Numeric-clue violations.
-  for (let x = 0; x < w; x++) {
-    let tents = 0;
-    let maybe = 0;
-    for (let y = 0; y < h; y++) {
-      if (grid[y * w + x] === TENT) tents++;
-      else if (grid[y * w + x] === BLANK) maybe++;
-    }
-    num[x] = tents > numbers[x] || tents + maybe < numbers[x] ? 1 : 0;
-  }
+  // Numeric-clue violations: too many tents, or too few squares left for them.
+  const tents = new Int32Array(w + h);
+  const maybe = new Int32Array(w + h);
   for (let y = 0; y < h; y++) {
-    let tents = 0;
-    let maybe = 0;
     for (let x = 0; x < w; x++) {
-      if (grid[y * w + x] === TENT) tents++;
-      else if (grid[y * w + x] === BLANK) maybe++;
-    }
-    num[w + y] = tents > numbers[w + y] || tents + maybe < numbers[w + y] ? 1 : 0;
-  }
-
-  // Groups of tents with too few trees (bipartite tent/tree components: a
-  // component with more tents than trees flags every tent in it).
-  {
-    const dsf = new Dsf(w * h);
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w - 1; x++) {
-        const a = grid[y * w + x];
-        const b = grid[y * w + x + 1];
-        if ((a === TREE && b === TENT) || (a === TENT && b === TREE)) {
-          dsf.merge(y * w + x, y * w + x + 1);
-        }
-      }
-    }
-    for (let y = 0; y < h - 1; y++) {
-      for (let x = 0; x < w; x++) {
-        const a = grid[y * w + x];
-        const b = grid[(y + 1) * w + x];
-        if ((a === TREE && b === TENT) || (a === TENT && b === TREE)) {
-          dsf.merge(y * w + x, (y + 1) * w + x);
-        }
-      }
-    }
-    const tmp = new Int32Array(w * h);
-    for (let i = 0; i < w * h; i++) {
-      const r = dsf.canonify(i);
-      if (grid[i] === TREE) tmp[r]++;
-      else if (grid[i] === TENT) tmp[r]--;
-    }
-    for (let i = 0; i < w * h; i++) {
-      if (grid[i] === TENT && tmp[dsf.canonify(i)] < 0)
-        cell[i] |= 1 << ERR_OVERCOMMITTED;
+      const v = grid[y * w + x];
+      if (v !== TENT && v !== BLANK) continue;
+      const counts = v === TENT ? tents : maybe;
+      counts[x]++;
+      counts[w + y]++;
     }
   }
+  for (let i = 0; i < w + h; i++) {
+    num[i] = tents[i] > numbers[i] || tents[i] + maybe[i] < numbers[i] ? 1 : 0;
+  }
 
-  // Groups of trees with too few tents: same, but count BLANK as a potential
-  // tent (so a tree is only flagged when there is no room left for its tents).
-  {
-    const potTent = (v: number) => v === TENT || v === BLANK;
+  // Per cell, the trees minus the `partner` squares in its component, where a
+  // component joins each tree to its orthogonally adjacent partners.
+  const balance = (partner: (v: number) => boolean): ((i: number) => number) => {
+    const linked = (a: number, b: number) =>
+      (grid[a] === TREE && partner(grid[b])) || (partner(grid[a]) && grid[b] === TREE);
     const dsf = new Dsf(w * h);
     for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w - 1; x++) {
-        const a = grid[y * w + x];
-        const b = grid[y * w + x + 1];
-        if ((a === TREE && potTent(b)) || (potTent(a) && b === TREE)) {
-          dsf.merge(y * w + x, y * w + x + 1);
-        }
-      }
-    }
-    for (let y = 0; y < h - 1; y++) {
       for (let x = 0; x < w; x++) {
-        const a = grid[y * w + x];
-        const b = grid[(y + 1) * w + x];
-        if ((a === TREE && potTent(b)) || (potTent(a) && b === TREE)) {
-          dsf.merge(y * w + x, (y + 1) * w + x);
-        }
+        const i = y * w + x;
+        if (x + 1 < w && linked(i, i + 1)) dsf.merge(i, i + 1);
+        if (y + 1 < h && linked(i, i + w)) dsf.merge(i, i + w);
       }
     }
-    const tmp = new Int32Array(w * h);
+    const sum = new Int32Array(w * h);
     for (let i = 0; i < w * h; i++) {
-      const r = dsf.canonify(i);
-      if (grid[i] === TREE) tmp[r]++;
-      else if (potTent(grid[i])) tmp[r]--;
+      if (grid[i] === TREE) sum[dsf.canonify(i)]++;
+      else if (partner(grid[i])) sum[dsf.canonify(i)]--;
     }
-    for (let i = 0; i < w * h; i++) {
-      if (grid[i] === TREE && tmp[dsf.canonify(i)] > 0)
-        cell[i] |= 1 << ERR_OVERCOMMITTED;
-    }
+    return (i) => sum[dsf.canonify(i)];
+  };
+  // A group of tents with too few trees flags every tent in it. A group of
+  // trees with too few tents flags its trees, counting a blank as a potential
+  // tent, so a tree is flagged only when there is no room left for its tents.
+  const tentBalance = balance((v) => v === TENT);
+  const treeBalance = balance((v) => v === TENT || v === BLANK);
+  for (let i = 0; i < w * h; i++) {
+    if (grid[i] === TENT && tentBalance(i) < 0) cell[i] |= ERR_OVERCOMMITTED;
+    if (grid[i] === TREE && treeBalance(i) > 0) cell[i] |= ERR_OVERCOMMITTED;
   }
 
   return { cell, num };
 }
 
-// --- drag transform (upstream drag_xform, stylus branches dropped — D6) ----
+// --- drag transform (upstream drag_xform) ---------------------------------
 
-/** Apply an in-progress drag's effect to cell `(x, y)`'s value `v` for the
- * live preview / error feedback. Mirrors upstream `drag_xform`. */
+/** Apply an in-progress drag's effect to cell `(x, y)`'s value `v`, for the
+ * live preview, the error feedback and the move a release makes. `dragButton`
+ * is the left or the right button. Upstream's stylus branches are absent: the
+ * pointer model delivers no `MOD_STYLUS`. */
 export function dragXform(ui: TentsUi, x: number, y: number, v: number): number {
-  let xmin = Math.min(ui.dsx, ui.dex);
-  let xmax = Math.max(ui.dsx, ui.dex);
-  let ymin = Math.min(ui.dsy, ui.dey);
-  let ymax = Math.max(ui.dsy, ui.dey);
-  if (ui.dragButton === LEFT_BUTTON) {
-    // Left-dragging has no effect: treat it as a click at the drag start.
-    xmin = xmax = ui.dsx;
-    ymin = ymax = ui.dsy;
-  }
-  if (x < xmin || x > xmax || y < ymin || y > ymax) return v;
   if (v === TREE) return v; // trees are inviolate
-  if (xmin === xmax && ymin === ymax) {
-    if (ui.dragButton === LEFT_BUTTON) v = v === BLANK ? TENT : BLANK;
-    else v = v === BLANK ? NONTENT : BLANK;
-  } else {
-    // A drag: only a right-drag has an effect (blanks → non-tents).
-    if (ui.dragButton === RIGHT_BUTTON) v = v === BLANK ? NONTENT : v;
+  if (ui.dragButton === LEFT_BUTTON) {
+    // Left-dragging has no effect: it acts as a click at the drag start.
+    if (x !== ui.dsx || y !== ui.dsy) return v;
+    return v === BLANK ? TENT : BLANK;
   }
-  return v;
+  // The right button: a click toggles a non-tent, a drag paints blanks.
+  if (x < Math.min(ui.dsx, ui.dex) || x > Math.max(ui.dsx, ui.dex)) return v;
+  if (y < Math.min(ui.dsy, ui.dey) || y > Math.max(ui.dsy, ui.dey)) return v;
+  if (ui.dsx === ui.dex && ui.dsy === ui.dey) return v === BLANK ? NONTENT : BLANK;
+  return v === BLANK ? NONTENT : v;
 }
 
 // --- tile drawing ----------------------------------------------------------
@@ -340,7 +283,7 @@ function drawTile(
     v === BLANK ? COL_BACKGROUND : COL_GRASS,
   );
 
-  const over = (err & (1 << ERR_OVERCOMMITTED)) !== 0;
+  const over = (err & ERR_OVERCOMMITTED) !== 0;
   if (v === TREE) {
     dr.drawRect(
       {
@@ -352,33 +295,14 @@ function drawTile(
       over ? COL_ERRTRUNK : COL_TREETRUNK,
     );
     const col = over ? COL_ERROR : COL_TREELEAF;
-    const r1 = Math.floor(ts / 4);
-    const r2 = Math.floor(ts / 8);
-    dr.drawCircle({ x: cx, y: ty + Math.floor((ts * 4) / 10) }, r1, col, col);
-    dr.drawCircle(
-      { x: cx + Math.floor(ts / 5), y: ty + Math.floor(ts / 4) },
-      r2,
-      col,
-      col,
-    );
-    dr.drawCircle(
-      { x: cx - Math.floor(ts / 5), y: ty + Math.floor(ts / 4) },
-      r2,
-      col,
-      col,
-    );
-    dr.drawCircle(
-      { x: cx + Math.floor(ts / 4), y: ty + Math.floor((ts * 6) / 13) },
-      r2,
-      col,
-      col,
-    );
-    dr.drawCircle(
-      { x: cx - Math.floor(ts / 4), y: ty + Math.floor((ts * 6) / 13) },
-      r2,
-      col,
-      col,
-    );
+    const leaf = (dx: number, dy: number, r: number) =>
+      dr.drawCircle({ x: cx + dx, y: ty + dy }, r, col, col);
+    leaf(0, Math.floor((ts * 4) / 10), Math.floor(ts / 4));
+    const r = Math.floor(ts / 8);
+    leaf(Math.floor(ts / 5), Math.floor(ts / 4), r);
+    leaf(-Math.floor(ts / 5), Math.floor(ts / 4), r);
+    leaf(Math.floor(ts / 4), Math.floor((ts * 6) / 13), r);
+    leaf(-Math.floor(ts / 4), Math.floor((ts * 6) / 13), r);
   } else if (v === TENT) {
     const t = Math.floor(ts / 3);
     const col = over ? COL_ERROR : COL_TENT;
@@ -394,24 +318,22 @@ function drawTile(
   }
 
   const half = Math.floor(ts / 2);
-  if (err & (1 << ERR_ADJ_TOPLEFT)) drawErrAdj(dr, ts, tx, ty);
-  if (err & (1 << ERR_ADJ_TOP)) drawErrAdj(dr, ts, tx + half, ty);
-  if (err & (1 << ERR_ADJ_TOPRIGHT)) drawErrAdj(dr, ts, tx + ts, ty);
-  if (err & (1 << ERR_ADJ_LEFT)) drawErrAdj(dr, ts, tx, ty + half);
-  if (err & (1 << ERR_ADJ_RIGHT)) drawErrAdj(dr, ts, tx + ts, ty + half);
-  if (err & (1 << ERR_ADJ_BOTLEFT)) drawErrAdj(dr, ts, tx, ty + ts);
-  if (err & (1 << ERR_ADJ_BOT)) drawErrAdj(dr, ts, tx + half, ty + ts);
-  if (err & (1 << ERR_ADJ_BOTRIGHT)) drawErrAdj(dr, ts, tx + ts, ty + ts);
+  if (err & ERR_ADJ_TOPLEFT) drawErrAdj(dr, ts, tx, ty);
+  if (err & ERR_ADJ_TOP) drawErrAdj(dr, ts, tx + half, ty);
+  if (err & ERR_ADJ_TOPRIGHT) drawErrAdj(dr, ts, tx + ts, ty);
+  if (err & ERR_ADJ_LEFT) drawErrAdj(dr, ts, tx, ty + half);
+  if (err & ERR_ADJ_RIGHT) drawErrAdj(dr, ts, tx + ts, ty + half);
+  if (err & ERR_ADJ_BOTLEFT) drawErrAdj(dr, ts, tx, ty + ts);
+  if (err & ERR_ADJ_BOT) drawErrAdj(dr, ts, tx + half, ty + ts);
+  if (err & ERR_ADJ_BOTRIGHT) drawErrAdj(dr, ts, tx + ts, ty + ts);
 
-  // Fork findMistakes overlay: an inset red outline (distinct from the live
+  // The findMistakes overlay: an inset red outline (distinct from the live
   // error red on trunk/leaf/tent).
   if (packed & MISTAKE_BIT) {
     const thick = Math.max(1, Math.floor(ts / 16));
     const inset = Math.max(2, Math.floor(ts / 8));
-    const sx = tx + inset;
-    const sy = ty + inset;
     const span = ts - 2 * inset;
-    drawThickRectOutline(dr, sx, sy, span, span, thick, COL_MISTAKE);
+    drawThickRectOutline(dr, tx + inset, ty + inset, span, span, thick, COL_MISTAKE);
   }
 
   if (cur) {
@@ -490,8 +412,7 @@ export function redraw(
   }
   const errors = findErrors(w, h, errGrid, numbers);
 
-  const mistakeSet = new Set<number>();
-  if (mistakes) for (const m of mistakes) mistakeSet.add(m.y * w + m.x);
+  const mistakeSet = new Set(mistakes?.map((m) => m.y * w + m.x));
 
   const cx = ui.cursor.visible ? ui.cursor.x : -1;
   const cy = ui.cursor.visible ? ui.cursor.y : -1;
@@ -517,55 +438,39 @@ export function redraw(
   // Edge numbers (redraw when their error state changed, or on first draw).
   const numberSize = Math.floor(ts / 2);
   for (let x = 0; x < w; x++) {
-    if (ds.numbersDrawn[x] !== errors.num[x]) {
-      dr.drawRect(
-        { x: coord(x, ts), y: coord(h, ts) + 1, w: ts, h: brBorder(ts) - 1 },
-        COL_BACKGROUND,
-      );
-      dr.drawText(
-        { x: coord(x, ts) + Math.floor(ts / 2), y: coord(h + 1, ts) },
-        {
-          align: "center",
-          baseline: "alphabetic",
-          fontType: "variable",
-          size: numberSize,
-        },
-        errors.num[x] ? COL_ERROR : COL_GRID,
-        String(numbers[x]),
-      );
-      dr.drawUpdate({
-        x: coord(x, ts),
-        y: coord(h, ts) + 1,
-        w: ts,
-        h: brBorder(ts) - 1,
-      });
-      ds.numbersDrawn[x] = errors.num[x];
-    }
+    if (ds.numbersDrawn[x] === errors.num[x]) continue;
+    const box = { x: coord(x, ts), y: coord(h, ts) + 1, w: ts, h: brBorder(ts) - 1 };
+    dr.drawRect(box, COL_BACKGROUND);
+    dr.drawText(
+      { x: coord(x, ts) + Math.floor(ts / 2), y: coord(h + 1, ts) },
+      {
+        align: "center",
+        baseline: "alphabetic",
+        fontType: "variable",
+        size: numberSize,
+      },
+      errors.num[x] ? COL_ERROR : COL_GRID,
+      String(numbers[x]),
+    );
+    dr.drawUpdate(box);
+    ds.numbersDrawn[x] = errors.num[x];
   }
   for (let y = 0; y < h; y++) {
-    if (ds.numbersDrawn[w + y] !== errors.num[w + y]) {
-      dr.drawRect(
-        { x: coord(w, ts) + 1, y: coord(y, ts), w: brBorder(ts) - 1, h: ts },
-        COL_BACKGROUND,
-      );
-      dr.drawText(
-        { x: coord(w + 1, ts), y: coord(y, ts) + Math.floor(ts / 2) },
-        {
-          align: "right",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: numberSize,
-        },
-        errors.num[w + y] ? COL_ERROR : COL_GRID,
-        String(numbers[w + y]),
-      );
-      dr.drawUpdate({
-        x: coord(w, ts) + 1,
-        y: coord(y, ts),
-        w: brBorder(ts) - 1,
-        h: ts,
-      });
-      ds.numbersDrawn[w + y] = errors.num[w + y];
-    }
+    if (ds.numbersDrawn[w + y] === errors.num[w + y]) continue;
+    const box = { x: coord(w, ts) + 1, y: coord(y, ts), w: brBorder(ts) - 1, h: ts };
+    dr.drawRect(box, COL_BACKGROUND);
+    dr.drawText(
+      { x: coord(w + 1, ts), y: coord(y, ts) + Math.floor(ts / 2) },
+      {
+        align: "right",
+        baseline: "mathematical",
+        fontType: "variable",
+        size: numberSize,
+      },
+      errors.num[w + y] ? COL_ERROR : COL_GRID,
+      String(numbers[w + y]),
+    );
+    dr.drawUpdate(box);
+    ds.numbersDrawn[w + y] = errors.num[w + y];
   }
 }

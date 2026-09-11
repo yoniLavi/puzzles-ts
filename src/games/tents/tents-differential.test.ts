@@ -1,18 +1,16 @@
 /**
- * Gated C-vs-TS differential for tents (openspec add-tents-ts-port).
+ * Gated C-vs-TS differential for tents.
  *
  * Byte-for-byte desc match: the generator is a faithful port over the
  * bit-identical `random.ts`, including the bipartite matching's internal RNG
  * draws, so `newDesc(params, randomNew(seed)).desc` reproduces C exactly
- * (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"). A follow-on assertion re-solves each C board with the TS
- * solver and asserts it grades at exactly the C-recorded difficulty — the
- * generator is solver-gated, so the TS solver must reach C's verdict on every
- * board (§4.4).
+ * (docs/games/testing.md § "Byte-match: fidelity where there is a right
+ * answer"). A follow-on assertion re-solves each C board with the TS solver
+ * and asserts it grades at exactly the C-recorded difficulty — the generator
+ * is solver-gated, so the TS solver must reach C's verdict on every board.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/tents-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C trace harness
+ * that captured it is gone — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

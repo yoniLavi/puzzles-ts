@@ -12,7 +12,7 @@
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
-import type { Game, UiUpdate } from "../../engine/game.ts";
+import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
@@ -31,9 +31,8 @@ import {
   showCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newTentsDesc } from "./generator.ts";
 import {
   colors,
@@ -195,30 +194,19 @@ function interpretMove(
   return null;
 }
 
-function flashLength(
-  oldState: TentsState,
-  newState_: TentsState,
-  _dir: number,
-  _ui: TentsUi,
-): number {
-  return winFlash(oldState, newState_, FLASH_TIME);
-}
-
-/** The unique solution to a board, from its trees + edge numbers only (never
- * the player's marks), or `null` when not uniquely deducible. */
-function uniqueSolution(state: TentsState): Int8Array | null {
-  const { w, h, grid, numbers } = state;
-  const puzzle = new Int8Array(w * h);
-  for (let i = 0; i < w * h; i++) puzzle[i] = grid[i] === TREE ? TREE : BLANK;
-  const { ret, soln } = tentsSolve(w, h, puzzle, numbers, DIFF_COUNT - 1);
-  return ret === 1 ? soln : null;
+/** Solve from the trees and edge numbers alone, never the player's marks.
+ * `ret` is 1 when both the grid and the tent–tree links come out complete, 0
+ * on an inconsistency the solver can prove, and 2 when it simply runs dry. */
+function solveFromClues(state: TentsState, cap = DIFF_COUNT - 1) {
+  const puzzle = Int8Array.from(state.grid, (v) => (v === TREE ? TREE : BLANK));
+  return tentsSolve(state.w, state.h, puzzle, state.numbers, cap);
 }
 
 function solve(
   orig: TentsState,
   _curr: TentsState,
   aux?: string,
-): ReturnType<NonNullable<Game<TentsParams, TentsState, TentsMove>["solve"]>> {
+): SolveResult<TentsMove> {
   if (aux) {
     // aux is "S;T<x>,<y>;…" — the generator's known solution.
     const tents: number[] = [];
@@ -228,10 +216,7 @@ function solve(
     }
     if (tents.length > 0) return { ok: true, move: { type: "solve", tents } };
   }
-  const { w, h, grid, numbers } = orig;
-  const puzzle = new Int8Array(w * h);
-  for (let i = 0; i < w * h; i++) puzzle[i] = grid[i] === TREE ? TREE : BLANK;
-  const { ret, soln } = tentsSolve(w, h, puzzle, numbers, DIFF_COUNT - 1);
+  const { ret, soln } = solveFromClues(orig);
   if (ret !== 1) {
     return {
       ok: false,
@@ -242,7 +227,7 @@ function solve(
     };
   }
   const tents: number[] = [];
-  for (let i = 0; i < w * h; i++) if (soln[i] === TENT) tents.push(i);
+  for (let i = 0; i < soln.length; i++) if (soln[i] === TENT) tents.push(i);
   return { ok: true, move: { type: "solve", tents } };
 }
 
@@ -251,8 +236,8 @@ function solve(
  * belongs). Blanks are never mistakes; a non-uniquely-solvable board yields
  * none. */
 function findMistakes(state: TentsState): readonly TentsMistake[] {
-  const soln = uniqueSolution(state);
-  if (!soln) return [];
+  const { ret, soln } = solveFromClues(state);
+  if (ret !== 1) return [];
   const { w, h, grid } = state;
   const out: TentsMistake[] = [];
   for (let y = 0; y < h; y++) {
@@ -266,18 +251,12 @@ function findMistakes(state: TentsState): readonly TentsMistake[] {
   return out;
 }
 
-/** Tents' difficulty contract (`engine/difficulty.ts`). `tentsSolve` returns
- * `ret` 1 when both the grid and the tent–tree links come out complete, 0 on an
- * inconsistency it can prove, and 2 when it simply runs dry. The puzzle grid is
- * rebuilt from the trees alone, exactly as `solve` does. */
+/** Tents' difficulty contract (`engine/difficulty.ts`). */
 const difficulty: DifficultyContract<TentsParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {
-    const s = newState(p, desc);
-    const puzzle = new Int8Array(s.w * s.h);
-    for (let i = 0; i < s.w * s.h; i++) puzzle[i] = s.grid[i] === TREE ? TREE : BLANK;
-    const { ret } = tentsSolve(s.w, s.h, puzzle, s.numbers, cap);
+    const { ret } = solveFromClues(newState(p, desc), cap);
     return ret === 1 ? "solved" : ret === 0 ? "impossible" : "unsolved";
   },
 };
@@ -308,7 +287,7 @@ export const tentsGame: Game<
     difficulty: p.diff,
   }),
 
-  newDesc: (p, rng: RandomState) => newTentsDesc(p, rng),
+  newDesc: newTentsDesc,
   validateDesc,
   newState,
   newUi,
@@ -323,17 +302,16 @@ export const tentsGame: Game<
 
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: TentsParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },
   newDrawState,
-  redraw: (dr, ds, prev, s, dir, ui, animTime, flashTime, _hint, mistakes) =>
-    redraw(dr, ds, prev, s, dir, ui, animTime, flashTime, undefined, mistakes),
+  redraw,
 
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(tentsGame);
