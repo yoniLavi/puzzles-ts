@@ -1,20 +1,18 @@
 /**
  * dominosa — the graded deductive solver, ported faithfully from
- * `dominosa.c`'s `run_solver` + the nine `deduce_*` techniques.
+ * `dominosa.c`'s `run_solver` and its `deduce_*` techniques.
  *
- * The scratch is an idiomatic object graph (`SolverDomino` / `SolverPlacement`
- * / `SolverSquare` with array cross-links) rather than C's parallel `snewn`
- * arrays, but every deduction is ported operation-for-operation — including the
- * swap-remove `ruleOutPlacement` back-index bookkeeping, the bitmask set
- * analysis, the `findloop` parity deduction and the flip-DSF forcing chains —
- * so the verdict (0 impossible / 1 unique / 2 ambiguous) matches C on every
- * board. The generator is solver-gated, so a faithful verdict is what makes the
- * byte-match differential hold (docs/games/solver-and-generator.md § "Solver-gated generation").
+ * The scratch is an object graph (`SolverDomino` / `SolverPlacement` /
+ * `SolverSquare` with array cross-links) rather than C's parallel arrays, but
+ * every deduction is ported operation-for-operation — including the swap-remove
+ * back-index bookkeeping in `ruleOutPlacement` — so the verdict (0 impossible /
+ * 1 unique / 2 ambiguous) matches C on every board. The generator is
+ * solver-gated, so a faithful verdict is what makes the byte-match differential
+ * hold (docs/games/solver-and-generator.md § "Solver-gated generation").
  *
- * The three `.sort()`s here (`squaresByNumber`, the two forcing-chain
- * comparators) use total or tie-order-irrelevant orderings that feed
- * set-membership grouping, not the desc byte-stream, so a plain stable sort
- * preserves the verdict (§4.3).
+ * The three `.sort()`s (`squaresByNumber`, the two forcing-chain comparators)
+ * use total or tie-order-irrelevant orderings that feed set-membership
+ * grouping, so a plain stable sort preserves the verdict.
  */
 
 import { FlipDsf } from "../../engine/dsf.ts";
@@ -32,14 +30,10 @@ import {
 export type PlaceTechnique = "onlySpot" | "squareOnly";
 
 /**
- * A technique that *rules out* placements.
- *
- * Split from {@link PlaceTechnique} so each narrator can be exhaustive over its
- * own half: with one union covering both, the barrier narrator needed a
- * `default:` arm, and that arm was reachable only in principle while reading as
- * a live un-narrated fallback ("This can't be a domino.") — the thing the hint
- * spec forbids. Now an unhandled technique is a compile error, which is the same
- * guarantee `HintTechnique` gets by not containing `"forcingChain"`.
+ * A technique that *rules out* placements. Split from {@link PlaceTechnique} so
+ * each narrator is exhaustive over its own half: an unhandled technique is a
+ * compile error rather than an unexplained fallback sentence. There is no
+ * forcing-chain member, because no hint fires one (see `firstFiring`).
  */
 export type BarrierTechnique =
   | "squareSingleDomino"
@@ -49,24 +43,12 @@ export type BarrierTechnique =
   | "parity"
   | "set";
 
-/** The deductive technique a hint firing used. */
-export type HintTechnique = PlaceTechnique | BarrierTechnique;
-// No `"forcingChain"` (`audit-guessing-tier-names`, design D4/D8): `runSolver`
-// still runs that rung — the generator grades on it — but `firstFiring`, the
-// hint's projection, does not, so nothing can produce the tag. Removing the
-// member rather than just the narration arm makes reintroducing the sentence a
-// compile error instead of a matter of convention.
-
 /**
  * One firing captured by the hint recorder — either a forced domino placement
  * or a set of ruled-out placements (barriers), plus the squares it reasons
- * over (shaded as evidence). Cell references are `y*w+x` indices.
- *
- * A **discriminated union on `place`**, so that a firing's kind and its
- * technique cannot disagree. With one flat shape the narrators had to accept
- * every technique and fall back on the ones that could not occur, and that
- * fallback was an unexplained sentence — which is the defect, not the
- * unreachability (`audit-guessing-tier-names`).
+ * over (shaded as evidence). Cell references are `y*w+x` indices. A
+ * discriminated union on `place`, so a firing's kind and its technique cannot
+ * disagree.
  */
 export type HintFiring =
   | {
@@ -96,7 +78,7 @@ class SolverDomino {
 
 class SolverPlacement {
   index = 0;
-  /** The two squares this placement covers. */
+  /** The two squares this placement covers, lower index first. */
   squares: [SolverSquare, SolverSquare];
   domino!: SolverDomino;
   /** Back-index of this placement in each square's placement list. */
@@ -112,8 +94,6 @@ class SolverPlacement {
 }
 
 class SolverSquare {
-  x = 0;
-  y = 0;
   index = 0;
   nplacements = 0;
   placements: SolverPlacement[] = [];
@@ -141,6 +121,12 @@ export class DominosaSolver {
 
   private squaresByNumber: SolverSquare[] | null = null;
   private dsfScratch: FlipDsf | null = null;
+
+  /** The deductions in the order `runSolver` tries them, each with the tier it
+   * costs and how many indices it sweeps (1 for a whole-board deduction). */
+  private readonly rungs: ReadonlyArray<
+    readonly [tier: number, count: number, deduce: (i: number) => boolean]
+  >;
 
   // --- hint recording (gated; runSolver / the generator never enable it) ----
   private recording = false;
@@ -184,15 +170,11 @@ export class DominosaSolver {
         this.dominoes.push(d);
       }
 
-    // Squares.
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++) {
-        const sq = new SolverSquare();
-        sq.x = x;
-        sq.y = y;
-        sq.index = y * w + x;
-        this.squares.push(sq);
-      }
+    for (let i = 0; i < wh; i++) {
+      const sq = new SolverSquare();
+      sq.index = i;
+      this.squares.push(sq);
+    }
 
     // Placements: vertical first (each square with the one below), then
     // horizontal — the exact upstream order (iteration order feeds deductions).
@@ -208,15 +190,13 @@ export class DominosaSolver {
         );
 
     // Full placement lists per square (temporarily) to compute overlaps.
-    for (const sq of this.squares) sq.nplacements = 0;
     for (const p of this.placements)
       for (let si = 0; si < 2; si++) {
         const sq = p.squares[si];
         p.spi[si] = sq.nplacements;
         sq.placements[sq.nplacements++] = p;
       }
-    for (const p of this.placements) {
-      p.noverlaps = 0;
+    for (const p of this.placements)
       for (let si = 0; si < 2; si++) {
         const sq = p.squares[si];
         for (let j = 0; j < sq.nplacements; j++) {
@@ -224,17 +204,26 @@ export class DominosaSolver {
           if (q !== p) p.overlaps[p.noverlaps++] = q;
         }
       }
-    }
     for (let pi = 0; pi < this.pc; pi++) this.placements[pi].index = pi;
+
+    this.rungs = [
+      [DIFF_TRIVIAL, dc, (di) => this.deduceDominoSinglePlacement(di)],
+      [DIFF_TRIVIAL, wh, (si) => this.deduceSquareSinglePlacement(si)],
+      [DIFF_BASIC, wh, (si) => this.deduceSquareSingleDomino(si)],
+      [DIFF_BASIC, dc, (di) => this.deduceDominoMustOverlap(di)],
+      [DIFF_BASIC, pc, (pi) => this.deduceLocalDuplicate(pi)],
+      [DIFF_BASIC, pc, (pi) => this.deduceLocalDuplicate2(pi)],
+      [DIFF_BASIC, 1, () => this.deduceParity()],
+      [DIFF_HARD, 1, () => this.deduceSet(false)],
+      [DIFF_EXTREME, 1, () => this.deduceSet(true)],
+      [DIFF_EXTREME, 1, () => this.deduceForcingChain()],
+    ];
   }
 
   /** (Re)initialize per-board: assign numbers, rebuild the domino/square
    * placement lists, mark all placements active. Mirrors `solver_setup_grid`. */
   setupGrid(numbers: Int32Array | number[]): void {
-    for (const sq of this.squares) {
-      sq.nplacements = 0;
-      sq.number = numbers[sq.index];
-    }
+    for (const sq of this.squares) sq.number = numbers[sq.index];
     for (const p of this.placements)
       p.domino = this.dominoes[DINDEX(p.squares[0].number, p.squares[1].number)];
 
@@ -266,11 +255,7 @@ export class DominosaSolver {
     const d = p.domino;
     p.active = false;
 
-    if (this.recording) {
-      const a = p.squares[0].index;
-      const b = p.squares[1].index;
-      this.recBarriers.push(a < b ? [a, b] : [b, a]);
-    }
+    if (this.recording) this.recBarriers.push([p.squares[0].index, p.squares[1].index]);
 
     let i = p.dpi;
     if (--d.nplacements !== i) {
@@ -313,9 +298,7 @@ export class DominosaSolver {
     const d = p.domino;
     if (d.nplacements <= 1) return false;
     if (this.recording) {
-      const a = p.squares[0].index;
-      const b = p.squares[1].index;
-      this.recPlace = a < b ? [a, b] : [b, a];
+      this.recPlace = [p.squares[0].index, p.squares[1].index];
       this.recEvidence = [sq.index];
     }
     while (d.nplacements > 1)
@@ -720,73 +703,20 @@ export class DominosaSolver {
 
   // --- driver -------------------------------------------------------------
 
-  /** Run to a fixpoint, capped at `maxDiffAllowed`. Returns 0 (impossible),
-   * 1 (unique solution), or 2 (ambiguous / solver too weak). */
+  /** Run to a fixpoint, capped at `maxDiffAllowed`: each pass sweeps the rungs
+   * in order and starts over after the first one that makes progress. Returns 0
+   * (impossible), 1 (unique solution), or 2 (ambiguous / solver too weak). */
   runSolver(maxDiffAllowed: number): number {
     let progressed: boolean;
     do {
       progressed = false;
-
-      for (let di = 0; di < this.dc; di++)
-        if (this.deduceDominoSinglePlacement(di)) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_TRIVIAL);
-        continue;
-      }
-      for (let si = 0; si < this.wh; si++)
-        if (this.deduceSquareSinglePlacement(si)) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_TRIVIAL);
-        continue;
-      }
-      if (maxDiffAllowed <= DIFF_TRIVIAL) continue;
-
-      for (let si = 0; si < this.wh; si++)
-        if (this.deduceSquareSingleDomino(si)) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_BASIC);
-        continue;
-      }
-      for (let di = 0; di < this.dc; di++)
-        if (this.deduceDominoMustOverlap(di)) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_BASIC);
-        continue;
-      }
-      for (let pi = 0; pi < this.pc; pi++)
-        if (this.deduceLocalDuplicate(pi)) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_BASIC);
-        continue;
-      }
-      for (let pi = 0; pi < this.pc; pi++)
-        if (this.deduceLocalDuplicate2(pi)) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_BASIC);
-        continue;
-      }
-      if (this.deduceParity()) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_BASIC);
-        continue;
-      }
-      if (maxDiffAllowed <= DIFF_BASIC) continue;
-
-      if (this.deduceSet(false)) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_HARD);
-        continue;
-      }
-      if (maxDiffAllowed <= DIFF_HARD) continue;
-
-      if (this.deduceSet(true)) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_EXTREME);
-        continue;
-      }
-      if (this.deduceForcingChain()) progressed = true;
-      if (progressed) {
-        this.maxDiffUsed = Math.max(this.maxDiffUsed, DIFF_EXTREME);
+      for (const [tier, count, deduce] of this.rungs) {
+        if (tier > maxDiffAllowed) break;
+        for (let i = 0; i < count; i++) if (deduce(i)) progressed = true;
+        if (progressed) {
+          this.maxDiffUsed = Math.max(this.maxDiffUsed, tier);
+          break;
+        }
       }
     } while (progressed);
 
@@ -798,15 +728,12 @@ export class DominosaSolver {
   /** After a unique solve, the forced domino placements as `[d1, d2]` pairs
    * (`d1 < d2`). Only meaningful when `runSolver` returned 1. */
   solutionPairs(): Array<[number, number]> {
-    const out: Array<[number, number]> = [];
-    for (const d of this.dominoes) {
-      if (d.nplacements !== 1) continue;
-      const p = d.placements[0];
-      const a = p.squares[0].index;
-      const b = p.squares[1].index;
-      out.push(a < b ? [a, b] : [b, a]);
-    }
-    return out;
+    return this.dominoes
+      .filter((d) => d.nplacements === 1)
+      .map(({ placements: [p] }): [number, number] => [
+        p.squares[0].index,
+        p.squares[1].index,
+      ]);
   }
 
   // --- hint driver --------------------------------------------------------
@@ -853,12 +780,10 @@ export class DominosaSolver {
     // A domino determined but not yet laid — the payoff "only spot" placement.
     for (const d of this.dominoes) {
       if (d.nplacements === 1 && !placed.has(d.index)) {
-        const p = d.placements[0];
-        const a = p.squares[0].index;
-        const b = p.squares[1].index;
+        const [a, b] = d.placements[0].squares;
         return {
           technique: "onlySpot",
-          place: a < b ? [a, b] : [b, a],
+          place: [a.index, b.index],
           barriers: [],
           evidence: [],
         };
@@ -868,11 +793,9 @@ export class DominosaSolver {
     this.recording = true;
     try {
       const place = (technique: PlaceTechnique): HintFiring => {
-        // Reached only just after a placement deduction returned true, which is
-        // where `recPlace` is set. Stated as a throw rather than a `?? fallback`
-        // because there is no sensible firing to invent here: a placement
-        // technique with no pair is a recorder bug, and swallowing it would
-        // surface as a hint pointing at nothing.
+        // Reached just after a placement deduction fired, which sets `recPlace`.
+        // A placement with no pair is a recorder bug, not a firing to invent:
+        // swallowing it would surface as a hint pointing at nothing.
         if (!this.recPlace) throw new Error(`${technique} recorded no placement`);
         return {
           technique,
@@ -925,13 +848,11 @@ export class DominosaSolver {
       this.resetRec();
       if (this.deduceSet(true)) return barrier("set");
 
-      // **No `deduceForcingChain` rung here** (`audit-guessing-tier-names`,
-      // design D4/D8). It follows an implication closure across the board until
-      // a chain repeats a domino — a conclusion reached by propagating rather
-      // than by looking, which the collection classes as non-deductive and
-      // never lets a hint present as a technique. `runSolver` above keeps it,
-      // so the generator and `solve` are untouched and no board changed; the
-      // hint stops where the search would have started and refuses.
+      // **No `deduceForcingChain` rung here.** It follows an implication closure
+      // across the board until a chain repeats a domino — a conclusion reached
+      // by propagating rather than by looking, which the collection never lets
+      // a hint present as a technique. `runSolver` keeps it for grading; the
+      // hint stops where it would start, and refuses.
       return null;
     } finally {
       this.recording = false;

@@ -14,6 +14,7 @@
 
 import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
+import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 
 // --- combinatorial helpers (upstream TRI / DCOUNT / DINDEX macros) ----------
@@ -42,25 +43,20 @@ export const DIFF_EXTREME = 3;
 export const DIFF_AMBIGUOUS = 4;
 export const DIFFCOUNT = 5;
 
-/** Names in enum order (upstream `dominosa_diffnames`). */
-// `Unreasonable` where upstream says `Extreme` (`audit-guessing-tier-names`,
-// design D5): that tier's `deduceForcingChain` rung follows an implication
-// closure across the board until a chain repeats a domino, which is a conclusion
-// reached by propagating rather than by looking, and the collection reserves one
-// word for a tier that may require that.
-//
-// It is Dominosa's top *difficulty* tier even though `Ambiguous` sits after it:
-// `Ambiguous` is not a harder rung but a **different promise** — its generator
-// skips uniqueness altogether (`nonUniqueTiers`), so no cap solves it and none
-// is meant to. The rule is about what a difficulty may require, so it lands on
-// the last real difficulty.
-//
-// The difficulty characters are untouched, so game IDs and saves are unaffected.
-/** Four conventional tiers plus **Ambiguous**, which is not a difficulty at all
- * but a relaxation of what the puzzle promises — the generator skips the
- * uniqueness search there. It is declared as such through the contract's
- * `nonUniqueTiers`, which is also what exempts it from the tier-name guard, so
- * this override needs no list of its own. */
+/**
+ * Tier names in enum order: four conventional tiers plus **Ambiguous**.
+ *
+ * The fourth is `Unreasonable` where upstream says `Extreme`: its
+ * `deduceForcingChain` rung follows an implication closure until a chain
+ * repeats a domino, a conclusion reached by propagating rather than by looking,
+ * and the collection reserves that word for a tier that may require it. It is
+ * the top *difficulty* even though Ambiguous sits after it, because Ambiguous is
+ * not a harder rung but a relaxation of what the puzzle promises (the generator
+ * skips the uniqueness search). The difficulty contract's `nonUniqueTiers`
+ * declares that, which is also what exempts it from the tier-name guard.
+ *
+ * Only the names differ from upstream; the encoding chars are upstream's.
+ */
 export const DIFF_NAMES = [...tierNames(4, { search: true }), "Ambiguous"];
 /** Encoding chars in enum order (upstream `dominosa_diffchars`). */
 export const DIFF_CHARS = "tbhea";
@@ -109,15 +105,9 @@ export function encodeParams(p: DominosaParams, full: boolean): string {
 }
 
 export function decodeParams(str: string): DominosaParams {
-  let i = 0;
-  let n = 0;
-  let sawDigit = false;
-  while (i < str.length && str[i] >= "0" && str[i] <= "9") {
-    n = n * 10 + (str.charCodeAt(i) - 48);
-    sawDigit = true;
-    i++;
-  }
-  if (!sawDigit) n = 6;
+  const { value, next } = parseLeadingInt(str, 0);
+  const n = next > 0 ? value : 6;
+  let i = next;
   let diff = DIFF_BASIC;
   while (i < str.length) {
     const c = str[i++];
@@ -198,7 +188,7 @@ export function validateDesc(p: DominosaParams, desc: string): string | null {
   const n = p.n;
   const wh = (n + 2) * (n + 1);
   const { numbers, error } = parseNumbers(n, wh, desc);
-  if (error || !numbers) return error ?? "Game description is invalid";
+  if (!numbers) return error;
   // Number-balance check: every number 0..n must occur exactly n+2 times.
   const occ = new Int32Array(n + 1);
   for (let i = 0; i < wh; i++) occ[numbers[i]]++;
@@ -209,12 +199,7 @@ export function validateDesc(p: DominosaParams, desc: string): string | null {
 
 /** Encode a numbers grid back to the desc string (bracket-escaping ≥10). */
 export function encodeNumbers(numbers: Int32Array | number[]): string {
-  let s = "";
-  for (let i = 0; i < numbers.length; i++) {
-    const k = numbers[i];
-    s += k < 10 ? String(k) : `[${k}]`;
-  }
-  return s;
+  return Array.from(numbers, (k) => (k < 10 ? String(k) : `[${k}]`)).join("");
 }
 
 // --- state ------------------------------------------------------------------
@@ -239,7 +224,7 @@ export function newState(p: DominosaParams, desc: string): DominosaState {
   const h = n + 1;
   const wh = w * h;
   const { numbers, error } = parseNumbers(n, wh, desc);
-  if (error || !numbers) throw new Error(`dominosa: bad desc: ${error}`);
+  if (!numbers) throw new Error(`dominosa: bad desc: ${error}`);
   const grid = new Int32Array(wh);
   for (let i = 0; i < wh; i++) grid[i] = i;
   return {
@@ -254,17 +239,9 @@ export function newState(p: DominosaParams, desc: string): DominosaState {
   };
 }
 
+/** `numbers` is frozen, so every state of a game shares it. */
 export function cloneState(s: DominosaState): DominosaState {
-  return {
-    params: s.params,
-    w: s.w,
-    h: s.h,
-    numbers: s.numbers, // frozen, shared
-    grid: s.grid.slice(),
-    edges: s.edges.slice(),
-    completed: s.completed,
-    cheated: s.cheated,
-  };
+  return { ...s, grid: s.grid.slice(), edges: s.edges.slice() };
 }
 
 export function status(s: DominosaState): "solved" | "ongoing" {

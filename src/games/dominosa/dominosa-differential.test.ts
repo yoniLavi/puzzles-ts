@@ -5,13 +5,13 @@
  * reproduces the C desc byte-for-byte for the same seed. Because the generator
  * is solver-gated (it keeps a board only if the solver grades it at exactly the
  * target difficulty), a byte-match on the desc transitively proves the TS
- * solver reached C's identical verdict on every intermediate board (playbook
- * §4.3–4.4) — the strongest bar. The `extra` hook additionally re-checks each
- * C board decodes validly, solves uniquely, and grades at exactly its recorded
- * difficulty under the TS solver.
+ * solver reached C's verdict on every intermediate board. The `extra` hook
+ * also re-checks that each C board decodes validly, solves uniquely, and grades
+ * at exactly its recorded difficulty under the TS solver.
  *
- * Fixtures: `__fixtures__/dominosa-c-reference.json`, recorded by
- * `puzzles/auxiliary/dominosa-trace.c` (see that file for the rebuild recipe).
+ * The fixture is frozen and cannot be regenerated: it was captured from
+ * upstream's C by a harness that no longer exists (see
+ * `engine/testing/differential.ts`).
  */
 import { expect } from "vitest";
 import {

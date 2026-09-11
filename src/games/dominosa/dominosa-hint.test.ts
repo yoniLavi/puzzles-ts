@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { newDominosaDesc } from "./generator.ts";
-import { dominosaGame } from "./index.ts";
-import { COL_HINT } from "./render.ts";
+import { type DominosaHint, dominosaGame } from "./index.ts";
+import { border, COL_HINT, PREFERRED_TILE_SIZE } from "./render.ts";
 import { solveNumbers } from "./solver.ts";
 import {
   DIFF_AMBIGUOUS,
@@ -99,12 +99,27 @@ describe("dominosa hint — render", () => {
   it("draws the forced domino's cells in COL_HINT", () => {
     const p = { n: 4, diff: DIFF_TRIVIAL };
     const { desc } = newDominosaDesc(p, randomNew("hint-render"));
-    const { recording } = renderScenario({
+    const { recording, hint } = renderScenario({
       game: dominosaGame,
       id: `${encodeParams(p, true)}:${desc}`,
       showHint: true,
     });
-    const hasHint = recording.ops.some((o) => o.op === "rect" && o.color === COL_HINT);
-    expect(hasHint).toBe(true);
+    const hintRects = recording.ops.flatMap((o) =>
+      o.op === "rect" && o.color === COL_HINT ? [o] : [],
+    );
+    expect(hintRects.length).toBeGreaterThan(0);
+    // Every mark lies inside one of the step's two target squares.
+    const ts = PREFERRED_TILE_SIZE;
+    const w = p.n + 2;
+    const targets = (hint?.highlights as DominosaHint | undefined)?.targets ?? [];
+    expect(targets).toHaveLength(2);
+    for (const r of hintRects) {
+      const inside = targets.some((i) => {
+        const x = (i % w) * ts + border(ts);
+        const y = Math.floor(i / w) * ts + border(ts);
+        return r.x >= x && r.y >= y && r.x + r.w <= x + ts && r.y + r.h <= y + ts;
+      });
+      expect(inside).toBe(true);
+    }
   });
 });

@@ -1,14 +1,12 @@
 /**
- * dominosa rendering — faithful port of `game_redraw` / `draw_tile` in
- * dominosa.c. Each square packs its full draw state (domino type, clash,
- * highlights, barrier edges, cursor sub-position, flash, and the fork mistake
- * overlay) into one `Int32Array` cache word, so the diff key covers every
+ * dominosa rendering — port of upstream's `game_redraw` / `draw_tile`. Each
+ * square packs its full draw state (domino type, clash, highlights, barrier
+ * edges, cursor sub-position, flash, and the mistake, hint and reference
+ * overlays) into one `Int32Array` cache word, so the diff key covers every
  * overlay by construction (docs/games/rendering.md § "Overlay sidecars").
  *
- * Geometry note: the web C build defines `NARROW_BORDERS`
- * (cmake/platforms/webapp.cmake), so `BORDER = −DOMINO_GUTTER` — a slight
- * negative inset that bleeds the domino gutters to the canvas edge, not the
- * desktop `¾·TS`.
+ * Geometry follows upstream's web build (`NARROW_BORDERS`): `BORDER` is minus
+ * the domino gutter, so the gutters bleed to the canvas edge.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -27,6 +25,7 @@ import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.
 import type { Color, Size } from "../../engine/types.ts";
 import type { DominosaHint } from "./index.ts";
 import {
+  DCOUNT,
   DINDEX,
   type DominosaMistake,
   type DominosaMove,
@@ -37,7 +36,6 @@ import {
   EDGE_L,
   EDGE_R,
   EDGE_T,
-  TRI,
 } from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 32;
@@ -52,14 +50,13 @@ export const COL_DOMINOTEXT = 4;
 export const COL_EDGE = 5;
 export const COL_HIGHLIGHT_1 = 6;
 export const COL_HIGHLIGHT_2 = 7;
-// Fork mistake overlay, appended past the upstream enum.
+// Fork overlays, appended past the upstream enum.
 export const COL_MISTAKE = 8;
-// Fork hint overlay, appended past the enum (no dark-mode overrides touch these).
 export const COL_HINT = 9; // the acted-on square's ring / the suggested edge
 export const COL_HINT_CELL = 10; // the evidence squares' outline
-// Fork reference-panel spotlight: boxes a domino's candidate placements. Violet,
-// distinct from the mistake (red), hint (blue), and value-highlight (red/green)
-// colors; appended past the enum so no dark-mode override touches it.
+// The reference-panel spotlight boxing a domino's candidate placements: violet,
+// distinct from the mistake (red), hint (blue) and value-highlight (red/green)
+// colors.
 export const COL_REFERENCE = 11;
 
 export function colors(defaultBackground: Color): Color[] {
@@ -166,10 +163,8 @@ export function newDrawState(state: DominosaState): DominosaDrawState {
  *
  * Dominosa's squares tile exactly, so the band lies wholly inside the box
  * (`outer` 0) and a square whose hint flags change repaints itself and takes its
- * mark with it. Every square carries a number, drawn centered, so the border is
- * the only place a mark can go — a fill behind those numbers is what this
- * replaces, and it was the collection's *strongest* case of it: `HINT_ACTION` is
- * the emphatic blue rather than a wash.
+ * mark with it. Every square carries a centered number, so the border is the
+ * only place a mark can go.
  */
 function markBand(ds: DominosaDrawState, x: number, y: number): MarkBand {
   const ts = ds.tilesize;
@@ -359,7 +354,7 @@ export function redraw(
 
   // Count domino-value occurrences (capped at 2) so a value placed twice
   // highlights in red.
-  const used = new Uint8Array(TRI(n + 1));
+  const used = new Uint8Array(DCOUNT(n));
   for (let i = 0; i < wh; i++)
     if (grid[i] > i) {
       const di = DINDEX(numbers[i], numbers[grid[i]]);

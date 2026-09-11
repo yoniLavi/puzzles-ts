@@ -1,5 +1,5 @@
 /**
- * dominosa — native TS port of `dominosa.c`. Place one of every possible
+ * dominosa — port of upstream's `dominosa.c`. Place one of every possible
  * domino (all number-pairs `0-0 … n-n`) into an `(n+2) × (n+1)` grid so each
  * square's number matches its clue.
  *
@@ -38,15 +38,8 @@ import {
   newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type {
-  Color,
-  Point,
-  ReferenceItem,
-  ReferenceModel,
-  Size,
-} from "../../engine/types.ts";
+import type { Point, ReferenceItem, ReferenceModel } from "../../engine/types.ts";
 import { newDominosaDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -59,13 +52,7 @@ import {
   PREFERRED_TILE_SIZE,
   redraw,
 } from "./render.ts";
-import {
-  type BarrierTechnique,
-  DominosaSolver,
-  type HintFiring,
-  type PlaceTechnique,
-  solveNumbers,
-} from "./solver.ts";
+import { DominosaSolver, solveNumbers } from "./solver.ts";
 import {
   cloneState,
   DCOUNT,
@@ -231,18 +218,10 @@ function clearEdgesAround(edges: Int32Array, d: number, w: number): void {
 
 function checkCompletion(s: DominosaState): void {
   if (s.completed) return;
-  const n = s.params.n;
-  const used = new Uint8Array(TRI(n + 1));
-  let ok = 0;
+  const used = new Set<number>();
   for (let i = 0; i < s.w * s.h; i++)
-    if (s.grid[i] > i) {
-      const di = DINDEX(s.numbers[i], s.numbers[s.grid[i]]);
-      if (!used[di]) {
-        used[di] = 1;
-        ok++;
-      }
-    }
-  if (ok === DCOUNT(n)) s.completed = true;
+    if (s.grid[i] > i) used.add(DINDEX(s.numbers[i], s.numbers[s.grid[i]]));
+  if (used.size === DCOUNT(s.params.n)) s.completed = true;
 }
 
 function executeMove(state: DominosaState, m: DominosaMove): DominosaState {
@@ -282,7 +261,6 @@ function executeMove(state: DominosaState, m: DominosaMove): DominosaState {
         clearEdgesAround(ret.edges, d2, w);
       }
     } else {
-      // edge
       if (ret.grid[d1] !== d1 || ret.grid[d2] !== d2)
         throw new Error("dominosa: edge move next to a domino");
       if (d2 === d1 + 1) {
@@ -365,80 +343,49 @@ export interface DominosaHint {
 
 const edgeKey = (a: number, b: number): string => (a < b ? `${a}-${b}` : `${b}-${a}`);
 
-/** A placement of the domino on squares `a` and `b`, named by the two numbers
- * it shows. The words are [`hint-text.ts`](./hint-text.ts)'s. */
-function narratePlace(
-  technique: PlaceTechnique,
-  a: number,
-  b: number,
-  numbers: Int32Array,
-): string {
-  return say.place(technique, numbers[a], numbers[b]);
-}
-
-/** A barrier between squares `a` and `b`; a later barrier of the same firing
- * (`continues`) does not repeat the reason. */
-function narrateBarrier(
-  technique: BarrierTechnique,
-  a: number,
-  b: number,
-  numbers: Int32Array,
-  continues: boolean,
-): string {
-  return continues ? say.barrierNext : say.barrier(technique, numbers[a], numbers[b]);
-}
-
 function hint(state: DominosaState): HintResult<DominosaMove, DominosaHint> {
   const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
   if (refusal) return refusal;
-  const { numbers, params } = state;
+  const { w, numbers, grid, edges, params } = state;
   const n = params.n;
-  const w = state.w;
   const wh = numbers.length;
 
   // A hint teaches a *forced* deduction; an Ambiguous board has none.
-  if (solveNumbers(n, numbers, DIFFCOUNT).result !== 1) {
-    return {
-      ok: false,
-      error: PUZZLE_NOT_REASONABLE,
-    };
-  }
+  if (solveNumbers(n, numbers, DIFFCOUNT).result !== 1)
+    return { ok: false, error: PUZZLE_NOT_REASONABLE };
 
   const solver = new DominosaSolver(n);
   solver.setupGrid(numbers);
-  solver.seedFromDominoes(state.grid);
+  solver.seedFromDominoes(grid);
 
   const placed = new Set<number>();
-  let placedCount = 0;
   for (let i = 0; i < wh; i++)
-    if (state.grid[i] > i) {
-      placed.add(DINDEX(numbers[i], numbers[state.grid[i]]));
-      placedCount++;
-    }
+    if (grid[i] > i) placed.add(DINDEX(numbers[i], numbers[grid[i]]));
 
   // Barriers the player already drew (or we've already emitted) — skip display.
   const seenEdges = new Set<string>();
   for (let i = 0; i < wh; i++) {
-    if (state.edges[i] & EDGE_R) seenEdges.add(edgeKey(i, i + 1));
-    if (state.edges[i] & EDGE_B) seenEdges.add(edgeKey(i, i + w));
+    if (edges[i] & EDGE_R) seenEdges.add(edgeKey(i, i + 1));
+    if (edges[i] & EDGE_B) seenEdges.add(edgeKey(i, i + w));
   }
 
   const steps: HintStep<DominosaMove, DominosaHint>[] = [];
   const total = DCOUNT(n);
   let budget = 12 * wh + 200;
 
-  while (budget-- > 0 && placedCount < total) {
-    const firing: HintFiring | null = solver.firstFiring(DIFFCOUNT, placed);
+  while (budget-- > 0 && placed.size < total) {
+    const firing = solver.firstFiring(DIFFCOUNT, placed);
     if (!firing) break;
 
+    // The numbers the domino or barrier would show name it in the sentence,
+    // whose words are `hint-text.ts`'s.
     if (firing.place) {
       const [a, b] = firing.place;
       placed.add(DINDEX(numbers[a], numbers[b]));
-      placedCount++;
       solver.forcePlacement(a, b);
       steps.push({
         move: { type: "domino", d1: a, d2: b },
-        explanation: narratePlace(firing.technique, a, b, numbers),
+        explanation: say.place(firing.technique, numbers[a], numbers[b]),
         highlights: { kind: "place", targets: [a, b], evidence: firing.evidence },
       });
     } else {
@@ -448,7 +395,11 @@ function hint(state: DominosaState): HintResult<DominosaMove, DominosaHint> {
         seenEdges.add(edgeKey(a, b));
         steps.push({
           move: { type: "edge", d1: a, d2: b },
-          explanation: narrateBarrier(firing.technique, a, b, numbers, idx > 0),
+          // A later barrier of the same firing does not repeat the reason.
+          explanation:
+            idx > 0
+              ? say.barrierNext
+              : say.barrier(firing.technique, numbers[a], numbers[b]),
           ...(idx > 0 ? { continuesPrevious: true } : {}),
           highlights: {
             kind: "barrier",
@@ -635,17 +586,14 @@ function selectReference(ui: DominosaUi, key: string | null): boolean {
   return true;
 }
 
-/** Dominosa's difficulty contract (`engine/difficulty.ts`). `solveNumbers`
- * documents its `result` as 0 impossible, 1 unique solution, 2 ambiguous or
- * solver-too-weak — so 2 is `"unsolved"`: at this cap the board is not
- * deducible, which is the question being asked.
+/** Dominosa's difficulty contract (`engine/difficulty.ts`). A `solveNumbers`
+ * result of 2 (ambiguous, or too hard for the cap) is `"unsolved"`: at this
+ * cap the board is not deducible, which is the question being asked.
  *
- * **Its last tier is not a deduction rung.** "Ambiguous" is a genuine entry in
- * Dominosa's difficulty menu, and the generator branches on it to skip the
- * uniqueness search altogether — a board generated there is *meant* to have
- * several solutions, so no cap solves it and that is correct. Declaring it in
- * `nonUniqueTiers` points the cross-game guard at what the tier actually
- * promises. */
+ * **Its last tier is not a deduction rung.** The generator skips the uniqueness
+ * search for Ambiguous, so a board generated there is *meant* to have several
+ * solutions and no cap solves it. Declaring it in `nonUniqueTiers` points the
+ * cross-game guard at what the tier actually promises. */
 const difficulty: DifficultyContract<DominosaParams> = {
   nonUniqueTiers: [DIFF_AMBIGUOUS],
   tierOf: (p) => p.diff,
@@ -702,7 +650,7 @@ export const dominosaGame: Game<
     difficulty: p.diff,
   }),
 
-  newDesc: (p: DominosaParams, rng: RandomState) => newDominosaDesc(p, rng),
+  newDesc: newDominosaDesc,
   validateDesc,
   newState,
   newUi,
@@ -721,9 +669,9 @@ export const dominosaGame: Game<
 
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: DominosaParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },

@@ -107,6 +107,28 @@ describe("dominosa solver / generator", () => {
   });
 });
 
+/** Two disjoint horizontal placements showing the same domino, or null. */
+function twoDisjointPairs(
+  state: DominosaState,
+): [[number, number], [number, number]] | null {
+  const { w, h, numbers } = state;
+  const byValue = new Map<number, Array<[number, number]>>();
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x + 1 < w; x++) {
+      const i = y * w + x;
+      const v = DINDEX(numbers[i], numbers[i + 1]);
+      (byValue.get(v) ?? byValue.set(v, []).get(v))?.push([i, i + 1]);
+    }
+  for (const list of byValue.values())
+    for (let i = 0; i < list.length; i++)
+      for (let j = i + 1; j < list.length; j++) {
+        const [a1, b1] = list[i];
+        const [a2, b2] = list[j];
+        if (a1 !== a2 && a1 !== b2 && b1 !== a2 && b1 !== b2) return [list[i], list[j]];
+      }
+  return null;
+}
+
 // Helper: place the whole solution via the game's own domino moves.
 function layoutSolution(
   state: DominosaState,
@@ -223,29 +245,7 @@ describe("dominosa reference aid", () => {
     expect(afterPlace?.items.filter((i) => i.status === "placed").length).toBe(1);
 
     // Two disjoint adjacent pairs of the same value → that item is "conflict".
-    const { w, h } = state;
-    const byValue = new Map<number, Array<[number, number]>>();
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
-        if (x + 1 < w) {
-          const v = DINDEX(state.numbers[i], state.numbers[i + 1]);
-          (byValue.get(v) ?? byValue.set(v, []).get(v))?.push([i, i + 1]);
-        }
-      }
-    let two: [[number, number], [number, number]] | null = null;
-    for (const list of byValue.values()) {
-      for (let i = 0; i < list.length && !two; i++)
-        for (let j = i + 1; j < list.length; j++) {
-          const [a1, b1] = list[i];
-          const [a2, b2] = list[j];
-          if (a1 !== a2 && a1 !== b2 && b1 !== a2 && b1 !== b2) {
-            two = [list[i], list[j]];
-            break;
-          }
-        }
-      if (two) break;
-    }
+    const two = twoDisjointPairs(state);
     expect(two).not.toBeNull();
     if (two) {
       let s = dominosaGame.executeMove(state, {
@@ -339,52 +339,16 @@ describe("dominosa render", () => {
   });
 
   it("renders a clash in COL_DOMINOCLASH when a value is placed twice", () => {
-    // Use a fixed generated board and place the same domino value in two
-    // spots by re-solving to find a duplicate-able value.
+    // Place the same domino in two disjoint spots on a fixed board.
     const p = { n: 4, diff: DIFF_TRIVIAL };
-    const seed = "clash";
-    const { desc } = newDominosaDesc(p, randomNew(seed));
-    const state = newState(p, desc);
-    const w = state.w;
-    const h = state.h;
-
-    // Find two disjoint adjacent pairs with the same DINDEX value.
-    const byValue = new Map<number, Array<[number, number]>>();
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
-        if (x + 1 < w) {
-          const v = DINDEX(state.numbers[i], state.numbers[i + 1]);
-          let list = byValue.get(v);
-          if (!list) {
-            list = [];
-            byValue.set(v, list);
-          }
-          list.push([i, i + 1]);
-        }
-      }
-    let moves: DominosaMove[] | null = null;
-    for (const pairs of byValue.values()) {
-      for (let i = 0; i < pairs.length && !moves; i++)
-        for (let j = i + 1; j < pairs.length; j++) {
-          const [a1, b1] = pairs[i];
-          const [a2, b2] = pairs[j];
-          if (a1 !== a2 && a1 !== b2 && b1 !== a2 && b1 !== b2) {
-            moves = [
-              { type: "domino", d1: a1, d2: b1 },
-              { type: "domino", d1: a2, d2: b2 },
-            ];
-            break;
-          }
-        }
-      if (moves) break;
-    }
-    expect(moves).not.toBeNull();
+    const { desc } = newDominosaDesc(p, randomNew("clash"));
+    const two = twoDisjointPairs(newState(p, desc));
+    expect(two).not.toBeNull();
 
     const { recording } = renderScenario({
       game: dominosaGame,
       id: `${encodeParams(p, true)}:${desc}`,
-      moves: moves ?? undefined,
+      moves: two?.map(([d1, d2]): DominosaMove => ({ type: "domino", d1, d2 })),
     });
     const clash = recording.ops.some(
       (o) => o.op === "rect" && o.color === COL_DOMINOCLASH,

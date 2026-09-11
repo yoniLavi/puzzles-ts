@@ -5,9 +5,10 @@
  * The strategy is brute force: lay a random domino tiling (`dominoLayout`),
  * assign numbers by one of three strategies keyed on difficulty, run the solver,
  * and keep the board only if it is uniquely solvable at *exactly* the target
- * difficulty. RNG-faithful throughout (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"–4.4): every `shuffle` and
- * `randomUpto` draw is reproduced in order over the bit-identical `random.ts`,
- * so `newDesc` matches C's desc byte-for-byte for a given seed.
+ * difficulty. Every `shuffle` and `randomUpto` draw is reproduced in order over
+ * the bit-identical `random.ts`, so `newDesc` matches C's desc byte-for-byte for
+ * a given seed (docs/games/testing.md § "Byte-match: fidelity where there is a
+ * right answer").
  */
 
 import { dominoLayout } from "../../engine/laydomino.ts";
@@ -25,6 +26,14 @@ import {
   type DominosaParams,
   encodeNumbers,
 } from "./state.ts";
+
+/** The four orthogonal steps, in upstream's order. */
+const STEPS = [
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+  [0, -1],
+] as const;
 
 interface AllocVal {
   lo: number;
@@ -65,9 +74,17 @@ class AllocScratch {
       if (this.layout[i] > i) this.locs.push([i, this.layout[i]]);
   }
 
-  /** The domino location on one side of location (p0,p1); null if OOB or not a
-   * domino in the layout. Mirrors `alloc_find_neighbour`. */
-  private findNeighbor(p0: number, p1: number): [number, number] | null {
+  /**
+   * Whether putting `val.lo` on `p0` and `val.hi` on `p1` would set a number
+   * diagonally opposite the same number in the layout domino beside them (on
+   * the side a quarter turn from `p0→p1`). That 2×2 block could then be retiled
+   * the other way, so the solution would not be unique.
+   *
+   * The neighbor lookup is upstream's `alloc_find_neighbour`, including its
+   * `>= 1` lower bounds on the second square, kept as written so the
+   * differential matches.
+   */
+  private formsSwappableBlock(p0: number, p1: number, val: AllocVal): boolean {
     const w = this.w;
     const h = this.h;
     const x0 = p0 % w;
@@ -92,11 +109,13 @@ class AllocScratch {
         ny1 < h
       )
     )
-      return null;
+      return false;
     const np0 = ny0 * w + nx0;
     const np1 = ny1 * w + nx1;
-    if (this.layout[np0] !== np1) return null;
-    return [np0, np1];
+    return (
+      this.layout[np0] === np1 &&
+      (this.numbers[np0] === val.hi || this.numbers[np1] === val.lo)
+    );
   }
 
   trivial(rng: RandomState): void {
@@ -106,9 +125,8 @@ class AllocScratch {
       const val = this.vals[order[i]];
       const loc = this.locs[i];
       const whichLo = randomUpto(rng, 2);
-      const whichHi = 1 - whichLo;
       this.numbers[loc[whichLo]] = val.lo;
-      this.numbers[loc[whichHi]] = val.hi;
+      this.numbers[loc[1 - whichLo]] = val.hi;
     }
   }
 
@@ -123,29 +141,17 @@ class AllocScratch {
     for (let i = 0; i < this.dc; i++) {
       const val = this.vals[valOrder[i]];
       const loc = this.locs[locOrder[i]];
-      let canLo0 = true;
-      let canLo1 = true;
-
-      let nb = this.findNeighbor(loc[0], loc[1]);
-      if (nb && (this.numbers[nb[0]] === val.hi || this.numbers[nb[1]] === val.lo))
-        canLo0 = false;
-      nb = this.findNeighbor(loc[1], loc[0]);
-      if (nb && (this.numbers[nb[0]] === val.hi || this.numbers[nb[1]] === val.lo))
-        canLo1 = false;
-
-      let whichLo: number;
+      const canLo0 = !this.formsSwappableBlock(loc[0], loc[1], val);
+      const canLo1 = !this.formsSwappableBlock(loc[1], loc[0], val);
       if (!canLo0 && !canLo1) return false;
-      else if (canLo0 && canLo1) whichLo = randomUpto(rng, 2);
-      else whichLo = canLo0 ? 0 : 1;
-
-      const whichHi = 1 - whichLo;
+      let whichLo = canLo0 ? 0 : 1;
+      if (canLo0 && canLo1) whichLo = randomUpto(rng, 2);
       this.numbers[loc[whichLo]] = val.lo;
-      this.numbers[loc[whichHi]] = val.hi;
+      this.numbers[loc[1 - whichLo]] = val.hi;
     }
     return true;
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the hard-mode generator's placement search with backtracking.
   tryHard(rng: RandomState): boolean {
     const n = this.n;
     const w = this.w;
@@ -153,11 +159,12 @@ class AllocScratch {
     const numbers = this.numbers;
     numbers.fill(-1);
 
-    // Shuffle the location indices.
     const locOrder = Array.from({ length: this.dc }, (_, i) => i);
     shuffle(locOrder, rng);
 
-    // Place the double dominoes first, seeding every number.
+    // Place the double dominoes first, seeding every number. Upstream shuffles
+    // the doubles and then places number `i` regardless, so the shuffle is kept
+    // only for its RNG draws.
     const doubles = Array.from({ length: n + 1 }, (_, i) => DINDEX(i, i));
     shuffle(doubles, rng);
     for (let i = 0; i <= n; i++) {
@@ -184,16 +191,13 @@ class AllocScratch {
         }
       }
 
-    let confoundersNeeded = 0;
-    for (const v of this.vals) if (!v.confounder) confoundersNeeded++;
+    let confoundersNeeded = this.vals.filter((v) => !v.confounder).length;
 
     // Shuffled list of all the (non-double) unplaced dominoes.
     let valList: number[] = [];
     for (let hi = 0; hi <= n; hi++)
       for (let lo = 0; lo < hi; lo++) valList.push(DINDEX(hi, lo));
     shuffle(valList, rng);
-
-    const locs = this.dc;
 
     while (valList.length > 0) {
       const oldVals = valList.length;
@@ -208,15 +212,15 @@ class AllocScratch {
         let placedLoc: [number, number] | null = null;
         let placedWhichLo = 0;
 
-        locpos: for (let lp = 0; lp < locs; lp++) {
+        locpos: for (let lp = 0; lp < this.dc; lp++) {
           const loc = this.locs[locOrder[lp]];
           if (numbers[loc[0]] !== -1) continue;
           const flip = randomUpto(rng, 2);
 
           for (let wi = 0; wi < 2; wi++) {
             const whichLo = wi ^ flip;
-            const nb = this.findNeighbor(loc[whichLo], loc[1 - whichLo]);
-            if (nb && (numbers[nb[0]] === val.hi || numbers[nb[1]] === val.lo)) break; // can't place this way round → give up on this location
+            // Can't place it this way round → give up on this location.
+            if (this.formsSwappableBlock(loc[whichLo], loc[1 - whichLo], val)) break;
 
             if (confoundersNeeded === 0) {
               placedLoc = loc;
@@ -229,9 +233,7 @@ class AllocScratch {
               const x = loc[si] % w;
               const y = Math.floor(loc[si] / w);
               const nn = si === whichLo ? val.lo : val.hi;
-              for (let d = 0; d < 4; d++) {
-                const dx = d === 0 ? 1 : d === 2 ? -1 : 0;
-                const dy = d === 1 ? 1 : d === 3 ? -1 : 0;
+              for (const [dx, dy] of STEPS) {
                 const x1 = x + dx;
                 const y1 = y + dy;
                 const p1 = y1 * w + x1;
@@ -268,9 +270,7 @@ class AllocScratch {
           const nn = numbers[p];
           const x = p % w;
           const y = Math.floor(p / w);
-          for (let d = 0; d < 4; d++) {
-            const dx = d === 0 ? 1 : d === 2 ? -1 : 0;
-            const dy = d === 1 ? 1 : d === 3 ? -1 : 0;
+          for (const [dx, dy] of STEPS) {
             const x1 = x + dx;
             const y1 = y + dy;
             const p1 = y1 * w + x1;
@@ -294,9 +294,7 @@ class AllocScratch {
       if (oldVals === valList.length) break; // no progress this pass
     }
 
-    for (const v of this.vals) if (!v.confounder) return false;
-    for (let i = 0; i < this.wh; i++) if (numbers[i] === -1) return false;
-    return true;
+    return confoundersNeeded === 0 && !numbers.includes(-1);
   }
 }
 
@@ -305,11 +303,10 @@ export function newDominosaDesc(
   rng: RandomState,
 ): { desc: string; aux: string } {
   const n = p.n;
-  const w = n + 2;
   let diff = p.diff;
 
   // Cap the difficulty for tiny puzzles that would otherwise be impossible to
-  // generate (upstream OMIT_DIFFICULTY_CAP guard).
+  // generate (upstream's OMIT_DIFFICULTY_CAP guard).
   if (diff !== DIFF_AMBIGUOUS) {
     if (n === 1 && diff > DIFF_TRIVIAL) diff = DIFF_TRIVIAL;
     if (n === 2 && diff > DIFF_BASIC) diff = DIFF_BASIC;
@@ -329,16 +326,12 @@ export function newDominosaDesc(
     } else if (diff < DIFF_HARD) {
       if (!as.tryUnique(rng)) continue;
     } else {
+      // Hard and up want no easy toehold: reject a board the Basic solver
+      // finishes, or on which it pins any domino to a single placement.
       if (!as.tryHard(rng)) continue;
       sc.setupGrid(as.numbers);
       if (sc.runSolver(DIFF_BASIC) < 2) continue;
-      let ok = true;
-      for (const d of sc.dominoes)
-        if (d.nplacements <= 1) {
-          ok = false;
-          break;
-        }
-      if (!ok) continue;
+      if (sc.dominoes.some((d) => d.nplacements <= 1)) continue;
     }
 
     if (diff !== DIFF_AMBIGUOUS) {
@@ -351,23 +344,15 @@ export function newDominosaDesc(
     break;
   }
 
-  const desc = encodeNumbers(as.numbers);
-
-  // Encode the solved layout as aux (per-square domino orientation).
+  // The solved layout as aux: which half of its domino each square is.
+  const half = new Map([
+    [1, "L"],
+    [-1, "R"],
+    [as.w, "T"],
+    [-as.w, "B"],
+  ]);
   let aux = "";
-  for (let i = 0; i < as.wh; i++) {
-    const v = as.layout[i];
-    aux +=
-      v === i + 1
-        ? "L"
-        : v === i - 1
-          ? "R"
-          : v === i + w
-            ? "T"
-            : v === i - w
-              ? "B"
-              : ".";
-  }
+  for (let i = 0; i < as.wh; i++) aux += half.get(as.layout[i] - i) ?? ".";
 
-  return { desc, aux };
+  return { desc: encodeNumbers(as.numbers), aux };
 }
