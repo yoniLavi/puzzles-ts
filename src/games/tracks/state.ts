@@ -1,7 +1,7 @@
 /**
  * Tracks (Train Tracks) state, params, desc codec, the shared-edge board
- * model, and the live error/completion analysis — the state half of a native
- * TS port of `tracks.c`.
+ * model, and the live error/completion analysis: the state half of the port
+ * of `tracks.c`.
  *
  * Lay a single continuous train track from an entrance on the left edge to an
  * exit on the bottom edge of a `w × h` grid, using only straight and curved
@@ -10,9 +10,10 @@
  *
  * The per-cell flag word keeps upstream's exact bit layout (an `Int32Array`
  * of `sflags`): the solver is byte-match-critical, so reproducing its bit
- * arithmetic verbatim is the lowest-risk choice (docs/games/solver-and-generator.md § "Solver-gated generation"). Edges are
- * shared between neighboring cells — setting one cell's edge mirrors the bit
- * onto the adjacent cell — so the two never disagree.
+ * arithmetic verbatim is the lowest-risk choice
+ * (docs/games/solver-and-generator.md § "Solver-gated generation"). Edges are
+ * shared between neighboring cells: setting one cell's edge mirrors the bit
+ * onto the adjacent cell, so the two never disagree.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
@@ -24,12 +25,12 @@ import { choice, dims, flag, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
-// --- difficulty (upstream DIFFLIST: Easy, Tricky, Hard) -------------------
+// --- difficulty (upstream's Easy, Tricky, Hard; shown as tierNames(3)) ------
 export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFF_HARD = 2;
 export const DIFF_COUNT = 3;
-export const DIFF_NAMES: readonly string[] = tierNames(3);
+export const DIFF_NAMES: readonly string[] = tierNames(DIFF_COUNT);
 export const DIFF_CHARS = "eth"; // ENCODE chars, indexed by difficulty
 
 // --- directions (upstream R/U/L/D bit flags) ------------------------------
@@ -44,8 +45,6 @@ export const DX = (d: number): number => (d === R ? 1 : d === L ? -1 : 0);
 export const DY = (d: number): number => (d === D ? 1 : d === U ? -1 : 0);
 /** The opposite direction (upstream `F`). */
 export const FLIP = (d: number): number => ((d << 2) | (d >> 2)) & 0xf;
-export const MOVECHAR = (d: number): string =>
-  d === R ? "R" : d === U ? "U" : d === L ? "L" : d === D ? "D" : "?";
 
 export const NBITS = [0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4] as const;
 
@@ -126,15 +125,9 @@ export interface TracksUi {
   cursor: GridCursor;
 }
 
-/** A player mark that contradicts the unique solution (Check & Save). */
-export interface TracksMistake {
-  x: number;
-  y: number;
-}
-
 // --- a mutable working board (the solver/generator/executeMove subject) ----
 
-/** The mutable board the solver and generator work on — upstream mutates the
+/** The mutable board the solver and generator work on: upstream mutates the
  * `game_state` in place, so a close transliteration keeps a mutable holder. */
 export interface Board {
   w: number;
@@ -146,34 +139,25 @@ export interface Board {
   numErrors: Uint8Array; // length w + h
   impossible: boolean;
   /**
-   * The hint path's recorder, present only there — the generator and
-   * `findMistakes` leave it undefined and allocate nothing.
-   *
-   * It rides on the board because the board *is* Tracks' solver state: every
-   * rung already takes it, so one optional field threads the recorder to all
-   * eight of them and, more to the point, to the two primitive flag setters
-   * every one of them changes the board through
-   * (docs/games/hints.md § "Recording the deduction", the Singles precedent).
-   *
-   * `reason` is `unknown` for the same reason `DeductionRecord.reason` is: the
-   * shape belongs to the solver, and naming it here would point the state
-   * module at the deduction module. `solver.ts` narrows it once, in
-   * `tracksRecordingPass`.
+   * The hint path's recorder; the generator and `findMistakes` leave it
+   * undefined and allocate nothing. It rides on the board because every rung
+   * already takes the board, so one optional field reaches all eight and the
+   * flag setters they change it through (docs/games/hints.md § "Recording the
+   * deduction").
    */
   rec?: TracksRecorder;
 }
 
 /**
- * What the recording path collects for **one firing**: the flag changes it
- * made, and the premise that forced them.
- *
- * Every change is recorded. One made with no premise standing comes back as a
- * firing with a `null` reason, and the plan hides it (`deduceHintPlan`'s
- * `showable`); `tracks-hint.test.ts` holds every such firing to being evident
- * on the player's board, so hiding one never hides something they needed told.
+ * What the recording path collects for one firing: the flag changes it made,
+ * and the premise that forced them. A change made with no premise standing
+ * comes back as a firing with a `null` reason, which the plan hides
+ * (`showable` in `hint.ts`).
  */
 export interface TracksRecorder {
-  /** The premise the rung is acting on; `null` when it declares none. */
+  /** The rung's premise; `null` when it declares none. `unknown` because the
+   * shape belongs to the solver, and naming it here would point this module at
+   * the deduction module; `tracksRecordingPass` narrows it. */
   reason: unknown;
   /** The flag changes this firing made, in the order it made them. */
   ops: TracksOp[];
@@ -211,11 +195,13 @@ export const inGrid = (b: { w: number; h: number }, x: number, y: number): boole
 
 // --- shared-edge helpers (upstream S_E_*) ---------------------------------
 
+const edgeShift = (eflag: number): number =>
+  eflag === E_TRACK ? S_TRACK_SHIFT : S_NOTRACK_SHIFT;
+
 /** The four directions in which a particular edge flag is set around a
  * square. */
 export function sEDirs(b: Board, x: number, y: number, eflag: number): number {
-  const shift = eflag === E_TRACK ? S_TRACK_SHIFT : S_NOTRACK_SHIFT;
-  return (b.sflags[y * b.w + x] >> shift) & ALLDIR;
+  return (b.sflags[y * b.w + x] >> edgeShift(eflag)) & ALLDIR;
 }
 
 /** Count of a particular edge flag around a square. */
@@ -231,26 +217,13 @@ export function sEFlags(b: Board, x: number, y: number, d: number): number {
   return (t ? E_TRACK : 0) | (nt ? E_NOTRACK : 0);
 }
 
-/** The neighbor across edge `d`, and the reciprocal direction, or null. */
-function sEAdj(
-  b: Board,
-  x: number,
-  y: number,
-  d: number,
-): { ax: number; ay: number; ad: number } | null {
-  if (d === L && x > 0) return { ax: x - 1, ay: y, ad: R };
-  if (d === R && x < b.w - 1) return { ax: x + 1, ay: y, ad: L };
-  if (d === U && y > 0) return { ax: x, ay: y - 1, ad: D };
-  if (d === D && y < b.h - 1) return { ax: x, ay: y + 1, ad: U };
-  return null;
-}
-
 /** Set a flag on a given edge of a square (and its shared neighbor edge). */
 export function sESet(b: Board, x: number, y: number, d: number, eflag: number): void {
-  const shift = eflag === E_TRACK ? S_TRACK_SHIFT : S_NOTRACK_SHIFT;
+  const shift = edgeShift(eflag);
   b.sflags[y * b.w + x] |= d << shift;
-  const adj = sEAdj(b, x, y, d);
-  if (adj) b.sflags[adj.ay * b.w + adj.ax] |= adj.ad << shift;
+  const ax = x + DX(d);
+  const ay = y + DY(d);
+  if (inGrid(b, ax, ay)) b.sflags[ay * b.w + ax] |= FLIP(d) << shift;
 }
 
 /** Clear a flag on a given edge of a square (and its shared neighbor edge). */
@@ -261,10 +234,11 @@ export function sEClear(
   d: number,
   eflag: number,
 ): void {
-  const shift = eflag === E_TRACK ? S_TRACK_SHIFT : S_NOTRACK_SHIFT;
+  const shift = edgeShift(eflag);
   b.sflags[y * b.w + x] &= ~(d << shift);
-  const adj = sEAdj(b, x, y, d);
-  if (adj) b.sflags[adj.ay * b.w + adj.ax] &= ~(adj.ad << shift);
+  const ax = x + DX(d);
+  const ay = y + DY(d);
+  if (inGrid(b, ax, ay)) b.sflags[ay * b.w + ax] &= ~(FLIP(d) << shift);
 }
 
 // --- params ---------------------------------------------------------------
@@ -348,6 +322,10 @@ export function validateParams(p: TracksParams, _full: boolean): string | null {
 // char per clue square (its two E_TRACK direction flags). Then a
 // `,`-separated `S?<n>` list of the w column clues and h row clues.
 
+/** Upstream's hex digit: `0`–`9`, then `A` onward. */
+const hexChar = (n: number): string =>
+  n < 10 ? String.fromCharCode(48 + n) : String.fromCharCode(65 + n - 10);
+
 export function validateDesc(p: TracksParams, desc: string): string | null {
   const { w, h } = p;
   let i = 0;
@@ -400,26 +378,19 @@ export function decodeDesc(p: TracksParams, desc: string): Board {
     else if (ch >= "a" && ch <= "z") i += ch.charCodeAt(0) - 97;
 
     if (f !== 0) {
-      const x = i % w;
-      const y = Math.floor(i / w);
       b.sflags[i] |= S_TRACK | S_CLUE;
-      if (f & U) sESet(b, x, y, U, E_TRACK);
-      if (f & D) sESet(b, x, y, D, E_TRACK);
-      if (f & L) sESet(b, x, y, L, E_TRACK);
-      if (f & R) sESet(b, x, y, R, E_TRACK);
+      for (const d of DIRS) if (f & d) sESet(b, i % w, Math.floor(i / w), d, E_TRACK);
     }
     i++;
     pos++;
     if (i === w * h) break;
   }
-  let rowS = -1;
-  let colS = -1;
   for (let n = 0; n < w + h; n++) {
     // desc[pos] === ',' (validated)
     pos++;
     if (desc[pos] === "S") {
-      if (n < w) colS = n;
-      else rowS = n - w;
+      if (n < w) b.colS = n;
+      else b.rowS = n - w;
       pos++;
     }
     let numStr = "";
@@ -429,8 +400,6 @@ export function decodeDesc(p: TracksParams, desc: string): Board {
     }
     b.numbers[n] = Number.parseInt(numStr || "0", 10);
   }
-  b.rowS = rowS;
-  b.colS = colS;
   return b;
 }
 
@@ -439,20 +408,16 @@ export function encodeDesc(b: Board): string {
   const { w, h } = b;
   let desc = "";
   for (let i = 0; i < w * h; i++) {
-    if (
-      !(b.sflags[i] & S_CLUE) &&
-      desc.length > 0 &&
-      desc[desc.length - 1] >= "a" &&
-      desc[desc.length - 1] < "z"
-    ) {
-      // Advance the current run letter.
-      desc =
-        desc.slice(0, -1) + String.fromCharCode(desc.charCodeAt(desc.length - 1) + 1);
-    } else if (!(b.sflags[i] & S_CLUE)) {
-      desc += "a";
+    if (b.sflags[i] & S_CLUE) {
+      desc += hexChar(sEDirs(b, i % w, Math.floor(i / w), E_TRACK));
+      continue;
+    }
+    // Extend the current run letter, or start a new run at `a`.
+    const last = desc[desc.length - 1];
+    if (last >= "a" && last < "z") {
+      desc = desc.slice(0, -1) + String.fromCharCode(last.charCodeAt(0) + 1);
     } else {
-      const f = sEDirs(b, i % w, Math.floor(i / w), E_TRACK);
-      desc += f < 10 ? String.fromCharCode(48 + f) : String.fromCharCode(65 + (f - 10));
+      desc += "a";
     }
   }
   for (let x = 0; x < w; x++) {
@@ -509,6 +474,22 @@ export function setFlashData(b: Board): void {
 
 // --- completion / error analysis (upstream check_completion) --------------
 
+/** Union every pair of squares joined by a laid track edge. */
+export function trackDsf(b: Board): Dsf {
+  const { w, h } = b;
+  const dsf = new Dsf(w * h);
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      const i = y * w + x;
+      // Guard the grid boundary (upstream `dsf_update_completion` checks
+      // INGRID): the exit cell's outward edge must not merge off-grid.
+      if (x < w - 1 && sEDirs(b, x, y, E_TRACK) & R) dsf.merge(i, i + 1);
+      if (y < h - 1 && sEDirs(b, x, y, E_TRACK) & D) dsf.merge(i, i + w);
+    }
+  }
+  return dsf;
+}
+
 function* tracksNeighbors(b: Board, vertex: number): Iterable<number> {
   const { w } = b;
   const x = vertex % w;
@@ -534,7 +515,7 @@ export function checkCompletion(b: Board, mark: boolean): boolean {
   let ret = true;
 
   if (mark) {
-    for (let i = 0; i < w + h; i++) b.numErrors[i] = 0;
+    b.numErrors.fill(0);
     for (let i = 0; i < w * h; i++) {
       b.sflags[i] &= ~S_ERROR;
       if (sECount(b, i % w, Math.floor(i / w), E_TRACK) > 2) {
@@ -544,17 +525,7 @@ export function checkCompletion(b: Board, mark: boolean): boolean {
     }
   }
 
-  // Connectivity of the current track set.
-  const dsf = new Dsf(w * h);
-  for (let x = 0; x < w; x++) {
-    for (let y = 0; y < h; y++) {
-      const i = y * w + x;
-      // Guard the grid boundary (upstream `dsf_update_completion` checks
-      // INGRID): the exit cell's outward edge must not merge off-grid.
-      if (x < w - 1 && sEDirs(b, x, y, E_TRACK) & R) dsf.merge(i, y * w + (x + 1));
-      if (y < h - 1 && sEDirs(b, x, y, E_TRACK) & D) dsf.merge(i, (y + 1) * w + x);
-    }
-  }
+  const dsf = trackDsf(b);
 
   // No loop allowed.
   const loops = findLoops(w * h, (v) => tracksNeighbors(b, v));
@@ -592,47 +563,30 @@ export function checkCompletion(b: Board, mark: boolean): boolean {
 
   const pathret = ret; // do we have a plausible solution so far?
 
-  for (let x = 0; x < w; x++) {
-    const target = b.numbers[x];
+  // Each clue, columns (`0..w-1`) then rows.
+  for (let line = 0; line < w + h; line++) {
+    const isCol = line < w;
+    const len = isCol ? h : w;
+    const target = b.numbers[line];
     let ntrack = 0;
     let nnotrack = 0;
     let ntrackcomplete = 0;
-    for (let y = 0; y < h; y++) {
-      if (sECount(b, x, y, E_TRACK) > 0 || b.sflags[y * w + x] & S_TRACK) ntrack++;
-      if (sECount(b, x, y, E_TRACK) === 2) ntrackcomplete++;
+    for (let k = 0; k < len; k++) {
+      const x = isCol ? line : k;
+      const y = isCol ? k : line - w;
+      const edges = sECount(b, x, y, E_TRACK);
+      if (edges > 0 || b.sflags[y * w + x] & S_TRACK) ntrack++;
+      if (edges === 2) ntrackcomplete++;
       if (b.sflags[y * w + x] & S_NOTRACK) nnotrack++;
     }
-    if (mark) {
-      if (
-        ntrack > target ||
-        nnotrack > h - target ||
-        (pathret && ntrackcomplete !== target)
-      ) {
-        b.numErrors[x] = 1;
-        ret = false;
-      }
-    }
-    if (ntrackcomplete !== target) ret = false;
-  }
-  for (let y = 0; y < h; y++) {
-    const target = b.numbers[w + y];
-    let ntrack = 0;
-    let nnotrack = 0;
-    let ntrackcomplete = 0;
-    for (let x = 0; x < w; x++) {
-      if (sECount(b, x, y, E_TRACK) > 0 || b.sflags[y * w + x] & S_TRACK) ntrack++;
-      if (sECount(b, x, y, E_TRACK) === 2) ntrackcomplete++;
-      if (b.sflags[y * w + x] & S_NOTRACK) nnotrack++;
-    }
-    if (mark) {
-      if (
-        ntrack > target ||
-        nnotrack > w - target ||
-        (pathret && ntrackcomplete !== target)
-      ) {
-        b.numErrors[w + y] = 1;
-        ret = false;
-      }
+    if (
+      mark &&
+      (ntrack > target ||
+        nnotrack > len - target ||
+        (pathret && ntrackcomplete !== target))
+    ) {
+      b.numErrors[line] = 1;
+      ret = false;
     }
     if (ntrackcomplete !== target) ret = false;
   }
@@ -646,20 +600,11 @@ export function checkCompletion(b: Board, mark: boolean): boolean {
 export function textFormat(s: TracksState): string {
   const b = stateToBoard(s);
   const { w, h } = b;
-  const hex = (n: number) =>
-    n < 10 ? String.fromCharCode(48 + n) : String.fromCharCode(65 + n - 10);
-  let out = "";
-  // Column clues.
-  out += "  ";
-  for (let x = 0; x < w; x++) out += `${hex(b.numbers[x])} `;
-  out += "\n";
-  // Top edge.
-  out += " +";
-  for (let x = 0; x < w * 2 - 1; x++) out += "-";
-  out += "+\n";
+  let out = "  ";
+  for (let x = 0; x < w; x++) out += `${hexChar(b.numbers[x])} `;
+  out += `\n +${"-".repeat(w * 2 - 1)}+\n`;
   for (let y = 0; y < h; y++) {
-    out += y === b.rowS ? "A" : " ";
-    out += y === b.rowS ? "-" : "|";
+    out += y === b.rowS ? "A-" : " |";
     for (let x = 0; x < w; x++) {
       const f = sEDirs(b, x, y, E_TRACK);
       if (b.sflags[y * w + x] & S_CLUE) out += "C";
@@ -671,21 +616,18 @@ export function textFormat(s: TracksState): string {
       else out += " ";
       out += x < w - 1 ? (f & R ? "-" : " ") : "|";
     }
-    out += hex(b.numbers[w + y]);
-    out += "\n";
+    out += `${hexChar(b.numbers[w + y])}\n`;
     if (y === h - 1) continue;
     out += " |";
     for (let x = 0; x < w; x++) {
-      const f = sEDirs(b, x, y, E_TRACK);
-      out += f & D ? "|" : " ";
+      out += sEDirs(b, x, y, E_TRACK) & D ? "|" : " ";
       out += x < w - 1 ? " " : "|";
     }
     out += "\n";
   }
   out += " +";
   for (let x = 0; x < w * 2 - 1; x++) out += x === b.colS * 2 ? "|" : "-";
-  out += "+\n";
-  out += "  ";
+  out += "+\n  ";
   for (let x = 0; x < w * 2 - 1; x++) out += x === b.colS * 2 ? "B" : " ";
   out += "\n";
   return out;

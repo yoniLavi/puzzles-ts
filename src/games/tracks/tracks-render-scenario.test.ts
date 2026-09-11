@@ -105,12 +105,11 @@ describe("Tracks render scenarios", () => {
   });
 
   it("one arrow press draws the cursor a step along, not where it started", () => {
-    // The player-visible half of `unify-cross-game-vocabulary`: Tracks used to
-    // spend the first press revealing the cursor in place. Tracks is the
+    // The first press reveals the cursor *and* moves it. Tracks is the
     // interesting case because its cursor walks a HALF grid and skips square
-    // corners, so "moved by one" is not "moved by one tile" — the frame is
-    // what settles whether the shared rule and the bespoke traversal compose.
-    // The cursor is an outline, drawn as four thin `COL_CURSOR` rects.
+    // corners, so "moved by one" is not "moved by one tile": the frame is what
+    // settles whether the shared rule and the bespoke traversal compose. The
+    // cursor is an outline, drawn as four thin `COL_CURSOR` rects.
     const frame = (presses: number[]) =>
       renderScenario({ game: tracksGame, id: ID, presses })
         .recording.ops.filter((o) => o.op === "rect" && o.color === COL_CURSOR)
@@ -126,7 +125,7 @@ describe("Tracks render scenarios", () => {
     ).toBeGreaterThanOrEqual(4);
 
     // Where it would have been had the press only revealed it: select reveals
-    // without moving, so this is the frame the old behavior produced.
+    // without moving, so this is the frame a reveal-only press would draw.
     const revealOnly = frame([CURSOR_SELECT2]);
     expect(first).not.toEqual(revealOnly);
 

@@ -2,7 +2,7 @@
  * Tracks' explained hint: the narration half of the recording projection in
  * [`solver.ts`](./solver.ts).
  *
- * The deduction end is entirely `solver.ts`'s — the same eight rungs on the
+ * The deduction end is entirely `solver.ts`'s: the same eight rungs on the
  * same `runDeductionFixpoint`, run one firing at a time with a recorder
  * standing (docs/games/hints.md § "Recording the deduction", the *threaded*
  * shape). This file turns each firing into the sentence and the picture: what
@@ -28,13 +28,11 @@ import { type TracksFiring, type TracksReason, tracksRecordingPass } from "./sol
 import {
   type Board,
   checkCompletion,
-  D,
   DX,
   DY,
   E_TRACK,
+  FLIP,
   inGrid,
-  L,
-  R,
   S_NOTRACK,
   S_NOTRACK_SHIFT,
   S_TRACK,
@@ -44,7 +42,6 @@ import {
   type TracksMove,
   type TracksOp,
   type TracksState,
-  U,
 } from "./state.ts";
 
 /**
@@ -53,7 +50,7 @@ import {
  * A UX bound rather than a correctness one, and Tracks needs it more than most:
  * a 15x15 board is ~600 forced decisions from empty, and a player rarely
  * follows more than a handful before going their own way, at which point the
- * plan is recomputed anyway (Spokes and Bricks bound theirs the same way —
+ * plan is recomputed anyway (Spokes and Bricks bound theirs the same way:
  * `engine/hint-plan.ts`). It also keeps `hint()` cheap enough to be called
  * after every move, which the cross-game resume walk does.
  */
@@ -77,7 +74,7 @@ export interface TracksHintEdge {
  * has its own digit recolored. `targets` and `targetEdges` are separate roles
  * only because Tracks decides two different kinds of thing, not because their
  * fates differ: a firing that forces four edges forces all four the same way,
- * and they are all drawn identically (quality-bar rule 3).
+ * and they are all drawn identically (equivalent moves share a color).
  */
 export interface TracksHighlights {
   /** Squares this step decides. `track` is what it decides them to be. */
@@ -98,7 +95,6 @@ export interface TracksHighlights {
 function lineOf(b: Board, line: number) {
   const isCol = line < b.w;
   return {
-    isCol,
     axis: (isCol ? "column" : "row") as Axis,
     /** How many squares the line holds. */
     len: isCol ? b.h : b.w,
@@ -134,9 +130,8 @@ export function narrate(b: Board, reason: TracksReason): string {
       return say.wouldCloseLoop;
     case "wouldStrandTrack":
       return say.wouldStrandTrack;
-    case "wouldFinishEarly": {
+    case "wouldFinishEarly":
       return say.wouldFinishEarly(lineOf(b, reason.unmet).axis);
-    }
     case "looseEndsFill": {
       const { axis, target } = lineOf(b, reason.line);
       return say.looseEndsFill(axis, target);
@@ -148,10 +143,7 @@ export function narrate(b: Board, reason: TracksReason): string {
       const { dir } = reason;
       if (reason.fills && reason.empties) return say.sharedFateBoth(axis, dir);
       if (reason.fills) return say.sharedFateFills(axis, dir);
-      return say.sharedFateEmpties(
-        axis,
-        dir === U ? D : dir === D ? U : dir === L ? R : L,
-      );
+      return say.sharedFateEmpties(axis, FLIP(dir));
     }
     case "crossingParity":
       // The track crosses a closed block's border an even number of times, so
@@ -189,17 +181,6 @@ function highlightsOf(
 // --- the plan -------------------------------------------------------------
 
 /**
- * Deduce the plan from the player's current marks.
- *
- * `deduceHintPlan` supplies no `apply`: the rungs mutate the working board as
- * they detect, so re-applying a firing would be wrong rather than merely
- * redundant (`engine/hint-plan.ts`). The tier cap is the board's own
- * difficulty, not `DIFF_COUNT` — the generator only ever certified the board
- * soluble at that tier, and every rung is monotone in what is already marked,
- * so a correct partial board stays soluble there too. It is also what stops an
- * Easy board being handed a parity argument it never needed.
- */
-/**
  * Does the player's board already decide this change? True when the **contrary**
  * move is one the game would refuse them: track on a side of a square they have
  * marked empty (or of the board's rim), track as a third side of a finished
@@ -207,9 +188,9 @@ function highlightsOf(
  * `uiCanFlipEdge` / `uiCanFlipSquare`'s own refusals, read as board facts so the
  * answer does not depend on the op having been applied yet.
  *
- * It reads only facts no firing's own ops can create — an edge block creates no
- * empty square and no rail, and marking a track square creates no rail — which
- * is the condition `showable` is judged under (it runs after the firing lands).
+ * It reads only facts no firing's own ops can create (an edge block creates no
+ * empty square and no rail, and marking a track square creates no rail), which
+ * is the condition `showable` is judged under: it runs after the firing lands.
  */
 export function evident(b: Board, op: TracksOp): boolean {
   if (op.kind === "square") return op.track && sECount(b, op.x, op.y, E_TRACK) > 0;
@@ -227,19 +208,27 @@ export function evident(b: Board, op: TracksOp): boolean {
  * something their board does not already say (docs/games/hints.md § "Show only
  * what the board does not already say").
  *
- * Both halves are needed. The reason check alone was the first cut, and it let
- * through the owner's first playtest finding: `trackComplete` — blocking the
- * two free sides of a finished piece — was narrated, fired on sides the player
- * had already closed off by marking the squares beyond them empty, and was a
- * third of every plan (671 of 2,059 steps measured, every one of them evident).
- * The board check alone would narrate `null`. Together, the rules with no reason
- * are the ones the board shows, and a narrated rule that happens to land on an
- * already-decided side is hidden too, wherever the scan order puts it.
+ * Both halves are needed. Without the board check, a narrated rule that lands
+ * on sides the player already closed off, by marking the squares beyond them
+ * empty, is shown anyway, wherever the scan order puts it; without the reason
+ * check, the plan would narrate `null`. Together, the rules with no reason are
+ * the ones the board shows.
  */
 function showable(b: Board, f: TracksFiring): boolean {
   return f.reason !== null && !f.ops.every((op) => evident(b, op));
 }
 
+/**
+ * Deduce the plan from the player's current marks.
+ *
+ * `deduceHintPlan` supplies no `apply`: the rungs mutate the working board as
+ * they detect, so re-applying a firing would be wrong rather than merely
+ * redundant (`engine/hint-plan.ts`). The tier cap is the board's own
+ * difficulty, not `DIFF_COUNT`: the generator only ever certified the board
+ * soluble at that tier, and every rung is monotone in what is already marked,
+ * so a correct partial board stays soluble there too. It is also what stops an
+ * easiest-tier board being handed a parity argument it never needed.
+ */
 export function tracksHint(
   state: TracksState,
 ):
@@ -263,11 +252,8 @@ export function tracksHint(
   if (board.impossible) return { ok: false, error: PUZZLE_NOT_REASONABLE };
   if (plan.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
 
-  // The board the narration reads is the one the *state* came from: a firing's
-  // reason carries its own evidence, so nothing here needs the working board's
-  // later state, and `lineOf` only ever reads the clue numbers, which no move
-  // changes.
-  const shape = stateToBoard(state);
+  // A firing's reason carries its own evidence, and the narration reads only
+  // the board's size and clue numbers, which no firing changes.
   return {
     ok: true,
     steps: plan.map((firing) => {
@@ -278,8 +264,8 @@ export function tracksHint(
       if (!reason) throw new Error("tracks hint: a step with no premise was shown");
       return {
         move: { ops: firing.ops },
-        explanation: narrate(shape, reason),
-        highlights: highlightsOf(shape, reason, firing),
+        explanation: narrate(board, reason),
+        highlights: highlightsOf(board, reason, firing),
       };
     }),
   };

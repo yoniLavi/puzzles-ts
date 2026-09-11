@@ -1,13 +1,13 @@
 /**
- * Tracks rendering — a faithful port of `game_redraw` / `draw_square` /
+ * Tracks rendering: a port of `game_redraw` / `draw_square` /
  * `draw_tracks_specific` / `draw_clue` from `tracks.c`, using the
  * `NARROW_BORDERS` geometry the web build compiles (zero gutter, a one-tile
  * margin holding the clue numbers and the A/B entrance/exit labels).
  *
  * Two per-tile `Int32Array`s (`flags` + `flagsDrag`) mirror upstream's
  * committed-vs-drag-preview drawstate; the `findMistakes` overlay rides an
- * `OverlaySidecar` so it is part of the diff key (docs/games/rendering.md § "Overlay sidecars"). The palette
- * is index-for-index with the C color enum.
+ * `OverlaySidecar` so it is part of the diff key (docs/games/rendering.md
+ * § "Overlay sidecars"). The palette is index-for-index with the C color enum.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -32,7 +32,13 @@ import type { TracksHighlights } from "./hint.ts";
 import { copyAndApplyDrag } from "./moves.ts";
 import {
   ALLDIR,
+  type Board,
   D,
+  DX,
+  DY,
+  E_NOTRACK,
+  E_TRACK,
+  FLIP,
   L,
   NBITS,
   R,
@@ -45,7 +51,6 @@ import {
   sECount,
   sEDirs,
   stateToBoard,
-  type TracksMistake,
   type TracksMove,
   type TracksState,
   type TracksUi,
@@ -72,17 +77,17 @@ export const COL_ERROR_BACKGROUND = 12;
 /**
  * The hint's action color, past the end of the C enum.
  *
- * **The collection's default blue, kept rather than moved**, and the claimant
- * worth naming is `COL_DRAGON`, which is the same `DRAG_ADD` blue Galaxies
- * moved its hint away from (docs/games/hints.md § "The element-type color
- * legend"). The reasoning that made Galaxies yield does not transfer: there the
- * drag ring and the hint ring pointed at *different* dots, so one hue carried
- * two contradictory claims about the same object. Here the drag preview
- * recolors a square's own rails and crosses while a hint is drawn as a border
- * ring, an edge stub or an edge cross, and the two only ever coincide when the
- * player is dragging to place what the hint just asked for, where agreeing is
- * the point. Tracks' other spent hue is `COL_CURSOR` green, which is the
- * per-game affordance the Sticks precedent says should yield rather than blue.
+ * **The collection's default blue, kept rather than moved**, although
+ * `COL_DRAGON` is the same `DRAG_ADD` blue Galaxies moved its hint away from
+ * (docs/games/hints.md § "The element-type color legend"). Galaxies' reason
+ * does not transfer: there the drag ring and the hint ring pointed at
+ * *different* dots, so one hue made two contradictory claims about the same
+ * object. Here the drag preview recolors a square's own rails and crosses while
+ * a hint is drawn as a border ring, an edge stub or an edge cross, and the two
+ * only ever coincide when the player is dragging to place what the hint just
+ * asked for, where agreeing is the point. Tracks' other spent hue is
+ * `COL_CURSOR` green, the per-game affordance the Sticks precedent says should
+ * yield rather than blue.
  */
 export const COL_HINT = 13;
 /** The hint's evidence color: teal, the collection's, distinct in hue from the
@@ -186,7 +191,7 @@ export interface TracksDrawState {
   flagsDrag: Int32Array;
   /** Per-clue: the error flag, plus a bit for "the hint counts with this clue". */
   numErrors: Int32Array;
-  /** Per-square hint marks — part of the diff key, see the `H_*` bits. */
+  /** Per-square hint marks: part of the diff key, see the `H_*` bits. */
   hint: Int32Array;
   wrong: OverlaySidecar;
 }
@@ -222,12 +227,7 @@ function hintFlags(
   /** Set `shift`'s direction bit on both squares sharing the edge. */
   const markEdge = (x: number, y: number, dir: number, shift: number): void => {
     mark(x, y, dir << shift);
-    const fd = ((dir << 2) | (dir >> 2)) & 0xf; // upstream FLIP
-    mark(
-      x + (dir === R ? 1 : dir === L ? -1 : 0),
-      y + (dir === D ? 1 : dir === U ? -1 : 0),
-      fd << shift,
-    );
+    mark(x + DX(dir), y + DY(dir), FLIP(dir) << shift);
   };
 
   for (const t of hl.targets) mark(t.x, t.y, H_RING | (t.track ? 0 : H_EMPTY));
@@ -236,7 +236,7 @@ function hintFlags(
   }
   for (const e of hl.areaEdges) markEdge(e.x, e.y, e.dir, H_CITED_SHIFT);
 
-  // One contour round a contiguous region, one ring per scattered cell — the
+  // One contour round a contiguous region, one ring per scattered cell: the
   // shared rule, so the picture never draws a boundary the deduction did not
   // reason across (`engine/hint-mark.ts`).
   const inArea = new Set(hl.area.map((c) => c.y * w + c.x));
@@ -277,7 +277,7 @@ function circleSleepers(
 ): void {
   const qr6 = Math.PI / 12;
   const qr3 = Math.PI / 6;
-  const r1 = (m.sz6 * 2) / 2; // THIRDSZ / 2
+  const r1 = m.sz6; // THIRDSZ / 2
   for (let i = 0; i < 12; i++) {
     const th = qr6 + i * qr3;
     thickLine(
@@ -353,12 +353,8 @@ function drawTracksSpecific(
     thickLine(dr, thickTrack, ox + 2 * t3, oy, ox + 2 * t3, oy + m.tile, ctrack);
     return;
   }
-  if (
-    flags === (U | L) ||
-    flags === (D | L) ||
-    flags === (U | R) ||
-    flags === (D | R)
-  ) {
+  if (NBITS[flags] === 2) {
+    // Any other two-sided piece is a curve round the corner the two sides share.
     const cx = flags & L ? ox : ox + m.tile;
     const cy = flags & U ? oy : oy + m.tile;
     circleSleepers(dr, m, cx, cy, 5 * t6, thickSleeper, csleeper);
@@ -533,8 +529,8 @@ function drawSquare(
 
   // Background (in the drag color when the drag toggles this square's track).
   const bg = bestBits(
-    (flags & DS_TRACK) === DS_TRACK ? 1 : 0,
-    (flagsDrag & DS_TRACK) === DS_TRACK ? 1 : 0,
+    flags & DS_TRACK ? 1 : 0,
+    flagsDrag & DS_TRACK ? 1 : 0,
     flags & DS_TRACK ? COL_TRACK_BACKGROUND : COL_BACKGROUND,
   ).col;
   dr.drawRect({ x: ox, y: oy, w: m.tile, h: m.tile }, COL_GRID);
@@ -585,8 +581,8 @@ function drawSquare(
 
   // No-track square mark (a central cross).
   const sq = bestBits(
-    (flags & DS_NOTRACK) === DS_NOTRACK ? 1 : 0,
-    (flagsDrag & DS_NOTRACK) === DS_NOTRACK ? 1 : 0,
+    flags & DS_NOTRACK ? 1 : 0,
+    flagsDrag & DS_NOTRACK ? 1 : 0,
     COL_TRACK,
   );
   if (sq.bits) drawCross(dr, cx, cy, Math.floor(t2 / 2), lineThick, sq.col);
@@ -689,20 +685,14 @@ function drawLoopEnds(
 
 // --- per-tile draw flags (upstream s2d_flags) -----------------------------
 
-function s2dFlags(
-  b: ReturnType<typeof stateToBoard>,
-  x: number,
-  y: number,
-  ui: TracksUi,
-): number {
-  const w = b.w;
-  let f = sEDirs(b, x, y, 1 /* E_TRACK */);
-  f |= sEDirs(b, x, y, 2 /* E_NOTRACK */) << DS_NSHIFT;
-  const sf = b.sflags[y * w + x];
+function s2dFlags(b: Board, x: number, y: number, ui: TracksUi): number {
+  let f = sEDirs(b, x, y, E_TRACK);
+  f |= sEDirs(b, x, y, E_NOTRACK) << DS_NSHIFT;
+  const sf = b.sflags[y * b.w + x];
   if (sf & S_ERROR) f |= DS_ERROR;
   if (sf & S_CLUE) f |= DS_CLUE;
   if (sf & S_NOTRACK) f |= DS_NOTRACK;
-  if (sf & S_TRACK || sECount(b, x, y, 1) > 0) f |= DS_TRACK;
+  if (sf & S_TRACK || sECount(b, x, y, E_TRACK) > 0) f |= DS_TRACK;
   if (ui.cursor.visible) {
     if (
       ui.cursor.x >= x * 2 &&
@@ -732,19 +722,14 @@ export function redraw(
   _animTime: number,
   flashTime: number,
   hint?: HintStep<TracksMove>,
-  mistakes?: readonly TracksMistake[],
+  mistakes?: readonly Point[],
 ): void {
   const m = metrics(ds.tileSize);
   const { w, h } = state;
   let force = false;
-  const hintMarks = hintFlags(
-    state,
-    hint as HintStep<TracksMove, TracksHighlights> | undefined,
-  );
-  const hintedClues = new Set(
-    (hint as HintStep<TracksMove, TracksHighlights> | undefined)?.highlights?.clues ??
-      [],
-  );
+  const step = hint as HintStep<TracksMove, TracksHighlights> | undefined;
+  const hintMarks = hintFlags(state, step);
+  const hintedClues = new Set(step?.highlights?.clues ?? []);
 
   if (!ds.started) {
     // The engine paints no pixels of its own: fill the whole background.
@@ -767,7 +752,7 @@ export function redraw(
 
   // Clue numbers in the margin. Half of several deductions lives out here
   // rather than on the grid, so the clue the hint counts with recolors with the
-  // rest of the mark (docs/games/hints.md § "Off-board evidence") — which means
+  // rest of the mark (docs/games/hints.md § "Off-board evidence"), which means
   // the hint has to be part of *this* surface's cache key too, not only the
   // per-tile one.
   for (let i = 0; i < w + h; i++) {

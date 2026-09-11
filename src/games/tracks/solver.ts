@@ -1,33 +1,24 @@
 /**
- * Tracks solver — a faithful port of `tracks_solve` and its deduction rungs
+ * Tracks solver: a faithful port of `tracks_solve` and its deduction rungs
  * from `tracks.c`. Because the generator is solver-gated (it lays and strips
  * clues by re-running this solver and keeping only removals that stay soluble
  * at exactly the target difficulty), the desc is decided by this solver's
- * *verdict* on every intermediate board, so the port reproduces C's deductions
- * — and their order — verbatim (docs/games/solver-and-generator.md § "Solver-gated generation"). Reused by `solve()` and
- * `findMistakes`.
+ * *verdict* on every intermediate board, so the port reproduces C's
+ * deductions, and their order, verbatim (docs/games/solver-and-generator.md
+ * § "Solver-gated generation"). Reused by `solve()` and `findMistakes`.
  *
- * **The ladder runs on the shared `runDeductionFixpoint`**
- * (`adopt-the-deduction-runner-where-it-rewires`, the first adoption). It was
- * written out by hand as eight repetitions of `if (diff >= TIER &&
- * technique(b)) { maxDiff = Math.max(maxDiff, TIER); continue; }`, which is that
- * runner's signature transcribed — so adoption was a rewiring, not a
- * restructuring. Three things made it exact, and each is worth checking before
- * adopting the next game:
+ * **The ladder runs on the shared `runDeductionFixpoint`**, and three things
+ * make it agree exactly with the hand-written loop it replaced
+ * (`tracksSolveLegacy`):
  *
- *  - **The tier guard skips, it does not stop.** Each `diff >= TIER` was an
- *    independent guard with no `break`, and the runner likewise *skips* a rung
- *    above `maxTier` and keeps going. A game that breaks out of its ladder on
- *    the first over-cap rung is not this shape.
- *  - **The grade means the same number.** `maxDiff` was bumped only inside a
- *    fired branch, so it already meant *highest tier that fired*, which is what
- *    the runner returns. A game that bumps its grade on *reaching* a tier means
- *    "deepest tier reached" — a different number, and Boats' recorded reason for
- *    staying out.
- *  - **`b.impossible` is a board flag, not a `< 0` return.** The old loop tested
- *    it at the top of each pass; `settled` is checked in exactly that place.
+ *  - **The tier guard skips, it does not stop.** A rung above `maxTier` is
+ *    skipped and the ladder keeps going, as each `diff >= TIER` guard did.
+ *  - **The grade means the same number**: the highest tier that fired. A game
+ *    that bumps its grade on *reaching* a tier is not this shape.
+ *  - **`b.impossible` is a board flag, not a `< 0` return**, and `settled`
+ *    reads it where the loop did, at the top of each pass.
  *
- * Proved by `tracks-ladder.test.ts`, not by the differential — see its header
+ * Proved by `tracks-ladder.test.ts`, not by the differential; see its header
  * for why the fixtures could not certify this on their own.
  */
 import {
@@ -55,6 +46,7 @@ import {
   NBITS,
   R,
   S_CLUE,
+  S_ERROR,
   S_MARK,
   S_NOTRACK,
   S_TRACK,
@@ -65,6 +57,7 @@ import {
   sESet,
   type TracksOp,
   type TracksRecorder,
+  trackDsf,
   U,
 } from "./state.ts";
 
@@ -94,14 +87,14 @@ const evEdge = (w: number, x: number, y: number, d: number): number =>
   (y * w + x) * 16 + d;
 
 /**
- * Why one firing is forced — the half of a hint `runDeductionFixpoint` is
- * explicitly *oblivious* to, and the whole reason this game needed a recording
- * projection rather than the rung id its `FiringTally` already reports.
+ * Why one firing is forced: the half of a hint `runDeductionFixpoint` is
+ * *oblivious* to, and the reason this game needs a recording projection rather
+ * than the rung id its `FiringTally` already reports.
  *
  * One variant per narratable **premise**, not one per rung: `update-flags` is a
  * single technique holding two teachable rules and three that only restate what
  * the board already draws. Those three, and `check-single` (which fires on no
- * board this generator produces — `tracks-ladder.test.ts`'s `unreached`
+ * board this generator produces: `tracks-ladder.test.ts`'s `unreached`
  * ledger), declare no reason: their firings come back with a `null` one and the
  * plan hides them. `tracks-hint.test.ts` holds every such firing to being
  * evident on the player's board, so the list of reason-less rules is a
@@ -129,7 +122,7 @@ export type TracksReason = { ev: TracksEvidence } & (
   | { kind: "crossingParity"; x: number; y: number; dir: number; crossings: number }
 );
 
-/** One firing: the flag changes it forced, and the premise that forced them —
+/** One firing: the flag changes it forced, and the premise that forced them;
  * `null` for a rule that restates what the board already shows. */
 export interface TracksFiring {
   reason: TracksReason | null;
@@ -149,26 +142,18 @@ export interface TracksFiring {
  * `if (rec && did > before) return did;` is the **per-premise early return**
  * that keeps one firing = one hint step (a rung like `updateFlags` scans the
  * whole grid and would otherwise pile dozens of unrelated deductions into one
- * step — docs/games/hints.md § "Group one firing into one step"), and
+ * step: docs/games/hints.md § "Group one firing into one step"), and
  * `if (rec) rec.reason = null;` stops a premise that changed nothing from
  * lending its reason to the next one.
  */
 
 // --- primitive flag setters (upstream solve_set_sflag / solve_set_eflag) ---
-
-/**
- * Record a change for the firing `b.rec` is collecting — every change, whether
- * or not a premise is standing; what is worth showing is decided later, by the
- * plan loop.
- *
- * **This is the whole of the recording projection's plumbing** — every one of
- * the eight rungs changes the board through {@link setSflag} or
- * {@link setEflag} and through nothing else, so the *what* of a firing costs
- * these two calls. Only the *why* is per-rung work.
- */
-function note(b: Board, op: TracksOp): void {
-  b.rec?.ops.push(op);
-}
+//
+// Every change they make is recorded for the firing `b.rec` is collecting,
+// whether or not a premise is standing; what is worth showing is decided later,
+// by the plan loop. They are how every rung but `neighborsTry` changes the
+// board, so the *what* of a firing costs these two lines; only the *why* is
+// per-rung work.
 
 function setSflag(b: Board, x: number, y: number, f: number): number {
   const i = y * b.w + x;
@@ -176,7 +161,7 @@ function setSflag(b: Board, x: number, y: number, f: number): number {
   if (b.sflags[i] & (f === S_TRACK ? S_NOTRACK : S_TRACK)) b.impossible = true;
   else {
     b.sflags[i] |= f;
-    if (b.rec) note(b, { kind: "square", x, y, track: f === S_TRACK, set: true });
+    b.rec?.ops.push({ kind: "square", x, y, track: f === S_TRACK, set: true });
   }
   return 1;
 }
@@ -187,14 +172,12 @@ function setEflag(b: Board, x: number, y: number, d: number, f: number): number 
   if (sf & (f === E_TRACK ? E_NOTRACK : E_TRACK)) b.impossible = true;
   else {
     sESet(b, x, y, d, f);
-    if (b.rec) {
-      note(b, { kind: "edge", x, y, dir: d, track: f === E_TRACK, set: true });
-    }
+    b.rec?.ops.push({ kind: "edge", x, y, dir: d, track: f === E_TRACK, set: true });
   }
   return 1;
 }
 
-// --- Easy rungs -----------------------------------------------------------
+// --- DIFF_EASY rungs ------------------------------------------------------
 
 /** The sides of `(x,y)` carrying `eflag`, as evidence edges. */
 function sidesWith(b: Board, x: number, y: number, eflag: number): number[] {
@@ -214,10 +197,9 @@ function sidesWith(b: Board, x: number, y: number, eflag: number): number[] {
  *    a square already showing its own cross;
  *  - *a square with a track side is a track square* changes nothing on screen
  *    at all: `s2dFlags` already sets `DS_TRACK` from the edge count;
- *  - *a finished piece's other two sides are blocked* — the player can see the
- *    piece is finished. This one was narrated until the owner's first playtest,
- *    where it was a third of every plan and redundant every single time it
- *    fired (671 of 671, measured).
+ *  - *a finished piece's other two sides are blocked*: the player can see the
+ *    piece is finished. Narrated, it was a third of every plan and redundant
+ *    every time it fired (671 of 671, measured).
  *
  * All three are real and needed by the deduction, so they run; none claims a
  * reason, so each comes back as a firing the plan hides (docs/games/hints.md
@@ -515,14 +497,7 @@ function checkLoopSub(
 function checkLoop(b: Board): number {
   const { w, h } = b;
   let did = 0;
-  const dsf = new Dsf(w * h);
-  for (let x = 0; x < w; x++) {
-    for (let y = 0; y < h; y++) {
-      const i = y * w + x;
-      if (x < w - 1 && sEDirs(b, x, y, E_TRACK) & R) dsf.merge(i, y * w + (x + 1));
-      if (y < h - 1 && sEDirs(b, x, y, E_TRACK) & D) dsf.merge(i, (y + 1) * w + x);
-    }
-  }
+  const dsf = trackDsf(b);
   const startc = dsf.canonify(b.rowS * w);
   const endc = dsf.canonify((h - 1) * w + b.colS);
   for (let x = 0; x < w; x++) {
@@ -536,7 +511,7 @@ function checkLoop(b: Board): number {
   return did;
 }
 
-// --- Tricky rungs ---------------------------------------------------------
+// --- DIFF_TRICKY rungs ----------------------------------------------------
 
 function checkSingleSub(
   b: Board,
@@ -779,12 +754,12 @@ function neighborsTry(
   }
   if (onefill) {
     b.sflags[p] |= S_NOTRACK;
-    if (b.rec) note(b, { kind: "square", x, y, track: false, set: true });
+    b.rec?.ops.push({ kind: "square", x, y, track: false, set: true });
     did++;
   }
   if (oneempty) {
     b.sflags[P] |= S_TRACK;
-    if (b.rec) note(b, { kind: "square", x: X, y: Y, track: true, set: true });
+    b.rec?.ops.push({ kind: "square", x: X, y: Y, track: true, set: true });
     did++;
   }
   // Only when this premise recorded nothing: the reset exists to stop a
@@ -799,7 +774,7 @@ function checkNeighbors(b: Board, bothWays: boolean): number {
   let did = 0;
   for (let x = 0; x < w; x++) {
     const { onefill, oneempty: oe } = neighborsCount(b, x, w, h, x);
-    const oneempty = bothWays ? oe : false;
+    const oneempty = bothWays && oe;
     if (!onefill && !oneempty) continue;
     for (let y = 0; y + 1 < h; y++) {
       did += neighborsTry(b, x, y, x, y + 1, onefill, oneempty, D, x, x, w, h);
@@ -810,7 +785,7 @@ function checkNeighbors(b: Board, bothWays: boolean): number {
   }
   for (let y = 0; y < h; y++) {
     const { onefill, oneempty: oe } = neighborsCount(b, y * w, 1, w, w + y);
-    const oneempty = bothWays ? oe : false;
+    const oneempty = bothWays && oe;
     if (!onefill && !oneempty) continue;
     for (let x = 0; x + 1 < w; x++) {
       did += neighborsTry(b, x, y, x + 1, y, onefill, oneempty, R, w + y, y * w, 1, w);
@@ -822,7 +797,7 @@ function checkNeighbors(b: Board, bothWays: boolean): number {
   return did;
 }
 
-// --- Hard rung: bridge parity ---------------------------------------------
+// --- DIFF_HARD rung: bridge parity ----------------------------------------
 
 function bridgeSub(b: Board, x: number, y: number, d: number, dsf: Dsf): number {
   const { w, h } = b;
@@ -934,12 +909,7 @@ function discountEdge(b: Board, x: number, y: number, d: number): void {
   setEflag(b, x, y, d, E_NOTRACK);
 }
 
-/**
- * Run the solver to a fixpoint at the given max difficulty. Returns the
- * verdict (`-1` impossible, `0` non-converged, `1` uniquely solved) and the
- * maximum difficulty rung that fired (upstream `tracks_solve`).
- */
-/** The eight rungs, easiest first — the ladder `tracksSolve` runs.
+/** The eight rungs, easiest first: the ladder `tracksSolve` runs.
  *
  * A factory rather than a constant because the rungs close over per-solve state:
  * every one needs the board, and `check-bridge-parity` needs a scratch dsf that
@@ -947,8 +917,7 @@ function discountEdge(b: Board, x: number, y: number, d: number): void {
  *
  * **The rung ids are load-bearing beyond documentation**: `runDeductionFixpoint`
  * names them when a step budget trips, and `tracks-ladder.test.ts` asserts which
- * of them a corpus ever fires — which is how `check-single` was found to fire
- * nowhere at all. */
+ * of them a corpus ever fires. */
 function tracksLadder(b: Board, bridgeDsf: Dsf): DeductionTechnique[] {
   return [
     { id: "update-flags", tier: DIFF_EASY, run: () => updateFlags(b) },
@@ -988,12 +957,14 @@ function tracksSolveInit(b: Board): Dsf {
 }
 
 /**
- * @param firings test seam — the runner tallies each rung's firings into it.
- * Unused in production and deliberately so: it exists because
- * `tracks-ladder.test.ts` has to prove its corpus reaches every rung, and a
- * ladder-equivalence test that could pass over boards needing only the easiest
- * rung would certify nothing. Costs one optional parameter and no work when
- * absent.
+ * Run the solver to a fixpoint at the given max difficulty (upstream
+ * `tracks_solve`). Returns the verdict (`-1` impossible, `0` non-converged,
+ * `1` uniquely solved) and the highest difficulty rung that fired.
+ *
+ * @param firings test seam: the runner tallies each rung's firings into it.
+ * Unused in production and deliberately so: `tracks-ladder.test.ts` has to
+ * prove its corpus reaches every rung, and a ladder-equivalence test that could
+ * pass over boards needing only the easiest rung would certify nothing.
  */
 export function tracksSolve(
   b: Board,
@@ -1008,11 +979,8 @@ export function tracksSolve(
     firings,
     maxTier: diff,
     baseGrade: DIFF_EASY,
-    // The hand-written loop was `while (!b.impossible)`, tested at the top of
-    // every pass — which is exactly where `settled` is checked. A rung here
-    // never returns `< 0`; it raises the board's own flag instead, so the
-    // runner's `impossible` is always false and this function keeps deriving
-    // `ret` from `b.impossible` as it always did.
+    // A rung never returns `< 0`; it raises the board's own flag instead, so
+    // the runner's `impossible` is always false and `ret` comes from the flag.
     settled: () => b.impossible,
   });
 
@@ -1025,19 +993,18 @@ export function tracksSolve(
  * firing at a time with its premise attached.
  *
  * `runDeductionFixpoint` is not bypassed here and gains nothing new. Two hooks
- * it already had do the whole job:
+ * it already has do the whole job:
  *
- *  - **`settled`** — documented as broader than "solved" (Undead stops on a
+ *  - **`settled`**: documented as broader than "solved" (Undead stops on a
  *    contradiction, Spokes on a spent action budget). `rec.ops.length > 0` is
  *    another such reason: *stop, this pass has a firing to narrate*. Checked at
  *    the top of an iteration, so the ladder always finishes the rung it is in.
- *  - **`beforeTechnique`** — `latinSolverTop` bumps a group id here; Tracks
- *    clears the standing reason, so a rung that declares none comes back with
- *    `null` rather than the previous rung's premise.
+ *  - **`beforeTechnique`** clears the standing reason, so a rung that declares
+ *    none comes back with `null` rather than the previous rung's premise.
  *
  * **Every change is a firing, including the ones nobody should be shown.**
  * Deciding what is worth a step is the plan loop's job (`deduceHintPlan`'s
- * `showable`), not the recorder's, so the recorder never has to know.
+ * `showable`), not the recorder's.
  *
  * The returned closure ignores its argument so it can be handed straight to
  * `deduceHintPlan`'s `next(board)`; the board it walks is the one passed here,
@@ -1075,14 +1042,9 @@ export function tracksRecordingPass(
 }
 
 /**
- * The hand-written ladder this solver ran until
- * `adopt-the-deduction-runner-where-it-rewires`, kept **only** as the oracle
- * `tracks-ladder.test.ts` proves the adoption against — the rungs are
- * module-private, so the comparison has to live on this side of the file.
- *
- * Delete it when the adoption sweep finishes and the shape is no longer
- * novel; until then it is what makes "the rewiring changed nothing" a checked
- * claim rather than an assertion.
+ * The hand-written ladder this solver ran before adopting the runner, kept
+ * **only** as the oracle `tracks-ladder.test.ts` proves the adoption against;
+ * the rungs are module-private, so the comparison has to live in this file.
  */
 export function tracksSolveLegacy(
   b: Board,
@@ -1133,9 +1095,9 @@ export function tracksSolveLegacy(
 
 /**
  * A clues-only copy of a board with all non-clue square/edge marks stripped
- * (upstream `copy_and_strip` with no clue flip). Optionally flips one clue
- * flag first (`flipClueI`, an index into `w*h`, or −1). Used by the generator
- * and by `findMistakes` to re-solve from the givens alone.
+ * (upstream `copy_and_strip`). Optionally flips one clue flag first
+ * (`flipClueI`, an index into `w*h`, or −1). Used by the generator and by
+ * `findMistakes` to re-solve from the givens alone.
  */
 export function copyAndStrip(b: Board, flipClueI: number): Board {
   const { w, h } = b;
@@ -1151,16 +1113,17 @@ export function copyAndStrip(b: Board, flipClueI: number): Board {
   };
   if (flipClueI !== -1) ret.sflags[flipClueI] ^= S_CLUE;
   for (let i = 0; i < w * h; i++) {
-    if (!(ret.sflags[i] & S_CLUE)) {
-      ret.sflags[i] &= ~(S_TRACK | S_NOTRACK | 4 /* S_ERROR */ | S_MARK);
-      for (let j = 0; j < 4; j++) {
-        const f = 1 << j;
-        const xx = (i % w) + DX(f);
-        const yy = Math.floor(i / w) + DY(f);
-        if (!inGrid(b, xx, yy) || !(ret.sflags[yy * w + xx] & S_CLUE)) {
-          sEClear(ret, i % w, Math.floor(i / w), f, E_TRACK);
-          sEClear(ret, i % w, Math.floor(i / w), f, E_NOTRACK);
-        }
+    if (ret.sflags[i] & S_CLUE) continue;
+    ret.sflags[i] &= ~(S_TRACK | S_NOTRACK | S_ERROR | S_MARK);
+    const x = i % w;
+    const y = Math.floor(i / w);
+    for (let j = 0; j < 4; j++) {
+      const f = 1 << j;
+      const xx = x + DX(f);
+      const yy = y + DY(f);
+      if (!inGrid(b, xx, yy) || !(ret.sflags[yy * w + xx] & S_CLUE)) {
+        sEClear(ret, x, y, f, E_TRACK);
+        sEClear(ret, x, y, f, E_NOTRACK);
       }
     }
   }

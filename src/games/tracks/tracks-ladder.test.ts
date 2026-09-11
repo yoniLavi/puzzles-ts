@@ -1,15 +1,13 @@
 /*
- * Tracks' adoption of `runDeductionFixpoint`, proved by equivalence
- * (`adopt-the-deduction-runner-where-it-rewires`). The harness and the argument
- * for it are `engine/testing/ladder-equivalence.ts`; this file is the
- * declaration.
+ * Tracks' adoption of `runDeductionFixpoint`, proved by equivalence. The
+ * harness and the argument for it are `engine/testing/ladder-equivalence.ts`;
+ * this file is the declaration.
  *
- * **Tracks is why the harness exists.** Its byte-match differential passed the
- * adoption and then failed its own control: mis-declare a rung's *tier* and
- * eight of its cases go red, but delete `check-single` entirely — from the new
- * ladder or the old loop — and all 39 Tracks tests stay green. That rung fires
- * on no board this generator produces (measured: 324 solves, every other rung
- * firing, that one zero), and no corpus can guard what nothing reaches.
+ * **The byte-match differential cannot certify the ladder on its own.**
+ * Mis-declare a rung's *tier* and it goes red, but delete `check-single`
+ * entirely, from the new ladder or the old loop, and it stays green: that rung
+ * fires on no board this generator produces (measured: 324 solves, every other
+ * rung firing, that one zero), and no corpus can guard what nothing reaches.
  */
 
 import { randomNew } from "../../engine/random/index.ts";

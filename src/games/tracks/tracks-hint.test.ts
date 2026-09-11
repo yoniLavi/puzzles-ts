@@ -205,10 +205,9 @@ describe("what the plan hides is exactly what the board already says", () => {
   });
 
   it("no step a player is shown is one their board already decides", () => {
-    // The owner's first playtest finding, as a guard over what reaches the
-    // screen: a step asking for two sides the player had already closed off.
-    // Every op, not just the step as a whole, so a step cannot smuggle a
-    // redundant op in beside a real one.
+    // A guard over what reaches the screen: no step asks for sides the player
+    // has already closed off. Every op, not just the step as a whole, so a step
+    // cannot smuggle a redundant op in beside a real one.
     let shown = 0;
     for (const params of SHAPES) {
       for (const seed of SEEDS) {
@@ -229,9 +228,8 @@ describe("what the plan hides is exactly what the board already says", () => {
   });
 
   it("the reported board: a finished piece beside squares marked empty gets no step about its sides", () => {
-    // Reconstructed from the report. The entrance's piece is given; the player
-    // marks the squares beyond its two free sides empty; the hint asked them
-    // to block those two sides.
+    // The entrance's piece is given, and the player marks the squares beyond
+    // its two free sides empty; no step may then ask them to block those sides.
     let checked = 0;
     for (let s = 0; s < 40 && checked < 3; s++) {
       const params = SHAPES[1];
@@ -469,7 +467,7 @@ describe("narration reads correctly at the degenerate extremes", () => {
     expect(narrate(b0, { kind: "clueFull", line: 0, ev })).toContain(
       "the one track square its clue allows",
     );
-    // Found reading the running app: "all 2 of" is grammatical and reads wrong.
+    // "all 2 of" is grammatical and reads wrong.
     b0.numbers[0] = 2;
     expect(narrate(b0, { kind: "clueFull", line: 0, ev })).toContain(
       "both of the track squares its clue allows",
@@ -572,14 +570,11 @@ describe("following one step at a time", () => {
     const params = SHAPES[0];
     const { steps } = walk(params, "keeptrack-b");
     const { step, before } = steps[0];
-    const foreign: TracksMove = {
-      ops: [{ kind: "square", x: 0, y: 0, track: false, set: true }],
-    };
-    const isWanted = step.move.ops.some(
-      (o) => o.kind === "square" && o.x === 0 && o.y === 0,
-    );
-    if (!isWanted)
-      expect(tracksGame.hintKeepTrack?.(foreign, step, before)).toBe("off");
+    // The contrary of an op the step asks for: same place, the other fate.
+    const asked = step.move.ops[0];
+    const foreign: TracksMove = { ops: [{ ...asked, track: !asked.track }] };
+    expect(step.move.ops).not.toContainEqual(foreign.ops[0]);
+    expect(tracksGame.hintKeepTrack?.(foreign, step, before)).toBe("off");
   });
 });
 

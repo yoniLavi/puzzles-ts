@@ -1,9 +1,10 @@
 /**
- * Tracks generator — a byte-faithful port of `new_game_desc` / `lay_path` /
+ * Tracks generator: a byte-faithful port of `new_game_desc` / `lay_path` /
  * `add_clues` from `tracks.c`. The clue-laying is solver-gated (it keeps a
  * clue only while the board stays soluble at exactly the target difficulty),
  * so over the bit-identical `random.ts` this reproduces the C desc
- * byte-for-byte for the same seed (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"–4.4).
+ * byte-for-byte for the same seed (docs/games/testing.md § "Byte-match:
+ * fidelity where there is a right answer").
  */
 
 import type { RandomState } from "../../engine/random/index.ts";
@@ -18,6 +19,7 @@ import {
   DIRS,
   DX,
   DY,
+  E_NOTRACK,
   E_TRACK,
   encodeDesc,
   inGrid,
@@ -44,10 +46,11 @@ function solveProgress(b: Board): number {
   const { w, h } = b;
   let progress = 0;
   for (let i = 0; i < w * h; i++) {
+    const x = i % w;
+    const y = Math.floor(i / w);
     if (b.sflags[i] & S_TRACK) progress++;
     if (b.sflags[i] & S_NOTRACK) progress++;
-    progress += sECount(b, i % w, Math.floor(i / w), E_TRACK);
-    progress += sECount(b, i % w, Math.floor(i / w), 2 /* E_NOTRACK */);
+    progress += sECount(b, x, y, E_TRACK) + sECount(b, x, y, E_NOTRACK);
   }
   return progress;
 }
@@ -82,29 +85,23 @@ function findDirection(b: Board, rs: RandomState, x: number, y: number): number 
 }
 
 function layPath(b: Board, rs: RandomState): void {
-  const { h } = b;
   const attempt = retryLimit("tracks: layPath");
   for (;;) {
     attempt();
 
     clearBoard(b);
-    const py0 = randomUpto(rs, h);
-    b.rowS = py0;
+    b.rowS = randomUpto(rs, b.h);
     let px = 0;
-    let py = py0;
+    let py = b.rowS;
     sESet(b, px, py, L, E_TRACK);
-    let restart = false;
     while (inGrid(b, px, py)) {
       const d = findDirection(b, rs, px, py);
-      if (d === 0) {
-        restart = true;
-        break;
-      }
+      if (d === 0) break;
       sESet(b, px, py, d, E_TRACK);
       px += DX(d);
       py += DY(d);
     }
-    if (restart) continue;
+    if (inGrid(b, px, py)) continue; // stuck: start again
     b.colS = px;
     return;
   }
@@ -119,7 +116,6 @@ function addClues(b: Board, rs: RandomState, diff: number): number {
   const nedgesPreviousSolve = new Int32Array(w * h);
   for (let i = 0; i < w * h; i++) {
     if (sEDirs(b, i % w, Math.floor(i / w), E_TRACK) !== 0) positions.push(i);
-    nedgesPreviousSolve[i] = 0;
   }
 
   // Already too easy, or already soluble without any added clues?
@@ -177,7 +173,7 @@ export function newDesc(
   rs: RandomState,
 ): { desc: string; aux?: string } {
   const { w, h } = p;
-  // 4x4 Tricky/Hard cannot be generated; fall back to Easy.
+  // A 4x4 board cannot be generated above the easiest tier.
   let diff = p.diff;
   if (w === 4 && h === 4 && diff > DIFF_EASY) diff = DIFF_EASY;
 
@@ -187,45 +183,26 @@ export function newDesc(
     attempt();
 
     layPath(b, rs);
+    // Mark the laid track, clue the entrance and exit, and count the clues.
     for (let x = 0; x < w; x++) {
       for (let y = 0; y < h; y++) {
-        if (sECount(b, x, y, E_TRACK) > 0) b.sflags[y * w + x] |= S_TRACK;
+        if (sECount(b, x, y, E_TRACK) > 0) {
+          b.sflags[y * w + x] |= S_TRACK;
+          b.numbers[x]++;
+          b.numbers[y + w]++;
+        }
         if ((x === 0 && y === b.rowS) || (y === h - 1 && x === b.colS)) {
           b.sflags[y * w + x] |= S_CLUE;
         }
       }
     }
-    // Clue numbers from the laid track.
-    for (let x = 0; x < w; x++) {
-      for (let y = 0; y < h; y++) {
-        if (b.sflags[y * w + x] & S_TRACK) {
-          b.numbers[x]++;
-          b.numbers[y + w]++;
-        }
-      }
-    }
-    let boring = false;
-    for (let i = 0; i < w + h; i++) {
-      if (b.numbers[i] === 0) {
-        boring = true;
-        break;
-      }
-    }
-    if (boring) continue;
+    const nums = b.numbers;
+    if (nums.includes(0)) continue; // boring
 
     if (p.singleOnes) {
-      let lastWasOne = true; // disallow a 1 clue at the entry point
-      let consecutive = false;
-      for (let i = 0; i < w + h; i++) {
-        const isOne = b.numbers[i] === 1;
-        if (isOne && lastWasOne) {
-          consecutive = true;
-          break;
-        }
-        lastWasOne = isOne;
-      }
-      if (consecutive) continue;
-      if (b.numbers[w + h - 1] === 1) continue; // disallow a 1 clue at the exit
+      // No 1 clue at the entry point or the exit, and no two in a row.
+      if (nums[0] === 1 || nums[w + h - 1] === 1) continue;
+      if (nums.some((n, i) => i > 0 && n === 1 && nums[i - 1] === 1)) continue;
     }
 
     if (addClues(b, rs, diff) !== 1) continue; // couldn't make soluble / too easy

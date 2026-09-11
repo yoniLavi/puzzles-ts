@@ -1,5 +1,5 @@
 /**
- * Tracks (Train Tracks) — native TS port of `tracks.c`. Lay one continuous
+ * Tracks (Train Tracks): native TS port of `tracks.c`. Lay one continuous
  * train track from the entrance (A, left edge) to the exit (B, bottom edge)
  * of a `w × h` grid, using only straight and curved rails that never cross or
  * loop, so every row/column clue counts the track-bearing cells in it.
@@ -40,7 +40,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import { type TracksHighlights, tracksHint, tracksKeepTrack } from "./hint.ts";
 import {
@@ -63,6 +63,7 @@ import {
 } from "./render.ts";
 import { copyAndStrip, tracksSolve } from "./solver.ts";
 import {
+  type Board,
   D,
   DIFF_COUNT,
   decodeParams,
@@ -82,7 +83,6 @@ import {
   sEFlags,
   stateToBoard,
   status,
-  type TracksMistake,
   type TracksMove,
   type TracksParams,
   type TracksState,
@@ -108,21 +108,16 @@ function newUi(_state: TracksState): TracksUi {
   };
 }
 
-/** A single square-flip move (upstream `square_flip_str` — a toggle). */
-function squareFlipMove(
-  b: ReturnType<typeof stateToBoard>,
-  x: number,
-  y: number,
-  notrack: boolean,
-): TracksMove {
+/** A single square-flip move (upstream `square_flip_str`: a toggle). */
+function squareFlipMove(b: Board, x: number, y: number, notrack: boolean): TracksMove {
   const sf = b.sflags[y * b.w + x];
   const set = notrack ? !(sf & S_NOTRACK) : !(sf & S_TRACK);
   return { ops: [{ kind: "square", x, y, track: !notrack, set }] };
 }
 
-/** A single edge-flip move (upstream `edge_flip_str` — a toggle). */
+/** A single edge-flip move (upstream `edge_flip_str`: a toggle). */
 function edgeFlipMove(
-  b: ReturnType<typeof stateToBoard>,
+  b: Board,
   x: number,
   y: number,
   dir: number,
@@ -136,29 +131,24 @@ function edgeFlipMove(
 /** Constrain an in-progress drag to a single straight row or column
  * (upstream `update_ui_drag`).
  *
- * Deliberate divergence from upstream (owner-requested 2026-07-15): when the
- * pointer drifts to neither the start row nor the start column — the common
- * touch case of wandering off the grid mid-drag — upstream *reset* the paint
- * to the start cell and dropped `dragging`, throwing the whole gesture away.
- * We instead **keep the last valid extent frozen**, so a stray excursion out
- * of bounds no longer invalidates the paint; the drag resumes when the finger
- * returns to the start row/column, and the only way to cancel is to drag back
- * to the start cell (or paint and undo). */
+ * Deliberate divergence from upstream: when the pointer drifts to neither the
+ * start row nor the start column (the common touch case of wandering off the
+ * grid mid-drag), upstream reset the paint to the start cell and dropped
+ * `dragging`, throwing the whole gesture away. Here the last valid extent stays
+ * frozen, so a stray excursion out of bounds does not invalidate the paint; the
+ * drag resumes when the finger returns to the start row/column, and the only
+ * way to cancel is to drag back to the start cell (or paint and undo). */
 function updateUiDrag(state: TracksState, ui: TracksUi, gx: number, gy: number): void {
   const { w, h } = state;
-  const dx = Math.abs(ui.dragSx - gx);
-  const dy = Math.abs(ui.dragSy - gy);
-  if (dy === 0) {
+  if (gy === ui.dragSy) {
     ui.dragEx = gx < 0 ? 0 : gx >= w ? w - 1 : gx;
     ui.dragEy = ui.dragSy;
     ui.dragging = true;
-  } else if (dx === 0) {
+  } else if (gx === ui.dragSx) {
     ui.dragEx = ui.dragSx;
     ui.dragEy = gy < 0 ? 0 : gy >= h ? h - 1 : gy;
     ui.dragging = true;
   }
-  // else: off-axis / out-of-bounds drift — keep dragEx/dragEy/dragging as they
-  // were, freezing the paint at its last valid extent.
 }
 
 function interpretMove(
@@ -274,15 +264,6 @@ function interpretMove(
   return null;
 }
 
-function flashLength(
-  oldState: TracksState,
-  newState_: TracksState,
-  _dir: number,
-  _ui: TracksUi,
-): number {
-  return winFlash(oldState, newState_, FLASH_TIME);
-}
-
 function solve(
   orig: TracksState,
   curr: TracksState,
@@ -303,24 +284,21 @@ function solve(
 /** Boards are uniquely solvable: re-solve from the clues and flag every
  * player mark (square or edge) that contradicts the unique solution. A
  * non-uniquely-solvable board degrades to "no detectable mistakes". */
-function findMistakes(state: TracksState): readonly TracksMistake[] {
+function findMistakes(state: TracksState): readonly Point[] {
   const { w, h } = state;
   const board = stateToBoard(state);
   const strip = copyAndStrip(board, -1);
   if (tracksSolve(strip, DIFF_COUNT).ret < 1) return [];
-  const out: TracksMistake[] = [];
+  const out: Point[] = [];
   for (let i = 0; i < w * h; i++) {
     const x = i % w;
     const y = Math.floor(i / w);
     const solTrack = (strip.sflags[i] & S_TRACK) !== 0;
-    let wrong = false;
-    if (state.sflags[i] & S_TRACK && !solTrack) wrong = true;
-    if (state.sflags[i] & S_NOTRACK && solTrack) wrong = true;
-    const playerTrack = sEDirs(board, x, y, E_TRACK);
-    const playerNotrack = sEDirs(board, x, y, E_NOTRACK);
-    const solTrackEdges = sEDirs(strip, x, y, E_TRACK);
-    if (playerTrack & ~solTrackEdges) wrong = true; // a track edge that shouldn't be
-    if (playerNotrack & solTrackEdges) wrong = true; // a no-track edge that should be track
+    const solEdges = sEDirs(strip, x, y, E_TRACK);
+    const wrong =
+      state.sflags[i] & (solTrack ? S_NOTRACK : S_TRACK) ||
+      sEDirs(board, x, y, E_TRACK) & ~solEdges || // a track edge that shouldn't be
+      sEDirs(board, x, y, E_NOTRACK) & solEdges; // a no-track edge that should be track
     if (wrong) out.push({ x, y });
   }
   return out;
@@ -340,9 +318,8 @@ function hint(state: TracksState): HintResult<TracksMove, TracksHighlights> {
   return tracksHint(state);
 }
 
-/** Tracks' difficulty contract (`engine/difficulty.ts`). `tracksSolve` returns
- * `{ ret, maxDiff }` with `ret` −1 impossible, 0 non-converged, 1 uniquely
- * solved; `stateToBoard` on the initial state gives the clue-only board. */
+/** Tracks' difficulty contract (`engine/difficulty.ts`); `stateToBoard` on the
+ * initial state gives the clue-only board. */
 const difficulty: DifficultyContract<TracksParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
@@ -358,7 +335,7 @@ export const tracksGame: Game<
   TracksMove,
   TracksUi,
   TracksDrawState,
-  TracksMistake
+  Point
 > = {
   id: "tracks",
   wantsStatusbar: false,
@@ -379,7 +356,7 @@ export const tracksGame: Game<
     "disallow-consecutive-1-clues": p.singleOnes,
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -401,16 +378,16 @@ export const tracksGame: Game<
 
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: TracksParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tileSize = ts;
   },
   newDrawState,
   redraw,
 
-  flashLength,
+  flashLength: (oldState, newState) => winFlash(oldState, newState, FLASH_TIME),
 };
 
 registerGame(tracksGame);

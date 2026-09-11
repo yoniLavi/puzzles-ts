@@ -88,10 +88,11 @@ export function copyAndApplyDrag(b: Board, ui: TracksUi): Board {
   const y2 = Math.max(ui.dragSy, ui.dragEy);
   for (let x = x1; x <= x2; x++) {
     for (let y = y1; y <= y2; y++) {
-      const ff = b.sflags[y * w + x];
-      if (ui.clearing && !(ff & f)) continue;
-      if (!ui.clearing && ff & f) continue;
-      if (uiCanFlipSquare(b, x, y, ui.notrack)) after.sflags[y * w + x] ^= f;
+      // Clearing flips only squares that have the flag; laying, only those without.
+      const has = (b.sflags[y * w + x] & f) !== 0;
+      if (has === ui.clearing && uiCanFlipSquare(b, x, y, ui.notrack)) {
+        after.sflags[y * w + x] ^= f;
+      }
     }
   }
   return after;
@@ -117,23 +118,10 @@ export function moveDiff(before: Board, after: Board, solve: boolean): TracksMov
         ops.push({ kind: "edge", x, y, dir: df, track: false, set: (nnf & df) !== 0 });
       }
     }
-    if ((before.sflags[i] & S_NOTRACK) !== (after.sflags[i] & S_NOTRACK)) {
-      ops.push({
-        kind: "square",
-        x,
-        y,
-        track: false,
-        set: (after.sflags[i] & S_NOTRACK) !== 0,
-      });
-    }
-    if ((before.sflags[i] & S_TRACK) !== (after.sflags[i] & S_TRACK)) {
-      ops.push({
-        kind: "square",
-        x,
-        y,
-        track: true,
-        set: (after.sflags[i] & S_TRACK) !== 0,
-      });
+    for (const f of [S_NOTRACK, S_TRACK]) {
+      const was = (before.sflags[i] & f) !== 0;
+      const set = (after.sflags[i] & f) !== 0;
+      if (was !== set) ops.push({ kind: "square", x, y, track: f === S_TRACK, set });
     }
   }
   return { ops, solve };
