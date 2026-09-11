@@ -1,15 +1,17 @@
 /**
  * The four regular solids Cube can roll, and the 3-D transforms that
- * roll them. Faithful port of the geometry in `puzzles/cube.c`: vertices
+ * roll them. Port of the geometry in `puzzles/cube.c`: vertices
  * (3 floats each), faces (`order` vertex indices each), per-face outward
  * normals, an isometric `shear` for nice 2-D projection, and the `border`
  * margin each needs around the arena.
  *
  * A `Solid` is immutable reference data; the transforms return a fresh
- * oriented copy (GC instead of C's dup/free). The grid topology is tied
- * to the solid: a face order of 4 (only the cube) means a square grid;
- * order 3 (tetra/octa/icosa) means a triangular grid.
+ * oriented copy. The grid topology is tied to the solid: a face order of 4
+ * (only the cube) means a square grid; order 3 (tetra/octa/icosa) means a
+ * triangular grid.
  */
+
+import type { GridSquare } from "./grid.ts";
 
 export interface Solid {
   nvertices: number;
@@ -129,12 +131,6 @@ const ICOSAHEDRON: Solid = {
 /** Indexed by `SolidType`. */
 export const SOLIDS: readonly Solid[] = [TETRAHEDRON, CUBE, OCTAHEDRON, ICOSAHEDRON];
 
-const APPROXEQ_TOL = 0.1;
-
-export function approxEq(x: number, y: number): boolean {
-  return (x - y) * (x - y) < APPROXEQ_TOL;
-}
-
 /**
  * `out = M * v`, where the 9-element `m` is column-major exactly as in
  * cube.c's MATMUL: row 0 is (m[0], m[3], m[6]), row 1 (m[1], m[4],
@@ -147,22 +143,6 @@ function matmul(out: number[], base: number, m: number[], v: number[], vBase: nu
   out[base] = m[0] * xx + m[3] * yy + m[6] * zz;
   out[base + 1] = m[1] * xx + m[4] * yy + m[7] * zz;
   out[base + 2] = m[2] * xx + m[5] * yy + m[8] * zz;
-}
-
-/** Shallow-clone a solid's mutable geometry (vertices + normals) so the
- * transform routines can work in place without touching the reference
- * constants. faces/order/shear/border are shared (never mutated). */
-function cloneGeometry(solid: Solid): Solid {
-  return {
-    nvertices: solid.nvertices,
-    vertices: solid.vertices.slice(),
-    order: solid.order,
-    nfaces: solid.nfaces,
-    faces: solid.faces,
-    normals: solid.normals.slice(),
-    shear: solid.shear,
-    border: solid.border,
-  };
 }
 
 /** Negate the x and y of every vertex and normal (a reflection used to
@@ -192,7 +172,12 @@ export function transformPoly(
   key1: number,
   angle: number,
 ): Solid {
-  const ret = cloneGeometry(solid);
+  // Only the vertices and normals are transformed in place; the rest is shared.
+  const ret = {
+    ...solid,
+    vertices: solid.vertices.slice(),
+    normals: solid.normals.slice(),
+  };
   flipPoly(ret, flip);
 
   const vx = ret.vertices[key1 * 3 + 0] - ret.vertices[key0 * 3 + 0];
@@ -205,11 +190,8 @@ export function transformPoly(
   const ay = Math.sin(angle);
   const amatrix = [1, 0, 0, 0, ax, -ay, 0, ay, ax];
 
-  // vmatrix2 is vmatrix with the rotation 2x2 transposed (the inverse
-  // of the horizontal-alignment rotation).
-  const vmatrix2 = vmatrix.slice();
-  vmatrix2[1] = vy;
-  vmatrix2[3] = -vy;
+  // vmatrix with its 2x2 rotation transposed: the inverse rotation.
+  const vmatrix2 = [vx, vy, 0, -vy, vx, 0, 0, 0, 1];
 
   for (let i = 0; i < ret.nvertices; i++) {
     matmul(ret.vertices, 3 * i, vmatrix, ret.vertices, 3 * i);
@@ -232,10 +214,7 @@ export function transformPoly(
  * matched vertex indices (one per square corner), or `null` if any
  * corner fails to match exactly one vertex. Mirrors `align_poly`.
  */
-export function alignPolyKeys(
-  solid: Solid,
-  sq: { x: number; y: number; npoints: number; points: number[]; flip: boolean },
-): number[] | null {
+export function alignPolyKeys(solid: Solid, sq: GridSquare): number[] | null {
   const flip = sq.flip ? -1 : +1;
 
   let zmin = 0.0;
@@ -257,7 +236,7 @@ export function alignPolyKeys(
         index = i;
       }
     }
-    if (matches !== 1 || index < 0) return null;
+    if (matches !== 1) return null;
     pkey[j] = index;
   }
 
@@ -283,6 +262,6 @@ export function lowestFace(solid: Solid): number {
   return best;
 }
 
-function sqr(x: number): number {
+export function sqr(x: number): number {
   return x * x;
 }

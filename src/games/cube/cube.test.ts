@@ -165,10 +165,8 @@ describe("cube rolling", () => {
     // Hand-built description: blue squares are irrelevant for reversal;
     // pick start square index 5 (interior: x=1,y=1) with no blue squares.
     const area = gridArea(p.d1, p.d2, SOLIDS[p.solid].order);
-    const blue = new Uint8Array(area);
     const desc = `${"0".repeat(Math.floor((area + 3) / 4))},5`;
     const start = newState(p, desc);
-    void blue;
 
     const rolledRight = executeMove(start, { dir: "R" });
     expect(rolledRight.current).not.toBe(start.current);
@@ -257,6 +255,7 @@ describe("cube Game wiring", () => {
     const { desc } = newDesc(p, rng);
     const state = newState(p, desc);
     expect(cubeGame.status(state)).toBe("ongoing");
+    expect(cubeGame.status({ ...state, completed: 7 })).toBe("solved");
   });
 
   it("reports a directions mask for square grids with no diagonals", () => {

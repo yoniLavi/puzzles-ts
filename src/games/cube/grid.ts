@@ -1,10 +1,10 @@
 /**
- * Grid-square enumeration for Cube's two topologies, a faithful port of
+ * Grid-square enumeration for Cube's two topologies, a port of
  * `enum_grid_squares` in cube.c. The cube (face order 4) rolls on a
  * square grid; the tetra/octa/icosa (order 3) roll on a triangular grid
  * whose d1/d2 shape it into a hexagon (d1==d2), a triangle (d2==0), or a
- * general hexagon. Square order matters: the game description indexes
- * blue squares by enumeration order, so this must match C exactly.
+ * general hexagon. The game description indexes blue squares by
+ * enumeration order, so changing the order changes every game ID.
  */
 
 import { SOLIDS } from "./solids.ts";
@@ -86,7 +86,7 @@ export function enumGridSquares(
     return out;
   }
 
-  const theight = Math.sqrt(3) / 2.0;
+  const triangleHeight = Math.sqrt(3) / 2.0;
   let firstix = -1;
 
   for (let row = 0; row < d1 + d2; row++) {
@@ -104,14 +104,13 @@ export function enumGridSquares(
     for (let i = 0; i < rowlen; i++) {
       let ix = 2 * i - (rowlen - 1);
       const x = ix * 0.5;
-      const y = theight * row;
+      const y = triangleHeight * row;
 
       const directions = new Array(8).fill(0);
       directions[Direction.Left] = 0x03; // 0,1
       directions[Direction.Right] = 0x06; // 1,2
       directions[Direction.Up] = 0x05; // 0,2
-      directions[Direction.Down] = 0; // invalid
-      // Both up-diagonals go up; the down-diagonals go left and right.
+      // No Down; both up-diagonals go up, the down-diagonals left and right.
       directions[Direction.UpLeft] = directions[Direction.UpRight] =
         directions[Direction.Up];
       directions[Direction.DownLeft] = directions[Direction.Left];
@@ -122,9 +121,9 @@ export function enumGridSquares(
 
       out.push({
         x,
-        y: y + theight / 3,
+        y: y + triangleHeight / 3,
         npoints: 3,
-        points: [x - 0.5, y, x, y + theight, x + 0.5, y],
+        points: [x - 0.5, y, x, y + triangleHeight, x + 0.5, y],
         directions,
         flip: true,
         tetraClass: ((row + (ix & 1)) & 2) ^ (ix & 3),
@@ -135,14 +134,13 @@ export function enumGridSquares(
     for (let i = 0; i < rowlen + other; i++) {
       let ix = 2 * i - (rowlen + other - 1);
       const x = ix * 0.5;
-      const y = theight * row;
+      const y = triangleHeight * row;
 
       const directions = new Array(8).fill(0);
       directions[Direction.Left] = 0x06; // 1,2
       directions[Direction.Right] = 0x03; // 0,1
       directions[Direction.Down] = 0x05; // 0,2
-      directions[Direction.Up] = 0; // invalid
-      // Both down-diagonals go down; the up-diagonals go left and right.
+      // No Up; both down-diagonals go down, the up-diagonals left and right.
       directions[Direction.DownLeft] = directions[Direction.DownRight] =
         directions[Direction.Down];
       directions[Direction.UpLeft] = directions[Direction.Left];
@@ -153,9 +151,9 @@ export function enumGridSquares(
 
       out.push({
         x,
-        y: y + (2 * theight) / 3,
+        y: y + (2 * triangleHeight) / 3,
         npoints: 3,
-        points: [x + 0.5, y + theight, x, y, x - 0.5, y + theight],
+        points: [x + 0.5, y + triangleHeight, x, y, x - 0.5, y + triangleHeight],
         directions,
         flip: false,
         tetraClass: ((row + (ix & 1)) & 2) ^ (ix & 3),

@@ -36,7 +36,15 @@ import {
   redraw,
   setTileSize,
 } from "./render.ts";
-import { alignPolyKeys, lowestFace, SOLIDS, transformPoly } from "./solids.ts";
+import {
+  alignPolyKeys,
+  flipPoly,
+  lowestFace,
+  SOLIDS,
+  type Solid,
+  sqr,
+  transformPoly,
+} from "./solids.ts";
 import {
   type CubeMove,
   type CubeParams,
@@ -44,7 +52,6 @@ import {
   decodeParams,
   defaultParams,
   encodeParams,
-  type KeyPair,
   newState,
   presets,
   validateDesc,
@@ -56,76 +63,53 @@ export type CubeUi = Record<string, never>;
 
 // --- shared move logic ------------------------------------------------
 
-interface MoveDest {
-  dest: number;
-  skey: [number, number];
-  dkey: [number, number];
-}
-
 /**
- * The destination square for rolling `direction` from `state.current`,
- * plus the key points (corner indices) shared between the source and
- * destination squares. `dest` is -1 if the move runs off the grid.
- * Mirrors `find_move_dest`.
+ * The square that rolling `direction` from `state.current` lands on, and
+ * `skey`, the two corners of the current square the solid rolls over; null
+ * if the roll runs off the grid. Mirrors `find_move_dest`.
  */
-function findMoveDest(state: CubeState, direction: Direction): MoveDest {
+function findMoveDest(
+  state: CubeState,
+  direction: Direction,
+): { dest: number; skey: [number, number] } | null {
   const sq = state.grid[state.current];
   const mask = sq.directions[direction];
-  if (mask === 0) return { dest: -1, skey: [0, 0], dkey: [0, 0] };
+  if (mask === 0) return null;
 
-  const points: number[] = [];
   const skey: number[] = [];
-  for (let i = 0; i < sq.npoints; i++) {
-    if (mask & (1 << i)) {
-      points.push(sq.points[i * 2], sq.points[i * 2 + 1]);
-      skey.push(i);
-    }
-  }
+  for (let i = 0; i < sq.npoints; i++) if (mask & (1 << i)) skey.push(i);
+  const near = (s2: typeof sq, j: number, k: number) =>
+    sqr(s2.points[j * 2] - sq.points[k * 2]) +
+      sqr(s2.points[j * 2 + 1] - sq.points[k * 2 + 1]) <
+    0.1;
 
+  // The destination is the other square sharing both rolled-over corners.
   for (let i = 0; i < state.grid.length; i++) {
     if (i === state.current) continue;
     const s2 = state.grid[i];
-    const dkey: number[] = [];
     let match = 0;
     for (let j = 0; j < s2.npoints; j++) {
-      let d = sqr(s2.points[j * 2] - points[0]) + sqr(s2.points[j * 2 + 1] - points[1]);
-      if (d < 0.1) dkey[match++] = j;
-      d = sqr(s2.points[j * 2] - points[2]) + sqr(s2.points[j * 2 + 1] - points[3]);
-      if (d < 0.1) dkey[match++] = j;
+      if (near(s2, j, skey[0])) match++;
+      if (near(s2, j, skey[1])) match++;
     }
-    if (match === 2) {
-      return { dest: i, skey: [skey[0], skey[1]], dkey: [dkey[0], dkey[1]] };
-    }
+    if (match === 2) return { dest: i, skey: [skey[0], skey[1]] };
   }
-
-  return { dest: -1, skey: [skey[0], skey[1]], dkey: [0, 0] };
+  return null;
 }
 
-const DIR_OF_CHAR: Record<CubeMove["dir"], Direction> = {
-  L: Direction.Left,
-  R: Direction.Right,
-  U: Direction.Up,
-  D: Direction.Down,
-};
-
-const CHAR_OF_DIR: Partial<Record<Direction, CubeMove["dir"]>> = {
-  [Direction.Left]: "L",
-  [Direction.Right]: "R",
-  [Direction.Up]: "U",
-  [Direction.Down]: "D",
-};
+/** Move letters, indexed by the orthogonal `Direction`s. */
+const DIR_CHARS: readonly CubeMove["dir"][] = ["L", "R", "U", "D"];
 
 export function executeMove(from: CubeState, move: CubeMove): CubeState {
-  // Cube's move is one object shape, not a union, so there is no discriminant
-  // to narrow to `never`: check the one field the dispatch reads. Without this
-  // an unknown direction indexes the table to `undefined` and comes out as
-  // "cube: illegal move" — true of a real roll into a wall, and misleading
-  // about a move from another build.
-  if (!Object.hasOwn(DIR_OF_CHAR, move.dir)) rejectMove(move, "cube: executeMove");
+  // Cube's move has no discriminant to narrow to `never`, so check the one
+  // field the dispatch reads: an unknown letter from another build must be
+  // rejected as unrecognized, not reported as a roll into a wall.
+  const direction: Direction = DIR_CHARS.indexOf(move.dir);
+  if (direction < 0) rejectMove(move, "cube: executeMove");
 
-  const direction = DIR_OF_CHAR[move.dir];
-  const { dest, skey } = findMoveDest(from, direction);
-  if (dest < 0) throw new Error("cube: illegal move");
+  const roll = findMoveDest(from, direction);
+  if (!roll) throw new Error("cube: illegal move");
+  const { dest, skey } = roll;
 
   const solid = SOLIDS[from.solidIndex];
   const grid = from.grid;
@@ -135,8 +119,6 @@ export function executeMove(from: CubeState, move: CubeMove): CubeState {
   if (!allPkey) throw new Error("cube: source alignment failed");
   const pkey: [number, number] = [allPkey[skey[0]], allPkey[skey[1]]];
 
-  // Roll angle: the dihedral angle between the two faces sharing that
-  // edge — acos of the dot product of their normals.
   let angle = dihedralAngle(solid, pkey);
 
   // HACK (from cube.c): for the cube, both +angle and -angle align, so
@@ -147,11 +129,11 @@ export function executeMove(from: CubeState, move: CubeMove): CubeState {
   // seats correctly; if not, the rotation went the wrong way — flip the
   // sign and try once more (mirrors cube.c's try-both approach).
   let poly = transformPoly(solid, grid[from.current].flip, pkey[0], pkey[1], angle);
-  flipInPlace(poly, grid[dest].flip);
+  flipPoly(poly, grid[dest].flip);
   if (!alignPolyKeys(poly, grid[dest])) {
     angle = -angle;
     poly = transformPoly(solid, grid[from.current].flip, pkey[0], pkey[1], angle);
-    flipInPlace(poly, grid[dest].flip);
+    flipPoly(poly, grid[dest].flip);
     if (!alignPolyKeys(poly, grid[dest]))
       throw new Error("cube: could not seat solid after roll");
   }
@@ -177,13 +159,8 @@ export function executeMove(from: CubeState, move: CubeMove): CubeState {
   // already complete (a finished solid may roll freely as a small reward).
   if (!completed) {
     const lf = lowestFace(solid);
-    const tmp = faceColors[lf];
-    faceColors[lf] = blue[dest];
-    blue[dest] = tmp;
-
-    let allBlue = 0;
-    for (let i = 0; i < solid.nfaces; i++) if (faceColors[i]) allBlue++;
-    if (allBlue === solid.nfaces) completed = movecount;
+    [faceColors[lf], blue[dest]] = [blue[dest], faceColors[lf]];
+    if (faceColors.every((c) => c)) completed = movecount;
   }
 
   // Resting key points for the static (non-animated) display.
@@ -197,10 +174,10 @@ export function executeMove(from: CubeState, move: CubeMove): CubeState {
     blue,
     completed,
     movecount,
-    dpkey: [restKeys[0], restKeys[1]] as KeyPair,
-    dgkey: [0, 1] as KeyPair,
-    spkey: pkey as KeyPair,
-    sgkey: [skey[0], skey[1]] as KeyPair,
+    dpkey: [restKeys[0], restKeys[1]],
+    dgkey: [0, 1],
+    spkey: pkey,
+    sgkey: skey,
     previous: from.current,
     angle,
   };
@@ -208,10 +185,7 @@ export function executeMove(from: CubeState, move: CubeMove): CubeState {
 
 /** Dihedral angle across the edge between solid vertices `pkey[0]` and
  * `pkey[1]`: acos of the dot product of the two faces sharing it. */
-function dihedralAngle(
-  solid: { nfaces: number; order: number; faces: number[]; normals: number[] },
-  pkey: [number, number],
-): number {
+function dihedralAngle(solid: Solid, pkey: [number, number]): number {
   const f: number[] = [];
   for (let i = 0; i < solid.nfaces; i++) {
     let match = 0;
@@ -224,22 +198,7 @@ function dihedralAngle(
   let dp = 0;
   for (let i = 0; i < 3; i++)
     dp += solid.normals[f[0] * 3 + i] * solid.normals[f[1] * 3 + i];
-  return Math.acos(clamp(dp, -1, 1));
-}
-
-function flipInPlace(
-  poly: { nvertices: number; nfaces: number; vertices: number[]; normals: number[] },
-  flip: boolean,
-): void {
-  if (!flip) return;
-  for (let i = 0; i < poly.nvertices; i++) {
-    poly.vertices[i * 3 + 0] *= -1;
-    poly.vertices[i * 3 + 1] *= -1;
-  }
-  for (let i = 0; i < poly.nfaces; i++) {
-    poly.normals[i * 3 + 0] *= -1;
-    poly.normals[i * 3 + 1] *= -1;
-  }
+  return Math.acos(Math.min(1, Math.max(-1, dp)));
 }
 
 // --- input ------------------------------------------------------------
@@ -294,10 +253,8 @@ function interpretMove(
     direction = found;
   }
 
-  if (findMoveDest(state, direction).dest < 0) return null;
-
-  const ch = CHAR_OF_DIR[direction];
-  return ch ? { dir: ch } : null;
+  if (!findMoveDest(state, direction)) return null;
+  return { dir: DIR_CHARS[direction] };
 }
 
 /** Pick a roll direction from a left-click bearing relative to the
@@ -308,12 +265,9 @@ function directionFromClick(
   ds: CubeDrawState,
   p: Point,
 ): Direction | null {
-  const gs = ds.gridscale;
-  const ox = ds.ox;
-  const oy = ds.oy;
   const sq = state.grid[state.current];
-  const cx = Math.trunc(sq.x * gs) + ox;
-  const cy = Math.trunc(sq.y * gs) + oy;
+  const cx = Math.trunc(sq.x * ds.gridscale) + ds.ox;
+  const cy = Math.trunc(sq.y * ds.gridscale) + ds.oy;
   if (p.x === cx && p.y === cy) return null;
 
   const angle = Math.atan2(p.y - cy, p.x - cx);
@@ -347,16 +301,6 @@ function statusbarText(state: CubeState): string {
 
 function status(state: CubeState): GameStatus {
   return state.completed > 0 ? "solved" : "ongoing";
-}
-
-// --- helpers ----------------------------------------------------------
-
-function sqr(x: number): number {
-  return x * x;
-}
-
-function clamp(x: number, lo: number, hi: number): number {
-  return x < lo ? lo : x > hi ? hi : x;
 }
 
 // --- Game object ------------------------------------------------------
@@ -406,16 +350,15 @@ export const cubeGame: Game<CubeParams, CubeState, CubeMove, CubeUi, CubeDrawSta
       },
     },
   ],
-  // Keys/shape match the `cube` config template in augmentation.ts
-  // ("{type-of-solid:Tetrahedron|Cube|Octahedron|Icosahedron}, {width-top}x{height-bottom}"):
-  // `type-of-solid` is the zero-based SolidType index, the dimensions are d1/d2.
+  // Keys match the `cube` template in augmentation.ts; `type-of-solid` is the
+  // zero-based SolidType index.
   describeParams: (p) => ({
     "type-of-solid": p.solid,
     "width-top": p.d1,
     "height-bottom": p.d2,
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,

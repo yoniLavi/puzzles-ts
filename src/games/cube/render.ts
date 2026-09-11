@@ -2,7 +2,7 @@
  * Cube rendering: draw the arena's grid squares, then the polyhedron
  * projected to 2-D with its isometric shear and back-face culling, with a
  * roll animation interpolating the solid's orientation between squares.
- * Faithful port of `game_redraw` in cube.c.
+ * Port of `game_redraw` in cube.c.
  *
  * Cube fully repaints every frame (a handful of polygons — cheap), so
  * there is no per-tile cache. The engine emits no pixels of its own; the

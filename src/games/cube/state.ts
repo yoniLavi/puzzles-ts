@@ -1,13 +1,8 @@
-/**
- * Cube parameters, state, and the game-description codec. Faithful port
- * of the corresponding pieces of cube.c, but idiomatic: immutable state,
- * a `Uint8Array` blue mask (one byte per square) rather than a packed
- * bitset, typed key-point pairs, and GC instead of dup/free.
- */
+/** Cube parameters, state, and the game-description codec. */
 
 import { parseDimensions } from "../../engine/params.ts";
 import { enumGridSquares, type GridSquare, gridArea } from "./grid.ts";
-import { alignPolyKeys, SOLIDS, type Solid, SolidType } from "./solids.ts";
+import { alignPolyKeys, SOLIDS, SolidType } from "./solids.ts";
 
 export interface CubeParams {
   /** A `SolidType`. */
@@ -19,9 +14,8 @@ export interface CubeParams {
 }
 
 /** A roll in one of the four orthogonal directions. Diagonal inputs on
- * triangular grids are resolved to the equivalent orthogonal roll before
- * a move is produced, so a stored/serialized move is always one of these
- * four — JSON-safe, so the default move codec suffices. */
+ * triangular grids resolve to the equivalent orthogonal roll, so a stored
+ * move is always one of these four (JSON-safe: the default codec suffices). */
 export type CubeMove = { dir: "L" | "R" | "U" | "D" };
 
 /** A key-point pair: indices into either a grid square's corners or the
@@ -31,8 +25,7 @@ export type KeyPair = readonly [number, number];
 export interface CubeState {
   readonly params: CubeParams;
   readonly solidIndex: number;
-  /** The arena, derived from params; shared by reference across clones
-   * (it never changes for a given params, like C's refcounted grid). */
+  /** The arena, derived from params; never changes, so clones share it. */
   readonly grid: GridSquare[];
   /** Paint per polyhedron face: 1 = blue, 0 = blank. */
   readonly faceColors: Int32Array;
@@ -59,22 +52,15 @@ export function defaultParams(): CubeParams {
   return { solid: SolidType.Cube, d1: 4, d2: 4 };
 }
 
-interface Preset {
-  name: string;
-  params: CubeParams;
-}
-
-const PRESETS: Preset[] = [
-  { name: "Cube", params: { solid: SolidType.Cube, d1: 4, d2: 4 } },
-  { name: "Tetrahedron", params: { solid: SolidType.Tetrahedron, d1: 1, d2: 2 } },
-  { name: "Octahedron", params: { solid: SolidType.Octahedron, d1: 2, d2: 2 } },
-  { name: "Icosahedron", params: { solid: SolidType.Icosahedron, d1: 3, d2: 3 } },
-];
-
 export function presets() {
   return {
     title: "Type",
-    submenu: PRESETS.map((p) => ({ title: p.name, params: p.params })),
+    submenu: [
+      { title: "Cube", params: { solid: SolidType.Cube, d1: 4, d2: 4 } },
+      { title: "Tetrahedron", params: { solid: SolidType.Tetrahedron, d1: 1, d2: 2 } },
+      { title: "Octahedron", params: { solid: SolidType.Octahedron, d1: 2, d2: 2 } },
+      { title: "Icosahedron", params: { solid: SolidType.Icosahedron, d1: 3, d2: 3 } },
+    ],
   };
 }
 
@@ -84,20 +70,15 @@ export function encodeParams(p: CubeParams, _full: boolean): string {
   return `${SOLID_LETTERS[p.solid]}${p.d1}x${p.d2}`;
 }
 
+/** An optional solid letter, then `WxH` (or `N` for both). */
 export function decodeParams(s: string): CubeParams {
-  const ret = defaultParams();
-  let i = 0;
   const letter = SOLID_LETTERS.indexOf(s[0]);
-  if (letter >= 0) {
-    ret.solid = letter;
-    i = 1;
-  }
-  // `WxH`-or-square dimension prefix (shared engine helper, atoi-like),
-  // parsed from just past the optional solid letter.
-  const dims = parseDimensions(s, i);
-  ret.d1 = dims.w;
-  ret.d2 = dims.h;
-  return ret;
+  const dims = parseDimensions(s, letter >= 0 ? 1 : 0);
+  return {
+    solid: letter >= 0 ? letter : defaultParams().solid,
+    d1: dims.w,
+    d2: dims.h,
+  };
 }
 
 export function validateParams(p: CubeParams, _full: boolean): string | null {
@@ -147,83 +128,53 @@ export function squareClass(sq: GridSquare, nclasses: number): number {
 
 // --- game description -------------------------------------------------
 
+// A desc is the blue mask in hex, four squares per digit with the first
+// square in the high bit, then a comma and the start square (cube.c's format).
+
 const HEX = "0123456789ABCDEF";
 
 export function validateDesc(p: CubeParams, desc: string): string | null {
   const area = gridArea(p.d1, p.d2, SOLIDS[p.solid].order);
   const hexlen = Math.floor((area + 3) / 4);
-  for (let j = 0; j < hexlen; j++) {
-    const c = desc[j];
-    if (c >= "0" && c <= "9") continue;
-    if (c >= "A" && c <= "F") continue;
-    if (c >= "a" && c <= "f") continue;
+  const hex = desc.slice(0, hexlen);
+  if (hex.length < hexlen || !/^[0-9A-Fa-f]*$/.test(hex))
     return "Not enough hex digits at start of string";
-  }
   if (desc[hexlen] !== ",") return "Expected ',' after hex digits";
-  let i = hexlen + 1;
-  if (i >= desc.length) return "Expected decimal integer after ','";
-  for (; i < desc.length; i++) {
-    if (desc[i] < "0" || desc[i] > "9") return "Expected decimal integer after ','";
-  }
+  if (!/^[0-9]+$/.test(desc.slice(hexlen + 1)))
+    return "Expected decimal integer after ','";
   return null;
 }
 
-function hexValue(c: string): number {
-  if (c >= "0" && c <= "9") return c.charCodeAt(0) - 48;
-  if (c >= "A" && c <= "F") return c.charCodeAt(0) - 55;
-  if (c >= "a" && c <= "f") return c.charCodeAt(0) - 87;
-  return -1;
-}
-
+/** `desc` has passed `validateDesc` (or came from `newDesc`). */
 export function newState(p: CubeParams, desc: string): CubeState {
-  const solid: Solid = SOLIDS[p.solid];
+  const solid = SOLIDS[p.solid];
   const grid = enumGridSquares(p.solid, p.d1, p.d2);
   const nsquares = grid.length;
 
-  const faceColors = new Int32Array(solid.nfaces);
   const blue = new Uint8Array(nsquares);
+  for (let i = 0; i < nsquares; i++)
+    blue[i] = (Number.parseInt(desc[i >> 2], 16) >> (3 - (i & 3))) & 1;
 
-  // Parse the hex blue mask (4 squares per nibble, MSB first).
-  let pos = 0;
-  let j = 8;
-  let v = 0;
-  for (let i = 0; i < nsquares; i++) {
-    if (j === 8) {
-      const hv = hexValue(desc[pos++] ?? "");
-      if (hv < 0) break;
-      v = hv;
-    }
-    if (v & j) blue[i] = 1;
-    j >>= 1;
-    if (j === 0) j = 8;
-  }
-
-  // The start square follows the comma.
-  let p2 = pos;
-  if (desc[p2] === ",") p2++;
-  let current = Number.parseInt(desc.slice(p2), 10);
-  if (!Number.isFinite(current) || current < 0 || current >= nsquares) current = 0;
+  // validateDesc does not bound the start square; out of range means square 0.
+  let current = Number.parseInt(desc.slice(desc.indexOf(",") + 1), 10);
+  if (current >= nsquares) current = 0;
 
   // Seat the solid on its start square to get the resting key points.
   const pkey = alignPolyKeys(solid, grid[current]);
   if (!pkey) throw new Error("cube: failed to align solid on start square");
-
-  const dpkey: KeyPair = [pkey[0], pkey[1]];
-  const spkey: KeyPair = [pkey[0], pkey[1]];
-  const dgkey: KeyPair = [0, 1];
-  const sgkey: KeyPair = [0, 1];
+  const restKeys: KeyPair = [pkey[0], pkey[1]];
 
   return {
     params: p,
     solidIndex: p.solid,
     grid,
-    faceColors,
+    faceColors: new Int32Array(solid.nfaces),
     blue,
     current,
-    sgkey,
-    dgkey,
-    spkey,
-    dpkey,
+    sgkey: [0, 1],
+    dgkey: [0, 1],
+    spkey: restKeys,
+    dpkey: restKeys,
     previous: current,
     angle: 0,
     completed: 0,
@@ -231,23 +182,13 @@ export function newState(p: CubeParams, desc: string): CubeState {
   };
 }
 
-/** Encode a blue mask + start square as a game description (the hex
- * format cube.c uses). Shared by `newDesc`. */
+/** Encode a blue mask + start square as a game description. */
 export function encodeDesc(blue: Uint8Array, start: number): string {
   let out = "";
-  let j = 0;
-  let k = 8;
-  for (let i = 0; i < blue.length; i++) {
-    if (blue[i]) j |= k;
-    k >>= 1;
-    if (!k) {
-      out += HEX[j];
-      k = 8;
-      j = 0;
-    }
+  for (let i = 0; i < blue.length; i += 4) {
+    let digit = 0;
+    for (let k = 0; k < 4; k++) if (blue[i + k]) digit |= 8 >> k;
+    out += HEX[digit];
   }
-  if (k !== 8) out += HEX[j];
   return `${out},${start}`;
 }
-
-export { gridArea };
