@@ -3,9 +3,10 @@
  * per-cell diffed loop drawing a grid-outlined tile (black fill for a
  * black square, the flash fill on completion, white for a known-white
  * cell, otherwise the background), corner brackets under the keyboard
- * cursor, a small centered dot for a white mark, and the clue number. Rule violations are recomputed every frame via
- * `findErrors` and drawn in the error color — Range highlights errors
- * live, which is upstream behavior, not the fork's Check & Save.
+ * cursor, a small centered dot for a white mark, and the clue number.
+ * Rule violations are recomputed every frame via `findErrors` and drawn in
+ * the error color — Range highlights errors live, which is upstream
+ * behavior, not the fork's Check & Save.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -30,6 +31,7 @@ import type { RangeHint } from "./index.ts";
 import { findErrors } from "./solver.ts";
 import {
   BLACK,
+  type Cell,
   idx,
   type RangeMove,
   type RangeParams,
@@ -102,10 +104,15 @@ const F_ERROR = 1 << 16;
 const F_CURSOR = 1 << 17;
 const F_FLASH = 1 << 18;
 const F_MISTAKE = 1 << 19;
-const F_HINT_TARGET = 1 << 20; // this cell is the displayed hint's target
-const F_HINT_REF = 1 << 22; // this cell is a hint area cell (light shade)
-const F_HINT_BLACKREF = 1 << 23; // a black premise cell, outlined in COL_HINT
 const F_HINT_CLUE = 1 << 21; // the clue driving the deduction — digit in COL_HINT
+
+/** A cell's role in the displayed hint, with its cache flag. The `target` is
+ * the forced cell, black or white alike (the narration says which mark),
+ * ringed in COL_HINT; the `area` is the deduction's evidence, outlined in
+ * COL_HINT_CELL; a `blackRef` is a black premise cell, kept black and ringed
+ * in COL_HINT_BLACKREF. */
+const HINT_FLAG = { none: 0, target: 1 << 20, area: 1 << 22, blackRef: 1 << 23 };
+type HintKind = keyof typeof HINT_FLAG;
 
 export interface RangeDrawState {
   started: boolean;
@@ -131,12 +138,6 @@ export function setTileSize(ds: RangeDrawState, ts: number): void {
 
 // --- cell drawing ----------------------------------------------------------
 
-/** Hint highlight for a cell: 0 none, 1 forced target (black *or* white —
- * both render as the same blue highlight; the narration says which mark),
- * 3 area (premise) cell, 4 black premise cell (kept black, outlined in
- * COL_HINT — e.g. the adjacent black that forces a neighbor white). */
-type HintKind = 0 | 1 | 3 | 4;
-
 function drawCell(
   dr: GameDrawing,
   ts: number,
@@ -147,11 +148,9 @@ function drawCell(
   cursor: boolean,
   flash: boolean,
   hintKind: HintKind,
-  /** This clue drives the displayed deduction: its digit draws `COL_HINT` so
-   * the narration can say "the highlighted 5" instead of "clue 5", which names
-   * nothing when its own shaded run holds a second 5. Orthogonal to
-   * `hintKind` — the clue is *inside* the shaded area, so it keeps that fill
-   * and changes only its digit (Light Up's recolored clue). */
+  /** This clue drives the displayed deduction, so its digit draws `COL_HINT`
+   * (see `RangeHint.clue`). The clue is *inside* the outlined area, so it
+   * keeps that outline and changes only its digit. */
   clueRef = false,
 ): void {
   const b = border(ts);
@@ -165,10 +164,8 @@ function drawCell(
   // fill; a known-white cell (clue or white mark) is pure white; an undecided
   // cell is the soft-gray background. The cursor is corner brackets, not a
   // fill, so a clue cell under it keeps its white and its digit keeps its ink.
-  // No hint role appears here — the target is ringed and the evidence
-  // outlined, below. A Range premise area reaches along a clue's arms and takes
-  // in the clue cell itself, so it is not the all-undecided region it looks
-  // like: it carries the digit the deduction is counting with.
+  // No hint role is a fill either: a Range premise area runs along a clue's
+  // arms and takes in the clue cell itself, whose digit the deduction counts.
   const fill =
     value === BLACK
       ? error
@@ -187,29 +184,22 @@ function drawCell(
   if (error) drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_ERROR);
   if (cursor) drawRectCorners(dr, tx, ty, Math.floor((ts * 3) / 10), COL_CURSOR);
 
-  // The evidence area's outline and the acted-on cell's ring, on the cell's own
-  // border. The evidence first, so a cell that is both keeps the target's mark.
+  // The hint marks sit on the cell's own border. A black premise gets a doubled
+  // inset outline so "this shaded square is the reason" reads distinct from the
+  // blue ring of the forced move. The target is never previewed with its mark:
+  // a placed square or dot would read as already done, so the narration says
+  // which mark and auto-hint applies it for real.
   const band = {
     box: { x: x + 1, y: y + 1, w: ts - 1, h: ts - 1 },
     outer: 0,
     inner: Math.max(2, ts >> 4),
   };
-  if (hintKind === 3) drawMarkSides(dr, band, MARK_ALL, COL_HINT_CELL);
-  if (hintKind === 1) drawMarkSides(dr, band, MARK_ALL, COL_HINT);
-
-  // A black premise cell stays black; ring it in COL_HINT_BLACKREF (a doubled
-  // 2px inset outline) so "this shaded square is the reason" reads distinct from
-  // the COL_HINT blue of the forced move.
-  if (hintKind === 4) {
+  if (hintKind === "area") drawMarkSides(dr, band, MARK_ALL, COL_HINT_CELL);
+  if (hintKind === "target") drawMarkSides(dr, band, MARK_ALL, COL_HINT);
+  if (hintKind === "blackRef") {
     drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_HINT_BLACKREF);
     drawRectOutline(dr, x + 2, y + 2, ts - 3, ts - 3, COL_HINT_BLACKREF);
   }
-
-  // No forced-mark preview: the hint only *highlights* the target cell blue
-  // ("act here"); it does not place the black square / white dot the player
-  // must enter themselves — doing so reads as already-done. The narration
-  // says which mark; auto-hint applies it for real in animation mode.
-  // (Owner-directed, 2026-06-20 — see hint-authoring.md.)
 
   if (value === WHITE) {
     dr.drawRect(
@@ -250,7 +240,7 @@ export function redraw(
   _animTime: number,
   flashTime: number,
   hint?: HintStep<RangeMove, RangeHint>,
-  mistakes?: readonly { r: number; c: number }[],
+  mistakes?: readonly Cell[],
 ): void {
   const ts = ds.tilesize;
   const { w, h, grid } = state;
@@ -272,8 +262,6 @@ export function redraw(
   // highlighted the same red as live rule violations.
   const mistakeSet = mistakes ? new Set(mistakes.map((m) => idx(m.r, m.c, w))) : null;
 
-  // The displayed hint step: the target cell, the deduction's area cells
-  // (light-blue shade) and any black premise cells (outlined).
   const hl = hint?.highlights;
   const hintTarget = hl ? idx(hl.target.r, hl.target.c, w) : -1;
   const hintAreaSet = hl ? new Set(hl.area.map((m) => idx(m.r, m.c, w))) : null;
@@ -290,17 +278,20 @@ export function redraw(
       const mistake = mistakeSet?.has(i) ?? false;
       const cursor = ui.cursor.visible && r === ui.cursor.y && c === ui.cursor.x;
       const hintKind: HintKind =
-        i === hintTarget ? 1 : hintBlackSet?.has(i) ? 4 : hintAreaSet?.has(i) ? 3 : 0;
+        i === hintTarget
+          ? "target"
+          : hintBlackSet?.has(i)
+            ? "blackRef"
+            : hintAreaSet?.has(i)
+              ? "area"
+              : "none";
       const clueRef = i === hintClue;
 
-      let packed = value + 2;
+      let packed = (value + 2) | HINT_FLAG[hintKind];
       if (error) packed |= F_ERROR;
       if (cursor) packed |= F_CURSOR;
       if (flash) packed |= F_FLASH;
       if (mistake) packed |= F_MISTAKE;
-      if (hintKind === 1) packed |= F_HINT_TARGET;
-      if (hintKind === 3) packed |= F_HINT_REF;
-      if (hintKind === 4) packed |= F_HINT_BLACKREF;
       if (clueRef) packed |= F_HINT_CLUE;
 
       if (ds.cache[i] !== packed) {

@@ -76,8 +76,8 @@ describe("hint color legend", () => {
     expect(rec.ops.some((o) => o.op === "line" && o.color === COL_HINT_BLACKREF)).toBe(
       true,
     );
-    // The forced cell fills COL_HINT (a `rect` body) — a different color from
-    // the premise ring.
+    // The forced cell is ringed in COL_HINT (drawn as `rect` sides) — a
+    // different color from the premise ring.
     expect(rec.ops.some((o) => o.op === "rect" && o.color === COL_HINT)).toBe(true);
     // The premise ring is NOT drawn in the target's COL_HINT.
     expect(rec.ops.some((o) => o.op === "line" && o.color === COL_HINT)).toBe(false);

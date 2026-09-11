@@ -7,9 +7,8 @@
  *
  * **Every Range step shows a second mark** — a shaded area, or (for
  * `adjacency`) a ringed black premise — so no sentence may leave "this cell"
- * bare: with two marks in view a bare deictic points at neither
- * (`disambiguate-hint-deixis`). The tie is the relation the rule itself
- * guarantees, never a color name:
+ * bare: with two marks in view a bare deictic points at neither. The tie is
+ * the relation the rule itself guarantees, never a color name:
  *
  * - `satisfied` / `overrun` place the target at `1 + rl[RUN_WHITE][j]` steps
  *   from the clue — that is, the **first cell past the shaded run** in one of

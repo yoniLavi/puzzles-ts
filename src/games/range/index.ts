@@ -22,7 +22,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { fromCoord } from "../../engine/geometry.ts";
 import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import {
   CURSOR_SELECT,
@@ -38,7 +38,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { say } from "./hint-text.ts";
 import {
   border,
@@ -52,6 +52,8 @@ import {
   setTileSize,
 } from "./render.ts";
 import {
+  DC,
+  DR,
   deduceHintPlan,
   findErrors,
   fullSolve,
@@ -60,6 +62,7 @@ import {
 } from "./solver.ts";
 import {
   BLACK,
+  type Cell,
   cellValueToGrid,
   cloneState,
   decodeParams,
@@ -67,6 +70,7 @@ import {
   EMPTY,
   encodeDesc,
   encodeParams,
+  gridValueToCell,
   idx,
   newState,
   outOfBounds,
@@ -84,29 +88,19 @@ import {
   WHITE,
 } from "./state.ts";
 
-export interface RangeMistake {
-  r: number;
-  c: number;
-}
+export type RangeMistake = Cell;
 
 function newUi(_state: RangeState): RangeUi {
   return { cursor: newCursor() };
 }
 
-/** The mark a cell becomes under a forward (right) or backward (left)
- * cycle, given its current value. Clue cells (handled by the caller)
- * never reach here. */
-function cycle(cell: number, forwards: boolean): RangeCellValue | null {
-  if (forwards) {
-    if (cell === EMPTY) return "white";
-    if (cell === WHITE) return "black";
-    if (cell === BLACK) return "empty";
-  } else {
-    if (cell === BLACK) return "white";
-    if (cell === WHITE) return "empty";
-    if (cell === EMPTY) return "black";
-  }
-  return null;
+/** The forward (right-button) cycle; a backward step is two forward ones. */
+const CYCLE: RangeCellValue[] = ["empty", "white", "black"];
+
+/** The mark a non-clue cell becomes under a forward or backward cycle. */
+function cycle(cell: number, forwards: boolean): RangeCellValue {
+  const i = CYCLE.indexOf(gridValueToCell(cell));
+  return CYCLE[(i + (forwards ? 1 : 2)) % 3];
 }
 
 function interpretMove(
@@ -129,19 +123,13 @@ function interpretMove(
 
   if (isMouseDown(button)) {
     const ts = ds.tilesize;
-    const b = border(ts);
-    const fromCoord = (v: number): number => fromCoordE(v, ts, b);
-    r = fromCoord(p.y + ts) - 1;
-    c = fromCoord(p.x + ts) - 1;
+    r = fromCoord(p.y, ts, border(ts));
+    c = fromCoord(p.x, ts, border(ts));
     if (outOfBounds(r, c, w, h)) return null;
     ui.cursor.y = r;
     ui.cursor.x = c;
     ui.cursor.visible = false;
   }
-
-  let forwards: boolean | null = null;
-  if (button === LEFT_BUTTON || button === CURSOR_SELECT) forwards = false;
-  else if (button === RIGHT_BUTTON || button === CURSOR_SELECT2) forwards = true;
 
   const delta = cursorDelta(button);
   if (delta) {
@@ -165,20 +153,20 @@ function interpretMove(
       if (doPost) sets.push({ r: ui.cursor.y, c: ui.cursor.x, value: "white" });
       return sets.length > 0 ? { sets } : UI_UPDATE;
     }
-    // Reveal *and* move in one press, as the rest of the collection does. The
-    // grid is `w × h` in (x, y); the cursor is too, transposed from Range's
-    // own `(r, c)` at the boundary.
+    // Reveal *and* move in one press. The cursor is (x, y), transposed from
+    // Range's own `(r, c)` at the boundary (see `RangeUi`).
     moveCursor(ui.cursor, button, w, h);
     return UI_UPDATE;
   }
 
-  if (forwards === null) return null;
+  let forwards: boolean;
+  if (button === LEFT_BUTTON || button === CURSOR_SELECT) forwards = false;
+  else if (button === RIGHT_BUTTON || button === CURSOR_SELECT2) forwards = true;
+  else return null;
 
   const cell = grid[idx(r, c, w)];
   if (cell > 0) return null; // clue cell — inert
-  const value = cycle(cell, forwards);
-  if (!value) return null;
-  return { sets: [{ r, c, value }] };
+  return { sets: [{ r, c, value: cycle(cell, forwards) }] };
 }
 
 function executeMove(state: RangeState, move: RangeMove): RangeState {
@@ -219,10 +207,8 @@ function solve(orig: RangeState, _curr: RangeState): SolveResult<RangeMove> {
   const sets: RangeMove["sets"] = [];
   for (let r = 0; r < orig.h; r++) {
     for (let c = 0; c < orig.w; c++) {
-      const cell = idx(r, c, orig.w);
-      if (solution[cell] <= 0) {
-        sets.push({ r, c, value: solution[cell] === BLACK ? "black" : "white" });
-      }
+      const v = solution[idx(r, c, orig.w)];
+      if (v <= 0) sets.push({ r, c, value: gridValueToCell(v) });
     }
   }
   return { ok: true, move: { solve: true, sets } };
@@ -236,11 +222,8 @@ function findMistakes(state: RangeState): readonly RangeMistake[] {
     for (let c = 0; c < state.w; c++) {
       const cell = idx(r, c, state.w);
       const v = state.grid[cell];
-      if (v !== BLACK && v !== WHITE) continue; // clue or undecided
-      const sol = solution[cell];
-      if ((v === BLACK && sol !== BLACK) || (v === WHITE && sol !== WHITE)) {
-        out.push({ r, c });
-      }
+      // Only a decided mark can be a mistake; clues and undecided cells never are.
+      if ((v === BLACK || v === WHITE) && solution[cell] !== v) out.push({ r, c });
     }
   }
   return out;
@@ -250,26 +233,22 @@ function findMistakes(state: RangeState): readonly RangeMistake[] {
 
 /** Highlight data for a Range hint step. `target` is the cell the
  * deduction forces (and the mark it forces). `area` is the deduction's
- * evidence to shade light-blue — the clue's line of sight, the line it
- * must reach along, or the white cells a cut would isolate — so a
- * beginner can *see* the reasoning, not just the conclusion (the
- * Palisade region-highlight convention). `blackRefs` are black premise
- * cells (an adjacent black) that stay black and are ringed instead. */
+ * evidence to outline — the clue's line of sight, the line it must reach
+ * along, or the non-black cells a cut would isolate — so a beginner can
+ * *see* the reasoning, not just the conclusion (the Palisade
+ * region-highlight convention). `blackRefs` are black premise cells (an
+ * adjacent black) that stay black and are ringed instead. */
 export interface RangeHint {
   target: { r: number; c: number; value: RangeCellValue };
-  area: { r: number; c: number }[];
-  blackRefs?: { r: number; c: number }[];
+  area: Cell[];
+  blackRefs?: Cell[];
   /** The clue driving a line-of-sight deduction, its digit recolored
    * `COL_HINT`. A clue sits *inside* its own shaded line of sight, and a
-   * board can put two clues of the same value in one such run — seen live on
-   * `9x6` seed `range-a`, where "Clue 5" named either of two shaded 5s. The
-   * value is not a name when the value repeats, so the driving one is marked
-   * (Light Up's recolored digit, the same element-type legend). */
-  clue?: { r: number; c: number };
+   * board can put two clues of the same value in one such run (as `9x6` seed
+   * `range-a` does), so the value alone does not name it and the driving one
+   * is marked (Light Up's recolored digit, the same element-type legend). */
+  clue?: Cell;
 }
-
-const DR = [1, 0, -1, 0];
-const DC = [0, 1, 0, -1];
 
 /** A cell already known to be white: the player's white mark, or a clue
  * (clues are implicitly white). Mirrors the solver's RUN_WHITE mask. */
@@ -287,7 +266,7 @@ function lineOfSight(
   h: number,
   cr: number,
   cc: number,
-): { r: number; c: number }[] {
+): Cell[] {
   const cells = [{ r: cr, c: cc }];
   for (let j = 0; j < 4; j++) {
     let r = cr + DR[j];
@@ -304,12 +283,7 @@ function lineOfSight(
 /** The straight line from a clue toward a target it must reach: the clue
  * plus every cell between it and the target (target excluded — that one
  * is the COL_HINT cell). Clue and target are collinear by construction. */
-function reachLine(
-  cr: number,
-  cc: number,
-  tr: number,
-  tc: number,
-): { r: number; c: number }[] {
+function reachLine(cr: number, cc: number, tr: number, tc: number): Cell[] {
   const cells = [{ r: cr, c: cc }];
   const dr = Math.sign(tr - cr);
   const dc = Math.sign(tc - cc);
@@ -333,8 +307,8 @@ function nonBlackNeighbors(
   h: number,
   cr: number,
   cc: number,
-): { r: number; c: number }[] {
-  const out: { r: number; c: number }[] = [];
+): Cell[] {
+  const out: Cell[] = [];
   for (let j = 0; j < 4; j++) {
     const r = cr + DR[j];
     const c = cc + DC[j];
@@ -361,28 +335,12 @@ function narrate(reason: HintReason): string {
   }
 }
 
-function gridValueToCell(v: number): RangeCellValue {
-  return v === BLACK ? "black" : v === WHITE ? "white" : "empty";
-}
-
-/** Build the highlight payload for a forced move: the area to shade and
- * any black premise cells to ring, derived from the deduction's reason. */
+/** Build the highlight payload for a forced move: the area to outline and
+ * any black premise cells to ring, derived from the deduction's reason.
+ * `grid` is the solver's working grid with this move already applied, so the
+ * target is never part of its own area: a black target cannot be in a line of
+ * sight, and a `reach` target, which can, is taken out of it. */
 function buildHighlights(
-  grid: Int8Array,
-  w: number,
-  h: number,
-  reason: HintReason,
-  target: { r: number; c: number; value: RangeCellValue },
-): RangeHint {
-  const hint = buildHighlightsInner(grid, w, h, reason, target);
-  // The working-grid snapshot already has this move applied, so a
-  // line-of-sight area could include the target; the target owns the
-  // blue COL_HINT cell, never the light-blue area.
-  hint.area = hint.area.filter((a) => !(a.r === target.r && a.c === target.c));
-  return hint;
-}
-
-function buildHighlightsInner(
   grid: Int8Array,
   w: number,
   h: number,
@@ -403,12 +361,16 @@ function buildHighlightsInner(
       // Show the clue's whole current line of sight *and* the path it is
       // extending toward this target, so the shaded run the narration
       // names is actually visible even when the target is adjacent.
-      const seen = lineOfSight(grid, w, h, reason.clue.r, reason.clue.c);
-      const path = reachLine(reason.clue.r, reason.clue.c, target.r, target.c);
-      const key = (cell: { r: number; c: number }) => idx(cell.r, cell.c, w);
-      const byKey = new Map<number, { r: number; c: number }>();
-      for (const cell of [...seen, ...path]) byKey.set(key(cell), cell);
-      return { target, area: [...byKey.values()], clue: reason.clue };
+      const { r, c } = reason.clue;
+      const area = new Map<number, Cell>();
+      for (const cell of [
+        ...lineOfSight(grid, w, h, r, c),
+        ...reachLine(r, c, target.r, target.c),
+      ]) {
+        area.set(idx(cell.r, cell.c, w), cell);
+      }
+      area.delete(idx(target.r, target.c, w));
+      return { target, area: [...area.values()], clue: reason.clue };
     }
     case "connect":
       return { target, area: nonBlackNeighbors(grid, w, h, target.r, target.c) };
@@ -419,9 +381,7 @@ function hint(state: RangeState): HintResult<RangeMove, RangeHint> {
   const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
   if (refusal) return refusal;
   const plan = deduceHintPlan(state.grid, state.w, state.h);
-  if (plan.length === 0) {
-    return { ok: false, error: DEDUCTION_EXHAUSTED };
-  }
+  if (plan.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
   const steps: HintStep<RangeMove, RangeHint>[] = plan.map((m) => {
     const value = gridValueToCell(m.value);
     const target = { r: m.r, c: m.c, value };
@@ -441,21 +401,10 @@ function hintKeepTrack(
   step: HintStep<RangeMove, RangeHint>,
   _state: RangeState,
 ): HintTrackVerdict {
-  if (m.solve) return "off";
   const t = step.highlights?.target;
-  if (!t) return "off";
-  const sets = m.sets.filter((s) => s.r === t.r && s.c === t.c);
-  if (sets.length === 0) return "off";
-  return sets[sets.length - 1].value === t.value ? "completed" : "off";
-}
-
-function flashLength(
-  from: RangeState,
-  to: RangeState,
-  _dir: number,
-  _ui: RangeUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
+  if (m.solve || !t) return "off";
+  const last = m.sets.findLast((s) => s.r === t.r && s.c === t.c);
+  return last?.value === t.value ? "completed" : "off";
 }
 
 export const rangeGame: Game<
@@ -495,15 +444,15 @@ export const rangeGame: Game<
 
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: RangeParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(rangeGame);

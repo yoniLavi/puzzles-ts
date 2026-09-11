@@ -93,10 +93,10 @@ describe("hint", () => {
 
   it("ties 'this cell' to the second mark, on every step of every reason", () => {
     // Every Range step shows a second mark (the test above pins that), so a
-    // bare "this cell" would point at neither it nor the target
-    // (`disambiguate-hint-deixis`). The tie is geometric — never a color
-    // name, which `docs/games/hints.md` § "Two marks on the board" forbids as
-    // scheme-relative and invisible to a color-blind reader.
+    // bare "this cell" would point at neither it nor the target. The tie is
+    // geometric — never a color name, which `docs/games/hints.md` § "Two marks
+    // on the board" forbids as scheme-relative and invisible to a color-blind
+    // reader.
     const TIE =
       /right next to the ringed black square|just past (?:it|them|the outlined cells)|along the outlined run as far as this cell|the outlined cells around it/;
     const kinds = new Set<string>();
