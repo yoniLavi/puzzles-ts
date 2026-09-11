@@ -2,18 +2,15 @@
  * Sokoban — gated differential check against a frozen snapshot of
  * C-generated reference boards (`__fixtures__/sokoban-c-reference.json`).
  *
- * C-free: this test does not link the C build. Sokoban has no solver, so
- * the *desc* is the whole reproducible output. The strongest meaningful
- * bar is therefore that the TS generator reproduces the C engine's level
- * byte-for-byte for the same seed — proving `random.ts` is bit-identical
- * end-to-end through every `random_upto` call the reverse-move generator
- * and its hand-rolled priority-queue BFS make, and validating the
- * run-length codec at the same time. See the change's design D1/D10.
+ * Sokoban has no solver, so the *desc* is the whole reproducible output, and
+ * the bar is that the TS generator reproduces the C engine's level
+ * byte-for-byte for the same seed: `random.ts` is bit-identical end-to-end
+ * through every `random_upto` call the reverse-move generator and its
+ * priority-queue search make, and the run-length codec is checked with it.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/sokoban-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: it was captured from
+ * upstream's C by a trace harness that no longer exists — see
+ * `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

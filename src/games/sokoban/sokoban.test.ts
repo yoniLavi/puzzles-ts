@@ -8,7 +8,7 @@
  *
  * The byte-match generator differential lives in
  * `sokoban-differential.test.ts`; these cover the interactive paths the
- * differential never touches (execute/win/pits), per the playbook.
+ * differential never touches (execute/win/pits).
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
@@ -147,7 +147,7 @@ describe("Sokoban desc codec", () => {
 
   it("validateDesc accepts pits, deep pits and labeled barrels (hand IDs)", () => {
     // A labeled barrel 'A' and a pit 'p' — the random generator never emits
-    // these, but hand-authored level IDs use them (design D7).
+    // these, but hand-authored level IDs use them.
     expect(validateDesc(p5, "w6uAtw2p3w2s3w6")).toBeNull();
     expect(validateDesc(p5, "w6ubdw2s3w2s3w6")).toBeNull();
   });
@@ -211,7 +211,7 @@ describe("Sokoban executeMove", () => {
   it("completes with a spare barrel when no free target remains", () => {
     // Player, barrel, target, space, spare barrel on one row. Pushing the first
     // barrel onto the only target leaves a free barrel but nowhere to put it —
-    // 'cannot become more complete', so the level is solved (design D4).
+    // 'cannot become more complete', so the level is solved.
     const s = stateFromRows(["wwwwwww", "wubtsbw", "wsssssw", "wsssssw", "wwwwwww"]);
     const after = executeMove(s, move(1, 0));
     expect(after.grid[1 * 7 + 3]).toBe(BARRELTARGET); // filled the target
@@ -249,7 +249,7 @@ describe("Sokoban interpretMove", () => {
         CURSOR_DOWN,
       ),
     ).toEqual(move(0, 1));
-    // Bare '3' = down-right diagonal (MOD_NUM_KEYPAD never arrives — §3.8a).
+    // Bare '3' = down-right diagonal.
     expect(
       sokobanGame.interpretMove(
         s,
@@ -384,14 +384,18 @@ describe("Sokoban render", () => {
   });
 
   it("renders the frame after a winning push", () => {
-    const { recording } = renderScenario({
+    const { recording, size } = renderScenario({
       game: sokobanGame,
       id: "5x5:w6ubtw2s3w2s3w6",
       moves: [move(1, 0)],
       settle: true,
     });
-    // A barrel-on-target disc (COL_TARGET ring + COL_BARREL disc) is present.
-    expect(recording.ops.some((o) => o.op === "circle")).toBe(true);
-    expect(recording.ops.length).toBeGreaterThan(0);
+    // The barrel now on the target cell (3,1) draws as the target disc
+    // (palette index 1) with the barrel disc (index 4) over it.
+    const ts = (size.w - 1) / 5;
+    const fills = recording.ops
+      .filter((o) => o.op === "circle" && o.cx === 3.5 * ts && o.cy === 1.5 * ts)
+      .map((o) => (o.op === "circle" ? o.fill : -1));
+    expect(fills).toEqual([1, 4]);
   });
 });

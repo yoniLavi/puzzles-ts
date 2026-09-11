@@ -1,14 +1,12 @@
 /**
- * Sokoban rendering (upstream `game_colours` / `game_redraw` / `draw_tile`).
+ * Sokoban rendering (upstream `game_colours` / `game_redraw` / `draw_tile`):
+ * a per-tile `Int32Array` cache (the cell char plus a flash-highlight bit), grid
+ * lines drawn once, walls with a bevel, targets / pits / deep pits / player /
+ * barrels as discs, and capital-letter barrel labels. The engine paints no
+ * pixels of its own, so Sokoban fills its own background on the first draw.
  *
- * Faithful baseline: per-tile `Int32Array` cache (the packed value is the cell
- * char plus a flash-highlight bit), grid lines drawn once, walls with a bevel,
- * targets / pits / deep-pits / player / barrels as discs, and capital-letter
- * barrel labels. The engine paints no pixels of its own, so Sokoban fills its
- * own background in the first-draw branch (playbook rendering doctrine).
- *
- * Border geometry: the web build defines `NARROW_BORDERS`, so `BORDER = 0`
- * (design D5, docs/games/rendering.md § "The tile cache and the diff key") — the whole board is `w*TILESIZE + 1` wide.
+ * There is no border (upstream's is a tile wide): the board is
+ * `w * tilesize + 1` wide, the 1 for the closing grid line.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -34,16 +32,15 @@ import {
 } from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 32;
-const BORDER = 0; // NARROW_BORDERS
-const FLASH_LENGTH = 0.3;
+export const FLASH_LENGTH = 0.3;
 
 /** The flash-highlight bit ORed into the packed cache word (upstream 0x100). */
 const FLASH_BIT = 0x100;
 /** Cache sentinel that forces a redraw (upstream INVALID = '!'). */
 const CACHE_INVALID = -1;
 
-// --- palette (indices C-identical — augmentation.ts keys dark-mode swaps
-// by index [[9,10]], so these must match the upstream enum order) ---------
+// --- palette (upstream's enum order: augmentation.ts keys its dark-mode swap
+// of the bevel colors, 9 and 10, by index) -------------------------------
 
 const COL_BACKGROUND = 0;
 const COL_TARGET = 1;
@@ -82,12 +79,8 @@ export function colors(defaultBackground: Color): Color[] {
   return out;
 }
 
-// --- sizing -----------------------------------------------------------
-
-const coord = (n: number, ts: number): number => n * ts + BORDER;
-
 export function computeSize(p: { w: number; h: number }, ts: number): Size {
-  return { w: 2 * BORDER + 1 + p.w * ts, h: 2 * BORDER + 1 + p.h * ts };
+  return { w: p.w * ts + 1, h: p.h * ts + 1 };
 }
 
 // --- draw state -------------------------------------------------------
@@ -95,10 +88,7 @@ export function computeSize(p: { w: number; h: number }, ts: number): Size {
 export interface SokobanDrawState {
   started: boolean;
   tilesize: number;
-  w: number;
-  h: number;
-  /** Per-cell cache of the last-drawn packed tile value (char | FLASH_BIT);
-   * `-1` forces a redraw (the no-BigInt Int32Array cache pattern). */
+  /** Per-cell cache of the last-drawn packed tile value (char | FLASH_BIT). */
   grid: Int32Array;
 }
 
@@ -106,8 +96,6 @@ export function newDrawState(state: SokobanState): SokobanDrawState {
   return {
     started: false,
     tilesize: 0,
-    w: state.w,
-    h: state.h,
     grid: new Int32Array(state.w * state.h).fill(CACHE_INVALID),
   };
 }
@@ -126,13 +114,19 @@ function drawTile(
   packed: number,
 ): void {
   const ts = ds.tilesize;
-  const tx = coord(x, ts);
-  const ty = coord(y, ts);
-  const bg = packed & FLASH_BIT ? COL_FLASH : COL_BACKGROUND;
+  const tx = x * ts;
+  const ty = y * ts;
   const v = packed & 0xff;
+  const center = { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) };
+  const disc = (r: number, fill: number) => dr.drawCircle(center, r, fill, COL_OUTLINE);
+  const floorDisc = Math.floor((ts * 3) / 7); // a target or a pit
+  const pieceDisc = Math.floor(ts / 3); // the player or a barrel
 
   dr.clip({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 });
-  dr.drawRect({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 }, bg);
+  dr.drawRect(
+    { x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 },
+    packed & FLASH_BIT ? COL_FLASH : COL_BACKGROUND,
+  );
 
   if (v === WALL) {
     const hw = raisedBevelWidth(ts);
@@ -149,46 +143,19 @@ function drawTile(
       COL_WALL,
     );
   } else if (v === PIT) {
-    dr.drawCircle(
-      { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
-      Math.floor((ts * 3) / 7),
-      COL_PIT,
-      COL_OUTLINE,
-    );
+    disc(floorDisc, COL_PIT);
   } else if (v === DEEP_PIT) {
-    dr.drawCircle(
-      { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
-      Math.floor((ts * 3) / 7),
-      COL_DEEP_PIT,
-      COL_OUTLINE,
-    );
+    disc(floorDisc, COL_DEEP_PIT);
   } else {
-    if (isOnTarget(v)) {
-      dr.drawCircle(
-        { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
-        Math.floor((ts * 3) / 7),
-        COL_TARGET,
-        COL_OUTLINE,
-      );
-    }
+    if (isOnTarget(v)) disc(floorDisc, COL_TARGET);
     if (isPlayer(v)) {
-      dr.drawCircle(
-        { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
-        Math.floor(ts / 3),
-        COL_PLAYER,
-        COL_OUTLINE,
-      );
+      disc(pieceDisc, COL_PLAYER);
     } else if (isBarrel(v)) {
-      dr.drawCircle(
-        { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
-        Math.floor(ts / 3),
-        COL_BARREL,
-        COL_OUTLINE,
-      );
+      disc(pieceDisc, COL_BARREL);
       const label = barrelLabel(v);
       if (label) {
         dr.drawText(
-          { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
+          center,
           {
             align: "center",
             baseline: "mathematical",
@@ -222,28 +189,16 @@ export function redraw(
   const { w, h } = state;
 
   if (!ds.started) {
-    // The engine paints no pixels of its own; fill our own background, then
-    // draw the grid lines once.
     const size = computeSize({ w, h }, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
     for (let y = 0; y <= h; y++)
-      dr.drawLine(
-        { x: coord(0, ts), y: coord(y, ts) },
-        { x: coord(w, ts), y: coord(y, ts) },
-        COL_GRID,
-        1,
-      );
+      dr.drawLine({ x: 0, y: y * ts }, { x: w * ts, y: y * ts }, COL_GRID, 1);
     for (let x = 0; x <= w; x++)
-      dr.drawLine(
-        { x: coord(x, ts), y: coord(0, ts) },
-        { x: coord(x, ts), y: coord(h, ts) },
-        COL_GRID,
-        1,
-      );
+      dr.drawLine({ x: x * ts, y: 0 }, { x: x * ts, y: h * ts }, COL_GRID, 1);
     ds.started = true;
   }
 
-  // Flash the background on the first, third, … of six sub-frames.
+  // Flash the background in the first and last thirds of the flash.
   const flashBit =
     flashTime > 0 && Math.floor((flashTime * 3) / FLASH_LENGTH) % 2 === 0
       ? FLASH_BIT
@@ -255,10 +210,9 @@ export function redraw(
       if (y === state.py && x === state.px) {
         v = v === TARGET ? PLAYERTARGET : PLAYER;
       }
-      // A leftover INITIAL is a wall (should never appear in a real state,
-      // but keep the draw total).
+      // A hand-typed desc may carry generation's INITIAL; it draws as a wall.
       if (v === INITIAL) v = WALL;
-      const packed = (v & 0xff) | flashBit;
+      const packed = v | flashBit;
       if (ds.grid[y * w + x] !== packed) {
         drawTile(dr, ds, x, y, packed);
         ds.grid[y * w + x] = packed;

@@ -3,26 +3,27 @@
  *
  * A level is built by playing the game *backwards*: start from a walled ring
  * of `INITIAL` interior, drop the player somewhere, then repeatedly make legal
- * inverse moves — *pulling* a barrel after the player (rather than pushing it),
- * inventing new barrels-on-targets out of untouched `INITIAL` squares, and
- * carving corridors through `INITIAL` as needed. Because the level is
- * constructed by reversing a real solution, every generated level is solvable
- * by construction — which is exactly why there is no solver to gate generation
- * (design D1 A). Leftover `INITIAL` squares become walls in the desc.
+ * inverse moves — *pulling* a barrel after the player, inventing new
+ * barrels-on-targets out of untouched `INITIAL` squares, and carving corridors
+ * through `INITIAL` as needed. Reversing a real solution makes every level
+ * solvable by construction, which is why no solver gates generation. Leftover
+ * `INITIAL` squares become walls in the desc.
  *
- * This is a byte-match-faithful port: the reachability search is upstream's
- * hand-rolled binary min-heap (keyed on how many `INITIAL` squares a route
- * carves through), and every `randomUpto` draw happens in the same order as C,
- * so the generated desc reproduces the C engine's byte-for-byte over the
- * bit-identical `random.ts`. The differential test is the whole assurance here
- * (there is no solver to otherwise exercise the generation path).
+ * Every `randomUpto` draw, and the order of upstream's hand-rolled binary
+ * min-heap (keyed on how many `INITIAL` squares a route carves through), match
+ * the C, so the desc reproduces the C engine's byte-for-byte. The differential
+ * test is the whole assurance here.
+ *
+ * Upstream also has a NetHack variant (a deep pit in a corner that barrels are
+ * pulled out of) and scores each pull by the damage it does to `INITIAL`
+ * squares. `new_game_desc` never asks for the variant and picks a pull
+ * uniformly, so neither is ported.
  */
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import {
   BARREL,
   BARRELTARGET,
-  DEEP_PIT,
   INITIAL,
   PLAYER,
   PLAYERTARGET,
@@ -37,53 +38,39 @@ import {
 const DX = (d: number): number => (d === 0 ? -1 : d === 2 ? 1 : 0);
 const DY = (d: number): number => (d === 1 ? -1 : d === 3 ? 1 : 0);
 
-const NEW_BARREL_SCORE = 10;
-const NEW_SPACE_SCORE = 3;
+/** A square the player can walk on, or an untouched one a route can carve. */
+const passable = (v: number): boolean => v === SPACE || v === TARGET || v === INITIAL;
 
+/** A barrel pulled from cell `from` to cell `to`; the player starts on `to`
+ * and steps one square further on. */
 interface Pull {
-  ox: number;
-  oy: number;
-  nx: number;
-  ny: number;
-  score: number;
+  from: number;
+  to: number;
 }
 
-/**
- * Fill `grid` (length `w*h`) with a generated Sokoban level. Mutates `grid`
- * in place, exactly as the C does. `moves` bounds the number of inverse moves
- * attempted; `nethack` toggles the (unused-by-`newDesc`) NetHack variant.
- */
-export function sokobanGenerate(
-  w: number,
-  h: number,
-  grid: Uint8Array,
-  moves: number,
-  nethack: boolean,
-  rs: RandomState,
-): void {
+/** Generate a level's grid of cell codes (upstream `sokoban_generate`). */
+function sokobanGenerate(w: number, h: number, rs: RandomState): Uint8Array {
+  const grid = new Uint8Array(w * h);
   const dist = new Int32Array(w * h);
   const prev = new Int32Array(w * h);
   const heap = new Int32Array(w * h);
 
-  // Initial grid: a solid wall ring, INITIAL everywhere inside.
+  // A solid wall ring, INITIAL everywhere inside.
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++)
       grid[y * w + x] =
         x === 0 || y === 0 || x === w - 1 || y === h - 1 ? WALL : INITIAL;
-  if (nethack) grid[1] = DEEP_PIT;
 
   // Place the player at a random interior square.
   const i = randomUpto(rs, (w - 2) * (h - 2));
-  let px = 1 + (i % (w - 2));
-  let py = 1 + Math.floor(i / (w - 2));
-  grid[py * w + px] = SPACE;
+  let player = (1 + Math.floor(i / (w - 2))) * w + 1 + (i % (w - 2));
+  grid[player] = SPACE;
 
-  // Each iteration aims to make one real barrel-pull, plus whatever free
-  // moves are needed to get into position for it.
-  while (moves-- >= 0) {
+  // Up to w*h + 1 rounds, each aiming to make one real barrel-pull, plus
+  // whatever free moves are needed to get into position for it.
+  for (let round = 0; round <= w * h; round++) {
     // Enumerate every viable barrel-pull (two directions of the same barrel
     // count as different). A pull can also *create* a barrel from an INITIAL.
-    // Each pull is scored by how much violence it does to INITIAL squares.
     const pulls: Pull[] = [];
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++)
@@ -94,68 +81,31 @@ export function sokobanGenerate(
           const ny = y + dy;
           const npx = nx + dx;
           const npy = ny + dy;
-          let score = 0;
 
-          // The player ends at (nx,ny) having stepped from (npx,npy), pulling
-          // a barrel at (x,y) to (nx,ny). Checking npx,npy in bounds suffices.
+          // The player starts at (nx,ny) and steps to (npx,npy), pulling the
+          // barrel at (x,y) to (nx,ny). Checking npx,npy in bounds suffices.
           if (npx < 0 || npx >= w || npy < 0 || npy >= h) continue;
 
-          // (x,y) must be a barrel, or convertible into one.
-          switch (grid[y * w + x]) {
-            case BARREL:
-            case BARRELTARGET:
-              break;
-            case INITIAL:
-              if (nethack) continue;
-              score += NEW_BARREL_SCORE;
-              break;
-            case DEEP_PIT:
-              if (!nethack) continue;
-              break;
-            default:
-              continue;
-          }
+          // (x,y) must be a barrel, or an INITIAL to make one from; the two
+          // squares the player uses must be passable.
+          const b = grid[y * w + x];
+          if (b !== BARREL && b !== BARRELTARGET && b !== INITIAL) continue;
+          if (!passable(grid[ny * w + nx]) || !passable(grid[npy * w + npx])) continue;
 
-          // (nx,ny) must be a space, or convertible into one.
-          switch (grid[ny * w + nx]) {
-            case SPACE:
-            case TARGET:
-              break;
-            case INITIAL:
-              score += NEW_SPACE_SCORE;
-              break;
-            default:
-              continue;
-          }
-
-          // (npx,npy) likewise.
-          switch (grid[npy * w + npx]) {
-            case SPACE:
-            case TARGET:
-              break;
-            case INITIAL:
-              score += NEW_SPACE_SCORE;
-              break;
-            default:
-              continue;
-          }
-
-          pulls.push({ ox: x, oy: y, nx, ny, score });
+          pulls.push({ from: y * w + x, to: ny * w + nx });
         }
 
     // No pulls available at all: give up.
     if (pulls.length === 0) break;
 
-    // BFS from the current player position to find every square the player can
-    // reach, giving a *positive* distance only to squares reached by carving
-    // through INITIAL — hence a proper priority queue, not a plain FIFO.
-    for (let k = 0; k < w * h; k++) {
-      dist[k] = -1;
-      prev[k] = -1;
-    }
-    heap[0] = py * w + px;
+    // Search from the player for every square it can reach, giving a
+    // *positive* distance only to squares reached by carving through INITIAL —
+    // hence a proper priority queue, not a plain FIFO.
+    dist.fill(-1);
+    prev.fill(-1);
+    heap[0] = player;
     let heapsize = 1;
-    dist[py * w + px] = 0;
+    dist[player] = 0;
 
     while (heapsize > 0) {
       // Pull the smallest element (at position 0); move the last element into
@@ -203,112 +153,59 @@ export function sokobanGenerate(
         const nx = x + DX(d);
         const ny = y + DY(d);
         if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-        const g = grid[ny * w + nx];
-        if (g !== SPACE && g !== TARGET && g !== INITIAL) continue;
-        if (dist[ny * w + nx] === -1) {
-          dist[ny * w + nx] = dist[y * w + x] + (g === INITIAL ? 1 : 0);
-          prev[ny * w + nx] = y * w + x;
-          // Insert at the end of the heap and sift up.
-          let ii = heapsize;
-          heap[heapsize++] = ny * w + nx;
-          while (ii > 0) {
-            const p = (ii - 1) >> 1;
-            if (dist[heap[p]] > dist[heap[ii]]) {
-              const t = heap[p];
-              heap[p] = heap[ii];
-              heap[ii] = t;
-              ii = p;
-            } else break;
-          }
+        const next = ny * w + nx;
+        if (!passable(grid[next]) || dist[next] !== -1) continue;
+        dist[next] = dist[top] + (grid[next] === INITIAL ? 1 : 0);
+        prev[next] = top;
+        // Insert at the end of the heap and sift up.
+        let ii = heapsize;
+        heap[heapsize++] = next;
+        while (ii > 0) {
+          const p = (ii - 1) >> 1;
+          if (dist[heap[p]] > dist[heap[ii]]) {
+            const t = heap[p];
+            heap[p] = heap[ii];
+            heap[ii] = t;
+            ii = p;
+          } else break;
         }
       }
     }
 
-    // Re-score each pull by how hard its starting point is to reach, dropping
-    // any whose start is genuinely unreachable.
-    const feasible: Pull[] = [];
-    for (const pull of pulls) {
-      const x = pull.nx;
-      const y = pull.ny;
-      if (dist[y * w + x] < 0) continue; // unreachable
-      // A pull whose start (nx,ny) is INITIAL was counted both as "can become a
-      // barrel" and "can become a space to walk to"; it can't be both, and if
-      // (ox,oy) lies on the route it must be exactly one step from the end.
-      if (prev[y * w + x] === pull.oy * w + pull.ox) continue;
-      feasible.push({ ...pull, score: pull.score + dist[y * w + x] * NEW_SPACE_SCORE });
-    }
+    // Drop a pull whose start is unreachable, or whose route runs through its
+    // own barrel's square: an INITIAL there was counted both as the barrel to
+    // be and as a square to carve, and cannot be both. If it is on the route
+    // at all, it is the last step before the end.
+    const feasible = pulls.filter(({ from, to }) => dist[to] >= 0 && prev[to] !== from);
     if (feasible.length === 0) break;
-
-    // Choose a pull. (Upstream leaves the score unused here — "very simple
-    // indeed" — and just picks uniformly. Reproduce that draw exactly.)
-    const chosen = feasible[randomUpto(rs, feasible.length)];
+    const { from, to } = feasible[randomUpto(rs, feasible.length)];
 
     // Carve a path to the pull site, then apply the pull.
-    let x = chosen.nx;
-    let y = chosen.ny;
-    while (prev[y * w + x] >= 0) {
-      if (grid[y * w + x] === INITIAL) grid[y * w + x] = SPACE;
-      const p = prev[y * w + x];
-      y = Math.floor(p / w);
-      x = p % w;
-    }
-    px = 2 * chosen.nx - chosen.ox;
-    py = 2 * chosen.ny - chosen.oy;
-    if (grid[py * w + px] === INITIAL) grid[py * w + px] = SPACE;
-    grid[chosen.ny * w + chosen.nx] =
-      grid[chosen.ny * w + chosen.nx] === TARGET ? BARRELTARGET : BARREL;
-    if (grid[chosen.oy * w + chosen.ox] === BARREL)
-      grid[chosen.oy * w + chosen.ox] = SPACE;
-    else if (grid[chosen.oy * w + chosen.ox] !== DEEP_PIT)
-      grid[chosen.oy * w + chosen.ox] = TARGET;
+    for (let k = to; prev[k] >= 0; k = prev[k])
+      if (grid[k] === INITIAL) grid[k] = SPACE;
+    player = 2 * to - from;
+    if (grid[player] === INITIAL) grid[player] = SPACE;
+    grid[to] = grid[to] === TARGET ? BARRELTARGET : BARREL;
+    grid[from] = grid[from] === BARREL ? SPACE : TARGET;
   }
 
-  // Finalize the player's square.
-  grid[py * w + px] = grid[py * w + px] === TARGET ? PLAYERTARGET : PLAYER;
-}
-
-// --- run-length desc encoding (upstream `new_game_desc`) --------------
-
-/** Map an internal grid cell to its desc character. Leftover INITIAL squares
- * (never touched during generation) become walls. */
-function descChar(v: number): string {
-  switch (v) {
-    case INITIAL:
-      return "w";
-    case SPACE:
-      return "s";
-    case WALL:
-      return "w";
-    case TARGET:
-      return "t";
-    case BARREL:
-      return "b";
-    case BARRELTARGET:
-      return "f";
-    case DEEP_PIT:
-      return "d";
-    case PLAYER:
-      return "u";
-    case PLAYERTARGET:
-      return "v";
-    default:
-      throw new Error(`sokoban: ungeneratable cell ${v}`);
-  }
+  grid[player] = grid[player] === TARGET ? PLAYERTARGET : PLAYER;
+  return grid;
 }
 
 export function newSokobanDesc(p: SokobanParams, rng: RandomState): { desc: string } {
-  const { w, h } = p;
-  const grid = new Uint8Array(w * h);
-  sokobanGenerate(w, h, grid, w * h, false, rng);
+  // A cell's code is its desc letter; an INITIAL generation never touched is a
+  // wall.
+  const chars = Array.from(sokobanGenerate(p.w, p.h, rng), (v) =>
+    String.fromCharCode(v === INITIAL ? WALL : v),
+  );
 
   // Run-length encode: a char, then a decimal count when the run repeats.
   let desc = "";
-  let i = 0;
-  while (i < w * h) {
-    const ch = descChar(grid[i]);
+  for (let i = 0; i < chars.length; ) {
     let n = 1;
-    while (i + n < w * h && descChar(grid[i + n]) === ch) n++;
-    desc += n > 1 ? `${ch}${n}` : ch;
+    while (i + n < chars.length && chars[i + n] === chars[i]) n++;
+    desc += n > 1 ? `${chars[i]}${n}` : chars[i];
     i += n;
   }
   return { desc };

@@ -1,33 +1,24 @@
 /**
- * Sokoban — native TS port (upstream `puzzles/unfinished/sokoban.c`). Push
- * every barrel onto a target square by walking into it; you can never pull.
+ * Sokoban (upstream `puzzles/unfinished/sokoban.c`): push every barrel onto a
+ * target square by walking into it; you can never pull.
  *
  * A movement puzzle, so it deliberately ships **no** `solve`, `hint` or
- * `findMistakes` — upstream has no solver (Sokoban solving is PSPACE-complete),
- * the game is non-deductive, and it has no wrong-but-legal cell state (every
- * reachable position is legal). Consequently Check & Save degrades to a plain
- * Quick-save (`canFindMistakes` is false), which is correct for a
- * non-uniquely-solvable movement puzzle (design D3/D4). There is no animation
- * either — moves are instant, matching upstream `game_anim_length` = 0 (D5).
+ * `findMistakes`: upstream has no solver (Sokoban solving is PSPACE-complete),
+ * and every reachable position is legal, so there is no wrong-but-legal state
+ * to flag and Check & Save is a plain Quick-save. Moves are instant, as
+ * upstream's `game_anim_length` is 0.
  */
 
 import { rejectMove } from "../../engine/assert-never.ts";
 import type { Game } from "../../engine/game.ts";
-import {
-  CURSOR_DOWN,
-  CURSOR_LEFT,
-  CURSOR_RIGHT,
-  CURSOR_UP,
-  LEFT_BUTTON,
-  stripModifiers,
-} from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
+import { cursorDelta, LEFT_BUTTON, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newSokobanDesc } from "./generator.ts";
 import {
   colors,
   computeSize,
+  FLASH_LENGTH,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
@@ -59,17 +50,14 @@ import {
   validateParams,
 } from "./state.ts";
 
-const FLASH_LENGTH = 0.3;
-
 // --- input ------------------------------------------------------------
 
 /**
- * The eight directions bound to the bare number-pad digits. This web frontend
- * never sets `MOD_NUM_KEYPAD`, so a faithful transcription of upstream's
- * `MOD_NUM_KEYPAD | '7'` bindings would leave the diagonals unreachable by
- * keyboard (docs/games/input.md § "The numeric keypad never arrives"). Accept the bare digits `1`–`9` (except `5`), plus
- * the cursor keys for the four orthogonal moves — a deliberate divergence that
- * costs nothing and restores the input the C build's keypad also failed to reach.
+ * The eight directions on the digits `1`–`9` (not `5`), beside the cursor keys'
+ * four. Upstream binds only the number pad's digits; the bare digits are bound
+ * too, because a numpad sends digits only with Num Lock on and a laptop may
+ * have none (docs/games/input.md § "The numeric keypad never arrives").
+ * `stripModifiers` lets the numpad's own digits through.
  */
 const DIGIT_DIRECTIONS: Record<string, { dx: number; dy: number }> = {
   "7": { dx: -1, dy: -1 },
@@ -93,20 +81,15 @@ function interpretMove(
   let dx = 0;
   let dy = 0;
 
-  if (button === CURSOR_UP) dy = -1;
-  else if (button === CURSOR_DOWN) dy = 1;
-  else if (button === CURSOR_LEFT) dx = -1;
-  else if (button === CURSOR_RIGHT) dx = 1;
-  else if (button === LEFT_BUTTON) {
-    // Direction relative to the player's cell (can be diagonal).
+  if (button === LEFT_BUTTON) {
+    // Toward the click from the player's cell, diagonally when off both axes.
     const ts = ds.tilesize;
-    const coord = (n: number) => n * ts; // BORDER = 0
-    if (p.x < coord(state.px)) dx = -1;
-    else if (p.x > coord(state.px + 1)) dx = 1;
-    if (p.y < coord(state.py)) dy = -1;
-    else if (p.y > coord(state.py + 1)) dy = 1;
+    if (p.x < state.px * ts) dx = -1;
+    else if (p.x > (state.px + 1) * ts) dx = 1;
+    if (p.y < state.py * ts) dy = -1;
+    else if (p.y > (state.py + 1) * ts) dy = 1;
   } else {
-    const dir = DIGIT_DIRECTIONS[String.fromCharCode(button)];
+    const dir = cursorDelta(button) ?? DIGIT_DIRECTIONS[String.fromCharCode(button)];
     if (!dir) return null;
     dx = dir.dx;
     dy = dir.dy;
@@ -120,11 +103,10 @@ function interpretMove(
 // --- move execution ---------------------------------------------------
 
 export function executeMove(state: SokobanState, move: SokobanMove): SokobanState {
-  // Sokoban's move is one object shape rather than a union, so there is no
-  // discriminant to narrow to `never`: check the fields the dispatch reads.
-  // Without this a move with no step lands in `moveType` as `(NaN, NaN)`, which
-  // reads the grid out of bounds and comes back "no barrel here" — a *legal*
-  // walk, so the board silently gained a move it never made.
+  // One object shape rather than a union, so there is no discriminant to
+  // narrow to `never`: check the fields the dispatch reads. A move with no
+  // step would reach `moveType` as (NaN, NaN), read the grid out of bounds and
+  // come back a *legal* walk, gaining the board a move it never made.
   if (
     move.type !== "move" ||
     !Number.isInteger(move.dx) ||
@@ -139,33 +121,25 @@ export function executeMove(state: SokobanState, move: SokobanMove): SokobanStat
 
   const { w, h } = state;
   const grid = state.grid.slice();
-  const px = state.px;
-  const py = state.py;
-  const nx = px + dx;
-  const ny = py + dy;
-  const nbx = nx + dx;
-  const nby = ny + dy;
+  const nx = state.px + dx;
+  const ny = state.py + dy;
 
   if (kind === "push") {
-    // Take the barrel off (nx,ny), leaving SPACE or TARGET.
-    let b = grid[ny * w + nx];
+    const from = ny * w + nx;
+    const to = (ny + dy) * w + nx + dx;
+    // Lift the barrel, leaving the SPACE or TARGET beneath it.
+    let b = grid[from];
     if (isOnTarget(b)) {
-      grid[ny * w + nx] = TARGET;
+      grid[from] = TARGET;
       b = detargetize(b);
     } else {
-      grid[ny * w + nx] = SPACE;
+      grid[from] = SPACE;
     }
-    // Deposit it beyond, honoring pits.
-    const beyond = grid[nby * w + nbx];
-    if (beyond === PIT) {
-      grid[nby * w + nbx] = SPACE; // the barrel fills the pit and is consumed
-    } else if (beyond === DEEP_PIT) {
-      /* the deep pit eats the barrel and remains */
-    } else if (beyond === TARGET) {
-      grid[nby * w + nbx] = targetize(b);
-    } else {
-      grid[nby * w + nbx] = b;
-    }
+    // Set it down beyond: it fills a pit, and a deep pit eats it and remains.
+    const beyond = grid[to];
+    if (beyond === PIT) grid[to] = SPACE;
+    else if (beyond === TARGET) grid[to] = targetize(b);
+    else if (beyond !== DEEP_PIT) grid[to] = b;
   }
 
   // Completion: the board cannot become any *more* complete. That is, either
@@ -176,27 +150,15 @@ export function executeMove(state: SokobanState, move: SokobanMove): SokobanStat
   if (!completed) {
     let freeBarrels = false;
     let freeTargets = false;
-    for (let i = 0; i < w * h; i++) {
-      const v = grid[i];
+    for (const v of grid) {
       if (isBarrel(v) && !isOnTarget(v)) freeBarrels = true;
       if (v === DEEP_PIT || v === PIT || (!isBarrel(v) && isOnTarget(v)))
         freeTargets = true;
     }
-    if (!freeBarrels || !freeTargets) completed = true;
+    completed = !freeBarrels || !freeTargets;
   }
 
   return { w, h, grid, px: nx, py: ny, completed };
-}
-
-// --- flash ------------------------------------------------------------
-
-function flashLength(
-  oldState: SokobanState,
-  newSt: SokobanState,
-  _dir: number,
-  _ui: SokobanUi,
-): number {
-  return !oldState.completed && newSt.completed ? FLASH_LENGTH : 0;
 }
 
 // --- Game object ------------------------------------------------------
@@ -222,14 +184,9 @@ export const sokobanGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  // Sokoban's params are exactly width and height, so this is the plain form.
-  // It was missing until `audit-vestigial-contract-surface`, which made Sokoban
-  // the one game in the collection whose "Custom type…" dialog opened with no
-  // fields in it — invisible because the menu entry is gated on a flag the
-  // midend hard-coded to `true`.
   paramConfig,
 
-  newDesc: (p: SokobanParams, rng: RandomState) => newSokobanDesc(p, rng),
+  newDesc: newSokobanDesc,
   validateDesc,
   newState,
   newUi: () => ({}),
@@ -238,15 +195,16 @@ export const sokobanGame: Game<
   executeMove,
   status,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SokobanParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (oldState, newState) =>
+    !oldState.completed && newState.completed ? FLASH_LENGTH : 0,
 };
 
 registerGame(sokobanGame);

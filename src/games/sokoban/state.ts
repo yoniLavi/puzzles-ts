@@ -1,28 +1,26 @@
 /**
  * Types, the cell alphabet, the desc codec and the pure move helpers for
- * Sokoban (barrel-pushing warehouse puzzle).
+ * Sokoban (barrel-pushing warehouse puzzle), after upstream
+ * `puzzles/unfinished/sokoban.c`.
  *
- * Faithful transliteration of `puzzles/unfinished/sokoban.c`. The grid is a
- * flat `Uint8Array` of *character codes* — the same alphabet the C uses in
- * game IDs — so a hand-authored level game ID decodes identically here. The
- * full alphabet (pits, deep pits, capital-letter labeled barrels) is ported
- * even though the random generator never emits those characters (design D7):
- * it keeps hand-typed level descriptions working, which the header names as
+ * The grid is a flat `Uint8Array` of the *character codes* game IDs use, so a
+ * hand-authored level ID decodes as it does upstream. The full alphabet (pits,
+ * deep pits, capital-letter labeled barrels) is ported although the generator
+ * never emits it: hand-typed levels are what upstream's header names as
  * Sokoban's reason to exist.
  */
 
-import type { ParamConfigItem } from "../../engine/game.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- the cell alphabet (char codes) -----------------------------------
-// Mirrors sokoban.c's #defines. Values are the ASCII codes of the letters
-// the C uses, so decode/encode round-trip byte-for-byte with a C game ID.
+// Upstream's #defines: each value is the character a game ID uses for it.
 
 const c = (ch: string): number => ch.charCodeAt(0);
 
-export const INITIAL = c("i"); // used only during generation
+export const INITIAL = c("i"); // an untouched square during generation
 export const SPACE = c("s");
 export const WALL = c("w");
 export const PIT = c("p");
@@ -36,15 +34,15 @@ export const PLAYERTARGET = c("v"); // player on a target
 const A = c("A");
 const Z = c("Z");
 
-/**
- * A capital letter A–Z is a *labeled* barrel; while resting on a target it
- * is stored as its control-character value (A → ^A = 1, … Z → 26). These let
- * annotated level IDs name particular barrels. `isBarrel`/`isOnTarget`
- * therefore test more than a bare equality (upstream macros of the same name).
- */
 export function isPlayer(v: number): boolean {
   return v === PLAYER || v === PLAYERTARGET;
 }
+/**
+ * A capital letter A–Z is a *labeled* barrel, letting an annotated level name
+ * particular barrels; on a target it is stored as its control-character value
+ * (A → ^A = 1, … Z → 26). Hence `isBarrel`/`isOnTarget` test ranges, not just
+ * equality (upstream macros of the same name).
+ */
 export function isBarrel(v: number): boolean {
   return (
     v === BARREL || v === BARRELTARGET || (v >= A && v <= Z) || (v >= 1 && v <= 26)
@@ -95,10 +93,7 @@ export function validateParams(p: SokobanParams, _full: boolean): string | null 
   return null;
 }
 
-export function presets(): {
-  title: string;
-  submenu: { title: string; params: SokobanParams }[];
-} {
+export function presets(): PresetMenu<SokobanParams> {
   const p = (w: number, h: number) => ({ title: `${w}x${h}`, params: { w, h } });
   return { title: "Type", submenu: [p(12, 10), p(16, 12), p(20, 16)] };
 }
@@ -108,24 +103,12 @@ export function presets(): {
 export interface SokobanState {
   readonly w: number;
   readonly h: number;
-  /** Row-major grid of cell char codes. The player's cell holds the SPACE
-   * or TARGET *beneath* the player (upstream keeps `px`/`py` separately and
-   * leaves the underlying square in the grid). */
+  /** Row-major grid of cell char codes. As upstream, the player's cell holds
+   * the SPACE or TARGET *beneath* the player, whose position is `px`/`py`. */
   readonly grid: Uint8Array;
   readonly px: number;
   readonly py: number;
   readonly completed: boolean;
-}
-
-export function cloneSokobanState(s: SokobanState): SokobanState {
-  return {
-    w: s.w,
-    h: s.h,
-    grid: s.grid.slice(),
-    px: s.px,
-    py: s.py,
-    completed: s.completed,
-  };
 }
 
 /** Sokoban has no persistent UI state (upstream `new_ui` returns NULL). */
@@ -133,86 +116,58 @@ export type SokobanUi = Record<string, never>;
 
 /**
  * A single step: move the player by (dx, dy). Whether it is a walk or a push
- * is *derived* from the board by {@link moveType}, exactly as the C decides in
- * both `interpret_move` and `execute_move` — so the move never has to carry
- * it. Plain JSON-safe data → the default move codec suffices (design D2).
+ * is *derived* from the board by {@link moveType}, as the C decides in both
+ * `interpret_move` and `execute_move`, so the move never carries it. Plain
+ * JSON data, so the default move codec serves.
  */
 export type SokobanMove = { type: "move"; dx: number; dy: number };
 
 // --- desc codec -------------------------------------------------------
 
-const isDigit = (ch: string | undefined): boolean =>
-  ch !== undefined && ch >= "0" && ch <= "9";
-
-/**
- * Decode a run-length grid description into a flat char-code array (upstream
- * `new_game`). A PLAYER/PLAYERTARGET cell is stored as the SPACE/TARGET
- * beneath it and its coordinates returned separately.
- */
-function decodeGrid(
-  desc: string,
-  w: number,
-): { cells: number[]; px: number; py: number } {
-  const cells: number[] = [];
-  let px = -1;
-  let py = -1;
-  let i = 0;
-  while (i < desc.length) {
-    let ch = desc.charCodeAt(i++);
-    let n = 1;
-    if (isDigit(desc[i])) {
-      n = Number.parseInt(desc.slice(i), 10);
-      while (isDigit(desc[i])) i++;
-    }
-    if (ch === PLAYER || ch === PLAYERTARGET) {
-      py = Math.floor(cells.length / w);
-      px = cells.length % w;
-      ch = isOnTarget(ch) ? TARGET : SPACE;
-    }
-    for (let k = 0; k < n; k++) cells.push(ch);
+/** The runs of a desc: each character, then an optional decimal repeat count. */
+function* runs(desc: string): Generator<{ ch: number; n: number }> {
+  for (let i = 0; i < desc.length; ) {
+    const ch = desc.charCodeAt(i++);
+    const start = i;
+    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;
+    yield { ch, n: i > start ? Number.parseInt(desc.slice(start, i), 10) : 1 };
   }
-  return { cells, px, py };
 }
 
+/** The characters a desc may use besides the player and the barrels. */
+const TERRAIN = new Set([INITIAL, SPACE, WALL, TARGET, PIT, DEEP_PIT]);
+
 export function validateDesc(p: SokobanParams, desc: string): string | null {
-  const w = p.w;
-  const h = p.h;
   let area = 0;
   let nplayers = 0;
-  let i = 0;
-  while (i < desc.length) {
-    const ch = desc.charCodeAt(i++);
-    let n = 1;
-    if (isDigit(desc[i])) {
-      n = Number.parseInt(desc.slice(i), 10);
-      while (isDigit(desc[i])) i++;
-    }
+  for (const { ch, n } of runs(desc)) {
     area += n;
-    if (ch === PLAYER || ch === PLAYERTARGET) {
-      nplayers += n;
-    } else if (
-      ch === INITIAL ||
-      ch === SPACE ||
-      ch === WALL ||
-      ch === TARGET ||
-      ch === PIT ||
-      ch === DEEP_PIT ||
-      isBarrel(ch)
-    ) {
-      /* ok */
-    } else {
+    if (isPlayer(ch)) nplayers += n;
+    else if (!TERRAIN.has(ch) && !isBarrel(ch))
       return "Invalid character in game description";
-    }
   }
-  if (area > w * h) return "Too much data in game description";
-  if (area < w * h) return "Too little data in game description";
+  if (area > p.w * p.h) return "Too much data in game description";
+  if (area < p.w * p.h) return "Too little data in game description";
   if (nplayers < 1) return "No starting player position specified";
   if (nplayers > 1) return "More than one starting player position specified";
   return null;
 }
 
+/** Build a board from a desc (upstream `new_game`), storing the player's cell
+ * as the SPACE or TARGET beneath it. */
 export function newState(p: SokobanParams, desc: string): SokobanState {
-  const { cells, px, py } = decodeGrid(desc, p.w);
+  const cells: number[] = [];
+  let px = -1;
+  let py = -1;
+  for (const { ch, n } of runs(desc)) {
+    let cell = ch;
+    if (isPlayer(ch)) {
+      px = cells.length % p.w;
+      py = Math.floor(cells.length / p.w);
+      cell = ch === PLAYERTARGET ? TARGET : SPACE;
+    }
+    for (let k = 0; k < n; k++) cells.push(cell);
+  }
   if (cells.length !== p.w * p.h) throw new Error("sokoban: desc area mismatch");
   if (px === -1) throw new Error("sokoban: no player in desc");
   return { w: p.w, h: p.h, grid: Uint8Array.from(cells), px, py, completed: false };
@@ -251,8 +206,8 @@ export function moveType(state: SokobanState, dx: number, dy: number): MoveKind 
     return "illegal";
   }
 
-  // An ordinary walk (the ahead square was already checked). A diagonal walk
-  // needs one orthogonally-shared square to be free to move through.
+  // An ordinary walk. A diagonal one needs one orthogonally-shared square to
+  // be free to move through.
   if (dx && dy) {
     const vert = grid[(py + dy) * w + px];
     const horiz = grid[py * w + (px + dx)];
