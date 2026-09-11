@@ -2,11 +2,10 @@
 # The pre-commit gate, in one place so `.husky/pre-commit` and `npm run gate`
 # cannot drift (the build-pipeline spec requires they mirror each other).
 #
-# THIS COMMENT DESCRIBES THE SHAPE, NOT THE STEPS. The steps are the commands
-# below, and naming them up here is how this header came to say `tsc` for the
-# thirty-five days after the gate switched to `tsgo` — eight lines above the line
-# that runs it (`state-the-gate-steps-once`). The readable list, with the reason
-# for each step, is `AGENTS.md` § "Git", and it is the only prose copy there is.
+# THIS COMMENT DESCRIBES THE SHAPE, NOT THE STEPS. Naming a step up here is how
+# a header comes to name a compiler the gate no longer runs, eight lines above
+# the line that runs the real one. The readable list, with the reason for each
+# step, is `AGENTS.md` § "Git", and it is the only prose copy there is.
 #
 # Order and semantics:
 #   1. Fast fail-fast prefix — the typechecks, then biome, then the cheap node
@@ -32,26 +31,15 @@
 # at all: the catalog is committed source (`retire-c-engine`) and the manual, the
 # last generated artifact, is deleted (`retire-the-upstream-help-tree`).
 #
-# CONCURRENCY. `vitest` and `vite build` share no inputs or outputs, so they
-# always run concurrently and the gate's wall clock is ~max(vitest, build)
-# rather than their sum.
-#
-# This used to probe the 1-minute load average and serialize on a busy box,
-# because oversubscribing starved vitest's heaviest seed-deterministic tests
-# past their 60s timeout (at high external load the concurrent build reliably
-# flaked dsf / netslide-hint). The probe is still gone — it read "busy" nearly
-# always on this deliberately-busy box and put the build on the critical path —
-# but the claim that replaced it, "contention now makes a test *slower*, never
-# *failed*", is NOT true without qualification and has since been falsified: it
-# holds only up to the 600s ceiling in vitest.config.ts, and at load ~81 on 8
-# cores two Sixteen hint tests (~50s each solo, 112s for the whole file) blew
-# through it and failed this gate.
-#
-# The fix is not another timeout. It is to stop oversubscribing: vitest now caps
-# its worker pool (`maxWorkers` in vitest.config.ts, leaving two cores free) and
-# both heavy branches below run under `nice`, so a gate run yields to the
-# developer's own work instead of competing with it. Reliability is still bought
-# by not gating on the clock — now also by not starving the box.
+# Do NOT gate the concurrency on the load average: a probe that serialized the
+# two branches on a busy box read "busy" nearly always here and put the build on
+# the critical path. Nor does contention only make a test *slower* — at load ~81
+# on 8 cores two Sixteen hint tests (~50s each solo, 112s for the whole file)
+# blew through the 600s ceiling in vitest.config.ts and failed this gate. The fix
+# is not another timeout: vitest caps its worker pool (`maxWorkers` in
+# vitest.config.ts, leaving two cores free) and both heavy branches below run
+# under `nice`, so a gate run yields to the developer's own work instead of
+# competing with it.
 set -e
 
 # --- 0. Reap orphaned vitest workers from a previously-interrupted run. ---

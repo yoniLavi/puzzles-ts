@@ -71,19 +71,16 @@
  *
  * ## Importing this file does not run it
  *
- * It used to. A run **edits files under `src/`** — that is how it works — so a
- * bare `import()` of this module, to reach `ownTests` or `engineFiles` from a
- * one-liner, started a fifteen-minute run that rewrote the engine underneath the
- * importer. The entry-point guard at the foot of the file is what stops that;
- * importing is now inert, and the helpers are exported so reaching for one is
- * the obvious thing rather than the dangerous one.
+ * A run **edits files under `src/`** — that is how it works — so a bare
+ * `import()` of this module, to reach `ownTests` or `engineFiles` from a
+ * one-liner, would rewrite the engine underneath the importer. The entry-point
+ * guard at the foot of the file is what stops that, and the helpers are exported
+ * so reaching for one is the obvious thing rather than the dangerous one.
  *
  * The same reasoning governs the argument parsing: `--verify` is the only flag,
- * and **anything else beginning with `-` is rejected**. It used to be silently
- * dropped, which meant a mistyped or speculative flag left the module filter
- * empty and started the *whole* 30-45 minute planting run — `--help`, of all
- * things, did exactly that. An option parser that answers an unknown question
- * by editing `src/` is the same footgun as the import one, wearing a flag.
+ * and **anything else beginning with `-` is rejected** rather than dropped (see
+ * `main`). An option parser that answers an unknown question by editing `src/`
+ * is the same footgun as the import one, wearing a flag.
  *
  * If a run is killed anyway (`SIGTERM`, or a `SIGINT` mid-`spawnSync`, which the
  * handler cannot service because `main` is synchronous throughout), it leaves

@@ -219,18 +219,12 @@ export function cleanUrl(pathname: string): string {
   return cleaned;
 }
 
-/**
- * Return true if url is something we should let Vite handle.
- */
 function isViteMagicUrl(url: URL) {
   if (url.pathname.includes("@vite")) return true;
   const viteMagicParams = ["import", "raw", "inline", "url", "v", "t"];
   return viteMagicParams.some((param) => url.searchParams.has(param));
 }
 
-/**
- * Vite plugin to generate additional index pages
- */
 export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
   const { debug = false } = options;
 
@@ -494,15 +488,14 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
         pathname = pathname.slice(base.length);
       }
 
-      // 2. Block source files
-      // (Don't serve source files that are part of an extra pages set.)
+      // Don't serve source files that are part of an extra pages set.
       if (isDev && isSourceFile(pathname)) {
         res.statusCode = 404;
         res.end();
         return;
       }
 
-      // 3. Resolve page (canonical, clean, or index)
+      // Resolve the page: canonical, clean, or index.
       const managed = findManagedPage(pathname);
       const canonical = managed
         ? (managed.resolved.resolvedPathname ?? pathname)
@@ -515,10 +508,9 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
       const isPage = managed || (canonical && checkFileExists(canonical));
 
       if (isPage && canonical) {
-        // 4. Handle Redirects (e.g. /foo.html -> /foo)
+        // Redirect /foo.html to its clean form /foo.
         const cleaned = cleanUrl(pathname);
         if (cleaned !== pathname) {
-          // Redirect to clean version
           const targetPath = base + cleaned;
           if (targetPath !== url.pathname) {
             const newUrl = new URL(req.url, "http://origin-unused");
@@ -530,9 +522,7 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
           }
         }
 
-        // 5. Handle Rewrites and Rendering
         if (canonical !== pathname) {
-          // Rewrite internal URL
           const newUrl = new URL(req.url, "http://origin-unused");
           newUrl.pathname = base + canonical;
           req.url = newUrl.pathname + newUrl.search + newUrl.hash;
@@ -681,10 +671,6 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
         if (codeSplitImports.size < 1) {
           return html;
         }
-        // console.log(`Transforming ${ctx.chunk.facadeModuleId} (${ctx.chunk.fileName})`);
-        // console.log(`  Root imports: ${[...rootImports].join(", ")}`);
-        // console.log(`  Code-split imports: ${[...codeSplitImports].join(", ")}`);
-
         // For the codeSplitImports, convert:
         //   <script type="module" [crossorigin] src="..."></script>
         // to:
@@ -799,11 +785,6 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
 //
 
 /**
- * Creates a transform function that renders 'source' as markdown.
- * Adds 'html' and 'body' (both set to rendered markdown)
- * and 'title' (first H1 in markdown) to the output data.
- */
-/**
  * The stylesheet a help glyph's picture actually comes from. A `::name::` in a
  * page renders `<span class="icon icon-name">`, and `--icon` on `.icon-name` is
  * the only thing that puts an image there — the app's own icon map
@@ -818,12 +799,12 @@ let helpIconRules: Set<string> | undefined;
 /**
  * The names `help.css` defines a picture for.
  *
- * This is the check the `TODO` here asked for, and it belongs at build time
- * rather than in a test: an unresolved class renders as **empty space**, with no
- * error from markdown-it, from Vite, or from the browser, so nothing downstream
- * would ever report it. `vite build` is in the pre-commit gate, so failing here
- * fails the commit. (The paired test in `src/help-coverage.test.ts` cannot do
- * it: Vitest stubs every CSS import to the empty string, `?raw` included.)
+ * Checked at build time rather than in a test: an unresolved class renders as
+ * **empty space**, with no error from markdown-it, from Vite, or from the
+ * browser, so nothing downstream would ever report it. `vite build` is in the
+ * pre-commit gate, so failing here fails the commit. (The paired test in
+ * `src/help-coverage.test.ts` cannot do it: Vitest stubs every CSS import to the
+ * empty string, `?raw` included.)
  */
 function definedHelpIcons(): Set<string> {
   if (helpIconRules) return helpIconRules;
@@ -837,6 +818,10 @@ function definedHelpIcons(): Set<string> {
   return helpIconRules;
 }
 
+/**
+ * A transform that renders `source` as markdown, adding `html` and `body_html`
+ * (both the rendered markdown) and `title` (the first H1) to the data.
+ */
 export const renderMarkdown = (
   config?: MarkdownItPresetName | MarkdownItOptions,
 ): Transform => {

@@ -36,9 +36,8 @@
  *   is what produced an observed ETA of ~678 hours with it off. With it on, the
  *   same set finished in 398 minutes.
  *
- *   Do not restate this as "836 mutants were skipped" — an earlier revision of
- *   this comment did, and it understated the audit's coverage by two orders of
- *   magnitude until the completed report contradicted it.
+ *   Do not restate this as "836 mutants were skipped": that understates the
+ *   audit's coverage by two orders of magnitude.
  *
  *   The general form, worth remembering before reaching for mutation testing
  *   anywhere else: cost per mutant is one *covering-test* run normally, and one

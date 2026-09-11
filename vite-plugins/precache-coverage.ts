@@ -47,9 +47,7 @@ const NOT_PRECACHEABLE: Record<string, { why: string; conditional?: true }> = {
   },
   // `robots.txt` is NOT conditional: `public/robots.txt` is copied on every
   // build, and `vite-plugin-sitemap` overwrites it only when
-  // VITE_CANONICAL_BASE_URL is set. It was marked conditional here on the same
-  // stale belief the file's own body carried — that the plugin is the only
-  // thing that emits it — which excused it from the reverse check for nothing.
+  // VITE_CANONICAL_BASE_URL is set.
   "robots.txt": { why: "for crawlers, never fetched by the app" },
   // `sitemap.xml` genuinely is conditional: the plugin is registered only when
   // VITE_CANONICAL_BASE_URL is set, so its absence from an ordinary build is
@@ -81,8 +79,7 @@ export function precacheCoverage(options: PrecacheCoverageOptions = {}): Plugin 
    * failed build and reported "the listing found almost nothing" as the error,
    * burying the one that actually stopped the build. A guard that reports
    * someone else's failure as its own is worse than no guard: it sends the next
-   * reader to the wrong file. (Found while adding the `_headers` rule-budget
-   * check in vite.config.ts, whose deliberate failure this masked.)
+   * reader to the wrong file.
    */
   let bundled = false;
   return {

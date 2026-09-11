@@ -10,12 +10,9 @@
 # It creates src/games/<gameId>/ with typed Game<…> source stubs, an
 # empty __fixtures__/, a starter <gameId>.test.ts (a save round-trip + a
 # renderScenario render smoke, both `it.skip` so a fresh scaffold stays green),
-# and a commented <gameId>-differential.test.ts stub. It then PRINTS (does not
-# perform) the manual-edit checklist that needs judgment — the two
-# registration edits and the icon PNGs. (It used to name a C trace harness too;
-# there is no C to trace since `retire-c-engine`, and a new port's differential,
-# if it has one, is founded on its own behavior.) Read the Galaxies port as the
-# exemplar.
+# and a <gameId>-generation.test.ts stub. It then PRINTS (does not perform) the
+# manual-edit checklist that needs judgment — the two registration edits and the
+# icon PNGs. Read the Galaxies port as the exemplar.
 
 set -euo pipefail
 
@@ -119,12 +116,12 @@ cat > "${DIR}/index.ts" <<EOF
  * Read the docs/games/ guides (start at docs/games/README.md) and the Galaxies port first.
  */
 
-import type { Color, GameStatus, Size } from "../../engine/types.ts";
-import type { Game } from "../../engine/game.ts";
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
+import type { Game } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
-import { registerGame } from "../../engine/registry.ts";
 import type { RandomState } from "../../engine/random/index.ts";
+import { registerGame } from "../../engine/registry.ts";
+import type { Color, GameStatus, Size } from "../../engine/types.ts";
 import { new${P}Desc } from "./generator.ts";
 import { redraw${P} } from "./render.ts";
 import type {
@@ -252,24 +249,20 @@ describe("${GAME} render smoke", () => {
 });
 EOF
 
-# Differential stub: a fresh scaffold has no C fixture yet, so the actual
-# differential (the describeDescDifferential wiring) stays COMMENTED — only a
-# single `it.todo` marker is live, which keeps vitest happy (a fully-commented
-# *.test.ts fails collection) and the file type-checks before any fixture
-# exists. Uncomment the body once __fixtures__/${GAME}-c-reference.json exists.
-# NOTE: since `retire-c-engine` there is no C build, so a NEW game has no
-# upstream oracle to differ against — the frozen fixtures under
-# src/games/*/__fixtures__/ belong to games ported while the C existed.
-# A greenfield game's assurance is behavioral: "every generated board is
-# uniquely solvable at exactly its stated difficulty" as a property test. This
-# scaffold therefore emits that, not a differential stub.
+# A new game has no upstream oracle to differ against: there is no C build, and
+# the frozen fixtures under src/games/*/__fixtures__/ belong to games ported
+# while it existed. A greenfield game's assurance is behavioral — "every
+# generated board is uniquely solvable at exactly its stated difficulty" as a
+# property test — so this scaffold emits that, not a differential stub. The
+# single live `it.todo` keeps vitest happy: a fully-commented *.test.ts fails
+# collection.
 cat > "${DIR}/${GAME}-generation.test.ts" <<EOF
 /**
  * Generation invariants for ${GAME} — SCAFFOLD STUB.
  *
  * Ports made while the C engine existed could lean on a byte-match
  * differential: because the generator is solver-gated, one desc comparison
- * validated generator, solver and codec at once. `retire-c-engine` removed
+ * validated generator, solver and codec at once. \`retire-c-engine\` removed
  * that build, so a new game states the property directly instead.
  *
  * Fill this in with the strongest claim the game can actually support — for a

@@ -120,12 +120,9 @@ export function noticeFor(dep: Dependency): string | null {
     if (appendix && !TEMPLATE_PLACEHOLDER.test(appendix[1])) return appendix[1];
 
     // Unfilled: drop the appendix rather than fall back to a license text that
-    // still has the placeholder in it, further down. (The first attempt at this
-    // fix did exactly that, and the build caught it.) The appendix is not part
-    // of the grant — it is headed "How to apply the Apache License to your
-    // work" and is addressed to authors, not to recipients — so removing it
-    // costs a reader nothing and removes the only text in the file that names
-    // nobody.
+    // still has the placeholder in it, further down. The appendix is not part of
+    // the grant — it is addressed to authors, not to recipients — so removing it
+    // costs a reader nothing and removes the only text that names nobody.
     const start = licenseText.indexOf("APPENDIX: How to apply the Apache License");
     if (start > 0) return licenseText.slice(0, start).trimEnd();
   }

@@ -57,9 +57,7 @@ const CANONICAL_RE = /<link\s+rel="canonical"\s+href="([^"]+)"/i;
  * away and offers no way to keep one (0.8.2, the current release, checked
  * rather than assumed), while the canonical must carry it because that is the
  * URL Cloudflare serves a folder index at and the URL the app's own links use.
- * Comparing the raw strings would report a disagreement that does not exist,
- * and the fix for a check that cries wolf is always to make it measure the
- * right thing — never to delete it, and never to bend the artifacts around it.
+ * Comparing the raw strings would report a disagreement that does not exist.
  */
 function asResource(url: string): string {
   return url.replace(/\/+$/, "");

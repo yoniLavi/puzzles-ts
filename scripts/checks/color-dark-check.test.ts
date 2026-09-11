@@ -51,10 +51,8 @@ const DARK_BG_L = 0.2;
 const lightInput = oklchToColor([LIGHT_BG_L, 0, 0]);
 const darkInput = oklchToColor([1, 0, 0]);
 
-/** `puzzle-view.ts`'s dark-mode pass — the real one, since
- * `refine-slide-appearance` extracted it. This file used to carry a second copy
- * under the instruction "Keep in step with it", which is how a rule ends up with
- * no owner. */
+/** `puzzle-view.ts`'s dark-mode pass — the real one, called rather than copied:
+ * a second copy kept in step by instruction is a rule with no owner. */
 function darkPalette(id: string, palette: Color[]): OKLCH[] {
   const authored: Record<number, Color> = {};
   palette.forEach((c, i) => {

@@ -40,14 +40,12 @@ const BG2: Color = [0.6, 0.7, 0.8];
 /**
  * Where the report lands, and why it is not next to the change that asked for it.
  *
- * It used to be `openspec/changes/consolidate-colour-palette/inventory.md`.
- * `openspec archive` **renames the change directory** on the day the change
- * ships, so that path had an expiry date built into the workflow: from
- * 2026-08-01 this test failed `ENOENT` on every `npm run diff`, and because the
- * run is advisory rather than gating, nothing said so for a day. A tool must not
- * write into a change directory — `metrics/` is where durable generated
- * artifacts live (`metrics/mutation/report.json` is the precedent), and the
- * committed copy there is the baseline to diff a color change against.
+ * A tool must not write into a change directory: `openspec archive` **renames**
+ * it on the day the change ships, and a report written there then failed
+ * `ENOENT` on every `npm run diff` — advisory rather than gating, so nothing
+ * said so. `metrics/` is where durable generated artifacts live
+ * (`metrics/mutation/report.json` is the precedent), and the committed copy
+ * there is the baseline to diff a color change against.
  */
 const OUT = "metrics/color-inventory.md";
 

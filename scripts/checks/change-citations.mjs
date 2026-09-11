@@ -95,14 +95,10 @@ const SCANNED = /^(docs\/.*\.md|AGENTS\.md)$/;
  * citing it, while a *deliberately dead* id leaves when the passage making the
  * point about it is rewritten.
  *
- * **The guard's real running cost, found by it catching this change's own
- * prose**: in `docs/`, a backtick around a kebab token *is* a citation, so a
- * passage that quotes product vocabulary as an example pays four ledger entries
- * for four illustrations. The fix is not a ledger entry — it is to stop
+ * **The guard's real running cost**: in `docs/`, a backtick around a kebab token
+ * *is* a citation, so a passage quoting product vocabulary as an example pays a
+ * ledger entry per illustration. The fix is not a ledger entry — it is to stop
  * backticking a word being used as an example rather than named as a thing.
- * That is the correct trade to make, but it is a tax on prose, and it is what
- * the 2026-09-04 decline meant by "an allowlist that grows with the docs"
- * arriving from an unexpected direction.
  */
 const NOT_A_LIVE_CHANGE = {
   "auto-mark-complete": "a `Ui` preference key (Bridges); named in rendering.md",
