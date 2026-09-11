@@ -19,12 +19,13 @@ import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { newDesc } from "./generator.ts";
 import { rectGame } from "./index.ts";
 import { cloneRectState, executeMove, newState, status } from "./moves.ts";
-import { COL_MISTAKE, newDrawState, redraw } from "./render.ts";
+import { BORDER, COL_MISTAKE, newDrawState, redraw } from "./render.ts";
 import {
   decodeParams,
   encodeNumbers,
   encodeParams,
   type RectParams,
+  type RectState,
   validateDesc,
   validateParams,
 } from "./state.ts";
@@ -38,9 +39,25 @@ const P = (over: Partial<RectParams> = {}): RectParams => ({
 });
 
 const TILE = rectGame.preferredTileSize ?? 24;
-const BORDER = 1;
-// Pixel coords for a grid point (gx, gy in half-integer/grid units).
+// Pixel coordinate of a fractional grid coordinate.
 const px = (g: number) => g * TILE + BORDER;
+
+/** Seed 3's 7x7 board with one interior vedge drawn that its solution lacks. */
+function boardWithWrongWall(): { st: RectState; wrong: { x: number; y: number } } {
+  const p = P();
+  const st = newState(p, newDesc(p, randomNew("3")).desc);
+  const solveMove = rectGame.solve?.(st, st, undefined);
+  if (!solveMove?.ok) throw new Error("unsolvable");
+  const solved = executeMove(st, solveMove.move);
+  for (let y = 0; y < p.h; y++)
+    for (let x = 1; x < p.w; x++)
+      if (!solved.vedge[y * p.w + x])
+        return {
+          st: executeMove(st, { type: "edge", edge: "v", x, y }),
+          wrong: { x, y },
+        };
+  throw new Error("no free edge");
+}
 
 describe("rect params codec", () => {
   it("round-trips full params including e/a suffixes", () => {
@@ -187,11 +204,10 @@ describe("rect input → moves", () => {
     expect(next.vedge[2 * 7 + 2]).toBe(1); // outline kept
   });
 
-  it("a no-op edge toggle on the grid boundary yields no move", () => {
+  it("a click on a cell center yields no move", () => {
     const p = P();
     const st = newState(p, "zw");
     const ui = rectGame.newUi(st);
-    // Clicking a cell center (no edge/corner) is not an edge toggle.
     const center = { x: px(3.5), y: px(3.5) };
     rectGame.interpretMove(st, ui, sizedDrawState(rectGame, st), center, LEFT_BUTTON);
     const move = rectGame.interpretMove(
@@ -245,25 +261,9 @@ describe("rect completion + solve", () => {
 
 describe("rect findMistakes", () => {
   it("flags a wall the unique solution does not contain", () => {
-    const p = P();
-    const { desc } = newDesc(p, randomNew("3"));
-    let st = newState(p, desc);
-    // Find an interior vedge that is NOT in the solution and draw it.
-    const solveMove = rectGame.solve?.(st, st, undefined);
-    if (!solveMove?.ok) throw new Error("unsolvable");
-    const solvedEdges = executeMove(st, solveMove.move);
-    let wrong: { x: number; y: number } | null = null;
-    for (let y = 0; y < p.h && !wrong; y++)
-      for (let x = 1; x < p.w; x++)
-        if (!solvedEdges.vedge[y * p.w + x]) {
-          wrong = { x, y };
-          break;
-        }
-    expect(wrong).not.toBeNull();
-    if (wrong)
-      st = executeMove(st, { type: "edge", edge: "v", x: wrong.x, y: wrong.y });
+    const { st, wrong } = boardWithWrongWall();
     const mistakes = rectGame.findMistakes?.(st) ?? [];
-    expect(mistakes).toContainEqual({ edge: "v", x: wrong?.x, y: wrong?.y });
+    expect(mistakes).toContainEqual({ edge: "v", ...wrong });
   });
 
   it("returns [] on an untouched board", () => {
@@ -297,22 +297,7 @@ describe("rect render", () => {
   });
 
   it("paints the mistake overlay even on an already-drawn tile", () => {
-    const p = P();
-    const { desc } = newDesc(p, randomNew("3"));
-    let st = newState(p, desc);
-    const solveMove = rectGame.solve?.(st, st, undefined);
-    if (!solveMove?.ok) throw new Error("unsolvable");
-    const solvedEdges = executeMove(st, solveMove.move);
-    let wrong: { x: number; y: number } | null = null;
-    for (let y = 0; y < p.h && !wrong; y++)
-      for (let x = 1; x < p.w; x++)
-        if (!solvedEdges.vedge[y * p.w + x]) {
-          wrong = { x, y };
-          break;
-        }
-    if (wrong)
-      st = executeMove(st, { type: "edge", edge: "v", x: wrong.x, y: wrong.y });
-
+    const { st } = boardWithWrongWall();
     const ds = newDrawState(st);
     ds.tileSize = TILE;
     const ui = rectGame.newUi(st);

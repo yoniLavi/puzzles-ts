@@ -14,12 +14,11 @@ import {
   type RectState,
 } from "./state.ts";
 
-/* Range predicates, matching upstream's macros. `HRANGE`: an hedge is
- * meaningful only for `y ∈ [1, h-1]`; `VRANGE`: a vedge only for
- * `x ∈ [1, w-1]`. */
-const hrange = (w: number, h: number, x: number, y: number) =>
+/* Upstream's `HRANGE` / `VRANGE`: an hedge is meaningful only for
+ * `y ∈ [1, h-1]`, a vedge only for `x ∈ [1, w-1]`. */
+export const hrange = (w: number, h: number, x: number, y: number) =>
   x >= 0 && x < w && y >= 1 && y < h;
-const vrange = (w: number, h: number, x: number, y: number) =>
+export const vrange = (w: number, h: number, x: number, y: number) =>
   x >= 1 && x < w && y >= 0 && y < h;
 
 /**
@@ -169,22 +168,6 @@ export function cloneRectState(s: RectState): RectState {
   };
 }
 
-/** Apply a bit-run string (`'0'`/`'1'`) into an edge grid at the given cells
- * in upstream's `S`-move order. Returns the number of characters consumed. */
-function applyBitRun(
-  bits: string,
-  start: number,
-  edge: Uint8Array,
-  w: number,
-  cells: Array<[number, number]>,
-): void {
-  let p = start;
-  for (const [x, y] of cells) {
-    edge[y * w + x] = bits[p] === "1" ? 1 : 0;
-    if (bits[p] !== undefined && bits[p] !== "") p++;
-  }
-}
-
 /** Pure move execution: returns a NEW state (upstream `execute_move`). Every
  * move type recomputes `correct` and sets `completed` monotonically once the
  * whole board is correct — including the solve path, so `status()` reports the
@@ -198,13 +181,14 @@ export function executeMove(from: RectState, move: RectMove): RectState {
 
   if (move.type === "solve") {
     cheated = true;
-    // vedge for x∈[1,w-1] row-major, then hedge for y∈[1,h-1] row-major.
-    const vcells: Array<[number, number]> = [];
-    for (let y = 0; y < h; y++) for (let x = 1; x < w; x++) vcells.push([x, y]);
-    const hcells: Array<[number, number]> = [];
-    for (let y = 1; y < h; y++) for (let x = 0; x < w; x++) hcells.push([x, y]);
-    applyBitRun(move.vedge, 0, vedge, w, vcells);
-    applyBitRun(move.hedge, 0, hedge, w, hcells);
+    // Row-major bit runs over the meaningful edges; a short run leaves the
+    // remaining edges clear.
+    let i = 0;
+    for (let y = 0; y < h; y++)
+      for (let x = 1; x < w; x++) vedge[y * w + x] = move.vedge[i++] === "1" ? 1 : 0;
+    i = 0;
+    for (let y = 1; y < h; y++)
+      for (let x = 0; x < w; x++) hedge[y * w + x] = move.hedge[i++] === "1" ? 1 : 0;
   } else if (move.type === "rect") {
     gridDrawRect(
       w,
@@ -227,13 +211,7 @@ export function executeMove(from: RectState, move: RectMove): RectState {
   }
 
   const correct = getCorrect(w, h, next.grid, hedge, vedge);
-  let completed = from.completed;
-  if (!completed) {
-    let ok = true;
-    for (let i = 0; i < w * h; i++) if (!correct[i]) ok = false;
-    if (ok) completed = true;
-  }
-
+  const completed = from.completed || !correct.includes(0);
   return { ...next, correct, completed, cheated };
 }
 
@@ -242,9 +220,7 @@ export function status(s: RectState): GameStatus {
 }
 
 export function textFormat(state: RectState): string {
-  const { w, h, grid } = state;
-  const hedge = state.hedge;
-  const vedge = state.vedge;
+  const { w, h, grid, hedge, vedge } = state;
 
   // Column width: at least 2, else the widest number.
   let col = 2;
@@ -253,48 +229,30 @@ export function textFormat(state: RectState): string {
     if (col < len) col = len;
   }
 
-  const pad = (s: string, n: number) => s.padStart(n);
+  // Whether the edge on the top / left of cell (cx, cy) is drawn; the grid's
+  // outer border always is.
+  const hOn = (cx: number, cy: number) =>
+    cy === 0 || cy === h || (hrange(w, h, cx, cy) && hedge[cy * w + cx] !== 0);
+  const vOn = (cx: number, cy: number) =>
+    cx === 0 || cx === w || (vrange(w, h, cx, cy) && vedge[cy * w + cx] !== 0);
+
   let out = "";
   for (let y = 0; y <= 2 * h; y++) {
     for (let x = 0; x <= 2 * w; x++) {
+      const cx = Math.floor(x / 2);
+      const cy = Math.floor(y / 2);
       if (x & y & 1) {
-        const v = grid[Math.floor(y / 2) * w + Math.floor(x / 2)];
-        out += v ? pad(String(v), col) : pad("", col);
+        const v = grid[cy * w + cx];
+        out += (v ? String(v) : "").padStart(col);
       } else if (x & 1) {
-        const on =
-          y === 0 || y === 2 * h
-            ? true
-            : hrange(w, h, Math.floor(x / 2), Math.floor(y / 2)) &&
-              hedge[Math.floor(y / 2) * w + Math.floor(x / 2)] !== 0;
-        out += (on ? "-" : " ").repeat(col);
+        out += (hOn(cx, cy) ? "-" : " ").repeat(col);
       } else if (y & 1) {
-        const on =
-          x === 0 || x === 2 * w
-            ? true
-            : vrange(w, h, Math.floor(x / 2), Math.floor(y / 2)) &&
-              vedge[Math.floor(y / 2) * w + Math.floor(x / 2)] !== 0;
-        out += on ? "|" : " ";
+        out += vOn(cx, cy) ? "|" : " ";
       } else {
-        const hl =
-          y === 0 || y === 2 * h
-            ? true
-            : hrange(w, h, Math.floor((x - 1) / 2), Math.floor(y / 2)) &&
-              hedge[Math.floor(y / 2) * w + Math.floor((x - 1) / 2)] !== 0;
-        const hr =
-          y === 0 || y === 2 * h
-            ? true
-            : hrange(w, h, Math.floor((x + 1) / 2), Math.floor(y / 2)) &&
-              hedge[Math.floor(y / 2) * w + Math.floor((x + 1) / 2)] !== 0;
-        const vu =
-          x === 0 || x === 2 * w
-            ? true
-            : vrange(w, h, Math.floor(x / 2), Math.floor((y - 1) / 2)) &&
-              vedge[Math.floor((y - 1) / 2) * w + Math.floor(x / 2)] !== 0;
-        const vd =
-          x === 0 || x === 2 * w
-            ? true
-            : vrange(w, h, Math.floor(x / 2), Math.floor((y + 1) / 2)) &&
-              vedge[Math.floor((y + 1) / 2) * w + Math.floor(x / 2)] !== 0;
+        const hl = hOn(cx - 1, cy);
+        const hr = hOn(cx, cy);
+        const vu = vOn(cx, cy - 1);
+        const vd = vOn(cx, cy);
         if (!hl && !hr && !vu && !vd) out += " ";
         else if (hl && hr && !vu && !vd) out += "-";
         else if (!hl && !hr && vu && vd) out += "|";

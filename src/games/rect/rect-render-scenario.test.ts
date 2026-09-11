@@ -37,7 +37,7 @@ describe("rect render scenarios", () => {
     const { recording } = renderScenario({
       game: rectGame,
       id: ID,
-      moves: [solveMove.move as RectMove],
+      moves: [solveMove.move],
     });
     // Every cell is correct → gray COL_CORRECT fill appears; flash is 0 here.
     expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_CORRECT)).toBe(

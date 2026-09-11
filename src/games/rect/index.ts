@@ -6,8 +6,7 @@
  * Left-drag draws a rectangle outline; right-drag erases interior edges; a
  * click near an edge toggles that single edge; a half-grid keyboard cursor
  * supports press-to-drag. `coord_round`'s corner/center/edge click allocation
- * is ported exactly. A drag or click that changes nothing produces no move
- * (local no-op suppression — no state-string undo).
+ * is ported exactly. A drag or click that changes nothing produces no move.
  */
 
 import { winFlash } from "../../engine/flash.ts";
@@ -29,17 +28,17 @@ import {
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import {
-  cloneRectState,
   executeMove,
   gridDrawRect,
+  hrange,
   newState,
   status,
   textFormat,
+  vrange,
 } from "./moves.ts";
 import {
   BORDER,
@@ -51,12 +50,12 @@ import {
   redraw,
 } from "./render.ts";
 import { type NumberData, rectSolver, SOLVE_UNIQUE } from "./solver.ts";
-import type { RectDrawState } from "./state.ts";
 import {
   decodeParams,
   defaultParams,
   encodeParams,
   presets,
+  type RectDrawState,
   type RectMistake,
   type RectMove,
   type RectParams,
@@ -81,26 +80,17 @@ function coordRound(x: number, y: number): [number, number] {
 
   let dx = Math.abs(x - xv);
   let dy = Math.abs(y - yv);
-  if (Math.max(dx, dy) < CORNER_TOLERANCE) {
-    return [2 * Math.trunc(xv), 2 * Math.trunc(yv)];
-  }
+  if (Math.max(dx, dy) < CORNER_TOLERANCE) return [2 * xv, 2 * yv];
   dx = Math.abs(x - xs);
   dy = Math.abs(y - ys);
   if (Math.max(dx, dy) < CENTER_TOLERANCE) {
     return [1 + 2 * Math.trunc(xs), 1 + 2 * Math.trunc(ys)];
   }
-  if (dx > dy) {
-    // Vertical edge: x-coord of corner, y-coord of square center.
-    return [2 * Math.trunc(xv), 1 + 2 * Math.trunc(Math.floor(ys))];
-  }
+  // Vertical edge: x-coord of corner, y-coord of square center.
+  if (dx > dy) return [2 * xv, 1 + 2 * Math.floor(ys)];
   // Horizontal edge: x-coord of square center, y-coord of corner.
-  return [1 + 2 * Math.trunc(Math.floor(xs)), 2 * Math.trunc(yv)];
+  return [1 + 2 * Math.floor(xs), 2 * yv];
 }
-
-const hrange = (w: number, h: number, x: number, y: number) =>
-  x >= 0 && x < w && y >= 1 && y < h;
-const vrange = (w: number, h: number, x: number, y: number) =>
-  x >= 1 && x < w && y >= 0 && y < h;
 
 function newUi(_state: RectState): RectUi {
   return {
@@ -188,7 +178,6 @@ function interpretMove(
       active = true;
     }
   } else if (isCancelKey(button)) {
-    // Backspace / Escape: cancel.
     if (!ui.cursorDragging) {
       ui.cursor.visible = false;
     } else {
@@ -292,24 +281,29 @@ function auxToMove(w: number, h: number, aux: string): RectMove {
   };
 }
 
-function solve(orig: RectState, _curr: RectState, aux?: string): SolveResult<RectMove> {
-  const { w, h } = orig;
-  if (aux) return { ok: true, move: auxToMove(w, h, aux) };
-
-  // Run the built-in solver from the fixed numbers.
+/** Run the solver from the fixed numbers. The edges of every rectangle it
+ * pins down are written, even when the verdict is not unique. */
+function solveFromNumbers({ w, h, grid }: RectState) {
   const nd: NumberData[] = [];
   for (let i = 0; i < w * h; i++) {
-    if (orig.grid[i])
+    if (grid[i])
       nd.push({
-        area: orig.grid[i],
+        area: grid[i],
         npoints: 1,
         points: [{ x: i % w, y: Math.floor(i / w) }],
       });
   }
   const hedge = new Uint8Array(w * h);
   const vedge = new Uint8Array(w * h);
-  rectSolver(w, h, nd, hedge, vedge, null);
+  const verdict = rectSolver(w, h, nd, hedge, vedge, null);
+  return { hedge, vedge, verdict };
+}
 
+function solve(orig: RectState, _curr: RectState, aux?: string): SolveResult<RectMove> {
+  const { w, h } = orig;
+  if (aux) return { ok: true, move: auxToMove(w, h, aux) };
+
+  const { hedge, vedge } = solveFromNumbers(orig);
   let vbits = "";
   for (let y = 0; y < h; y++)
     for (let x = 1; x < w; x++) vbits += vedge[y * w + x] ? "1" : "0";
@@ -320,21 +314,11 @@ function solve(orig: RectState, _curr: RectState, aux?: string): SolveResult<Rec
 }
 
 /** Boards are uniquely solvable: re-solve from the numbers and flag every edge
- * the player has drawn that the unique solution does not contain (design D4). */
+ * the player has drawn that the unique solution does not contain. */
 function findMistakes(state: RectState): readonly RectMistake[] {
   const { w, h } = state;
-  const nd: NumberData[] = [];
-  for (let i = 0; i < w * h; i++) {
-    if (state.grid[i])
-      nd.push({
-        area: state.grid[i],
-        npoints: 1,
-        points: [{ x: i % w, y: Math.floor(i / w) }],
-      });
-  }
-  const hedge = new Uint8Array(w * h);
-  const vedge = new Uint8Array(w * h);
-  if (rectSolver(w, h, nd, hedge, vedge, null) !== SOLVE_UNIQUE) return [];
+  const { hedge, vedge, verdict } = solveFromNumbers(state);
+  if (verdict !== SOLVE_UNIQUE) return [];
 
   const out: RectMistake[] = [];
   for (let y = 1; y < h; y++)
@@ -344,15 +328,6 @@ function findMistakes(state: RectState): readonly RectMistake[] {
     for (let x = 1; x < w; x++)
       if (state.vedge[y * w + x] && !vedge[y * w + x]) out.push({ edge: "v", x, y });
   return out;
-}
-
-function flashLength(
-  oldState: RectState,
-  newState_: RectState,
-  _dir: number,
-  _ui: RectUi,
-): number {
-  return winFlash(oldState, newState_, FLASH_TIME);
 }
 
 function statusbarText(s: RectState, ui: RectUi): string {
@@ -412,7 +387,7 @@ export const rectGame: Game<
     "ensure-unique-solution": p.unique,
   }),
 
-  newDesc: (p: RectParams, rng: RandomState) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -427,19 +402,16 @@ export const rectGame: Game<
   textFormat,
   statusbarText,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: RectParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tileSize = ts;
   },
   newDrawState,
   redraw,
 
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(rectGame);
-
-// cloneRectState is re-exported for tests.
-export { cloneRectState };

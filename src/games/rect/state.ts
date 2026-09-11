@@ -20,15 +20,15 @@ export interface RectParams {
   w: number;
   h: number;
   /** C `float`: base grid is generated at `size / (1 + expandfactor)` then
-   * stretched. Default 0 (all presets). A byte-match float hazard — encoded
-   * `%g`, decoded `atof` (see design D5). */
+   * stretched. Default 0 (all presets). A byte-match float hazard, so encoded
+   * `%g` and decoded `atof`. */
   expandfactor: number;
   /** Generate a uniquely-solvable board (default) vs. any placement. */
   unique: boolean;
 }
 
-/** A player action. Discriminated union in place of C's move strings
- * `R x,y,w,h` / `E x,y,w,h` / `H x,y` / `V x,y` / `S…` (design D2). */
+/** A player action; upstream's move strings `R x,y,w,h` / `E x,y,w,h` /
+ * `H x,y` / `V x,y` / `S…`. */
 export type RectMove =
   | { type: "rect"; erasing: boolean; x: number; y: number; w: number; h: number }
   | { type: "edge"; edge: "h" | "v"; x: number; y: number }
@@ -83,7 +83,7 @@ export interface RectDrawState {
   visible: Int32Array;
 }
 
-/** A flagged edge that the unique solution does not contain (design D4). */
+/** A flagged edge that the unique solution does not contain. */
 export interface RectMistake {
   edge: "h" | "v";
   x: number;
@@ -131,7 +131,7 @@ export function decodeParams(s: string): RectParams {
     i++;
     const start = i;
     while (i < s.length && (s[i] === "." || (s[i] >= "0" && s[i] <= "9"))) i++;
-    // Stored as a C `float`, so round to single precision (design D5).
+    // Stored as a C `float`, so round to single precision.
     p.expandfactor = Math.fround(atof(s.slice(start, i)));
   }
   if (s[i] === "a") {
@@ -153,7 +153,6 @@ export function validateParams(p: RectParams, _full: boolean): string | null {
  */
 
 const CODE_A = "a".charCodeAt(0);
-const CODE_Z = "z".charCodeAt(0);
 
 /** Encode a numbers array (row-major, 0 = empty) into the upstream desc. */
 export function encodeNumbers(numbers: ArrayLike<number>, area: number): string {
@@ -166,10 +165,9 @@ export function encodeNumbers(numbers: ArrayLike<number>, area: number): string 
     } else {
       if (run) {
         while (run > 0) {
-          let c = CODE_A - 1 + run;
-          if (run > 26) c = CODE_Z;
-          out += String.fromCharCode(c);
-          run -= c - (CODE_A - 1);
+          const gap = Math.min(run, 26);
+          out += String.fromCharCode(CODE_A - 1 + gap);
+          run -= gap;
         }
       } else if (out.length > 0 && n > 0) {
         // No unnecessary `_` before a number at the very top-left.
@@ -190,12 +188,10 @@ export function validateDesc(p: RectParams, desc: string): string | null {
     const c = desc[i++];
     if (c >= "a" && c <= "z") {
       squares += c.charCodeAt(0) - CODE_A + 1;
-    } else if (c === "_") {
-      // nothing
     } else if (c > "0" && c <= "9") {
       squares++;
       while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;
-    } else {
+    } else if (c !== "_") {
       return "Invalid character in game description";
     }
   }
@@ -212,10 +208,7 @@ export function decodeNumbers(desc: string, area: number): Int32Array {
   while (i < desc.length) {
     const c = desc[i++];
     if (c >= "a" && c <= "z") {
-      let run = c.charCodeAt(0) - CODE_A + 1;
-      while (run-- > 0) grid[idx++] = 0;
-    } else if (c === "_") {
-      // nothing
+      idx += c.charCodeAt(0) - CODE_A + 1; // the grid starts zeroed
     } else if (c > "0" && c <= "9") {
       const start = i - 1;
       while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;

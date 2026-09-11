@@ -22,29 +22,18 @@
 
 import type { RandomState } from "../../engine/random/index.ts";
 import { randomUpto } from "../../engine/random/index.ts";
-
-export interface Pt {
-  x: number;
-  y: number;
-}
-
-interface Rct {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+import type { Point, Rect } from "../../engine/types.ts";
 
 export interface NumberData {
   area: number;
   npoints: number;
   /** Candidate positions; only the first `npoints` are live. Mutated in
    * place (swap-with-end) exactly as upstream. */
-  points: Pt[];
+  points: Point[];
 }
 
 interface RectPositions {
-  rects: Rct[];
+  rects: Rect[];
   n: number;
 }
 
@@ -123,7 +112,7 @@ export function rectSolver(
       if (maxy < py) maxy = py;
     }
 
-    const rlist: Rct[] = [];
+    const rlist: Rect[] = [];
     for (let rw = 1; rw <= area && rw <= w; rw++) {
       if (area % rw) continue;
       const rh = area / rw;
@@ -173,10 +162,9 @@ export function rectSolver(
 
   const workspace = new Int32Array(nrects);
 
-  // Deduction loop. An inconsistency detected mid-loop just breaks out to the
-  // finalization below, which (matching C's `cleanup:` label) recomputes the
-  // verdict purely from the surviving placement counts — the mid-loop `ret = 0`
-  // in C is overwritten by `ret = 1` at the label, so we don't set it here.
+  // Deduction loop. An inconsistency found mid-loop only breaks out: the
+  // finalization below recomputes the verdict from the surviving placement
+  // counts, as C's `cleanup:` label overwrites its mid-loop `ret = 0`.
   deduction: for (;;) {
     let doneSomething = false;
 

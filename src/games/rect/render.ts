@@ -5,10 +5,11 @@
  *
  * The per-cell cache word packs exactly upstream's `visible[]` — the four edge
  * values (0/1/2/3) and four corner values (2 bits each) around the cell, plus
- * the `F_CORRECT` and `F_CURSOR` bits — into an `Int32Array` (docs/games/rendering.md § "The tile cache and the diff key"). Four
- * extra bits carry the `findMistakes` wrong-edge overlay so it repaints and
- * clears through the same cache. The drag preview is drawn into a scratch copy
- * of the edges before the corner pass, so it too lives entirely in the word.
+ * the `F_CORRECT` and `F_CURSOR` bits — into an `Int32Array`
+ * (docs/games/rendering.md § "The tile cache and the diff key"). Four extra
+ * bits carry the `findMistakes` wrong-edge overlay so it repaints and clears
+ * through the same cache. The drag preview is drawn into a scratch copy of the
+ * edges before the corner pass, so it too lives entirely in the word.
  *
  * Palette is index-for-index with the C color enum, plus an appended
  * `COL_MISTAKE`.
@@ -25,7 +26,7 @@ import {
 } from "../../engine/color/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Rect, Size } from "../../engine/types.ts";
-import { gridDrawRect } from "./moves.ts";
+import { gridDrawRect, hrange, vrange } from "./moves.ts";
 import type {
   RectDrawState,
   RectMistake,
@@ -47,7 +48,7 @@ export const COL_GRID = 4;
 export const COL_DRAG = 5;
 export const COL_DRAGERASE = 6;
 export const COL_CURSOR = 7;
-export const COL_MISTAKE = 8; // appended past the C enum (design D4)
+export const COL_MISTAKE = 8; // appended past the C enum
 
 export function colors(defaultBackground: Color): Color[] {
   const bg = defaultBackground;
@@ -77,11 +78,6 @@ const M_RIGHT = 1 << 21;
 const coord = (n: number, tile: number) => n * tile + BORDER;
 const colorOf = (k: number) =>
   k === 1 ? COL_LINE : k === 2 ? COL_DRAG : COL_DRAGERASE;
-
-const hrange = (w: number, h: number, x: number, y: number) =>
-  x >= 0 && x < w && y >= 1 && y < h;
-const vrange = (w: number, h: number, x: number, y: number) =>
-  x >= 1 && x < w && y >= 0 && y < h;
 
 export function computeSize(p: RectParams, tileSize: number): Size {
   return { w: p.w * tileSize + 2 * BORDER + 1, h: p.h * tileSize + 2 * BORDER + 1 };
