@@ -1,6 +1,5 @@
 /**
- * **Colors a game defines relative to its own board** — the third layer, and by
- * design almost the only thing left in it.
+ * **Colors a game defines relative to its own board** — the third layer.
  *
  * The palette is [`colors.ts`](./colors.ts) and the meanings are
  * [`palette.ts`](./palette.ts); read those first. What lands *here* is the
@@ -10,31 +9,21 @@
  * and means "where the arrow would be"; there is no scheme in which that is a
  * constant.
  *
- * This is not filing. `puzzle-view.ts` hands the engine **pure white** as the
- * background in dark mode, precisely because games derive colors by scaling the
- * board down (`resolvePalette` shifts it to a light gray before a game sees it),
- * and adapts the returned palette afterwards. A derivation therefore
- * tracks the scheme for free, and freezing one into a value is how a subtle tint
- * of the board becomes a bright patch on it.
+ * In dark mode `puzzle/components/view.ts` hands the engine **pure white** as
+ * the background (`resolvePalette` shifts it to a light gray before a game sees
+ * it) and adapts the returned palette afterwards. A derivation therefore tracks
+ * the scheme for free, and freezing one into a value is how a subtle tint of the
+ * board becomes a bright patch on it.
  *
- * ## What this file used to be, and why it shrank
- *
- * It held 170-odd *absolute* per-game colors — Cube's blue die face, Untangle's
- * blue vertex, Pegs' blue peg, Sticks' blue line, four independent arrivals at
- * pure blue under four names. `consolidate-colour-palette` replaced every one of
- * them with a meaning or a named color, on the argument that four names for one
- * color is not four decisions worth keeping: it is one color that nobody chose
- * four times, and it made restyling a scheme 170 judgment calls.
- *
- * Two rules still hold for what remains:
+ * Two rules hold here:
  *
  * - **every export is prefixed with its game's id** — `signpostArrowDim`,
  *   `UNRULY_BLACK`. `palette-source.test.ts` derives each game's allowed colors
  *   from that prefix, so the prefix is load-bearing, not decoration;
- * - **an absolute value here is an exception and says why.** There are two, both
- *   Unruly's, and the reason is written where they are declared. A third wants
- *   the same treatment: say what it means to the player, and why no meaning and
- *   no named color serves. Thirty of them is how the collection got here before.
+ * - **an absolute value here is an exception and says why.** Unruly's two are
+ *   the only ones, and the reason is written where they are declared. A new one
+ *   says what it means to the player, and why no meaning and no named color
+ *   serves.
  */
 
 import type { Color } from "../types.ts";
@@ -58,10 +47,6 @@ import { INK } from "./palette.ts";
  * from, so entry 15 sees entry 8 already filled in. Reproduced deliberately: it
  * is a real color on real boards, and "fixing" it would repaint every game with
  * more than seven chains.
- *
- * Sixty-four further palette entries are built from these sixteen — see
- * {@link SIGNPOST_ON_REGION_MID} — which is why one shared set covers seventy
- * colors.
  */
 export const SIGNPOST_REGION_BACKGROUNDS: readonly Color[] = (() => {
   // The eight fills go in **as themselves**, not re-wrapped: a token is
@@ -162,17 +147,11 @@ export const blackboxLock = (background: Color): Color => scale(background, 0.7)
  * mass. */
 export const blackboxCover = (background: Color): Color => scale(background, 0.5);
 
-// --- bridges ------------------------------------------------------------
-
 // --- crossing -----------------------------------------------------------
 
 /** **Not placed yet** — a ghosted word, light enough to read as provisional and
  * dark enough to read at all. */
 export const crossingGhost = (background: Color): Color => scale(background, 0.55);
-
-// --- dominosa -----------------------------------------------------------
-
-// --- filling ------------------------------------------------------------
 
 // --- flip ---------------------------------------------------------------
 
@@ -186,20 +165,12 @@ export const flipWrongFace = (background: Color): Color => divide(background, 3)
  * of the board so a black region reads as filled without becoming ink. */
 export const galaxiesBlackRegion = (background: Color): Color => scale(background, 0.3);
 
-// Galaxies' cursor was `bridgesCursor(background)` — the same warm tint of the
-// board, arrived at independently in both ports from the same upstream idiom.
-// It is now the collection's default `CURSOR`: a tint of the board is a color
-// that cannot be prominent, and Galaxies painted its *drag preview* in it too.
-// See the assignment in `games/galaxies/index.ts` and `DRAG_ADD`'s doc comment.
-
 // --- group --------------------------------------------------------------
 
 /** Group's **leading diagonal** — the cells where an element meets itself,
  * shaded a twentieth off the board because the hint is structural, not a state
  * the player set. */
 export const groupDiagonal = (background: Color): Color => scale(background, 0.95);
-
-// --- lightup ------------------------------------------------------------
 
 // --- net / netslide -----------------------------------------------------
 
@@ -211,8 +182,6 @@ export const netLocked = (background: Color): Color => scale(background, 0.75);
 /** Netslide's bevel lowlight — it takes the host background as-is rather than
  * through `mkhighlight`, so it derives its own. */
 export const netslideLowlight = (background: Color): Color => scale(background, 0.8);
-
-// --- rect ---------------------------------------------------------------
 
 // --- rome ---------------------------------------------------------------
 
@@ -238,28 +207,23 @@ export const slantGrounded = (background: Color): Color => scale(background, 0.8
  *
  * Deriving them from the board rather than authoring four colors is what makes
  * them read as *the same board, in different materials* rather than as four
- * objects placed on it, and `hand-author-dark-palette` F1 turned on exactly this
- * property: under the old dark-mode formula the target zone stopped being a tint
- * and became a bright patch. It also means the ladder below survives the scheme
- * flip without a single authored dark value — one inversion rule maps all four,
- * so their *ordering* is preserved by construction.
+ * objects placed on it, and it lets the ladder below survive the scheme flip
+ * without a single authored dark value: one inversion rule maps all four, so
+ * their *ordering* is preserved by construction.
  *
  * ## The ladder, and why it exists at all
  *
  * Upstream derives the floor, the walls **and** the ordinary blocks from one
- * `game_mkhighlight` trio, so all three are literally the same fill and are told
- * apart only by their bevels. Its own author recorded the result: *"All the
- * colors are a bit wishy-washy. Some dark colors would surely not be
- * excessive? Probably darken the tiles, the walls and the main block, and leave
- * the target marker pale."* Measured on the light scheme before this change, the
- * whole board — floor, wall, block, key block and exit — sat inside a **0.10
- * OKLCH lightness band**, and three of those five were the identical value.
+ * `game_mkhighlight` trio, so all three are the same fill told apart only by
+ * their bevels. Its own author recorded the result: *"All the colors are a bit
+ * wishy-washy. Some dark colors would surely not be excessive? Probably darken
+ * the tiles, the walls and the main block, and leave the target marker pale."*
+ * On the light scheme that board — floor, wall, block, key block and exit — sat
+ * inside a **0.10 OKLCH lightness band**.
  *
- * Note the instruction is a *pair*. Raising the contrast of everything else is
- * what lets the exit's green stop carrying the board on its own, which is why
- * the target below is unchanged: the owner's decision to keep it (2026-07-30)
- * stands, and it becomes *more* prominent here by everything around it stepping
- * back rather than by it stepping forward.
+ * Note the instruction is a *pair*: the target keeps its pale green (an owner
+ * decision) and becomes *more* prominent by everything around it stepping back
+ * rather than by it stepping forward.
  *
  * Ordered by what each material **is**:
  *
@@ -283,19 +247,14 @@ export const slideBlockBase = (background: Color): Color => scale(background, 0.
 
 /**
  * @see slideWallBase — the key block: the board with its red and green taken
- * **down**, which is the exact dual of the exit below.
- *
- * It used to be the board with blue taken *up* to the board's own highlight, a
- * tint 0.012 of a lightness from the floor it sat on. Reading the two
- * derivations against each other is the point: the block you have to move is a
+ * **down**, the exact dual of the exit below. The block you have to move is a
  * *weight* on the board, and the square it has to reach is a *light* on it.
  *
- * The arithmetic lands on exactly `palette.ts`'s `pencilColor`, arrived at
- * independently — which is some evidence it is the natural way to get a blue that
- * tracks the board, and is why `metrics/color-inventory.md` attributes this entry
- * to that function (it matches by value). It is deliberately **not** that role:
- * a pencil mark is a note *subordinate* to a placed digit, and a key block is the
- * one thing on the board that is not subordinate to anything.
+ * The arithmetic is exactly `palette.ts`'s `pencilColor`, which is why
+ * `metrics/color-inventory.md` attributes this entry to that function (it
+ * matches by value). It is deliberately **not** that role: a pencil mark is a
+ * note *subordinate* to a placed digit, and a key block is the one thing on the
+ * board that is not subordinate to anything.
  */
 export const slideMainBlockBase = (background: Color): Color => [
   background[0] * 0.5,
@@ -304,7 +263,7 @@ export const slideMainBlockBase = (background: Color): Color => [
 ];
 
 /** @see slideWallBase — the exit area: the board with its green channel taken to
- * the board's own highlight. Deliberately unchanged. */
+ * the board's own highlight. */
 export const slideTargetBase = (background: Color, highlight: Color): Color => [
   background[0],
   highlight[1],
@@ -349,8 +308,6 @@ export const soloKiller = (background: Color): Color => [
   0.5 * background[1],
   0.1 * background[2],
 ];
-
-// --- spokes -------------------------------------------------------------
 
 // --- tracks -------------------------------------------------------------
 
@@ -399,8 +356,8 @@ export const undeadVampire = (background: Color): Color => [
 // --- unruly -------------------------------------------------------------
 
 /**
- * Unruly's two tile colors — **the one absolute exception left in the
- * collection**, and the argument for it.
+ * Unruly's two tile colors — **the one absolute exception in the collection**,
+ * and the argument for it.
  *
  * *What they mean to the player:* the two states of a tile, on a board that is
  * half of each. *Why no named color serves:* these are not the colors drawn,
@@ -411,10 +368,9 @@ export const undeadVampire = (background: Color): Color => [
  * every tile on the board would read flat on one side. Near-black and near-white
  * are the whole point, and "near" is a headroom, not a shade.
  *
- * The palette has no place for them because the requirement is structural rather
- * than chromatic: it belongs with the bevel, which is
- * [`color-mkhighlight.ts`](./color-mkhighlight.ts)'s business, not with a
- * color anybody names.
+ * The requirement is structural rather than chromatic: it belongs with the
+ * bevel, which is [`color-mkhighlight.ts`](./color-mkhighlight.ts)'s business,
+ * not with a color anybody names.
  */
 export const UNRULY_BLACK = token([0.2, 0.2, 0.2], [0.2, 0.2, 0.2]);
 /** @see UNRULY_BLACK */

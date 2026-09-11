@@ -83,10 +83,8 @@ function makeGame(
       [0, 0, 0],
     ],
     computeSize: () => ({ w: 10, h: 10 }),
-    // Required since `audit-vestigial-contract-surface`: a game that draws
-    // nothing is not a game, and while these were optional every real game
-    // received a `DrawState | null` and guarded a null the engine cannot
-    // produce. This double genuinely draws nothing, so its DrawState is `null`.
+    // Required on `Game`: a game that draws nothing is not a game. This double
+    // genuinely draws nothing, so its DrawState is `null`.
     newDrawState: () => null,
     redraw: () => {},
     ...overrides,
@@ -207,9 +205,7 @@ describe("Every registered game with paramConfig round-trips its presets", () =>
     // The `continue` below skips a game with no `paramConfig` **in silence**,
     // and the type menu offers "Custom type…" for every game unconditionally,
     // so a port that forgets the hook ships a dialog with no fields in it and
-    // nothing objects. Sokoban did, from its port until
-    // `audit-vestigial-contract-surface` — invisible because the menu entry was
-    // gated on a `canConfigure` flag the midend hard-coded to `true`.
+    // nothing objects.
     //
     // If a genuinely preset-only game ever arrives, this is the prompt to
     // decide what its menu should say, rather than to add an exception.

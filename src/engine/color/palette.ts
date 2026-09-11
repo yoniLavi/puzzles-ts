@@ -14,32 +14,26 @@
  * told apart from the other members, or a color the game names to the player.
  *
  * [`color-mkhighlight.ts`](./color-mkhighlight.ts) owns *structural* color (a
- * game's background and its bevel highlight/lowlight trio) and keeps owning it.
+ * game's background and its bevel highlight/lowlight trio).
  * [`palette-games.ts`](./palette-games.ts) holds what is left: the colors a game
  * defines **relative to its own board**, which have no value to author because
  * they are functions.
  *
- * ## Why this exists
- *
- * Before `audit-game-colour-palette`, every color in every game was a
- * hand-written RGB triple: 388 of them across 56 of the 57 ported games, in 108
- * distinct values, drifted in ways nothing could catch — `COL_ERROR` was
- * `[1, 0, 0]` in 27 games, `[1.0, 0.0, 0.0]` in one more, plus `[0.9, 0, 0]` and
- * `[1, 0.25, 0.25]`. The audit named them; `colour-tokens-per-scheme` gave each a
- * home; `consolidate-colour-palette` cut the ~190 names down to twelve colors and
- * the meanings on this page.
+ * These are color *values*, so they do not carry the `COL_` prefix, which
+ * throughout the codebase means a palette **index**: a game imports `ERROR` and
+ * assigns it to its own `COL_ERROR` slot.
  *
  * ## Absolute vs background-derived
  *
  * A role is a named color when its job is to be unmistakable regardless of the
  * board, and a **function of the frontend background** when it must stay legible
- * *against* the board. That second form is not a stylistic preference:
- * `puzzle-view.ts` hands the engine **pure white** as the default background in
- * dark mode (precisely because upstream games derive colors as `background × 0.9`),
+ * *against* the board. That second form is not a stylistic preference: in dark
+ * mode `puzzle/components/view.ts` hands the engine **pure white** as the default
+ * background (because upstream games derive colors as `background × 0.9`),
  * `resolvePalette` shifts it to a light gray so every game's board sits at one
  * tone, and the returned palette is adapted afterwards — so a fixed pale color
  * that reads correctly in light mode can land on top of the background in dark
- * mode. Spokes shipped exactly that bug with a pure-white `COL_DONE`.
+ * mode, as Spokes' pure-white `COL_DONE` once did.
  */
 
 import type { Color } from "../types.ts";
@@ -58,18 +52,11 @@ import {
   YELLOW,
 } from "./colors.ts";
 
-// Naming: these are color *values* and deliberately do NOT carry the `COL_`
-// prefix, which throughout this codebase means "a palette **index**" — every game
-// declares its own `COL_ERROR`, `COL_HINT` and so on, mapped to its upstream C
-// enum. A game imports `ERROR` and assigns it to its own `COL_ERROR` slot, so the
-// two namespaces stay separate and a game's indices keep matching its C reference.
-
 // --- ink and paper ----------------------------------------------------
 
 /**
  * Maximum-contrast foreground: grid lines, outlines, glyphs, body text, and the
- * black half of a two-color game. The single most repeated value in the
- * collection (85 sites before the audit).
+ * black half of a two-color game.
  *
  * Not the {@link BLACK} color, despite being the same value: this is *contrast
  * against the surface*, so it must invert in dark mode or text ends up darker
@@ -78,8 +65,7 @@ import {
 export const INK: Color = [0, 0, 0];
 
 /** Maximum-contrast background: a white tile, a white-marked cell, the flash
- * frame. The counterpart to {@link INK} (28 sites, in two spellings), and
- * likewise not {@link WHITE}. */
+ * frame. The counterpart to {@link INK}, and likewise not {@link WHITE}. */
 export const PAPER: Color = [1, 1, 1];
 
 /** A mid-gray grid line, for games that want the grid to recede rather than
@@ -101,14 +87,10 @@ export const UNDECIDED: Color = GRAY;
 /**
  * **The keyboard cursor.** Green by default, because on a board of grays,
  * blacks and whites — which is most of them — green is the hue least likely to
- * be spoken for.
+ * be spoken for. A game whose board *has* spent green reaches past this for a
+ * named color and says why at the assignment (`palette-departures.test.ts`).
  *
- * A game whose board *has* spent green reaches past this for a named color and
- * says why at the assignment. The audit found seventeen games with seventeen
- * deliberately different cursors and read that as seventeen decisions; it is
- * really one decision plus a handful of collisions, and this is the one decision.
- *
- * Two corollaries, from the sweep that brought the seventeen down:
+ * Two corollaries:
  *
  * - **This is a *mark*** — a ring, an outline, a line, a disc. A cursor that
  *   *fills a cell under the cell's own content* (Solo's family, Bridges,
@@ -124,9 +106,7 @@ export const CURSOR: Color = GREEN;
 
 /**
  * **You have picked this up** — the island a bridge is being drawn from, the hub
- * a spoke is being dragged from, the square a link starts at. Three games
- * converged on the same bright green independently, which is the audit's
- * convergence test passing.
+ * a spoke is being dragged from, the square a link starts at.
  */
 export const HELD: Color = GREEN;
 
@@ -136,13 +116,11 @@ export const HELD: Color = GREEN;
  * same color as a wash, so the board underneath still reads through it.
  *
  * `DRAG_ADD` also dresses the *aim* drag's preview — the arrows Galaxies shows
- * on the pair a release would associate. The meaning is the same ("let go and
- * this is laid"); only the drag model differs. It must be an **authored**
- * color and not a board-relative tint, because a transient affordance the
- * player is steering by has to be prominent in *both* schemes, and a tint of
- * the board is by construction prominent in neither — Galaxies' preview
- * inherited its keyboard cursor's warm board tint, and shipped as a 1 px
- * `#ffaaaa` line on a `#d5d5d5` board. */
+ * on the pair a release would associate: the same meaning ("let go and this is
+ * laid") under a different drag model. It must be an **authored** color, not a
+ * board-relative tint, because an affordance the player is steering by has to
+ * be prominent in *both* schemes, and a tint of the board is by construction
+ * prominent in neither. */
 export const DRAG_ADD: Color = BLUE;
 
 /** @see DRAG_ADD */
@@ -154,12 +132,9 @@ export const DRAG_REMOVE: Color = BLUE_WASH;
  * Something is **wrong**: a rule the board breaks as you play, or a cell that
  * `findMistakes` has proved contradicts the unique solution.
  *
- * One role, not two. Before the audit this arrived under five names —
- * `COL_ERROR` (28), `COL_MISTAKE` (10), `COL_WRONG`, `COL_NUM_ERROR`,
- * `COL_ERRORDIST` — because upstream names it per game, and the *value* had
- * drifted to five variants around the same red. The names stay (they are
- * index-mapped into each game's palette and match its C enum); the value comes
- * from here.
+ * One role under several slot names — `COL_ERROR`, `COL_MISTAKE`, `COL_WRONG`,
+ * `COL_NUM_ERROR`, `COL_ERRORDIST` — because upstream names it per game. The
+ * names stay; the value comes from here.
  */
 export const ERROR: Color = RED;
 
@@ -173,12 +148,8 @@ export const ERROR_TEXT: Color = PAPER;
  * `COL_ERRORBG`, Mines' contradicted count, Light Up's two-lamps-see-each-other
  * square.
  *
- * Was a function of the background — red pinned at full strength while green and
- * blue tracked the board — which is what a wash had to be before the wash step
- * was authored per scheme. It is a named color now: the derivation existed to
- * make the fill follow the board's brightness, and `RED_WASH` does that by being
- * authored light in light mode and dark in dark mode, which the derivation could
- * not (it was handed pure white in dark mode and came out a pale pink).
+ * A named color rather than a function of the background, because `RED_WASH`
+ * already follows the board's brightness: light in light mode, dark in dark.
  */
 export const ERROR_WASH: Color = RED_WASH;
 
@@ -215,11 +186,11 @@ export const HINT_ACTION: Color = BLUE;
  * prevent, because restyling one would silently fail to restyle the other.
  *
  * A **different hue** from {@link HINT_ACTION}, rather than a third shade of the
- * same blue. Seven games mark an evidence region and a target cell at once, and
- * two blues eight hundredths of a lightness apart are all but the same color;
- * the distinction the player actually needs — *this is what I am reasoning from,
- * that is what I am concluding* — survives a hue change and does not survive a
- * shade change.
+ * same blue. A hint often marks an evidence region and a target cell at once,
+ * and two blues eight hundredths of a lightness apart are all but the same
+ * color; the distinction the player actually needs — *this is what I am
+ * reasoning from, that is what I am concluding* — survives a hue change and does
+ * not survive a shade change.
  *
  * Teal's **bold** step, not its base. A line drawn *against* a board wants a step
  * whose lightness differs between schemes, and bold is the one defined that way
@@ -235,19 +206,15 @@ export const HINT_EVIDENCE: Color = TEAL_BOLD;
  * evidence cells carry nothing the player has to read — Range's undecided cells,
  * Pattern's unfilled squares.
  *
- * A game reaching for this is making a claim, and the claim is *nothing is drawn
- * here*. Where content does sit on the evidence, the wash loses whichever way it
- * is tuned: pale enough to read a derived foreground through, and it stops
- * reading as a mark (it measured **1.15:1 against its own board in dark mode** at
- * the lightness that legibility needed). Those are two requirements moving in
- * opposite directions along one axis, and an outline is not on that axis at all.
+ * A game reaching for this is claiming *nothing is drawn here*. Where content
+ * does sit on the evidence, a wash loses whichever way it is tuned: pale enough
+ * to read a derived foreground through, and it stops reading as a mark (it
+ * measured **1.15:1 against its own board in dark mode** at the lightness that
+ * legibility needed). An outline has no such trade-off.
  *
- * **"Nothing is drawn here" excludes the game's content, not the hint's own
- * marks.** A target cell is very often inside the region the deduction reasons
- * from, so the action ring lands on this fill and has to win against it — which
- * is why the role takes teal's *quiet* wash rather than its ordinary one. On the
- * ordinary one the ring measured 1.69:1 in dark against 3.94 in light: the
- * evidence shouted and the conclusion whispered. See {@link TEAL_WASH_QUIET}.
+ * "Nothing is drawn here" excludes the game's content, not the hint's own marks:
+ * the action ring often lands on this fill and has to win against it, which is
+ * why the role takes teal's *quiet* wash — see {@link TEAL_WASH_QUIET}.
  */
 export const HINT_EVIDENCE_WASH: Color = TEAL_WASH_QUIET;
 
@@ -262,33 +229,19 @@ export const HINT_WHITEREF: Color = PURPLE;
 
 // --- pencil marks -----------------------------------------------------
 
-/**
- * The body of the pencil-mode indicator glyph — a #2-pencil yellow. Already
- * perfectly consistent across its ten games before the audit, which is what a
- * role looks like when it is introduced once and copied carefully.
- */
+/** The body of the pencil-mode indicator glyph — a #2-pencil yellow. */
 export const PENCIL_BODY: Color = YELLOW;
 
 // --- background-derived roles -----------------------------------------
 
-/**
- * The shared "this region/area is correctly completed" shade — the
- * local-completion feedback Galaxies and Rectangles give, *not* a global
- * solved check. A neutral darkening of the background to 75%, matching upstream
- * Rectangles' `COL_CORRECT`.
- *
- * Deliberately a settled gray rather than a per-game hue: a green invented for
- * Separate/Palisade was the inconsistency that first motivated sharing a color
- * at all. Re-exported from `color-mkhighlight.ts`, where it has lived since
- * before this module existed, so all the roles are reachable from one import.
- */
+/** @see correctRegionColor — re-exported from `color-mkhighlight.ts` so every
+ * role is reachable from one import. */
 export { correctRegionColor } from "./color-mkhighlight.ts";
 
 /**
- * A pencil mark — the candidate values a player has noted but not committed.
- * Eleven games draw these, and all eleven want the same thing: something clearly
- * *subordinate* to a placed digit, but still legible at the quarter-size a pencil
- * mark is drawn at.
+ * A pencil mark — the candidate values a player has noted but not committed:
+ * clearly *subordinate* to a placed digit, but still legible at the quarter-size
+ * a pencil mark is drawn at.
  *
  * Darkening two channels and leaving blue at full strength is upstream's answer
  * and a good one — it reads as "a note" by hue rather than by contrast alone, so
@@ -302,8 +255,7 @@ export function pencilColor(background: Color): Color {
 /**
  * **The player put this here** — the digit, letter or arrow you entered, as
  * opposed to the clue the puzzle gave you (which is {@link INK}). The single most
- * important distinction in every entry game, and eleven of them make it with this
- * same green.
+ * important distinction in every entry game.
  *
  * Derived because it is a *foreground on the board*: the green tracks the
  * background's own brightness so it stays a readable glyph color rather than a
@@ -314,8 +266,8 @@ export function playerEntryColor(background: Color): Color {
 }
 
 /** A gently emphasized cell — the "you are here" / "this line is selected" wash
- * that must stay a *background*, not become a foreground. Six games'
- * `COL_HIGHLIGHT` (Solo, Keen, Towers, Group, Undead, Filling). */
+ * that must stay a *background*, not become a foreground: `COL_HIGHLIGHT` in
+ * Solo's family and Filling. */
 export function highlightWash(background: Color): Color {
   return scale(background, 0.78);
 }
@@ -326,17 +278,12 @@ export function highlightWash(background: Color): Color {
  * `COL_LINEUNKNOWN` and Palisade's and Separate's `COL_LINE_MAYBE`.
  *
  * A background-toned olive — the background's own brightness with blue removed,
- * so it reads as a *marked* edge without competing with a real line. All three
- * games once carried the identical `paletteOverrides: { n: 0.6 }` dark-mode
- * patch, which was the strongest available evidence that they are one role:
- * three independent ports converged on both the color and its correction.
+ * so it reads as a *marked* edge without competing with a real line.
  *
- * **The dark value is authored here, not derived.** Derivation inverts the
- * olive's lightness and lands near the dark background, and the inherited
- * `0.6` multiplier then darkened *that* — the owner's playtest found the
- * undecided edges "almost invisible" on a dark board. A muted amber, clearly
- * above a near-black background and clearly below ink, is what the role wants
- * there; the three games' multipliers are gone.
+ * **The dark value is authored, not derived**: derivation inverts the olive's
+ * lightness and lands near the dark background, where the undecided edges are
+ * almost invisible. A muted amber, clearly above a near-black background and
+ * clearly below ink, is what the role wants there.
  */
 export function lineMaybeColor(background: Color): Color {
   return token([0.9 * background[0], 0.9 * background[1], 0], [0.62, 0.54, 0.18]);
@@ -347,16 +294,15 @@ export function lineMaybeColor(background: Color): Color {
  * sibling of {@link lineMaybeColor}, and used by the same three games (Loopy's
  * `COL_FAINT`, Palisade's and Separate's `COL_LINE_NO`).
  *
- * A mid gray in both schemes: clearly a step off the board, clearly not ink.
- * Three independent ports wrote `background × 0.9` — a tenth off the board, so
- * that a ruled-out edge would read as *board* — and the owner's playtest found
- * exactly that: on a dark board the edge could not be told from no edge, which
+ * A mid gray in both schemes: clearly a step off the board, clearly not ink. A
+ * tenth off the board (`background × 0.9`, as the ports first wrote it) reads as
+ * *board*: on a dark board the edge could not be told from no edge, which
  * matters most to a keyboard player, whose cursor walks the edges and needs to
  * see where they are. Disabled still has to be *discernible*.
  *
  * Both values are authored rather than taken from the gray scale's named steps,
  * because neither step fits: `GRAY`'s dark base (L 0.44) sits a tenth above the
- * board and is the faintness being fixed, and `GRAY_BOLD` (L 0.84) is nearly
+ * board, which is the faintness to avoid, and `GRAY_BOLD` (L 0.84) is nearly
  * ink. The light value stays a function of the board so it tracks a lighter or
  * darker host; the dark value is a fixed mid gray. Both clear the
  * `correctRegionColor` fill Palisade and Separate paint under a finished
@@ -370,12 +316,7 @@ export function lineNoColor(background: Color): Color {
 
 /**
  * **Solved** — the fill or line color a board flashes to when the player
- * completes it. One role for the thirteen games that flash to white: the six
- * that wrote `PAPER` and the seven that wrote `mkhighlight`'s highlight were one
- * convention seen through the raw-versus-shifted background split, since the
- * highlight of a shifted white *is* pure white. Singles, Mathrax and Range,
- * which flashed to the lowlight, join it: a solved board lights up rather than
- * dims.
+ * completes it. A solved board lights up rather than dims.
  *
  * {@link PAPER} rather than {@link WHITE}: the flash is *maximum contrast
  * against the surface*, so it inverts with the scheme and stays a visible step
@@ -390,8 +331,7 @@ export const FLASH: Color = PAPER;
  * has already satisfied, grayed back so the player's eye skips it and lands on
  * the clues that still have work in them.
  *
- * Magnets, Towers and Undead all wrote `background / 1.5`, under the same local
- * name `COL_DONE`, for the same meaning. Note this is *not*
+ * Upstream's `background / 1.5`, Magnets', Towers' and Undead's `COL_DONE`. Not
  * {@link correctRegionColor}: that one shades an area of the board as correct,
  * this one retires a clue in the margin.
  */

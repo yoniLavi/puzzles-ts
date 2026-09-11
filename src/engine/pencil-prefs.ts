@@ -1,8 +1,7 @@
 /**
  * The `GamePref` declarations every pencil-mark game shares, so the wording a
- * player reads has **one** source. Ten games offer sticky pencil mode and five
- * offer keep-highlight, each previously repeating the same sentence verbatim;
- * a preference whose label is copied is a preference whose label drifts.
+ * player reads has **one** source: a preference whose label is copied is a
+ * preference whose label drifts.
  *
  * Each is its own factory rather than one options-bag helper, so each carries
  * the precise `Ui` constraint for the field it drives — a game that offers
@@ -11,7 +10,7 @@
  * in a game's `prefs` array (Crossing lists sticky-pencil fourth, after three
  * of its own).
  *
- * `auto-pencil` is deliberately **not** unconditioned: its label names the
+ * `auto-pencil`'s label is deliberately **not** shared: it names the
  * regions the placement clears ("its row, column and block" in Solo, "its row
  * and column" in Keen and Unequal, and Towers places a *tower* rather than a
  * number), so the sentence is a per-game fact and is passed in. Sharing only

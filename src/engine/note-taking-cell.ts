@@ -1,21 +1,17 @@
 /**
- * The note-taking cell: the input mechanic eleven games share.
+ * The note-taking cell: the input mechanic the pencil-mark games share.
  *
  * The mechanic the player operates is one design — *highlight a cell, type a
  * value into it, pencil candidate marks in it* — and Abcd, Crossing, Group,
  * Keen, Mathrax, Salad, Seismic, Solo, Towers, Undead and Unequal each carried
- * their own copy of it. `jscpd` measured **514 duplicated lines** across their
- * `index.ts` files (2026-09-05, ≥10 lines / ≥70 tokens), 60% of the clone-sides
- * inside `interpretMove`. Extracting the *press* arm here took that to **331**;
- * the rest is the symbol-entry block, which is the next thing to move.
+ * their own copy of it (`jscpd`: 514 duplicated lines across their `index.ts`
+ * files, 2026-09-05).
  *
  * WHAT LIVES HERE is only what would have to change in every copy at once to
- * keep them correct, by [`border-grid.ts`](./border-grid.ts)'s test — not "is
- * this the same text" but *"would a change here have to happen in every copy at
- * once?"*: what a left and a right press do to the highlight, how the fork's
- * sticky pencil mode behaves, and the rule that a pointer press hands the
- * cursor's provenance back to the mouse. Change how sticky pencil works and one
- * edit here is the whole change; before this module it was eleven.
+ * keep them correct, by [`border-grid.ts`](./border-grid.ts)'s test: what a
+ * left and a right press do to the highlight, how the fork's sticky pencil mode
+ * behaves, and the rule that a pointer press hands the cursor's provenance back
+ * to the mouse.
  *
  * WHAT DOES NOT live here is everything about the *puzzle*. Each game keeps its
  * own coordinate mapping, its own symbol vocabulary (digits, letters past nine,
@@ -26,36 +22,32 @@
  * blocks, Towers' 3D tower-top hit retarget.
  *
  * The two things a game genuinely answers for itself arrive as {@link CellEntry}:
- * *may the player type into this cell* and *may it carry pencil marks*. Eleven
- * games spelled those two predicates eleven ways — `immutable`, a flag bit,
+ * *may the player type into this cell* and *may it carry pencil marks*. Each
+ * game spells those predicates its own way — `immutable`, a flag bit,
  * `!walls[i]`, a clue ring, "is it still empty" — and that is a real difference
- * about the puzzle. Everything around them was not.
+ * about the puzzle.
  *
  * WHAT WAS EVALUATED AND DECLINED, recorded so it is not re-proposed each time.
- * After both arms moved here, `jscpd` still reports a ~28-line clone between
- * Keen, Solo, Towers and Unequal's entry blocks. It is the *move literal* —
+ * `jscpd` still reports a ~28-line clone between Keen, Solo, Towers and
+ * Unequal's entry blocks. It is the *move literal* —
  * `{ type: "set", x, y, n, pencil, autoElim }` — plus the two predicates around
  * it that read each game's own `grid` and `pencil` arrays. Lifting it would mean
- * a shared `Move`, and `border-grid.ts` already answered that: the shared code
- * reports what the player did and never a move, because a shared move type
- * couples save formats that have no reason to be identical. The remaining
- * duplication is four games agreeing about their own data, which is where the
- * line is.
+ * a shared `Move`, and a shared move type couples save formats that have no
+ * reason to be identical. The remaining duplication is four games agreeing about
+ * their own data, which is where the line is.
  */
 
 import { UI_UPDATE, type UiUpdate } from "./game.ts";
-import type { GridCursor } from "./pointer.ts";
-import { LEFT_BUTTON, RIGHT_BUTTON } from "./pointer.ts";
+import { type GridCursor, LEFT_BUTTON, RIGHT_BUTTON } from "./pointer.ts";
 
 /**
  * The three `Ui` fields the mechanic owns. A game's `Ui` structurally satisfies
  * this by carrying them; there is no base class and no wrapper object, so a
  * game's own fields sit beside these untouched.
  *
- * `pencilSticky` is optional because Group does not offer the preference, and
- * that is **derived from the game's own declaration** rather than from an
- * exemption roster here — a roster rots exactly as quietly as the membership
- * list it replaces (AGENTS.md § "Convention over configuration").
+ * `pencilSticky` is optional because Group does not offer the preference; a
+ * game without the field reads as non-sticky, so nothing here keeps an
+ * exemption roster.
  */
 export interface NoteTakingUi {
   cursor: GridCursor;
@@ -67,7 +59,7 @@ export interface NoteTakingUi {
   pencilSticky?: boolean;
   /** Keep the mouse highlight through a pencil change, where the game offers
    * the preference. See {@link releaseHighlightAfterEntry} for why its absence
-   * reads as `true`, and for the split that leaves standing. */
+   * reads as `true`. */
   pencilKeepHighlight?: boolean;
 }
 
@@ -92,8 +84,8 @@ export interface CellEntry {
  * A button the mechanic does not own comes back as **`null`**, not as a third
  * word, so the common caller — *"did you take this press?"* — is a plain truth
  * test that cannot misfire. A string sentinel there would be truthy, and every
- * one of the eleven would have started reporting a repaint for every button on
- * the keyboard. `interpretMove` spells "not mine" the same way.
+ * caller would report a repaint for every button on the keyboard.
+ * `interpretMove` spells "not mine" the same way.
  */
 export type NoteTakingPress = "moved" | "unmoved";
 
@@ -115,21 +107,18 @@ export function highlightIsOn(ui: NoteTakingUi, x: number, y: number): boolean {
  * Every press it handles is a repaint, because the highlight is part of the
  * frame even when the press changed nothing else.
  *
- * Two rules, and both replaced a disagreement rather than recording one:
+ * Two rules:
  *
- * **A press moves the highlight to the pressed cell.** The eleven games
- * disagreed, and Towers disagreed with itself — its left press moved the hidden
- * highlight onto a given while its right press left it behind. A pointer press
- * takes the board over (`docs/games/input.md`), which is only true if the
- * highlight goes where the player pointed; and the position matters even while
- * hidden, because the next arrow key resumes from it.
+ * **A press moves the highlight to the pressed cell**, even onto a cell that
+ * cannot take what the press offers. A pointer press takes the board over
+ * (`docs/games/input.md`), which is only true if the highlight goes where the
+ * player pointed; and the position matters even while hidden, because the next
+ * arrow key resumes from it.
  *
  * **The highlight is shown only where the mode it is in could write** — against
- * `canMark` in pencil mode and `canEnter` otherwise. Crossing was the one game
- * that got this right, with a `(pencil && filled)` clause the others lacked;
- * everywhere else, a left press in sticky pencil mode onto a filled cell lit a
- * highlight that no keystroke could act on. One rule covers both its clause and
- * the four separate placements of "never leave a given highlighted".
+ * `canMark` in pencil mode and `canEnter` otherwise, so a left press in sticky
+ * pencil mode onto a filled cell does not light a highlight no keystroke could
+ * act on. The same rule keeps a given from being left highlighted.
  *
  * The single carve-out is the sticky toggle, which says why at its branch.
  */
@@ -186,9 +175,7 @@ export function pressNoteTakingCell(
  * already there.
  *
  * Not simply `null`: a mouse-driven entry still puts the highlight away, so
- * there is a frame to repaint even though the board did not move. Writing this
- * by hand is how Seismic came to return a bare `null` while the other ten
- * hid the highlight.
+ * there is a frame to repaint even though the board did not move.
  */
 export function noOpEntryResult(ui: NoteTakingUi): UiUpdate | null {
   if (ui.cursorFromKeyboard) return null;
@@ -201,20 +188,11 @@ export function noOpEntryResult(ui: NoteTakingUi): UiUpdate | null {
  * it, or this was a pencil change the player asked to keep the highlight
  * through.
  *
- * **A missing `pencilKeepHighlight` reads as `true`**, which is the convention a
- * game gets without declaring anything. All eleven do declare it today; the
- * default is here so a twelfth inherits the right behavior rather than the
- * absence of one.
- *
- * **The collection was split on this and no longer is.** Five games kept the
- * highlight unconditionally, having no preference at all; the other six offered
- * the preference and defaulted it **off**, so out of the box the same
- * mouse-driven pencil mark kept the highlight in Mathrax and lost it in Solo.
- * Keeping it is the better default — entering two or three candidates in a row
- * is the ordinary case with a mouse, and re-clicking between each is the
- * annoyance the preference was added to remove — so the six flipped and the
- * five gained the preference. Every player can still choose; nobody has to
- * choose twice for the same puzzle family.
+ * **A missing `pencilKeepHighlight` reads as `true`**, so a game that does not
+ * declare the preference still inherits the right behavior. Keeping it is the
+ * better default: entering two or three candidates in a row is the ordinary
+ * case with a mouse, and re-clicking between each is the annoyance the
+ * preference exists to remove.
  */
 export function releaseHighlightAfterEntry(ui: NoteTakingUi): void {
   if (ui.cursorFromKeyboard) return;

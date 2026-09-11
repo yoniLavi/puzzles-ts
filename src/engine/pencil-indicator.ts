@@ -2,13 +2,11 @@
  * The CapsLock-style "pencil mode is on" indicator glyph — a small diagonal #2
  * pencil (yellow body + sharpened graphite tip), pointing down-left. Shared by
  * every pencil-mark game so the indicator looks identical across the
- * collection; Towers is the first consumer, Unequal the second (promote-on-
- * second-consumer rule).
+ * collection.
  *
  * The glyph is drawn into a `size × size` box at `(ox, oy)`, scaled by the same
- * fractions regardless of where each game places it (Towers: the top-right
- * clue-ring corner tile; Unequal: the top-right border corner). `bodyColor` is
- * the pencil body palette index, `gridColor` the outline/graphite index.
+ * fractions wherever each game places it. `bodyColor` is the pencil body
+ * palette index, `gridColor` the outline/graphite index.
  */
 
 import type { GameDrawing } from "./game.ts";

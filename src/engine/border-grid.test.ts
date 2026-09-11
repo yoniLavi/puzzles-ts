@@ -217,9 +217,8 @@ describe("interpretBorderGridInput", () => {
     ).toBeNull();
   });
 
-  // Both axes, and both ends of each. The first version of this test drove
-  // only CURSOR_UP, so the `ui.x` clamp — the same line, on the other axis —
-  // was never asserted and could be deleted with the suite green.
+  // Both axes, and both ends of each: a walk along one axis alone leaves the
+  // other axis's clamp — the same line — unasserted.
   it.each([
     ["up", CURSOR_UP, "y", 1],
     ["down", CURSOR_DOWN, "y", 5],

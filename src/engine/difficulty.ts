@@ -3,35 +3,31 @@
  * object, and how to run the game's solver capped at one. **What the tiers
  * *are* is not part of it** — see {@link difficultyTiers}.
  *
- * **Why this exists.** Twenty-nine of the fifty-seven games have difficulty
- * tiers, and before this contract no two of them could be asked about their
- * tiers the same way — so a property that is *about* tiers could only ever be
- * asserted one game at a time, by hand. The property in question is
+ * **Why this exists.** Without one contract no two tiered games can be asked
+ * about their tiers the same way, so a property that is *about* tiers can only
+ * be asserted one game at a time, by hand. The property in question is
  * cap-monotonicity (a board solvable with the ladder capped at `d` is solvable
  * at every cap above `d`), and it is not theoretical: Boats shipped a solver
  * that solved boards at a *lower* cap which it failed at a higher one, which
  * silently broke Check & Save on every Easy board, because "solvable at Easy"
  * and "solvable at Tricky" were both true statements about different code paths
- * and nothing compared them. Four games have since hand-written a version of
- * that test — in three different strengths, which is what a shared guard exists
- * to stop. `difficulty-contract.test.ts` is the shared guard.
+ * and nothing compared them. `difficulty-contract.test.ts` is the shared guard.
  *
  * **Why the accessors, rather than a documented field name.** The obstacle is
- * not that the params field is spelled `diff` in twenty-five games and
- * `difficulty` in three. It is that **eight games do not hold a number there at
- * all** — Galaxies, Keen, Mathrax, Singles, Spokes, Towers, Undead and Unequal
- * type it as a string union or an enum, each with its own private
- * `diffToLevel`. A cross-game caller cannot write `{ ...p, diff: cap }` on a
- * third of this population, because `cap` is an index and the field is not one.
- * `tierOf` / `withTier` go through the game rather than around it.
+ * not that the params field is spelled `diff` in some games and `difficulty` in
+ * others. It is that several games do not hold a number there at all — Galaxies,
+ * Keen, Spokes and others type it as a string union or an enum, each with its
+ * own private `diffToLevel`. A cross-game caller cannot write
+ * `{ ...p, diff: cap }` for those, because `cap` is an index and the field is
+ * not one. `tierOf` / `withTier` go through the game rather than around it.
  *
  * **Why a discriminated verdict, rather than the solvers' integers.** Every
  * game's solver reports some flavor of `-1 / 0 / 1`, and the meanings are not
  * uniform: Magnets' `0` is "ambiguous or unfinished", Boats' is "stuck",
  * Clusters returns a three-valued status enum, Tracks returns a record. Mapping
  * each to three named outcomes belongs in the per-game adapter, where the
- * knowledge is; propagating the raw integers would import twenty-nine
- * conventions into every cross-game consumer.
+ * knowledge is; propagating the raw integers would import every game's
+ * convention into every cross-game consumer.
  *
  * **The contract describes; it never decides.** Adopting it changes no board a
  * game generates — a differential fixture that moves means an adapter
@@ -64,9 +60,7 @@ export type CappedSolve = (cap: number) => DifficultyVerdict;
 
 /**
  * How to *operate* on a tiered game's tiers — read one off a params record, set
- * one, solve capped at one. Optional on `Game`, exactly like `hint` /
- * `findMistakes` / `supersededDesc` before it: a game without tiers omits it,
- * and the twenty-eight untiered games need no edit.
+ * one, solve capped at one. Optional on `Game`: a game without tiers omits it.
  *
  * **The tier list itself is not here** — it is {@link difficultyTiers}, read
  * off the game's own custom-params form. The contract is operations; the
@@ -82,18 +76,16 @@ export interface DifficultyContract<Params> {
   withTier(p: Params, tier: number): Params;
 
   /** Run the game's solver over `desc` with its deduction ladder capped at
-   * `cap`, from a *fresh* solver state. Freshness is load-bearing: reusing a
-   * live scratch is how `grade-difficulty-tiers-honestly`'s first Ascent gate
-   * under-rejected, because a retained `foundEndpoints` deliberately weakens
-   * that solver — and it left side effects behind for the next caller. */
+   * `cap`, from a *fresh* solver state. Freshness is load-bearing: a reused
+   * scratch can carry state that weakens the solver (Ascent's retained
+   * `foundEndpoints` does) and leaves side effects for the next caller. */
   solveAtCap(p: Params, desc: string, cap: number): DifficultyVerdict;
 
   /**
    * Tier indices that deliberately do **not** promise a uniquely-solvable
    * board, so "solvable at some cap" is the wrong question to ask of them.
    *
-   * Dominosa is the sole case, and it was found by this contract's own guards
-   * rather than anticipated: the fifth entry in its difficulty menu is
+   * Dominosa is the sole case: the fifth entry in its difficulty menu is
    * **"Ambiguous"**, and its generator branches on it to skip the uniqueness
    * search entirely (`if (diff === DIFF_AMBIGUOUS) as.trivial(rng)`). So a tier
    * is not always a rung of the deduction ladder — it can instead be a
@@ -127,19 +119,13 @@ export interface DifficultyContract<Params> {
  * game's own custom-params form**, which is where a player picks one.
  * `undefined` for a game that offers no difficulty choice.
  *
- * **One declaration, not two.** This was a `tiers` array on the contract until
- * `derive-difficulty-from-the-technique-ladder`, held equal to the form's
- * choices by an assertion — and eight games (Bridges, Galaxies, Keen, Lightup,
- * Singles, Solo, Towers, Unruly) really did write the names out as two separate
- * literals, with Loopy writing the same `.map` twice. Deriving is the
- * `derive-hint-enrollment` move: stop asserting that two hand-maintained things
- * match, and make one of them the only one. The form wins because it is the
- * list a player actually sees, and because it is reachable at module load with
- * no board in hand.
+ * **One declaration, not two.** The form is the only list: it is the one a
+ * player actually sees, and it is reachable at module load with no board in
+ * hand. A second copy on the contract could only be held equal to it by an
+ * assertion.
  *
- * **Why not from the technique ladder**, which is what the framework fiction
- * proposed and what this change went looking for. Three independent reasons,
- * each fatal on its own:
+ * **Why not from the technique ladder.** Three independent reasons, each fatal
+ * on its own:
  *
  * 1. **The ladder declares tier *indices*; a tier list is *names*.**
  *    `DeductionTechnique.tier` is a `number`. "Easy" and "Unreasonable" are
@@ -160,10 +146,9 @@ export interface DifficultyContract<Params> {
  *    tier 0 while the game offers three tiers. A ladder-derived list would be
  *    short for all of them.
  *
- * The prefix match, rather than `kw === "difficulty"`: 28 of the 29 spell it
- * `difficulty` and Loopy spells it `diff`, and matching the prefix keeps a
- * future `diff-level` enrolled instead of silently unwatched — the failure mode
- * this whole derivation exists to avoid.
+ * The prefix match, rather than `kw === "difficulty"`, because Loopy spells its
+ * `kw` `diff`, and matching the prefix keeps a future `diff-level` enrolled
+ * instead of silently unwatched.
  */
 export function difficultyTiers<Params>(game: {
   paramConfig?: readonly ParamConfigItem<Params>[];
@@ -176,13 +161,9 @@ export function difficultyTiers<Params>(game: {
  * `set` included.
  *
  * Exported because the tier list alone cannot prove the finder found the
- * *difficulty* item. The comparison it replaced could: a hand-written `tiers`
- * disagreeing with the found item's choices failed loudly. With one list there
- * is nothing to compare, so the coupling has to be asserted against the
- * contract's own accessors instead — `item.set(p, i)` must be the same thing as
- * `withTier(p, i)`, for every tier. That is a **stronger** statement than the
- * old one, which two identical string arrays could satisfy while belonging to
- * different params fields. `difficulty-contract.test.ts` makes it.
+ * *difficulty* item, so the coupling is asserted against the contract's own
+ * accessors instead: `item.set(p, i)` must be the same thing as
+ * `withTier(p, i)`, for every tier. `difficulty-contract.test.ts` makes it.
  */
 export function difficultyChoiceItem<Params>(game: {
   paramConfig?: readonly ParamConfigItem<Params>[];
@@ -218,16 +199,11 @@ const TIER_SCALE = ["Easy", "Normal", "Tricky", "Hard", "Extreme"] as const;
  *   tierNames(6, { search: true })  Easy · Normal · Tricky · Hard · Extreme · Unreasonable
  * ```
  *
- * **Why positional, and why that is the point** (owner, 2026-09-04:
- * *"I want consistency and convention-over-configuration where it makes
- * sense … I don't want every new game to come up with names for its difficulty
- * levels"*). Before this, 29 independently-ported games had picked twelve
- * different words: the six three-tier games used six different vocabularies,
- * and "Tricky" was the second rung in six games and the third in three others,
- * so the name told a player nothing that carried between games. Deriving the
- * name from the position makes it a bijection — "Tricky" is the third rung
- * everywhere it appears — which is the only property that makes a tier name
- * worth reading across a collection.
+ * **Why positional.** Deriving the name from the position makes it a bijection
+ * — "Tricky" is the third rung everywhere it appears — which is the only
+ * property that makes a tier name worth reading across a collection, and it
+ * spares a new game from inventing names for its levels (an owner decision:
+ * convention over configuration).
  *
  * **`search` is about the rung, never the count.** A two-tier game whose harder
  * rung backtracks is `Easy · Unreasonable`; a six-tier game whose top rung is a
@@ -271,10 +247,6 @@ export function cappedSolveFor<Params>(
  * tier below it?
  *
  * This is the generator-acceptance rule that makes a tier mean what it says.
- * `grade-difficulty-tiers-honestly` had to spell it out four separate times
- * (Bricks, Mathrax, Salad, Ascent) because there was nowhere to put it;
- * `add-subsets-difficulty-tiers` and `add-sticks-difficulty-tiers` apply this
- * instead.
  *
  * **It takes a closure, not a `Game`.** A generator is where this rule belongs,
  * and a generator cannot reach the contract on its own `Game` — `index.ts`
@@ -285,9 +257,9 @@ export function cappedSolveFor<Params>(
  * before `tier`, so a board the easier ladder already cracks is rejected
  * without ever paying for the deeper solve — and a generator that retries in a
  * loop pays the cheap half far more often than the expensive one. That ordering
- * is not a micro-optimization: `add-clusters-difficulty-tiers` (D3) measured it
- * making the whole generator *faster than it had been before it had tiers*
- * (10×10 Tricky worst case 25.0 s → 10.9 s). It also leaves a game free to
+ * is not a micro-optimization: it measured making Clusters' whole generator
+ * *faster than it had been before it had tiers* (10×10 Tricky worst case
+ * 25.0 s → 10.9 s). It also leaves a game free to
  * answer both questions from a single fixpoint if its tiers are nested rungs of
  * one — this helper never dictates how many passes a verdict costs, only which
  * question is asked first.

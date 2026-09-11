@@ -1,16 +1,14 @@
 /**
- * The render sidecar for a per-cell overlay — docs/games/rendering.md § "Overlay sidecars"'s "every overlay
- * that doesn't live in the tile value MUST be in the diff key" rule, as a type
- * instead of a per-game discipline.
+ * The render sidecar for a per-cell overlay — `docs/games/rendering.md`
+ * § "Overlay sidecars"'s rule that every overlay not in the tile value MUST be
+ * in the diff key, as a type instead of a per-game discipline.
  *
  * An overlay is painted *on top of* a cell, so it can't live in the cell's
  * packed tile value; a game that forgets to also compare it in the cache-miss
  * branch ships an overlay that never repaints. Both overlays this engine has
  * hit that class: the hint overlay (guarded cross-game by
  * `hint-overlay.test.ts`) and the mistake overlay (Towers' Check & Save
- * highlighted nothing because `ds.wrong` was missing from the diff key). Five
- * games hand-wrote the same two-array dance — repack per frame, stale-compare,
- * commit after draw — once per overlay before it was hoisted here.
+ * highlighted nothing because `ds.wrong` was missing from the diff key).
  *
  * Usage in a game's `redraw`, one instance per overlay:
  *   - pack once per frame — `ds.hint.pack(step?.highlights, index, markBits)`
@@ -47,8 +45,7 @@ interface Cell {
  * A chain of forced consequences shaded as a plain set is not checkable — the
  * player sees which cells are involved but not which came first, so a narration
  * that speaks of one consequence leading to the next names nothing they can
- * follow (`walk-tactic-hint-chains`). The order is what makes the shading a
- * *chain* rather than a heap.
+ * follow. The order is what makes the shading a *chain* rather than a heap.
  *
  * It rides in its own lane rather than in the packed word: `hintMarkBit` already
  * reaches bit 28 in Group (26 elements), so there is no bit budget left to

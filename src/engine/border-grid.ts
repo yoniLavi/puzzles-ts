@@ -5,18 +5,8 @@
  * cells with a tri-state — wall / not-a-wall / undecided — and differ only in
  * what constrains the regions (Palisade counts each cell's walls, Separate fixes
  * region sizes and keeps marked cells apart). The mechanic the player operates
- * is one design, and before this module it existed as two byte-identical copies:
- * jscpd measured **466 duplicated lines** between the two games, including a
- * 111-line `interpretMove` that differed only in its type names. This module
- * took that to 213 (re-measured 2026-09-05).
- *
- * That 466 was described here for a long time as the largest cross-game
- * duplication in the repository, and it was not: the eleven note-taking games
- * measured 514 the day somebody looked. **A superlative in a comment is a claim
- * nobody re-runs** — the same failure as a bare count in prose — so the ranking
- * is gone and only the measurements, each with its date, remain.
- * [`note-taking-cell.ts`](./note-taking-cell.ts) is that family's module, built
- * to the same test as this one.
+ * is one design: jscpd measured 466 duplicated lines between the two games
+ * before this module and 213 after (2026-09-05).
  *
  * WHAT LIVES HERE is only what would have to change in both games at once to
  * keep them correct: the edge bit vocabulary, the geometry that turns a tile
@@ -26,22 +16,17 @@
  * should cycle*, never a move. A shared move type would couple two save formats
  * that have no reason to be identical.
  *
- * The mechanic's **look** is the third layer, and it lives next door in
+ * The mechanic's **look** lives next door in
  * [`border-grid-render.ts`](./border-grid-render.ts): the error model over the
  * two DSFs, the half-grid cursor this file *moves*, the four edge rects and the
- * geometry. It is a sibling rather than more of this file only because both
- * would otherwise be long; the test that admitted it is the one below.
+ * geometry — a sibling only because one file holding both would be long.
  *
  * WHAT DOES NOT live here is code that merely looks alike. A loop over `w*h`
  * that reads a flag and draws a line resembles its counterpart in any grid game
  * in this collection; unifying that would couple two renderers with no reason to
- * move together. **That sentence used to be read as declining to share the two
- * renderers at all, and it does not reach that far** — the error model and the
- * cursor are the rendering *of this mechanic*, and each answers the test below
- * with a yes. The generic claim stands; what changed in 2026-09 is that the
- * question was asked again with the two renderers side by side rather than only
- * their inputs. The test is not "are these the same text" but *"would a change
- * here have to happen in both games at once?"*
+ * move together. The test is not "are these the same text" but *"would a change
+ * here have to happen in both games at once?"* — which the error model and the
+ * cursor pass, being the rendering *of this mechanic*.
  */
 import { Dsf } from "./dsf.ts";
 import {
@@ -225,8 +210,8 @@ export function moveBorderCursor(
  *
  * The first press only reveals a hidden cursor. On an edge, `select` toggles the
  * wall and `select2` toggles the not-a-wall mark — except that either press on
- * an edge already marked the *other* way clears it, which is what the key table
- * below encodes. A corner or tile center means nothing.
+ * an edge already marked the *other* way clears that mark. A corner or tile
+ * center means nothing.
  */
 export function selectEdge(
   state: BorderGridState,
@@ -239,8 +224,6 @@ export function selectEdge(
   const gx = Math.floor(ui.cursor.x / 2);
   const gy = Math.floor(ui.cursor.y / 2);
   const dir = px === 0 ? 3 : 0; // left : up
-  const hx = gx + DX[dir];
-  const hy = gy + DY[dir];
   const i = gy * w + gx;
 
   if (!ui.cursor.visible) {
@@ -249,21 +232,13 @@ export function selectEdge(
   }
   if (px === py) return null; // a corner or center: no edge
 
-  const key =
-    (isSelect2 ? 1 : 0) |
-    (((borders[i] & BORDER(dir)) >> dir) << 1) |
-    (((borders[i] & DISABLED(BORDER(dir))) >> dir) >> 2);
-
-  // key: MAYBE_LEFT=0, MAYBE_RIGHT=1, ON_LEFT=2, ON_RIGHT=3, OFF_LEFT=4, OFF_RIGHT=5
-  if (key === 0 || key === 2 || key === 3) {
-    return [
-      { x: gx, y: gy, flag: BORDER(dir) },
-      { x: hx, y: hy, flag: BORDER(FLIP(dir)) },
-    ];
-  }
+  const isWall = (borders[i] & BORDER(dir)) !== 0;
+  const isNotWall = (borders[i] & DISABLED(BORDER(dir))) !== 0;
+  const togglesWall = !isNotWall && (isWall || !isSelect2);
+  const flag = (d: number) => (togglesWall ? BORDER(d) : DISABLED(BORDER(d)));
   return [
-    { x: gx, y: gy, flag: DISABLED(BORDER(dir)) },
-    { x: hx, y: hy, flag: DISABLED(BORDER(FLIP(dir))) },
+    { x: gx, y: gy, flag: flag(dir) },
+    { x: gx + DX[dir], y: gy + DY[dir], flag: flag(FLIP(dir)) },
   ];
 }
 

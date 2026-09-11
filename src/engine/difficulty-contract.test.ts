@@ -1,14 +1,11 @@
 /**
  * The cross-game difficulty guards — the reason `Game.difficulty` exists.
  *
- * Before this file, the cap-monotonicity property (*a board solvable with the
- * ladder capped at `d` is solvable at every cap above `d`*) was asserted for
- * four games out of twenty-eight, by four hand-written tests, in three
- * different strengths: Magnets swept every cap, Rome checked only the top,
- * Salad folded it into a generation test. It was **false** on Boats, and that
- * silently broke Check & Save on every Easy board — because "solvable at Easy"
- * and "solvable at Tricky" were both true statements about different code paths
- * and nothing compared them.
+ * The central one is cap-monotonicity (*a board solvable with the ladder capped
+ * at `d` is solvable at every cap above `d`*). It was **false** on Boats, and
+ * that silently broke Check & Save on every Easy board — because "solvable at
+ * Easy" and "solvable at Tricky" were both true statements about different code
+ * paths and nothing compared them.
  *
  * **The enrolled set is derived, not listed.** A game is tiered iff it offers a
  * difficulty choice in its custom-params form, which is the tiers a player can
@@ -19,11 +16,9 @@
  * whose tiers are a plain `difficulty: number` against a `DIFFICULTY_NAMES`
  * array. A guard blind to a game cannot fire on it.
  *
- * **The tier list is derived from the same place** since
- * `derive-difficulty-from-the-technique-ladder` (`difficultyTiers`): the form's
- * difficulty choices decide both *whether* a game is tiered and *what its tiers
- * are*, so the enrollment and the list can no longer disagree either. That is
- * the last of three hand-maintained lists this file has absorbed.
+ * **The tier list is derived from the same place** (`difficultyTiers`): the
+ * form's difficulty choices decide both *whether* a game is tiered and *what
+ * its tiers are*, so the enrollment and the list cannot disagree either.
  */
 import { describe, expect, it } from "vitest";
 import "../games/index.ts";
@@ -48,10 +43,8 @@ interface TieredGame {
   game: AnyGame;
   contract: DifficultyContract<unknown>;
   /** The game's tier names — `difficultyTiers(game)`, i.e. the custom-params
-   * form's own difficulty choices. Since
-   * `derive-difficulty-from-the-technique-ladder` there is no second copy on
-   * the contract to compare this against; the list *is* what the player picks
-   * from, so a stale one is not a thing a game can now have. */
+   * form's own difficulty choices, which are the only copy: the list *is* what
+   * the player picks from. */
   tiers: readonly string[];
 }
 
@@ -133,32 +126,19 @@ describe("the tiered-game set is derived from the registry", () => {
   });
 
   it("every game declaring the contract offers a difficulty choice", () => {
-    // The other direction, and it went from useful to **load-bearing** when
-    // `derive-difficulty-from-the-technique-ladder` made the form the tier
-    // list's only definition. A contract on a game with no difficulty choice
-    // used to be dead metadata; now it is a contract with *no tiers at all*,
-    // and every per-game assertion below would loop zero times over it while
-    // reporting health. This is the guard that stops that.
+    // The other direction, and it is **load-bearing**: the form is the tier
+    // list's only definition, so a contract on a game with no difficulty choice
+    // is a contract with *no tiers at all*, and every per-game assertion below
+    // would loop zero times over it while reporting health.
     expect(contractWithoutChoice).toEqual([]);
   });
 });
 
 describe.each(tiered)("$id difficulty contract", ({ id, game, contract, tiers }) => {
   it("offers a readable menu of at least two distinct tiers", () => {
-    // What this replaces, and why it is not weaker. Until
-    // `derive-difficulty-from-the-technique-ladder` there was a second
-    // hand-written tier list on the contract, and this slot asserted the two
-    // agreed. That assertion is gone because the second list is gone — the
-    // strongest possible outcome, and the one the change existed to reach: two
-    // things cannot disagree when there is one of them. (Its own comment had
-    // meanwhile gone stale, naming Bricks, Undead and Unequal among games
-    // "writing the names out twice" when all three had moved to spreading their
-    // shared constant — a hand-maintained list rotting inside the guard against
-    // hand-maintained lists.)
-    //
-    // What is left is what a single list can still get wrong: a menu with one
-    // entry (nothing to choose), or two entries a player cannot tell apart.
-    // Neither was checked before.
+    // The tier list has one copy, so it cannot disagree with another. What a
+    // single list can still get wrong is a menu with one entry (nothing to
+    // choose), or two entries a player cannot tell apart.
     expect(tiers.length).toBeGreaterThan(1);
     expect(new Set(tiers).size, `${id}: two tiers share a name`).toBe(tiers.length);
     expect(
@@ -168,21 +148,16 @@ describe.each(tiered)("$id difficulty contract", ({ id, game, contract, tiers })
   });
 
   it("names its tiers from the collection's scale", () => {
-    // CONVENTION OVER CONFIGURATION (owner, 2026-09-04). Before
-    // `adopt-conventional-tier-names` these 29 games had picked twelve
-    // different words with nobody deciding: the six three-tier games used six
-    // different vocabularies, and "Tricky" was the 2nd rung in six games and
-    // the 3rd in three others, so the word told a player nothing that carried
-    // between games. Now the name follows the position, and this is what stops
-    // it drifting back one port at a time.
+    // CONVENTION OVER CONFIGURATION: the name follows the position, so a word
+    // means the same rung in every game, and this is what stops it drifting
+    // back one port at a time.
     //
     // **A tier a game declares non-unique is exempt, and needs no list.**
     // Dominosa's "Ambiguous" is not a difficulty but a relaxation of what the
     // puzzle promises, and it already says so through `nonUniqueTiers` — so the
     // exemption is derived from a declaration the game makes for its own
     // reasons, rather than from a roster this file would have to maintain.
-    // (`derive-hint-enrollment`'s lesson: a hand-kept list of exceptions goes
-    // stale exactly as quietly as a hand-kept list of members.)
+    //
     // **What this deliberately does NOT check**, stated rather than implied:
     // `search` is read off the game's own top name, so this cannot tell a game
     // that has earned `Unreasonable` from one that merely claims it. That is
@@ -202,13 +177,10 @@ describe.each(tiered)("$id difficulty contract", ({ id, game, contract, tiers })
   });
 
   it("never names a tier in a preset title that is not that preset's tier", () => {
-    // THE COPY NOBODY COUNTED. `derive-difficulty-from-the-technique-ladder`
-    // removed the tier list from the contract and `adopt-conventional-tier-names`
-    // removed the per-game literals — and the words were *still* written out by
-    // hand in two games' preset titles, where no test looked. Solo's menu said
-    // "3x3 Intermediate" while its Custom dialog offered "Tricky"; Galaxies' said
-    // "7x7 Normal" for a tier named Easy. Both were found by opening the app,
-    // which is the reminder that a green suite is not a rendered menu.
+    // THE COPY NOBODY COUNTED: tier words written by hand in a preset title,
+    // where no other test looks. Solo's menu once said "3x3 Intermediate" while
+    // its Custom dialog offered "Tricky", and Galaxies' said "7x7 Normal" for a
+    // tier named Easy.
     //
     // **Stated as a prohibition, so it needs no exemption list.** "Every title
     // carries its tier" would be the stronger rule and would need one: Salad's
@@ -236,8 +208,8 @@ describe.each(tiered)("$id difficulty contract", ({ id, game, contract, tiers })
   });
 
   it("reads its tiers off the same params field the contract writes", () => {
-    // The coupling the removed equality check used to carry, made explicit and
-    // made stronger. `difficultyTiers` finds the form item by a `kw` prefix; if
+    // The coupling between the form and the contract, made explicit.
+    // `difficultyTiers` finds the form item by a `kw` prefix; if
     // it found some *other* `choices` item — a mode list, a symmetry list —
     // every loop above would run over the wrong length and pass, having covered
     // a different param. Two string arrays being equal never ruled that out.

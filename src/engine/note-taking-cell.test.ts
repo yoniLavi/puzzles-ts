@@ -12,23 +12,20 @@
  *    to extend. `cursor-vocabulary.test.ts` does the same thing for the cursor
  *    and for the same reason: a guard blind to a game cannot fire on it.
  *
- * ON THE STANDARDIZATIONS this module made, because a test that merely records
- * today's behavior is worth much less than one that says why. Each is asserted
- * by a case below that names it:
+ * ON THE STANDARDIZATIONS this module makes, because a test that merely records
+ * behavior is worth much less than one that says why. Each is asserted by a
+ * case below that names it:
  *
  *  1. **A press moves the highlight to the pressed cell even when the cell
  *     cannot take what the press offers**, and the cell decides only whether
- *     it is *shown*. Five games moved it, five left it behind, and Towers did
- *     both — its left press moved the hidden highlight onto a given while its
- *     right press left it where it was. It is observable: the next arrow key
- *     resumes from wherever the hidden highlight sits.
- *  2. **A right press that puts the highlight away no longer clears pencil
- *     mode.** Only Undead did that, and only on one of its four arms.
- *  3. **The highlight is shown only where the mode it is in could write.**
- *     Crossing alone had the clause; everywhere else a sticky-mode left press
- *     onto a filled cell lit a highlight no keystroke could act on.
+ *     it is *shown*. It is observable: the next arrow key resumes from wherever
+ *     the hidden highlight sits.
+ *  2. **A right press that puts the highlight away leaves pencil mode alone.**
+ *  3. **The highlight is shown only where the mode it is in could write**, so a
+ *     sticky-mode left press onto a filled cell does not light a highlight no
+ *     keystroke could act on.
  *
- * None was a decision about a puzzle, which is the test AGENTS.md sets for
+ * None is a decision about a puzzle, which is the test AGENTS.md sets for
  * whether a difference is real. The sticky arm is the one place the highlight
  * is deliberately left alone, and {@link pressNoteTakingCell} says why there.
  */
@@ -119,7 +116,7 @@ describe("the right press is a pencil select, or the sticky mode toggle", () => 
   });
 
   it("deselects a repeat press, and leaves pencil mode alone doing it", () => {
-    // Standardization 2: only Undead cleared the mode here, on one of its arms.
+    // Standardization 2.
     const u = ui({ cursor: newCursor(4, 4, true), pencilMode: true });
     pressNoteTakingCell(u, RIGHT_BUTTON, 4, 4, OPEN);
     expect(u.cursor.visible).toBe(false);
@@ -172,8 +169,7 @@ describe("a button the mechanic does not own is left alone", () => {
 
 describe("the highlight is shown only where the current mode could write", () => {
   it("hides on a filled cell when a sticky left press lands in pencil mode", () => {
-    // Standardization 3. Crossing was the one game with this clause; everywhere
-    // else the highlight lit up on a cell no keystroke could mark.
+    // Standardization 3: no highlight on a cell no keystroke could mark.
     const u = ui({ pencilMode: true, pencilSticky: true });
     expect(pressNoteTakingCell(u, LEFT_BUTTON, 4, 0, FILLED)).toBe("moved");
     expect(u.cursor).toMatchObject({ x: 4, y: 0, visible: false });
@@ -197,7 +193,7 @@ describe("the highlight is shown only where the current mode could write", () =>
 describe("what a symbol entry does to the highlight", () => {
   it("a no-op keystroke still puts a mouse-driven highlight away", () => {
     // Not simply `null`: there is a frame to repaint even though the board did
-    // not move. Seismic returned a bare `null` here while the other ten hid it.
+    // not move.
     const u = ui({ cursor: newCursor(1, 1, true), cursorFromKeyboard: false });
     expect(noOpEntryResult(u)).toBe(UI_UPDATE);
     expect(u.cursor.visible).toBe(false);
@@ -222,8 +218,7 @@ describe("what a symbol entry does to the highlight", () => {
   });
 
   it("a missing keep-highlight preference reads as 'keep'", () => {
-    // The convention a game gets without declaring anything. All eleven declare
-    // it today; this is what a twelfth inherits.
+    // The convention a game gets without declaring anything.
     const u = ui({
       cursor: newCursor(1, 1, true),
       cursorFromKeyboard: false,
@@ -235,7 +230,7 @@ describe("what a symbol entry does to the highlight", () => {
   });
 
   it("and a player who turns it off loses the highlight", () => {
-    // The preference still does what it says; only the default moved.
+    // The preference still does what it says.
     const u = ui({
       cursor: newCursor(1, 1, true),
       cursorFromKeyboard: false,
@@ -247,9 +242,8 @@ describe("what a symbol entry does to the highlight", () => {
   });
 
   it("never clears pencil mode", () => {
-    // Undead used to, which contradicted its own sticky-pencil preference:
-    // the label promises the mode "stays on until right-clicked again", and it
-    // is on by default, yet one mouse-driven pencil mark turned it off.
+    // The sticky-pencil label promises the mode "stays on until right-clicked
+    // again", so no entry may turn it off.
     const u = ui({
       cursor: newCursor(1, 1, true),
       cursorFromKeyboard: false,
@@ -296,11 +290,9 @@ describe("the enrolled population is derived, not listed", () => {
     ]);
   });
 
-  // The family used to answer this two ways: five games kept the highlight
-  // through a mouse-driven pencil mark with no preference at all, six offered
-  // the preference and defaulted it off. A player moving between Mathrax and
-  // Solo met opposite behavior for the same gesture. One answer now, and the
-  // preference everywhere so the answer is still the player's.
+  // One answer across the family — keep the highlight through a mouse-driven
+  // pencil mark — and the preference everywhere, so the answer is still the
+  // player's.
   it("every member offers keep-highlight, defaulted on", () => {
     const members = builtGames().filter((g) => noteTaking.ids.includes(g.id));
     const off = members.filter((g) => g.ui["pencilKeepHighlight"] !== true);

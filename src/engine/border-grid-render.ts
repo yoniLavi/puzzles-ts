@@ -1,11 +1,6 @@
 /**
  * The border-marking grid's *look*: the third layer of the mechanic
- * [`border-grid.ts`](./border-grid.ts) already owns the model and the input of.
- *
- * Palisade and Separate drew it twice. `diff` of their two `render.ts` files was
- * fifteen hunks over 709 lines, with every function heading matching except the
- * params types — one renderer written out twice, not two renderers that
- * resemble each other.
+ * [`border-grid.ts`](./border-grid.ts) owns the model and the input of.
  *
  * WHAT LIVES HERE is what would have to change in both games at once, by the
  * same test `border-grid.ts` states:
@@ -13,12 +8,11 @@
  * - **The error model.** A region larger than `k`, a region smaller than `k`, or
  *   a wall that separates nothing, read off the two DSFs each frame. Change what
  *   counts as a wrong wall and both games change together, or one is wrong.
- * - **The half-grid cursor**, whose *movement* `border-grid.ts` already owns
- *   (`moveBorderCursor`). The module moved it and the games drew it, twice.
+ * - **The half-grid cursor**, whose *movement* `border-grid.ts` owns
+ *   (`moveBorderCursor`).
  * - **The four edge rects**, keyed off the border bits the module defines, and
  *   the tile skeleton around them — clip, body, content, edges, unclip, update.
- * - **The geometry**, of which `margin` was already shared and re-derived in
- *   both renderers regardless.
+ * - **The geometry.**
  *
  * WHAT DOES NOT live here is the clue layer and everything below it. Palisade
  * draws a digit, counts a cell's walls, and has an explained hint with its own
@@ -26,15 +20,6 @@
  * inside one. Those are the puzzles. A game supplies its own palette indices and
  * a `drawContent` callback for the middle of the tile, and computes its own
  * validity — the shared code never asks which game it is drawing.
- *
- * ON REOPENING A DECLINE. `border-grid.ts`'s header declines sharing the
- * renderers, and that sentence is about *generic* resemblance — "a loop over
- * `w*h` that reads a flag and draws a line resembles its counterpart in any grid
- * game" — which is true and still stands there. It is not about this: the error
- * model, the border bits and the half-grid cursor are the rendering *of the
- * mechanic the module owns*. The decline was written when only the input had
- * moved; what changed is that the question was asked again with the two
- * renderers side by side.
  */
 
 import { BORDER, DISABLED, DX, DY, margin, outOfBounds } from "./border-grid.ts";
@@ -46,8 +31,8 @@ import type { Rect, Size } from "./types.ts";
 // --- geometry ---------------------------------------------------------------
 
 /** The wall's thickness: a wall is drawn as a rect, not a line, because it
- * carries three states and an error color. Both games had this exact
- * expression; it is upstream's and every pixel of the board depends on it. */
+ * carries three states and an error color. Upstream's expression; every pixel
+ * of the board depends on it. */
 export const tileWidth = (ts: number): number => Math.max(Math.floor((3 * ts) / 32), 1);
 
 /** The center of a tile's *body*, which is offset by half a wall from the
@@ -179,23 +164,16 @@ export function mistakeEdgeBits(
   mistakes: readonly { x: number; y: number; dir: number }[] | undefined,
 ): Int32Array {
   const mask = new Int32Array(w * h);
-  if (mistakes) {
-    for (const m of mistakes) mask[m.y * w + m.x] |= BORDER_ERROR(BORDER(m.dir));
-  }
+  for (const m of mistakes ?? []) mask[m.y * w + m.x] |= BORDER_ERROR(BORDER(m.dir));
   return mask;
 }
 
 /** The cursor-containment bits for this tile — see {@link CONTAINS_CURSOR}. */
 export function cursorBits(cursor: GridCursor, c: number, r: number): number {
-  if (!cursor.visible) return 0;
-  let bits = 0;
-  for (let u = 0; u < 3; u++) {
-    for (let v = 0; v < 3; v++) {
-      if (cursor.x === 2 * c + u && cursor.y === 2 * r + v)
-        bits |= CONTAINS_CURSOR(1 << (3 * u + v));
-    }
-  }
-  return bits;
+  const u = cursor.x - 2 * c;
+  const v = cursor.y - 2 * r;
+  if (!cursor.visible || u < 0 || u > 2 || v < 0 || v > 2) return 0;
+  return CONTAINS_CURSOR(1 << (3 * u + v));
 }
 
 /**

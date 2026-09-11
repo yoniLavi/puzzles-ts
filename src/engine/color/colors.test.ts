@@ -98,14 +98,11 @@ describe("the named colors", () => {
     // Two names for one value are two names for one color, which is the
     // duplication this table exists to remove.
     //
-    // **Keyed on the value in *both* schemes**, because that is what a token is:
-    // `color-token.ts` states the identity as (value, scheme behavior), and
-    // this keyed on the light half alone — so it read two colors that agree in
-    // light and differ in dark as one. `TEAL_WASH_DEEP` is exactly that color
-    // (it is `TEAL_WASH` in light and darker in dark), and it failed here while
-    // being a perfectly good second name. Keying on the pair is not a weakening:
-    // two names agreeing in *both* schemes are still two names for one color,
-    // and still fail.
+    // **Keyed on the value in *both* schemes**, because that is what a token is
+    // (`color-token.ts`: value plus scheme behavior). `TEAL_WASH_QUIET` is
+    // `TEAL_WASH` in light and darker in dark — a good second name that a
+    // light-only key would reject. Two names agreeing in *both* schemes are
+    // still two names for one color, and still fail.
     const seen = new Map<string, string>();
     for (const [name, c] of named) {
       const key = [...c, ...(darkValue(c) ?? [])].map((v) => v.toFixed(4)).join(",");

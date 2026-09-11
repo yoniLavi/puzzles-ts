@@ -3,14 +3,11 @@
  * run of blanks.** `a` = 1 blank … `z` = 26, and a run longer than 26 is
  * written as repeated `z`s.
  *
- * Eight games' descs are exactly this — bridges, filling, loopy, map, mosaic,
- * palisade, pearl, slant — and each of them scanned it **twice**: once in
- * `validateDesc` to count the squares, once in `newState` to fill them, with
- * the `charCodeAt` arithmetic written out both times. Two copies of a grammar
- * inside one file is the shape this exists to remove; the bytes it parses are
- * frozen, so the scanner reproduces them exactly rather than improving on them.
- * `src/run-length-desc.test.ts` derives that roster from who imports this
- * module, so it is a fact rather than the count above.
+ * A game with this desc reads it twice — in `validateDesc` to count the squares
+ * and in `newState` to fill them — and this is the one scanner both use. The
+ * bytes it parses are frozen, so it reproduces them exactly rather than
+ * improving on them. `src/run-length-desc.test.ts` derives who uses it from who
+ * imports this module.
  *
  * Map is here for **half** its desc: its clue list is this grammar, its edge
  * list is not. One desc, two run-length codings — see the comment at the
@@ -31,9 +28,9 @@
  * handing the caller an index back and re-entering the scan, which is longer
  * than the loop it replaces.
  *
- * **Bricks and Crossing belong with them, and were misfiled here first.** A
- * scan for the letter-run arithmetic finds both, because both have it — but
- * what the *other* token means is what decides the grammar. Bricks' is a
+ * **Bricks and Crossing belong with them**, although a scan for the letter-run
+ * arithmetic finds both, because both have it — what the *other* token means
+ * is what decides the grammar. Bricks' is a
  * multi-digit clue with `_` separating two adjacent ones, over a padded grid
  * whose `F_BOUND` cells the desc index skips independently of the cell index.
  * Crossing has no value character at all: its decimal numbers are a *second

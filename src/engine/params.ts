@@ -32,11 +32,6 @@ export function parseLeadingInt(
  * index of the first character after the consumed dimensions, so a
  * caller can continue parsing a trailing suffix (a difficulty letter,
  * `m<movetarget>`, ...).
- *
- * Replaces the three hand-rolled idioms ports grew (a `parseLeadingInt`
- * pair, a digit-scan loop, `indexOf("x")` + slice). The latter silently
- * mis-sliced a bare square form (no `"x"`); routing through here restores
- * the square fallback.
  */
 export function parseDimensions(
   s: string,
@@ -123,17 +118,12 @@ const DEFAULT_DIMENSION_FIELDS = { w: "w", h: "h" };
  * `width`/`height`, Unruly's `w2`/`h2` — upstream names for the *full*
  * grid extent, not halves) passes the field pair rather than being
  * renamed to fit: `dimensionParamConfig<UnrulyParams>({ w: "w2", h: "h2" })`.
- * Contorting a game's own types to satisfy a shared helper is the failure
- * this project's refactoring guardrails exist to prevent, and a helper
- * only *most* games can call is the drift it exists to prevent.
  *
- * The `kw`s (`"width"`/`"height"`) and labels (`"Width"`/`"Height"`)
- * match the C/WASM path, where upstream's config labels slugify to the
- * same keys — so a TS and a C build present the identical form. Each
- * field renders as a text box (upstream's `C_STRING`) whose `set` parses
- * the leading integer exactly as upstream's `atoi` does (empty or
- * non-numeric → 0, which the game's `validateParams` then rejects with
- * its own message).
+ * The labels (`"Width"`/`"Height"`) are upstream's, and the `kw`s are their
+ * slugs. Each field renders as a text box (upstream's `C_STRING`) whose `set`
+ * parses the leading integer exactly as upstream's `atoi` does (empty or
+ * non-numeric → 0, which the game's `validateParams` then rejects with its
+ * own message).
  */
 export function dimensionParamConfig<
   P extends { w: number; h: number },

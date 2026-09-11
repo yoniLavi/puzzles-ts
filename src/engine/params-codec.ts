@@ -5,9 +5,9 @@
  *
  * ## Why this exists
  *
- * Every game used to hand-write both halves of its codec and hold them to be
- * mutual inverses by discipline. Read together, the 57 pairs turned out to
- * spell one grammar with very little variation:
+ * A hand-written codec is two halves held to be mutual inverses by discipline,
+ * and read together the collection's codecs spell one grammar with very little
+ * variation:
  *
  * ```
  *   <dimensions>     <tagged segments…>          <bare flag letters…>
@@ -18,13 +18,10 @@
  *                    c<int>   colors             o  orientable
  * ```
  *
- * `d<char>` alone appeared in about twenty games, written out twenty times,
- * alongside five different local idioms for "read a digit run" (`eatNum`,
- * `readInt`, `digits`, `parseLeadingInt`, `parseInt(slice)` + a `while`). None
- * of that is about the puzzle, which is the test AGENTS.md § "Convention over
- * configuration" sets: *would two games ever legitimately answer this
- * differently?* What tag letter a field takes, yes — that is fixed by upstream
- * compatibility and belongs to the game. How a digit run is consumed, no.
+ * How a digit run is consumed is not about the puzzle, which is the test
+ * AGENTS.md § "Convention over configuration" sets: *would two games ever
+ * legitimately answer this differently?* What tag letter a field takes, yes —
+ * that is fixed by upstream compatibility and belongs to the game.
  *
  * ## Segments name a `paramConfig` field, they do not restate it
  *
@@ -53,11 +50,11 @@
  * Byte-stability is not assumed, it is asserted: `params-stability.test.ts`
  * holds every game's encodings against a recorded table, so replacing a
  * hand-written codec with a declared one is only correct if it produces the
- * identical string for all 612 corpus cases.
+ * identical string for every corpus case.
  */
 
 import type { ParamConfigItem } from "./game.ts";
-import { parseLeadingInt } from "./params.ts";
+import { parseDimensions, parseLeadingInt } from "./params.ts";
 
 /** One piece of an encoded params string. Built by the factories below. */
 export interface ParamsSegment<P> {
@@ -76,8 +73,14 @@ interface SegmentOptions {
 }
 
 type Config<P> = readonly ParamConfigItem<P>[];
+type ItemType<P> = ParamConfigItem<P>["type"];
 
-function item<P>(config: Config<P>, kw: string): ParamConfigItem<P> {
+/** The `paramConfig` item named `kw`, which must be of type `type`. */
+function item<P, T extends ItemType<P>>(
+  config: Config<P>,
+  kw: string,
+  type: T,
+): Extract<ParamConfigItem<P>, { type: T }> {
   const found = config.find((i) => i.kw === kw);
   if (!found) {
     // Loud rather than lenient: a segment naming a field the form does not
@@ -85,36 +88,10 @@ function item<P>(config: Config<P>, kw: string): ParamConfigItem<P> {
     // silently skipped segment would drop the field from every game ID.
     throw new Error(`params codec: no paramConfig item with kw "${kw}"`);
   }
-  return found;
-}
-
-function stringItem<P>(config: Config<P>, kw: string) {
-  const found = item(config, kw);
-  if (found.type !== "string") {
-    throw new Error(`params codec: "${kw}" is a ${found.type} item, want string`);
+  if (found.type !== type) {
+    throw new Error(`params codec: "${kw}" is a ${found.type} item, want ${type}`);
   }
-  return found;
-}
-
-function choicesItem<P>(config: Config<P>, kw: string) {
-  const found = item(config, kw);
-  if (found.type !== "choices") {
-    throw new Error(`params codec: "${kw}" is a ${found.type} item, want choices`);
-  }
-  return found;
-}
-
-function booleanItem<P>(config: Config<P>, kw: string) {
-  const found = item(config, kw);
-  if (found.type !== "boolean") {
-    throw new Error(`params codec: "${kw}" is a ${found.type} item, want boolean`);
-  }
-  return found;
-}
-
-/** Consume a digit run, leaving `i` untouched when there is none. */
-function eatInt(s: string, i: number): { value: number; next: number } {
-  return parseLeadingInt(s, i);
+  return found as Extract<ParamConfigItem<P>, { type: T }>;
 }
 
 /**
@@ -130,20 +107,15 @@ export function dims<P>(
   wKw = "width",
   hKw = "height",
 ): ParamsSegment<P> {
-  const w = stringItem(config, wKw);
-  const h = stringItem(config, hKw);
+  const w = item(config, wKw, "string");
+  const h = item(config, hKw, "string");
   return {
     encode: (p) => `${w.get(p)}x${h.get(p)}`,
     decode: (s, i, p) => {
-      const wParse = eatInt(s, i);
-      w.set(p, String(wParse.value));
-      if (s[wParse.next] === "x") {
-        const hParse = eatInt(s, wParse.next + 1);
-        h.set(p, String(hParse.value));
-        return hParse.next;
-      }
-      h.set(p, String(wParse.value));
-      return wParse.next;
+      const parsed = parseDimensions(s, i);
+      w.set(p, String(parsed.w));
+      h.set(p, String(parsed.h));
+      return parsed.next;
     },
   };
 }
@@ -154,11 +126,11 @@ export function dims<P>(
  * Unequal's order, Mathrax's order, Group's order).
  */
 export function size<P>(config: Config<P>, kw: string): ParamsSegment<P> {
-  const field = stringItem(config, kw);
+  const field = item(config, kw, "string");
   return {
     encode: (p) => String(field.get(p)),
     decode: (s, i, p) => {
-      const parsed = eatInt(s, i);
+      const parsed = parseLeadingInt(s, i);
       field.set(p, String(parsed.value));
       return parsed.next;
     },
@@ -191,7 +163,7 @@ export function num<P>(
     whenAbsent?: (p: P) => void;
   } = {},
 ): ParamsSegment<P> {
-  const field = stringItem(config, kw);
+  const field = item(config, kw, "string");
   return {
     encode: (p, full) => {
       if (opts.full && !full) return "";
@@ -203,7 +175,7 @@ export function num<P>(
         opts.whenAbsent?.(p);
         return i;
       }
-      const parsed = eatInt(s, i + tag.length);
+      const parsed = parseLeadingInt(s, i + tag.length);
       field.set(p, String(parsed.value));
       return parsed.next;
     },
@@ -231,7 +203,7 @@ export function choice<P>(
     invalid?: number;
   } = {},
 ): ParamsSegment<P> {
-  const field = choicesItem(config, kw);
+  const field = item(config, kw, "choices");
   return {
     encode: (p, full) => {
       if (opts.full && !full) return "";
@@ -266,7 +238,7 @@ export function flag<P>(
   kw: string,
   opts: SegmentOptions & { means?: boolean } = {},
 ): ParamsSegment<P> {
-  const field = booleanItem(config, kw);
+  const field = item(config, kw, "boolean");
   const means = opts.means ?? true;
   return {
     encode: (p, full) => {

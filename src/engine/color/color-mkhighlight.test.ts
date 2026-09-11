@@ -134,8 +134,7 @@ describe("mkhighlightSpecific", () => {
   it("hands a base's authored dark value on to the trio built from it", () => {
     // Unruly's tiles must not invert. The base carries that decision as a token
     // and the trio derived from it must carry it too, or the pieces are three
-    // untagged arrays adapted by calculation — which is what a six-index
-    // `false` override in augmentation.ts used to paper over.
+    // untagged arrays adapted by calculation.
     const pinned = token([0.2, 0.2, 0.2], [0.2, 0.2, 0.2]);
     const trio = mkhighlightSpecific(pinned);
     const plain = mkhighlightSpecific([0.2, 0.2, 0.2]);

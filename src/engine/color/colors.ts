@@ -6,18 +6,12 @@
  * these, or a *meaning* defined over them in [`palette.ts`](./palette.ts), or a
  * color derived from the board it sits on.
  *
- * ## Why the set is small, and why it is exactly this size
+ * ## Why the set is exactly this size
  *
- * `colour-tokens-per-scheme` gave every color in the collection a name and a
- * home: 687 palette entries across 57 games resolving to ~190 tokens. That was
- * the precondition, not the answer — ~190 named colors is still 190 independent
- * decisions, and pure blue arrived six times under six names because upstream
- * wrote each game separately.
- *
- * The number here is not taste. **Flood, Guess and Samegame need ten members a
- * player can tell apart**, in every scheme; nothing else the collection does
- * needs more. So the palette is sized by that, and "how many colors should there
- * be" has an answer rather than a preference.
+ * **Flood, Guess and Samegame need ten members a player can tell apart**, in
+ * every scheme; nothing else the collection does needs more. So the palette is
+ * sized by that, and "how many colors should there be" has an answer rather than
+ * a preference.
  *
  * ## Two things a name has to be
  *
@@ -39,21 +33,13 @@
  * - **base** — the color: a mark, a line, a piece, a tile.
  * - **`_WASH`** — a fill that content must stay readable *on top of*. Light in
  *   light mode, dark in dark mode.
- * - **`_WASH_DEEP`** — the same, for a fill that has to carry the collection's
- *   **derived** foregrounds: pencil marks and entered digits, which are computed
- *   from the board rather than authored and land at *mid* luminance in dark mode.
- *   Identical to `_WASH` in light mode, and darker in dark. See the note under
- *   {@link DESIGN}'s dark bounds for why this could not be done by moving `_WASH`
- *   itself.
  * - **`_BOLD`** — the emphatic end: a mark that has to read against a large
  *   light fill, or a second member of a set (Mines' navy 4 against its blue 1).
  *   Dark in light mode, light in dark mode.
  *
- * Two steps were the intent; **Mines forced the third**. Its six count digits are
- * upstream's and by now most players' expectation of what a minesweeper looks
- * like, and 1-blue against 4-navy and 3-red against 5-maroon are two pairs that a
- * wash cannot supply — a wash of blue is a fill, not a digit. That is the case on
- * record for the third step; anything further needs its own.
+ * The third step is Mines': 1-blue against 4-navy and 3-red against 5-maroon
+ * are pairs a wash cannot supply, because a wash of blue is a fill, not a digit.
+ * Teal alone has a fourth, {@link TEAL_WASH_QUIET}, which says why.
  *
  * **A color carries only the steps something asks for**, which is why orange has
  * no wash and yellow, purple and pink have no bold. An intensity nobody
@@ -66,15 +52,14 @@
  * that is the space the constraints live in — "these ten are mutually
  * distinguishable" is a distance, "this wash is light enough for black text on
  * top" is a lightness, and "Crossing's across and down must carry equal weight"
- * is an equality of lightness *and* chroma that RGB cannot express (the port
- * found this the hard way: the obvious RGB mirror of a blue made an amber that
- * measured both lighter and more colorful, and duly looked more important).
+ * is an equality of lightness *and* chroma that RGB cannot express (the obvious
+ * RGB mirror of a blue is an amber that measures both lighter and more colorful).
  *
- * The conversion to sRGB is done here, in ~20 lines, rather than by importing the
- * app's color library: this module is reached from the puzzle worker, and the
- * arithmetic is fixed, standard and cheaper than the dependency.
- * `colors.test.ts` pins it against `colorjs.io` and measures every set that has
- * to stay distinguishable, in **both** schemes.
+ * The conversion to sRGB is done here rather than by importing the app's color
+ * library: this module is reached from the puzzle worker, and the arithmetic is
+ * fixed, standard and cheaper than the dependency. `colors.test.ts` pins it
+ * against `colorjs.io` and measures every set that has to stay distinguishable,
+ * in **both** schemes.
  */
 
 import type { Color } from "../types.ts";
@@ -110,9 +95,7 @@ function oklch(l: number, c: number, hDegrees: number): Color {
 /** One intensity of one color, in one scheme: `[lightness, chroma]`. */
 type Step = readonly [l: number, c: number];
 
-/** A color's intensities under one scheme. Every step but `base` is absent
- * where nothing needs it — an unused intensity is a color decision nobody can
- * see, and it will be wrong by the time somebody looks. */
+/** A color's intensities under one scheme; every step but `base` is optional. */
 type Steps = { base: Step; wash?: Step; washQuiet?: Step; bold?: Step };
 
 /**
@@ -137,29 +120,25 @@ type Steps = { base: Step; wash?: Step; washQuiet?: Step; bold?: Step };
  * chroma is held down to what orange can reach, the constraint running that way
  * because orange's gamut is the narrower of the two at that lightness.
  *
- * ## Three bounds the dark column is held inside, and why
+ * ## Three bounds the dark column is held inside
  *
  * A search maximizes separation, and left alone it will buy separation with
- * anything not nailed down. Three bounds are what stop it, each from a defect it
- * produced on the way — **do not widen them to recover a decimal place**:
+ * anything not nailed down. Each bound below stops a defect it produced — **do
+ * not widen them to recover a decimal place**:
  *
- * - **A color may not leave its own name.** Dark yellow first came out at
- *   lightness 0.95 and chroma 0.104: the lightest entry in the palette, at half
- *   the chroma it can carry, which is a **cream**. It bought the ten-set 0.158
- *   that way. Yellow is now capped at 0.86, the set is 0.143, and that is the
- *   better trade — 0.143 is still twice what upstream's set measured in dark
- *   (0.070) and above what it measured in *light* (0.134), and a yellow that
- *   reads as white fails the truthful-name rule outright.
- * - **A wash sits where the board's own cells sit.** Four dark washes were at
- *   0.34-and-below when a game's cells are drawn nearer 0.44, so Crossing's
- *   across/down highlight came out *darker* than the squares it was highlighting
- *   and read as a hole in the board rather than a mark on it. The dark wash band
- *   is 0.34–0.48.
+ * - **A color may not leave its own name.** Uncapped, dark yellow went to
+ *   lightness 0.95 at half the chroma it can carry: a **cream**, which bought
+ *   the ten-set 0.158. Capped at 0.86 the set is 0.143 — still twice upstream's
+ *   dark 0.070 and above its light 0.134 — and a yellow that reads as white
+ *   fails the truthful-name rule outright.
+ * - **A wash sits where the board's own cells sit.** A game's dark cells are
+ *   drawn near 0.44, and a wash well below that reads as a hole in the board
+ *   rather than a mark on it, as Crossing's across/down highlight once did. The
+ *   hued dark washes sit at 0.34–0.48.
  * - **The bold step stays the emphatic end.** In dark mode that means *lighter*
- *   than the base — which the search will happily invert for yellow, whose base
- *   is already near the top of its gamut. Every hue's dark bold is at least 0.05
- *   above its dark base; yellow's is the one that had to move (0.91) rather than
- *   sit at the uniform 0.84 the others share.
+ *   than the base, which the search will happily invert for a hue whose base is
+ *   already near the top of its gamut. Every dark bold is at least 0.05 above
+ *   its dark base.
  *
  * A **third scheme** is this table with a third column.
  */
@@ -171,10 +150,7 @@ const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
   },
   ORANGE: {
     h: 62,
-    // No wash step: nothing needs one. Crossing was its only consumer and now
-    // inks its down-runs with the same value the clue list uses, which is the
-    // bold step. An intensity nobody references is a color decision nobody can
-    // see, and it would be wrong by the time somebody looked.
+    // No wash step: nothing needs one.
     light: { base: [0.72, 0.156], bold: [0.42, 0.091] },
     dark: { base: [0.69, 0.149], bold: [0.84, 0.076] },
   },
@@ -193,17 +169,15 @@ const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
     light: {
       base: [0.72, 0.115],
       wash: [0.94, 0.072],
-      // Identical to `wash`: light mode has no defect here and nothing moves.
+      // Identical to `wash`: the quiet step differs only in dark mode.
       washQuiet: [0.94, 0.072],
       bold: [0.42, 0.067],
     },
     dark: {
       base: [0.72, 0.115],
       wash: [0.48, 0.077],
-      // Chroma 0.06 rather than the wash's 0.077 because teal cannot carry
-      // 0.077 this dark — asking for it makes the gamut clamp return something
-      // else entirely, silently, which is how a separation once came out at
-      // 0.106 instead of the 0.124 the arithmetic predicted.
+      // Chroma 0.06 because teal cannot carry the wash's 0.077 this dark: asking
+      // for it makes the gamut clamp silently return a different color.
       washQuiet: [0.3, 0.06],
       bold: [0.84, 0.134],
     },
@@ -283,20 +257,16 @@ export const TEAL_WASH: Color = of("TEAL", "wash");
  * of, so it has to stay close enough to the board that they still win. Its one
  * consumer is `HINT_EVIDENCE_WASH`.
  *
- * **Why this is a step and not a retune of {@link TEAL_WASH}.** `TEAL_WASH` is a
- * member of {@link EIGHT_FILLS} and {@link FOUR_FILLS}, so its dark lightness is
- * an *output* of the search that keeps Signpost's sixteen region colors and
- * Map's four mutually distinguishable — it is not free to move for a reason
- * outside that set.
+ * A step of its own rather than a retune of {@link TEAL_WASH}, because that one
+ * is a member of {@link EIGHT_FILLS} and {@link FOUR_FILLS}: its dark lightness
+ * is an *output* of the search that keeps those sets distinguishable.
  *
- * **And why the value is where it is.** Two requirements pull in opposite
- * directions along one axis, and only measurement finds the crossing point: the
- * wash must be *seen* against its board, and the action ring — which sits on it,
- * because a target cell is very often inside the region the deduction reasons
- * from — must be seen against *the wash*. At the ordinary dark wash the ring
- * scored **1.69:1**, against 3.94 in light: the evidence shouted and the
- * conclusion whispered. Lightness 0.30 is where the wash reaches light mode's
- * own visibility (1.31 against 1.29) and leaves the ring 3.54.
+ * The dark value is where two opposed requirements cross: the wash must be
+ * *seen* against its board, and the action ring drawn on it (a target cell is
+ * often inside the evidence region) must be seen against *the wash*. At the
+ * ordinary dark wash the ring scored **1.69:1**, against 3.94 in light.
+ * Lightness 0.30 matches light mode's own visibility (1.31 against 1.29) and
+ * leaves the ring 3.54.
  */
 export const TEAL_WASH_QUIET: Color = of("TEAL", "washQuiet");
 /** @see TEAL */
@@ -349,11 +319,11 @@ export const WHITE: Color = token([1, 1, 1], [1, 1, 1]);
  * it is: Flood's tiles, Guess's pegs, Samegame's nine (which takes all but the
  * gray — a gray tile among colored ones reads as a hole in the board).
  *
- * Upstream wrote Flood's and Guess's ten out twice, character for character, and
- * they were never designed as a set: measured worst pair 0.134 in light and
- * **0.070** in dark, because mutual distinguishability is a property of the set
- * and no per-color rule — including adapting one to a scheme — can establish it.
- * This set measures 0.159 light and 0.158 dark.
+ * Upstream wrote Flood's and Guess's ten out twice and never designed them as a
+ * set: worst pair 0.134 in light and **0.070** in dark, because mutual
+ * distinguishability is a property of the set and no per-color rule — including
+ * adapting one to a scheme — can establish it. This set measures 0.159 light and
+ * 0.143 dark (2026-09-11).
  */
 export const TEN: readonly Color[] = [
   RED,
@@ -400,8 +370,8 @@ export const TEN_NAMES: readonly string[] = [
  *
  * Eight washes cannot be as separated as eight colors — a pastel set is close
  * together by construction, which is why upstream's own eight measured 0.071.
- * These measure 0.087 light and 0.081 dark, so the set is better than the one it
- * replaces without pretending to be something a wash cannot be.
+ * These measure 0.076 light and 0.100 dark (2026-09-11), so the set is better
+ * than the one it replaces without pretending to be something a wash cannot be.
  */
 export const EIGHT_FILLS: readonly Color[] = [
   GRAY_WASH,
@@ -420,10 +390,10 @@ export const EIGHT_FILLS: readonly Color[] = [
  *
  * The widest spread {@link EIGHT_FILLS} allows, because a Map board is almost
  * entirely region fill and the whole game is telling neighboring regions apart.
- * Upstream's four muted earth tones measured 0.077; these measure 0.115 light and
- * 0.123 dark. The earth tones went deliberately — they were chosen so that four
- * saturated hues at that area were not unpleasant to look at for the length of a
- * game, and the wash step already answers that without also being hard to read.
+ * Upstream's four muted earth tones measured 0.077; these measure 0.113 light and
+ * 0.120 dark (2026-09-11). Upstream chose earth tones so four saturated hues were
+ * not tiring over a whole game; the wash step answers that without being hard to
+ * read.
  */
 export const FOUR_FILLS: readonly Color[] = [
   RED_WASH,
