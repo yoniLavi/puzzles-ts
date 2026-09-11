@@ -3,8 +3,8 @@
  * `flood.c` (`search` + `choosemove` + `choosemove_recurse`). It is
  * *not* optimal — it is a depth-3 greedy look-ahead — but it is exactly
  * what upstream uses to set each board's par at generation time, so it
- * must reproduce C's choices (see the design's D-RISK note and the
- * differential test). Keep the inner loops typed-array-tight.
+ * must reproduce C's choices (the differential test checks it). Keep the
+ * inner loops typed-array-tight.
  */
 
 import { stepBudget } from "../../engine/step-budget.ts";
@@ -124,7 +124,7 @@ export function search(
   let qhead = 1;
   let qnext = 1;
   let remaining = wh - 1;
-  let control = qhead;
+  let control = 0;
 
   while (true) {
     if (qtail === qhead) {
@@ -161,9 +161,7 @@ export function search(
     }
   }
 
-  const result: SearchResult = { dist: currdist, number: qhead, control };
-  if (currdist === 0) result.control = qhead;
-  return result;
+  return { dist: currdist, number: qhead, control };
 }
 
 /**
@@ -206,28 +204,20 @@ function choosemoveRecurse(
       out.control = wh;
       return move;
     }
-    let dist: number;
-    let number: number;
-    let control: number;
+    let s = inner;
     if (depth < RECURSION_DEPTH - 1) {
       choosemoveRecurse(w, h, tmpgrid, x0, y0, maxmove, scratch, depth + 1, inner);
-      dist = inner.dist;
-      number = inner.number;
-      control = inner.control;
     } else {
-      const s = search(w, h, tmpgrid, x0, y0, scratch);
-      dist = s.dist;
-      number = s.number;
-      control = s.control;
+      s = search(w, h, tmpgrid, x0, y0, scratch);
     }
     if (
-      dist < bestdist ||
-      (dist === bestdist &&
-        (number < bestnumber || (number === bestnumber && control > bestcontrol)))
+      s.dist < bestdist ||
+      (s.dist === bestdist &&
+        (s.number < bestnumber || (s.number === bestnumber && s.control > bestcontrol)))
     ) {
-      bestdist = dist;
-      bestnumber = number;
-      bestcontrol = control;
+      bestdist = s.dist;
+      bestnumber = s.number;
+      bestcontrol = s.control;
       bestmove = move;
     }
   }

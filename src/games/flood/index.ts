@@ -7,12 +7,11 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { fromCoord } from "../../engine/geometry.ts";
 import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
-  CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
@@ -20,15 +19,17 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { say } from "./hint-text.ts";
 import {
   colors,
   computeSize,
+  DEFEAT_FLASH_FRAME,
   type FloodDrawState,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
+  VICTORY_FLASH_FRAME,
 } from "./render.ts";
 import { completed, fill, solveMoves } from "./solver.ts";
 import {
@@ -50,40 +51,24 @@ import {
   validateParams,
 } from "./state.ts";
 
-// --- flash timing -----------------------------------------------------
-
-const VICTORY_FLASH_FRAME = 0.03;
-const DEFEAT_FLASH_FRAME = 0.1;
-
 // --- move logic -------------------------------------------------------
 
-/** Apply a single fill color to a (cloned) grid and return the new
- * state, advancing the move count and completion flag. */
-function applyFill(state: FloodState, color: number): FloodState {
+/** Apply `fills` in turn to a copy of the grid, advancing the move count. */
+function applyFills(state: FloodState, fills: readonly number[]): FloodState {
   const grid = Uint8Array.from(state.grid);
   const queue = new Int32Array(state.w * state.h);
-  fill(state.w, state.h, grid, FILLX, FILLY, color, queue);
-  const moves = state.moves + 1;
+  for (const c of fills) fill(state.w, state.h, grid, FILLX, FILLY, c, queue);
+  const moves = state.moves + fills.length;
   return { ...state, grid, moves, completed: completed(grid) };
 }
 
 export function executeMove(state: FloodState, move: FloodMove): FloodState {
   if (move.type === "solve") {
-    // Snap to solved: run the solver from here and apply every fill
-    // (design D5). Upstream stores a path instead; our `hint()` gives the
-    // step-by-step experience, so Solve just completes the board.
+    // Snap to solved: the hint plan is the step-by-step experience, so Solve
+    // just completes the board.
     if (state.completed) throw new Error("Puzzle is already solved");
-    const moves = solveMoves(state.w, state.h, state.grid, state.colors);
-    const grid = Uint8Array.from(state.grid);
-    const queue = new Int32Array(state.w * state.h);
-    for (const c of moves) fill(state.w, state.h, grid, FILLX, FILLY, c, queue);
-    return {
-      ...state,
-      grid,
-      moves: state.moves + moves.length,
-      completed: true,
-      cheated: true,
-    };
+    const fills = solveMoves(state.w, state.h, state.grid, state.colors);
+    return { ...applyFills(state, fills), cheated: true };
   }
   if (move.type !== "fill") return assertNever(move, "flood: executeMove");
 
@@ -96,7 +81,7 @@ export function executeMove(state: FloodState, move: FloodMove): FloodState {
   ) {
     throw new Error(`Illegal flood fill with color ${move.color}`);
   }
-  return applyFill(state, move.color);
+  return applyFills(state, [move.color]);
 }
 
 // --- UI / input -------------------------------------------------------
@@ -114,14 +99,14 @@ function interpretMove(
 ): FloodMove | null | UiUpdate {
   const { w, h } = state;
   const raw = stripModifiers(button);
-  let tx = -1;
-  let ty = -1;
+  let tx: number;
+  let ty: number;
   let uiUpdated = false;
 
   if (raw === LEFT_BUTTON) {
     const ts = ds.tilesize;
-    tx = fromCoordE(p.x, ts, Math.floor(ts / 2));
-    ty = fromCoordE(p.y, ts, Math.floor(ts / 2));
+    tx = fromCoord(p.x, ts, Math.floor(ts / 2));
+    ty = fromCoord(p.y, ts, Math.floor(ts / 2));
     if (ui.cursor.visible) {
       ui.cursor.visible = false;
       uiUpdated = true;
@@ -137,67 +122,48 @@ function interpretMove(
   } else if (raw === CURSOR_SELECT) {
     tx = ui.cursor.x;
     ty = ui.cursor.y;
-  } else if (raw === CURSOR_SELECT2) {
-    // Upstream advances the stored solver path here; we have none
-    // (design D2), so this is a no-op.
-    return null;
   } else {
     return null;
   }
 
-  let color = -1;
-  if (
-    tx >= 0 &&
-    tx < w &&
-    ty >= 0 &&
-    ty < h &&
-    state.grid[FILLY * w + FILLX] !== state.grid[ty * w + tx]
-  ) {
-    color = state.grid[ty * w + tx];
-  }
-
-  if (color >= 0 && !state.completed) {
-    return { type: "fill", color };
+  // A completed grid is one color, so it offers no fill.
+  if (tx >= 0 && tx < w && ty >= 0 && ty < h) {
+    const color = state.grid[ty * w + tx];
+    if (color !== state.grid[FILLY * w + FILLX]) return { type: "fill", color };
   }
   return uiUpdated ? UI_UPDATE : null;
 }
 
 // --- status bar -------------------------------------------------------
 
+/** Upstream's status line: the outcome, then the move count. */
 function statusbarText(state: FloodState, _ui: FloodUi): string {
-  // Faithful port of upstream's status string assembly.
-  let prefix: string;
-  if (state.completed && state.moves <= state.movelimit) {
-    prefix = state.cheated ? "Auto-solved. " : "COMPLETED! ";
-  } else if (state.moves >= state.movelimit) {
-    prefix = "FAILED! ";
-  } else if (state.cheated) {
-    prefix = "Auto-solver used. ";
-  } else {
-    prefix = "";
+  const count = `${state.moves} / ${state.movelimit} moves`;
+  switch (status(state)) {
+    case "solved":
+      return `${state.cheated ? "Auto-solved." : "COMPLETED!"} ${count}`;
+    case "lost":
+      return `FAILED! ${count}`;
+    default:
+      return state.cheated ? `Auto-solver used. ${count}` : count;
   }
-  return `${prefix}${state.moves} / ${state.movelimit} moves`;
 }
 
 // --- hint -------------------------------------------------------------
 
-/** Compute the solver's whole remaining move sequence as a hint plan:
- * one narrated fill per step, simulated forward from the current board.
- * Returning the full plan (rather than one step per request) keeps the
- * hint banner populated through an auto-hint run, matching the other
- * solver-backed ports. */
+/** The solver's whole remaining fill sequence, one narrated step per fill.
+ * Returning the full plan rather than one step keeps the hint banner
+ * populated through an auto-hint run. */
 function hint(state: FloodState): HintResult<FloodMove> {
   if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   const moves = solveMoves(state.w, state.h, state.grid, state.colors);
   if (moves.length === 0) return { ok: false, error: NO_MOVE_WORTH_MAKING };
-
-  const steps: HintStep<FloodMove>[] = [];
-  for (const color of moves) {
-    steps.push({
+  const steps = moves.map(
+    (color): HintStep<FloodMove> => ({
       move: { type: "fill", color },
       explanation: say.fill(color),
-    });
-  }
+    }),
+  );
   return { ok: true, steps };
 }
 
@@ -214,10 +180,9 @@ function hintKeepTrack(
 
 // --- flash ------------------------------------------------------------
 
-/** Mirror upstream `game_flash_length`: on a forward transition out of
- * the ongoing state, flash the victory rainbow on a win or the defeat
- * blink on a loss. Auto-solve snaps suppress the flash (the board jumps
- * straight to "Auto-solved"). */
+/** Upstream's `game_flash_length`: leaving the ongoing state flashes the
+ * victory rainbow on a win or the defeat blink on a loss. An auto-solve
+ * jumps straight to "Auto-solved" with no flash. */
 function flashLength(
   oldState: FloodState,
   newState: FloodState,
@@ -225,16 +190,11 @@ function flashLength(
   _ui: FloodUi,
 ): number {
   if (dir !== 1 || newState.cheated) return 0;
-  const oldStatus = status(oldState);
-  const newStatus = status(newState);
-  if (oldStatus === "ongoing" && newStatus !== "ongoing") {
-    if (newStatus === "solved") {
-      const frames = newState.w + newState.h + newState.colors - 2;
-      return VICTORY_FLASH_FRAME * frames;
-    }
-    return DEFEAT_FLASH_FRAME * 3;
-  }
-  return 0;
+  const now = status(newState);
+  if (status(oldState) !== "ongoing" || now === "ongoing") return 0;
+  if (now === "lost") return DEFEAT_FLASH_FRAME * 3;
+  const frames = newState.w + newState.h + newState.colors - 2;
+  return VICTORY_FLASH_FRAME * frames;
 }
 
 // --- Game object ------------------------------------------------------
@@ -286,7 +246,7 @@ export const floodGame: Game<
     "extra-moves-permitted": String(p.leniency),
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -306,9 +266,9 @@ export const floodGame: Game<
   textFormat,
   statusbarText,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: FloodParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },

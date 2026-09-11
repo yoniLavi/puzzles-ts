@@ -29,7 +29,8 @@ export interface FloodState {
   readonly h: number;
   /** Number of distinct colors in play (cells hold `0..colors-1`). */
   readonly colors: number;
-  /** Color per cell in row-major order. */
+  /** Color per cell in row-major order. Below `MAXCOLORS`, so each is one
+   * digit in the desc and the text format. */
   readonly grid: Uint8Array;
   readonly moves: number;
   readonly movelimit: number;
@@ -39,9 +40,10 @@ export interface FloodState {
 }
 
 /** A fill picks a color for the corner region; a solve snaps to the
- * solved board. Both are plain JSON-safe data → the default move codec
- * suffices. Upstream's stored-solution path machinery (`soln`) is
- * dropped — our engine's `hint()` plan replaces it (design D2). */
+ * solved board. Both are plain JSON-safe data, so the default move codec
+ * suffices. Upstream's stored solution path (`soln`, which Solve set and
+ * the secondary select stepped through) is dropped: the hint plan
+ * replaces it. */
 export type FloodMove = { type: "fill"; color: number } | { type: "solve" };
 
 export interface FloodUi {
@@ -61,9 +63,8 @@ export function encodeParams(p: FloodParams, full: boolean): string {
 }
 
 export function decodeParams(s: string): FloodParams {
-  // Upstream: w = h = atoi(s); then if 'x' follows the leading digits,
-  // h = atoi(after-x). Then scan for 'c<colors>' / 'm<leniency>'
-  // anywhere in the remainder. A bare "W" yields a square W×W board.
+  // Upstream's format: `WxH` (a bare `W` is square), then `c<colors>` and
+  // `m<leniency>` anywhere in the remainder, each read with `atoi`.
   const ret = defaultParams();
   const dims = parseDimensions(s);
   ret.w = dims.w;
@@ -124,16 +125,9 @@ function isDigit(ch: string): boolean {
   return ch >= "0" && ch <= "9";
 }
 
-/** Encode a color as its grid-description character, mirroring
- * upstream `(color > 9 ? 'A' : '0') + color`. In practice colors are
- * `0..9` (at most `MAXCOLORS-1`), so the `A`-branch is unreachable, but
- * we mirror it for fidelity. */
-export function encodeColorChar(color: number): string {
-  return String.fromCharCode((color > 9 ? 65 : 48) + color);
-}
-
 /** Decode a grid-description character to a color, or `-1` if invalid.
- * `'0'..'9'` → `0..9`; `'A'..'Z'` → `10..35` (upstream `validate_desc`). */
+ * Upstream's `validate_desc` reads `A`-`Z` as 10-35, so a letter is out of
+ * range rather than a bad character. */
 export function decodeColorChar(ch: string): number {
   const code = ch.charCodeAt(0);
   if (code >= 48 && code <= 57) return code - 48;
@@ -145,18 +139,16 @@ export function decodeColorChar(ch: string): number {
 
 export function validateDesc(p: FloodParams, desc: string): string | null {
   const wh = p.w * p.h;
-  let i = 0;
-  for (; i < wh; i++) {
+  for (let i = 0; i < wh; i++) {
     const ch = desc[i];
     if (ch === undefined) return "Not enough data in grid description";
     const c = decodeColorChar(ch);
     if (c < 0) return "Bad character in grid description";
     if (c >= MAXCOLORS) return "Color out of range in grid description";
   }
-  if (desc[i] !== ",") return "Expected ',' after grid description";
-  i++;
-  const rest = desc.slice(i);
-  if (!/^\d*$/.test(rest)) return "Badly formatted move limit after grid description";
+  if (desc[wh] !== ",") return "Expected ',' after grid description";
+  if (!/^\d*$/.test(desc.slice(wh + 1)))
+    return "Badly formatted move limit after grid description";
   return null;
 }
 
@@ -185,10 +177,8 @@ export function newState(p: FloodParams, desc: string): FloodState {
 
 // --- status -----------------------------------------------------------
 
-/** Faithful port of upstream `game_status`: victory only within the
- * limit; defeat once the move count reaches the limit (whether or not
- * the grid is one color — completing *over* the limit is still a
- * defeat, exactly as upstream); else ongoing. */
+/** Upstream's `game_status`: completing within the limit wins; reaching the
+ * limit otherwise loses, even if a later fill completes the grid. */
 export function status(state: FloodState): GameStatus {
   if (state.completed && state.moves <= state.movelimit) return "solved";
   if (state.moves >= state.movelimit) return "lost";
@@ -199,23 +189,18 @@ export function status(state: FloodState): GameStatus {
 
 export function textFormat(state: FloodState): string {
   const { w, h, grid } = state;
-  const lines: string[] = [];
-  for (let y = 0; y < h; y++) {
-    let row = "";
-    for (let x = 0; x < w; x++) row += encodeColorChar(grid[y * w + x]);
-    lines.push(row);
-  }
-  return `${lines.join("\n")}\n`;
+  let text = "";
+  for (let y = 0; y < h; y++) text += `${grid.subarray(y * w, (y + 1) * w).join("")}\n`;
+  return text;
 }
 
 // --- generator --------------------------------------------------------
 
-/** Faithful port of upstream `new_game_desc`: invent a random grid
- * (re-rolling an already-complete one), run the heuristic solver to
- * count the moves it needs, and set the move limit to that count plus
- * the leniency. The grid reproduces bit-for-bit from `random.ts`; the
- * limit reproduces only if the TS solver makes the same choices as C
- * (see design D-RISK / the differential test). */
+/** Upstream's `new_game_desc`: invent a random grid (re-rolling an
+ * already-complete one), run the heuristic solver to count the moves it
+ * needs, and set the move limit to that count plus the leniency. The
+ * differential checks both halves: the grid reproduces from `random.ts`,
+ * the limit only if the solver makes C's choices. */
 export function newDesc(p: FloodParams, rng: RandomState): { desc: string } {
   const { w, h, colors, leniency } = p;
   const wh = w * h;
@@ -234,10 +219,5 @@ export function newDesc(p: FloodParams, rng: RandomState): { desc: string } {
     fill(w, h, work, FILLX, FILLY, move, scratch.queue0);
     moves++;
   }
-  moves += leniency;
-
-  let desc = "";
-  for (let i = 0; i < wh; i++) desc += encodeColorChar(grid[i]);
-  desc += `,${moves}`;
-  return { desc };
+  return { desc: `${grid.join("")},${moves + leniency}` };
 }

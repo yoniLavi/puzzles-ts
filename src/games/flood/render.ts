@@ -2,7 +2,6 @@ import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { BLACK, TEN, TEN_NAMES } from "../../engine/color/colors.ts";
 import { drawRecessedBorder as drawBevel, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import { fill } from "./solver.ts";
 import {
@@ -11,6 +10,7 @@ import {
   type FloodMove,
   type FloodParams,
   type FloodState,
+  type FloodUi,
 } from "./state.ts";
 
 // --- tile-size-derived metrics ----------------------------------------
@@ -23,8 +23,8 @@ const highlightWidth = (ts: number) => Math.floor(ts / 10);
 const border = (ts: number) => Math.floor(ts / 2);
 const coord = (n: number, ts: number) => n * ts + border(ts);
 
-const VICTORY_FLASH_FRAME = 0.03;
-const DEFEAT_FLASH_FRAME = 0.1;
+export const VICTORY_FLASH_FRAME = 0.03;
+export const DEFEAT_FLASH_FRAME = 0.1;
 
 // --- color palette indices -------------------------------------------
 
@@ -35,13 +35,10 @@ const COL_HIGHLIGHT = 12;
 const COL_LOWLIGHT = 13;
 
 /**
- * The ten tiles, as the hint says them: *"Fill with orange"*.
- *
- * Re-exported from the palette rather than written here, because the sentence is
- * a claim about the board and the only thing between it and a lie is that the
- * word and the color come from the same place. A scheme may restyle a tile; it
- * may not turn the one the hint calls orange into something a player would call
- * another color.
+ * The ten tiles, as the hint says them: *"Fill with orange"*. Re-exported from
+ * the palette rather than written here, because the sentence is a claim about
+ * the board and only a word and a color from the same place keep it true. A
+ * scheme may restyle a tile, but not into what a player would call another color.
  */
 export const COLOR_NAMES = TEN_NAMES;
 
@@ -58,7 +55,7 @@ export function colors(defaultBackground: Color): Color[] {
   return out;
 }
 
-export function computeSize(p: FloodParams, ts: number): Size {
+export function computeSize(p: Pick<FloodParams, "w" | "h">, ts: number): Size {
   return { w: border(ts) * 2 + ts * p.w, h: border(ts) * 2 + ts * p.h };
 }
 
@@ -81,10 +78,7 @@ const COLOR_SHIFT = 11;
 export interface FloodDrawState {
   started: boolean;
   tilesize: number;
-  w: number;
-  h: number;
-  /** Per-cell cache of the last-drawn packed tile value; `-1` forces a
-   * redraw (the documented no-BigInt Int32Array cache pattern). */
+  /** Per-cell cache of the last-drawn packed tile; `-1` forces a redraw. */
   grid: Int32Array;
 }
 
@@ -92,8 +86,6 @@ export function newDrawState(state: FloodState): FloodDrawState {
   return {
     started: false,
     tilesize: 0,
-    w: state.w,
-    h: state.h,
     grid: new Int32Array(state.w * state.h).fill(-1),
   };
 }
@@ -109,9 +101,7 @@ function drawTile(
   const ty = coord(y, ts);
   const sep = sepWidth(ts);
 
-  let color: number;
-  if (tile & BADFLASH) color = COL_SEPARATOR;
-  else color = (tile >> COLOR_SHIFT) + COL_1;
+  const color = tile & BADFLASH ? COL_SEPARATOR : (tile >> COLOR_SHIFT) + COL_1;
   dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, color);
 
   if (sep > 0) {
@@ -194,7 +184,7 @@ export function redraw(
   _prev: FloodState | null,
   state: FloodState,
   _dir: number,
-  ui: FloodUiLike,
+  ui: FloodUi,
   _animTime: number,
   flashTime: number,
   activeHint?: HintStep<FloodMove>,
@@ -205,14 +195,13 @@ export function redraw(
 
   if (!ds.started) {
     // The engine paints no pixels of its own; fill our own background.
-    const size = computeSize({ w, h, colors: ncolors, leniency: 0 }, ts);
-    dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
+    dr.drawRect({ x: 0, y: 0, ...computeSize(state, ts) }, COL_BACKGROUND);
     drawRecessedFrame(dr, w, h, ts);
     ds.started = true;
   }
 
   // Flash type follows the terminal status: a completed board flashes
-  // the victory rainbow, a lost board the defeat blink (design D8).
+  // the victory rainbow, a lost board the defeat blink.
   let flashframe = -1;
   let victory = false;
   if (flashTime > 0) {
@@ -224,24 +213,23 @@ export function redraw(
   // Build the display grid (a mutable copy we may overlay onto).
   const grid = Uint8Array.from(state.grid);
 
-  // Hint overlay: highlight every square of the next fill's color that
-  // is adjacent to the controlled region (upstream's SOLNNEXT). Compute
-  // it as upstream does: fill to the target, fill again in a sentinel
-  // color (= ncolors, out of range), then revert anything that was not
-  // originally the target color. Sentinel-colored cells are SOLNNEXT.
-  let solnmove = 0;
-  const showSoln =
-    activeHint !== undefined &&
-    activeHint.move.type === "fill" &&
+  // Hint overlay: mark every square of the next fill's color that is
+  // adjacent to the controlled region (upstream's SOLNNEXT), found as
+  // upstream does: fill to that color, fill again in an out-of-range
+  // sentinel (`ncolors`), then revert whatever was not originally that color.
+  let hintColor = 0;
+  const next = activeHint?.move;
+  if (
+    next?.type === "fill" &&
     !state.completed &&
-    state.grid[FILLY * w + FILLX] !== activeHint.move.color;
-  if (showSoln && activeHint?.move.type === "fill") {
-    solnmove = activeHint.move.color;
+    state.grid[FILLY * w + FILLX] !== next.color
+  ) {
+    hintColor = next.color;
     const queue = new Int32Array(wh);
-    fill(w, h, grid, FILLX, FILLY, solnmove, queue);
+    fill(w, h, grid, FILLX, FILLY, hintColor, queue);
     fill(w, h, grid, FILLX, FILLY, ncolors, queue);
     for (let i = 0; i < wh; i++)
-      if (grid[i] === ncolors && state.grid[i] !== solnmove) grid[i] = state.grid[i];
+      if (grid[i] === ncolors && state.grid[i] !== hintColor) grid[i] = state.grid[i];
   }
 
   // Victory rainbow: superimpose the radiating color wave.
@@ -257,13 +245,10 @@ export function redraw(
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
       const pos = y * w + x;
-      let tile: number;
-      if (grid[pos] === ncolors) {
-        tile = (solnmove << COLOR_SHIFT) | SOLNNEXT;
-      } else {
-        tile = grid[pos] << COLOR_SHIFT;
-      }
-
+      let tile =
+        grid[pos] === ncolors
+          ? (hintColor << COLOR_SHIFT) | SOLNNEXT
+          : grid[pos] << COLOR_SHIFT;
       if (x === 0 || grid[pos - 1] !== grid[pos]) tile |= BORDER_L;
       if (x === w - 1 || grid[pos + 1] !== grid[pos]) tile |= BORDER_R;
       if (y === 0 || grid[pos - w] !== grid[pos]) tile |= BORDER_U;
@@ -282,10 +267,4 @@ export function redraw(
       }
     }
   }
-}
-
-/** Minimal shape `redraw` reads from the UI (kept structural so the
- * render module needn't import the full `FloodUi`). */
-interface FloodUiLike {
-  cursor: GridCursor;
 }

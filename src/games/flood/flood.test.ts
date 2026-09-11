@@ -40,6 +40,7 @@ describe("Flood params", () => {
 
   it("decodes c/m flags in either remainder order", () => {
     expect(decodeParams("8x10c4m0")).toEqual({ w: 8, h: 10, colors: 4, leniency: 0 });
+    expect(decodeParams("8x10m0c4")).toEqual({ w: 8, h: 10, colors: 4, leniency: 0 });
     expect(decodeParams("16x16c6m2")).toEqual({
       w: 16,
       h: 16,

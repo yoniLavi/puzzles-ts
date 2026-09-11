@@ -1,6 +1,5 @@
 // Tier-1 solver tests: the heuristic solver completes every generated
-// board, and the depth-3 look-ahead beats a one-ply greedy choice on a
-// crafted board where the greedy pick is locally tempting but worse.
+// board, picks a playable color, and stays within the grid-area bound.
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
 import { choosemove, completed, fill, SolverScratch, solveMoves } from "./solver.ts";

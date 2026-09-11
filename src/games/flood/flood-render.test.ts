@@ -108,16 +108,17 @@ describe("Flood redraw", () => {
       { w: 5, h: 5, colors: 6, leniency: 0 },
       `${"0".repeat(25)},9`,
     );
-    const state: FloodState = { ...base, completed: true, moves: 3 };
+    // A one-color desc decodes to `colors: 1`; a real win keeps the colors
+    // the board started with, and those are what the rainbow cycles through.
+    const state: FloodState = { ...base, colors: 6, completed: true, moves: 3 };
     const ds = freshDs(state);
     const { dr, ops } = recordingDrawing();
-    // flashTime / VICTORY_FLASH_FRAME(0.03) ≈ 4 → cells within manhattan
-    // distance 4 of the corner get colors 0..4.
+    // 0.12 / VICTORY_FLASH_FRAME (0.03) floors to frame 3, so cells within
+    // Manhattan distance 3 of the corner take colors 0..3.
     redraw(dr, ds, null, state, 1, UI, 0, 0.12);
-    const playColors = new Set(
-      ops.filter((o) => o.op === "drawRect" && o.w === TS).map((o) => o.color),
-    );
-    expect(playColors.size).toBeGreaterThan(1);
+    // Whole-tile rects only: a separator strip along a tile's edge is TS wide.
+    const tiles = ops.filter((o) => o.op === "drawRect" && o.w === TS && o.h === TS);
+    expect(new Set(tiles.map((o) => o.color)).size).toBeGreaterThan(1);
   });
 
   it("blinks the board to the separator color on a defeat flash", () => {
@@ -129,8 +130,8 @@ describe("Flood redraw", () => {
     // flashTime / DEFEAT_FLASH_FRAME(0.1) = 0 (≠ 1) → BADFLASH → every
     // tile painted in the separator color at full size.
     redraw(dr, ds, null, state, 1, UI, 0, 0.05);
-    expect(ops.some((o) => o.op === "drawRect" && o.color === 1 && o.w === TS)).toBe(
-      true,
-    );
+    const tiles = ops.filter((o) => o.op === "drawRect" && o.w === TS && o.h === TS);
+    expect(tiles).toHaveLength(9);
+    expect(tiles.every((o) => o.color === 1)).toBe(true);
   });
 });

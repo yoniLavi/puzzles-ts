@@ -2,15 +2,11 @@
  * Flood — gated differential check against a frozen snapshot of
  * C-generated reference boards (`__fixtures__/flood-c-reference.json`).
  *
- * C-free: this test does not link the C build. Unlike the permutation
- * games (whose generators don't consult a solver, so only the *grid*
- * need reproduce), Flood's move limit is `solver_move_count + leniency`
- * — the par depends on the heuristic solver's exact choices. So the
- * strongest meaningful bar here is that the TS generator reproduces the
- * C engine's **whole** game description for the same seed: the grid
- * characters (proving `random.ts` is bit-identical end-to-end) *and*
- * the trailing move limit (proving the TS solver makes the same choices
- * as C). See the change's design D-RISK.
+ * Flood's move limit is `solver_move_count + leniency`, so the par depends
+ * on the heuristic solver's exact choices. The bar is therefore the
+ * **whole** game description for the same seed: the grid characters
+ * (proving `random.ts` is bit-identical end-to-end) *and* the trailing
+ * move limit (proving the TS solver makes the same choices as C).
  *
  * The fixture is **frozen and cannot be regenerated**. It was captured by
  * `puzzles/auxiliary/flood-trace.c` against upstream's C, under an
