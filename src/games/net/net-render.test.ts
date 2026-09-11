@@ -2,10 +2,9 @@
  * Render tier-2.5 tests: drive real frames through a `Midend` with the recording
  * `GameDrawing`, assert the ops that matter, and snapshot the record.
  *
- * Net's renderer is a fresh port (design D2), so this is the guard that its
- * rotated-polygon wires, the three color passes (black / powered-cyan /
- * error-red), the endpoint + source boxes, the locked-gray background, and the
- * barrier rectangles are all emitted.
+ * This is the guard that Net's rotated-polygon wires, the three color passes
+ * (black / powered-cyan / error-red), the endpoint + source boxes, the
+ * locked-gray background, and the barrier rectangles are all emitted.
  */
 
 import { describe, expect, it } from "vitest";
@@ -59,7 +58,6 @@ describe("net render", () => {
     // Grid lines are border-gray rects; wires are black-filled polygons.
     expect(ops.some((o) => o.op === "rect" && o.color === COL_BORDER)).toBe(true);
     expect(ops.some((o) => o.op === "polygon" && o.fill === COL_WIRE)).toBe(true);
-    expect(ops.filter((o) => o.op === "polygon").length).toBeGreaterThan(0);
 
     expect(ops).toMatchSnapshot();
   });

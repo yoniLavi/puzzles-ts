@@ -11,9 +11,8 @@
  * candidate set by `xyd_cmp`; the perimeter sort, whose keys are distinct so its
  * order is total) are reproduced exactly.
  *
- * The fixtures were recorded from `puzzles/auxiliary/net-trace.c`. That harness
- * and `puzzles/net.c` are deleted when the port ships at owner-confirmed parity;
- * this frozen snapshot is what survives.
+ * The fixtures are a frozen recording from upstream's `auxiliary/net-trace.c`
+ * harness, which this repo does not carry.
  */
 
 import { describe, expect, it } from "vitest";

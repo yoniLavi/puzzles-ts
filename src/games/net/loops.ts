@@ -15,8 +15,7 @@
 
 import { findLoops } from "../../engine/findloop.ts";
 import { DIRECTIONS, offset, opposite } from "../../engine/wires.ts";
-
-const LOCKED = 0x10;
+import { LOCKED } from "./state.ts";
 
 /** Upstream `ERR(dir) = dir << 6`. The error/loop flag for a direction. */
 export const ERR_SHIFT = 6;
@@ -35,41 +34,29 @@ export function computeLoops(
   barriers: Uint8Array | null,
   includeUnlocked: boolean,
 ): Int32Array {
-  const neighbors = (vertex: number): number[] => {
-    const x = vertex % w;
-    const y = Math.floor(vertex / w);
-    let tile = tiles[vertex];
-    if (barriers) tile &= ~barriers[vertex];
-
-    const out: number[] = [];
-    for (const dir of DIRECTIONS) {
-      if (!(tile & dir)) continue;
-      const { x: x1, y: y1 } = offset(x, y, dir, w, h);
-      const v1 = y1 * w + x1;
-      if (!includeUnlocked && !(tile & tiles[v1] & LOCKED)) continue;
-      if (tiles[v1] & opposite(dir)) out.push(v1);
-    }
-    return out;
+  /** The tile that `v`'s wire in direction `dir` links to, or -1 for none. */
+  const linked = (v: number, dir: number): number => {
+    if (!(tiles[v] & dir) || (barriers && barriers[v] & dir)) return -1;
+    const o = offset(v % w, Math.floor(v / w), dir, w, h);
+    const v1 = o.y * w + o.x;
+    if (!includeUnlocked && !(tiles[v] & tiles[v1] & LOCKED)) return -1;
+    return tiles[v1] & opposite(dir) ? v1 : -1;
   };
 
-  const fls = findLoops(w * h, neighbors);
+  const fls = findLoops(w * h, (v) => {
+    const out: number[] = [];
+    for (const dir of DIRECTIONS) {
+      const v1 = linked(v, dir);
+      if (v1 >= 0) out.push(v1);
+    }
+    return out;
+  });
 
   const loops = new Int32Array(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const v = y * w + x;
-      let flags = 0;
-      for (const dir of DIRECTIONS) {
-        if (!(tiles[v] & dir)) continue;
-        if (barriers && barriers[v] & dir) continue;
-        const { x: x1, y: y1 } = offset(x, y, dir, w, h);
-        const v1 = y1 * w + x1;
-        if (!includeUnlocked && !(tiles[v] & tiles[v1] & LOCKED)) continue;
-        if (tiles[v1] & opposite(dir) && fls.isLoopEdge(v, v1)) {
-          flags |= dir << ERR_SHIFT;
-        }
-      }
-      loops[v] = flags;
+  for (let v = 0; v < w * h; v++) {
+    for (const dir of DIRECTIONS) {
+      const v1 = linked(v, dir);
+      if (v1 >= 0 && fls.isLoopEdge(v, v1)) loops[v] |= dir << ERR_SHIFT;
     }
   }
   return loops;

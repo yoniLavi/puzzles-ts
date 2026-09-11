@@ -23,6 +23,7 @@
 
 import { Dsf } from "../../engine/dsf.ts";
 import { anticlockwise, offset, opposite } from "../../engine/wires.ts";
+import { LOCKED } from "./state.ts";
 
 /** Proved to have no solution at all. */
 export const SOLVER_INCONSISTENT = -1;
@@ -30,8 +31,6 @@ export const SOLVER_INCONSISTENT = -1;
 export const SOLVER_AMBIGUOUS = 0;
 /** Solved: every tile's orientation is determined. */
 export const SOLVER_UNIQUE = 1;
-
-const LOCKED = 0x10;
 
 /**
  * A FIFO worklist with a "already queued" bitmap — upstream's `struct todo`.

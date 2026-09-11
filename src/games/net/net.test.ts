@@ -188,8 +188,7 @@ describe("moves", () => {
     const a = netGame.executeMove(s, { type: "rotate", op: "A", x: 1, y: 1 });
     const c = netGame.executeMove(a, { type: "rotate", op: "C", x: 1, y: 1 });
     expect(c.tiles).toEqual(s.tiles);
-    // The intermediate is genuinely different — no equality short-circuit (the
-    // "rotation cycle" non-issue, design D1).
+    // The intermediate is genuinely different: no equality short-circuit.
     expect(a.tiles).not.toEqual(s.tiles);
   });
 
@@ -266,13 +265,17 @@ describe("moves", () => {
   it("win fires exactly when every non-empty tile is powered", () => {
     const { aux, state } = generate(p, "win-seed");
     expect(state.completed).toBe(false);
-    const solvedTiles = Uint8Array.from(aux, (c) => Number.parseInt(c, 16));
-    const solved = netGame.executeMove(state, {
-      type: "solve",
-      ops: [], // no-op, but re-check completion on the already-solved tiles
-    });
-    void solved;
-    expect(isComplete({ ...state, tiles: solvedTiles })).toBe(true);
+    const solved = {
+      ...state,
+      tiles: Uint8Array.from(aux, (c) => Number.parseInt(c, 16)),
+    };
+    // An empty batch re-checks completion on the tiles it is handed.
+    expect(netGame.executeMove(solved, { type: "jumble", ops: [] }).completed).toBe(
+      true,
+    );
+    // A quarter turn of any tile in the solved tree breaks one of its edges.
+    const turned = netGame.executeMove(solved, { type: "rotate", op: "A", x: 0, y: 0 });
+    expect(turned.completed).toBe(false);
   });
 
   it("moving the source marks its own tile active", () => {

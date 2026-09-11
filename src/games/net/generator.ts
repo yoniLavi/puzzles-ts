@@ -39,10 +39,7 @@ import {
 } from "../../engine/wires.ts";
 import { computeLoops } from "./loops.ts";
 import { netSolver, SOLVER_UNIQUE } from "./solver.ts";
-import type { NetParams } from "./state.ts";
-
-const HEX = "0123456789abcdef";
-const LOCKED = 0x10;
+import { LOCKED, type NetParams } from "./state.ts";
 
 /**
  * Consecutive loop-fixing rounds that may fail to reduce the loop-square count
@@ -121,7 +118,7 @@ export function newDesc(p: NetParams, rs: RandomState): { desc: string; aux: str
   const candidates = collectBarrierCandidates(tiles, w, h, p.wrapping);
 
   // The unshuffled grid is the solution; `solve()` replays it.
-  const aux = Array.from(tiles, (t) => HEX[t & 0xf]).join("");
+  const aux = Array.from(tiles, (t) => (t & 0xf).toString(16)).join("");
 
   shuffle(tiles, w, h, rs);
   placeBarriers(barriers, candidates, w, h, p.barrierProbability, rs);
@@ -133,8 +130,8 @@ export function newDesc(p: NetParams, rs: RandomState): { desc: string; aux: str
  * Scramble the solved grid: rotate every tile a random amount, then repeatedly
  * reshuffle just the tiles that form a loop until there are none, and finally
  * require at least one mismatched non-wrapping edge so the start is not
- * accidentally already solved. Every draw and every retry must match C, so this
- * is transcribed rather than tidied.
+ * accidentally already solved. Every draw and every retry must match C (the
+ * differential checks it).
  */
 function shuffle(tiles: Uint8Array, w: number, h: number, rs: RandomState): void {
   const wh = w * h;
@@ -143,32 +140,20 @@ function shuffle(tiles: Uint8Array, w: number, h: number, rs: RandomState): void
   reshuffle: for (;;) {
     attempt();
 
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const orig = tiles[y * w + x];
-        tiles[y * w + x] = rot(orig, randomUpto(rs, 4));
-      }
-    }
+    for (let i = 0; i < wh; i++) tiles[i] = rot(tiles[i], randomUpto(rs, 4));
 
     // Fix loops by reshuffling just the squares involved.
     //
-    // TERMINATION. Upstream (net.c:1485) gives up only when the count
-    // *increases*, while its own comment states the intent as "increasing
-    // rather than reducing". A plateau is a failure to reduce, but the `>`
-    // test lets it re-rotate for ever: the count sequence is non-increasing,
-    // so it converges, and if it converges to anything above zero the loop
-    // spins until random rotation happens to break the tie — "terminates with
-    // probability 1", which for a synchronous, uninterruptible worker means
-    // "may hang the machine" (see engine/retry-limit.ts). A grid where every
-    // rotation yields the same count never escapes at all.
-    //
-    // So detect the stall the predicate misses and take upstream's own escape
-    // hatch. Each round now either strictly reduces the count (at most `wh`
-    // times, since it is a non-increasing series of non-negative integers) or
-    // burns one of MAX_STALLED_ROUNDS — giving a real bound, `wh *
-    // MAX_STALLED_ROUNDS`, in place of a probabilistic argument. Reshuffling
-    // rather than throwing keeps a pathological seed a slower puzzle instead
-    // of a failed one; the outer `retries` above bounds the recovery itself.
+    // Upstream (net.c:1485) gives up only when the loop-square count
+    // *increases*, though its own comment states the intent as "increasing
+    // rather than reducing". Short of a give-up the count never rises, so if it
+    // settles above zero the `>` test re-rotates until chance breaks the tie,
+    // and for ever on a grid where every rotation yields the same count: a hang,
+    // for a synchronous and uninterruptible worker (see engine/retry-limit.ts).
+    // So a round that fails to reduce the count also spends one of
+    // MAX_STALLED_ROUNDS, and running out takes upstream's own escape, a full
+    // reshuffle. That bounds this loop at `wh * MAX_STALLED_ROUNDS` rounds, and
+    // `attempt()` bounds the reshuffles.
     let stalledRounds = 0;
     let prevLoopsquares = wh + 1;
     for (;;) {
@@ -180,14 +165,9 @@ function shuffle(tiles: Uint8Array, w: number, h: number, rs: RandomState): void
           thisLoopsquares++;
         }
       }
-      if (thisLoopsquares > prevLoopsquares) {
-        // Making it worse: give up and go back to a full shuffle.
-        continue reshuffle;
-      }
+      // Making it worse: give up and go back to a full shuffle.
+      if (thisLoopsquares > prevLoopsquares) continue reshuffle;
       if (thisLoopsquares === 0) break;
-      // Not reducing either. Upstream would retry this for ever; give the tie
-      // a generous number of chances to break (so any seed C converges on
-      // behaves identically), then treat it as the give-up it already is.
       if (thisLoopsquares === prevLoopsquares) {
         if (++stalledRounds > MAX_STALLED_ROUNDS) continue reshuffle;
       } else {
@@ -197,20 +177,13 @@ function shuffle(tiles: Uint8Array, w: number, h: number, rs: RandomState): void
     }
 
     // Require a mismatch across a non-wrapping edge (always possible).
-    let mismatches = 0;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        if (x + 1 < w && (rot(tiles[y * w + x], 2) ^ tiles[y * w + x + 1]) & L) {
-          mismatches++;
-        }
-        if (y + 1 < h && (rot(tiles[y * w + x], 2) ^ tiles[(y + 1) * w + x]) & U) {
-          mismatches++;
-        }
+        if (x + 1 < w && (rot(tiles[y * w + x], 2) ^ tiles[y * w + x + 1]) & L) return;
+        if (y + 1 < h && (rot(tiles[y * w + x], 2) ^ tiles[(y + 1) * w + x]) & U)
+          return;
       }
     }
-
-    if (mismatches === 0) continue;
-    break;
   }
 }
 
@@ -268,14 +241,14 @@ function perturb(
     }
   } while (x !== startx || y !== starty || d !== startd);
 
-  // Search the (shuffled) perimeter for a join we can make.
-  const perim2 = perimeter.slice();
-  shuffleArray(perim2, rs);
+  // Search the perimeter, in shuffled order, for a join we can make.
+  const shuffled = perimeter.slice();
+  shuffleArray(shuffled, rs);
   let joined = false;
-  for (let i = 0; i < perim2.length; i++) {
-    x = perim2[i].x;
-    y = perim2[i].y;
-    d = perim2[i].direction;
+  for (let i = 0; i < shuffled.length; i++) {
+    x = shuffled[i].x;
+    y = shuffled[i].y;
+    d = shuffled[i].direction;
 
     const o = offset(x, y, d, w, h);
     if (!wrapping && (Math.abs(o.x - x) > 1 || Math.abs(o.y - y) > 1)) continue;

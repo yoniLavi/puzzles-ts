@@ -1,8 +1,7 @@
 /**
- * Net's renderer — a fresh port of `game_redraw`/`draw_tile`/`draw_wires` from
- * net.c (design D2: the *model* is shared with Netslide, but the pixels are not
- * — Net draws thick scalable wires as rotated polygons, a different algorithm
- * from Netslide's fixed offset lines).
+ * Net's renderer, a port of `game_redraw`/`draw_tile`/`draw_wires` from net.c.
+ * The model is shared with Netslide but the pixels are not: Net draws thick
+ * scalable wires as rotated polygons, where Netslide draws fixed offset lines.
  *
  * The per-tile cache word packs every visible feature of a tile (barriers,
  * corners, cursor, the four wires at two bits each, the endpoint, neighbor
@@ -21,6 +20,7 @@ import {
   anticlockwise,
   clockwise,
   D,
+  DIRECTIONS,
   dirX,
   dirY,
   L,
@@ -33,10 +33,8 @@ import { computeLoops, ERR_SHIFT } from "./loops.ts";
 import { ACTIVE, computeActive, LOCKED, type NetState, type NetUi } from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 32;
-const ROTATE_TIME = 0.13;
-const FLASH_FRAME = 0.07;
-
-export { FLASH_FRAME, ROTATE_TIME as ANIM_TIME };
+export const ROTATE_TIME = 0.13;
+export const FLASH_FRAME = 0.07;
 
 // Palette, index-for-index with net.c's color enum.
 export const COL_BACKGROUND = 0;
@@ -77,8 +75,6 @@ const TILE_WIRE_ON_EDGE_SHIFT = 19; // 8 bits, same encoding as TILE_WIRE_SHIFT
 const TILE_ROTATING = 1 << 27;
 const TILE_LOCKED = 1 << 28;
 
-/** `WINDOW_OFFSET` under `NARROW_BORDERS`: Net has no gutter at all. */
-export const WINDOW_OFFSET = 0;
 export const lineThick = (ts: number): number => Math.floor((ts + 47) / 48);
 
 export interface NetDrawState {
@@ -109,19 +105,20 @@ export function setTileSize(ds: NetDrawState, tileSize: number): void {
   ds.tilesize = tileSize;
 }
 
+/** The board and its closing grid line, with no margin (upstream's
+ * `NARROW_BORDERS`). */
 export function computeSize(p: { w: number; h: number }, tileSize: number): Size {
-  return {
-    w: WINDOW_OFFSET * 2 + tileSize * p.w + lineThick(tileSize),
-    h: WINDOW_OFFSET * 2 + tileSize * p.h + lineThick(tileSize),
-  };
+  const lt = lineThick(tileSize);
+  return { w: tileSize * p.w + lt, h: tileSize * p.h + lt };
 }
 
-/** Cell index in the `(w+2)×(h+2)` cache/scratch arrays. */
-function dsi(ds: NetDrawState, x: number, y: number): number {
+/** Index of cell `(x, y)` in the `(w+2)×(h+2)` cache arrays. */
+function cell(ds: NetDrawState, x: number, y: number): number {
   return (y + 1) * (ds.w + 2) + (x + 1);
 }
 
-function rotatedCoords(
+/** `(ix, iy)` rotated by `matrix` about `(cx, cy)`, rounded to the pixel. */
+function rotatedPoint(
   matrix: readonly number[],
   cx: number,
   cy: number,
@@ -129,8 +126,8 @@ function rotatedCoords(
   iy: number,
 ): Point {
   return {
-    x: matrix[0] * ix + matrix[2] * iy + cx,
-    y: matrix[1] * ix + matrix[3] * iy + cy,
+    x: Math.floor(matrix[0] * ix + matrix[2] * iy + cx + 0.5),
+    y: Math.floor(matrix[1] * ix + matrix[3] * iy + cy + 0.5),
   };
 }
 
@@ -151,34 +148,29 @@ function drawWires(
   halfwidth: number,
   matrix: readonly number[],
 ): void {
-  const fpoints: number[] = [];
+  const points: Point[] = [];
+  const at = (ix: number, iy: number) => {
+    points.push(rotatedPoint(matrix, cx, cy, ix, iy));
+  };
   let anyWire = false;
 
-  let dsh = 0;
-  for (let d = 1; d < 16; d *= 2, dsh++) {
+  for (let d = 1, dsh = 0; d < 16; d *= 2, dsh++) {
     const wiretype = (tile >> (TILE_WIRE_SHIFT + 2 * dsh)) & 3;
+    const cw = clockwise(d);
+    const acw = anticlockwise(d);
 
-    fpoints.push(halfwidth * (dirX(d) + dirX(clockwise(d))));
-    fpoints.push(halfwidth * (dirY(d) + dirY(clockwise(d))));
+    at(halfwidth * (dirX(d) + dirX(cw)), halfwidth * (dirY(d) + dirY(cw)));
 
     if (bitmap & (1 << wiretype)) {
-      fpoints.push(radius * dirX(d) + halfwidth * dirX(clockwise(d)));
-      fpoints.push(radius * dirY(d) + halfwidth * dirY(clockwise(d)));
-      fpoints.push(radius * dirX(d) + halfwidth * dirX(anticlockwise(d)));
-      fpoints.push(radius * dirY(d) + halfwidth * dirY(anticlockwise(d)));
+      const ox = radius * dirX(d);
+      const oy = radius * dirY(d);
+      at(ox + halfwidth * dirX(cw), oy + halfwidth * dirY(cw));
+      at(ox + halfwidth * dirX(acw), oy + halfwidth * dirY(acw));
       anyWire = true;
     }
   }
 
-  if (!anyWire) return;
-
-  const points: Point[] = [];
-  for (let i = 0; i < fpoints.length; i += 2) {
-    const c = rotatedCoords(matrix, cx, cy, fpoints[i], fpoints[i + 1]);
-    points.push({ x: Math.floor(0.5 + c.x), y: Math.floor(0.5 + c.y) });
-  }
-
-  dr.drawPolygon(points, color, color);
+  if (anyWire) dr.drawPolygon(points, color, color);
 }
 
 function drawTile(
@@ -195,8 +187,8 @@ function drawTile(
   const borderTl = lt - borderBr;
   const barrierOutline = Math.floor((lt + 1) / 2);
 
-  const tx = WINDOW_OFFSET + ts * x + borderBr;
-  const ty = WINDOW_OFFSET + ts * y + borderBr;
+  const tx = ts * x + borderBr;
+  const ty = ts * y + borderBr;
 
   // Clip to the tile boundary, tightened when drawing just outside the grid.
   let clipx = tx;
@@ -238,7 +230,6 @@ function drawTile(
 
   // Keyboard cursor: an inset ring.
   if (tile & TILE_KEYBOARD_CURSOR) {
-    const cursorcol = COL_CURSOR;
     const insetOuter = Math.floor(ts / 8);
     const insetInner = insetOuter + lt;
     dr.drawRect(
@@ -248,7 +239,7 @@ function drawTile(
         w: ts - 2 * insetOuter,
         h: ts - 2 * insetOuter,
       },
-      cursorcol,
+      COL_CURSOR,
     );
     dr.drawRect(
       {
@@ -268,55 +259,49 @@ function drawTile(
 
   // Protrusions of neighboring cells' wires into our edges — only when our own
   // wire won't overdraw them (no wire here, or we're rotating).
-  {
-    let dsh = 0;
-    for (let d = 1; d < 16; d *= 2, dsh++) {
-      const edgetype = (tile >> (TILE_WIRE_ON_EDGE_SHIFT + 2 * dsh)) & 3;
-      if (edgetype === 0) continue;
-      if (
-        !(tile & TILE_ROTATING) &&
-        ((tile >> (TILE_WIRE_SHIFT + 2 * dsh)) & 3) !== 0
-      ) {
-        continue;
+  for (let d = 1, dsh = 0; d < 16; d *= 2, dsh++) {
+    const edgetype = (tile >> (TILE_WIRE_ON_EDGE_SHIFT + 2 * dsh)) & 3;
+    if (edgetype === 0) continue;
+    if (!(tile & TILE_ROTATING) && ((tile >> (TILE_WIRE_SHIFT + 2 * dsh)) & 3) !== 0) {
+      continue;
+    }
+
+    for (let pass = 0; pass < 2; pass++) {
+      const col =
+        pass === 0 || edgetype === 1
+          ? COL_WIRE
+          : edgetype === 2
+            ? COL_POWERED
+            : COL_ERR;
+      const halfwidth = pass === 0 ? 2 * lt - 1 : lt - 1;
+
+      let rx: number;
+      let rw: number;
+      if (dirX(d) < 0) {
+        rx = tx;
+        rw = borderTl;
+      } else if (dirX(d) > 0) {
+        rx = tx + ts - borderBr;
+        rw = borderBr;
+      } else {
+        rx = cx - halfwidth;
+        rw = 2 * halfwidth + 1;
       }
 
-      for (let pass = 0; pass < 2; pass++) {
-        const col =
-          pass === 0 || edgetype === 1
-            ? COL_WIRE
-            : edgetype === 2
-              ? COL_POWERED
-              : COL_ERR;
-        const halfwidth = pass === 0 ? 2 * lt - 1 : lt - 1;
-
-        let rx: number;
-        let rw: number;
-        if (dirX(d) < 0) {
-          rx = tx;
-          rw = borderTl;
-        } else if (dirX(d) > 0) {
-          rx = tx + ts - borderBr;
-          rw = borderBr;
-        } else {
-          rx = cx - halfwidth;
-          rw = 2 * halfwidth + 1;
-        }
-
-        let ry: number;
-        let rh: number;
-        if (dirY(d) < 0) {
-          ry = ty;
-          rh = borderTl;
-        } else if (dirY(d) > 0) {
-          ry = ty + ts - borderBr;
-          rh = borderBr;
-        } else {
-          ry = cy - halfwidth;
-          rh = 2 * halfwidth + 1;
-        }
-
-        dr.drawRect({ x: rx, y: ry, w: rw, h: rh }, col);
+      let ry: number;
+      let rh: number;
+      if (dirY(d) < 0) {
+        ry = ty;
+        rh = borderTl;
+      } else if (dirY(d) > 0) {
+        ry = ty + ts - borderBr;
+        rh = borderBr;
+      } else {
+        ry = cy - halfwidth;
+        rh = 2 * halfwidth + 1;
       }
+
+      dr.drawRect({ x: rx, y: ry, w: rw, h: rh }, col);
     }
   }
 
@@ -334,10 +319,10 @@ function drawTile(
   drawWires(dr, cx, cy, radius, tile, 0x4, COL_POWERED, lt - 1, matrix);
   drawWires(dr, cx, cy, radius, tile, 0x8, COL_ERR, lt - 1, matrix);
 
-  // Central box (endpoint / source).
-  for (let pass = 0; pass < 2; pass++) {
-    const endtype = (tile >> TILE_ENDPOINT_SHIFT) & 3;
-    if (endtype) {
+  // Central box (endpoint / source): an outline pass, then the fill.
+  const endtype = (tile >> TILE_ENDPOINT_SHIFT) & 3;
+  if (endtype) {
+    for (let pass = 0; pass < 2; pass++) {
       const boxr = ts * 0.24 + (pass === 0 ? lt - 1 : 0);
       const col =
         pass === 0 || endtype === 3
@@ -345,17 +330,15 @@ function drawTile(
           : endtype === 2
             ? COL_POWERED
             : COL_ENDPOINT;
-
       const corners = [
         [+1, +1],
         [+1, -1],
         [-1, -1],
         [-1, +1],
       ];
-      const points = corners.map(([sx, sy]) => {
-        const c = rotatedCoords(matrix, cx, cy, boxr * sx, boxr * sy);
-        return { x: Math.floor(c.x + 0.5), y: Math.floor(c.y + 0.5) };
-      });
+      const points = corners.map(([sx, sy]) =>
+        rotatedPoint(matrix, cx, cy, boxr * sx, boxr * sy),
+      );
       dr.drawPolygon(points, col, COL_WIRE);
     }
   }
@@ -405,7 +388,6 @@ export function redraw(
   flashTime: number,
 ): void {
   let state = current;
-  const oldstate = prev;
 
   if (!ds.started) {
     ds.started = true;
@@ -418,26 +400,19 @@ export function redraw(
   let tx = -1;
   let ty = -1;
   let angle = 0;
-  const lastRotateDir =
-    dir === -1 ? (oldstate?.lastRotateDir ?? 0) : state.lastRotateDir;
-  if (oldstate && animTime < ROTATE_TIME && lastRotateDir) {
-    tx = dir === -1 ? oldstate.lastRotateX : state.lastRotateX;
-    ty = dir === -1 ? oldstate.lastRotateY : state.lastRotateY;
+  const lastRotateDir = dir === -1 ? (prev?.lastRotateDir ?? 0) : state.lastRotateDir;
+  if (prev && animTime < ROTATE_TIME && lastRotateDir) {
+    tx = dir === -1 ? prev.lastRotateX : state.lastRotateX;
+    ty = dir === -1 ? prev.lastRotateY : state.lastRotateY;
     angle = lastRotateDir * dir * 90 * (animTime / ROTATE_TIME);
-    state = oldstate;
+    state = prev;
   }
 
   const frame = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) : 0;
 
-  const active = computeActive(state, ui.cx, ui.cy);
-  const loops = computeLoops(
-    state.w,
-    state.h,
-    state.tiles,
-    state.barriers,
-    ui.unlockedLoops,
-  );
   const { w, h, barriers } = state;
+  const active = computeActive(state, ui.cx, ui.cy);
+  const loops = computeLoops(w, h, state.tiles, barriers, ui.unlockedLoops);
 
   const td = ds.toDraw;
   td.fill(0);
@@ -446,31 +421,24 @@ export function redraw(
     const gy = (dy + ui.orgY) % h;
     for (let dx = 0; dx < w; dx++) {
       const gx = (dx + ui.orgX) % w;
+      const here = cell(ds, dx, dy);
       let t = state.tiles[gy * w + gx] | loops[gy * w + gx] | active[gy * w + gx];
 
-      let dsh = 0;
-      for (let d = 1; d < 16; d *= 2, dsh++) {
+      for (let d = 1, dsh = 0; d < 16; d *= 2, dsh++) {
         if (barriers[gy * w + gx] & d) {
-          td[dsi(ds, dx, dy)] |= d << TILE_BARRIER_SHIFT;
-          td[dsi(ds, dx + dirX(d), dy + dirY(d))] |= opposite(d) << TILE_BARRIER_SHIFT;
-          td[dsi(ds, dx + dirX(anticlockwise(d)), dy + dirY(anticlockwise(d)))] |=
-            clockwise(d) << TILE_BARRIER_CORNER_SHIFT;
-          td[
-            dsi(
-              ds,
-              dx + dirX(anticlockwise(d)) + dirX(d),
-              dy + dirY(anticlockwise(d)) + dirY(d),
-            )
-          ] |= opposite(d) << TILE_BARRIER_CORNER_SHIFT;
-          td[dsi(ds, dx + dirX(clockwise(d)), dy + dirY(clockwise(d)))] |=
-            d << TILE_BARRIER_CORNER_SHIFT;
-          td[
-            dsi(
-              ds,
-              dx + dirX(clockwise(d)) + dirX(d),
-              dy + dirY(clockwise(d)) + dirY(d),
-            )
-          ] |= anticlockwise(d) << TILE_BARRIER_CORNER_SHIFT;
+          // The barrier itself on the cells either side of it, and a corner
+          // join on the four cells that touch its ends.
+          const cw = clockwise(d);
+          const acw = anticlockwise(d);
+          td[here] |= d << TILE_BARRIER_SHIFT;
+          td[cell(ds, dx + dirX(d), dy + dirY(d))] |= opposite(d) << TILE_BARRIER_SHIFT;
+          td[cell(ds, dx + dirX(acw), dy + dirY(acw))] |=
+            cw << TILE_BARRIER_CORNER_SHIFT;
+          td[cell(ds, dx + dirX(acw) + dirX(d), dy + dirY(acw) + dirY(d))] |=
+            opposite(d) << TILE_BARRIER_CORNER_SHIFT;
+          td[cell(ds, dx + dirX(cw), dy + dirY(cw))] |= d << TILE_BARRIER_CORNER_SHIFT;
+          td[cell(ds, dx + dirX(cw) + dirX(d), dy + dirY(cw) + dirY(d))] |=
+            acw << TILE_BARRIER_CORNER_SHIFT;
         }
 
         if (t & d) {
@@ -487,32 +455,28 @@ export function redraw(
           }
 
           const edgeval = t & (d << ERR_SHIFT) ? 3 : t & ACTIVE ? 2 : 1;
-          td[dsi(ds, dx, dy)] |= edgeval << (TILE_WIRE_SHIFT + dsh * 2);
+          td[here] |= edgeval << (TILE_WIRE_SHIFT + dsh * 2);
           if (!(gx === tx && gy === ty)) {
-            td[dsi(ds, dx + dirX(d), dy + dirY(d))] |=
+            td[cell(ds, dx + dirX(d), dy + dirY(d))] |=
               edgeval << (TILE_WIRE_ON_EDGE_SHIFT + (dsh ^ 2) * 2);
           }
         }
       }
 
       if (ui.cursor.visible && gx === ui.cursor.x && gy === ui.cursor.y) {
-        td[dsi(ds, dx, dy)] |= TILE_KEYBOARD_CURSOR;
+        td[here] |= TILE_KEYBOARD_CURSOR;
       }
 
-      if (gx === tx && gy === ty) td[dsi(ds, dx, dy)] |= TILE_ROTATING;
+      if (gx === tx && gy === ty) td[here] |= TILE_ROTATING;
 
       if (gx === ui.cx && gy === ui.cy) {
-        td[dsi(ds, dx, dy)] |= 3 << TILE_ENDPOINT_SHIFT;
-      } else if (
-        (t & 0xf) === R ||
-        (t & 0xf) === U ||
-        (t & 0xf) === L ||
-        (t & 0xf) === D
-      ) {
-        td[dsi(ds, dx, dy)] |= (t & ACTIVE ? 2 : 1) << TILE_ENDPOINT_SHIFT;
+        td[here] |= 3 << TILE_ENDPOINT_SHIFT;
+      } else if (DIRECTIONS.includes(t & 0xf)) {
+        // A tile with a single wire is an endpoint.
+        td[here] |= (t & ACTIVE ? 2 : 1) << TILE_ENDPOINT_SHIFT;
       }
 
-      if (t & LOCKED) td[dsi(ds, dx, dy)] |= TILE_LOCKED;
+      if (t & LOCKED) td[here] |= TILE_LOCKED;
 
       // Completion flash: a Chebyshev ripple from the source that toggles the
       // locked-gray background frame by frame.
@@ -523,7 +487,7 @@ export function redraw(
         const ydist = dy < rcy ? rcy - dy : dy - rcy;
         const dist = Math.max(xdist, ydist);
         if (frame >= dist && frame < dist + 4 && (frame - dist) & 1) {
-          td[dsi(ds, dx, dy)] ^= TILE_LOCKED;
+          td[here] ^= TILE_LOCKED;
         }
       }
     }
@@ -533,11 +497,12 @@ export function redraw(
   // rotating, since its angle changes every frame.
   for (let dy = -1; dy < h + 1; dy++) {
     for (let dx = -1; dx < w + 1; dx++) {
-      const prevWord = ds.visible[dsi(ds, dx, dy)];
-      const curr = td[dsi(ds, dx, dy)];
+      const i = cell(ds, dx, dy);
+      const prevWord = ds.visible[i];
+      const curr = td[i];
       if (prevWord !== curr || (prevWord | curr) & TILE_ROTATING) {
         drawTile(dr, ds, dx, dy, curr, angle);
-        ds.visible[dsi(ds, dx, dy)] = curr;
+        ds.visible[i] = curr;
       }
     }
   }

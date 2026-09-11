@@ -1,5 +1,5 @@
 /**
- * Net — Simon Tatham's original wire-rotation puzzle, native TS port.
+ * Net — Simon Tatham's original wire-rotation puzzle.
  *
  * A `w × h` grid of wire tiles whose solved form is a spanning tree rooted at a
  * movable source; the player rotates each tile until every tile is powered. The
@@ -11,7 +11,7 @@
 import { assertNever } from "../../engine/assert-never.ts";
 import type { Game, GamePref, SolveResult } from "../../engine/game.ts";
 import { UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
+import { atof, dimensionParamConfig, formatG } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -26,10 +26,9 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { randomUpto } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { ConfigValues, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, GameStatus, Point } from "../../engine/types.ts";
 import {
   anticlockwise,
   clockwise,
@@ -42,7 +41,6 @@ import {
 } from "../../engine/wires.ts";
 import { newDesc } from "./generator.ts";
 import {
-  ANIM_TIME,
   colors,
   computeSize,
   FLASH_FRAME,
@@ -50,19 +48,16 @@ import {
   type NetDrawState,
   newDrawState,
   PREFERRED_TILE_SIZE,
+  ROTATE_TIME,
   redraw,
   setTileSize,
-  WINDOW_OFFSET,
 } from "./render.ts";
 import { netSolver, SOLVER_INCONSISTENT } from "./solver.ts";
 import {
-  atof,
-  cloneState,
   computeActive,
   decodeParams,
   defaultParams,
   encodeParams,
-  formatG,
   isComplete,
   LOCKED,
   type NetMove,
@@ -77,11 +72,8 @@ import {
 } from "./state.ts";
 
 /* ----------------------------------------------------------------------
- * Presets.
- *
- * All ten upstream presets. The web build defines `NARROW_BORDERS` but *not*
- * `SMALL_SCREEN`, so the two 13×11 presets the `#ifndef SMALL_SCREEN` guards are
- * included — matching what the C web build actually shows.
+ * Presets: upstream's ten, including the two 13×11 ones its `SMALL_SCREEN`
+ * build leaves out (the web build showed them).
  */
 const PRESETS: NetParams[] = [
   { w: 5, h: 5, wrapping: false, unique: true, barrierProbability: 0 },
@@ -117,48 +109,52 @@ function applyOp(tiles: Uint8Array, w: number, o: NetOp): void {
   else tiles[i] = rotateTile(o.op, tiles[i]);
 }
 
+/** Each rotation's animation direction (see `NetState.lastRotateDir`). */
+const ROTATE_DIR = { A: 1, C: -1, F: 2 } as const;
+
 function executeMove(s: NetState, m: NetMove): NetState {
-  const next = cloneState(s);
+  const tiles = new Uint8Array(s.tiles);
   let lastRotateX = 0;
   let lastRotateY = 0;
   let lastRotateDir = 0;
-  let cheated = s.cheated;
 
   switch (m.type) {
-    case "rotate": {
-      next.tiles[m.y * s.w + m.x] = rotateTile(m.op, next.tiles[m.y * s.w + m.x]);
+    case "rotate":
+      applyOp(tiles, s.w, m);
       lastRotateX = m.x;
       lastRotateY = m.y;
-      lastRotateDir = m.op === "A" ? 1 : m.op === "C" ? -1 : 2;
+      lastRotateDir = ROTATE_DIR[m.op];
       break;
-    }
-    case "lock": {
-      next.tiles[m.y * s.w + m.x] ^= LOCKED;
-      // A lock commits with no animation (dir stays 0) but still records the
-      // tile, matching upstream's `!noanim` tail.
+    case "lock":
+      tiles[m.y * s.w + m.x] ^= LOCKED;
+      // A lock records its tile but does not animate, matching upstream's
+      // `!noanim` tail.
       lastRotateX = m.x;
       lastRotateY = m.y;
       break;
-    }
     case "jumble":
-    case "solve": {
-      for (const o of m.ops) applyOp(next.tiles, s.w, o);
-      if (m.type === "solve") cheated = true;
+    case "solve":
+      for (const o of m.ops) applyOp(tiles, s.w, o);
       break;
-    }
     default:
       return assertNever(m, "net: executeMove");
   }
 
-  const tiled: NetState = {
-    ...next,
-    cheated,
+  const next: NetState = {
+    ...s,
+    tiles,
+    cheated: s.cheated || m.type === "solve",
     lastRotateX,
     lastRotateY,
     lastRotateDir,
   };
   // `completed` is monotonic (upstream only ever sets it true).
-  return s.completed ? tiled : { ...tiled, completed: isComplete(tiled) };
+  return s.completed ? next : { ...next, completed: isComplete(next) };
+}
+
+/** Rotate the tile at `(x, y)`, or nothing: a locked tile does not turn. */
+function rotateMove(s: NetState, op: "A" | "C" | "F", x: number, y: number) {
+  return s.tiles[y * s.w + x] & LOCKED ? null : ({ type: "rotate", op, x, y } as const);
 }
 
 function interpretMove(
@@ -169,54 +165,30 @@ function interpretMove(
   rawButton: number,
 ): NetMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
-  const shift = (rawButton & MOD_SHFT) !== 0;
-  const ctrl = (rawButton & MOD_CTRL) !== 0;
-
-  let nullret: null | UiUpdate = null;
-  let tx = -1;
-  let ty = -1;
-  let dirBit = 0;
-  type Action =
-    | "none"
-    | "rotateLeft"
-    | "rotate180"
-    | "rotateRight"
-    | "toggleLock"
-    | "jumble"
-    | "moveOrigin"
-    | "moveSource"
-    | "moveOriginAndSource"
-    | "moveCursor";
-  let action: Action = "none";
 
   if (button === LEFT_BUTTON || button === MIDDLE_BUTTON || button === RIGHT_BUTTON) {
-    if (ui.cursor.visible) {
-      ui.cursor.visible = false;
-      nullret = UI_UPDATE;
-    }
+    const nullret = ui.cursor.visible ? UI_UPDATE : null;
+    ui.cursor.visible = false;
 
     // Pixel → tile. (No stylus branch: the midend strips MOD_STYLUS for us, so a
     // touch tap rotates left and a long-press right — deliberate divergence,
     // docs/games/input.md § "Touch is stripped for you". Lock stays on the middle button / `s`.)
     const ts = ds.tilesize;
     const lt = lineThick(ts);
-    const px = Math.floor(p.x) - WINDOW_OFFSET - lt;
-    const py = Math.floor(p.y) - WINDOW_OFFSET - lt;
-    tx = Math.floor(px / ts);
-    ty = Math.floor(py / ts);
+    const px = Math.floor(p.x) - lt;
+    const py = Math.floor(p.y) - lt;
+    const tx = Math.floor(px / ts);
+    const ty = Math.floor(py / ts);
     if (px < 0 || py < 0 || tx >= s.w || ty >= s.h) return nullret;
-    tx = (tx + ui.orgX) % s.w;
-    ty = (ty + ui.orgY) % s.h;
     if (px % ts >= ts - lt || py % ts >= ts - lt) return nullret; // in the gutter
+    const x = (tx + ui.orgX) % s.w;
+    const y = (ty + ui.orgY) % s.h;
+    if (button === MIDDLE_BUTTON) return { type: "lock", x, y };
+    return rotateMove(s, button === LEFT_BUTTON ? "A" : "C", x, y) ?? nullret;
+  }
 
-    action =
-      button === LEFT_BUTTON
-        ? "rotateLeft"
-        : button === RIGHT_BUTTON
-          ? "rotateRight"
-          : "toggleLock";
-  } else if (isCursorMove(button)) {
-    dirBit =
+  if (isCursorMove(button)) {
+    const dir =
       button === CURSOR_UP
         ? U
         : button === CURSOR_DOWN
@@ -224,89 +196,58 @@ function interpretMove(
           : button === CURSOR_LEFT
             ? L
             : R;
-    action =
-      shift && ctrl
-        ? "moveOriginAndSource"
-        : shift
-          ? "moveOrigin"
-          : ctrl
-            ? "moveSource"
-            : "moveCursor";
-  } else if (
-    button === 0x61 || // a
-    button === 0x41 || // A
-    button === 0x73 || // s
-    button === 0x53 || // S
-    button === 0x64 || // d
-    button === 0x44 || // D
-    button === 0x66 || // f
-    button === 0x46 || // F
-    button === CURSOR_SELECT ||
-    button === CURSOR_SELECT2
-  ) {
-    tx = ui.cursor.x;
-    ty = ui.cursor.y;
-    if (button === 0x61 || button === 0x41 || button === CURSOR_SELECT) {
-      action = "rotateLeft";
-    } else if (button === 0x73 || button === 0x53 || button === CURSOR_SELECT2) {
-      action = "toggleLock";
-    } else if (button === 0x64 || button === 0x44) {
-      action = "rotateRight";
-    } else {
-      action = "rotate180";
+    // Shift moves the origin, Ctrl the source, both together moves both, and
+    // a bare arrow moves the cursor. All are UI-only.
+    const shift = (rawButton & MOD_SHFT) !== 0;
+    const ctrl = (rawButton & MOD_CTRL) !== 0;
+    if (shift) {
+      if (!s.wrapping) return null; // origin shift is meaningless when bounded
+      const o = offset(ui.orgX, ui.orgY, dir, s.w, s.h);
+      ui.orgX = o.x;
+      ui.orgY = o.y;
     }
+    if (ctrl) {
+      const o = offset(ui.cx, ui.cy, dir, s.w, s.h);
+      ui.cx = o.x;
+      ui.cy = o.y;
+    }
+    if (!shift && !ctrl) {
+      const o = offset(ui.cursor.x, ui.cursor.y, dir, s.w, s.h);
+      ui.cursor.x = o.x;
+      ui.cursor.y = o.y;
+      ui.cursor.visible = true;
+    }
+    return UI_UPDATE;
+  }
+
+  // Keys act on the cursor's tile: `a` `d` `f` rotate it anticlockwise,
+  // clockwise and 180°, and `s` locks it.
+  let op: NetOp["op"] | null = null;
+  if (button === 0x61 || button === 0x41 || button === CURSOR_SELECT) op = "A";
+  else if (button === 0x64 || button === 0x44) op = "C";
+  else if (button === 0x66 || button === 0x46) op = "F";
+  else if (button === 0x73 || button === 0x53 || button === CURSOR_SELECT2) op = "L";
+  if (op) {
+    const { x, y } = ui.cursor;
     ui.cursor.visible = true;
-  } else if (button === 0x6a || button === 0x4a) {
-    action = "jumble";
-  } else {
-    return nullret;
+    return op === "L" ? { type: "lock", x, y } : rotateMove(s, op, x, y);
   }
 
-  if (action === "toggleLock") {
-    return { type: "lock", x: tx, y: ty };
-  }
-
-  if (action === "rotateLeft" || action === "rotateRight" || action === "rotate180") {
-    // A rotation has no effect on a locked tile.
-    if (s.tiles[ty * s.w + tx] & LOCKED) return nullret;
-    const op = action === "rotateLeft" ? "A" : action === "rotateRight" ? "C" : "F";
-    return { type: "rotate", op, x: tx, y: ty };
-  }
-
-  if (action === "jumble") {
-    // Rotate every unlocked tile a random amount, expanded into an explicit op
-    // list so replay is deterministic (design D4).
+  if (button === 0x6a || button === 0x4a) {
+    // j: rotate every unlocked tile a random amount, expanded into an explicit
+    // op list so replay is deterministic.
     const ops: NetOp[] = [];
-    for (let jy = 0; jy < s.h; jy++) {
-      for (let jx = 0; jx < s.w; jx++) {
-        if (!(s.tiles[jy * s.w + jx] & LOCKED)) {
-          const r = randomUpto(ui.rs, 4);
-          if (r) ops.push({ op: (["A", "F", "C"] as const)[r - 1], x: jx, y: jy });
-        }
+    for (let y = 0; y < s.h; y++) {
+      for (let x = 0; x < s.w; x++) {
+        if (s.tiles[y * s.w + x] & LOCKED) continue;
+        const r = randomUpto(ui.rs, 4);
+        if (r) ops.push({ op: (["A", "F", "C"] as const)[r - 1], x, y });
       }
     }
     return { type: "jumble", ops };
   }
 
-  // The remaining actions are all cursor/origin/source transforms — UI-only.
-  if (action === "moveOrigin" || action === "moveOriginAndSource") {
-    if (!s.wrapping) return nullret; // origin shift is meaningless when bounded
-    const o = offset(ui.orgX, ui.orgY, dirBit, s.w, s.h);
-    ui.orgX = o.x;
-    ui.orgY = o.y;
-  }
-  if (action === "moveSource" || action === "moveOriginAndSource") {
-    const o = offset(ui.cx, ui.cy, dirBit, s.w, s.h);
-    ui.cx = o.x;
-    ui.cy = o.y;
-  }
-  if (action === "moveCursor") {
-    const o = offset(ui.cursor.x, ui.cursor.y, dirBit, s.w, s.h);
-    ui.cursor.x = o.x;
-    ui.cursor.y = o.y;
-    ui.cursor.visible = true;
-  }
-  return UI_UPDATE;
+  return null;
 }
 
 /* ----------------------------------------------------------------------
@@ -321,12 +262,11 @@ function solve(_orig: NetState, curr: NetState, aux?: string): SolveResult<NetMo
   if (aux) {
     for (let i = 0; i < n; i++) target[i] = Number.parseInt(aux[i], 16) | LOCKED;
   } else {
-    const tiles = new Uint8Array(curr.tiles);
-    const result = netSolver(w, h, tiles, curr.barriers, curr.wrapping);
-    if (result === SOLVER_INCONSISTENT) {
+    // The solver leaves every determined tile at its orientation | LOCKED.
+    target.set(curr.tiles);
+    if (netSolver(w, h, target, curr.barriers, curr.wrapping) === SOLVER_INCONSISTENT) {
       return { ok: false, error: "No solution exists for this puzzle" };
     }
-    target.set(tiles); // determined tiles now carry their orientation | LOCKED
   }
 
   // Build the op list transforming the current grid into the target: unlock,
@@ -375,8 +315,8 @@ function decodeUi(ui: NetUi, encoded: string): void {
   const m = /^O(-?\d+),(-?\d+);C(-?\d+),(-?\d+)/.exec(encoded);
   if (!m) return;
   const [orgX, orgY, cx, cy] = m.slice(1).map(Number);
-  // Bounds-check as upstream; the grid dimensions come from the current ui's
-  // source, which newUi seeded from the state.
+  // Upstream also range-checks each pair against the grid; this hook gets no
+  // state to check against, so it rejects only a pair that is not an integer.
   if (Number.isInteger(orgX) && Number.isInteger(orgY)) {
     ui.orgX = orgX;
     ui.orgY = orgY;
@@ -392,26 +332,21 @@ function decodeUi(ui: NetUi, encoded: string): void {
  */
 
 function statusbarText(s: NetState, ui: NetUi): string {
+  const complete = s.cheated || s.completed;
   let text = "";
-  let complete = false;
-  if (s.cheated) {
-    text = "Auto-solved. ";
-    complete = true;
-  } else if (s.completed) {
-    text = "COMPLETED! ";
-    complete = true;
-  }
+  if (s.cheated) text = "Auto-solved. ";
+  else if (s.completed) text = "COMPLETED! ";
 
   // Omit the counter when the source tile is empty (it would always read 1).
   if (s.tiles[ui.cy * s.w + ui.cx] & 0xf) {
     const active = computeActive(s, ui.cx, ui.cy);
-    let a = 0;
-    let n2 = 0;
+    let powered = 0;
+    let wired = 0;
     for (let i = 0; i < s.w * s.h; i++) {
-      if (active[i]) a++;
-      if (s.tiles[i] & 0xf) n2++;
+      if (active[i]) powered++;
+      if (s.tiles[i] & 0xf) wired++;
     }
-    if (!complete || a < n2) text += `Active: ${a}/${n2}`;
+    if (!complete || powered < wired) text += `Active: ${powered}/${wired}`;
   }
 
   return text;
@@ -478,7 +413,7 @@ export const netGame: Game<NetParams, NetState, NetMove, NetUi, NetDrawState> = 
     },
   ],
 
-  newDesc: (p: NetParams, rng: RandomState) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -498,21 +433,17 @@ export const netGame: Game<NetParams, NetState, NetMove, NetUi, NetDrawState> = 
 
   colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p, ts): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
-  animLength: (a, b, dir) => {
-    const lastRotateDir = dir === -1 ? a.lastRotateDir : b.lastRotateDir;
-    return lastRotateDir ? ANIM_TIME : 0;
-  },
+  animLength: (a, b, dir) => ((dir === -1 ? a : b).lastRotateDir ? ROTATE_TIME : 0),
 
   flashLength: (a, b) => {
     // Flash on completion, unless it was auto-solved.
     if (a.completed || !b.completed || a.cheated || b.cheated) return 0;
-    const size = Math.max(b.w, b.h);
-    return FLASH_FRAME * (size + 4);
+    return FLASH_FRAME * (Math.max(b.w, b.h) + 4);
   },
 };
 
