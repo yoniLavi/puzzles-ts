@@ -1,12 +1,9 @@
 /**
- * Types and pure state helpers for Untangle — an idiomatic TS rendering
- * of the data model in `puzzles/untangle.c` (deleted when this ships).
+ * Types and pure state helpers for Untangle, after upstream's `untangle.c`.
  *
- * The architectural key is the separation of **topology** (the edges)
- * from **positions** (the vertex coordinates):
- *  - `edges` (the `a < b` vertex-index pairs) are immutable for the
- *    game's life and shared by every state (C refcounts the graph; we
- *    freeze + share by reference, like Galaxies' topology). Built once.
+ * The **topology** (the edges) is kept apart from the **positions**:
+ *  - `edges` (the `a < b` vertex-index pairs) are frozen when the game starts
+ *    and shared by reference across every state.
  *  - `pts` (positions) are the only thing `executeMove` changes.
  *  - `crosses[]` (per-edge) + `completed` are **derived**, recomputed by
  *    `findCrossings` on every transition.
@@ -19,6 +16,8 @@
  * may carry different denominators, and `cross()` keeps each point's own
  * `d` in the cross-multiplication.
  */
+
+import type { Point } from "../../engine/types.ts";
 
 /**
  * A point as the rational `(x/d, y/d)`. **Invariant: `x`, `y`, `d` are
@@ -50,8 +49,7 @@ export interface UntangleState {
   /** Coordinate-system extent: `COORDLIMIT(n)` (the bounding box is
    * `0..w` on each axis, in tile units). */
   w: number;
-  /** Per-vertex positions (rational). Mutable per state; cloned on every
-   * `executeMove`. */
+  /** Per-vertex positions, copied by every `executeMove`. */
   pts: RationalPoint[];
   /** The graph topology, shared by reference across every state, sorted
    * `(a,b)` ascending. Immutable. */
@@ -131,13 +129,8 @@ export interface UntangleDrawState {
   y: number[];
 }
 
-/** Untangle has no wrong-but-legal state to flag — crossed edges (drawn
- * red) are the built-in mistake feedback — so it ships no `findMistakes`
- * and this is never produced. */
-export type UntangleMistake = never;
-
-const PI = Math.PI;
-const PREFERRED_TILESIZE = 64;
+/** Also the circle layout's denominator. */
+export const PREFERRED_TILESIZE = 64;
 const POINTDENSITY = 3;
 
 /** Radius of a drawn vertex blob, px. */
@@ -145,33 +138,26 @@ export const CIRCLE_RADIUS = 6;
 /** Pointer must come within this of a vertex (px) to grab it. */
 export const DRAG_THRESHOLD = CIRCLE_RADIUS * 2;
 /** Inset (px) of the playable-area border from the canvas edge. The
- * drag clamp keeps a vertex's *blob* inside this border (center ≥
- * `PLAY_BORDER_INSET + CIRCLE_RADIUS` from the edge), so the border and
+ * drag clamp keeps a vertex's *blob* inside this border, so the border and
  * the reachable region coincide. */
 export const PLAY_BORDER_INSET = 2;
 /** The clamp margin for a vertex center: blob fully inside the border. */
 export const PLAY_MARGIN = PLAY_BORDER_INSET + CIRCLE_RADIUS;
 
-/** Exact integer floor square root (upstream `squarert`). */
-export function isqrt(n: number): number {
-  if (n <= 0) return 0;
-  let x = Math.floor(Math.sqrt(n));
-  while (x * x > n) x--;
-  while ((x + 1) * (x + 1) <= n) x++;
-  return x;
-}
-
 /** `COORDLIMIT(n)` — the grid is big enough that `n` points occupy about
  * `1/POINTDENSITY` of it. */
 export function coordLimit(n: number): number {
-  return isqrt(n * POINTDENSITY);
+  return Math.floor(Math.sqrt(n * POINTDENSITY));
 }
 
 /** Pack an unordered vertex pair into a single key for `edgeSet`. */
 export function packEdge(a: number, b: number, n: number): number {
-  const lo = Math.min(a, b);
-  const hi = Math.max(a, b);
-  return lo * n + hi;
+  return Math.min(a, b) * n + Math.max(a, b);
+}
+
+/** A move placing vertex `i` at `p`. */
+export function placeMove(i: number, p: RationalPoint): UntangleMove {
+  return { kind: "place", points: [{ i, x: p.x, y: p.y, d: p.d }], solving: false };
 }
 
 /**
@@ -273,18 +259,14 @@ export function makeCircle(n: number, w: number): RationalPoint[] {
   const d = PREFERRED_TILESIZE;
   const c = Math.trunc((d * w) / 2);
   const r = Math.trunc((d * w * 3) / 7);
-  const pts: RationalPoint[] = [];
-  for (let i = 0; i < n; i++) {
-    const angle = (i * 2 * PI) / n;
-    const x = r * Math.sin(angle);
-    const y = -r * Math.cos(angle);
-    pts.push({
-      x: Math.floor(c + x + 0.5),
-      y: Math.floor(c + y + 0.5),
+  return Array.from({ length: n }, (_, i) => {
+    const angle = (i * 2 * Math.PI) / n;
+    return {
+      x: Math.floor(c + r * Math.sin(angle) + 0.5),
+      y: Math.floor(c - r * Math.cos(angle) + 0.5),
       d,
-    });
-  }
-  return pts;
+    };
+  });
 }
 
 /** Build the shared `edges`/`edgeSet` for a state from a sorted list of
@@ -293,8 +275,7 @@ export function buildEdges(
   pairs: readonly Edge[],
   n: number,
 ): { edges: readonly Edge[]; edgeSet: ReadonlySet<number> } {
-  const edges = pairs.map((e) => Object.freeze({ a: e.a, b: e.b }));
-  Object.freeze(edges);
+  const edges = Object.freeze(pairs.map((e) => Object.freeze({ a: e.a, b: e.b })));
   const edgeSet = new Set<number>(edges.map((e) => packEdge(e.a, e.b, n)));
   return { edges, edgeSet };
 }
@@ -313,7 +294,7 @@ export function decodeGame(desc: string, n: number): Edge[] {
     if (!m) throw new Error(`bad edge "${part}" in untangle desc`);
     const a = Number(m[1]);
     const b = Number(m[2]);
-    if (a < 0 || a >= n || b < 0 || b >= n || a === b) {
+    if (a >= n || b >= n || a === b) {
       throw new Error(`edge "${part}" out of range for n=${n}`);
     }
     const key = packEdge(a, b, n);
@@ -361,20 +342,18 @@ function dihedralMatrix(i: number): [number, number, number, number] {
 export function dihedralSolvedUnits(
   curr: UntangleState,
   auxPts: readonly RationalPoint[],
-): { x: number; y: number }[] {
-  const n = curr.n;
-  const cx = curr.w / 2;
-  const cy = curr.w / 2;
+): Point[] {
+  const c = curr.w / 2;
   let besti = -1;
   let bestd = 0;
   for (let i = 0; i < 8; i++) {
     const mat = dihedralMatrix(i);
     let d = 0;
-    for (let j = 0; j < n; j++) {
-      const px = auxPts[j].x / auxPts[j].d - cx;
-      const py = auxPts[j].y / auxPts[j].d - cy;
-      const ox = mat[0] * px + mat[1] * py + cx;
-      const oy = mat[2] * px + mat[3] * py + cy;
+    for (let j = 0; j < curr.n; j++) {
+      const px = auxPts[j].x / auxPts[j].d - c;
+      const py = auxPts[j].y / auxPts[j].d - c;
+      const ox = mat[0] * px + mat[1] * py + c;
+      const oy = mat[2] * px + mat[3] * py + c;
       const sx = curr.pts[j].x / curr.pts[j].d;
       const sy = curr.pts[j].y / curr.pts[j].d;
       d += (ox - sx) ** 2 + (oy - sy) ** 2;
@@ -386,25 +365,8 @@ export function dihedralSolvedUnits(
   }
   const mat = dihedralMatrix(besti);
   return auxPts.map((p) => {
-    const px = p.x / p.d - cx;
-    const py = p.y / p.d - cy;
-    return { x: mat[0] * px + mat[1] * py + cx, y: mat[2] * px + mat[3] * py + cy };
+    const px = p.x / p.d - c;
+    const py = p.y / p.d - c;
+    return { x: mat[0] * px + mat[1] * py + c, y: mat[2] * px + mat[3] * py + c };
   });
-}
-
-/** Clone a state for an `executeMove`: deep-copy the per-move `pts`,
- * share the immutable topology by reference. `crosses`/`completed` are
- * overwritten by the caller, so they are shared here cheaply. */
-export function cloneUntangleState(s: UntangleState): UntangleState {
-  return {
-    n: s.n,
-    w: s.w,
-    pts: s.pts.map((p) => ({ x: p.x, y: p.y, d: p.d })),
-    edges: s.edges,
-    edgeSet: s.edgeSet,
-    crosses: s.crosses,
-    completed: s.completed,
-    cheated: s.cheated,
-    justSolved: s.justSolved,
-  };
 }

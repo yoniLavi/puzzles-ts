@@ -12,10 +12,9 @@
  *  2. **Planar + tangled**: the decoded board has every vertex degree ≤ 4
  *     and starts with at least one crossing.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * The fixture is **frozen and cannot be regenerated**: it was captured by
  * `puzzles/auxiliary/untangle-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * Emscripten build this repo does not have — see `engine/testing/differential.ts`.
  */
 
 import { describe, expect, it } from "vitest";

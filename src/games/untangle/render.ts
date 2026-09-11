@@ -3,10 +3,9 @@
  *
  * There is no sensible partial redraw for this game (any vertex move can
  * change which edges cross), so it is a **full-frame** repaint with a
- * single early-out: recompute every vertex's pixel position, and if the
- * background, the drag/cursor vertex, and all positions are unchanged,
- * skip drawing entirely (the cheap guard against spinning during the
- * completion flash). No per-tile cache.
+ * single early-out: recompute every vertex's pixel position, and if nothing
+ * the frame depends on has changed, skip drawing entirely (the cheap guard
+ * against spinning during the completion flash). No per-tile cache.
  */
 
 import { drawRectOutline } from "../../engine/draw.ts";
@@ -36,7 +35,7 @@ export const COL_NEIGHBOR = 8;
 export const COL_FLASH = 9;
 export const COL_HINT = 10;
 
-const FLASH_TIME = 0.3;
+export const FLASH_TIME = 0.3;
 
 /** Linear interpolation between two rational points (upstream `mix`),
  * keeping exact integer rational arithmetic. `t` runs 0→1. */
@@ -109,8 +108,7 @@ export function redrawUntangle(
   ds.hintTy = hintTy;
   ds.started = true;
 
-  // The midend brackets this call with startDraw/endDraw; the game just
-  // paints. Full-frame: fill the background every repaint.
+  // Full-frame: fill the background every repaint.
   const size = s.w * ts;
   dr.drawRect({ x: 0, y: 0, w: size, h: size }, bg);
 
@@ -177,7 +175,7 @@ export function redrawUntangle(
   // a marker at the destination. The source is the vertex's *current*
   // drawn position (ds.x/y), so during an auto-hint slide the line shrinks
   // to nothing as the vertex arrives.
-  if (hint && hintVertex >= 0) {
+  if (hint) {
     dr.drawLine(
       { x: ds.x[hintVertex], y: ds.y[hintVertex] },
       { x: hintTx, y: hintTy },

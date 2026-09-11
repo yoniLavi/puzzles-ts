@@ -17,6 +17,7 @@ import {
   cross,
   decodeGame,
   findCrossings,
+  parseAux,
   type RationalPoint,
   type UntangleMove,
 } from "./state.ts";
@@ -95,20 +96,6 @@ describe("params", () => {
   });
 });
 
-/** Decode the solved layout the generator emits in `aux`. */
-function parseAux(aux: string, n: number): RationalPoint[] {
-  const parts = aux
-    .slice(1)
-    .split(";")
-    .filter((p) => p.length > 0);
-  expect(parts.length).toBe(n);
-  return parts.map((p) => {
-    const m = /^P\d+:(-?\d+),(-?\d+)\/(\d+)$/.exec(p);
-    if (!m) throw new Error(`bad aux part ${p}`);
-    return { x: Number(m[1]), y: Number(m[2]), d: Number(m[3]) };
-  });
-}
-
 describe("generation invariants", () => {
   for (const n of [6, 10, 15, 20]) {
     it(`n=${n}: planar solution, degree ≤ 4, starts tangled`, () => {
@@ -129,7 +116,9 @@ describe("generation invariants", () => {
         expect(Math.max(...degree)).toBeLessThanOrEqual(4);
 
         // The solved (aux) layout is crossing-free — i.e. planar.
-        expect(findCrossings(parseAux(aux ?? "", n), edges).completed).toBe(true);
+        const solved = parseAux(aux, n);
+        expect(solved).not.toBeNull();
+        expect(findCrossings(solved ?? [], edges).completed).toBe(true);
 
         // The initial circle layout has at least one crossing (never
         // starts solved).
@@ -155,10 +144,9 @@ describe("moves and solve", () => {
   });
 
   it("a drag committed at fractional pointer coords stores integer coords (no BigInt RangeError)", () => {
-    // Regression: pointer events can carry sub-pixel coords (dpr scaling).
-    // An in-window fractional drop used to store a fractional vertex
-    // coordinate, and `cross()`'s BigInt accumulator threw a RangeError
-    // the moment crossings were recomputed.
+    // Pointer events can carry sub-pixel coords (dpr scaling), and a
+    // fractional vertex coordinate makes `cross()`'s BigInt accumulator
+    // throw a RangeError the moment crossings are recomputed.
     const { desc } = untangleGame.newDesc({ n: 10 }, randomNew("frac-drag"));
     const s0 = untangleGame.newState({ n: 10 }, desc);
     const ui = untangleGame.newUi(s0);
@@ -236,7 +224,7 @@ describe("moves and solve", () => {
   });
 
   it("a drag released far outside the area clamps to the boundary and commits (no cancel)", () => {
-    // Owner-requested divergence from upstream's drag-off-to-cancel: a drop
+    // A deliberate divergence from upstream's drag-off-to-cancel: a drop
     // outside the play area pins the vertex at the nearest in-bounds spot
     // and commits there rather than resetting to the start.
     const { desc } = untangleGame.newDesc({ n: 10 }, randomNew("clamp-drag"));
@@ -313,8 +301,7 @@ describe("moves and solve", () => {
   });
 
   it("midend threads aux into Solve and reports solved status (regression)", () => {
-    // The midend used to drop `aux` from `newDesc`, so Untangle's
-    // aux-dependent Solve was a silent no-op.
+    // Solve needs the midend to thread `aux` through from `newDesc`.
     const me = new Midend(untangleGame);
     let lastStatus = "";
     me.setCallbacks(

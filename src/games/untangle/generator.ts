@@ -15,11 +15,10 @@
  * The desc encodes the **edges only** (sorted zero-based `a-b` pairs);
  * vertex positions are reconstructed deterministically (`make_circle`)
  * and via the move log, never the desc. The solved layout is returned as
- * `aux` (used by Solve; not persisted).
+ * `aux` (used by Solve and the hint; not persisted).
  *
- * The only randomness is the two `shuffle` calls; everything else is a
- * deterministic function of them, so over the bit-identical `random.ts`
- * a faithful port reproduces the C desc for a given seed.
+ * The only randomness is the two `shuffle` calls, so over the bit-identical
+ * `random.ts` this reproduces the C desc for a given seed.
  */
 
 import type { RandomState } from "../../engine/random/index.ts";
@@ -71,16 +70,12 @@ function hasCrossing(
   return false;
 }
 
-/** Relabel and re-sort edges into the canonical desc string. With
- * `mapping`, each endpoint is renumbered through it (then re-sorted so
- * the original generation order is not a side channel). */
-function encodeGraph(
-  edges: readonly Edge[],
-  mapping: readonly number[] | null,
-): string {
+/** Renumber each endpoint through `mapping`, then re-sort into the canonical
+ * desc string (so the original generation order is not a side channel). */
+function encodeGraph(edges: readonly Edge[], mapping: readonly number[]): string {
   const mapped = edges.map((e) => {
-    const ma = mapping ? mapping[e.a] : e.a;
-    const mb = mapping ? mapping[e.b] : e.b;
+    const ma = mapping[e.a];
+    const mb = mapping[e.b];
     return { a: Math.min(ma, mb), b: Math.max(ma, mb) };
   });
   mapped.sort((p, q) => p.a - q.a || p.b - q.b);
@@ -93,34 +88,35 @@ export function newUntangleDesc(
 ): { desc: string; aux: string } {
   const n = params.n;
   const w = coordLimit(n);
-  const h = w;
 
   // --- Phase A: scatter points, build a planar graph ----------------
-  const tmp: number[] = Array.from({ length: w * h }, (_, i) => i);
-  shuffle(tmp, rng);
-  const pts: RationalPoint[] = [];
-  for (let i = 0; i < n; i++) {
-    pts.push({ x: tmp[i] % w, y: Math.floor(tmp[i] / w), d: 1 });
-  }
+  const cells = Array.from({ length: w * w }, (_, i) => i);
+  shuffle(cells, rng);
+  const pts: RationalPoint[] = cells
+    .slice(0, n)
+    .map((c) => ({ x: c % w, y: Math.floor(c / w), d: 1 }));
 
   const degree = new Array<number>(n).fill(0);
   const edges: Edge[] = [];
   const edgeSet = new Set<number>();
-  const isedge = (a: number, b: number): boolean => edgeSet.has(packEdge(a, b, n));
-  const addEdge = (a: number, b: number): void => {
-    const lo = Math.min(a, b);
-    const hi = Math.max(a, b);
-    const key = packEdge(lo, hi, n);
-    if (edgeSet.has(key)) return;
-    edgeSet.add(key);
-    edges.push({ a: lo, b: hi });
-  };
+  // Edge u-v is blocked if it passes through another point or crosses an
+  // existing edge (one sharing an endpoint with it cannot cross it).
+  const blocked = (u: number, v: number): boolean =>
+    pts.some((p, k) => k !== u && k !== v && cross(pts[u], pts[v], p, p)) ||
+    edges.some(
+      (e) =>
+        e.a !== u &&
+        e.a !== v &&
+        e.b !== u &&
+        e.b !== v &&
+        cross(pts[u], pts[v], pts[e.a], pts[e.b]),
+    );
 
   while (true) {
     let added = false;
     // Vertices in (degree, index) order — the tree234 ordering upstream
-    // maintains incrementally; we re-sort each pass (degrees just
-    // changed). Ties broken by index, matching `vertcmpC`.
+    // maintains incrementally, re-sorted here each pass. Ties broken by
+    // index, matching `vertcmpC`.
     const order = Array.from({ length: n }, (_, i) => i).sort(
       (p, q) => degree[p] - degree[q] || p - q,
     );
@@ -133,49 +129,20 @@ export function newUntangleDesc(
       // before it were already tried the other way round), excluding
       // full ones and existing neighbors, sorted by squared distance
       // then index.
-      const vlist: { vindex: number; dist: number }[] = [];
+      const candidates: { v: number; dist: number }[] = [];
       for (let k = i + 1; k < n; k++) {
-        const ki = order[k];
-        if (degree[ki] >= MAXDEGREE || isedge(ki, j)) continue;
-        const dx = pts[ki].x - pts[j].x;
-        const dy = pts[ki].y - pts[j].y;
-        vlist.push({ vindex: ki, dist: dx * dx + dy * dy });
+        const v = order[k];
+        if (degree[v] >= MAXDEGREE || edgeSet.has(packEdge(v, j, n))) continue;
+        const dx = pts[v].x - pts[j].x;
+        const dy = pts[v].y - pts[j].y;
+        candidates.push({ v, dist: dx * dx + dy * dy });
       }
-      vlist.sort((p, q) => p.dist - q.dist || p.vindex - q.vindex);
+      candidates.sort((p, q) => p.dist - q.dist || p.v - q.v);
 
-      let chosen = -1;
-      for (const cand of vlist) {
-        const ki = cand.vindex;
-        // Reject if the new edge passes through any other point.
-        let bad = false;
-        for (let p = 0; p < n; p++) {
-          if (p !== ki && p !== j && cross(pts[ki], pts[j], pts[p], pts[p])) {
-            bad = true;
-            break;
-          }
-        }
-        if (bad) continue;
-        // Reject if it crosses any existing edge (not sharing an endpoint).
-        bad = false;
-        for (const e of edges) {
-          if (
-            e.a !== ki &&
-            e.a !== j &&
-            e.b !== ki &&
-            e.b !== j &&
-            cross(pts[ki], pts[j], pts[e.a], pts[e.b])
-          ) {
-            bad = true;
-            break;
-          }
-        }
-        if (bad) continue;
-        chosen = ki;
-        break;
-      }
-
-      if (chosen >= 0) {
-        addEdge(j, chosen);
+      const chosen = candidates.find((c) => !blocked(c.v, j))?.v;
+      if (chosen !== undefined) {
+        edgeSet.add(packEdge(j, chosen, n));
+        edges.push({ a: Math.min(j, chosen), b: Math.max(j, chosen) });
         degree[j]++;
         degree[chosen]++;
         added = true;
@@ -198,24 +165,12 @@ export function newUntangleDesc(
   const desc = encodeGraph(edges, perm);
 
   // --- aux: the solved layout, in the permuted (desc) numbering -----
+  // Each vertex sits at the center of its grid cell, so at denominator 2.
   const solved = new Array<RationalPoint>(n);
-  for (let i = 0; i < n; i++) {
-    const j = perm[i];
-    let { x, y, d } = pts[i];
-    if (d & 1) {
-      x *= 2;
-      y *= 2;
-      d *= 2;
-    }
-    x += Math.trunc(d / 2);
-    y += Math.trunc(d / 2);
-    solved[j] = { x, y, d };
-  }
-  let aux = "S";
-  for (let i = 0; i < n; i++) {
-    const p = solved[i];
-    aux += `;P${i}:${p.x},${p.y}/${p.d}`;
-  }
+  pts.forEach((p, i) => {
+    solved[perm[i]] = { x: 2 * p.x + 1, y: 2 * p.y + 1, d: 2 };
+  });
+  const aux = `S${solved.map((p, i) => `;P${i}:${p.x},${p.y}/${p.d}`).join("")}`;
 
   return { desc, aux };
 }

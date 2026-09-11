@@ -78,10 +78,10 @@ describe("Untangle hint heuristic", () => {
   });
 
   it("spreads the final layout out (does not collapse to the center)", () => {
-    // Regression for the barycentric-collapse complaint: the spread-aware
-    // planner's untangled layout should occupy a healthy fraction of the
-    // play box, not shrink to a knot in the middle. Measure the final
-    // bounding box across a few seeds.
+    // The spread-aware planner's untangled layout should occupy a healthy
+    // fraction of the play box, not shrink to a knot in the middle (the
+    // barycentric fixed point). Measure the final bounding box across a few
+    // seeds.
     for (const seed of [
       "untangle-spread-a",
       "untangle-spread-b",

@@ -8,23 +8,20 @@
  * Two strategies, dispatched by `deduceUntangleHintPlan`:
  *
  *  1. **Aux solution (primary, when known).** Freshly-generated games carry
- *     the generator's solved layout in `aux`. The board has a unique
- *     solution (up to the 8 dihedral symmetries), so the best possible hint
- *     just walks the player to it. We take the dihedral image of the
- *     solution closest to the current positions (least motion), **rescale
- *     it to fill the play box** (a uniform scale preserves planarity, so the
- *     result is both crossing-free *and* maximally spaced — addressing both
- *     the clustering and the failure-to-progress of the heuristic), then
- *     emit a plan that places vertices one at a time, greedily choosing the
- *     order that keeps intermediate crossings lowest. The end state is the
- *     full rescaled solution: guaranteed untangled.
+ *     the generator's solved layout in `aux`, so the hint walks the player
+ *     to it. It takes the dihedral image of the solution closest to the
+ *     current positions (least motion), **rescales it to fill the play box**
+ *     (a uniform scale preserves planarity, so the result is both
+ *     crossing-free *and* well spaced), then places vertices one at a time,
+ *     greedily choosing the order that keeps intermediate crossings lowest.
+ *     The end state is the full rescaled solution: guaranteed untangled.
  *
  *  2. **Greedy heuristic (fallback, when `aux` is absent** — descriptive
  *     game ids, some loaded saves). Greedy crossing-reduction with a spread
  *     tie-break: among the vertices on a crossed edge, take only moves that
  *     strictly reduce the crossing-pair count (primary); each candidate
  *     offers the neighbor centroid plus outward-pushed variants, and among
- *     equally-untangling targets we prefer the one that most reduces a
+ *     equally-untangling targets prefer the one that most reduces a
  *     pairwise clustering score (Σ 1/(distance+ε)) so the layout spreads
  *     rather than collapsing to the center (the barycentric fixed point).
  *     This can stall at a local minimum on hard boards; the aux path does
@@ -32,10 +29,12 @@
  */
 
 import type { HintResult, HintStep } from "../../engine/game.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   dihedralSolvedUnits,
   findCrossings,
   parseAux,
+  placeMove,
   type RationalPoint,
   type UntangleMove,
   type UntangleState,
@@ -69,23 +68,17 @@ const BOX_MARGIN = 0.3;
 const FILL_MARGIN = 0.25;
 
 /** True when moving `cur` to `target` would not change its position at the
- * target's pixel resolution — i.e. the suggestion is a no-op. Used instead of
- * a fine unit-distance tolerance because the aux target jitters slightly
+ * target's pixel resolution — i.e. the suggestion is a no-op. A fine
+ * unit-distance tolerance is not enough: the aux target jitters slightly
  * between recomputes (the dihedral match + rescale depend on the current
  * positions), and a tolerance finer than that jitter re-suggests a vertex
- * that is already exactly on its target pixel — an infinite no-op when hints
- * are consumed one move at a time. */
+ * already on its target pixel, forever, when hints are taken one move at a
+ * time. */
 function isNoOpMove(cur: RationalPoint, target: RationalPoint): boolean {
   return (
     Math.round((cur.x / cur.d) * target.d) === target.x &&
     Math.round((cur.y / cur.d) * target.d) === target.y
   );
-}
-
-/** A position in model units (`x/d`, `y/d` already divided out). */
-interface UnitPoint {
-  x: number;
-  y: number;
 }
 
 /** Per-vertex adjacency from the shared edge list. */
@@ -101,9 +94,9 @@ function buildAdjacency(state: UntangleState): number[][] {
 /** Centroid of vertex's graph-neighbors in model units, or `null` if it
  * has none. */
 function neighborCentroid(
-  pu: readonly UnitPoint[],
+  pu: readonly Point[],
   neighbors: readonly number[],
-): UnitPoint | null {
+): Point | null {
   if (neighbors.length === 0) return null;
   let sx = 0;
   let sy = 0;
@@ -115,18 +108,14 @@ function neighborCentroid(
 }
 
 /** Unit vector, or `null` if the input is ~zero. */
-function normalize(x: number, y: number): UnitPoint | null {
+function normalize(x: number, y: number): Point | null {
   const m = Math.hypot(x, y);
   return m > 1e-9 ? { x: x / m, y: y / m } : null;
 }
 
 /** Direction that pushes point `c` away from the other vertices (a
  * repulsion sum), so an outward target declusters around `c`. */
-function repulsionDir(
-  pu: readonly UnitPoint[],
-  v: number,
-  c: UnitPoint,
-): UnitPoint | null {
+function repulsionDir(pu: readonly Point[], v: number, c: Point): Point | null {
   let rx = 0;
   let ry = 0;
   for (let u = 0; u < pu.length; u++) {
@@ -144,13 +133,13 @@ function repulsionDir(
  * plain neighbor centroid plus a few outward-pushed variants that give
  * the optimizer spacious options. */
 function candidateTargets(
-  pu: readonly UnitPoint[],
+  pu: readonly Point[],
   v: number,
-  centroid: UnitPoint,
+  centroid: Point,
   w: number,
-): UnitPoint[] {
-  const targets: UnitPoint[] = [centroid];
-  const dirs: UnitPoint[] = [];
+): Point[] {
+  const targets: Point[] = [centroid];
+  const dirs: Point[] = [];
   const rep = repulsionDir(pu, v, centroid);
   if (rep) dirs.push(rep);
   const radial = normalize(centroid.x - w / 2, centroid.y - w / 2);
@@ -165,7 +154,7 @@ function candidateTargets(
 
 /** Clamp a model-unit point into the play box and convert to an integer
  * `RationalPoint`. */
-function toRational(p: UnitPoint, w: number): RationalPoint {
+function toRational(p: Point, w: number): RationalPoint {
   const lo = BOX_MARGIN;
   const hi = Math.max(lo, w - BOX_MARGIN);
   const x = Math.min(hi, Math.max(lo, p.x));
@@ -181,17 +170,13 @@ function toRational(p: UnitPoint, w: number): RationalPoint {
  * vertex. Higher means more crowded; moving to a lower score spreads out.
  * Only `v`'s pairs change when `v` moves, so a before/after difference is
  * a valid spread delta. */
-function clusteringAt(pu: readonly UnitPoint[], v: number, p: UnitPoint): number {
+function clusteringAt(pu: readonly Point[], v: number, p: Point): number {
   let s = 0;
   for (let u = 0; u < pu.length; u++) {
     if (u === v) continue;
     s += 1 / (Math.hypot(p.x - pu[u].x, p.y - pu[u].y) + SPREAD_EPS);
   }
   return s;
-}
-
-function placeMove(i: number, p: RationalPoint): UntangleMove {
-  return { kind: "place", points: [{ i, x: p.x, y: p.y, d: p.d }], solving: false };
 }
 
 function step(vertex: number, to: RationalPoint): HintStep<UntangleMove, UntangleHint> {
@@ -233,23 +218,20 @@ function deduceAuxPlan(
   else if (bh > 1e-9) scale = avail / bh;
   const ccx = (minX + maxX) / 2;
   const ccy = (minY + maxY) / 2;
-  const targetUnits: UnitPoint[] = solved.map((p) => ({
-    x: state.w / 2 + (p.x - ccx) * scale,
-    y: state.w / 2 + (p.y - ccy) * scale,
-  }));
-  const targets: RationalPoint[] = targetUnits.map((u) => toRational(u, state.w));
+  const targets: RationalPoint[] = solved.map((p) =>
+    toRational(
+      { x: state.w / 2 + (p.x - ccx) * scale, y: state.w / 2 + (p.y - ccy) * scale },
+      state.w,
+    ),
+  );
 
   // Greedily assemble the solution: each step places the unplaced vertex
-  // whose move to its target yields the fewest resulting crossings.
-  let pts = state.pts.map((p) => ({ x: p.x, y: p.y, d: p.d }));
-  const placed = new Array<boolean>(state.n).fill(false);
-  // Skip vertices already on their target pixel (a move there is a no-op).
-  for (let v = 0; v < state.n; v++) {
-    if (isNoOpMove(pts[v], targets[v])) placed[v] = true;
-  }
+  // whose move to its target yields the fewest resulting crossings. A vertex
+  // already on its target pixel counts as placed (a move there is a no-op).
+  const pts = state.pts.slice();
+  const placed = pts.map((p, v) => isNoOpMove(p, targets[v]));
   const steps: HintStep<UntangleMove, UntangleHint>[] = [];
-  let remaining = placed.filter((p) => !p).length;
-  for (; remaining > 0; remaining--) {
+  while (placed.includes(false)) {
     let bestV = -1;
     let bestCount = Infinity;
     for (let v = 0; v < state.n; v++) {
@@ -262,9 +244,7 @@ function deduceAuxPlan(
         bestV = v;
       }
     }
-    if (bestV < 0) break;
     placed[bestV] = true;
-    pts = pts.slice();
     pts[bestV] = targets[bestV];
     steps.push(step(bestV, targets[bestV]));
   }
@@ -279,8 +259,6 @@ export function deduceUntangleHintPlan(
   if (state.completed) {
     return { ok: false, error: "This puzzle is already solved." };
   }
-  // Prefer the known solution (guaranteed untangled + spaced); fall back to
-  // the local heuristic when no solution is available.
   if (aux) {
     const auxPlan = deduceAuxPlan(state, aux);
     if (auxPlan) return auxPlan;
@@ -288,8 +266,7 @@ export function deduceUntangleHintPlan(
 
   const adj = buildAdjacency(state);
   const steps: HintStep<UntangleMove, UntangleHint>[] = [];
-  // Work on a mutable copy of the positions; the topology is shared.
-  let pts = state.pts.map((p) => ({ x: p.x, y: p.y, d: p.d }));
+  const pts = state.pts.slice();
   const maxSteps = state.n * MAX_HINT_STEPS_PER_VERTEX;
 
   for (let iter = 0; iter < maxSteps; iter++) {
@@ -297,7 +274,7 @@ export function deduceUntangleHintPlan(
     if (completed) break;
 
     // Positions in model units, recomputed each step.
-    const pu: UnitPoint[] = pts.map((p) => ({ x: p.x / p.d, y: p.y / p.d }));
+    const pu: Point[] = pts.map((p) => ({ x: p.x / p.d, y: p.y / p.d }));
 
     // Candidate vertices: those on at least one crossed edge.
     const candidates = new Set<number>();
@@ -340,7 +317,6 @@ export function deduceUntangleHintPlan(
 
     if (best === null) break; // local minimum: no single move helps
 
-    pts = pts.slice();
     pts[best.vertex] = best.to;
     steps.push(step(best.vertex, best.to));
   }

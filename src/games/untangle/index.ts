@@ -1,32 +1,20 @@
 /**
- * Untangle — native TS port of `puzzles/untangle.c` (deleted when this
- * ships). Drag the vertices of a planar graph until no two edges cross.
+ * Untangle, after upstream's `untangle.c`: drag the vertices of a planar
+ * graph until no two edges cross.
  *
- * Idiomatic rendering of the C reference: immutable state, a discriminated
- * `UntangleMove`, GC instead of dup/free, rational integer coordinates,
- * an exact integer crossing test (`state.ts`'s `cross`), and the topology
- * shared by reference across states. The C is the logic reference, not a
- * control-flow template.
- *
- * Notable divergences / decisions (see the change's design.md):
- *  - **No `supersede_desc`**: the public desc is edges-only and never
+ * Where it departs from upstream:
+ *  - **No `supersededDesc`**: the public desc is edges-only and never
  *    changes; the player's dragged positions ride the serialized move
- *    log, which the midend save format already replays. (Mines remains
- *    the forcing function for `supersede_desc`.)
+ *    log, which the midend save format already replays.
  *  - **Editor build excluded**: no `E` add/delete-edge moves, no text
  *    format (`canFormatAsText = false`).
  *  - **No `findMistakes`**: crossed edges drawn red ARE the mistake
- *    feedback. The `hint` (added by `add-untangle-hint`) is *unnarrated* —
- *    Untangle has no deduction to teach, so by owner-approved divergence
- *    from the Palisade quality bar the hint is a suggested move (highlight +
- *    the existing move animation), not an explained deduction. It walks the
- *    player to the known solution (`aux`) when one is available — rescaled
- *    to fill the play box, so guaranteed untangled and well-spaced — and
- *    falls back to a local crossing-reduction heuristic otherwise. See
- *    `hint.ts`.
- *  - **Preferences via the engine `prefs` hook**: snap-to-grid,
- *    show-crossed-edges (default ON), vertex-style — the first consumer
- *    of the per-game preferences hook this change adds.
+ *    feedback.
+ *  - **The hint is unnarrated**: Untangle has no deduction to teach, so by
+ *    owner-approved divergence from the Palisade quality bar the hint is a
+ *    suggested move (highlight + the existing move animation). See `hint.ts`.
+ *  - **Preferences** via the engine `prefs` hook: snap-to-grid,
+ *    show-crossed-edges (default ON), vertex-style.
  */
 
 import { rejectMove } from "../../engine/assert-never.ts";
@@ -55,14 +43,12 @@ import {
   MOD_SHFT,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import { newUntangleDesc } from "./generator.ts";
 import { deduceUntangleHintPlan, type UntangleHint } from "./hint.ts";
-import { redrawUntangle } from "./render.ts";
+import { FLASH_TIME, redrawUntangle } from "./render.ts";
 import {
   buildEdges,
-  cloneUntangleState,
   coordLimit,
   DRAG_THRESHOLD,
   decodeGame,
@@ -70,8 +56,9 @@ import {
   findCrossings,
   makeCircle,
   PLAY_MARGIN,
+  PREFERRED_TILESIZE,
   parseAux,
-  type RationalPoint,
+  placeMove,
   type UntangleDrawState,
   type UntangleMove,
   type UntangleParams,
@@ -80,10 +67,8 @@ import {
 } from "./state.ts";
 
 // --- constants (untangle.c) -----------------------------------------
-const PREFERRED_TILESIZE = 64;
 const ANIM_TIME = 0.13;
 const SOLVEANIM_TIME = 0.5;
-const FLASH_TIME = 0.3;
 /** Tab key — upstream also accepts '\t' to cycle the cursor. */
 const TAB = 9;
 /** Sane upper cap on vertices (the generator allocates a COORDLIMIT(n)²
@@ -125,19 +110,15 @@ function placeDraggedPoint(
   x: number,
   y: number,
 ): void {
-  // Clamp the drag target to the playable square, keeping the vertex blob
-  // fully inside the play-area border (so dragging past the edge shows the
-  // vertex pinned at the nearest in-bounds position and a drop commits
-  // there — a deliberate divergence from upstream's drag-off-to-cancel).
-  // Then round: pointer coords can arrive fractional (sub-pixel /
-  // devicePixelRatio scaling) where upstream's GUI hands integer pixels,
-  // and the rational-point model / exact-integer `cross` require integers.
-  // This is the single boundary where pixels enter the model.
+  // Clamp the drag target so the vertex blob stays inside the play-area
+  // border: a drag past the edge pins the vertex there and a drop commits
+  // there (upstream cancels a drag dropped off the board). Then round:
+  // pointer coords can arrive fractional (devicePixelRatio scaling), and the
+  // exact-integer `cross` requires integers. This is the single boundary
+  // where pixels enter the model.
   const size = s.w * tileSize;
-  const lo = PLAY_MARGIN;
-  const hi = size - PLAY_MARGIN;
-  x = Math.round(Math.max(lo, Math.min(hi, x)));
-  y = Math.round(Math.max(lo, Math.min(hi, y)));
+  x = Math.round(Math.max(PLAY_MARGIN, Math.min(size - PLAY_MARGIN, x)));
+  y = Math.round(Math.max(PLAY_MARGIN, Math.min(size - PLAY_MARGIN, y)));
   if (ui.snapToGrid) {
     const d = s.n - 1;
     const gx = Math.trunc((d * x) / (s.w * tileSize));
@@ -146,10 +127,6 @@ function placeDraggedPoint(
   } else {
     ui.newPoint = { x, y, d: tileSize };
   }
-}
-
-function placeMove(i: number, p: RationalPoint): UntangleMove {
-  return { kind: "place", points: [{ i, x: p.x, y: p.y, d: p.d }], solving: false };
 }
 
 export const untangleGame: Game<
@@ -200,7 +177,7 @@ export const untangleGame: Game<
   },
 
   // --- generation ----------------------------------------------------
-  newDesc: (p: UntangleParams, rng: RandomState) => newUntangleDesc(p, rng),
+  newDesc: newUntangleDesc,
   validateDesc: (p, desc) => {
     try {
       decodeGame(desc, p.n);
@@ -236,7 +213,7 @@ export const untangleGame: Game<
     justDragged: false,
     justMoved: false,
     animLength: ANIM_TIME,
-    // Preference defaults (the divergence point — show-crossed-edges ON).
+    // Preference defaults (show-crossed-edges ON is our divergence).
     snapToGrid: false,
     showCrossedEdges: true,
     vertexNumbers: false,
@@ -277,11 +254,10 @@ export const untangleGame: Game<
       return UI_UPDATE;
     }
     if (isMouseRelease(button) && ui.dragPoint >= 0) {
+      // Always commits: the drag target was clamped into the play area.
       const p = ui.dragPoint;
       ui.dragPoint = -1;
       ui.cursorPoint = -1;
-      // The drag target was clamped into the play area, so a release always
-      // commits at the nearest in-bounds position (no drag-off-to-cancel).
       ui.justDragged = true;
       return placeMove(p, ui.newPoint);
     }
@@ -302,8 +278,6 @@ export const untangleGame: Game<
           const dx = p.x * cur.d - cur.x * p.d;
           const dy = p.y * cur.d - cur.y * p.d;
           if (dx === 0 && dy === 0) continue; // overlaps the cursor point
-          // Quadrant test (untangle.c:1479): the [-45°,+45°] cone of the
-          // arrow direction, using the screen convention (y grows down).
           if (!quadrantOk(button, dx, dy)) continue;
           const dd = cur.d * p.d;
           const distsq = (dx * dx + dy * dy) / (dd * dd);
@@ -383,25 +357,20 @@ export const untangleGame: Game<
   executeMove: (s, m) => {
     // Untangle's move is one object shape rather than a union, so there is no
     // discriminant to narrow to `never`: check the fields the dispatch reads.
-    // The per-point validation below is stricter still, but it only runs over
-    // points that exist — an empty or absent list would sail past it.
+    // The per-point validation below only runs over points that exist, so an
+    // empty or absent list would sail past it.
     if (m.kind !== "place" || !Array.isArray(m.points)) {
       rejectMove(m, "untangle: executeMove");
     }
 
-    const ns = cloneUntangleState(s);
-    ns.justSolved = false;
-    if (m.solving) {
-      ns.cheated = true;
-      ns.justSolved = true;
-    }
+    // The topology is shared; only the positions are copied.
+    const ns: UntangleState = { ...s, pts: s.pts.slice(), justSolved: m.solving };
+    if (m.solving) ns.cheated = true;
     for (const p of m.points) {
-      // The integer invariant of `RationalPoint` is enforced here, at the
-      // single chokepoint where every move (drag, solve, replay, load)
-      // becomes state. The exact-integer `cross()` (BigInt accumulator)
-      // depends on it; a non-integer slipping through any input path would
-      // otherwise surface as a cryptic `BigInt` RangeError deep inside
-      // `findCrossings`. Fail loudly and locally instead.
+      // `RationalPoint`'s integer invariant is enforced here, where every
+      // move (drag, solve, replay, load) becomes state: a fraction slipping
+      // through any input path would otherwise surface as a cryptic `BigInt`
+      // RangeError deep inside `findCrossings`.
       if (
         !Number.isInteger(p.i) ||
         !Number.isInteger(p.x) ||
@@ -459,7 +428,7 @@ export const untangleGame: Game<
   },
   flashLength: (a, b) => winFlash(a, b, FLASH_TIME),
 
-  // --- preferences (the engine prefs hook; first consumer) -----------
+  // --- preferences ---------------------------------------------------
   prefs: [
     {
       kw: "snap-to-grid",
