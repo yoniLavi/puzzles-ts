@@ -198,10 +198,8 @@ describe("moves", () => {
 
   it("clears a cell with either erase key", () => {
     // `DELETE` (127) is what the keyboard sends for Backspace/Delete/Clear;
-    // `BACKSPACE` (8) is what a keypad's Clear key would send. `decideValue`
-    // used to list only 8, while `interpretMove`'s gate called `isEraseKey`,
-    // so 127 was admitted and then matched nothing — the erase key looked
-    // wired at every level and did nothing at the last one.
+    // `BACKSPACE` (8) is what a keypad's Clear key would send. Both must pass
+    // `interpretMove`'s gate *and* reach a value in `decideValue`.
     const ds = unrulyGame.newDrawState(blank());
     unrulyGame.setTileSize?.(ds, 32);
     for (const erase of [BACKSPACE, DELETE]) {

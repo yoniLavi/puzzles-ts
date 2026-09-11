@@ -21,10 +21,8 @@ import {
 import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
-  BACKSPACE,
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  DELETE,
   digitOf,
   gridCursorMove,
   isCursorMove,
@@ -36,7 +34,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { type Cell, DIFF_NAMES, EMPTY, ONE, ZERO } from "./constants.ts";
 import { newDesc, solvableAt } from "./generator.ts";
 import { say } from "./hint-text.ts";
@@ -85,13 +83,8 @@ function decideValue(button: number, current: Cell): Cell | null {
   const digit = digitOf(button);
   if (digit === 1) return ONE;
   if (digit === 0 || digit === 2) return ZERO;
+  if (isEraseKey(button)) return EMPTY;
   switch (button) {
-    // Both erase codes, spelled out because a `case` cannot call `isEraseKey`.
-    // The gate in `interpretMove` calls it, so `DELETE` (127) passed the gate,
-    // reached here and fell straight through to `default` — the erase key read
-    // as wired at every level and was dead at the last one.
-    case BACKSPACE:
-    case DELETE:
     case MIDDLE_BUTTON:
       return EMPTY;
     case CURSOR_SELECT2:
@@ -127,22 +120,17 @@ function interpretMove(
     button === LEFT_BUTTON || button === RIGHT_BUTTON || button === MIDDLE_BUTTON;
 
   if (isMouse) {
-    const gx = Math.floor((p.x - b) / ts);
-    const gy = Math.floor((p.y - b) / ts);
-    if (p.x >= b && gx < w2 && p.y >= b && gy < h2 && gx >= 0 && gy >= 0) {
-      hx = gx;
-      hy = gy;
-      if (ui.cursor.visible) {
-        ui.cursor.visible = false;
-        nullret = UI_UPDATE;
-      }
-    } else {
-      return null;
+    hx = Math.floor((p.x - b) / ts);
+    hy = Math.floor((p.y - b) / ts);
+    if (hx < 0 || hy < 0 || hx >= w2 || hy >= h2) return null;
+    if (ui.cursor.visible) {
+      ui.cursor.visible = false;
+      nullret = UI_UPDATE;
     }
   }
 
-  // Keyboard cursor movement (clamped, no wrap). An edge no-op leaves
-  // (cx, cy) but still reveals the cursor and repaints, as before.
+  // Keyboard cursor movement (clamped, no wrap). An edge no-op still reveals
+  // the cursor and repaints.
   if (isCursorMove(button)) {
     const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w2, h2);
     if (moved) {
@@ -185,16 +173,15 @@ function flashLength(
 // --- hint -----------------------------------------------------------------
 
 /** Highlight data for an Unruly hint step. `target` is the cell the
- * deduction forces (filled `COL_HINT` with a preview of the forced color).
- * `area` cells are the deduction's other forced cells — the journey's
- * siblings — light-shaded `COL_HINT_CELL` *where still empty*, so the player
- * sees the whole "this line fills" deduction at a glance. `ring` cells are
- * **filled** premise cells whose color is the evidence (the same-color
- * pair, the completed quota, the near-complete reserved window); a light
+ * deduction forces, ringed in `COL_HINT`. `area` cells are the deduction's
+ * other forced cells — the journey's siblings — shaded `COL_HINT_CELL` *where
+ * still empty*, so the player sees the whole "this line fills" deduction at a
+ * glance. `ring` cells are the premise cells whose color is the evidence (the
+ * same-color pair, the completed quota, the near-complete reserved window); a
  * shade would hide the color that *is* the reason, so they are ringed in
- * `COL_HINT` instead. */
+ * `COL_HINT_REF` instead. */
 export interface UnrulyHint {
-  target: { x: number; y: number; value: Cell };
+  target: Point & { value: Cell };
   area: number[];
   ring: number[];
 }
@@ -228,10 +215,10 @@ function narrate(reason: HintReason): string {
 }
 
 /** Build the highlight payload for a forced move from its reason: the
- * evidence to shade (siblings) and to ring (filled premise cells). */
+ * evidence to shade (siblings) and to ring (premise cells). */
 function buildHighlights(
   reason: HintReason,
-  target: { x: number; y: number; value: Cell },
+  target: UnrulyHint["target"],
   state: UnrulyState,
 ): UnrulyHint {
   const { w2, h2, grid } = state;
@@ -280,9 +267,7 @@ function hint(state: UnrulyState): HintResult<UnrulyMove, UnrulyHint> {
   const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
   if (refusal) return refusal;
   const plan = deduceHintPlan(state);
-  if (plan.length === 0) {
-    return { ok: false, error: DEDUCTION_EXHAUSTED };
-  }
+  if (plan.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
   const steps: HintStep<UnrulyMove, UnrulyHint>[] = plan.map((m) => {
     const value = m.value as Cell;
     const x = m.index % state.w2;
@@ -303,24 +288,17 @@ function hint(state: UnrulyState): HintResult<UnrulyMove, UnrulyHint> {
 function hintKeepTrack(
   m: UnrulyMove,
   step: HintStep<UnrulyMove, UnrulyHint>,
-  _state: UnrulyState,
 ): HintTrackVerdict {
-  if (m.type !== "place") return "off";
   const t = step.highlights?.target;
-  if (!t) return "off";
-  if (m.x !== t.x || m.y !== t.y) return "off";
-  return m.value === t.value ? "completed" : "off";
+  const hit =
+    m.type === "place" && t && m.x === t.x && m.y === t.y && m.value === t.value;
+  return hit ? "completed" : "off";
 }
 
 /** Animate a placement that changes exactly one cell (so `solve`'s bulk fill
  * and no-ops stay instant); the midend stretches this to the uniform
  * hint-step duration, so auto-hint reads as continuous fills. */
-function animLength(
-  oldState: UnrulyState,
-  newState_: UnrulyState,
-  _dir: number,
-  _ui: UnrulyUi,
-): number {
+function animLength(oldState: UnrulyState, newState_: UnrulyState): number {
   let changed = 0;
   const g0 = oldState.grid;
   const g1 = newState_.grid;
@@ -330,18 +308,15 @@ function animLength(
   return changed === 1 ? PLACE_ANIM_TIME : 0;
 }
 
-/** Unruly's difficulty contract (`engine/difficulty.ts`). Its `solveGame`
- * returns the *highest rung that fired*, not a verdict, so solvability is read
- * the way the generator reads it — run the ladder, then check the counts came
- * out balanced. `solvableAt` is that predicate, shared with the generator rather
- * than re-derived here. */
+/** Unruly's difficulty contract (`engine/difficulty.ts`). `solveGame` returns
+ * the highest rung that fired, not a verdict, so solvability is read the way
+ * the generator reads it, through the shared `solvableAt`. */
 const difficulty: DifficultyContract<UnrulyParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {
     const s = newState(p, desc);
-    const view = { w2: s.w2, h2: s.h2, unique: s.unique, grid: s.grid };
-    return solvableAt(view, s.grid, cap) ? "solved" : "unsolved";
+    return solvableAt(s, s.grid, cap) ? "solved" : "unsolved";
   },
 };
 
@@ -365,8 +340,8 @@ export const unrulyGame: Game<
   decodeParams,
   validateParams,
   paramConfig: [
-    // Upstream's `w2`/`h2` are the *full* grid extent, not halves — the names
-    // are historical — so the fields are mapped rather than the game renamed.
+    // Upstream's `w2`/`h2` are the *full* grid extent, not halves, so the
+    // fields are mapped rather than the game renamed.
     ...dimensionParamConfig<UnrulyParams>({ w: "w2", h: "h2" }),
     {
       kw: "difficulty",
@@ -395,7 +370,7 @@ export const unrulyGame: Game<
     "unique-rows-and-columns": p.unique,
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -418,9 +393,9 @@ export const unrulyGame: Game<
 
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: UnrulyParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },

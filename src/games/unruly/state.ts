@@ -1,12 +1,8 @@
 /**
- * Unruly state, params, and desc codec — idiomatic TS port of the state
- * half of `unruly.c` (the binary puzzle Binairo / Tohu-wa-Vohu: fill a
- * grid with two colors so no row or column has a run of three equal
- * cells and each row/column holds equally many of each).
+ * Unruly state, params and desc codec: the state half of `unruly.c`.
  *
- * Color/value mapping is upstream's and worth stating once: a cell is
- * `EMPTY`, `ONE`, or `ZERO`, where **`ONE` renders dark ("black") and
- * `ZERO` renders light ("white")** (see `render.ts`).
+ * A cell is `EMPTY`, `ONE` or `ZERO`, and as upstream, **`ONE` renders dark
+ * ("black") and `ZERO` renders light ("white")** (see `render.ts`).
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -25,7 +21,7 @@ import {
   ONE,
   ZERO,
 } from "./constants.ts";
-import { validateCounts, validateRows } from "./solver.ts";
+import { isComplete } from "./solver.ts";
 
 // --- types ---------------------------------------------------------------
 
@@ -64,7 +60,7 @@ export interface UnrulyUi {
 }
 
 /** A player-placed cell whose color contradicts the unique solution
- * (the mistake-checking divergence; surfaced by Check & Save). */
+ * (surfaced by Check & Save). */
 export interface UnrulyMistake {
   x: number;
   y: number;
@@ -104,24 +100,17 @@ export function encodeParams(p: UnrulyParams, full: boolean): string {
 }
 
 export function decodeParams(s: string): UnrulyParams {
-  const ret = defaultParams();
-  ret.unique = false;
   const dims = parseDimensions(s, 0);
-  ret.w2 = dims.w;
-  ret.h2 = dims.h;
+  const ret = { ...defaultParams(), w2: dims.w, h2: dims.h };
   let i = dims.next;
   if (s[i] === "u") {
-    i++;
     ret.unique = true;
+    i++;
   }
   if (s[i] === "d") {
-    i++;
-    ret.diff = DIFF_COUNT + 1; // invalid until matched
-    if (i < s.length) {
-      const idx = DIFF_CHARS.indexOf(s[i]);
-      if (idx >= 0) ret.diff = idx;
-      i++;
-    }
+    // A missing or unknown letter leaves a difficulty validateParams rejects.
+    const idx = i + 1 < s.length ? DIFF_CHARS.indexOf(s[i + 1]) : -1;
+    ret.diff = idx >= 0 ? idx : DIFF_COUNT + 1;
   }
   return ret;
 }
@@ -178,24 +167,16 @@ export function newState(p: UnrulyParams, desc: string): UnrulyState {
   const immutable = new Uint8Array(s);
   let pos = 0;
   for (const ch of desc) {
-    const code = ch.charCodeAt(0);
-    if (ch >= "a" && ch < "z") {
-      pos += code - 97;
+    const zero = ch >= "a" && ch < "z";
+    if (zero || (ch >= "A" && ch < "Z")) {
+      pos += ch.charCodeAt(0) - (zero ? 97 : 65);
       if (pos < s) {
-        grid[pos] = ZERO;
-        immutable[pos] = 1;
-      }
-      pos++;
-    } else if (ch >= "A" && ch < "Z") {
-      pos += code - 65;
-      if (pos < s) {
-        grid[pos] = ONE;
+        grid[pos] = zero ? ZERO : ONE;
         immutable[pos] = 1;
       }
       pos++;
     } else {
-      // 'z' / 'Z': advance 25, place nothing.
-      pos += 25;
+      pos += 25; // `z` / `Z`
     }
   }
   return {
@@ -209,44 +190,26 @@ export function newState(p: UnrulyParams, desc: string): UnrulyState {
   };
 }
 
-/** Encode a filled-or-partial grid as upstream's run-length desc (a ZERO
- * or end-of-grid closes a run as `a`+run, a ONE as `A`+run, with `z`/`Z`
- * emitted for runs over 24). */
+/** Encode a filled-or-partial grid as the run-length desc above. The end of
+ * the grid closes the last run as a ZERO would, which is the `+ 1`. */
 export function encodeGrid(grid: Uint8Array, s: number): string {
   let out = "";
   let run = 0;
   for (let i = 0; i <= s; i++) {
-    if (i === s || grid[i] === ZERO) {
-      while (run > 24) {
-        out += "z";
-        run -= 25;
-      }
-      out += String.fromCharCode(97 + run);
-      run = 0;
-    } else if (grid[i] === ONE) {
-      while (run > 24) {
-        out += "Z";
-        run -= 25;
-      }
-      out += String.fromCharCode(65 + run);
-      run = 0;
-    } else {
+    const v = i === s ? ZERO : grid[i];
+    if (v !== ZERO && v !== ONE) {
       run++;
+      continue;
     }
+    const base = v === ONE ? 65 : 97; // "A" / "a"; base + 25 is "Z" / "z"
+    for (; run > 24; run -= 25) out += String.fromCharCode(base + 25);
+    out += String.fromCharCode(base + run);
+    run = 0;
   }
   return out;
 }
 
 // --- moves ---------------------------------------------------------------
-
-export function cloneState(state: UnrulyState): UnrulyState {
-  return { ...state, grid: Uint8Array.from(state.grid) };
-}
-
-/** Is the board complete? Balanced counts and no rule violation. */
-export function isComplete(state: UnrulyState): boolean {
-  return validateCounts(state, null) === 0 && validateRows(state, null) === 0;
-}
 
 export function executeMove(state: UnrulyState, move: UnrulyMove): UnrulyState {
   const { w2, h2 } = state;
@@ -269,11 +232,9 @@ export function executeMove(state: UnrulyState, move: UnrulyMove): UnrulyState {
   const i = y * w2 + x;
   if (state.immutable[i]) throw new Error("Cannot edit an immutable cell");
 
-  const next = cloneState(state);
+  const next = { ...state, grid: Uint8Array.from(state.grid) };
   next.grid[i] = value;
-  if (!next.completed && isComplete(next)) {
-    return { ...next, completed: true };
-  }
+  if (!next.completed && isComplete(next)) return { ...next, completed: true };
   return next;
 }
 
@@ -285,14 +246,13 @@ export function status(state: UnrulyState): GameStatus {
 
 export function textFormat(state: UnrulyState): string {
   const { w2, h2, grid } = state;
-  const lines: string[] = [];
+  let out = "";
   for (let y = 0; y < h2; y++) {
-    let row = "";
     for (let x = 0; x < w2; x++) {
       const c = grid[y * w2 + x];
-      row += `${c === ONE ? "1" : c === ZERO ? "0" : "."} `;
+      out += `${c === ONE ? "1" : c === ZERO ? "0" : "."} `;
     }
-    lines.push(row);
+    out += "\n";
   }
-  return `${lines.join("\n")}\n`;
+  return out;
 }

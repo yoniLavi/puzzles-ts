@@ -96,8 +96,7 @@ describe("Unruly render scenarios", () => {
     const hl = hint?.highlights as UnrulyHint | undefined;
     expect(hl).toBeDefined();
 
-    // The forced cell is painted COL_HINT (both the target fill and any
-    // premise ring use it), so the hint color is on the frame.
+    // The forced cell is ringed in COL_HINT, so the hint color is on the frame.
     expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_HINT)).toBe(
       true,
     );

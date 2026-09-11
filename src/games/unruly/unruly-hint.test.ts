@@ -10,9 +10,8 @@ import { type Cell, EMPTY as E, ONE as O, ZERO as Z } from "./constants.ts";
 import { newDesc } from "./generator.ts";
 import { type UnrulyHint, unrulyGame } from "./index.ts";
 import { PLACE_ANIM_TIME } from "./render.ts";
-import { deduceHintPlan } from "./solver.ts";
+import { deduceHintPlan, isComplete } from "./solver.ts";
 import {
-  isComplete,
   newState,
   type UnrulyMove,
   type UnrulyParams,

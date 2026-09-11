@@ -1,13 +1,11 @@
 /**
- * Unruly solver — idiomatic TS port of the solver/validation half of
- * `unruly.c`. Five deductive techniques gated by difficulty, plus the
- * count/run validators the state and renderer reuse.
+ * Unruly solver: the solver/validation half of `unruly.c`. Five deductive
+ * techniques gated by difficulty, plus the count/run validators the state and
+ * renderer reuse.
  *
- * The solver is the one place we keep a mutable C-style grid: it fills
- * thousands of cells per board during generation, where an immutable
- * clone per fill would be wasteful and un-idiomatic. The `Game`'s
- * `executeMove` stays pure; only the solver/generator mutate a private
- * working grid.
+ * The solver mutates a private working grid in place: it fills thousands of
+ * cells per board during generation, where a clone per fill would be wasteful.
+ * The `Game`'s `executeMove` stays pure.
  */
 import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
@@ -87,44 +85,36 @@ export const FE_COL_MATCH = 0x0040;
 
 // --- scratch counts ------------------------------------------------------
 
-export class Scratch {
+/** Per-row and per-column counts of each color, kept in step with the grid
+ * as the solver fills it. */
+export interface Scratch {
   onesRows: Int32Array;
   onesCols: Int32Array;
   zerosRows: Int32Array;
   zerosCols: Int32Array;
-
-  constructor(w2: number, h2: number) {
-    this.onesRows = new Int32Array(h2);
-    this.onesCols = new Int32Array(w2);
-    this.zerosRows = new Int32Array(h2);
-    this.zerosCols = new Int32Array(w2);
-  }
 }
 
 export function newScratch(view: GridView): Scratch {
-  const s = new Scratch(view.w2, view.h2);
-  updateRemaining(view, s);
-  return s;
-}
-
-function updateRemaining(view: GridView, scratch: Scratch): void {
   const { w2, h2, grid } = view;
-  scratch.onesRows.fill(0);
-  scratch.onesCols.fill(0);
-  scratch.zerosRows.fill(0);
-  scratch.zerosCols.fill(0);
+  const s: Scratch = {
+    onesRows: new Int32Array(h2),
+    onesCols: new Int32Array(w2),
+    zerosRows: new Int32Array(h2),
+    zerosCols: new Int32Array(w2),
+  };
   for (let y = 0; y < h2; y++) {
     for (let x = 0; x < w2; x++) {
       const v = grid[y * w2 + x];
       if (v === ONE) {
-        scratch.onesRows[y]++;
-        scratch.onesCols[x]++;
+        s.onesRows[y]++;
+        s.onesCols[x]++;
       } else if (v === ZERO) {
-        scratch.zerosRows[y]++;
-        scratch.zerosCols[x]++;
+        s.zerosRows[y]++;
+        s.zerosCols[x]++;
       }
     }
   }
+  return s;
 }
 
 // --- technique: impending threes (TRIVIAL) ------------------------------
@@ -333,7 +323,6 @@ function checkUniques(
       }
       if (nmatch === max - 1 && nonmatch >= 0) {
         const i1 = r2 * rmult + nonmatch * cmult;
-        if (grid[i1] === block) continue;
         if (grid[i1] !== EMPTY) continue;
         rec?.(
           i1,
@@ -366,11 +355,10 @@ function checkAllUniques(view: GridView, s: Scratch, rec?: Recorder): number {
 }
 
 // --- technique: near-complete (NORMAL) ----------------------------------
-// A row/column with one cell of color Y left and ≥2 of color X left: in
-// any spot where placing the last Y would force three X's in a row, that Y
-// can't go there. We BOGUS-mark the cells that would complete such a run so
-// `fillRow` fills the *forced* remainder with the fill color, then restore
-// the BOGUS cells. (See unruly.c's worked example.)
+// A row/column with one cell of the `complete` color left and at least two
+// of `fill` left. Where three consecutive cells would all become `fill`
+// unless that last cell goes among them, it must, so every other empty cell
+// in the line is `fill`. (See unruly.c's worked example.)
 function checkNearComplete(
   view: GridView,
   complete: Int32Array,
@@ -396,10 +384,9 @@ function checkNearComplete(
       const i2 = y * w2 + x;
       const i3 = (y + dy) * w2 + (x + dx);
 
-      // The four cases (fill adjacent to empties, or three empties) that a
-      // forced run could occupy. Mark the run's empties BOGUS, fill the
-      // remainder, then restore. `anchor` is the abutting fill cell (or -1
-      // for the all-empty window) — the cell whose color makes the threat.
+      // The window the last cell is pinned to: two empties beside a `fill`
+      // cell (the `anchor`), or three empties. BOGUS-mark it so `fillRow`
+      // fills only the rest of the line, then restore it.
       let bogus: number[] | null = null;
       let anchor = -1;
       if (grid[i1] === fill && grid[i2] === EMPTY && grid[i3] === EMPTY) {
@@ -453,19 +440,14 @@ function checkAllNearComplete(view: GridView, s: Scratch, rec?: Recorder): numbe
 // --- solve loop ----------------------------------------------------------
 
 /**
- * Run the deductive techniques to a fixpoint, gated by `diff`. Mutates
- * `view.grid` and `scratch`. Returns the maximum difficulty whose technique
- * fired, or `-1` if no progress was made.
+ * Run the deductive techniques to a fixpoint, capped at tier `diff`. Mutates
+ * `view.grid` and `scratch`. Returns the highest tier whose technique fired,
+ * or `-1` if none did.
  *
- * Five techniques across **three** tiers — two Trivial, two Easy, one Normal —
- * which is why this loop was hand-rolled until `declare-deduction-techniques`:
- * the shared runner graded by a technique's *index* in the ladder, and here the
- * index is not the tier. Now that a technique declares its own tier, the whole
- * of upstream's bookkeeping is the runner's: the `continue`s are
- * restart-on-first-firing, the running `maxdiff` is the tier grade, and the two
- * `if (diff < …) break;` statements that used to sit *inside* the ladder are
- * one `maxTier`. No technique here can prove a contradiction, so `impossible`
- * is never reported and the `-1 / 0 / >0` contract's negative arm is unused.
+ * Five techniques across three tiers, each declaring its own tier, so the
+ * shared runner owns all of upstream's bookkeeping: restart on the first
+ * firing, the running grade, and the tier cap. No technique can prove a
+ * contradiction, so `impossible` is never reported.
  */
 export function solveGame(
   view: GridView,
@@ -474,7 +456,7 @@ export function solveGame(
   rec?: Recorder,
 ): number {
   // Guard the hint/recording path against a non-terminating fixpoint; the
-  // generator (no `rec`) runs unguarded and byte-for-byte unchanged.
+  // generator (no `rec`) runs unguarded.
   const budget = rec ? stepBudget("unruly hint") : undefined;
   const { grade } = runDeductionFixpoint({
     techniques: [
@@ -494,9 +476,9 @@ export function solveGame(
         run: () => (checkAllCompleteNums(view, scratch, rec) ? 1 : 0),
       },
       {
-        // `unique` is the "no two identical rows" game variant, so the guard is
-        // a rule of the board, not a rung ordering question — it belongs inside
-        // the technique rather than as a runner predicate.
+        // `unique` is a rule of the board (the "no two identical rows"
+        // variant), not a rung ordering question, so it gates the technique
+        // rather than being a runner predicate.
         id: "unique-rows",
         tier: DIFF_EASY,
         run: () => (view.unique && checkAllUniques(view, scratch, rec) ? 1 : 0),
@@ -514,24 +496,30 @@ export function solveGame(
   return grade;
 }
 
+/** Solve a copy of `grid` on `view`'s board, capped at tier `diff`, and return
+ * the worked copy; the caller's grid is untouched. */
+export function solveCopy(
+  view: GridView,
+  grid: Uint8Array,
+  diff: number,
+  rec?: Recorder,
+): GridView {
+  const { w2, h2, unique } = view;
+  const work: GridView = { w2, h2, unique, grid: Uint8Array.from(grid) };
+  solveGame(work, newScratch(work), diff, rec);
+  return work;
+}
+
 /**
  * Run the deduction from the player's current marks at full strength,
- * recording every forced cell in order — the explained-hint plan. The grid
- * is copied, so the caller's state is untouched. Returns the ordered forced
- * moves; the first is the move to surface next.
+ * recording every forced cell in order — the explained-hint plan. Returns the
+ * ordered forced moves; the first is the move to surface next.
  */
 export function deduceHintPlan(state: UnrulyState): HintMove[] {
-  const work: GridView = {
-    w2: state.w2,
-    h2: state.h2,
-    unique: state.unique,
-    grid: Uint8Array.from(state.grid),
-  };
-  const scratch = newScratch(work);
   const moves: HintMove[] = [];
-  solveGame(
-    work,
-    scratch,
+  solveCopy(
+    state,
+    state.grid,
     Number.MAX_SAFE_INTEGER,
     (index, value, reason, continues) => {
       moves.push({ index, value, reason, continuesPrevious: continues });
@@ -641,20 +629,16 @@ export function validateCounts(view: GridView, errors: Uint8Array | null): numbe
   let above = false;
 
   for (let i = 0; i < w2; i++) {
-    if (s.onesCols[i] < h) below = true;
-    if (s.zerosCols[i] < h) below = true;
-    if (s.onesCols[i] > h) above = true;
-    if (s.zerosCols[i] > h) above = true;
+    if (s.onesCols[i] < h || s.zerosCols[i] < h) below = true;
+    if (s.onesCols[i] > h || s.zerosCols[i] > h) above = true;
     if (errors) {
       errors[2 * h2 + i] = s.onesCols[i] > h ? 1 : 0;
       errors[2 * h2 + w2 + i] = s.zerosCols[i] > h ? 1 : 0;
     }
   }
   for (let i = 0; i < h2; i++) {
-    if (s.onesRows[i] < w) below = true;
-    if (s.zerosRows[i] < w) below = true;
-    if (s.onesRows[i] > w) above = true;
-    if (s.zerosRows[i] > w) above = true;
+    if (s.onesRows[i] < w || s.zerosRows[i] < w) below = true;
+    if (s.onesRows[i] > w || s.zerosRows[i] > w) above = true;
     if (errors) {
       errors[i] = s.onesRows[i] > w ? 1 : 0;
       errors[h2 + i] = s.zerosRows[i] > w ? 1 : 0;
@@ -662,6 +646,11 @@ export function validateCounts(view: GridView, errors: Uint8Array | null): numbe
   }
 
   return above ? -1 : below ? 1 : 0;
+}
+
+/** Is the grid finished: every count balanced and no rule broken? */
+export function isComplete(view: GridView): boolean {
+  return validateCounts(view, null) === 0 && validateRows(view, null) === 0;
 }
 
 /**
@@ -672,38 +661,27 @@ export function validateCounts(view: GridView, errors: Uint8Array | null): numbe
  * matching Range/Mosaic. Pure (no state mutation).
  */
 export function findMistakes(state: UnrulyState): UnrulyMistake[] {
-  const { w2, h2, unique, grid, immutable } = state;
-  const s = w2 * h2;
-
-  // Solve a copy holding only the fixed clues → the canonical solution.
-  const clueGrid = new Uint8Array(s);
-  for (let i = 0; i < s; i++) if (immutable[i]) clueGrid[i] = grid[i];
-  const work: GridView = { w2, h2, unique, grid: clueGrid };
-  const scratch = newScratch(work);
-  solveGame(work, scratch, Number.MAX_SAFE_INTEGER);
-  if (validateCounts(work, null) !== 0 || validateRows(work, null) !== 0) return [];
+  const { w2, grid, immutable } = state;
+  const clues = grid.map((v, i) => (immutable[i] ? v : EMPTY));
+  const solved = solveCopy(state, clues, Number.MAX_SAFE_INTEGER);
+  if (!isComplete(solved)) return [];
 
   const mistakes: UnrulyMistake[] = [];
-  for (let i = 0; i < s; i++) {
-    if (immutable[i]) continue;
-    const v = grid[i];
-    if (v !== EMPTY && v !== work.grid[i]) {
+  for (let i = 0; i < grid.length; i++) {
+    if (!immutable[i] && grid[i] !== EMPTY && grid[i] !== solved.grid[i]) {
       mistakes.push({ x: i % w2, y: Math.floor(i / w2) });
     }
   }
   return mistakes;
 }
 
-/** Run the full solver from a copy of `state`'s grid and return the solved
+/** Run the full solver from a copy of `view`'s grid and return the solved
  * grid as a `'0'`/`'1'` string, or `null` if it doesn't reach a valid,
  * complete solution (Solve button). */
 export function solveToString(view: GridView): string | null {
-  const grid = Uint8Array.from(view.grid);
-  const work: GridView = { w2: view.w2, h2: view.h2, unique: view.unique, grid };
-  const scratch = newScratch(work);
-  solveGame(work, scratch, Number.MAX_SAFE_INTEGER);
-  if (validateCounts(work, null) !== 0 || validateRows(work, null) !== 0) return null;
+  const solved = solveCopy(view, view.grid, Number.MAX_SAFE_INTEGER);
+  if (!isComplete(solved)) return null;
   let out = "";
-  for (let i = 0; i < grid.length; i++) out += grid[i] === ONE ? "1" : "0";
+  for (const v of solved.grid) out += v === ONE ? "1" : "0";
   return out;
 }

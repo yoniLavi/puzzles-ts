@@ -5,15 +5,12 @@
  *
  *  1. TS `newDesc` over the same seed reproduces the C desc **byte-for-byte**
  *     — the generator is a faithful port and the RNG is bit-identical, so
- *     the streams must agree exactly (the strongest possible check, like
- *     Flip's CROSSES path).
+ *     the streams must agree exactly.
  *  2. The TS solver solves the C-generated board at the C-recorded
  *     difficulty (no harder, and it completes).
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/unruly-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: its recorder and the C
+ * build it ran against are gone (see `engine/testing/differential.ts`).
  */
 import { describe, expect, it } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

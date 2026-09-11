@@ -1,12 +1,12 @@
 /**
- * Unruly rendering — faithful port of `game_redraw` / `unruly_draw_tile`
- * in unruly.c. Per-tile `Int32Array` cache keyed on a packed flag word
- * (the upstream `tile` int); error overlays (3-in-a-row bars, count `!`,
- * unique-match bars) recomputed each frame from the validators; a
- * completion flash inverting filled tiles toward highlight/lowlight.
+ * Unruly rendering: upstream's `game_redraw` / `unruly_draw_tile`. A per-tile
+ * cache keyed on a packed flag word (upstream's `tile` int); error overlays
+ * (3-in-a-row bars, count `!`, unique-match bars) recomputed each frame from
+ * the validators; a completion flash shifting filled tiles toward
+ * highlight/lowlight.
  *
- * The palette deliberately mirrors the C color-enum index layout, so a reader
- * can check it against upstream's slot by slot. Unruly has no dark-mode
+ * The palette mirrors the C color enum index-for-index, so a reader can
+ * check it against upstream's slot by slot. Unruly has no dark-mode
  * `paletteOverrides`: the two tile bases author their own dark values and
  * `mkhighlightSpecific` hands those to each bevel trio, so nothing addresses a
  * slot by number.
@@ -54,7 +54,7 @@ export const FLASH_TIME = FLASH_FRAME * 3;
  * stretches it to the uniform hint-step duration for auto-hint. */
 export const PLACE_ANIM_TIME = 0.13;
 
-// --- palette (mirrors the unruly.c color enum index-for-index) ---------
+// --- palette -------------------------------------------------------------
 export const COL_BACKGROUND = 0;
 export const COL_GRID = 1;
 export const COL_EMPTY = 2;
@@ -66,15 +66,13 @@ export const COL_1_HIGHLIGHT = 7;
 export const COL_1_LOWLIGHT = 8;
 export const COL_CURSOR = 9;
 export const COL_ERROR = 10;
-// Hint colors — appended past the dark-mode override range (3–8), so dark
-// mode leaves them unchanged. The action cell is COL_HINT (blue); the
-// deduction's empty siblings shade COL_HINT_CELL (light blue); the cited
-// premise / pivotal cells ring COL_HINT_REF (orange), distinct from the move.
+// Hint colors, appended past upstream's enum. The action cell rings
+// COL_HINT; the deduction's empty siblings shade COL_HINT_CELL; the cited
+// premise cells ring COL_HINT_REF, distinct from the move.
 export const COL_HINT = 11;
-/** The evidence **wash**, and this is the game that shows why the role has a
- * wash form at all: these cells are the journey's still-*empty* siblings, so
- * nothing is drawn on the shade and it can be the more visible of the two
- * teals. A game whose evidence carries content outlines instead. */
+/** The evidence **wash**: these cells are the journey's still-*empty*
+ * siblings, so nothing is drawn on the shade and it can be the more visible
+ * of the two teals. A game whose evidence carries content outlines instead. */
 export const COL_HINT_CELL = 12;
 export const COL_HINT_REF = 13;
 
@@ -118,7 +116,7 @@ const FF_IMMUTABLE = 0x1000;
 // Our mistake-overlay bit (no upstream analog), folded into the cache key.
 const FF_MISTAKE = 0x2000;
 // Hint-overlay bits (no upstream analog), also folded into the cache key.
-const FF_HINT_TARGET = 0x4000; // the forced cell (filled COL_HINT + preview)
+const FF_HINT_TARGET = 0x4000; // the forced cell (COL_HINT ring)
 const FF_HINT_AREA = 0x10000; // a journey-sibling empty cell (light shade)
 const FF_HINT_RING = 0x20000; // a cited premise / pivotal cell (COL_HINT_REF outline)
 
@@ -139,8 +137,6 @@ export function computeSize(p: UnrulyParams, ts: number): Size {
 export interface UnrulyDrawState {
   started: boolean;
   tilesize: number;
-  w2: number;
-  h2: number;
   /** Last-drawn packed tile word per cell; -1 forces a draw. */
   cache: Int32Array;
 }
@@ -149,8 +145,6 @@ export function newDrawState(state: UnrulyState): UnrulyDrawState {
   return {
     started: false,
     tilesize: 0,
-    w2: state.w2,
-    h2: state.h2,
     cache: new Int32Array(state.w2 * state.h2).fill(-1),
   };
 }
@@ -299,11 +293,10 @@ function drawTile(
     dr.drawRect({ x: sx + span - t, y: sy, w: t, h: span }, COL_ERROR);
   }
 
-  // Hint ring: a COL_HINT_REF outline around a cited premise / pivotal cell
-  // (its own color stays visible — for a filled premise that color *is* the
-  // evidence; for an empty reserved window the ring marks the spared cells).
-  // Ringed in COL_HINT_REF, not the COL_HINT of the move, so premise and move
-  // don't read as the same element type.
+  // Hint ring around a cited premise cell. Its own color stays visible: for a
+  // filled premise that color *is* the evidence; for an empty reserved window
+  // the ring marks the spared cells. COL_HINT_REF, not the move's COL_HINT, so
+  // premise and move don't read as the same element type.
   if (tile & FF_HINT_RING) {
     const t = Math.max(1, Math.floor(ts / 12));
     dr.drawRect({ x: px, y: py, w: ts - 1, h: t }, COL_HINT_REF);
@@ -316,8 +309,7 @@ function drawTile(
   // is: the hint marks where to act, it does not place the color the player
   // must enter themselves. A blue *fill* in a game whose entire move is "make
   // this cell black or white" reads as a third color already placed. The
-  // narration says which color; auto-hint applies it for real in animation
-  // mode. (Owner-directed, 2026-06-20.)
+  // narration says which color; auto-hint applies it for real.
   if (tile & FF_HINT_TARGET) {
     drawMarkSides(
       dr,

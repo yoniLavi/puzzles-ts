@@ -1,9 +1,9 @@
 /**
- * Unruly generator — idiomatic TS port of `unruly_fill_game` /
- * `new_game_desc`. Build a random valid full grid (place a random color
- * in each cell in shuffled order, solving forward after each placement),
- * then winnow clues while the deductive solver at the target difficulty
- * can still finish, with a too-easy gate above Trivial.
+ * Unruly generator: upstream's `unruly_fill_game` / `new_game_desc`. Build a
+ * random valid full grid (place a random color in each cell in shuffled order,
+ * solving forward after each placement), then winnow clues while the deductive
+ * solver at the target difficulty can still finish, with a too-easy gate above
+ * the first tier.
  */
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
@@ -12,22 +12,14 @@ import { shuffle } from "../../engine/shuffle.ts";
 import { type Cell, DIFF_TRIVIAL, EMPTY, ONE, ZERO } from "./constants.ts";
 import {
   type GridView,
+  isComplete,
   newScratch,
   type Scratch,
+  solveCopy,
   solveGame,
   validateCounts,
-  validateRows,
 } from "./solver.ts";
 import { encodeGrid, type UnrulyParams } from "./state.ts";
-
-function blankView(p: UnrulyParams): GridView {
-  return {
-    w2: p.w2,
-    h2: p.h2,
-    unique: p.unique,
-    grid: new Uint8Array(p.w2 * p.h2),
-  };
-}
 
 /** Fill a blank grid to a valid complete solution, or return false to
  * retry. Mutates `view`/`scratch`. */
@@ -51,16 +43,13 @@ function fillGame(view: GridView, scratch: Scratch, rng: RandomState): boolean {
     solveGame(view, scratch, Number.MAX_SAFE_INTEGER);
   }
 
-  return validateRows(view, null) === 0 && validateCounts(view, null) === 0;
+  return isComplete(view);
 }
 
 /** Does the solver at `diff` reach a complete (counts-balanced) solution
  * from `grid`? */
 export function solvableAt(view: GridView, grid: Uint8Array, diff: number): boolean {
-  const work: GridView = { ...view, grid: Uint8Array.from(grid) };
-  const scratch = newScratch(work);
-  solveGame(work, scratch, diff);
-  return validateCounts(work, null) === 0;
+  return validateCounts(solveCopy(view, grid, diff), null) === 0;
 }
 
 export function newDesc(p: UnrulyParams, rng: RandomState): { desc: string } {
@@ -71,12 +60,16 @@ export function newDesc(p: UnrulyParams, rng: RandomState): { desc: string } {
     attempt();
 
     // Build a valid full grid, retrying until one materializes.
-    const view = blankView(p);
+    const view: GridView = {
+      w2: p.w2,
+      h2: p.h2,
+      unique: p.unique,
+      grid: new Uint8Array(s),
+    };
     let scratch = newScratch(view);
     const fill = retryLimit("unruly: fillGame");
     while (!fillGame(view, scratch, rng)) {
       fill();
-
       view.grid.fill(EMPTY);
       scratch = newScratch(view);
     }
@@ -92,9 +85,8 @@ export function newDesc(p: UnrulyParams, rng: RandomState): { desc: string } {
       if (!solvableAt(view, grid, p.diff)) grid[i] = c;
     }
 
-    // Too-easy gate: above Trivial, reject a board the next-easier solver
-    // already finishes (so the target technique is genuinely needed), and
-    // regenerate. Trivial boards can never be too easy.
+    // Too-easy gate: reject a board the next tier down already finishes, so
+    // the target technique is genuinely needed. The first tier has none below.
     if (p.diff > DIFF_TRIVIAL && solvableAt(view, grid, p.diff - 1)) continue;
 
     return { desc: encodeGrid(grid, s) };
