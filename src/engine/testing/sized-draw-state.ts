@@ -10,13 +10,6 @@
  * game then maps every pointer coordinate onto cell (0, 0) — a test that
  * fails for a reason that has nothing to do with what it is testing.
  *
- * Before `audit-vestigial-contract-surface` these call sites passed `null`,
- * which the interface allowed and every game absorbed with a
- * `ds?.tilesize ?? PREFERRED_TILE_SIZE` fallback. That made the tests the
- * fallback's only callers: they asserted coordinate mapping against a branch
- * the engine cannot reach, and the branch read as protection for a case that
- * could not occur.
- *
  * Default tile size is the game's own preferred one, which is what a freshly
  * dealt board is laid out at before any resize. Pass `tileSize` for a test
  * that needs a specific one.

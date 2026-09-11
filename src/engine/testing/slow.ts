@@ -1,11 +1,11 @@
 /**
  * The opt-in tier for tests that are **expensive and not load-bearing per
- * commit** (`right-size-the-test-gate`).
+ * commit**.
  *
  * The pre-commit gate exists to say "this tree is not broken", and it is paid
- * for on every commit. A handful of tests were costing more than half of it:
- * three Seismic 7×7 differential fixtures at 272 s, one Bricks 12×8 at 100 s.
- * Their configuration coverage — every mode × difficulty — is carried by the
+ * for on every commit. A handful of tests cost more than half of it (three
+ * Seismic 7×7 differential fixtures at 272 s, one Bricks 12×8 at 100 s) while
+ * their configuration coverage — every mode × difficulty — is carried by the
  * smaller boards of the same family, so what the big ones add is board *size*
  * against the same code paths.
  *
@@ -18,13 +18,12 @@
  *
  * ## Run it targeted; the whole tier is not the unit of use
  *
- * **`npm run test:slow` re-runs the entire gate suite as well** — every one of
- * its ~8,500 tests — *plus* the deferred cases, *plus* the widened seed budgets
- * below, which multiply the heaviest files 3–7.5×. Measured 2026-09-09
- * (`retire-tests-that-do-not-earn-their-runtime`): the tier itself is **six
- * deferred tests** in three files, and everything else it costs is the gate
- * being paid again. So the bare command is the wrong instrument for almost
- * every question, and reaching for it is how a tier becomes one nobody invokes.
+ * **`npm run test:slow` re-runs the entire gate suite as well**, *plus* the
+ * deferred cases, *plus* the widened seed budgets below, which multiply the
+ * heaviest files 3–7.5×. Measured 2026-09-09: the tier itself is **six deferred
+ * tests** in three files, and everything else it costs is the gate being paid
+ * again. So the bare command is the wrong instrument for almost every question,
+ * and reaching for it is how a tier becomes one nobody invokes.
  *
  * **Pass a path.** The script forwards arguments to vitest, so the deferred
  * work for the thing you are actually changing is one command:

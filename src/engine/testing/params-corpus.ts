@@ -2,12 +2,9 @@
  * A params corpus for every registered game — **derived from the registry and
  * from each game's own declarations, never authored**.
  *
- * It exists so that a game's encoded params can be held byte-stable while the
- * codec underneath them is replaced. Params appear in shared game IDs, so an
- * encoding is a promise to players (`ts-migration`, "codec stability"); until
- * now nothing in the tree asserted that promise, and each game's
- * `encodeParams`/`decodeParams` pair was held to be mutual inverses by
- * discipline alone.
+ * It holds each game's encoded params byte-stable: params appear in shared game
+ * IDs, so an encoding is a promise to players (`ts-migration` spec, "Encoded
+ * params are byte-stable, and the guard is derived").
  *
  * **Where the cases come from**, in order of how much they are worth:
  *
@@ -35,11 +32,11 @@
 
 import "../../games/index.ts";
 import { difficultyChoiceItem } from "../difficulty.ts";
-import type { Game, PresetMenu } from "../game.ts";
+import type { PresetMenu } from "../game.ts";
 import { getTsGame, registeredGameIds } from "../registry.ts";
+import type { AnyGame } from "./enrollment.ts";
 
-// biome-ignore lint/suspicious/noExplicitAny: a deliberately game-agnostic probe.
-export type AnyGame = Game<any, any, any, any, any, any>;
+export type { AnyGame };
 
 /** A params record as this module handles it: plain fields, no methods. */
 export type AnyParams = Record<string, unknown>;
@@ -53,8 +50,7 @@ export interface ParamsCase {
 
 /**
  * Every registered game, by puzzle id, sorted so the sweeps iterate in a
- * stable order. The side-effect import above is what populates the registry,
- * the same way `hint-games.ts` reaches it.
+ * stable order. The side-effect import above is what populates the registry.
  */
 export const PARAMS_GAMES: [string, AnyGame][] = registeredGameIds()
   .sort()
@@ -77,45 +73,21 @@ function presetCases(menu: PresetMenu<AnyParams>, path: string[] = []): ParamsCa
 }
 
 /**
- * Which params fields the game's difficulty item writes, found by **asking the
- * item** rather than by matching a field name.
- *
- * A tier is not always an index: Spokes stores a string union, Loopy an object
- * lookup. Probing every tier and collecting the keys that moved is the only
- * form of this question that is right for all 29 tiered games, and it keeps the
- * perturbation pass below from bumping a difficulty field to a value the game
- * has no letter for.
- */
-function difficultyFields(game: AnyGame, base: AnyParams): Set<string> {
-  const item = difficultyChoiceItem<AnyParams>(game);
-  if (!item) return new Set();
-  const moved = new Set<string>();
-  for (let tier = 0; tier < item.choices.length; tier++) {
-    const probe = { ...base };
-    item.set(probe, tier);
-    for (const key of Object.keys(base)) {
-      if (!Object.is(probe[key], base[key])) moved.add(key);
-    }
-  }
-  return moved;
-}
-
-/**
  * Numeric fields that are the **length of another field**, and so cannot be
  * perturbed on their own.
  *
- * Boats is the case that found this: `fleet` is how many boats there are and
- * `fleetData` lists their sizes, so `fleet + 1` is not a bigger fleet, it is a
- * params record that contradicts itself — the encoder writes the four sizes it
- * has while the decoder reads the five it was promised. No player path can
- * reach that state (the Custom dialog writes both fields together), so a case
- * built from it measures the corpus rather than the codec.
+ * Boats' `fleet` is how many boats there are and `fleetData` lists their sizes,
+ * so `fleet + 1` is not a bigger fleet, it is a params record that contradicts
+ * itself — the encoder writes the four sizes it has while the decoder reads the
+ * five it was promised. No player path can reach that state (the Custom dialog
+ * writes both fields together), so a case built from it measures the corpus
+ * rather than the codec.
  *
  * Derived from the record's own shape rather than from a roster of games: a
  * number equal to some sibling array's length is a cardinality field wherever
  * it appears, and a future game with the same shape is covered the day it
- * lands. An exemption roster would not be — it rots exactly as quietly as the
- * membership roster it replaces (AGENTS.md, "Convention over configuration").
+ * lands. An exemption roster would rot exactly as quietly as the membership
+ * roster it replaces (AGENTS.md, "Convention over configuration").
  */
 function cardinalityFields(base: AnyParams): Set<string> {
   const lengths = new Set(
@@ -145,16 +117,23 @@ export function paramsCorpus(game: AnyGame): ParamsCase[] {
 
   cases.push(...presetCases(game.presets() as PresetMenu<AnyParams>));
 
+  // The fields the difficulty item writes, found by *asking the item* rather
+  // than by matching a field name: a tier is not always an index (Spokes stores
+  // a string union, Loopy an object lookup). The perturbation pass below skips
+  // them, so it never bumps a difficulty field to a value the game has no
+  // letter for.
+  const owned = new Set<string>();
   const item = difficultyChoiceItem<AnyParams>(game);
   if (item) {
     for (let tier = 0; tier < item.choices.length; tier++) {
       const params = { ...base };
       item.set(params, tier);
       cases.push({ label: `tier:${tier}`, params });
+      for (const key of Object.keys(base))
+        if (!Object.is(params[key], base[key])) owned.add(key);
     }
   }
 
-  const owned = difficultyFields(game, base);
   const counts = cardinalityFields(base);
   for (const key of Object.keys(base)) {
     if (owned.has(key) || counts.has(key)) continue;

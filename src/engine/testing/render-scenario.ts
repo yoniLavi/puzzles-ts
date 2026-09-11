@@ -7,31 +7,25 @@
  * that frame with a {@link RecordingDrawing}. Driving the real midend
  * (rather than calling a game's `redraw` against a hand-built state)
  * guarantees the captured frame is the one that ships: the hint /
- * mistake / animation lifecycle is the production one.
- *
- * This removes exactly the friction that made the Palisade hint frame
- * painful to verify in the browser harness: no worker, no
- * OffscreenCanvas blocking `getImageData`, no right-button marks that
- * don't register, and no Auto-Hint timing needed to stop on a mid-plan
- * step — reaching a specific hint step is just `showHint` + `hintUntil`.
+ * mistake / animation lifecycle is the production one. It needs no worker,
+ * no OffscreenCanvas `getImageData` and no Auto-Hint timing: reaching a
+ * specific hint step is just `showHint` + `hintUntil`.
  *
  * Dev/test-only; never imported by production code.
  */
 
 import type { Game, HintStep } from "../game.ts";
 import { Midend } from "../midend.ts";
-import type { Color, Size } from "../types.ts";
+import type { Color, Point, Size } from "../types.ts";
 import { RecordingDrawing } from "./recording-drawing.ts";
 
 /** A neutral light-gray default background, standing in for the
- * frontend's theme color (`puzzle-view.ts` derives one per theme). Any
- * fixed value works; it only needs to be stable so palette-derived
+ * frontend's theme color (`puzzle/components/view.ts` derives one per theme).
+ * Any fixed value works; it only needs to be stable so palette-derived
  * colors snapshot deterministically. */
 export const DEFAULT_BACKGROUND: Color = [0.827, 0.827, 0.827];
 
-/** Guard against a never-satisfied `hintUntil` predicate walking the
- * plan forever (each step recomputes nothing, but a buggy predicate
- * could still loop to the plan's end and back). */
+/** Bounds the `hintUntil` walk, should a plan never run out. */
 const MAX_HINT_STEPS = 1000;
 
 /** Longer than any game's animation or flash, so one tick settles the clock. */
@@ -60,14 +54,11 @@ export interface RenderScenario<Params, State, Move, Ui, DrawState, Mistake> {
    * `selectReference` hooks) — the key of the item to highlight, or null. */
   selectReference?: string | null;
   /** Run the animation/flash clock out before capturing, so the frame is the
-   * **settled** one rather than an animated game's frame 0.
-   *
-   * A move on an animated game (Inertia's slide, Flip's tile spin, Sixteen's
-   * row shove) arms an animation, and a capture taken straight after `moves`
-   * therefore shows the *start* of that animation — with the previous state
-   * still on screen. Anything a game draws only once the move has landed (a
-   * dead player's splat, a win flash resolving) is invisible in that frame.
-   * Set this to reach the frame a player actually ends up looking at. */
+   * **settled** one a player ends up looking at. A capture straight after a
+   * move on an animated game (Inertia's slide, Flip's tile spin) shows the
+   * *start* of the animation, with the previous state still on screen, and
+   * misses anything drawn only once the move has landed (a dead player's
+   * splat, a win flash resolving). */
   settle?: boolean;
   /** Frontend default background fed to the game's palette. Defaults to
    * {@link DEFAULT_BACKGROUND}. */
@@ -79,14 +70,13 @@ export interface RenderScenario<Params, State, Move, Ui, DrawState, Mistake> {
    * `moves` is the right tool for reaching a board state and stays the default:
    * it needs no coordinate arithmetic and cannot be broken by a layout change.
    * But a keyboard cursor is `Ui` state, not board state, so no `Move` can put
-   * it anywhere — and "the frame after one arrow press" was therefore a frame
-   * this harness could not reach at all. Pointer buttons work here too; prefer
-   * `moves` for those unless the *coordinates* are what is under test.
+   * it anywhere. Pointer buttons work here too; prefer `moves` for those unless
+   * the *coordinates* are what is under test.
    */
   presses?: readonly number[];
   /** Where {@link presses} land. Defaults to `{ x: 0, y: 0 }`, which is what a
    * keyboard press wants (the coordinates are ignored). */
-  at?: { x: number; y: number };
+  at?: Point;
 }
 
 export interface RenderResult<Params, State, Move, Ui, DrawState> {
@@ -130,26 +120,20 @@ export function renderScenario<Params, State, Move, Ui, DrawState, Mistake>(
   if (scenario.selectReference !== undefined)
     midend.selectReference(scenario.selectReference);
 
-  let mistakeCount = 0;
-  if (showMistakes) mistakeCount = midend.findMistakes();
+  const mistakeCount = showMistakes ? midend.findMistakes() : 0;
 
   let hint: HintStep<Move> | undefined;
   if (showHint) {
     const hintErr = midend.hint();
     if (hintErr) throw new Error(`renderScenario: hint failed: ${hintErr}`);
     hint = midend.activeHintStep();
-    if (hintUntil) {
-      let steps = 0;
-      while (hint && !hintUntil(hint) && steps < MAX_HINT_STEPS) {
-        // Apply the current step and advance; a no-animation game (e.g.
-        // Palisade) settles synchronously, so the next step is on
-        // display immediately. Stop when the plan runs out (executeHint
-        // clears it ⇒ activeHintStep() is undefined).
-        const stepErr = midend.executeHint();
-        if (stepErr) break;
-        hint = midend.activeHintStep();
-        steps += 1;
-      }
+    // Apply the displayed step and advance, until the plan runs out
+    // (`executeHint` clears it, so `activeHintStep()` is undefined). A
+    // no-animation game (e.g. Palisade) settles synchronously, so the next
+    // step is on display immediately.
+    for (let steps = 0; hintUntil && hint && !hintUntil(hint); steps++) {
+      if (steps >= MAX_HINT_STEPS || midend.executeHint()) break;
+      hint = midend.activeHintStep();
     }
   }
 

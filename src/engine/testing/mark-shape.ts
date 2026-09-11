@@ -4,9 +4,8 @@
  *
  * **Shape, deliberately, and not color.** "Some rect carries the hint color"
  * is satisfied by exactly the thing these guards exist to forbid: a solid fill
- * behind the digits the hint is talking about. It would have passed unchanged
- * through the entire rewrite that removed the fills. So a target asserts *four
- * thin rects and none solid*, and an evidence contour asserts its **side count**,
+ * behind the digits the hint is talking about. So a target asserts *four thin
+ * rects and none solid*, and an evidence contour asserts its **side count**,
  * which distinguishes one contour around a `w`-cell region (`2w + 2` sides) from
  * a ring per cell (`4w`) — a game that loses the neighbor test still fails.
  *
@@ -21,8 +20,8 @@ interface RectOp {
   h?: number;
 }
 
-/** A rect is a mark *side* when it is thin in exactly one direction. A solid
- * fill is thick in both, which is the shape every one of these replaced. */
+/** A rect is a mark *side* when it is thin in exactly one direction; a solid
+ * fill is thick in both. */
 export function isThin(r: { w?: number; h?: number }): boolean {
   const w = r.w ?? 0;
   const h = r.h ?? 0;

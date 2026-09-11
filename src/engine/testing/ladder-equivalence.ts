@@ -1,12 +1,11 @@
 /**
- * The equivalence harness every `runDeductionFixpoint` adoption is proved with
- * (`adopt-the-deduction-runner-where-it-rewires`).
+ * The equivalence harness every `runDeductionFixpoint` adoption is proved with.
  *
  * **Why an adoption needs more than its differential.** The obvious proof that
  * re-plumbing a hand-written ladder onto the shared runner changed nothing is
  * that the game's byte-match fixtures did not move. Tracks showed that is
  * necessary and not sufficient: **deleting one of its eight rungs entirely, from
- * either version, left all 39 of its tests green** — not because the
+ * either version, left all its tests green** — not because the
  * differential is weak (mis-declaring a rung's *tier* turns eight of its cases
  * red) but because that rung fires on no board the generator produces. A corpus
  * certifies only the rungs it fires, and nothing in a fixture file tells you
@@ -60,9 +59,7 @@ export interface LadderEquivalenceSpec<Board> {
    * **Why a game's solver carries a parameter only a test supplies.** A rung's
    * reachability cannot be observed from the game's own results — that is this
    * file's whole premise — so the game has to hand the census a channel. The
-   * runner does the counting; the game forwards the map and nothing else. This
-   * was seven copies of a ladder-wrapping closure until
-   * `return-the-firing-tally-from-the-runner`.
+   * runner does the counting; the game forwards the map and nothing else.
    */
   viaRunner: (board: Board, cap: number, firings: FiringTally) => unknown;
   /** The hand-written loop, kept as the oracle. */

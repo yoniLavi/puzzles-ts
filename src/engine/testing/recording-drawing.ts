@@ -1,12 +1,9 @@
 /**
  * A shared, deterministic recording `GameDrawing` for in-process render
- * tests.
- *
- * Where the ad-hoc tier-2 doubles each capture a partial slice of the
- * draw calls, this captures *every* drawing primitive with *all* its
- * arguments into one normalized, ordered record — the reusable basis
- * for both targeted op assertions and `toMatchSnapshot` regression
- * snapshots. It is dev/test-only and never imported by production code.
+ * tests. It captures *every* drawing primitive with *all* its arguments into
+ * one normalized, ordered record — the basis for both targeted op assertions
+ * and `toMatchSnapshot` regression snapshots. Dev/test-only; never imported by
+ * production code.
  *
  * Determinism (so a snapshot changes only when the render changes):
  *  - coordinates are rounded to integers;
@@ -84,23 +81,26 @@ export type DrawOp =
 
 const round = (n: number): number => Math.round(n);
 
-/** Resolve a palette index to a stable `rgb(r, g, b)` label (components
- * 0..255). An index with no palette entry (e.g. a game drawing with a
- * color it forgot to define) resolves to `color#<index>` rather than
- * throwing, so a bug surfaces as a visible, diffable label. */
-function rgbLabel(palette: readonly Color[], index: number): string {
-  const c = palette[index];
-  if (!c) return `color#${index}`;
-  return `rgb(${round(c[0] * 255)}, ${round(c[1] * 255)}, ${round(c[2] * 255)})`;
-}
+const roundRect = (r: Rect): Rect => ({
+  x: round(r.x),
+  y: round(r.y),
+  w: round(r.w),
+  h: round(r.h),
+});
 
 export class RecordingDrawing implements GameDrawing {
   readonly ops: DrawOp[] = [];
 
   constructor(private readonly palette: readonly Color[]) {}
 
+  /** A palette index as a stable `rgb(r, g, b)` label (components 0..255). An
+   * index with no palette entry (e.g. a game drawing with a color it forgot to
+   * define) resolves to `color#<index>` rather than throwing, so a bug surfaces
+   * as a visible, diffable label. */
   private rgb(index: number): string {
-    return rgbLabel(this.palette, index);
+    const c = this.palette[index];
+    if (!c) return `color#${index}`;
+    return `rgb(${round(c[0] * 255)}, ${round(c[1] * 255)}, ${round(c[2] * 255)})`;
   }
 
   startDraw(): void {}
@@ -108,13 +108,7 @@ export class RecordingDrawing implements GameDrawing {
   drawUpdate(_rect: Rect): void {}
 
   clip(rect: Rect): void {
-    this.ops.push({
-      op: "clip",
-      x: round(rect.x),
-      y: round(rect.y),
-      w: round(rect.w),
-      h: round(rect.h),
-    });
+    this.ops.push({ op: "clip", ...roundRect(rect) });
   }
 
   unclip(): void {
@@ -122,15 +116,7 @@ export class RecordingDrawing implements GameDrawing {
   }
 
   drawRect(rect: Rect, color: number): void {
-    this.ops.push({
-      op: "rect",
-      x: round(rect.x),
-      y: round(rect.y),
-      w: round(rect.w),
-      h: round(rect.h),
-      color,
-      rgb: this.rgb(color),
-    });
+    this.ops.push({ op: "rect", ...roundRect(rect), color, rgb: this.rgb(color) });
   }
 
   drawLine(p1: Point, p2: Point, color: number, thickness: number): void {
@@ -190,7 +176,6 @@ export class RecordingDrawing implements GameDrawing {
     });
   }
 
-  // Blitter (drag-sprite) operations are no-ops in-process.
   blitterNew(): unknown {
     return {};
   }

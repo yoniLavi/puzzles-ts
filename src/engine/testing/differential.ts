@@ -1,28 +1,23 @@
 /**
- * Shared helper for the *byte-for-byte desc* differential shape that recurs
- * across faithful-generator ports (samegame, unruly's 1st assertion, flood,
- * guess): for each frozen C-reference fixture, assert that the TS generator,
- * run over the bit-identical RNG seeded the same way, reproduces the C desc
- * exactly.
+ * Shared helper for the *byte-for-byte desc* differential shape of the
+ * faithful-generator ports: for each frozen C-reference fixture, assert that
+ * the TS generator, run over the bit-identical RNG seeded the same way,
+ * reproduces the C desc exactly.
  *
  * This is the strongest possible differential bar and is valid ONLY for a
  * faithful generator over `random.ts` (which is bit-identical to `random.c`).
  * It is deliberately narrow: the *solver-agreement* shape (decode a C board,
  * run the TS solver, assert the recorded difficulty) threads each game's own
  * decode + solver + difficulty encoding, so it stays inline in the games that
- * need it (galaxies; unruly's 2nd assertion) rather than being forced through
- * a callback-heavy "universal" helper. See the change `improve-port-tooling`
- * design notes.
+ * need it rather than being forced through a callback-heavy "universal" helper.
  *
  * ## THE FIXTURES ARE FROZEN, AND CANNOT BE REGENERATED
  *
  * Every `__fixtures__/<game>-c-reference.json` in this repository was captured
  * by a per-game `<game>-trace` harness, built against upstream's C by the
- * Emscripten/CMake toolchain. `retire-c-engine` (2026-08-01) deleted all of it —
- * the C sources, the harnesses, the CMake tree, the `USE_TS_*` flags and the
- * `build/` output — so **there is no way to re-run any of it**, and each of
- * these test files used to carry a `cmake … && make <game>-trace` recipe that
- * had quietly become a set of commands nobody could execute.
+ * Emscripten/CMake toolchain. All of that is deleted — the C sources, the
+ * harnesses, the CMake tree and its output — so **there is no way to re-run any
+ * of it**, and a differential test file must not carry a regeneration recipe.
  *
  * That is by decision, not by accident. With no C build there is no asking
  * *"what would upstream have produced?"* about a new question, so a deliberate

@@ -1,53 +1,32 @@
 /**
  * The enrolled set for every cross-game hint guard — **derived from the
- * registry, never authored**.
+ * registry, never authored**: a game is enrolled iff it declares `hint`, and
+ * every file importing `HINT_GAMES` iterates it.
  *
- * One set, many guards: `hint-resume.test.ts` (plan convergence, purity,
- * no-op-free plans), `hint-overlay.test.ts` (overlay reaches the render cache),
- * `hint-quality.test.ts` (narration form), `hint-mark.test.ts`,
- * `hint-ordinal.test.ts` (an ordered chain reaches the canvas with its order on
- * it) and `scripts/checks/hint-deixis.test.ts` all iterate it.
+ * A hand-maintained list is a thing a session has to remember, and a game left
+ * off it gets none of the guards, silently: *a guard blind to a game cannot fire
+ * on it.* Reading the declaration rather than scanning for the word matters too,
+ * because games mention `hint` without declaring one (an unused `redraw`
+ * parameter, Guess's unrelated `ui.hint`).
  *
- * **A game is enrolled iff it declares `hint`.** This was a hand-maintained
- * array of thirty games until `derive-hint-enrollment`, and its own header
- * advertised the coupling as a feature — *"a newly ported game with a `hint()`
- * enrolls in all of them by adding one line here"*. That sentence was the
- * defect: enrollment was a thing a session had to remember, nothing asserted the
- * list was complete, and a game left off got **zero** of the six guards,
- * silently. The repo had already solved exactly this once —
- * `difficulty-contract.test.ts` derives its tiered set from the registry, and
- * its reasoning transfers verbatim: *a guard blind to a game cannot fire on it.*
- *
- * The list happened to be complete on the day it was replaced, which is the
- * state in which a missing guard is invisible rather than the state in which it
- * is unnecessary. Four games mention `hint` in their `index.ts` without
- * declaring one (`ascent`, `magnets` and `tents` name it as an unused `redraw`
- * parameter; Guess has an unrelated `ui.hint`), so a naming-based scan would
- * have over-counted where reading the declaration does not.
- *
- * **A game with no `hint()` is not a defect.** The collection deliberately keeps
- * some logic games hintless for now, as the corpus for assessing the framework
- * work: implementing those hints is how the target contract gets tested against
- * real games (owner, 2026-09-04). The forward-looking bar — *a new game
- * implementation ships with a hint* — is stated in AGENTS.md.
+ * **A game with no `hint()` is not a defect.** Some logic games stay hintless
+ * deliberately, as the corpus for assessing the framework work; the bar that a
+ * new game ships with a hint is stated in AGENTS.md.
  *
  * Dev/test-only; never imported by production code.
  */
 import "../../games/index.ts";
-import type { Game, PresetMenu } from "../game.ts";
+import type { PresetMenu } from "../game.ts";
 import { getTsGame, registeredGameIds } from "../registry.ts";
-import { membersNotMentioning } from "./enrollment.ts";
+import { type AnyGame, membersNotMentioning } from "./enrollment.ts";
 
-// biome-ignore lint/suspicious/noExplicitAny: a deliberately game-agnostic probe.
-export type AnyGame = Game<any, any, any, any, any, any>;
+export type { AnyGame };
 
 /**
  * Every registered game that declares a `hint()`, by puzzle id, sorted so the
- * guards iterate in a stable order.
- *
- * The side-effect import above is what populates the registry
- * (`games/index.ts` calls `registerAllGames()` on evaluation) — the same way
- * `difficulty-contract.test.ts` reaches it.
+ * guards iterate in a stable order. The side-effect import above is what
+ * populates the registry (`games/index.ts` calls `registerAllGames()` on
+ * evaluation).
  */
 export const HINT_GAMES: [string, AnyGame][] = registeredGameIds()
   .sort()
@@ -56,24 +35,20 @@ export const HINT_GAMES: [string, AnyGame][] = registeredGameIds()
 
 /**
  * How many games the registry offered the filter above — the **vacuity guard**
- * every derived sweep in this repo owes.
- *
- * Six guards iterate `HINT_GAMES`, and every one of them passes vacuously over
- * an empty array. A derivation that silently found nothing — an import cycle
- * leaving the registry unpopulated, a renamed accessor — would turn all six
- * green while checking nothing, which is the shape this repo has now hit six
- * times. Exported so `hint-enrollment.test.ts` can put a floor under the
- * *population*, not only under the filtered result: the filtered count can look
- * healthy while the set it was drawn from is short.
+ * every derived sweep owes. Every hint guard passes vacuously over an empty
+ * `HINT_GAMES`, so a derivation that silently found nothing (an import cycle
+ * leaving the registry unpopulated, a renamed accessor) would turn them all
+ * green while checking nothing. `hint-enrollment.test.ts` floors the
+ * *population*, not only the filtered result, which can look healthy while the
+ * set it was drawn from is short.
  */
 export const REGISTERED_GAME_COUNT = registeredGameIds().length;
 
 /**
  * The games whose hint **plans by searching** rather than by deducing — derived
  * from each game's own comment-stripped source (it calls the shared slide
- * planner), never declared. `enrollment.ts`'s third question; the marker
- * carries its opening paren so importing the planner without calling it does
- * not count.
+ * planner), never declared. The marker carries its opening paren so importing
+ * the planner without calling it does not count.
  *
  * **Two guards read this for two different reasons, which is why it lives
  * here.** `hint-resume.test.ts` reads it to excuse a member the walk's
@@ -82,12 +57,9 @@ export const REGISTERED_GAME_COUNT = registeredGameIds().length;
  * the *gate* walks, because a search is the one hint shape whose cost explodes
  * with board size: the walk is quadratic in it twice over (one full search per
  * move, and more moves on a bigger board). Measured 2026-09-09, the two members
- * were **43% of the whole suite's test time** — Sixteen 30%, Netslide 13% —
- * with Sixteen's single 5×5 resume walk the most expensive test in the
- * collection.
+ * were **43% of the whole suite's test time** — Sixteen 30%, Netslide 13%.
  *
- * Deriving both from one scan rather than listing them twice is the point: a
- * third game that calls the planner joins both concerns by *having* the
+ * A third game that calls the planner joins both concerns by *having* the
  * mechanic, and `hint-resume.test.ts`'s `SEARCH_REACH` ledger then fails until
  * someone writes down what covers its largest board.
  */
@@ -114,9 +86,8 @@ export function declaresNoMarks(highlights: unknown): boolean {
 
 /**
  * How many **distinct mark roles** a step declares — the count that decides
- * whether "this cell" points at anything (`disambiguate-hint-deixis`): with one
- * mark it is unambiguous, with two it names neither unless the narration ties
- * them.
+ * whether "this cell" points at anything: with one mark it is unambiguous, with
+ * two it names neither unless the narration ties them.
  *
  * A role counts when its field carries board geometry: a non-empty array, a
  * cell index, or a coordinate object. A field holding a *mode* rather than a
@@ -156,12 +127,9 @@ export function firstLeaf<P>(menu: PresetMenu<P>): P {
 /**
  * Every leaf preset a game offers, with the title its menu shows.
  *
- * The counterpart to `firstLeaf`, and the reason it is here rather than local
- * to one sweep: **a cross-game sweep keyed on tier is blind to the games that
- * have none**, and both sweeps that made that mistake needed this to fix it —
- * one preset per tier where a game has tiers, and its presets where it does not,
- * because that is the axis such a game varies (`hint-resume.test.ts` walked one,
- * `hint-quality.test.ts` walked none).
+ * **A cross-game sweep keyed on tier is blind to the games that have none**, so
+ * a sweep walks one preset per tier where a game has tiers, and its presets
+ * where it does not, because that is the axis such a game varies.
  */
 export function leafPresets<P>(menu: PresetMenu<P>): { title: string; params: P }[] {
   if (menu.params !== undefined) return [{ title: menu.title, params: menu.params }];

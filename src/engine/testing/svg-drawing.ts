@@ -16,12 +16,8 @@
  *   writeFileSync("frame.svg", toSvg(recording.ops, size));
  */
 
+import type { Size } from "../types.ts";
 import type { DrawOp } from "./recording-drawing.ts";
-
-interface SvgSize {
-  w: number;
-  h: number;
-}
 
 /** A palette index below 0 is upstream's "no color" sentinel (e.g. an
  * outline-less polygon); map it to SVG `none`. */
@@ -55,7 +51,7 @@ function opToSvg(op: DrawOp): string {
 }
 
 /** Serialize a draw record to a standalone SVG string. */
-export function toSvg(ops: readonly DrawOp[], size: SvgSize): string {
+export function toSvg(ops: readonly DrawOp[], size: Size): string {
   const body = ops
     .map(opToSvg)
     .filter((s) => s !== "")

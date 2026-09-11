@@ -18,11 +18,8 @@
  *    shape, and taking the ring as an argument makes that structural rather
  *    than a convention a future edit can drift off.
  *
- * Written for `grid-geometry.test.ts` and hoisted here when
- * `grid-incenter.test.ts` became its second consumer — the change that replaced
- * that file's peer comparison against a frozen C capture with this, the real
- * quantity (`retire-the-incentre-c-fixture`). A peer bar is green whenever both
- * implementations are wrong in the same way; this one is not.
+ * It measures the real quantity rather than comparing against a peer: a peer
+ * bar is green whenever both implementations are wrong in the same way.
  *
  * Test-only: nothing under `src/` outside a `*.test.ts` may import it.
  */
