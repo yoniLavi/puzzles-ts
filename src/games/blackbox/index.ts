@@ -1,14 +1,11 @@
 /**
- * Black Box — native TS port of `puzzles/blackbox.c` (deleted when this
- * ships).
- *
- * Locate the hidden balls in a `w`×`h` arena by firing lasers from the
- * surrounding range and reading how they hit (`H`), reflect (`R`), or
- * exit (matched entry/exit numbers). Mark guessed balls, optionally lock
- * cells/rows/columns, then verify: a wrong verify shows one piece of
- * evidence and asks again; a right one wins. The laser physics and the
- * verify logic live in `state.ts`; this file is the `Game` glue, input
- * mapping, and the move executor.
+ * Black Box: locate the hidden balls in a `w`×`h` arena by firing lasers
+ * from the surrounding range and reading how they hit (`H`), reflect
+ * (`R`), or exit (matched entry/exit numbers). Mark guessed balls,
+ * optionally lock cells/rows/columns, then verify: a wrong verify shows
+ * one piece of evidence and asks again; a right one wins. The laser
+ * physics and the verify logic live in `state.ts`; this file is the
+ * `Game` glue, input mapping, and the move executor.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -25,13 +22,13 @@ import {
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   animLength,
   type BlackboxDrawState,
   borderFor,
-  colors as colorsImpl,
-  computeSize as computeSizeImpl,
+  colors,
+  computeSize,
   flashLength,
   newDrawState,
   PREFERRED_TILE_SIZE,
@@ -45,15 +42,17 @@ import {
   type BlackboxParams,
   type BlackboxState,
   type BlackboxUi,
+  ballsText,
   canReveal,
   checkGuesses,
   cloneState,
   decodeParams,
   defaultParams,
   encodeParams,
-  fireLaserMove,
+  fireLaser,
   grid2range,
   gridGet,
+  gridIdx,
   LASER_EMPTY,
   LASER_OMITTED,
   LASER_WRONG,
@@ -82,27 +81,20 @@ function newUi(_state: BlackboxState): BlackboxUi {
 function changedState(
   ui: BlackboxUi,
   _oldState: BlackboxState | null,
-  newState_: BlackboxState,
+  state: BlackboxState,
 ): void {
-  if (newState_.justwrong && ui.newmove) ui.errors++;
+  if (state.justwrong && ui.newmove) ui.errors++;
   ui.newmove = false;
 }
 
-// --- helpers ----------------------------------------------------------
+// --- input ------------------------------------------------------------
 
-function tileSizeOf(ds: BlackboxDrawState): number {
-  return ds && ds.tilesize > 0 ? ds.tilesize : PREFERRED_TILE_SIZE;
-}
-
-/** Pixel → grid cell. Faithful to upstream `FROMDRAW`: `(px − border) /
- * ts` with C's truncate-toward-zero division, so left/top border-margin
- * clicks fold onto cell 0 exactly as upstream (where `(0,0)` is the
- * reveal button). */
+/** Pixel → grid cell, truncating toward zero like upstream's `FROMDRAW`, so
+ * a click in the left/top border margin folds onto cell 0 (where `(0,0)`
+ * is the reveal button). */
 function fromDraw(px: number, ts: number): number {
   return Math.trunc((px - borderFor(ts)) / ts);
 }
-
-// --- input ------------------------------------------------------------
 
 function interpretMove(
   state: BlackboxState,
@@ -117,7 +109,7 @@ function interpretMove(
 
   if (isCursorMove(button)) {
     // Move the cursor over the (w+2)×(h+2) grid, no wrap, no corners. An
-    // edge no-op keeps (curX, curY) but still reveals + repaints, as before.
+    // edge no-op leaves it in place but still reveals it and repaints.
     const { x: cx, y: cy } = gridCursorMove(
       button,
       ui.cursor.x,
@@ -140,9 +132,8 @@ function interpretMove(
 
   let effective = button;
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    const ts = tileSizeOf(ds);
-    gx = fromDraw(p.x, ts);
-    gy = fromDraw(p.y, ts);
+    gx = fromDraw(p.x, ds.tilesize);
+    gy = fromDraw(p.y, ds.tilesize);
     ui.cursor.visible = false;
     wouldflash = 1;
   } else if (button === LEFT_RELEASE) {
@@ -235,6 +226,13 @@ function interpretMove(
 
 // --- moves ------------------------------------------------------------
 
+/** Lock every cell of a row or column, or unlock them all if more than half
+ * are locked already. */
+function toggleLineLock(grid: Int32Array, cells: number[]): void {
+  const unlock = cells.filter((i) => grid[i] & BALL_LOCK).length > cells.length / 2;
+  for (const i of cells) grid[i] = unlock ? grid[i] & ~BALL_LOCK : grid[i] | BALL_LOCK;
+}
+
 function executeMove(from: BlackboxState, m: BlackboxMove): BlackboxState {
   const ret = cloneState(from);
 
@@ -257,21 +255,16 @@ function executeMove(from: BlackboxState, m: BlackboxMove): BlackboxState {
     case "toggleBall": {
       if (m.x < 1 || m.y < 1 || m.x > ret.w || m.y > ret.h)
         throw new Error("Ball toggle outside arena");
-      const idx = m.y * (ret.w + 2) + m.x;
-      if (ret.grid[idx] & BALL_GUESS) {
-        ret.nguesses--;
-        ret.grid[idx] &= ~BALL_GUESS;
-      } else {
-        ret.nguesses++;
-        ret.grid[idx] |= BALL_GUESS;
-      }
+      const idx = gridIdx(ret.w, m.x, m.y);
+      ret.nguesses += ret.grid[idx] & BALL_GUESS ? -1 : 1;
+      ret.grid[idx] ^= BALL_GUESS;
       break;
     }
     case "fire": {
       if (m.rangeno < 0 || m.rangeno >= ret.nlasers)
         throw new Error("Laser index out of range");
       if (ret.exits[m.rangeno] !== LASER_EMPTY) throw new Error("Laser already fired");
-      fireLaserMove(ret, m.rangeno);
+      fireLaser(ret, m.rangeno);
       break;
     }
     case "reveal": {
@@ -283,31 +276,19 @@ function executeMove(from: BlackboxState, m: BlackboxMove): BlackboxState {
     case "toggleLock": {
       if (m.x < 1 || m.y < 1 || m.x > ret.w || m.y > ret.h)
         throw new Error("Lock toggle outside arena");
-      ret.grid[m.y * (ret.w + 2) + m.x] ^= BALL_LOCK;
+      ret.grid[gridIdx(ret.w, m.x, m.y)] ^= BALL_LOCK;
       break;
     }
     case "toggleColumnLock": {
       if (m.x < 1 || m.x > ret.w) throw new Error("Column out of range");
-      let lcount = 0;
-      for (let y = 1; y <= ret.h; y++)
-        if (ret.grid[y * (ret.w + 2) + m.x] & BALL_LOCK) lcount++;
-      for (let y = 1; y <= ret.h; y++) {
-        const idx = y * (ret.w + 2) + m.x;
-        if (lcount > ret.h / 2) ret.grid[idx] &= ~BALL_LOCK;
-        else ret.grid[idx] |= BALL_LOCK;
-      }
+      const cells = Array.from({ length: ret.h }, (_, y) => gridIdx(ret.w, m.x, y + 1));
+      toggleLineLock(ret.grid, cells);
       break;
     }
     case "toggleRowLock": {
       if (m.y < 1 || m.y > ret.h) throw new Error("Row out of range");
-      let lcount = 0;
-      for (let x = 1; x <= ret.w; x++)
-        if (ret.grid[m.y * (ret.w + 2) + x] & BALL_LOCK) lcount++;
-      for (let x = 1; x <= ret.w; x++) {
-        const idx = m.y * (ret.w + 2) + x;
-        if (lcount > ret.w / 2) ret.grid[idx] &= ~BALL_LOCK;
-        else ret.grid[idx] |= BALL_LOCK;
-      }
+      const cells = Array.from({ length: ret.w }, (_, x) => gridIdx(ret.w, x + 1, m.y));
+      toggleLineLock(ret.grid, cells);
       break;
     }
     default:
@@ -322,8 +303,7 @@ function executeMove(from: BlackboxState, m: BlackboxMove): BlackboxState {
 function statusbarText(state: BlackboxState, ui: BlackboxUi): string {
   let buf: string;
   if (state.reveal) {
-    if (state.nwrong === 0 && state.nmissed === 0 && state.nright >= state.minballs)
-      buf = "CORRECT!";
+    if (status(state) === "solved") buf = "CORRECT!";
     else buf = `${state.nwrong} wrong and ${state.nmissed} missed balls.`;
   } else if (state.justwrong) {
     buf = "Wrong! Guess again.";
@@ -363,14 +343,12 @@ export const blackboxGame: Game<
   paramConfig: [
     ...dimensionParamConfig<BlackboxParams>(),
     {
-      // Upstream's single "No. of balls" C_STRING: `N` (fixed) or `N-M`
-      // (a range). Parses back onto minballs/maxballs; an empty/garbled
-      // field yields 0, which validateParams rejects with its message.
+      // Upstream's single "No. of balls" string, `N` or `N-M`. A garbled
+      // field parses to 0, which validateParams rejects with its message.
       kw: "no-of-balls",
       name: "No. of balls",
       type: "string",
-      get: (p) =>
-        p.minballs === p.maxballs ? String(p.minballs) : `${p.minballs}-${p.maxballs}`,
+      get: ballsText,
       set: (p, v) => {
         const dash = v.indexOf("-");
         if (dash >= 0) {
@@ -382,12 +360,9 @@ export const blackboxGame: Game<
       },
     },
   ],
-  describeParams: (p) => ({
-    "no-of-balls":
-      p.minballs === p.maxballs ? String(p.minballs) : `${p.minballs}-${p.maxballs}`,
-  }),
+  describeParams: (p) => ({ "no-of-balls": ballsText(p) }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -398,16 +373,16 @@ export const blackboxGame: Game<
   status,
 
   solve() {
-    // Upstream solve_game returns "S": reveal the real layout (a give-up,
-    // scored as a loss-reveal unless the guesses already matched).
+    // Reveal the real layout: a give-up, scored as a loss unless the
+    // guesses already matched.
     return { ok: true, move: { type: "solve" } };
   },
 
   statusbarText,
 
-  colors: (defaultBackground: Color): Color[] => colorsImpl(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: BlackboxParams, ts: number): Size => computeSizeImpl(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

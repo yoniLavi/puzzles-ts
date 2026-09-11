@@ -2,22 +2,20 @@
  * Black Box — state, params, the obfuscated desc codec, the laser
  * ray-tracer, and `checkGuesses` (the reveal/verify logic).
  *
- * Idiomatic rendering of `puzzles/blackbox.c`. The grid representation
- * is kept verbatim (one `Int32Array` overlaying ball flags on arena
- * cells and laser display-values on the surrounding firing-range ring,
- * plus an `exits` array mapping each entry index to its exit) because
- * the laser physics — entry-cell instant-hit/reflect priority, the
- * clockwise/anticlockwise turn rules, the matched-pair numbering — is
- * subtle and there is no corpus to catch a re-derivation slip. State is
- * immutable: `executeMove` clones then mutates the clone (GC, not
- * `dup_game`/`free_game`).
+ * The grid representation is upstream's (one `Int32Array` overlaying ball
+ * flags on arena cells and laser display-values on the surrounding
+ * firing-range ring, plus an `exits` array mapping each entry index to its
+ * exit), because the laser physics — entry-cell instant-hit/reflect
+ * priority, the clockwise/anticlockwise turn rules, the matched-pair
+ * numbering — is subtle and there is no corpus to catch a re-derivation
+ * slip.
  */
 
 import { bin2hex, hex2bin, obfuscateBitmap } from "../../engine/obfuscate.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomNew, randomUpto } from "../../engine/random/index.ts";
-import type { GameStatus } from "../../engine/types.ts";
+import type { GameStatus, Point } from "../../engine/types.ts";
 
 // --- flag constants (upstream BALL_* / LASER_*) -----------------------
 
@@ -25,16 +23,16 @@ export const BALL_CORRECT = 0x01;
 export const BALL_GUESS = 0x02;
 export const BALL_LOCK = 0x04;
 
-/** A laser that, when verified, would have demonstrated the guess wrong
- * but was never fired by the player (revealed by the cagey check). */
+/** A laser the player never fired that would have shown the guess wrong;
+ * the verify fires it for them. */
 export const LASER_OMITTED = 0x0800;
 export const LASER_REFLECT = 0x1000;
 export const LASER_HIT = 0x2000;
 /** A fired laser whose recorded result contradicts the player's guess. */
 export const LASER_WRONG = 0x4000;
 export const LASER_FLASHED = 0x8000;
-/** Masks off the cursor + all laser flag bits, leaving the display value
- * (a laser number, or a hit/reflect sentinel) — upstream `LASER_FLAGMASK`. */
+/** Masks off every flag bit, the cursor's included, leaving a laser's
+ * pair number or exit index. */
 export const LASER_FLAGMASK = 0x1f800;
 /** `~0` in upstream's `unsigned` exits array; every use is an equality
  * sentinel, so `-1` in a signed `Int32Array` is exactly equivalent. */
@@ -43,18 +41,18 @@ export const LASER_EMPTY = -1;
 /** Disjoint from both flag sets; an overlay drawn for the cursor tile. */
 export const FLAG_CURSOR = 0x10000;
 
-// --- directions (indices must match `OFFSETS`) ------------------------
+// --- directions (indices into `OFFSETS`) ------------------------------
 
 const DIR_UP = 0;
 const DIR_RIGHT = 1;
 const DIR_DOWN = 2;
 const DIR_LEFT = 3;
 
-const OFFSETS: ReadonlyArray<{ x: number; y: number }> = [
-  { x: 0, y: -1 }, // up
-  { x: 1, y: 0 }, // right
-  { x: 0, y: 1 }, // down
-  { x: -1, y: 0 }, // left
+const OFFSETS: ReadonlyArray<Point> = [
+  { x: 0, y: -1 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+  { x: -1, y: 0 },
 ];
 
 const LOOK_LEFT = 0;
@@ -112,11 +110,11 @@ export interface BlackboxUi {
 
 // --- grid helpers -----------------------------------------------------
 
-function gridIdx(w: number, x: number, y: number): number {
+export function gridIdx(w: number, x: number, y: number): number {
   return y * (w + 2) + x;
 }
 
-function gridGet(st: BlackboxState, x: number, y: number): number {
+export function gridGet(st: BlackboxState, x: number, y: number): number {
   return st.grid[gridIdx(st.w, x, y)];
 }
 
@@ -124,8 +122,9 @@ function gridSet(st: BlackboxState, x: number, y: number, v: number): void {
   st.grid[gridIdx(st.w, x, y)] = v;
 }
 
-function rangecheck(st: BlackboxState, x: number): boolean {
-  return x >= 0 && x < st.nlasers;
+/** Whether a laser result is an exit index rather than a hit or reflect. */
+function isExitIndex(st: BlackboxState, result: number): boolean {
+  return result >= 0 && result < st.nlasers;
 }
 
 export function cloneState(s: BlackboxState): BlackboxState {
@@ -146,16 +145,18 @@ const PRESETS: ReadonlyArray<BlackboxParams> = [
   { w: 10, h: 10, minballs: 4, maxballs: 10 },
 ];
 
-function presetName(p: BlackboxParams): string {
-  return p.minballs === p.maxballs
-    ? `${p.w}x${p.h}, ${p.minballs} balls`
-    : `${p.w}x${p.h}, ${p.minballs}-${p.maxballs} balls`;
+/** The ball count as the params show it: `N`, or `N-M` for a range. */
+export function ballsText(p: BlackboxParams): string {
+  return p.minballs === p.maxballs ? String(p.minballs) : `${p.minballs}-${p.maxballs}`;
 }
 
 export function presets() {
   return {
     title: "Black Box",
-    submenu: PRESETS.map((p) => ({ title: presetName(p), params: { ...p } })),
+    submenu: PRESETS.map((p) => ({
+      title: `${p.w}x${p.h}, ${ballsText(p)} balls`,
+      params: { ...p },
+    })),
   };
 }
 
@@ -163,28 +164,22 @@ export function encodeParams(p: BlackboxParams, _full: boolean): string {
   return `w${p.w}h${p.h}m${p.minballs}M${p.maxballs}`;
 }
 
+const PARAM_LETTERS: Record<string, keyof BlackboxParams> = {
+  w: "w",
+  h: "h",
+  m: "minballs",
+  M: "maxballs",
+};
+
 export function decodeParams(s: string): BlackboxParams {
   const p = defaultParams();
   let i = 0;
   while (i < s.length) {
-    const c = s[i++];
-    if (c === "w") {
-      const r = parseLeadingInt(s, i);
-      p.w = r.value;
-      i = r.next;
-    } else if (c === "h") {
-      const r = parseLeadingInt(s, i);
-      p.h = r.value;
-      i = r.next;
-    } else if (c === "m") {
-      const r = parseLeadingInt(s, i);
-      p.minballs = r.value;
-      i = r.next;
-    } else if (c === "M") {
-      const r = parseLeadingInt(s, i);
-      p.maxballs = r.value;
-      i = r.next;
-    }
+    const field = PARAM_LETTERS[s[i++]];
+    if (!field) continue;
+    const r = parseLeadingInt(s, i);
+    p[field] = r.value;
+    i = r.next;
   }
   return p;
 }
@@ -209,25 +204,32 @@ export function newDesc(p: BlackboxParams, rng: RandomState): { desc: string } {
   let nballs = p.minballs;
   if (p.maxballs > p.minballs) nballs += randomUpto(rng, p.maxballs - p.minballs + 1);
 
-  const grid = new Uint8Array(p.w * p.h);
+  const taken = new Uint8Array(p.w * p.h);
   const bmp = new Uint8Array(nballs * 2 + 2);
   bmp[0] = p.w;
   bmp[1] = p.h;
 
-  for (let i = 0; i < nballs; i++) {
+  for (let i = 2; i < bmp.length; i += 2) {
     let x: number;
     let y: number;
     do {
       x = randomUpto(rng, p.w);
       y = randomUpto(rng, p.h);
-    } while (grid[y * p.w + x]);
-    grid[y * p.w + x] = 1;
-    bmp[(i + 1) * 2] = x;
-    bmp[(i + 1) * 2 + 1] = y;
+    } while (taken[y * p.w + x]);
+    taken[y * p.w + x] = 1;
+    bmp[i] = x;
+    bmp[i + 1] = y;
   }
 
-  obfuscateBitmap(bmp, (nballs * 2 + 2) * 8, false);
+  obfuscateBitmap(bmp, bmp.length * 8, false);
   return { desc: bin2hex(bmp) };
+}
+
+/** A desc's de-obfuscated `[w, h, x0, y0, …]` bytes. */
+function descBytes(desc: string): Uint8Array {
+  const bmp = hex2bin(desc, desc.length / 2);
+  obfuscateBitmap(bmp, bmp.length * 8, true);
+  return bmp;
 }
 
 export function validateDesc(p: BlackboxParams, desc: string): string | null {
@@ -236,33 +238,22 @@ export function validateDesc(p: BlackboxParams, desc: string): string | null {
   if (dlen < 4 || dlen % 4 || nballs < p.minballs || nballs > p.maxballs)
     return "Game description is wrong length";
 
-  const bmp = hex2bin(desc, nballs * 2 + 2);
-  obfuscateBitmap(bmp, (nballs * 2 + 2) * 8, true);
+  const bmp = descBytes(desc);
   if (bmp[0] !== p.w || bmp[1] !== p.h) return "Game description is corrupted";
-  for (let i = 0; i < nballs; i++) {
-    const x = bmp[(i + 1) * 2];
-    const y = bmp[(i + 1) * 2 + 1];
-    if (x < 0 || y < 0 || x >= p.w || y >= p.h) return "Game description is corrupted";
+  for (let i = 2; i < bmp.length; i += 2) {
+    if (bmp[i] >= p.w || bmp[i + 1] >= p.h) return "Game description is corrupted";
   }
   return null;
 }
 
 export function newState(p: BlackboxParams, desc: string): BlackboxState {
-  const dlen = desc.length;
-  const nballs = (dlen / 2 - 2) / 2;
-  const bmp = hex2bin(desc, nballs * 2 + 2);
-  obfuscateBitmap(bmp, (nballs * 2 + 2) * 8, true);
-
+  const bmp = descBytes(desc);
   const w = bmp[0];
   const h = bmp[1];
   const nlasers = 2 * (w + h);
   const grid = new Int32Array((w + 2) * (h + 2));
-  const exits = new Int32Array(nlasers).fill(LASER_EMPTY);
-
-  for (let i = 0; i < nballs; i++) {
-    const bx = bmp[(i + 1) * 2] + 1;
-    const by = bmp[(i + 1) * 2 + 1] + 1;
-    grid[by * (w + 2) + bx] = BALL_CORRECT;
+  for (let i = 2; i < bmp.length; i += 2) {
+    grid[gridIdx(w, bmp[i] + 1, bmp[i + 1] + 1)] = BALL_CORRECT;
   }
 
   return {
@@ -270,10 +261,10 @@ export function newState(p: BlackboxParams, desc: string): BlackboxState {
     h,
     minballs: p.minballs,
     maxballs: p.maxballs,
-    nballs,
+    nballs: bmp.length / 2 - 1,
     nlasers,
     grid,
-    exits,
+    exits: new Int32Array(nlasers).fill(LASER_EMPTY),
     laserno: 1,
     nguesses: 0,
     nright: 0,
@@ -286,9 +277,7 @@ export function newState(p: BlackboxParams, desc: string): BlackboxState {
 
 // --- range <-> grid mapping -------------------------------------------
 
-interface RangeCell {
-  x: number;
-  y: number;
+interface RangeCell extends Point {
   direction: number;
 }
 
@@ -323,9 +312,9 @@ export function grid2range(w: number, h: number, x: number, y: number): number |
 
 // --- laser ray-tracer -------------------------------------------------
 
-function offset(x: number, y: number, o: number): { x: number; y: number } {
-  const off = (4 + (o % 4)) % 4;
-  return { x: x + OFFSETS[off].x, y: y + OFFSETS[off].y };
+function offset(x: number, y: number, dir: number): Point {
+  const d = OFFSETS[(dir + 4) % 4];
+  return { x: x + d.x, y: y + d.y };
 }
 
 /** Is there a ball forward (and, for LEFT/RIGHT, diagonally) of `(gx,gy)`
@@ -345,15 +334,10 @@ function isball(
   return (gridGet(st, p.x, p.y) & BALL_CORRECT) !== 0;
 }
 
-/** Trace a beam entering at range cell `(x0,y0)` facing `direction`;
+/** Trace a laser fired from range cell `entryno` without recording it;
  * returns `LASER_HIT`, `LASER_REFLECT`, or the exit range index. */
-function fireLaserInternal(
-  st: BlackboxState,
-  x0: number,
-  y0: number,
-  direction: number,
-): number {
-  const lno = grid2range(st.w, st.h, x0, y0) as number;
+function laserExit(st: BlackboxState, entryno: number): number {
+  const { x: x0, y: y0, direction } = range2grid(st.w, st.h, entryno) as RangeCell;
 
   // Entry-cell special cases: hit prioritized over reflection.
   if (isball(st, x0, y0, direction, LOOK_FORWARD)) return LASER_HIT;
@@ -367,7 +351,7 @@ function fireLaserInternal(
   let dir = direction;
   for (;;) {
     const exitno = grid2range(st.w, st.h, x, y);
-    if (exitno !== null) return lno === exitno ? LASER_REFLECT : exitno;
+    if (exitno !== null) return exitno === entryno ? LASER_REFLECT : exitno;
 
     if (isball(st, x, y, dir, LOOK_FORWARD)) return LASER_HIT;
     if (isball(st, x, y, dir, LOOK_LEFT)) {
@@ -382,33 +366,26 @@ function fireLaserInternal(
   }
 }
 
-/** Read-only: the result code a laser fired at `entryno` would produce. */
-function laserExit(st: BlackboxState, entryno: number): number {
-  const rc = range2grid(st.w, st.h, entryno) as RangeCell;
-  return fireLaserInternal(st, rc.x, rc.y, rc.direction);
-}
-
-/** Fire a laser and record its result in `grid` + `exits` (mutates). */
-function fireLaser(st: BlackboxState, entryno: number): void {
-  const rc = range2grid(st.w, st.h, entryno) as RangeCell;
-  const exitno = fireLaserInternal(st, rc.x, rc.y, rc.direction);
-
+/** Show a laser's result on the range: `H`/`R` on its entry cell, or the
+ * next pair number on both its entry and exit cells. */
+function paintLaser(st: BlackboxState, entryno: number, exitno: number): void {
+  const entry = range2grid(st.w, st.h, entryno) as RangeCell;
   if (exitno === LASER_HIT || exitno === LASER_REFLECT) {
-    gridSet(st, rc.x, rc.y, exitno);
-    st.exits[entryno] = exitno;
+    gridSet(st, entry.x, entry.y, exitno);
   } else {
     const newno = st.laserno++;
     const end = range2grid(st.w, st.h, exitno) as RangeCell;
-    gridSet(st, rc.x, rc.y, newno);
+    gridSet(st, entry.x, entry.y, newno);
     gridSet(st, end.x, end.y, newno);
-    st.exits[entryno] = exitno;
-    st.exits[exitno] = entryno;
   }
 }
 
-/** Fire `entryno` on `st` if not already fired (used by `executeMove`). */
-export function fireLaserMove(st: BlackboxState, entryno: number): void {
-  fireLaser(st, entryno);
+/** Fire a laser and record its result in `grid` + `exits` (mutates). */
+export function fireLaser(st: BlackboxState, entryno: number): void {
+  const exitno = laserExit(st, entryno);
+  paintLaser(st, entryno, exitno);
+  st.exits[entryno] = exitno;
+  if (isExitIndex(st, exitno)) st.exits[exitno] = entryno;
 }
 
 // --- guess verification (upstream check_guesses) ----------------------
@@ -435,8 +412,8 @@ function fillCounts(st: BlackboxState): void {
   }
 }
 
-/** Turn a copy's guessed balls into its "correct" balls (clear real,
- * promote `BALL_GUESS` → `BALL_CORRECT`). */
+/** Make the guessed balls the real ones: `BALL_CORRECT` set exactly where
+ * `BALL_GUESS` is. */
 function guessesAsCorrect(st: BlackboxState): void {
   for (let x = 1; x <= st.w; x++) {
     for (let y = 1; y <= st.h; y++) {
@@ -447,133 +424,85 @@ function guessesAsCorrect(st: BlackboxState): void {
   }
 }
 
+/** Flag laser `i`, and its exit if it has one, as the verify's evidence. */
+function markEvidence(st: BlackboxState, i: number, flag: number): void {
+  st.exits[i] |= flag;
+  const exit = laserExit(st, i);
+  if (isExitIndex(st, exit)) st.exits[exit] |= flag;
+  st.justwrong = true;
+}
+
 /**
  * Verify the player's guessed balls against the real layout by firing
  * every laser on both and comparing. Mutates `state` (run on the already
- * cloned `executeMove` result). Returns 1 if the layouts are equivalent
- * (a correct solve), else 0.
+ * cloned `executeMove` result).
  *
  * `cagey` (the player's explicit verify) first shows at most one piece
  * of evidence the guess is wrong — a fired laser that contradicts it, or
  * an unfired laser that would have — and reveals nothing else; only when
  * the guess survives both checks does it run the full reveal.
  */
-export function checkGuesses(state: BlackboxState, cagey: boolean): number {
+export function checkGuesses(state: BlackboxState, cagey: boolean): void {
   if (cagey) {
     const guesses = cloneState(state);
     guessesAsCorrect(guesses);
-
-    // (1) A fired laser whose recorded result contradicts the guess.
-    let n = 0;
-    for (let i = 0; i < guesses.nlasers; i++) {
-      if (
-        guesses.exits[i] !== LASER_EMPTY &&
-        guesses.exits[i] !== laserExit(guesses, i)
-      )
-        n++;
-    }
-    if (n) {
-      n = randomUpto(gridSeededRandom(guesses), n);
-      for (let i = 0; i < guesses.nlasers; i++) {
-        if (
-          guesses.exits[i] !== LASER_EMPTY &&
-          guesses.exits[i] !== laserExit(guesses, i) &&
-          n-- === 0
-        ) {
-          state.exits[i] |= LASER_WRONG;
-          const tmp = laserExit(state, i);
-          if (rangecheck(state, tmp)) state.exits[tmp] |= LASER_WRONG;
-          state.justwrong = true;
-          return 0;
-        }
+    const contradicted: number[] = [];
+    const telling: number[] = []; // unfired, and would tell the layouts apart
+    for (let i = 0; i < state.nlasers; i++) {
+      if (guesses.exits[i] !== LASER_EMPTY) {
+        if (guesses.exits[i] !== laserExit(guesses, i)) contradicted.push(i);
+      } else if (laserExit(state, i) !== laserExit(guesses, i)) {
+        telling.push(i);
       }
     }
+    const pick = (lasers: number[]) =>
+      lasers[randomUpto(gridSeededRandom(guesses), lasers.length)];
 
-    // (2) An unfired laser that would have distinguished guess from real.
-    n = 0;
-    for (let i = 0; i < guesses.nlasers; i++) {
-      if (
-        guesses.exits[i] === LASER_EMPTY &&
-        laserExit(state, i) !== laserExit(guesses, i)
-      )
-        n++;
+    if (contradicted.length) {
+      markEvidence(state, pick(contradicted), LASER_WRONG);
+      return;
     }
-    if (n) {
-      n = randomUpto(gridSeededRandom(guesses), n);
-      for (let i = 0; i < guesses.nlasers; i++) {
-        if (
-          guesses.exits[i] === LASER_EMPTY &&
-          laserExit(state, i) !== laserExit(guesses, i) &&
-          n-- === 0
-        ) {
-          fireLaser(state, i);
-          state.exits[i] |= LASER_OMITTED;
-          const tmp = laserExit(state, i);
-          if (rangecheck(state, tmp)) state.exits[tmp] |= LASER_OMITTED;
-          state.justwrong = true;
-          return 0;
-        }
-      }
+    if (telling.length) {
+      const i = pick(telling);
+      fireLaser(state, i);
+      markEvidence(state, i, LASER_OMITTED);
+      return;
     }
   }
 
   // Full reveal: a real-layout copy and a guess-layout copy, both with
   // their lasers cleared then fully fired, compared laser by laser.
   const solution = cloneState(state);
-  for (let i = 0; i < solution.nlasers; i++) {
-    const rc = range2grid(solution.w, solution.h, i) as RangeCell;
-    gridSet(solution, rc.x, rc.y, 0);
-    solution.exits[i] = LASER_EMPTY;
-  }
+  solution.exits.fill(LASER_EMPTY);
   const guesses = cloneState(solution);
   guessesAsCorrect(guesses);
-
-  for (let i = 0; i < solution.nlasers; i++) {
+  for (let i = 0; i < state.nlasers; i++) {
     if (solution.exits[i] === LASER_EMPTY) fireLaser(solution, i);
     if (guesses.exits[i] === LASER_EMPTY) fireLaser(guesses, i);
   }
 
-  let ret = 1;
-  for (let i = 0; i < solution.nlasers; i++) {
-    const rc = range2grid(solution.w, solution.h, i) as RangeCell;
-    if (solution.exits[i] !== guesses.exits[i]) {
-      if (state.exits[i] === LASER_EMPTY) {
-        // The player never fired this distinguishing laser: add it.
-        state.exits[i] = solution.exits[i];
-        if (state.exits[i] === LASER_REFLECT || state.exits[i] === LASER_HIT) {
-          gridSet(state, rc.x, rc.y, state.exits[i]);
-        } else {
-          const newno = state.laserno++;
-          const end = range2grid(state.w, state.h, state.exits[i]) as RangeCell;
-          gridSet(state, rc.x, rc.y, newno);
-          gridSet(state, end.x, end.y, newno);
-        }
-        state.exits[i] |= LASER_OMITTED;
-      } else {
-        state.exits[i] |= LASER_WRONG;
-      }
-      ret = 0;
+  let equivalent = true;
+  for (let i = 0; i < state.nlasers; i++) {
+    if (solution.exits[i] === guesses.exits[i]) continue;
+    equivalent = false;
+    if (state.exits[i] === LASER_EMPTY) {
+      // The player never fired this distinguishing laser: add it.
+      paintLaser(state, i, solution.exits[i]);
+      state.exits[i] = solution.exits[i] | LASER_OMITTED;
+    } else {
+      state.exits[i] |= LASER_WRONG;
     }
-  }
-
-  if (ret === 0 || state.nguesses < state.minballs || state.nguesses > state.maxballs) {
-    fillCounts(state);
-    state.reveal = true;
-    return ret;
   }
 
   // Proven equivalent: make the real balls match the guesses.
-  for (let x = 1; x <= state.w; x++) {
-    for (let y = 1; y <= state.h; y++) {
-      let v = gridGet(state, x, y);
-      if (v & BALL_GUESS) v |= BALL_CORRECT;
-      else v &= ~BALL_CORRECT;
-      gridSet(state, x, y, v);
-    }
-  }
+  if (
+    equivalent &&
+    state.nguesses >= state.minballs &&
+    state.nguesses <= state.maxballs
+  )
+    guessesAsCorrect(state);
   fillCounts(state);
   state.reveal = true;
-  return ret;
 }
 
 // --- predicates -------------------------------------------------------
@@ -595,7 +524,3 @@ export function status(s: BlackboxState): GameStatus {
   }
   return "ongoing";
 }
-
-// --- shared read helpers for index.ts / render.ts ---------------------
-
-export { gridGet };

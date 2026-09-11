@@ -10,6 +10,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { bin2hex, obfuscateBitmap } from "../../engine/obfuscate.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { blackboxGame } from "./index.ts";
 import {
@@ -227,22 +228,12 @@ describe("Black Box — desc codec", () => {
   });
 
   it("rejects a description whose balls fall outside the arena", () => {
-    // A 2x2 board needs a ball coord < 2; craft an obfuscated desc that
-    // de-obfuscates to an out-of-range ball by perturbing a valid one.
+    // A valid 2x2 header, then one ball a column (then a row) past the arena.
     const p = { w: 2, h: 2, minballs: 1, maxballs: 1 };
-    const { desc } = newDesc(p, randomNew("oob"));
-    // Flip a hex nibble in the ball-coord region to corrupt it; at least
-    // one perturbation must produce an out-of-range / mismatched header.
-    let rejected = false;
-    for (let i = 0; i < desc.length; i++) {
-      const c = desc[i] === "f" ? "0" : "f";
-      const bad = desc.slice(0, i) + c + desc.slice(i + 1);
-      if (validateDesc(p, bad) !== null) {
-        rejected = true;
-        break;
-      }
+    for (const bmp of [Uint8Array.of(2, 2, 2, 0), Uint8Array.of(2, 2, 0, 2)]) {
+      obfuscateBitmap(bmp, bmp.length * 8, false);
+      expect(validateDesc(p, bin2hex(bmp))).toBe("Game description is corrupted");
     }
-    expect(rejected).toBe(true);
   });
 });
 

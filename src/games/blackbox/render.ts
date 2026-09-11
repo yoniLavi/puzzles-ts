@@ -1,13 +1,7 @@
 /**
- * Black Box — palette, geometry, and the imperative `redraw`.
- *
- * Faithful port of `blackbox.c`'s drawing routines: a per-cell cache
- * (`ds.grid` mirrors the displayed grid value, cursor/flash flags
- * included), the cover/lock/ball/reveal arena states with the red
- * wrong-guess cross, the firing-range tiles with their hit/reflect/number
- * text and wrong/omitted markers, the press-to-highlight laser flash, the
- * beveled outline, and the reveal button. The engine paints no pixels of
- * its own, so the first-draw branch fills the background explicitly.
+ * Black Box — palette, geometry, and the imperative `redraw`, over a
+ * per-tile cache (`ds.grid` mirrors each tile's displayed value, cursor and
+ * flash flags included).
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -26,6 +20,7 @@ import {
   type BlackboxUi,
   canReveal,
   FLAG_CURSOR,
+  gridIdx,
   LASER_EMPTY,
   LASER_FLAGMASK,
   LASER_FLASHED,
@@ -36,8 +31,8 @@ import {
   range2grid,
 } from "./state.ts";
 
-// --- color indices (upstream enum, order load-bearing for dark-mode
-//     palette swaps in augmentation.ts) -------------------------------
+// --- color indices (upstream's order; augmentation.ts swaps 5 and 6,
+//     highlight and lowlight, in dark mode) ------------------------------
 
 export const COL_BACKGROUND = 0;
 export const COL_COVER = 1;
@@ -47,7 +42,7 @@ const COL_FLASHTEXT = 4;
 const COL_HIGHLIGHT = 5;
 const COL_LOWLIGHT = 6;
 const COL_GRID = 7;
-export const COL_BALL = 8;
+const COL_BALL = 8;
 export const COL_WRONG = 9;
 export const COL_BUTTON = 10;
 const COL_CURSOR = 11;
@@ -61,10 +56,9 @@ const CUR_ANIM = 0.2;
 
 export interface BlackboxDrawState {
   tilesize: number;
-  crad: number;
-  rrad: number;
+  ballRadius: number;
+  ringRadius: number;
   w: number;
-  h: number;
   grid: Int32Array;
   started: boolean;
   reveal: boolean;
@@ -75,10 +69,9 @@ export interface BlackboxDrawState {
 export function newDrawState(s: BlackboxState): BlackboxDrawState {
   return {
     tilesize: 0,
-    crad: 0,
-    rrad: 0,
+    ballRadius: 0,
+    ringRadius: 0,
     w: s.w,
-    h: s.h,
     grid: new Int32Array((s.w + 2) * (s.h + 2)),
     started: false,
     reveal: false,
@@ -89,8 +82,8 @@ export function newDrawState(s: BlackboxState): BlackboxDrawState {
 
 export function setTileSize(ds: BlackboxDrawState, tilesize: number): void {
   ds.tilesize = tilesize;
-  ds.crad = Math.floor((tilesize - 1) / 2);
-  ds.rrad = Math.floor((3 * tilesize) / 8);
+  ds.ballRadius = Math.floor((tilesize - 1) / 2);
+  ds.ringRadius = Math.floor((3 * tilesize) / 8);
 }
 
 /** The board's pixel origin. Exported so `fromDraw` reads the same number the
@@ -136,10 +129,6 @@ const pt = (x: number, y: number): Point => ({ x, y });
 
 function todraw(ds: BlackboxDrawState, x: number): number {
   return ds.tilesize * x + Math.floor(ds.tilesize / 2);
-}
-
-function gridIdx(w: number, x: number, y: number): number {
-  return y * (w + 2) + x;
 }
 
 function drawSquareCursor(
@@ -194,13 +183,13 @@ function drawArenaTile(
 
     dr.drawCircle(
       pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)),
-      ds.crad - 1,
+      ds.ballRadius - 1,
       ocol,
       ocol,
     );
     dr.drawCircle(
       pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)),
-      ds.crad - 3,
+      ds.ballRadius - 3,
       bcol,
       bcol,
     );
@@ -288,13 +277,13 @@ function drawLaserTile(
       if (wrong) {
         dr.drawCircle(
           pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)),
-          ds.rrad,
+          ds.ringRadius,
           COL_WRONG,
           COL_WRONG,
         );
         dr.drawCircle(
           pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)),
-          ds.rrad - Math.floor(ts / 16),
+          ds.ringRadius - Math.floor(ts / 16),
           COL_BACKGROUND,
           COL_WRONG,
         );
@@ -341,8 +330,7 @@ export function redraw(
   }
 
   if (!ds.started) {
-    const fullW = ts * (state.w + 2) + 2 * Math.floor(ts / 2);
-    const fullH = ts * (state.h + 2) + 2 * Math.floor(ts / 2);
+    const { w: fullW, h: fullH } = computeSize(state, ts);
     // The engine emits no pixels of its own: fill the background.
     dr.drawRect(rect(0, 0, fullW, fullH), COL_BACKGROUND);
 
@@ -393,14 +381,14 @@ export function redraw(
         : COL_BALL;
     dr.clip(rect(b0 - 1, b0 - 1, ts + 1, ts + 1));
     dr.drawCircle(
-      pt(b0 + ds.crad - 1, b0 + ds.crad - 1),
-      ds.crad - 1,
+      pt(b0 + ds.ballRadius - 1, b0 + ds.ballRadius - 1),
+      ds.ballRadius - 1,
       outline,
       outline,
     );
     dr.drawCircle(
-      pt(b0 + ds.crad - 1, b0 + ds.crad - 1),
-      ds.crad - 3,
+      pt(b0 + ds.ballRadius - 1, b0 + ds.ballRadius - 1),
+      ds.ballRadius - 3,
       COL_BUTTON,
       COL_BUTTON,
     );
@@ -431,6 +419,5 @@ export function flashLength(
   _dir: number,
   _ui: BlackboxUi,
 ): number {
-  if (!oldState.reveal && newState.reveal) return 4 * FLASH_FRAME;
-  return 0;
+  return !oldState.reveal && newState.reveal ? 4 * FLASH_FRAME : 0;
 }
