@@ -7,7 +7,13 @@ import { describe, expect, it } from "vitest";
 import type { GameDrawing } from "../../engine/game.ts";
 import { newCursor } from "../../engine/pointer.ts";
 import { executeMove, twiddleGame } from "./index.ts";
-import { animLength, COL_HIGHLIGHT, COL_LOWLIGHT } from "./render.ts";
+import {
+  animLength,
+  COL_HIGHCURSOR,
+  COL_HIGHLIGHT,
+  COL_LOWCURSOR,
+  COL_LOWLIGHT,
+} from "./render.ts";
 import { newState, type TwiddleParams, type TwiddleState } from "./state.ts";
 
 interface Op {
@@ -150,11 +156,14 @@ describe("Twiddle rendering", () => {
 
     const { dr, ops } = recordingDrawing();
     // Cursor visible at origin (0,0): the region's edge bevels recolor
-    // their *outline* to the cursor colors (COL_HIGHCURSOR=6 /
-    // COL_LOWCURSOR=7).
+    // their *outline* to the cursor colors.
     redraw(dr, ds, null, state, 0, { cursor: newCursor(0, 0, true) }, 0, 0);
     expect(
-      ops.some((o) => o.op === "drawPolygon" && (o.outline === 6 || o.outline === 7)),
+      ops.some(
+        (o) =>
+          o.op === "drawPolygon" &&
+          (o.outline === COL_HIGHCURSOR || o.outline === COL_LOWCURSOR),
+      ),
     ).toBe(true);
   });
 });

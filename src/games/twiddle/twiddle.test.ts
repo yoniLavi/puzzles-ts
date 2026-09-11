@@ -10,6 +10,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   LEFT_BUTTON,
+  MOD_NUM_KEYPAD,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
@@ -27,8 +28,6 @@ import {
   type TwiddleParams,
   type TwiddleState,
 } from "./state.ts";
-
-const MOD_NUM_KEYPAD = 0x4000;
 
 function params(over: Partial<TwiddleParams> = {}): TwiddleParams {
   return {
@@ -156,17 +155,17 @@ describe("Twiddle doRotate", () => {
   it("rotates a 2×2 block and inverts cleanly", () => {
     const nums = Int32Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     const orient = new Uint8Array(9);
-    doRotate(nums, orient, 3, 3, 2, false, 0, 0, 1);
+    doRotate(nums, orient, 3, 2, false, 0, 0, 1);
     // Block (0,0): 1,2 / 4,5 → after one clockwise quarter-turn.
     expect(Array.from(nums)).toEqual([2, 5, 3, 1, 4, 6, 7, 8, 9]);
-    doRotate(nums, orient, 3, 3, 2, false, 0, 0, -1);
+    doRotate(nums, orient, 3, 2, false, 0, 0, -1);
     expect(Array.from(nums)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 
   it("advances orientation in orientable mode", () => {
     const nums = Int32Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     const orient = new Uint8Array(9);
-    doRotate(nums, orient, 3, 3, 2, true, 0, 0, 1);
+    doRotate(nums, orient, 3, 2, true, 0, 0, 1);
     // Every moved tile's orientation advances by +1.
     for (const i of [0, 1, 3, 4]) expect(orient[i]).toBe(1);
     for (const i of [2, 5, 6, 7, 8]) expect(orient[i]).toBe(0);
@@ -175,7 +174,7 @@ describe("Twiddle doRotate", () => {
   it("advances the center tile's orientation for odd n", () => {
     const nums = Int32Array.from(Array.from({ length: 9 }, (_, i) => i + 1));
     const orient = new Uint8Array(9);
-    doRotate(nums, orient, 3, 3, 3, true, 0, 0, 1);
+    doRotate(nums, orient, 3, 3, true, 0, 0, 1);
     expect(orient[4]).toBe(1); // center of the 3×3 block at (0,0)
   });
 });
@@ -248,15 +247,11 @@ describe("Twiddle input", () => {
   );
 
   it("maps a centered click to the region whose center it lands in", () => {
-    // Tile size 48, border 24. A click at the center of the region whose
-    // top-left is (1,1): block center is at coord(1)+ts = 24+48+24 = ... use
-    // the region-center pixel. Region (1,1) spans tiles (1,1)-(2,2); its
-    // center is at pixel (coord(1)+ts, coord(1)+ts) = (72+48?, ...). Simpler:
-    // click the center of tile (1,1)'s top-left → maps via the (n-1) offset.
+    // Tile size 48, border 24: the center of the 2×2 region with top-left
+    // (1,1) is the corner its four tiles share, coord(2) = 2*48+24 = 120 in
+    // each axis.
     const ts = 48;
     const border = 24;
-    // Center of the 2×2 region with top-left (1,1) = pixel of the shared
-    // corner between the four tiles = coord(2) = 2*48+24 = 120 in each axis.
     const px = 2 * ts + border;
     const { move } = interpret(s, LEFT_BUTTON, { x: px, y: px });
     expect(move).toEqual({ type: "rotate", x: 1, y: 1, dir: 1 });

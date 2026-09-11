@@ -63,9 +63,8 @@ export function defaultParams(): TwiddleParams {
 }
 
 export function encodeParams(p: TwiddleParams, _full: boolean): string {
-  // Upstream writes the full descriptor regardless of `full` (the
-  // shuffle limit is part of the limited params because the target move
-  // count must be supplied).
+  // Ignores `full`, as upstream does: the move target belongs in the brief
+  // form because the status bar reports progress against it.
   let s = `${p.w}x${p.h}n${p.n}`;
   if (p.rowsonly) s += "r";
   if (p.orientable) s += "o";
@@ -74,34 +73,27 @@ export function encodeParams(p: TwiddleParams, _full: boolean): string {
 }
 
 export function decodeParams(s: string): TwiddleParams {
-  // Upstream `decode_params`: w = h = atoi; n = 2; flags off. Then an
-  // optional `xH`, an optional `nN`, then any of `r`/`o`/`mK` in order.
+  // Upstream `decode_params`: `W` or `WxH`, an optional `nN` (default 2), then
+  // `r`, `o` and `mK` in any order, skipping anything unrecognized.
+  const { w, h, next } = parseDimensions(s);
+  let i = next;
   let n = 2;
+  if (s[i] === "n") {
+    const run = parseLeadingInt(s, i + 1);
+    n = run.value || 2;
+    i = run.next;
+  }
   let rowsonly = false;
   let orientable = false;
   let movetarget = 0;
-
-  const { w, h, next } = parseDimensions(s);
-  let i = next;
-
-  if (s[i] === "n") {
-    const nRun = parseLeadingInt(s, i + 1);
-    n = nRun.value || 2;
-    i = nRun.next;
-  }
   while (i < s.length) {
-    if (s[i] === "r") {
-      rowsonly = true;
-      i++;
-    } else if (s[i] === "o") {
-      orientable = true;
-      i++;
-    } else if (s[i] === "m") {
-      const mRun = parseLeadingInt(s, i + 1);
-      movetarget = mRun.value;
-      i = mRun.next;
-    } else {
-      i++;
+    const c = s[i++];
+    if (c === "r") rowsonly = true;
+    else if (c === "o") orientable = true;
+    else if (c === "m") {
+      const run = parseLeadingInt(s, i);
+      movetarget = run.value;
+      i = run.next;
     }
   }
   return { w, h, n, rowsonly, orientable, movetarget };
@@ -153,19 +145,16 @@ export function presets() {
 
 /**
  * Rotate the `n×n` block whose top-left corner is `(x, y)` by `dir`
- * quarter-turns, in place on the given `numbers`/`orient` arrays (the
- * caller passes copies — `executeMove` is pure). Faithful port of
- * upstream `do_rotate`: loop the representative quarter
- * `(n+1)/2 × n/2` and cycle each element with its 4-rotational coset
- * `p[0..3]`. When orientable, each moved tile's orientation advances by
- * `dir` (the upstream `v ^= ((v+dir) ^ v) & 3` packed-bit trick reduces
- * to `(orient + dir) & 3`), plus the lone center tile when `n` is odd.
+ * quarter-turns, in place (so `executeMove` rotates copies). Upstream
+ * `do_rotate`: loop the representative quarter `(n+1)/2 × n/2` and cycle
+ * each element with its 4-rotational coset `p[0..3]`. When orientable, each
+ * moved tile's orientation advances by `dir` (upstream's packed-bit
+ * `v ^= ((v+dir) ^ v) & 3`), and so does the lone center tile when `n` is odd.
  */
 export function doRotate(
   numbers: Int32Array,
   orient: Uint8Array,
   w: number,
-  _h: number,
   n: number,
   orientable: boolean,
   x: number,
@@ -173,9 +162,9 @@ export function doRotate(
   dir: number,
 ): void {
   const d = dir & 3;
-  if (d === 0) return; // nothing to do
+  if (d === 0) return;
 
-  const base = y * w + x; // translate region to its top-left corner
+  const base = y * w + x;
   for (let i = 0; i < Math.floor((n + 1) / 2); i++) {
     for (let j = 0; j < Math.floor(n / 2); j++) {
       const p = [
@@ -198,7 +187,6 @@ export function doRotate(
     }
   }
 
-  // Don't forget the orientation on the center square, if n is odd.
   if (orientable && n & 1) {
     const c = base + (n >> 1) * w + (n >> 1);
     orient[c] = (orient[c] + d) & 3;
@@ -229,20 +217,8 @@ export function isComplete(
 
 // --- desc / state -----------------------------------------------------
 
-const ORIENT_LETTERS = "uldr"; // index = orientation (u=0, l=1, d=2, r=3)
-
-function letterToOrient(c: string): number {
-  switch (c) {
-    case "l":
-      return 1;
-    case "d":
-      return 2;
-    case "r":
-      return 3;
-    default: // 'u'
-      return 0;
-  }
-}
+/** The desc's orientation letters, indexed by orientation (`u` is upright). */
+const ORIENT_LETTERS = "uldr";
 
 function encodeDesc(
   numbers: Int32Array,
@@ -263,16 +239,15 @@ export function validateDesc(p: TwiddleParams, desc: string): string | null {
   const wh = p.w * p.h;
   let i = 0;
   for (let cell = 0; cell < wh; cell++) {
-    if (i >= desc.length || desc[i] < "0" || desc[i] > "9")
-      return "Not enough numbers in string";
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;
-    if (!p.orientable && cell < wh - 1) {
-      if (desc[i] !== ",") return "Expected comma after number";
-    } else if (p.orientable) {
-      const c = desc[i];
-      if (c !== "l" && c !== "r" && c !== "u" && c !== "d")
+    const run = parseLeadingInt(desc, i);
+    if (run.next === i) return "Not enough numbers in string";
+    i = run.next;
+    if (p.orientable) {
+      if (!ORIENT_LETTERS.includes(desc[i]))
         return "Expected orientation letter after number";
-    } else if (cell === wh - 1 && i < desc.length) {
+    } else if (cell < wh - 1) {
+      if (desc[i] !== ",") return "Expected comma after number";
+    } else if (i < desc.length) {
       return "Excess junk at end of string";
     }
     if (i < desc.length) i++; // eat separator / orientation letter
@@ -289,14 +264,11 @@ function parseDesc(
   const orient = new Uint8Array(wh);
   let i = 0;
   for (let cell = 0; cell < wh; cell++) {
-    let numStr = "";
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") {
-      numStr += desc[i];
-      i++;
-    }
-    numbers[cell] = Number.parseInt(numStr, 10);
+    const run = parseLeadingInt(desc, i);
+    numbers[cell] = run.value;
+    i = run.next;
     if (i < desc.length) {
-      if (orientable) orient[cell] = letterToOrient(desc[i]);
+      if (orientable) orient[cell] = Math.max(0, ORIENT_LETTERS.indexOf(desc[i]));
       i++; // consume orientation letter or comma
     }
   }
@@ -304,8 +276,7 @@ function parseDesc(
 }
 
 export function newState(p: TwiddleParams, desc: string): TwiddleState {
-  const wh = p.w * p.h;
-  const { numbers, orient } = parseDesc(desc, wh, p.orientable);
+  const { numbers, orient } = parseDesc(desc, p.w * p.h, p.orientable);
   return {
     w: p.w,
     h: p.h,
@@ -333,16 +304,12 @@ const TEXT_ARROWS = "^<v>"; // orientation arrows: up, left, down, right
 
 export function textFormat(state: TwiddleState): string {
   const { w, h, numbers, orient, orientable } = state;
-  let col = 0;
-  for (let i = 0; i < w * h; i++) {
-    col = Math.max(col, String(numbers[i]).length);
-  }
+  const col = numbers.reduce((max, v) => Math.max(max, String(v).length), 0);
   const lines: string[] = [];
   for (let y = 0; y < h; y++) {
     const cells: string[] = [];
     for (let x = 0; x < w; x++) {
-      const v = numbers[y * w + x];
-      let cell = String(v).padStart(col);
+      let cell = String(numbers[y * w + x]).padStart(col);
       if (orientable) cell += TEXT_ARROWS[orient[y * w + x]];
       cells.push(cell);
     }
@@ -353,40 +320,23 @@ export function textFormat(state: TwiddleState): string {
 
 // --- generator --------------------------------------------------------
 
-/** Build the solved grid into `numbers`/`orient`. */
-function fillSolved(
-  numbers: Int32Array,
-  orient: Uint8Array,
-  w: number,
-  rowsonly: boolean,
-): void {
-  for (let i = 0; i < numbers.length; i++) {
-    numbers[i] = (rowsonly ? Math.floor(i / w) : i) + 1;
-    orient[i] = 0;
-  }
-}
-
 /**
- * Faithful port of upstream `new_game_desc`: shuffle the solved grid by
- * a long sequence of random rotations, each chosen under the `prevmoves`
- * guard that forbids immediately undoing or over-repeating a rotation in
- * an un-overlapped region (with the `w==h==n` special case where that is
- * unavoidable). Re-shuffle while the result is already solved.
+ * Upstream `new_game_desc`: shuffle the solved grid by a long run of random
+ * rotations, each chosen under the `prevmoves` guard that forbids immediately
+ * undoing or over-repeating a rotation in an un-overlapped region. Shuffle
+ * again while the result is still solved.
  */
 export function newDesc(p: TwiddleParams, rng: RandomState): { desc: string } {
   const { w, h, n } = p;
   const wh = w * h;
   const numbers = new Int32Array(wh);
   const orient = new Uint8Array(wh);
-  fillSolved(numbers, orient, w, p.rowsonly);
+  for (let i = 0; i < wh; i++) numbers[i] = (p.rowsonly ? Math.floor(i / w) : i) + 1;
 
-  let totalMoves = p.movetarget;
-  if (!totalMoves) {
-    // Add a random move to avoid parity issues.
-    totalMoves = w * h * n * n * 2 + randomUpto(rng, 2);
-  }
+  // Zero means auto; upstream adds a random move to avoid parity issues.
+  const totalMoves = p.movetarget || w * h * n * n * 2 + randomUpto(rng, 2);
 
-  const rw = w - n + 1; // width of rotation-center space
+  const rw = w - n + 1; // width of the rotation-origin space
   const rh = h - n + 1;
 
   do {
@@ -404,14 +354,14 @@ export function newDesc(p: TwiddleParams, rng: RandomState): { desc: string } {
         r = 2 * randomUpto(rng, 2) - 1; // ±1
         oldtotal = prevmoves[y * rw + x];
         newtotal = oldtotal + r;
-        // Special case for w==h==n: every move repeats/undoes a previous
-        // one, so the guard can never be satisfied — skip it there.
+        // When w == h == n every move repeats or undoes a previous one, so
+        // the guard could never be satisfied: skip it there.
       } while (
         (w !== n || h !== n) &&
         (Math.abs(newtotal) < Math.abs(oldtotal) || Math.abs(newtotal) > 2)
       );
 
-      doRotate(numbers, orient, w, h, n, p.orientable, x, y, r);
+      doRotate(numbers, orient, w, n, p.orientable, x, y, r);
 
       // Log the rotation for inversion detection, and zero every region
       // that overlaps this one (now safe to move in again).
@@ -428,17 +378,4 @@ export function newDesc(p: TwiddleParams, rng: RandomState): { desc: string } {
   } while (isComplete(numbers, orient, wh, p.orientable));
 
   return { desc: encodeDesc(numbers, orient, wh, p.orientable) };
-}
-
-/** Build the solved arrangement's numbers/orient for a given state
- * (used by Solve). */
-export function solvedGrid(state: TwiddleState): {
-  numbers: Int32Array;
-  orient: Uint8Array;
-} {
-  // Solve = sort the current numbers ascending, clear orientations.
-  const numbers = Int32Array.from(state.numbers);
-  numbers.sort();
-  const orient = new Uint8Array(state.numbers.length);
-  return { numbers, orient };
 }

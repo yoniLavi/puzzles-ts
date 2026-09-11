@@ -1,9 +1,8 @@
 /**
- * Twiddle rendering: beveled numbered tiles, the subsquare rotation
- * animation (the one render piece with no analog in the other ported
- * grid games), the per-edge bevel recoloring through a turn, the cursor
- * region highlight, and the completion flash. Faithful port of
- * `twiddle.c`'s `game_redraw` / `draw_tile` / `rotate` / `highlight_colour`.
+ * Twiddle rendering: beveled numbered tiles, the block rotation animation with
+ * each tile's bevel edges recolored through the turn, the cursor region
+ * outline, and the completion flash. Port of upstream `game_redraw` /
+ * `draw_tile` / `rotate` / `highlight_colour`.
  */
 
 import { CURSOR, INK } from "../../engine/color/palette.ts";
@@ -11,11 +10,11 @@ import {
   twiddleGentleHighlight,
   twiddleGentleLowlight,
 } from "../../engine/color/palette-games.ts";
-import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
+import { drawRecessedBorder } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
-import type { TwiddleParams, TwiddleState, TwiddleUi } from "./state.ts";
+import type { Color, Point, Rect, Size } from "../../engine/types.ts";
+import type { TwiddleState, TwiddleUi } from "./state.ts";
 
 // --- constants --------------------------------------------------------
 
@@ -61,7 +60,7 @@ function highlightWidth(ts: number): number {
   return Math.max(1, Math.floor(ts / HIGHLIGHT_WIDTH_DIV));
 }
 
-export function computeSize(p: TwiddleParams, ts: number): Size {
+export function computeSize(p: Size, ts: number): Size {
   const b = border(ts);
   return { w: ts * p.w + 2 * b, h: ts * p.h + 2 * b };
 }
@@ -75,8 +74,6 @@ export function animLength(n: number): number {
 
 export interface TwiddleDrawState {
   started: boolean;
-  w: number;
-  h: number;
   bgcolor: number;
   /** Per-cell cache of the packed `number*4 + orient`; `-1` forces a
    * redraw (unknown, or inside the animating block). */
@@ -90,8 +87,6 @@ export interface TwiddleDrawState {
 export function newDrawState(state: TwiddleState): TwiddleDrawState {
   return {
     started: false,
-    w: state.w,
-    h: state.h,
     bgcolor: COL_BACKGROUND,
     cache: new Int32Array(state.w * state.h).fill(-1),
     tilesize: 0,
@@ -102,74 +97,42 @@ export function newDrawState(state: TwiddleState): TwiddleDrawState {
 
 // --- rotation ---------------------------------------------------------
 
+/** The block turning mid-animation. */
 interface Rotation {
-  cx: number;
-  cy: number;
-  cw: number;
-  ch: number;
+  /** The block's pixel rect, which each of its tiles is clipped to. */
+  block: Rect;
+  /** The center of rotation. */
   ox: number;
   oy: number;
-  c: number;
-  s: number;
-  lc: number;
-  rc: number;
-  tc: number;
-  bc: number;
+  cos: number;
+  sin: number;
+  leftColor: number;
+  rightColor: number;
+  topColor: number;
+  bottomColor: number;
 }
 
-/** Rotate a point about the rotation origin, rounding to nearest; the
+/** Rotate a point about the rotation center, rounding to nearest; the
  * identity when `rot` is null. */
 function rotate(px: number, py: number, rot: Rotation | null): Point {
   if (!rot) return { x: px, y: py };
   const xf = px - rot.ox;
   const yf = py - rot.oy;
-  const xf2 = rot.c * xf + rot.s * yf;
-  const yf2 = -rot.s * xf + rot.c * yf;
+  const xf2 = rot.cos * xf + rot.sin * yf;
+  const yf2 = -rot.sin * xf + rot.cos * yf;
   return { x: Math.round(xf2 + rot.ox), y: Math.round(yf2 + rot.oy) };
 }
 
-/** Upstream `highlight_colour`: map a (radian) edge angle to one of the
- * five bevel colors so the four sides of a turning tile recolor
- * smoothly through the rotation. */
+/** Upstream `highlight_colour`: the bevel color of an edge facing `angle`
+ * radians, in 32 steps round the circle, so the four sides of a turning tile
+ * recolor smoothly. Lit facing up and left, shaded facing down and right,
+ * gentle in between. */
 function highlightColor(angle: number): number {
-  // Indices into [low, low_gentle×3, high_gentle×3, high×9, high_gentle×3,
-  // low_gentle×3, low×8] — the 32-entry table from twiddle.c.
-  const table = [
-    COL_LOWLIGHT,
-    COL_LOWLIGHT_GENTLE,
-    COL_LOWLIGHT_GENTLE,
-    COL_LOWLIGHT_GENTLE,
-    COL_HIGHLIGHT_GENTLE,
-    COL_HIGHLIGHT_GENTLE,
-    COL_HIGHLIGHT_GENTLE,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-    COL_HIGHLIGHT_GENTLE,
-    COL_HIGHLIGHT_GENTLE,
-    COL_HIGHLIGHT_GENTLE,
-    COL_LOWLIGHT_GENTLE,
-    COL_LOWLIGHT_GENTLE,
-    COL_LOWLIGHT_GENTLE,
-    COL_LOWLIGHT,
-    COL_LOWLIGHT,
-    COL_LOWLIGHT,
-    COL_LOWLIGHT,
-    COL_LOWLIGHT,
-    COL_LOWLIGHT,
-    COL_LOWLIGHT,
-    COL_LOWLIGHT,
-    COL_LOWLIGHT,
-  ];
-  const idx = Math.floor((angle + 2 * Math.PI) / (Math.PI / 16)) & 31;
-  return table[idx];
+  const step = Math.floor((angle + 2 * Math.PI) / (Math.PI / 16)) & 31;
+  if (step >= 7 && step <= 16) return COL_HIGHLIGHT;
+  if (step >= 4 && step <= 19) return COL_HIGHLIGHT_GENTLE;
+  if (step >= 1 && step <= 22) return COL_LOWLIGHT_GENTLE;
+  return COL_LOWLIGHT;
 }
 
 // --- tile drawing -----------------------------------------------------
@@ -184,25 +147,14 @@ function drawTile(
   num: number,
   orient: number,
   flashColor: number,
-  rotIn: Rotation | null,
+  rot: Rotation | null,
   cedges: number,
 ): void {
-  // If we've been passed a rotation region but this tile is outside it,
-  // draw it normally (can happen when cleaning up a completion flash
-  // while a new move is also being made).
-  let rot = rotIn;
-  if (
-    rot &&
-    (px < rot.cx || py < rot.cy || px >= rot.cx + rot.cw || py >= rot.cy + rot.ch)
-  ) {
-    rot = null;
-  }
-
-  if (rot) dr.clip({ x: rot.cx, y: rot.cy, w: rot.cw, h: rot.ch });
+  if (rot) dr.clip(rot.block);
 
   // The four bevel edges, each a triangle from a pair of corners to the
   // center. During a rotation they all differ in color.
-  const cc = rotate(px + ts / 2, py + ts / 2, rot);
+  const center = rotate(px + ts / 2, py + ts / 2, rot);
   const c00 = rotate(px, py, rot);
   const c10 = rotate(px + ts - 1, py, rot);
   const c11 = rotate(px + ts - 1, py + ts - 1, rot);
@@ -210,27 +162,27 @@ function drawTile(
 
   // Right side.
   dr.drawPolygon(
-    [c11, c10, cc],
-    rot ? rot.rc : COL_LOWLIGHT,
-    rot ? rot.rc : cedges & CUR_RIGHT ? COL_LOWCURSOR : COL_LOWLIGHT,
+    [c11, c10, center],
+    rot ? rot.rightColor : COL_LOWLIGHT,
+    rot ? rot.rightColor : cedges & CUR_RIGHT ? COL_LOWCURSOR : COL_LOWLIGHT,
   );
   // Bottom side.
   dr.drawPolygon(
-    [c11, c01, cc],
-    rot ? rot.bc : COL_LOWLIGHT,
-    rot ? rot.bc : cedges & CUR_BOTTOM ? COL_LOWCURSOR : COL_LOWLIGHT,
+    [c11, c01, center],
+    rot ? rot.bottomColor : COL_LOWLIGHT,
+    rot ? rot.bottomColor : cedges & CUR_BOTTOM ? COL_LOWCURSOR : COL_LOWLIGHT,
   );
   // Left side.
   dr.drawPolygon(
-    [c00, c01, cc],
-    rot ? rot.lc : COL_HIGHLIGHT,
-    rot ? rot.lc : cedges & CUR_LEFT ? COL_HIGHCURSOR : COL_HIGHLIGHT,
+    [c00, c01, center],
+    rot ? rot.leftColor : COL_HIGHLIGHT,
+    rot ? rot.leftColor : cedges & CUR_LEFT ? COL_HIGHCURSOR : COL_HIGHLIGHT,
   );
   // Top side.
   dr.drawPolygon(
-    [c00, c10, cc],
-    rot ? rot.tc : COL_HIGHLIGHT,
-    rot ? rot.tc : cedges & CUR_TOP ? COL_HIGHCURSOR : COL_HIGHLIGHT,
+    [c00, c10, center],
+    rot ? rot.topColor : COL_HIGHLIGHT,
+    rot ? rot.topColor : cedges & CUR_TOP ? COL_HIGHCURSOR : COL_HIGHLIGHT,
   );
 
   // The blank center area.
@@ -296,9 +248,8 @@ function drawTile(
     );
   }
 
-  const textCenter = rotate(px + ts / 2, py + ts / 2, rot);
   dr.drawText(
-    textCenter,
+    center,
     { align: "center", baseline: "mathematical", fontType: "variable", size: ts / 3 },
     COL_TEXT,
     String(num),
@@ -306,22 +257,6 @@ function drawTile(
 
   if (rot) dr.unclip();
   dr.drawUpdate({ x: px, y: py, w: ts, h: ts });
-}
-
-function drawRecessedBorder(dr: GameDrawing, w: number, h: number, ts: number): void {
-  const hw = highlightWidth(ts);
-  drawBevel(
-    dr,
-    {
-      left: coord(0, ts) - hw,
-      top: coord(0, ts) - hw,
-      right: coord(w, ts) + hw - 1,
-      bottom: coord(h, ts) + hw - 1,
-    },
-    ts,
-    COL_HIGHLIGHT,
-    COL_LOWLIGHT,
-  );
 }
 
 // --- redraw -----------------------------------------------------------
@@ -353,9 +288,20 @@ export function redraw(
   if (!ds.started) {
     // The engine paints no pixels of its own: fill our own background,
     // then draw the recessed frame around the playfield.
-    const size = computeSize({ w, h } as TwiddleParams, ts);
+    const size = computeSize(state, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
-    drawRecessedBorder(dr, w, h, ts);
+    drawRecessedBorder(
+      dr,
+      {
+        left: coord(0, ts) - hw,
+        top: coord(0, ts) - hw,
+        right: coord(w, ts) + hw - 1,
+        bottom: coord(h, ts) + hw - 1,
+      },
+      ts,
+      COL_HIGHLIGHT,
+      COL_LOWLIGHT,
+    );
     ds.started = true;
   }
 
@@ -377,25 +323,21 @@ export function redraw(
     }
     if (lastx >= 0 && lasty >= 0) {
       const animMax = animLength(n);
-      const rcx = coord(lastx, ts);
-      const rcy = coord(lasty, ts);
       const cw = ts * n;
+      const block = { x: coord(lastx, ts), y: coord(lasty, ts), w: cw, h: cw };
       const angle = -(Math.PI / 2) * lastr * (1 - animTime / animMax);
       rot = {
-        cx: rcx,
-        cy: rcy,
-        cw,
-        ch: cw,
-        ox: rcx + cw / 2,
-        oy: rcy + cw / 2,
-        c: Math.cos(angle),
-        s: Math.sin(angle),
-        lc: highlightColor(Math.PI + angle),
-        rc: highlightColor(angle),
-        tc: highlightColor(Math.PI / 2 + angle),
-        bc: highlightColor(-Math.PI / 2 + angle),
+        block,
+        ox: block.x + cw / 2,
+        oy: block.y + cw / 2,
+        cos: Math.cos(angle),
+        sin: Math.sin(angle),
+        leftColor: highlightColor(Math.PI + angle),
+        rightColor: highlightColor(angle),
+        topColor: highlightColor(Math.PI / 2 + angle),
+        bottomColor: highlightColor(-Math.PI / 2 + angle),
       };
-      dr.drawRect({ x: rcx, y: rcy, w: cw, h: cw }, bgcolor);
+      dr.drawRect(block, bgcolor);
     }
   }
 
@@ -405,13 +347,7 @@ export function redraw(
 
     // -1 ("always redraw") for cells inside the animating block.
     const inBlock =
-      rot !== null &&
-      lastx >= 0 &&
-      lasty >= 0 &&
-      tx >= lastx &&
-      tx < lastx + n &&
-      ty >= lasty &&
-      ty < lasty + n;
+      rot !== null && tx >= lastx && tx < lastx + n && ty >= lasty && ty < lasty + n;
     const t = inBlock ? -1 : state.numbers[i] * 4 + state.orient[i];
 
     let cc = false;
@@ -426,13 +362,7 @@ export function redraw(
         cc = true;
     }
 
-    if (
-      ds.bgcolor !== bgcolor ||
-      ds.cache[i] !== t ||
-      ds.cache[i] === -1 ||
-      t === -1 ||
-      cc
-    ) {
+    if (ds.bgcolor !== bgcolor || ds.cache[i] !== t || t === -1 || cc) {
       const x = coord(tx, ts);
       const y = coord(ty, ts);
       let cedges = 0;
@@ -451,7 +381,9 @@ export function redraw(
         state.numbers[i],
         state.orient[i],
         bgcolor,
-        rot,
+        // A tile outside the turning block draws unrotated, even mid-turn
+        // (a completion flash can repaint it while a new move animates).
+        inBlock ? rot : null,
         cedges,
       );
       ds.cache[i] = t;

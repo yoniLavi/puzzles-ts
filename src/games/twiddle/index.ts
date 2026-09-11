@@ -1,14 +1,9 @@
 /**
- * Twiddle — native TS port (migration-order item 7). A grid of numbered
- * tiles; one click rotates an `n×n` subsquare 90°. Solved when the
- * numbers read in non-decreasing row-major order (and, when orientable,
- * every tile is upright).
- *
- * Idiomatic rendering of `puzzles/twiddle.c` (deleted when this ships):
- * immutable state, discriminated `TwiddleMove`, separate number/orient
- * typed arrays instead of C's packed `value*4 + orient`, GC instead of
- * dup/free. The logic mirrors the C reference; it is not a control-flow
- * transliteration.
+ * Twiddle: a grid of numbered tiles, where one click rotates an `n×n`
+ * subsquare 90°. Solved when the numbers read in non-decreasing row-major
+ * order (and, when orientable, every tile is upright). Port of upstream
+ * `twiddle.c`, holding numbers and orientations in separate arrays rather
+ * than its packed `value*4 + orient`.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -19,13 +14,14 @@ import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
   MOD_MASK,
   MOD_NUM_KEYPAD,
+  moveCursor,
   newCursor,
   RIGHT_BUTTON,
+  showCursor,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Color, Point } from "../../engine/types.ts";
@@ -35,7 +31,6 @@ import {
   computeSize,
   FLASH_FRAME,
   fromCoord,
-  NCOLORS,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
@@ -50,7 +45,6 @@ import {
   newDesc,
   newState,
   presets,
-  solvedGrid,
   status,
   type TwiddleMove,
   type TwiddleParams,
@@ -60,12 +54,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-// --- button modifiers -------------------------------------------------
-
-// Twiddle strips every modifier *except* the numpad bit (upstream
-// `button & (~MOD_MASK | MOD_NUM_KEYPAD)`), since numpad keys drive the
-// corner/edge rotations — so `stripModifiers` is intentionally not used.
 
 // Char codes for the corner-rotation keys.
 const KEY_a = 0x61;
@@ -97,26 +85,14 @@ function interpretMove(
   rawButton: number,
 ): TwiddleMove | null | UiUpdate {
   const { w, h, n } = state;
+  // Every modifier but the numpad bit (so not `stripModifiers`): the keypad
+  // rotations below need it.
   const button = rawButton & (~MOD_MASK | MOD_NUM_KEYPAD);
   const ts = ds.tilesize;
 
-  // Cursor movement over the (w-n+1) × (h-n+1) rotation-origin space.
-  // No toroidal wrap; the origin space is clamped.
+  // The cursor moves over the rotation-origin space, clamped.
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(
-      button,
-      ui.cursor.x,
-      ui.cursor.y,
-      w - n + 1,
-      h - n + 1,
-    );
-    const changed = moved !== null || !ui.cursor.visible;
-    if (moved) {
-      ui.cursor.x = moved.x;
-      ui.cursor.y = moved.y;
-    }
-    ui.cursor.visible = true;
-    return changed ? UI_UPDATE : null;
+    return moveCursor(ui.cursor, button, w - n + 1, h - n + 1) ? UI_UPDATE : null;
   }
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
@@ -130,15 +106,13 @@ function interpretMove(
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.cursor.visible) {
-      ui.cursor.visible = true;
-      return UI_UPDATE;
-    }
+    if (showCursor(ui.cursor)) return UI_UPDATE;
     return rotateMove(ui.cursor.x, ui.cursor.y, button === CURSOR_SELECT2 ? -1 : 1);
   }
 
-  // Corner-rotation keys and numpad rotations. Each targets a fixed
-  // block; the letter's case (or the numpad key) sets the direction.
+  // Letters a–d and numpad 7/9/1/3 turn a corner block (a capital turns it
+  // back); numpad 8/2/4/6/5 turn the block exactly midway along an edge, or
+  // at the center, when there is one.
   if (button === KEY_a || button === KEY_A || button === (MOD_NUM_KEYPAD | 0x37)) {
     return rotateMove(0, 0, button === KEY_A ? -1 : 1);
   }
@@ -174,12 +148,12 @@ function interpretMove(
 
 export function executeMove(from: TwiddleState, move: TwiddleMove): TwiddleState {
   if (move.type === "solve") {
-    const { numbers, orient } = solvedGrid(from);
-    // Upstream sets both completed and movecount to 1 on auto-solve.
+    // Sort the numbers and clear the orientations. Upstream sets both
+    // completed and movecount to 1 on auto-solve.
     return {
       ...from,
-      numbers,
-      orient,
+      numbers: Int32Array.from(from.numbers).sort(),
+      orient: new Uint8Array(from.numbers.length),
       cheated: true,
       completed: 1,
       moveCount: 1,
@@ -194,7 +168,7 @@ export function executeMove(from: TwiddleState, move: TwiddleMove): TwiddleState
 
   const numbers = Int32Array.from(from.numbers);
   const orient = Uint8Array.from(from.orient);
-  doRotate(numbers, orient, w, h, n, from.orientable, move.x, move.y, move.dir);
+  doRotate(numbers, orient, w, n, from.orientable, move.x, move.y, move.dir);
 
   const moveCount = from.moveCount + 1;
   let completed = from.completed;
@@ -231,11 +205,7 @@ function statusbarText(state: TwiddleState, _ui: TwiddleUi): string {
 
 function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const palette = buildColors(background, highlight, lowlight);
-  if (palette.length !== NCOLORS) {
-    throw new Error("twiddle palette size mismatch");
-  }
-  return palette;
+  return buildColors(background, highlight, lowlight);
 }
 
 // --- Game object ------------------------------------------------------
@@ -298,7 +268,7 @@ export const twiddleGame: Game<
     },
   ],
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -307,9 +277,7 @@ export const twiddleGame: Game<
   executeMove,
   status,
 
-  solve(_orig, _curr) {
-    return { ok: true, move: { type: "solve" as const } };
-  },
+  solve: () => ({ ok: true, move: { type: "solve" } }),
 
   textFormat,
   statusbarText,
