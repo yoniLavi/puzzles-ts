@@ -1,20 +1,12 @@
 /**
- * The on-demand, idiomatic replacement for upstream `tree234` as used
- * by Flip's RANDOM matrix generator (`ts-migration`: leaf libs ported
- * "lazily and idiomatically … as ordinary TS dependencies", not as
- * bridged seams with corpora).
+ * Upstream's `tree234` as the games use it: an ordered collection that is a
+ * set *under its comparator* (`add234` returns the existing element when the
+ * comparator ties, so a tying insert is dropped), with positional and
+ * relative-find operations. A sorted array with binary search stands in for
+ * the 2-3-4 tree.
  *
- * Flip uses three `tree234`s purely as ordered collections that are
- * sets *under their comparator* (`add234` returns the existing element
- * when the comparator ties, so a tying insert is dropped) plus
- * positional / relative-find operations. Flip grids are tiny (presets
- * ≤ 5×5 = 25 cells; the puzzle is impractical at large sizes), so a
- * sorted array with binary search is the right structure — a 2-3-4
- * tree would be gratuitous. Now a shared `engine/` leaf: Pegs, Netslide
- * and Net (via `engine/wires.ts`) are further consumers.
- *
- * `compare(a, b)` returns <0, 0, or >0. Two items that compare equal
- * are treated as the same member (the comparator defines identity).
+ * `compare(a, b)` returns <0, 0, or >0. Two items that compare equal are the
+ * same member (the comparator defines identity).
  */
 export class SortedMultiset<T> {
   private readonly items: T[] = [];
@@ -49,11 +41,8 @@ export class SortedMultiset<T> {
     return lo;
   }
 
-  /**
-   * Insert `item`. Returns `true` if inserted, `false` if an element
-   * comparing equal is already present (left untouched) — upstream
-   * `add234`'s "already there" behavior.
-   */
+  /** Insert `item`. Returns `false`, leaving the set untouched, if an element
+   * comparing equal is already present (upstream `add234`). */
   add(item: T): boolean {
     const i = this.lowerBound(item);
     if (i < this.items.length && this.compare(this.items[i], item) === 0) {
@@ -63,8 +52,7 @@ export class SortedMultiset<T> {
     return true;
   }
 
-  /** Remove the element comparing equal to `item`, if present
-   * (upstream `del234`). */
+  /** Remove the element comparing equal to `item`, if present (upstream `del234`). */
   delete(item: T): void {
     const i = this.lowerBound(item);
     if (i < this.items.length && this.compare(this.items[i], item) === 0) {
@@ -77,25 +65,20 @@ export class SortedMultiset<T> {
     return this.items[pos];
   }
 
-  /** Remove and return the element at position `pos` (upstream
-   * `delpos234`). */
+  /** Remove and return the element at position `pos` (upstream `delpos234`). */
   removeAt(pos: number): T {
     return this.items.splice(pos, 1)[0];
   }
 
-  /**
-   * Position of the greatest element strictly less than `probe`, or
-   * `-1` if none — upstream `findrelpos234(t, probe, REL234_LT, &pos)`
-   * (returns the element and its index).
-   */
+  /** Position of the greatest element strictly less than `probe`, or `-1` if
+   * none (the index upstream `findrelpos234(t, probe, REL234_LT, &pos)`
+   * writes to `pos`). */
   lastIndexLessThan(probe: T): number {
     return this.lowerBound(probe) - 1;
   }
 
-  /**
-   * The least element strictly greater than `probe`, or `undefined`
-   * if none — upstream `findrel234(t, probe, REL234_GT)`.
-   */
+  /** The least element strictly greater than `probe`, or `undefined` if none
+   * (upstream `findrel234(t, probe, REL234_GT)`). */
   firstGreaterThan(probe: T): T | undefined {
     const i = this.upperBound(probe);
     return i < this.items.length ? this.items[i] : undefined;

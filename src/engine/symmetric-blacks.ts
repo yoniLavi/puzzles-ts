@@ -1,9 +1,6 @@
 /**
- * Symmetric black-square placement — upstream `set_blacks`, which
- * `sticks.c` copied verbatim from `lightup.c` (its own comment says so).
- * Promoted to a shared engine helper when Sticks became the second
- * consumer (docs/games/engine-catalog.md § "Reach for these, don't re-roll"); Light Up and Sticks both call it from their
- * generators.
+ * Symmetric black-square placement: upstream `set_blacks`, which `sticks.c`
+ * copied verbatim from `lightup.c` (its own comment says so).
  *
  * Byte-match critical: the symmetry-reduced region sizing, the
  * rejection-sampling draw order (one `randomUpto` pair per placement
@@ -96,7 +93,7 @@ export function placeSymmetricBlacks(opts: SymmetricBlacksOptions): void {
   if (degree === 4) {
     rw = Math.floor(w / 2);
     rh = Math.floor(h / 2);
-    if (!rotate) rw += wodd; // ... but see below (upstream comment)
+    if (!rotate) rw += wodd; // rotation's odd center is filled in at the end
     rh += hodd;
   } else if (degree === 2) {
     rw = w;

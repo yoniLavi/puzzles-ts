@@ -1,13 +1,11 @@
 /**
- * Random-loop generator — the idiomatic TS port of upstream `loopgen.c`
- * (the loop-generation code Loopy and Pearl share), landed lazily with its
- * first consumer, Pearl.
+ * Random-loop generator (upstream `loopgen.c`, which Loopy and Pearl share).
  *
  * `generateLoop(grid, board, rng, bias?)` colors every face of `grid`
  * inside (WHITE) or outside (BLACK) so the white/black boundary is a single
  * closed loop, writing the coloring into `board`. It is **RNG-faithful**:
- * it reproduces the exact `generate_loop` draw order so a generator built
- * on it (Pearl) is byte-match portable —
+ * it reproduces the exact `generate_loop` draw order, which the consumers'
+ * differentials depend on —
  *   1. a per-face 31-bit random score (`randomBits(rng, 31)`),
  *   2. a random seed face (`randomUpto(rng, numFaces)`),
  *   3. per main-loop iteration a random candidate color (`randomUpto(rng, 2)`),
@@ -15,9 +13,8 @@
  *   5. a final random flip pass (`randomUpto(rng, 10)` per flippable face).
  * The candidate sets are ordered by (score desc, random asc, face index),
  * where the final **face-index** tie-break reproduces upstream's
- * pointer-order tie-break (faces are allocated in index order, so pointer
- * order is index order — see grid.ts). Because the random field is 31 bits
- * the index tie-break is essentially never reached.
+ * pointer-order tie-break (see `grid/grid-core.ts`). Because the random field
+ * is 31 bits the index tie-break is essentially never reached.
  */
 
 import type { Grid, GridFace } from "./grid/index.ts";
@@ -92,11 +89,11 @@ function canColorFace(
   // around that dot; the current face is testFace.dots[i].faces[j].
   let i = 0;
   let j = 0;
-  // biome-ignore lint/style/noNonNullAssertion: square-grid faces always have their dots.
+  // biome-ignore lint/style/noNonNullAssertion: a built grid's faces have all their dots.
   let currentFace: GridFace | null = testFace.dots[0]!.faces[0];
   if (currentFace === testFace) {
     j = 1;
-    // biome-ignore lint/style/noNonNullAssertion: seeded above.
+    // biome-ignore lint/style/noNonNullAssertion: as above.
     currentFace = testFace.dots[0]!.faces[1];
   }
   let transitions = 0;
@@ -213,11 +210,10 @@ export function generateLoop(
     const color = randomUpto(rng, 2) ? FACE_WHITE : FACE_BLACK;
     const facesToPick = color === FACE_WHITE ? lightable : darkable;
 
-    let chosen: number;
+    let i = facesToPick.get(0);
     if (bias) {
       // Pick the face the bias likes best, breaking ties by the sorted
       // order (replace only on strictly-greater, matching C's `> bestscore`).
-      let best = -1;
       let bestScore = 0;
       for (let k = 0; k < facesToPick.size; k++) {
         const fi = facesToPick.get(k);
@@ -225,17 +221,13 @@ export function generateLoop(
         const score = bias(board, fi);
         board[fi] = FACE_GRAY;
         bias(board, fi); // let bias know we put it back
-        if (best === -1 || score > bestScore) {
+        if (k === 0 || score > bestScore) {
           bestScore = score;
-          best = fi;
+          i = fi;
         }
       }
-      chosen = best;
-    } else {
-      chosen = facesToPick.get(0);
     }
 
-    const i = chosen;
     board[i] = color;
     if (bias) bias(board, i); // notify bias of the change
 
@@ -270,8 +262,7 @@ export function generateLoop(
   }
 
   // The tendril / random-flip pass needs a shuffled list of all faces.
-  const faceList: number[] = [];
-  for (let i = 0; i < numFaces; i++) faceList.push(i);
+  const faceList = Array.from({ length: numFaces }, (_, i) => i);
   shuffle(faceList, rng);
 
   // Normal passes grow 'tendrils' (flip a face adjacent to exactly one

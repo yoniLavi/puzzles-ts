@@ -1,17 +1,12 @@
 /**
- * Loop/bridge finding in undirected graphs — idiomatic TS port of upstream
- * `findloop.c` (Tarjan's bridge-finding algorithm, the non-recursive
- * doubly-linked-list variant credited to
- * https://mathstodon.xyz/@abacabadabacaba@infosec.exchange/113113280480134188).
+ * Loop/bridge finding in undirected graphs (upstream `findloop.c`): Tarjan's
+ * bridge-finding algorithm, in the non-recursive doubly-linked-list variant
+ * credited to
+ * https://mathstodon.xyz/@abacabadabacaba@infosec.exchange/113113280480134188.
  *
  * A bridge is an edge whose removal would disconnect its component; an edge
- * is part of a loop exactly when it is *not* a bridge. Games use this for
- * live loop-error highlighting (Slant) and bridge analysis (Bridges,
- * Dominosa, Loopy, Tracks when ported).
- *
- * Deterministic and RNG-free. The C's stateful `neighbour_fn_t` re-entry
- * protocol (`vertex >= 0` starts iteration, `-1` continues) becomes an
- * ordinary `(vertex) => Iterable<number>` callback.
+ * is part of a loop exactly when it is *not* a bridge. Deterministic and
+ * RNG-free.
  */
 
 /** Vertex counts on the two sides of a bridge edge. */

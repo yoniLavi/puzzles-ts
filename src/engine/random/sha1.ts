@@ -1,10 +1,6 @@
 /*
- * SHA-1 implementation, byte-for-byte equivalent to `puzzles/random.c`'s
- * internal SHA-1. Used by random.ts as the engine behind the
- * Simon-Tatham game RNG.
- *
- * Not exported as a general-purpose SHA-1 yet. puzzles/misc.c also calls
- * the C `SHA_*` functions for non-random work; that's a separate seam.
+ * SHA-1, byte for byte upstream `random.c`'s: the engine behind the RNG in
+ * `index.ts`, and behind `obfuscate.ts`'s desc masking.
  */
 
 export type ShaState = {
@@ -120,9 +116,7 @@ export function shaBytes(s: ShaState, data: Uint8Array): void {
 
 export function shaFinal(s: ShaState, output: Uint8Array): void {
   const pad = s.blkused >= 56 ? 56 + 64 - s.blkused : 56 - s.blkused;
-  // Bit-length of the input. C does:
-  //   lenhi = (s->lenhi << 3) | (s->lenlo >> 29);
-  //   lenlo = (s->lenlo << 3);
+  // The input's length in bits, as a 64-bit hi/lo pair.
   const lenhi = u32((s.lenhi << 3) | (s.lenlo >>> 29));
   const lenlo = u32(s.lenlo << 3);
 
@@ -150,11 +144,10 @@ export function shaFinal(s: ShaState, output: Uint8Array): void {
 }
 
 /**
- * Deep-clone a SHA state. Mirrors the C `final = base;` struct copy in
- * `misc.c`'s `obfuscate_bitmap`, which forks a partially-hashed base
- * state and finalizes each fork independently. `shaFinal` mutates its
- * argument (it appends padding via `shaBytes`), so a caller that needs
- * to keep hashing the base after finalizing a fork MUST copy first.
+ * Deep-clone a SHA state (the C `final = base;` struct copy in
+ * `obfuscate_bitmap`). `shaFinal` mutates its argument by appending padding,
+ * so a caller that keeps hashing the base after finalizing a fork MUST copy
+ * first.
  */
 export function shaCopy(s: ShaState): ShaState {
   return {

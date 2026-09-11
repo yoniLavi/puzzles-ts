@@ -1,8 +1,5 @@
-/**
- * Fisher-Yates shuffle over the engine's `RandomState` — the idiomatic
- * port of upstream `misc.c shuffle()`. Promoted from Galaxies'
- * generator when Mosaic became the second consumer.
- */
+/** Fisher-Yates shuffle over the engine's `RandomState` (upstream `misc.c`
+ * `shuffle()`, draw for draw). */
 import { type RandomState, randomUpto } from "./random/index.ts";
 
 export function shuffle<T>(arr: T[], rng: RandomState): void {

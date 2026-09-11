@@ -443,14 +443,12 @@ describe("planSlides", () => {
     // every board it reaches, one storing almost none — so each is a referee for
     // the other. **This is the check that matters, and it is not decoration.**
     //
-    // The deep search's index narrows its hash into an `Int32Array`, and an
-    // earlier version compared that narrowed word against an unsigned `>>> 0`
-    // copy of the same hash. Half of every database was therefore invisible. It
-    // did not fail — it went half blind, quietly returned "no plan" on boards it
-    // should have solved, and read exactly like a search that could not reach
-    // that far. It survived a whole round of measurement and produced a
-    // confident, wrong conclusion about Sixteen's endgame; what caught it was
-    // asking a mechanism with no hash table in it for the same answer.
+    // The deep search's index narrows its hash into an `Int32Array`; compare
+    // that narrowed word against an unsigned `>>> 0` copy of the same hash and
+    // half of every database goes invisible. Nothing fails — it quietly returns
+    // "no plan" on boards it should solve, which reads exactly like a search that
+    // cannot reach that far. What catches it is asking a mechanism with no hash
+    // table in it for the same answer.
     //
     // Small board, small depths: the property is about agreement, not size, and
     // this runs in a moment.

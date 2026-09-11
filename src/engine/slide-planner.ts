@@ -23,8 +23,7 @@
  *   runs on every board before the heuristic does. A shortest plan is what makes
  *   a hint the player keeps re-asking for arrive rather than cycle; running it
  *   unconditionally is what makes that a guarantee rather than a hope. See
- *   `exactSearch`, which is also where the two gates that were tried and cycled
- *   are recorded.
+ *   `exactSearch` for why it must not be gated.
  * - **A deeper last resort** for the boards that search cannot reach, bounded by
  *   depth rather than by stored states: a kept endgame database of the goal side
  *   and a depth-first walk of the board side, which costs time instead of
@@ -66,7 +65,7 @@ export interface SlidePuzzle {
    * non-negative integer that is zero at `goal`; it steers the A\* and nothing
    * else, so a game is free to make it as sharp as it can afford.
    *
-   * One warning, learned the hard way. It is tempting to fix a target *once* —
+   * One warning. It is tempting to fix a target *once* —
    * decide up front which piece is going to end up where, then measure the total
    * distance to that arrangement. For a game with interchangeable pieces this
    * quietly poisons the search: the further the board drifts from the one the
@@ -102,27 +101,20 @@ export interface SlidePuzzle {
    * Netslide was found sending a board five slides of the same row, each
    * separately scoring as progress, back to exactly where it started.
    *
-   * **On every board is not a missing optimization — it is the guarantee.** It
-   * is tempting to hold this search back for the boards that need it: run the
-   * cheap heuristic first and reach for the exact search only where the
-   * heuristic proves helpless, or arm it only once the board *looks* nearly
-   * finished. Both break the guarantee in a way that is very hard to see, and
-   * both were measured breaking it here.
+   * **On every board is not a missing optimization — it is the guarantee.**
+   * Running it only where the heuristic proves helpless, or only once the board
+   * *looks* nearly finished, both break it, and both were measured doing so:
+   * **a shortest plan does not look like progress on the way home**. A 5×5
+   * Sixteen plan starting 9 tiles out of place, a total of 9 slides from their
+   * homes, peaks at 17 and 30 on those two measures before it arrives, so a gate
+   * keyed on either switches off partway down the descent it opened, and the
+   * heuristic walks the board back — a period-4 cycle that no budget or depth
+   * removes. **The search that opens a descent must be the one that finishes
+   * it.**
    *
-   * The reason is that **a shortest plan does not look like progress on the way
-   * home**. Sixteen's endgame is the worked example: a 5×5 plan starting 9 tiles
-   * out of place, with the tiles a total of 9 slides from their homes, peaks at
-   * 17 and 30 on those two measures before it arrives. So a gate keyed on either
-   * of them switches off partway down the descent it just opened, the heuristic
-   * takes back over, and it walks the board straight back to where it started —
-   * a period-4 cycle that no budget and no depth would have removed. **The
-   * search that opens a descent must be the one that finishes it**, and the only
-   * way to be sure of that is for it to be the one that always runs.
-   *
-   * What that costs is a search on boards far too far away to reach, which come
-   * back empty having spent the whole budget. That is the price of the
-   * guarantee, and it is why the budget wants to be the smallest one that still
-   * crosses the game's worst endgame rather than the largest one affordable.
+   * The price is a search on boards far out of reach, which come back empty
+   * having spent the whole budget. So the budget wants to be the smallest one
+   * that still crosses the game's worst endgame, not the largest affordable.
    */
   exactSearch?: {
     maxDepth: number;
@@ -140,10 +132,8 @@ export interface SlidePuzzle {
    * to.** This one reaches exactly one ply further than `exactSearch`, so a plan
    * it opens is at most one move longer than `exactSearch` can finish; play that
    * first move and the remainder is `exactSearch`'s, on every board, because
-   * `exactSearch` is ungated. The old defect was the mirror image: the only
-   * exact search *was* the gated one, so when the gate shut there was nothing
-   * beneath it but the heuristic, and the heuristic walked the board back to
-   * where it started.
+   * `exactSearch` is ungated. Had the gated search been the only exact one,
+   * nothing but the heuristic would lie beneath it when the gate shut.
    *
    * **Keep that one ply.** Reaching two plies further would leave a board the
    * ungated search cannot finish, the gate would shut on it, and the cycle would
@@ -305,10 +295,9 @@ function sameLineMovesCompose(
 /**
  * A board squeezed into a handful of 31-bit words, and hashed.
  *
- * The exact search below is the expensive half of a hint and it now runs on
- * *every* board rather than only on the ones the heuristic gave up on (see
- * `exactSearch`), so what it costs per board is the constraint on the whole
- * design. Measured on Sixteen 5×5, one board through the obvious
+ * The exact search below is the expensive half of a hint and it runs on
+ * *every* board (see `exactSearch`), so what it costs per board is the
+ * constraint on the whole design. Measured on Sixteen 5×5, one board through the obvious
  * string-key-in-a-`Map` route costs about 2 µs, and a search that crosses the
  * endgame visits two million of them: four to six seconds, per hint. The same
  * search on the storage below is a little under one second, because a board
@@ -346,9 +335,7 @@ class BoardPacker {
   /** Pack `board` into `buf` and return its hash (FNV-1a over the words). */
   pack(board: Int32Array): number {
     // Hoisted one by one rather than destructured: biome's unused-private-member
-    // rule does not count a read through `const { … } = this`, and a suppression
-    // to buy back the shorter line would be hiding the measurement rather than
-    // satisfying it.
+    // rule does not count a read through `const { … } = this`.
     const buf = this.buf;
     const bits = this.bits;
     const perWord = this.perWord;
@@ -394,8 +381,7 @@ function hashWords(words: Int32Array, offset: number, count: number): number {
  *
  * Memory, since the caller's `maxStates` is what bounds it: a node costs
  * `words` + 3 words in the pools, plus up to two slots in the index, so a
- * 2.5-million-state Sixteen search peaks around 200 MB across both sides —
- * a third of what the same search cost as objects and string keys.
+ * 2.5-million-state Sixteen search peaks around 200 MB across both sides.
  */
 class SearchSide {
   count = 0;
@@ -770,9 +756,7 @@ class SlideEndgame {
    * value with the top bit set — half of them. What makes it worth this comment
    * is that the database does not break when that happens. It goes half blind,
    * and a search that cannot find a nine-move plan looks exactly like a search
-   * that cannot reach nine moves. It produced a confident wrong conclusion about
-   * this game's endgame until the answer was checked against a referee search
-   * that had no hash table in it at all.
+   * that cannot reach nine moves.
    */
   hash(board: Int32Array): number {
     let hash = 0;
@@ -1173,21 +1157,11 @@ export function planSlides(p: SlidePuzzle): SlidePlan {
   // climb out of. The exact search has already run and come back empty, so the
   // board is past its reach; the deep search is the last thing there is to try.
   //
-  // **This is a gate, and gating the search above is the defect this file
-  // exists to explain, so it is worth saying exactly why this one is safe.** A
-  // gated search is safe when an *ungated* one covers everything it hands off
-  // to. The deep search reaches one ply further than `exactSearch` and no more,
-  // so the plan it opens is at most one move longer than what `exactSearch` can
-  // finish — and `exactSearch` runs on every board. Play the deep plan's first
-  // move and the rest is `exactSearch`'s, every time. The old defect was the
-  // opposite arrangement: the *only* exact search was the gated one, so when the
-  // gate shut there was nothing underneath it but the heuristic, and the
-  // heuristic walked the board back.
-  //
-  // The gate is worth having because this search is bounded by time rather than
-  // by memory, and a board out of its reach costs the whole of it. Running it on
-  // every board past `exactSearch`'s reach — which is most of a game — would
-  // spend that on every hint.
+  // This is a gate, safe for the reason `deepSearch`'s doc gives: `exactSearch`
+  // is ungated and finishes whatever this one opens. It is worth having because
+  // this search is bounded by time, and a board out of its reach costs the whole
+  // of it; running it on every board past `exactSearch`'s reach — most of a
+  // game — would spend that on every hint.
   if (bestNode.move === null && p.deepSearch) {
     const shortest = deepPlan(p, p.deepSearch);
     if (shortest && shortest.length > 0) {

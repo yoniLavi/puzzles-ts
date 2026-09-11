@@ -1,20 +1,14 @@
 /**
- * Divide a rectangle into equally-sized connected ominoes at random — an
- * idiomatic port of `divvy.c` (`divvy_rectangle`). Shared engine leaf: consumed
- * by Solo's jigsaw sub-block division, Palisade's region generation, and
- * Separate's `k`-omino partition (promoted here from `solo/` on the third
- * consumer per docs/games/engine-catalog.md § "Reach for these, don't re-roll").
+ * Divide a rectangle into equally-sized connected ominoes at random (upstream
+ * `divvy.c`'s `divvy_rectangle`).
  *
- * RNG-faithful to upstream over the bit-identical `random.ts`: the draw order
- * (the `order` shuffle, the per-iteration `random_upto` omino pick, the BFS over
- * the same `order` permutation) is preserved so a generated desc matches the C
- * reference byte-for-byte. The algorithm is ported logic-faithfully (typed
- * arrays instead of `void *` scratch), not control-flow-transliterated.
+ * RNG-faithful: the draw order (the `order` shuffle, the per-iteration
+ * `random_upto` omino pick, the BFS over the same `order` permutation) is
+ * upstream's, so a generated desc matches the C reference byte for byte.
  *
- * The returned `Dsf` is consumed only for membership/connectivity (Solo's
- * `blocksFromDsf` numbers regions by ascending first-appearance), so the shared
- * union-by-size `Dsf` is byte-match-safe here regardless of its root choice — the
- * partition, not the root identity, is what feeds the desc (docs/games/solver-and-generator.md § "The Latin family").
+ * Callers read the returned `Dsf` for membership only (Solo's `blocksFromDsf`
+ * numbers regions by first appearance), so the partition feeds a desc and the
+ * root choice does not.
  */
 
 import { Dsf } from "./dsf.ts";
@@ -64,8 +58,8 @@ function addremcommon(
 
 /**
  * One attempt at partitioning a `w × h` rectangle into `n = w*h/k` ominoes of
- * size `k`. Returns a `w*h`-sized `Dsf` of the partition, or `null` if this
- * attempt got stuck (the caller retries). Faithful to `divvy_rectangle_attempt`.
+ * size `k` (upstream `divvy_rectangle_attempt`). Returns a `w*h`-sized `Dsf` of
+ * the partition, or `null` if this attempt got stuck (the caller retries).
  */
 function divvyRectangleAttempt(
   w: number,
@@ -218,9 +212,10 @@ function divvyRectangleAttempt(
 const MAX_DIVVY_ATTEMPTS = 10000;
 
 /**
- * Partition a `w × h` rectangle into size-`k` connected ominoes. Retries failed
- * attempts (faithful to `divvy_rectangle`'s `do { } while (!ret)`), capped so a
- * divergence fails loudly instead of hanging (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned").
+ * Partition a `w × h` rectangle into size-`k` connected ominoes, retrying
+ * failed attempts as upstream does, capped so a divergence fails loudly instead
+ * of hanging (docs/games/testing.md § "Quirks are load-bearing — capped, not
+ * cleaned").
  */
 export function divvyRectangle(w: number, h: number, k: number, rng: RandomState): Dsf {
   for (let attempt = 0; attempt < MAX_DIVVY_ATTEMPTS; attempt++) {

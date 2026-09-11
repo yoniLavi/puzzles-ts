@@ -1,10 +1,7 @@
 /*
- * Replay the C-recorded random.c corpus against `random.ts`, byte by byte.
- *
- * The corpus at `__fixtures__/corpus.json` is produced by
- * `puzzles/auxiliary/random-trace.c` running natively against
- * `puzzles/random.c`. A mismatch here means the TS port's output
- * has drifted from upstream's — never acceptable.
+ * Replay the C-recorded `random.c` corpus in `__fixtures__/corpus.json`, byte
+ * by byte. A mismatch means the RNG has drifted from upstream's, which changes
+ * every shared game ID — never acceptable.
  */
 
 import { describe, expect, it } from "vitest";

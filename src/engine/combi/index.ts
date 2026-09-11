@@ -1,11 +1,4 @@
-/*
- * TypeScript port of `puzzles/combi.c` — lex-order r-of-n combination
- * iterator. The replay corpus lives at `__fixtures__/corpus.json` and
- * is recorded by `puzzles/auxiliary/combi-trace.c`. Internals mirror
- * the C `next_combi` control flow step-for-step; the public surface
- * is an idiomatic TS class per AGENTS.md's "idiomatic surface,
- * faithful internals" dictum.
- */
+/** Lex-order r-of-n combination iterator (upstream `combi.c`). */
 
 export class Combi {
   readonly r: number;
@@ -42,16 +35,11 @@ export class Combi {
   }
 
   next(): boolean {
-    let i = this.r - 1;
-
-    // The very first call after reset returns the initial tuple [0..r-1]
-    // unchanged (mirrors the `goto done` branch in C's next_combi);
-    // subsequent calls do the lex-successor walk.
-    if (this.#nleft === this.total) {
-      // initial tuple already populated by reset()
-    } else if (this.#nleft <= 0) {
-      return false;
-    } else {
+    if (this.#nleft <= 0) return false;
+    // The first call after reset returns the initial tuple [0..r-1] as it
+    // stands; every later call steps to the lex successor.
+    if (this.#nleft < this.total) {
+      let i = this.r - 1;
       while (this.#a[i] === this.n - this.r + i) i--;
       this.#a[i] += 1;
       for (let j = i + 1; j < this.r; j++) {
@@ -71,8 +59,7 @@ export class Combi {
 
 function choose(n: number, r: number): number {
   // C(n, r) accumulated as ((n-r+1) * (n-r+2) * ... * n) / r!, multiplying
-  // before dividing so each intermediate is an integer (matches the
-  // factx(n, r+1) / factx(n-r, 1) shape in combi.c).
+  // before dividing so each intermediate is an integer.
   let result = 1;
   for (let k = 1; k <= r; k++) {
     result = (result * (n - r + k)) / k;

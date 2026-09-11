@@ -1,19 +1,13 @@
 /**
- * Random 2×1 domino tiling of a `w × h` grid — an idiomatic TS port of
- * `domino_layout` (`puzzles/laydomino.c`). Returns an `Int32Array` of length
- * `w·h` where `grid[i]` is the index of the other end of the domino covering
- * cell `i` (or `i` itself for a lone singleton, which happens only when `w·h`
- * is odd).
+ * Random 2×1 domino tiling of a `w × h` grid (upstream `laydomino.c`'s
+ * `domino_layout`). Returns an `Int32Array` of length `w·h` where `grid[i]` is
+ * the index of the other end of the domino covering cell `i` (or `i` itself
+ * for a lone singleton, which happens only when `w·h` is odd).
  *
- * Byte-match critical: the RNG draw order reproduces C exactly — the initial
+ * Byte-match critical: the RNG draw order is upstream's — the initial
  * `shuffle` of the `2·w·h − w − h` candidate positions, then the per-BFS-node
  * `shuffle` of a cell's neighbor directions during the chessboard-parity
- * singleton fixup. The shared `shuffle` (engine/shuffle.ts) matches
- * `misc.c shuffle` byte-for-byte, so a faithful port over the bit-identical
- * `random.ts` reproduces the layout for a given seed.
- *
- * Consumers: Magnets (ported); Dominosa (still C — `laydomino.c` stays until
- * its last C consumer ports, like `random.c`).
+ * singleton fixup — so a seed lays out the same dominoes as the C reference.
  */
 import type { RandomState } from "./random/index.ts";
 import { shuffle } from "./shuffle.ts";

@@ -1,9 +1,8 @@
 /*
- * Tests for the TS port of `puzzles/combi.c`. Three layers:
+ * Tests for the port of upstream `combi.c`. Three layers:
  *
- *  1. A direct translation of `puzzles/auxiliary/combi-test.c` so the
- *     upstream per-module test acts as the spec (per AGENTS.md test
- *     discipline layer 2).
+ *  1. A direct translation of upstream's `auxiliary/combi-test.c`, so the
+ *     upstream per-module test acts as the spec.
  *
  *  2. Surface-level behavioral checks (preconditions, reset, iterator
  *     sugar) that are part of the TS API contract.
@@ -12,30 +11,21 @@
  *     `C(n, r)` tuples, strictly ascending, in strict lex order, all
  *     distinct, all drawn from `{0..n-1}`.
  *
- * THERE USED TO BE A FOURTH, FIRST LAYER: replay of a C-recorded
- * `__fixtures__/corpus.json`. `retire-native-directory` retired it, and the
- * reasoning is worth keeping because it does **not** generalize to the other
- * frozen corpora in this repo. A per-game differential records which boards a
- * solver-gated generator produces, and `random`'s corpus records what bit
- * sequence a seed yields; neither fact can be derived, so the recorded fixture
- * is the only statement of it and it stays. `combi` enumerates the subsets of a
- * set. There is no upstream quirk in it — the recorded enumeration is what the
- * definition requires — so replaying it demonstrated only that C and TypeScript
- * both implement combinations, while layer 3 states the mathematics directly and
- * holds for every `(r, n)` rather than the five that were recorded.
- *
- * The one thing the corpus block did carry alone was `reset()` coverage, which
- * is now the explicit test below. Retiring a fixture is retiring an assurance,
- * so the question to ask is not "is this fact derivable?" but "is *every* fact
- * this file asserted derivable?".
+ * There is deliberately no C-recorded corpus, and the reason does **not**
+ * generalize to the other frozen corpora in this repo. A per-game differential
+ * records which boards a solver-gated generator produces, and `random`'s corpus
+ * records what bit sequence a seed yields; neither fact can be derived, so the
+ * recorded fixture is the only statement of it. `combi` enumerates the subsets
+ * of a set, with no upstream quirk in it, so layer 3 states the mathematics
+ * directly and holds for every `(r, n)` rather than a recorded handful.
  */
 
 import { describe, expect, it } from "vitest";
 import { Combi } from "./index.ts";
 
 // -----------------------------------------------------------------------------
-// Port of puzzles/auxiliary/combi-test.c — the upstream per-module test as our
-// spec. The C program takes `R N` argv and prints:
+// Port of upstream's auxiliary/combi-test.c — the upstream per-module test as
+// our spec. The C program takes `R N` argv and prints:
 //   combi R of N, T elements.
 //   <r-tuple, space-separated>
 //   ...
@@ -109,9 +99,7 @@ describe("Combi API surface", () => {
   });
 
   it("reset rewinds an exhausted iterator to the same enumeration", () => {
-    // The corpus block this file used to open with was the only place `reset()`
-    // was driven — the `combi` spec requires the scenario, so it is stated here
-    // directly rather than as a side effect of replaying a recording.
+    // The `combi` spec requires this scenario, and nothing else drives `reset()`.
     const c = new Combi(2, 4);
     const first: number[][] = [];
     while (c.next()) first.push([...c.a]);
@@ -176,10 +164,8 @@ describe("Combi API surface", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Property tests, per the AGENTS.md "for pure deterministic seams, also add a
-// property-test layer" rule. These invariants hold for every valid (r, n) —
-// they catch regressions which happen to pass the recorded fixtures but break
-// on unrecorded inputs. Cheap, exhaustive over a small grid.
+// Property tests: these invariants hold for every valid (r, n). Cheap,
+// exhaustive over a small grid.
 
 describe("Combi properties (exhaustive over small grid)", () => {
   const pairs: [number, number][] = [];

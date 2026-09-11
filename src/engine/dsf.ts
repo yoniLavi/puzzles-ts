@@ -1,12 +1,6 @@
 /**
- * Disjoint-set / union-find — idiomatic TS leaf for Galaxies.
- *
- * Lazy idiomatic leaf port per the `ts-migration` spec: ported when a
- * game (Galaxies) needs it, kept local to the game until a second
- * caller appears, then promoted. The original four operations —
- * construct, reinit, canonify, merge — cover Galaxies/Pegs; Palisade
- * added the two read accessors upstream's `dsf.c` also exposes
- * (`size`, `equivalent`). Path compression + union-by-size; ~40 lines.
+ * Disjoint-set / union-find (upstream `dsf.c`): path compression and
+ * union-by-size, with upstream's choice of root (see `merge`).
  */
 export class Dsf {
   private readonly parent: Int32Array;
@@ -43,13 +37,11 @@ export class Dsf {
 
   /** Merge `a`'s class with `b`'s. No-op if already in the same class.
    *
-   * Tie-breaking mirrors upstream `dsf.c`'s `dsf_merge` exactly: the larger
-   * class becomes the root, and on a tie the *second* argument's root wins
-   * (`if (s1 > s2) root = r1; else root = r2`). This matters because a few
-   * upstream algorithms branch on the canonical-root *identity* (e.g.
-   * Filling's `learn_critical_square` walks a region's `connected` list from
-   * its canonical cell), so matching the root choice is required for
-   * differential parity, not just connectivity. */
+   * The root is upstream `dsf_merge`'s: the larger class's, and on a tie the
+   * *second* argument's. Some algorithms branch on the root's *identity*
+   * (Filling's `learn_critical_square` walks a region from its canonical
+   * cell), so the differentials depend on this choice, not only on the
+   * partition. */
   merge(a: number, b: number): void {
     const ra = this.canonify(a);
     const rb = this.canonify(b);
@@ -73,8 +65,8 @@ export class Dsf {
     return this.canonify(a) === this.canonify(b);
   }
 
-  /** A deep copy — a fresh forest with the same partition. Used by games
-   * (Signpost) whose immutable state clones its `Dsf` per move. */
+  /** A deep copy: a fresh forest with the same partition, for a state that
+   * clones its `Dsf` per move. */
   clone(): Dsf {
     const copy = new Dsf(this.parent.length);
     copy.parent.set(this.parent);
@@ -92,16 +84,13 @@ export interface FlipCanon {
 }
 
 /**
- * Flip (parity) disjoint-set — a union-find whose classes additionally track a
- * parity bit, so two elements can be bound "in the same sense" or "in opposite
- * senses". An idiomatic TS port of `dsf.c`'s flip variant (`dsf_new_flip` /
- * `dsf_canonify_flip` / `dsf_merge_flip`), ported for Dominosa's forcing-chain
- * deduction (two domino placements are linked either always-together or
- * always-opposite).
+ * Flip (parity) disjoint-set, upstream `dsf.c`'s flip variant: a union-find
+ * whose classes also track a parity bit, so two elements can be bound "in the
+ * same sense" or "in opposite senses" (Dominosa: two domino placements are
+ * either always together or always opposite).
  *
- * Path compression carries the accumulated flip parity exactly as
- * `dsf_path_compress_flip`; union is by class size with the same tie-break as
- * {@link Dsf} (the second argument's root wins on a tie).
+ * Path compression carries the accumulated parity as `dsf_path_compress_flip`
+ * does; union is by class size with {@link Dsf}'s tie-break.
  */
 export class FlipDsf {
   private readonly parent: Int32Array;
@@ -157,9 +146,9 @@ export class FlipDsf {
     return { root, inverse: flip !== 0 };
   }
 
-  /** Bind `n1` and `n2` into one class. `inverse` is `true` to bind them in
-   * opposite senses, `false` for the same sense. No-op (but parity-checked in
-   * dev) if they are already related. Mirrors `dsf_merge_flip`. */
+  /** Bind `n1` and `n2` into one class, in opposite senses when `inverse`.
+   * Two elements already in one class keep their parity: a contradictory
+   * `inverse` is not checked. Mirrors `dsf_merge_flip`. */
   mergeFlip(n1: number, n2: number, inverse: boolean): void {
     const inv = inverse ? 1 : 0;
     const c1 = this.findRoot(n1);

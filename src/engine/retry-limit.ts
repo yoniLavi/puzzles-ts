@@ -11,12 +11,11 @@
  * which is what the `repo-layout` determinism requirement asks for: a finite
  * iteration cap rather than probabilistic termination inside a timeout.
  *
- * WHY A CAP CANNOT MOVE A GENERATED BOARD. A faithful port converges in a
- * handful of attempts, so these bounds only fire on a porting divergence (or on
- * params that provably admit no puzzle — `net` 2xN wrapping, say, which
- * `validateParams` rejects up front). Exhaustion throws rather than returning a
- * fallback, so no seed that used to converge can quietly start producing a
- * different desc: byte-match with the C reference is untouched by construction.
+ * WHY A CAP CANNOT MOVE A GENERATED BOARD. A working generator converges in a
+ * handful of attempts, so these bounds fire only on a bug (or on params that
+ * provably admit no puzzle — `net` 2xN wrapping, say, which `validateParams`
+ * rejects up front). Exhaustion throws rather than returning a fallback, so a
+ * seed that converges can never quietly produce a different desc.
  *
  * WHY A CAP IS NOT ALWAYS THE ANSWER. It converts a hang into a *crash* — right
  * for a divergence bug, wrong for a rare-but-legal seed a player might hit.
@@ -30,11 +29,10 @@
  * so every generator that returns from inside its retry loop would need a
  * trailing unreachable `throw` to satisfy control-flow analysis. `for (;;)` and
  * `while (true)` are understood to never complete, and a guard also drops
- * straight into `do…while` and rejection-sampling loops without reshaping
- * control flow that is matched byte-for-byte against the C.
+ * straight into `do…while` and rejection-sampling loops without reshaping them.
  */
 
-/** The house default. Generous enough that a faithful port never reaches it. */
+/** The house default. Generous enough that a working generator never reaches it. */
 export const MAX_REGENERATE = 10_000;
 
 /** Thrown when a retry loop exhausts its budget, so callers and tests can tell

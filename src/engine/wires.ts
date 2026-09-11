@@ -3,18 +3,12 @@
  *
  * Both are grids of Net wire tiles whose solved configuration is a spanning
  * tree rooted at a source; they differ only in *how the player rearranges the
- * grid* (Net rotates a tile in place, Netslide slides a whole line). Everything
- * up to and including that rearrangement — the direction algebra, the hex wire
- * description codec, the spanning-tree grower, barrier placement, and the
- * "power flows from the source" flood — is identical, and lives here.
+ * grid* (Net rotates a tile in place, Netslide slides a whole line). The
+ * direction algebra, the hex wire description codec, the spanning-tree grower,
+ * barrier placement and the "power flows from the source" flood are shared,
+ * and live here. Both games' differentials depend on the draw order in it.
  *
- * Extracted from Netslide's `state.ts`/`generator.ts` when Net became the
- * second consumer (the promotion trigger the migration playbook names). It is a
- * behavior-preserving lift: Netslide's byte-identical differential and its
- * render snapshots are the oracle, so nothing here changes what Netslide
- * produces.
- *
- * ## The `0x10` trap (design D2)
+ * ## The `0x10` trap
  *
  * A tile's low four bits are its wires (`R U L D`); the *same* four bits name a
  * direction. Bit `0x10`, however, means different things to the two games —
@@ -89,9 +83,9 @@ export function wireCount(tile: number): number {
   );
 }
 
-/** Step one tile in `dir`, wrapping around the torus (upstream's `OFFSET`
- * macro — it wraps unconditionally; a non-wrapping game is fenced in by
- * border barriers instead, not by clamping the arithmetic). */
+/** Step one tile in `dir`, wrapping around the torus (upstream `OFFSET`). It
+ * wraps unconditionally: a non-wrapping game is fenced in by border barriers,
+ * not by clamping the arithmetic. */
 export function offset(
   x: number,
   y: number,
@@ -249,22 +243,18 @@ export function placeBarriers(
   barrierProbability: number,
   rs: RandomState,
 ): void {
-  let nbarriers = Math.trunc(
+  const count = Math.trunc(
     Math.fround(Math.fround(barrierProbability) * candidates.size),
   );
-
-  while (nbarriers > 0) {
+  for (let i = 0; i < count; i++) {
     const {
       x: x1,
       y: y1,
       direction: d1,
     } = candidates.removeAt(randomUpto(rs, candidates.size));
     const { x: x2, y: y2 } = offset(x1, y1, d1, w, h);
-
     barriers[y1 * w + x1] |= d1;
     barriers[y2 * w + x2] |= opposite(d1);
-
-    nbarriers--;
   }
 }
 

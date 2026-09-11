@@ -1,6 +1,6 @@
 /**
- * Exact `round(n · √k)` in integer arithmetic — the idiomatic TS port of
- * upstream `n_times_root_k` (`misc.c:569`).
+ * Exact `round(n · √k)` in integer arithmetic (upstream `misc.c`'s
+ * `n_times_root_k`).
  *
  * This is the bridge where the aperiodic tilings' exact irrational arithmetic
  * finally becomes integer pixels: Penrose works in ℤ[√5] and spectres in ℤ[√3],

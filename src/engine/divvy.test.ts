@@ -114,8 +114,7 @@ describe("divvyRectangle", () => {
   it("holds across successive draws from one RNG, over every Palisade preset", () => {
     // Palisade generates many regions from a single `RandomState`, so the
     // interesting case is repeated calls threading one stream — not a fresh seed
-    // each time. (This absorbs the `palisade divvy` block that used to live in
-    // `palisade.test.ts`: same shapes, and it never checked connectivity.)
+    // each time.
     const rng = randomNew("palisade-divvy");
     for (const [w, h, k] of [
       [5, 5, 5],

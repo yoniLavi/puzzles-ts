@@ -1,12 +1,7 @@
 /*
- * TypeScript port of `puzzles/random.c` (Simon Tatham's portable RNG).
- *
- * Byte-for-byte equivalent to the C implementation: identical seeds
- * produce identical streams. This is a product requirement — game
- * IDs and shared seeds must keep working when the TS port goes live.
- *
- * The replay corpus lives at `__fixtures__/corpus.json` and is
- * recorded by `puzzles/auxiliary/random-trace.c`.
+ * Upstream `random.c` (Simon Tatham's portable RNG), byte for byte: identical
+ * seeds produce identical streams, which is what keeps shared game IDs
+ * reproducible. `__fixtures__/corpus.json` is a C-recorded replay corpus of it.
  */
 
 import { shaSimple } from "./sha1.ts";
@@ -47,9 +42,8 @@ export function randomBits(state: RandomState, bits: number): number {
   let ret = 0;
   for (let n = 0; n < bits; n += 8) {
     if (state.pos >= DATABUF_LEN) {
-      // Increment the seedbuf as a big-integer (LSB-first), carry on
-      // every 0xFF, then re-hash to refill the databuf. Exactly mirrors
-      // random_bits's increment loop.
+      // Increment seedbuf as a little-endian big integer, then re-hash it to
+      // refill databuf.
       for (let i = 0; i < SEEDBUF_LEN; i++) {
         if (state.seedbuf[i] !== 0xff) {
           state.seedbuf[i]++;
@@ -60,13 +54,11 @@ export function randomBits(state: RandomState, bits: number): number {
       shaSimple(state.seedbuf, state.databuf);
       state.pos = 0;
     }
-    // Multiply rather than shift: for `bits` up to 32 the accumulated
-    // value can reach 2^32-1, which doesn't fit signed-int32 (i.e.
-    // JS bitwise semantics). 2^32 is well below 2^53 so plain number
-    // arithmetic stays exact.
+    // Multiply rather than shift: with `bits` up to 32 the value can reach
+    // 2^32-1, past JS's signed-int32 bitwise range but exact as a number.
     ret = ret * 256 + state.databuf[state.pos++];
   }
-  // Trim to `bits` low bits. % 2**bits works for bits ∈ [1, 32].
+  // Trim to the low `bits` bits (bits ∈ [1, 32]).
   return ret % 2 ** bits;
 }
 
@@ -131,8 +123,7 @@ export function randomStateDecode(input: string): RandomState {
         state.databuf[pos++ - SEEDBUF_LEN] = byte;
       } else if (pos === SEEDBUF_LEN + DATABUF_LEN && byte <= DATABUF_LEN) {
         state.pos = byte;
-        // Note: C also doesn't increment pos here, so extra bytes get
-        // silently discarded. Match that behavior.
+        // `pos` is not advanced, so trailing bytes are ignored, as upstream.
       }
       byte = 0;
       digits = 0;
