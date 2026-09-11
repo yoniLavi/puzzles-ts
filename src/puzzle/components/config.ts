@@ -123,9 +123,8 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
   private renderConfigItem(id: string, config: ConfigItem) {
     const value = this.changes[id] ?? this.values[id];
-    // Abbreviating "%" or "%age" at the start of a label bugs me.
-    // (E.g., Bridges. But I'm OK with "Expansion factor (%age)".)
-    // Also improve "Size (s*s)": "(s&thinsp;&times;&thinsp;)" (e.g., Unequal).
+    // A leading "%" reads badly (Bridges), and "Size (s*s)" better as
+    // "Size (s × s)" (Unequal).
     const label = config.name.replace(/^%/, "Percent").replace("s*s", "s × s");
 
     switch (config.type) {
@@ -152,9 +151,9 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
       case "choices": {
         // Render choices as a select menu, or as a horizontal radio button group
-        // for small numbers of choices if the button group fits one one line.
+        // for small numbers of choices if the button group fits on one line.
         // There's no way to know if it fits until it's rendered, so always render
-        // both and use a resize observer to update showButtonGroup state so that
+        // both and use a resize observer to update showAsButtonGroup so that
         // only one is visible.
         const showButtonGroup = this.showAsButtonGroup.has(id);
         const select = html`
@@ -205,8 +204,8 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
       }
 
       default:
-        // @ts-expect-error: item.type never
-        throw new Error(`Unknown config item type ${item.type}`);
+        // @ts-expect-error: config.type never
+        throw new Error(`Unknown config item type ${config.type}`);
     }
   }
 
@@ -270,7 +269,6 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
       // If there's a result string, it's an error message
       this.error = result;
     } else {
-      // Success
       this.error = undefined;
       if (this.puzzle) {
         this.dispatchEvent(
@@ -500,8 +498,7 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
 
   protected override updated() {
     if (!this.hasAttribute("dialog-title")) {
-      // Get the dialog title from the form.
-      // This causes Lit changed-in-update warning.
+      // Get the dialog title from the form (see disableWarning below).
       const title = this.form?.title;
       if (title && title !== this.dialogTitle) {
         this.dialogTitle = title;

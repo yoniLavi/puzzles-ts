@@ -14,11 +14,10 @@ import { detectSecondaryButton } from "../../utils/touch.ts";
 import { PuzzleView } from "./view.ts";
 
 /**
- * Whether the user currently has a non-empty text selection on the page
- * (e.g. they dragged across the hint banner). `window.getSelection()` reports
- * selections inside shadow roots too, so this catches a banner selection even
- * though the banner lives in this component's shadow DOM. Used to let a native
- * text copy win over the puzzle's copy-as-image shortcut.
+ * Whether the user has a non-empty text selection on the page (e.g. across the
+ * hint explanation), so a native text copy can win over the puzzle's
+ * copy-as-image shortcut. `window.getSelection()` reports selections inside
+ * shadow roots too.
  */
 function hasTextSelection(): boolean {
   const sel = typeof window !== "undefined" ? window.getSelection?.() : null;
@@ -118,18 +117,11 @@ export class PuzzleViewInteractive extends PuzzleView {
       throw new Error("getPuzzleLocation called before render (?!)");
     }
     const canvasRect = this.canvas.getBoundingClientRect();
-    // Floor to whole pixels: the drawing API is defined on integer pixels, and
-    // games do whole-pixel arithmetic with no slack for a sub-pixel shift.
-    // Both terms are fractional in general -- pointers report sub-pixel
-    // positions, and a centered canvas routinely lands on a half-pixel edge.
-    // The C/WASM engine never saw that, because Embind truncates to `int` at
-    // the boundary; the TS engine takes `number` and let it through. Symptom:
-    // Map's drag blob, whose TILESIZE+3 blitter is exactly flush with the
-    // circle it saves at even tile sizes, so a fractional origin (truncated by
-    // getImageData) left the circle's last column and row unerased -- a trail
-    // of scratch marks across the board.
-    // Flooring leaves every hit test unchanged, since floor(floor(x)/ts) is
-    // floor(x/ts) -- games locate a cell by exactly that division.
+    // Floor to whole pixels: games do whole-pixel arithmetic with no slack for
+    // a sub-pixel shift, and both terms are fractional in general (pointers
+    // report sub-pixel positions; a centered canvas lands on half pixels).
+    // Map's drag blob left a trail of unerased pixels without this. Flooring
+    // leaves every hit test unchanged, since floor(floor(x)/ts) is floor(x/ts).
     return {
       x: Math.floor(event.clientX - canvasRect.left),
       y: Math.floor(event.clientY - canvasRect.top),
@@ -215,13 +207,9 @@ export class PuzzleViewInteractive extends PuzzleView {
       await this.cancelPointerTracking();
       return;
     }
-    // Otherwise Escape falls through to the game as button 27 below. It used to
-    // return here instead, which made it a **dead key**: Pearl and Rectangles
-    // each ship a `button === 27` arm to abandon a keyboard drag, and neither
-    // could ever run. Nothing is claimed that was not claimed before —
-    // `wantsKeyEvent` already returned true for Escape — and the fall-through
-    // does not `preventDefault`, so Escape still composes with the reference
-    // spotlight and with a dialog closing above it.
+    // Otherwise Escape falls through to the game as button 27 (Pearl and
+    // Rectangles abandon a keyboard drag on it), without `preventDefault`, so
+    // it still composes with the reference spotlight and a dialog closing above.
 
     if (event.key === "Copy" || (event.key === "c" && hasCtrlKey(event))) {
       // A real text selection (e.g. the hint banner) takes precedence: let the
@@ -255,13 +243,10 @@ export class PuzzleViewInteractive extends PuzzleView {
 
     const consumed = await this.puzzle.processKey(button | mods);
     if (!consumed) {
-      // **The game declined this key**, which `Midend.processInput` reports by
-      // returning false exactly when `interpretMove` returned null. That is the
-      // signal an app-level bare-letter shortcut needs, and it is a stronger
-      // one than any declaration: it cannot be forgotten by a new game, cannot
-      // be left behind by a changed one, and covers a game that consumes a
-      // letter without ever putting it on the keypad. `puzzle-screen.ts`
-      // listens; see `src/puzzle/shortcuts.ts`.
+      // The game declined the key (`interpretMove` returned null). This is the
+      // signal the app's bare-letter shortcuts act on, rather than a per-game
+      // declaration that a new or changed game could get wrong.
+      // `puzzle-screen.ts` listens; see `src/puzzle/shortcuts.ts`.
       this.dispatchEvent(
         new CustomEvent<KeyboardEvent>("puzzle-key-unhandled", {
           bubbles: true,
@@ -319,13 +304,11 @@ export class PuzzleViewInteractive extends PuzzleView {
    * yet answered, so `pointerTracking` is not installed yet.
    *
    * Without this, a click faster than that round-trip loses its release: the
-   * `pointerup` arrives, finds no `pointerTracking`, and is dropped — so the
-   * puzzle never sees `LEFT_RELEASE`/`RIGHT_RELEASE` and any state it shows only
-   * while a press is held (a drag highlight, a lifted piece) stays on screen
-   * until some later, unrelated input. The midend's contract is one release per
-   * press, and the declined-press path below already honors it; this is the
-   * accepted-press path doing the same. `deferred` parks the release until
-   * tracking exists, and it is then replayed exactly once.
+   * `pointerup` finds no `pointerTracking` and is dropped, and any state the
+   * puzzle shows only while a press is held (a drag highlight, a lifted piece)
+   * stays on screen until some later input. The midend's contract is one
+   * release per press, so `deferred` parks the release until tracking exists,
+   * and it is then replayed exactly once.
    *
    * This is the same shape as `detectSecondaryButton`'s `unhandledEvent`, which
    * covers the *other* await in `handlePointerDown`.
@@ -510,21 +493,11 @@ export class PuzzleViewInteractive extends PuzzleView {
   // No pointermove events are sent for the right button, and there isn't
   // any way to track right-click dragging in a browser.
   private handleContextMenu(event: PointerEvent) {
-    // Cancel contextmenu conditioned on whether puzzle wanted right button
-    // at the particular location:
-    //   if (this.pointerTracking?.pointerId === event.pointerId) ...
-    // Unfortunately, async processMouseEvent in the worker means the
-    // response arrives too late for handlePointerDown to set up the
-    // pointerTracking object before handleContextMenu is called.
-    //
-    // Canceling only for a puzzle that wants the right button would need a
-    // flag saying so, and `Game.ignoresSecondaryButton` is not it: it marks the
-    // games with no secondary meaning *at all*, and everything else — whether
-    // the button is essential (Pattern) or merely available (Tracks) — wants
-    // the menu suppressed alike. Suppressing for the seven that ignore it costs
-    // them nothing, since a right-click there does nothing either way.
-    //
-    // Cancel contextmenu unconditionally for all puzzles:
+    // Cancel the context menu unconditionally. Canceling only where the puzzle
+    // wanted the right button would need the press's answer from the worker,
+    // which arrives after this event. `Game.ignoresSecondaryButton` is not that
+    // flag: it marks games with no secondary meaning at all, where a
+    // right-click does nothing either way.
     event.preventDefault();
   }
 

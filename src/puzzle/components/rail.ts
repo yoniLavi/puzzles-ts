@@ -1,24 +1,15 @@
 /**
- * **The puzzle screen's one command surface.**
+ * **The puzzle screen's one command surface.** Per the `app-shell` spec, *every
+ * command has exactly one home, grouped by what it acts on and ordered by how
+ * often it is used*, with only the rare and the once-ever behind `More…`.
  *
- * It replaces two: a fourteen-item game menu in the top bar and an eight-button
- * toolbar at the bottom right, with **Hint, Reference and Check & save in
- * both** and eleven further commands split between them under no rule. A player
- * had to learn both surfaces and could still miss a command that lived only in
- * the other. The rule now is the one in the `app-shell` spec: *every command has
- * exactly one home, grouped by what it acts on and ordered by how often it is
- * used*, with only the rare and the once-ever behind `More…`.
+ * **Being vertical is what pays for the labels**: a rail row carries an icon, a
+ * label and its shortcut on one line, so no command has to be an unguessable
+ * icon (`Fill all pencil marks` can overwrite a player's notes).
  *
- * **Being vertical is what pays for the labels.** A horizontal bar has no room
- * for text, which is exactly why the eight toolbar buttons were icon-only and
- * several were unguessable — `Fill all pencil marks` can overwrite a player's
- * notes and had no words on it anywhere. A rail row carries an icon, a label
- * and its shortcut on one line, so labeling everything costs nothing.
- *
- * **One component draws both the desktop rail and the phone sheet** (`variant`).
- * The design asks for the sheet to be "the rail in the same order with the same
- * wording", and the only way two surfaces stay in the same order is for there to
- * be one of them.
+ * **One component draws both the desktop rail and the phone sheet** (`variant`),
+ * because the only way two surfaces stay in the same order with the same
+ * wording is for there to be one of them.
  *
  * Every row is a `data-command` control, so `puzzle-screen.ts`'s command bus is
  * the single vocabulary and `puzzle-command-homes.test.ts` can hold the rendered
@@ -50,9 +41,9 @@ interface Row {
   command: string;
   icon: string;
   label: string;
-  /** Absent unless the game supports it — a command a game cannot run is not
-   * rendered disabled, it is not rendered. "Present and grayed out" teaches a
-   * player that the app is broken for this puzzle. */
+  /** Unavailable for now (nothing to undo). A command the game cannot run at
+   * all is not rendered disabled, it is not rendered: "present and grayed out"
+   * teaches a player that the app is broken for this puzzle. */
   disabled?: boolean;
   /** Drawn as a bordered button rather than a plain row. */
   emphasis?: "bordered";
@@ -118,7 +109,7 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
   /**
    * *Where you are in this game* — one group, because your position, the two
    * ways you move through it and the checkpoint you can return to are one
-   * concern. They were spread across a menu and a toolbar.
+   * concern.
    */
   private renderPosition() {
     return html`
@@ -155,17 +146,9 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
   }
 
   /**
-   * The game's own status line, for the nine games that print one.
-   *
-   * It used to live inside the board component, sized to the canvas and placed
-   * by a `statusbar-placement` preference offering `start` / `end` / `hidden`.
-   * The rail gives it one correct home, so the preference stopped denoting
-   * anything and was retired (owner's call,
-   * `design-front-page-and-chrome` design.md §4.9 item 2).
-   *
-   * **Absent, not blank**, for a game with nothing to say: an empty reserved
-   * line in a vertical rail is a hole, where in the old horizontal placement it
-   * at least kept the board from jumping.
+   * The game's own status line, for the games that print one. **Absent, not
+   * blank**, for a game with nothing to say: an empty reserved line in a
+   * vertical rail is a hole.
    */
   private renderStatusLine() {
     if (!this.puzzle?.wantsStatusbar) return nothing;
@@ -197,18 +180,12 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
               ${this.renderRow({
                 command: "hint",
                 icon: "hint",
-                // The hint button has two beats — show, then play — and it used
-                // to say the same word for both, so the second press was a
-                // surprise. The label says which beat the next press is.
-                //
-                // The resting word is just "Hint": it sits under a "Help me
-                // play" heading, beside "Auto-solve for me" and "Show
-                // solution", so "Next" was doing no work the group did not
-                // already do. The armed word stays a full phrase, because it
-                // is the state a player has not seen before.
-                //
-                // A third word for a press that is still being answered
-                // (`Puzzle.hintPending`): the button is not dead, it is working.
+                // The hint has two beats — show, then play — and the label says
+                // which one the next press is. At rest it is just "Hint", as
+                // the "Help me play" heading says the rest; armed, a full
+                // phrase, the state a player has not seen before; and while a
+                // press is still being answered (`Puzzle.hintPending`), a word
+                // that says the button is working, not dead.
                 label: this.puzzle.hintPending
                   ? "Thinking…"
                   : this.puzzle.hintArmedToApply
@@ -217,7 +194,7 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
                 disabled: this.solved,
               })}
               ${this.renderHintExplanation()}
-              ${this.renderAutoHintSwitch()}
+              ${this.renderAutoHintButton()}
             `
             : nothing
         }
@@ -271,8 +248,7 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
   }
 
   /** The hint's own words, directly under the button that asked for it, with
-   * its position in a multi-step journey. In the old chrome the explanation was
-   * a banner under the board and the button was in the far corner. */
+   * its position in a multi-step journey. */
   private renderHintExplanation() {
     const text = this.puzzle?.activeHintExplanation || this.puzzle?.autoHintMessage;
     if (!text) return nothing;
@@ -286,16 +262,10 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
 
   /**
    * Auto-solve: one button whose label and icon say what pressing it will do.
-   *
-   * It was drawn as a switch, on the reasoning that continuous hinting is a
-   * *mode*. In front of a player that reads worse than it argues: a switch says
-   * "a setting you leave in a position", and this is something that is running
-   * right now and that you will want to stop. So it is a button that says
-   * `Auto-solve for me`, and while it is running says `Stop auto-solving` with
-   * a stop icon — the state is in the words, not in the position of a track
-   * whose two ends look alike (owner, 2026-09-07).
+   * Not a switch: a switch says "a setting you leave in a position", and this
+   * is something running right now that a player will want to stop.
    */
-  private renderAutoHintSwitch() {
+  private renderAutoHintButton() {
     const active = this.puzzle?.autoHintActive === true;
     return this.renderRow({
       command: "toggle-auto-hint",
@@ -305,8 +275,8 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
     });
   }
 
-  /** Pinned to the bottom: the two most common non-move actions in a session
-   * (which were two levels deep in a menu), the help page, and everything rare. */
+  /** Pinned to the bottom: the two most common non-move actions in a session,
+   * the help page, and everything rare. */
   private renderFooterGroup() {
     return html`
       <section part="group" aria-label="This puzzle">
@@ -493,8 +463,8 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
         padding: 0.25rem 0.5rem 0.5rem;
       }
 
-      /* A row is a row whether it is a button, a link or a label wrapping a
-       * switch — one selector, so the three cannot drift apart visually. */
+      /* A row is a row whether it is a button or a link — one selector, so
+       * the two cannot drift apart visually. */
       [part="row"] {
         display: flex;
         align-items: center;
@@ -559,16 +529,10 @@ export class PuzzleRail extends SignalWatcher(LitElement) {
         color: var(--app-color-text-faint);
       }
 
-      /* There is no accent row. The hint used to be one — filled amber, the
-       * single loudest control in the chrome — on the reasoning that explained
-       * hints are what this fork is for. That reasoning is about the fork, and
-       * on a player's screen it read as advice: take a hint. The hint is a
-       * choice, and a player should be free to want to solve it themselves, so
-       * the chrome offers it and does not urge it.
-       *
-       * The amber is not gone, it moved to where it belongs: the hint
-       * explanation panel below, which is the hint *speaking* rather than the
-       * chrome *recommending*. */
+      /* There is no accent row: an amber Hint row reads as advice to take a
+       * hint, and the chrome offers one without urging it. The amber belongs
+       * to the hint explanation below, the hint speaking rather than the
+       * chrome recommending. */
 
       /* Check & save reads as a button among plain rows, because it is the one
        * row in this group that writes something. */

@@ -54,8 +54,7 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
    * description into its own small monospaced chips — `7×7`, `Easy` — which is
    * what the rail and the phone's top bar want: the type is a *fact about the
    * board in front of you*, and hiding it behind a caret while the board is
-   * governed by it is the wrong way round
-   * (`design-front-page-and-chrome` design.md §4.4).
+   * governed by it is the wrong way round.
    *
    * Both draw the same `currentGameTypeLabel`, computed once in `willUpdate`,
    * so the chips cannot say something the menu disagrees with.
@@ -211,10 +210,7 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
     }
 
     // Every game has a custom-params form (`custom-params.test.ts` asserts it),
-    // so the only condition left is that there is a puzzle to configure. This
-    // used to read `this.puzzle?.canConfigure`, and the midend answered that
-    // with a literal `true` — a gate that never closed
-    // (`audit-vestigial-contract-surface`).
+    // so the only condition is that there is a puzzle to configure.
     if (this.puzzle) {
       result.push(html`<wa-divider></wa-divider>`);
       result.push(html`
@@ -383,10 +379,8 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
         opacity: 1;
       }
   
-      /* Crop the trigger button's two-line label to display either only one
-       * of the menu label or the or its current value at any given time.
-       * (Both are always rendered for accessibility.)
-        */
+      /* Crop the trigger button's two-line label to show either the menu
+       * label or its current value (both are rendered for accessibility). */
       .dropdown-label {
         height: 1lh;
         overflow: hidden;

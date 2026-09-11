@@ -24,10 +24,8 @@ import type { Puzzle } from "../puzzle.ts";
 
 /**
  * The `<puzzle-view>` component renders a puzzle using the drawing API.
- * It must be used within a puzzle-context component.
- *
- * puzzle-view does not provided any input (mouse, keyboard, etc.) event
- * handling on the puzzle. (See `<puzzle-view-interactive>` for that.)
+ * It must be used within a puzzle-context component, and handles no input:
+ * `<puzzle-view-interactive>` adds that.
  */
 @customElement("puzzle-view")
 export class PuzzleView extends SignalWatcher(LitElement) {
@@ -38,18 +36,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
    */
   @property({ type: Number, attribute: "max-scale" })
   maxScale: number = Number.POSITIVE_INFINITY;
-
-  /*
-   * `statusbar-placement` was here — `start` / `end` / `hidden`, bound to a
-   * stored preference, deciding whether the nine games that print a status line
-   * showed it above the board, below it, or not at all.
-   *
-   * The line is no longer the board's to draw. The chrome gives it one home
-   * (the rail on desktop, above the phone bar on a phone), so the placement
-   * stopped denoting anything and the preference was retired with it — owner's
-   * call, `design-front-page-and-chrome` design.md §4.9 item 2. Reading a
-   * stored value from an older version is harmless: nothing asks for it.
-   */
 
   @consume({ context: puzzleContext, subscribe: true })
   @state()
@@ -148,20 +134,11 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   protected contentTabIndex: string | typeof nothing = nothing;
 
   /*
-   * The hint banner was here — a reserved line under the board carrying
-   * `activeHintExplanation` / `autoHintMessage`.
-   *
-   * The chrome now gives the explanation one home, right where the button that
-   * asked for it is: under `Next hint` in the rail, and above the phone bar
-   * where a thumb cannot cover it. Keeping the banner as well would have made
-   * the hint's own words the fourth thing offered from two places at once,
-   * which is the defect this whole redesign is against.
-   *
-   * Its removal also un-warps the board. To keep the board from jumping as
-   * hints toggled, the banner reserved a stable width of `max(board, 34rem)` —
-   * which on a 390px phone made `[part=content]` **736px wide**, twice the
-   * viewport, so the board's mat bled off both edges. Nothing reserves a
-   * footprint here any more, and the mat hugs the board again.
+   * The game's status line and the hint's explanation are not drawn here: the
+   * rail (and, on a phone, the bar above it) gives each one home, beside the
+   * control it belongs to. Nothing in `content` may reserve a width of its own:
+   * a banner reserving `max(board, 34rem)` made it twice the width of a 390px
+   * phone (and see `computeAvailableCanvasSize` for the sizing loop).
    */
 
   protected override render() {
@@ -225,9 +202,8 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       host: { w: hostW, h: hostH },
       canvasW: canvas?.offsetWidth ?? 0,
       canvasH: canvas?.offsetHeight ?? 0,
-      // Horizontal overhead from the *puzzle wrapper* (canvas + padding only),
-      // NOT `content` (see computeAvailableCanvasSize for why the banner poisons
-      // a content-based width measurement).
+      // Horizontal overhead from the puzzle wrapper, not `content`: see
+      // computeAvailableCanvasSize.
       puzzleW: this.puzzlePart?.offsetWidth,
       contentW: this.contentPart?.offsetWidth,
       contentH: this.contentPart?.offsetHeight,
@@ -237,7 +213,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   // Returns true if canvasSize changed.
   // If changed and canvasReady, redraws puzzle.
-  protected async resize(_isUserSize = false): Promise<boolean> {
+  protected async resize(): Promise<boolean> {
     // (Resize observer may call this before first render,
     // so avoid initializing cached @query props unless hasUpdated.)
     if (!this.hasUpdated || !this.puzzlePart) {
@@ -246,9 +222,8 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
     const availableSize = this.getAvailableCanvasSize();
 
-    // midend_size() is only valid while there's a game; just report full
-    // availableSize before that. (We'll get called again once there's a game:
-    // see renderingFirstGame in updated()).
+    // Puzzle.size() is only valid while there's a game; report the full
+    // availableSize before that. (updated() resizes again for the first game.)
     let size = availableSize;
     if (this.puzzle?.currentGameId) {
       if (this.maxScale > 0 && this.maxScale < Number.POSITIVE_INFINITY) {
@@ -266,12 +241,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
     const changed = size.w !== this.canvasSize?.w || size.h !== this.canvasSize?.h;
     if (changed) {
-      // const { w: currentW, h: currentH } = this.canvasSize ?? { w: "---", h: "---" };
-      // console.log(
-      //   `Resize: current ${currentW}x${currentH},` +
-      //     ` available ${availableSize.w}x${availableSize.h},` +
-      //     ` used ${size.w}x${size.h}`,
-      // );
       this.canvasSize = size;
       await this.updateCanvasSize();
       if (this.puzzle && this.canvasReady) {
@@ -353,13 +322,10 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   protected destroyCanvas() {
     if (this.canvas) {
-      // Deliberately not calling `Puzzle.detachCanvas` here: we'd need the
-      // Puzzle that was in use during `createCanvas`, which isn't necessarily
-      // `this.puzzle` any more. `Puzzle.delete()` calls it on the right
-      // instance. (This used to say `detachCanvas` "is actually a noop", which
-      // it has never been — it shrinks the offscreen canvas to 1x1 to release
-      // its backing store, in the C worker as in this one.
-      // `audit-vestigial-contract-surface`.)
+      // Deliberately not calling `Puzzle.detachCanvas` (which releases the
+      // offscreen canvas's backing store): it belongs to the Puzzle that
+      // `createCanvas` attached to, which may no longer be `this.puzzle`.
+      // `Puzzle.delete()` calls it on the right instance.
       this.canvas.remove();
       this.canvas = undefined;
     }
@@ -448,7 +414,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   static override styles = [
     css`
       :host {
-        /* Padding around everything, spacing between puzzle and status bar */
+        /* Padding around the puzzle */
         --spacing: var(--wa-space-s);
 
         display: flex;
@@ -486,10 +452,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         /* For sizing the loadingIndicator */
         position: relative;
 
-        /* Center the board, statusbar, and hint banner within the content
-         * box. The banner's readable min-width (see .hint-banner) can make
-         * the content wider than the board on small puzzles; without this the
-         * board would sit left-aligned against that wider banner. */
+        /* Center the board within the content box */
         display: flex;
         flex-direction: column;
         align-items: center;

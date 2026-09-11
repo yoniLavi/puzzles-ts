@@ -151,9 +151,8 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   }
 
   protected override async updated() {
-    // Run the wa-dialog's "show" animation after it's in the DOM.
-    // (Including the "open" attribute at render time skips the animation.)
-    // Wait for any game animations/flashes to finish before showing dialog
+    // Show the dialog once it's in the DOM (rendering it open would skip the
+    // show animation), after any game animation or flash has finished.
     await sleep(10); // ensure timer start notification arrives from worker
     await Promise.all([this.updateComplete, this.puzzle?.timerComplete]);
     await sleep(this.delay); // brief break between animations
@@ -224,7 +223,6 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   }
 
   private async showSolution() {
-    // Need to hide the alert first
     await this.hide();
     await this.puzzle?.solve();
   }
@@ -262,12 +260,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     "You got it!",
   ] as const;
 
-  static lostMessages = [
-    // "Better luck next time",
-    // "No more moves",
-    "Out of moves",
-    // "Out of options",
-  ] as const;
+  static lostMessages = ["Out of moves"] as const;
 
   static override styles = [
     cssWATweaks,

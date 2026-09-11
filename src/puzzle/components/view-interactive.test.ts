@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 //
-// Tier-3 component tests for the input layer above the C-vs-TS engine seam.
+// Tier-3 component tests for the input layer above the engine.
 //
 // 1. Cmd/Ctrl+C is a deliberate "copy the board as an image" shortcut. It must
 //    step aside when the user has a real text selection (e.g. the hint banner),
@@ -105,8 +105,8 @@ function pointerEvent(type: string, overrides: Record<string, unknown> = {}) {
 
 /**
  * A view wired to a fake puzzle whose press round-trip resolves only when the
- * test says so — that pending window is exactly where the release used to be
- * dropped. Returns the buttons the puzzle actually received, in order.
+ * test says so — the pending window in which a release can be lost. Returns
+ * the buttons the puzzle actually received, in order.
  */
 function makePointerView(consumed = true, canvasOrigin = { left: 0, top: 0 }) {
   const received: number[] = [];
@@ -150,9 +150,9 @@ function makePointerView(consumed = true, canvasOrigin = { left: 0, top: 0 }) {
 
 describe("press/release delivery", () => {
   it("delivers the release of a click that beat the press round-trip", async () => {
-    // The regression: `pointerup` used to arrive before `pointerTracking` was
-    // installed, find nothing to match, and be dropped — so the puzzle kept
-    // showing press-only state (Spokes' green hub rim) until the next input.
+    // A `pointerup` that arrives before `pointerTracking` is installed must not
+    // be dropped, or the puzzle keeps showing press-only state (Spokes' green
+    // hub rim) until the next input.
     const { host, received, inFlight, answerPress } = makePointerView();
 
     const down = host.handlePointerDown(pointerEvent("pointerdown"));
@@ -224,15 +224,13 @@ describe("press/release delivery", () => {
 // --- Escape delivery --------------------------------------------------------
 
 /**
- * Escape is the collection's "put it back down" key, and it used to be a **dead
- * key**: `handleKeyEvent` swallowed it whether or not there was a gesture to
- * cancel, so Pearl's and Rectangles' `button === 27` arms — both shipped, both
- * intended to abandon a keyboard drag — could never run.
+ * Escape is the collection's "put it back down" key: Pearl's and Rectangles'
+ * `button === 27` arms abandon a keyboard drag, so `handleKeyEvent` must not
+ * swallow it when there is no gesture to cancel.
  *
- * The two arms are asserted separately because they are genuinely different
- * jobs, and collapsing them is how the bug came back: with a pointer down,
- * Escape abandons *that gesture* and the puzzle hears a release, so it must not
- * also arrive as a keypress.
+ * The two arms are asserted separately because they are different jobs: with a
+ * pointer down, Escape abandons *that gesture* and the puzzle hears a release,
+ * so it must not also arrive as a keypress.
  */
 describe("Escape delivery", () => {
   function makeKeyView() {
@@ -299,7 +297,6 @@ describe("pointer coordinates", () => {
   // is exactly flush with the circle it covers at even tile sizes, so a
   // fractional origin (truncated by getImageData) left the circle's rightmost
   // column and bottom row unerased: a trail of scratch marks along the drag.
-  // The C/WASM engine never saw a fraction, because Embind truncated to `int`.
   const HALF_PIXEL_CANVAS = { left: 263.5, top: 109.5 };
 
   it("delivers whole-pixel coordinates from a sub-pixel pointer", async () => {

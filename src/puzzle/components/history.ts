@@ -74,16 +74,8 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
   }
 
   /**
-   * **The move counter is the timeline control.**
-   *
-   * `currentMove` and `totalMoves` were already signals on `Puzzle` and were
-   * shown nowhere; the timeline hid behind a wordless clock icon in a row of
-   * seven identical buttons. State and control are now one element — a player
-   * reads where they are, and clicking where they are is how they go somewhere
-   * else (`design-front-page-and-chrome` design.md §4.6).
-   *
-   * The numerals are IBM Plex Mono: they are a quantity that changes on every
-   * move, and proportional digits make the row twitch as it counts.
+   * **The move counter is the timeline control**: a player reads where they
+   * are, and clicking where they are is how they go somewhere else.
    */
   private renderHistoryButton() {
     const current = this.puzzle?.currentMove ?? 0;
@@ -309,7 +301,7 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
         cursor: pointer;
 
         /* Disable double-tap to zoom on a control that may be tapped quickly.
-         * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.) */
+         * (Ineffective in iOS Safari; see preventDoubleTapZoomOnButtons.) */
         touch-action: pinch-zoom;
 
         &:focus-visible {
@@ -344,11 +336,9 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
         align-items: center;
   
         /* The plain "Close" button effectively pads top/bottom and part of right */
-        /*padding: 0.5em 1em;*/
         padding-inline-start: 1em;
         padding-inline-end: 0.5em;
         background-color: var(--background-color);
-        /*font-family: var(--wa-font-family-heading);*/
         font-weight: var(--wa-font-weight-semibold);
         position: sticky;
         inset-block-start: -0.25em; /* wa-dropdown::part(menu) padding */

@@ -150,8 +150,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
       
       wa-button {
         /* Disable double-tap to zoom on keys that might be tapped quickly.
-         * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
-         */
+         * (Ineffective in iOS Safari; see preventDoubleTapZoomOnButtons.) */
         touch-action: pinch-zoom;
       }
     `,
