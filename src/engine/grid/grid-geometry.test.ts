@@ -115,12 +115,10 @@ describe("gridFindIncenter", () => {
     // which truncates toward zero: −2.929 + 0.5 = −2.429, truncated to **−2**.
     // That is a whole unit off, and it is not an edge case — grid coordinates
     // are negative over most of a board, so the C form misplaces nearly every
-    // clue digit it stores. `retire-the-incentre-c-fixture` measured the cost at
-    // up to 1.229 units of inscribed radius across the eighteen tilings, against
-    // 0.053 for rounding; `grid-incenter.test.ts` is what holds it there.
-    //
-    // The peer comparison this file's sibling used to run could not see it: the
-    // C is wrong in exactly the same direction, so the two agreed perfectly.
+    // clue digit it stores (up to 1.229 units of inscribed radius across the
+    // eighteen tilings, against 0.053 for rounding; `grid-incenter.test.ts`
+    // holds it there). A comparison against the C cannot see it: the C is wrong
+    // in exactly the same direction.
     const face = singleFaceGrid([
       [0, 0],
       [0, -10],
@@ -177,17 +175,14 @@ describe("gridFindIncenter", () => {
     // best circle's supporting trio lives: the answer degrades to 0.97 of the
     // achievable radius, which nothing else here would notice.
     //
-    // **This test does not pin the all-vertices arm, despite what its previous
-    // name and comment claimed.** Restricting the outer loop to `i < order` is
-    // exactly "the subset must contain an edge" — vertices sort after every edge
-    // — and under it this shape's answer is *bit-identical*, point and radius.
-    // Re-swept while replacing this file's sibling's C comparison
-    // (`retire-the-incentre-c-fixture`): across 400 members of the family above,
-    // removing the all-vertices arm changes the answer on **2**, by at most 1%
-    // of the achievable radius, and on one of the two it makes the answer
-    // slightly *better*. So there is no shape here worth freezing for it, and
-    // the arm is recorded as unpinned rather than left looking covered. The
-    // earlier "5 of 400, widest margin" note measured a different restriction.
+    // **This test does not pin the all-vertices arm.** Restricting the outer
+    // loop to `i < order` is exactly "the subset must contain an edge" —
+    // vertices sort after every edge — and under it this shape's answer is
+    // *bit-identical*, point and radius. Across 400 members of the family
+    // above, removing the all-vertices arm changes the answer on **2**, by at
+    // most 1% of the achievable radius, and on one of the two it makes the
+    // answer slightly *better*. So there is no shape here worth freezing for
+    // it, and the arm is recorded as unpinned rather than left looking covered.
     const ring: Ring = [
       [84, 0],
       [77, 77],

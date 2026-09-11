@@ -5,19 +5,13 @@
  *
  * ## The yardstick is the truth, not a peer
  *
- * This file used to compare against `__fixtures__/grid-incenter-c-reference.json`,
- * a frozen capture of where the C put each digit, asserting only
- * `|r_TS − r_C| ≤ 1`. That bar is green whenever the two implementations agree
- * — *including when they are both wrong* — and it was not tightenable, because
- * its tolerance existed to absorb the peer's error rather than this code's.
- * `bestByBruteForce` replaces it with the quantity the routine exists to
- * maximize, computed from the vertex ring alone (`engine/testing/polygon-yardstick.ts`),
- * so it cannot share a bug with the thing it measures.
- *
- * That swap immediately found something the C comparison structurally could
- * not: the stored point was rounded with the C's `(int)(v + 0.5)`, which is not
- * round-to-nearest on the negative coordinates a grid mostly has. The C is off
- * the same way, so every face passed. See `grid-geometry.ts`'s rounding comment.
+ * A comparison against where the C put each digit is green whenever the two
+ * implementations agree — *including when they are both wrong*, as they were
+ * about rounding negative coordinates (see `grid-geometry.ts`'s rounding
+ * comment). `bestByBruteForce` measures the quantity the routine exists to
+ * maximize instead, computed from the vertex ring alone
+ * (`engine/testing/polygon-yardstick.ts`), so it cannot share a bug with the
+ * thing it measures.
  *
  * ## What the numbers below mean
  *
@@ -32,10 +26,10 @@
  *
  * The cases are enumerated from `ALL_GRID_TYPES`, not from a fixture list, so a
  * newly added tiling joins the sweep by existing rather than by someone
- * remembering. That is also why the four aperiodic tilings are covered here for
- * the first time: their descs come from `gridNewDesc` under a fixed seed, which
- * needs no capture at all — and hats and spectres are the most non-convex faces
- * the collection has, which is precisely where this routine is hard.
+ * remembering. The aperiodic descs come from `gridNewDesc` under a fixed seed,
+ * which needs no capture at all — and hats and spectres are the most
+ * non-convex faces the collection has, which is precisely where this routine
+ * is hard.
  */
 
 import { describe, expect, it } from "vitest";
@@ -78,10 +72,8 @@ function polygon(f: GridFace): Ring {
  * how the pattern meets the board edge, so one size per tiling would miss the
  * partial faces at the fringe.
  *
- * The sizes for the fourteen periodic tilings are the ones the retired C
- * capture used, kept so this sweep covers at least what it covered. The
- * aperiodic four are new here; Penrose runs at 4x4 because kite/dart at width 3
- * has no generable patch at any height (`add-loopy-ts-port` D1).
+ * Penrose runs at 4x4 because kite/dart at width 3 has no generable patch at
+ * any height.
  */
 const CASES: [GridType, number, number][] = [
   ["square", 3, 3],
@@ -248,8 +240,7 @@ describe("gridFindIncenter", () => {
     it("covers every tiling the barrel offers", () => {
       // The enumeration above is a literal list, so it can fall behind
       // `ALL_GRID_TYPES`. A tiling added without a case here would otherwise be
-      // silently unswept — the failure mode the retired fixture's skip scaffold
-      // had by construction.
+      // silently unswept.
       expect(new Set(CASES.map(([type]) => type))).toEqual(new Set(ALL_GRID_TYPES));
     });
   });

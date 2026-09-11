@@ -1,9 +1,8 @@
 /**
- * Differential check for the **aperiodic** tilings in `grid.ts` (Penrose P2/P3,
- * hats, spectres) against the C reference, via the frozen snapshot in
+ * Differential check for the **aperiodic** tilings (Penrose P2/P3, hats,
+ * spectres) against the C reference, via the frozen snapshot in
  * `__fixtures__/grid-aperiodic-c-reference.json`, captured by
- * `puzzles/auxiliary/grid-trace --aperiodic` before `retire-c-engine` deleted
- * the C and the build that ran it. It is frozen; see
+ * `puzzles/auxiliary/grid-trace --aperiodic`. It is frozen; see
  * `engine/testing/differential.ts`.
  *
  * ## Why this is a separate file from `grid-differential.test.ts`
@@ -13,8 +12,7 @@
  * RNG-bearing, which braids in a second cause — a wrong random draw order —
  * and a single red assertion could not tell them apart.
  *
- * So each fixture record carries both halves and they are asserted separately
- * (`add-aperiodic-tilings` design D1):
+ * So each fixture record carries both halves and they are asserted separately:
  *
  * - **RNG fidelity.** `gridNewDesc(type, w, h, randomNew(seed))` must reproduce
  *   the C's desc *string* byte-for-byte. Failure here means the draw order
@@ -164,8 +162,7 @@ describe("grid aperiodic tilings match the C reference", () => {
       it("dots, in emission order", () => {
         // `toEqual` distinguishes -0 from 0, which is the point: negative zero
         // survives `===` and the dot-dedup key, so a grid carrying it comes out
-        // structurally perfect and only a comparison like this one sees it.
-        // That is exactly how floret's bug was caught in `extend-grid-tilings`,
+        // structurally perfect and only a comparison like this one sees it —
         // and these tilings use signed basis vectors throughout.
         expect(got().dots).toEqual(f.dots);
       });

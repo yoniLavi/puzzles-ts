@@ -1,17 +1,10 @@
 /**
- * Shared planar-grid geometry leaf — the **core structures** of the idiomatic
- * TS port of upstream `grid.c` (Lambros Lambrou's general planar-graph grid
- * code): the four incidence classes, the shared `makeConsistent` incidence
- * builder, and the deterministic square tiling.
+ * The **core structures** of the port of upstream `grid.c`: the four incidence
+ * classes and the shared `makeConsistent` incidence builder.
  *
  * This file holds only what every tiling needs, so that the tiling generators
- * (`grid-tilings.ts`) and the geometry helpers (`grid-geometry.ts`) can import
- * it without an import cycle. **Consumers should import from `grid.ts`**, the
- * public barrel, not from here.
- *
- * Landed square-only with Pearl; extended to all 14 periodic tilings by
- * `extend-grid-tilings` for Loopy. The four aperiodic tilings (Penrose P2/P3,
- * hats, spectres) follow in `add-aperiodic-tilings`.
+ * and the geometry helpers can import it without an import cycle. **Consumers
+ * import from `index.ts`**, the public barrel, not from here.
  *
  * Idiomatic divergences from the C, all faithful:
  * - **Reference incidence, not indices-into-arrays.** An edge holds its
@@ -40,12 +33,9 @@ export class GridDot {
      * by {@link gridTrimVigorously}'s compaction pass, which renumbers the
      * survivors densely. Nothing else may write it.
      *
-     * (It was `readonly` until the aperiodic tilings arrived — they are the
-     * first generators that emit an over-large patch and trim it. Rebuilding
-     * fresh dots instead would have to remap every face's dot references, and
-     * getting that wrong breaks the *identity* sharing that `makeConsistent`
-     * relies on — deduplicated corners must stay the same object — which is a
-     * far worse failure than a narrowly-mutable field.)
+     * Mutable rather than rebuilt: fresh dots would mean remapping every face's
+     * dot references, and getting that wrong breaks the *identity* sharing
+     * `makeConsistent` relies on (a deduplicated corner must stay one object).
      */
     public index: number,
     public readonly x: number,
@@ -117,55 +107,6 @@ export class Grid {
   }
 }
 
-const SQUARE_TILESIZE = 20;
-
-/**
- * Build the square tiling deterministically from `(width, height)` alone
- * (no randomness, no floating point). Each cell is a four-dot clockwise
- * face at pixel origin `(SQUARE_TILESIZE·x, SQUARE_TILESIZE·y)`; shared
- * corner dots are deduplicated. Mirrors `grid_new_square`.
- *
- * @public Reached only through the `grid/index.ts` barrel (which its own doc
- * comment tells callers to import from), so knip cannot see the re-export
- * chain and reports this declaration as unused. It is not: `loopgen.test.ts`
- * and `grid-geometry.test.ts` both call it. The tag is what keeps the knip
- * report at zero, so a real finding there means something.
- */
-export function gridNewSquare(width: number, height: number): Grid {
-  const a = SQUARE_TILESIZE;
-  const g = new Grid();
-  g.tileSize = a;
-
-  // Deduplicate dots by pixel coordinate (upstream's tree234 keyed by
-  // (y desc, x desc), but the order is irrelevant — it is a pure lookup).
-  const points = new Map<number, GridDot>();
-  const getDot = (x: number, y: number): GridDot => {
-    const key = y * (a * (width + 2)) + x; // any injective (x,y) key
-    const existing = points.get(key);
-    if (existing) return existing;
-    const d = new GridDot(g.dots.length, x, y);
-    g.dots.push(d);
-    points.set(key, d);
-    return d;
-  };
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const px = a * x;
-      const py = a * y;
-      const face = new GridFace(g.faces.length, 4, [null, null, null, null]);
-      g.faces.push(face);
-      face.dots[0] = getDot(px, py);
-      face.dots[1] = getDot(px + a, py);
-      face.dots[2] = getDot(px + a, py + a);
-      face.dots[3] = getDot(px, py + a);
-    }
-  }
-
-  makeConsistent(g);
-  return g;
-}
-
 /**
  * Derive edges, per-face edge lists, per-dot edge/face rings, and the
  * bounding box from a grid whose faces already know their clockwise dots.
@@ -192,14 +133,10 @@ export function makeConsistent(g: Grid): void {
       const lo = Math.min(d1.index, d2.index);
       const hi = Math.max(d1.index, d2.index);
       const key = lo * numDots + hi;
-      // NOTE: upstream uses `del234` here, *removing* the edge on a match, so
-      // a hypothetical third face sharing this dot pair would allocate a new
-      // edge; this `get` instead overwrites `face2`. Unreachable for a planar
-      // grid — a dot pair bounds at most two faces — and the aperiodic tilings
-      // are trimmed before this runs, so no tiling can reach it. Recorded
-      // because the 14 periodic tilings exercise far more of this function
-      // than the square tiling did, and this is the one place the two
-      // implementations are not literally equivalent.
+      // The one place this is not literally upstream: its `del234` *removes*
+      // the edge on a match, so a third face sharing this dot pair would get a
+      // new edge, where this overwrites `face2`. Unreachable — in a planar grid
+      // a dot pair bounds at most two faces.
       const found = edgeByDots.get(key);
       if (found) {
         found.face2 = f;

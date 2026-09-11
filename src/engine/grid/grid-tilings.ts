@@ -1,14 +1,16 @@
 /**
- * The periodic tiling generators of upstream `grid.c`, ported for Loopy
- * (openspec `extend-grid-tilings`). Import from `grid.ts`, not from here.
+ * The tiling types, their sizes and parameter bounds, and the scaffolding the
+ * periodic tiling generators of upstream `grid.c` share. The square tiling is
+ * here; the other thirteen are in `grid-tilings-basic.ts`, `grid-tilings-hex.ts`
+ * and `grid-tilings-dodec.ts`. Import from `index.ts`, not from here.
  *
- * **Every generator in this file is a pure function of `(width, height)`** —
- * no randomness, no floating point — and follows one shape: walk cells in
+ * **Every periodic generator is a pure function of `(width, height)`** — no
+ * randomness, no floating point — and follows one shape: walk cells in
  * `y`-then-`x` order, emit K faces per cell at integer offsets from the cell
  * origin with their corners clockwise, dedup shared corner dots by exact
  * coordinate, then `makeConsistent`.
  *
- * Two rules are load-bearing and must not be "tidied":
+ * Two rules bind every one of them and must not be "tidied":
  *
  * 1. **Integer arithmetic only.** `grid.c:1404` says so in as many words. Dot
  *    dedup is by *exact* coordinate equality, so a fractional coordinate does
@@ -20,10 +22,6 @@
  *    first-encounter order, driven by these loops. `grid-differential.test.ts`
  *    compares indices, not just shapes, so reordering face emission within a
  *    cell is a behavior change even when the resulting geometry is identical.
- *
- * The four aperiodic tilings (Penrose P2/P3, hats, spectres) are NOT here —
- * they are RNG-bearing and desc-round-tripping, and land in
- * `add-aperiodic-tilings`.
  */
 
 import { Grid, GridDot, GridFace, makeConsistent } from "./grid-core.ts";
@@ -57,7 +55,7 @@ export type GridType =
   | "hats"
   | "spectres";
 
-/** The 14 tilings implemented in this change; the other four are aperiodic. */
+/** The 14 periodic tilings, each a pure function of `(width, height)`. */
 export const PERIODIC_GRID_TYPES = [
   "square",
   "honeycomb",
@@ -166,7 +164,7 @@ export const SPECTRE_UNIT = 8;
 // ---------------------------------------------------------------------------
 
 /**
- * The natural tile size and extent of a periodic tiling, as a pure function of
+ * The natural tile size and extent of a tiling, as a pure function of
  * `(type, width, height)`. Mirrors the `grid_size_*` family; the app sizes its
  * drawing surface from this before any grid exists.
  */
@@ -381,22 +379,16 @@ const OBJECT_BOUND: Record<
  * are not in `grid.c` at all — they live in the consuming game, as `amin`/`omin`
  * in Loopy's `GRIDLIST`. Geometry has no opinion on them.
  *
- * **Why keep the guards at all, when TS has no integer overflow?** Upstream
- * writes each check in divided form (`width > INT_MAX / k / height`) precisely
- * to avoid the `int` overflow it is testing for. TS numbers are doubles, so we
- * can compute the products directly — which is both clearer and exactly
- * equivalent. The guards are retained not for overflow, which cannot happen
- * here, but for the resource bound they incidentally provide: without them a
- * mistyped size silently tries to allocate hundreds of millions of objects.
- * `INT_MAX` is kept as the threshold so the accepted/rejected boundary stays
- * identical to the C's.
+ * **Why keep the guards, when TS has no integer overflow?** For the resource
+ * bound they incidentally provide: without them a mistyped size silently tries
+ * to allocate hundreds of millions of objects. Upstream writes each check in
+ * divided form (`width > INT_MAX / k / height`) to avoid the overflow it tests
+ * for; TS numbers are doubles, so the products can be computed directly, which
+ * is clearer and exactly equivalent. `INT_MAX` stays the threshold so the
+ * accepted/rejected boundary is identical to the C's.
  *
- * **Wording divergence, recorded deliberately.** Upstream returns "Grid must
- * not be unreasonably large"; this returns "Grid size must not be unreasonably
- * large". Nothing compares these strings — they are surfaced to the player, not
- * to a fixture — and the extra word reads better next to a size the player just
- * typed. Noted so it stays a decision rather than becoming unexplained drift
- * from the reference.
+ * The message deliberately says "Grid size must not…" where upstream says
+ * "Grid must not…": it reads better next to a size the player just typed.
  */
 export function gridValidateParams(
   type: GridType,

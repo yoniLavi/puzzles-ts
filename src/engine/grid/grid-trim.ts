@@ -1,6 +1,6 @@
 /**
- * "Vigorous trimming" of a freshly-generated grid — the idiomatic TS port of
- * upstream `grid_trim_vigorously` (`grid.c:378`).
+ * "Vigorous trimming" of a freshly-generated grid — upstream
+ * `grid_trim_vigorously` (`grid.c:378`).
  *
  * The four aperiodic tilings (Penrose P2/P3, hats, spectres) cannot generate a
  * tidy rectangle: each emits every tile that falls entirely inside a bounding

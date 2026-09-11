@@ -1,18 +1,20 @@
 /**
- * Shared planar-grid geometry leaf — the public entry point. The idiomatic TS
- * port of upstream `grid.c` (Lambros Lambrou's general planar-graph grid
- * code), which models any planar graph as faces, edges and dots with full
- * reference incidence.
+ * Shared planar-grid geometry leaf — the public entry point. The TS port of
+ * upstream `grid.c` (Lambros Lambrou's general planar-graph grid code), which
+ * models any planar graph as faces, edges and dots with full reference
+ * incidence.
  *
- * Split across three files, all of which are re-exported here — **import from
- * this module, not from the parts**:
+ * Everything is re-exported here — **import from this module, not from the
+ * parts**:
  *
  * - [`grid-core.ts`](./grid-core.ts) — the four incidence classes
  *   (`Grid`/`GridFace`/`GridEdge`/`GridDot`) and the shared `makeConsistent`
  *   incidence builder.
- * - [`grid-tilings.ts`](./grid-tilings.ts) — the 14 periodic tiling
- *   generators, the size dispatch (`gridSizeFor`, all 18 tilings) and
- *   `gridValidateParams`. Pure integer, no RNG.
+ * - [`grid-tilings.ts`](./grid-tilings.ts) — the tiling types, the size
+ *   dispatch (`gridSizeFor`, all 18 tilings), `gridValidateParams`, the
+ *   `TilingBuilder` and the square tiling; `grid-tilings-basic.ts`,
+ *   `grid-tilings-hex.ts` and `grid-tilings-dodec.ts` hold the other periodic
+ *   tilings, and `tilings/` the four aperiodic ones.
  * - [`grid-geometry.ts`](./grid-geometry.ts) — `gridNearestEdge` (input
  *   hit-testing) and `gridFindIncenter` (label placement). The only floating
  *   point in the module, and display/input only — never desc, generation or
@@ -27,10 +29,6 @@
  * deterministic function of `(type, width, height, desc)`. Everything else
  * follows from that split — including the ability to differential-check
  * geometry and RNG fidelity independently.
- *
- * Landed square-tiling-only with Pearl; extended to all 14 periodic tilings by
- * `extend-grid-tilings` for Loopy. The four aperiodic tilings (Penrose P2/P3,
- * hats, spectres) land in `add-aperiodic-tilings`.
  */
 
 export {
@@ -106,9 +104,8 @@ import { gridNewSpectres } from "./tilings/spectre-grid.ts";
 
 /**
  * Build a grid of the given type and size. `desc` is the tiling's description
- * string where it has one — today only `triangular` (a version flag selecting
- * upstream's legacy ragged-ear algorithm when absent, or the ear-trimmed one
- * when `"0"`). Every other periodic tiling requires `desc` to be null.
+ * string (see `grid-desc.ts`): required for the aperiodic four, a version flag
+ * for `triangular`, and null for every other tiling. An invalid one throws.
  *
  * Mirrors `grid_new`.
  */
@@ -118,9 +115,6 @@ export function gridNew(
   height: number,
   desc: string | null = null,
 ): Grid {
-  // Upstream asserts the description here rather than returning an error: a bad
-  // description reaching construction means the caller skipped validation, so
-  // it is a programming error, and every generator below may trust its input.
   assertGridDescValid(type, width, height, desc);
 
   switch (type) {

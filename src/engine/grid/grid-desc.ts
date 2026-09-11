@@ -1,25 +1,15 @@
 /**
  * Grid **description** strings: generation, validation, and the dispatch
- * between them. The idiomatic TS port of upstream's `grid_new_desc` /
- * `grid_validate_desc` (`grid.c:3817` and `:3832`).
- *
- * ## Why descs exist, and why this file is separate
+ * between them. Upstream's `grid_new_desc` / `grid_validate_desc`
+ * (`grid.c:3817` and `:3832`).
  *
  * Most tilings are a pure function of `(width, height)` and need no
  * description. The four aperiodic ones are not: there is no canonical
  * "10×10 patch of spectres", so the generator makes random choices, and the
  * description is the record of those choices — enough to rebuild the *same*
- * patch later from a saved game or a shared game ID.
- *
- * That gives the module its central contract, which callers may rely on:
- *
- * - **`gridNewDesc` is the only randomness-consuming function in `grid.ts`.**
- * - **`gridNew` is a pure deterministic function of `(type, w, h, desc)`.**
- *
- * Upstream draws the same line, and it is worth more here than there: it is
- * what lets the differential check geometry and RNG fidelity *separately*
- * (a geometry failure and a wrong random draw are otherwise indistinguishable
- * in a single red test).
+ * patch later from a saved game or a shared game ID. That is the module's
+ * contract (see `index.ts`): `gridNewDesc` is the only function in it that
+ * consumes randomness.
  *
  * ## The three cases
  *
@@ -64,9 +54,6 @@ export function gridNewDesc(
     case "spectres":
       return spectresNewDesc(width, height, rng);
     default:
-      void width;
-      void height;
-      void rng;
       return null;
   }
 }
@@ -93,8 +80,6 @@ export function gridValidateDesc(
     case "spectres":
       return spectresValidateDesc(width, height, desc);
     default:
-      void width;
-      void height;
       if (desc !== null) {
         return "Grid description strings not used with this grid type";
       }
@@ -106,13 +91,8 @@ export function gridValidateDesc(
  * Triangular's description is a version flag with exactly two legal values:
  * absent (upstream's original algorithm, which leaves "ears" — triangles joined
  * to only one other face at some corners) and `"0"` (the current algorithm,
- * which trims them). Anything else is rejected.
- *
- * Both stay legal permanently: pre-existing shared game IDs carry the absent
- * form, and rejecting it would break them for no gain.
- *
- * Mirrors `grid_validate_desc_triangular`. It lived inside `gridNewTriangular`
- * until the desc dispatch existed to give it a home.
+ * which trims them). Anything else is rejected. Mirrors
+ * `grid_validate_desc_triangular`.
  */
 function gridValidateDescTriangular(desc: string | null): string | null {
   if (desc === null || desc === "0") return null;

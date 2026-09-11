@@ -2,22 +2,13 @@
  * Five of upstream `grid.c`'s periodic tilings: the hexagon-derived family
  * (`greathexagonal`, `kagome`), `octagonal`, `kites` and `floret`.
  *
- * Import from [`grid.ts`](./grid.ts), not from here. The two load-bearing
- * rules of [`grid-tilings.ts`](./grid-tilings.ts) apply verbatim:
+ * Import from [`index.ts`](./index.ts), not from here.
  *
- * 1. **Integer arithmetic only** — dot dedup is by exact coordinate, so a
- *    fractional coordinate silently forks a shared corner into two dots.
- *    Wherever upstream leans on C's truncate-toward-zero integer division,
- *    this file uses `Math.trunc`. That matters most in `floret`, whose basis
- *    vectors have negative components (`FLORET_PY = -26`), so `/` and C's `/`
- *    disagree in *sign* as well as in fractionality.
- * 2. **Emission order is observable** — faces per cell, and corners within a
- *    face, are emitted in upstream's exact order, because dot indices are
- *    assigned on first encounter and the differential compares indices.
- *
- * Upstream's per-cell emission guards are reproduced verbatim too, including
- * the ones that exist purely for appearance (floret drops one pentagon
- * rosette; see the comment there).
+ * The two rules in [`grid-tilings.ts`](./grid-tilings.ts)'s header bind here:
+ * integer arithmetic only (floret is where `Math.trunc` matters; see there),
+ * and emission order is observable. Upstream's per-cell emission guards are
+ * reproduced verbatim too, including the ones that exist purely for
+ * appearance (floret drops one pentagon rosette).
  */
 
 import type { Grid } from "./grid-core.ts";

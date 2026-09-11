@@ -1,13 +1,11 @@
 /**
  * The four "basic" periodic tilings of upstream `grid.c` — honeycomb,
- * triangular, snubsquare and cairo. Import from `grid.ts`, not from here.
+ * triangular, snubsquare and cairo. Import from `index.ts`, not from here.
  *
- * The two load-bearing rules of `grid-tilings.ts` apply verbatim: **integer
- * arithmetic only** (dot dedup is by exact coordinate, so a fractional value
- * silently splits a shared corner) and **emission order is observable** (dot
- * indices are assigned in first-encounter order, and the differential compares
- * indices, not just shapes). Upstream's per-cell emission guards — cairo's
- * `y > 0` / `x > 0`, the `(x + y) % 2` branches — are reproduced exactly.
+ * The two rules in `grid-tilings.ts`'s header bind here: integer arithmetic
+ * only, and emission order is observable. Upstream's per-cell emission guards —
+ * cairo's `y > 0` / `x > 0`, the `(x + y) % 2` branches — are reproduced
+ * exactly.
  */
 
 import type { Grid } from "./grid-core.ts";
@@ -59,8 +57,8 @@ export function gridNewHoneycomb(width: number, height: number): Grid {
 
 /**
  * Triangular. Mirrors `grid_new_triangular`, **including both of its
- * algorithms** — the desc is read as an integer (upstream uses `atoi`), and an
- * absent desc selects the legacy generator while `"0"` selects the current one:
+ * algorithms** — an absent desc selects the legacy generator, and `"0"` (the
+ * only other desc validation allows) the current one:
  *
  * - **Legacy** (`desc === null`): predates the shared dot-dedup machinery and
  *   works by direct index arithmetic over a fully pre-allocated
@@ -78,11 +76,9 @@ export function gridNewTriangular(
 ): Grid {
   const vecX = TRIANGLE_VEC_X;
   const vecY = TRIANGLE_VEC_Y;
-  const version = desc === null ? -1 : atoi(desc);
-
   const g = new TilingBuilder(TRIANGLE_TILESIZE);
 
-  if (version === -1) {
+  if (desc === null) {
     // ---- Legacy algorithm (ragged 'ears'; kept for old game ids) ----
     //
     // Upstream allocates every dot up front in row-major order and then
@@ -116,20 +112,12 @@ export function gridNewTriangular(
     for (let y = 0; y < height; y++) {
       // Each row holds (width+1) triangles one way up and (width) the other.
       // Which way up is which varies with the parity of y, as does the
-      // direction the dots run around each face — hence n1/n2.
+      // direction the dots run around each face.
+      const odd = y % 2 !== 0;
       let y0 = y * vecY;
       let y1 = y0;
-      let n1: number;
-      let n2: number;
-      if (y % 2) {
-        y1 += vecY;
-        n1 = 2;
-        n2 = 1;
-      } else {
-        y0 += vecY;
-        n1 = 1;
-        n2 = 2;
-      }
+      if (odd) y1 += vecY;
+      else y0 += vecY;
 
       for (let x = 0; x <= width; x++) {
         const x0 = 2 * x * vecX;
@@ -142,15 +130,8 @@ export function gridNewTriangular(
           continue;
         }
 
-        const dots: [number, number][] = [
-          [0, 0],
-          [0, 0],
-          [0, 0],
-        ];
-        dots[0] = [x0, y0];
-        dots[n1] = [x1, y1];
-        dots[n2] = [x2, y0];
-        g.face(...dots);
+        if (odd) g.face([x0, y0], [x2, y0], [x1, y1]);
+        else g.face([x0, y0], [x1, y1], [x2, y0]);
       }
 
       for (let x = 0; x < width; x++) {
@@ -158,15 +139,8 @@ export function gridNewTriangular(
         const x1 = x0 + vecX;
         const x2 = x1 + vecX;
 
-        const dots: [number, number][] = [
-          [0, 0],
-          [0, 0],
-          [0, 0],
-        ];
-        dots[0] = [x0, y1];
-        dots[n2] = [x1, y0];
-        dots[n1] = [x2, y1];
-        g.face(...dots);
+        if (odd) g.face([x0, y1], [x1, y0], [x2, y1]);
+        else g.face([x0, y1], [x2, y1], [x1, y0]);
       }
     }
   }
@@ -281,10 +255,4 @@ export function gridNewCairo(width: number, height: number): Grid {
   }
 
   return g.finish();
-}
-
-/** C's `atoi`: leading integer, or 0 if there isn't one. */
-function atoi(s: string): number {
-  const n = Number.parseInt(s, 10);
-  return Number.isNaN(n) ? 0 : n;
 }

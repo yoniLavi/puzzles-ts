@@ -1,8 +1,5 @@
 /**
- * Tier-1 structural tests for the shared planar-grid leaf.
- *
- * The square-specific block came first (with Pearl); `extend-grid-tilings`
- * added the all-tilings blocks below it for Loopy. All of it is deliberately
+ * Tier-1 structural tests for the shared planar-grid leaf, deliberately
  * **independent of the C fixture**: the differential
  * (`grid-differential.test.ts`) proves the tilings match upstream, while these
  * prove they are structurally sane — which still holds if the oracle is ever
@@ -180,10 +177,10 @@ describe.each(PERIODIC_GRID_TYPES)("%s tiling", (type) => {
     }
 
     // `d.order` is what sizes `d.edges` and `d.faces`, so comparing their
-    // lengths to it is vacuous — it was, until a planted defect that halved
-    // every dot's degree passed all 151 tests in this file. The non-vacuous
-    // statement is the one the *builder* has to get right: a dot's degree is
-    // the number of edges that actually name it as an endpoint.
+    // lengths to it alone is vacuous (a planted defect halving every dot's
+    // degree passed it). The non-vacuous statement is the one the *builder*
+    // has to get right: a dot's degree is the number of edges that actually
+    // name it as an endpoint.
     const degree = new Map<(typeof g.dots)[number], number>();
     for (const e of g.edges) {
       degree.set(e.dot1, (degree.get(e.dot1) ?? 0) + 1);
@@ -277,10 +274,9 @@ describe("triangular version desc", () => {
 });
 
 describe("aperiodic tilings", () => {
-  // Replaced `extend-grid-tilings`' "these throw a named error" guard, which
-  // was the change boundary while the four were unimplemented. Index-exact
-  // agreement with the C lives in `grid-aperiodic-differential.test.ts`; what
-  // is asserted here is only that they are wired into the barrel at all.
+  // Index-exact agreement with the C lives in
+  // `grid-aperiodic-differential.test.ts`; what is asserted here is only that
+  // they are wired into the barrel at all.
   it.each([
     ...APERIODIC_GRID_TYPES,
   ])("%s builds from a generated description", (type) => {

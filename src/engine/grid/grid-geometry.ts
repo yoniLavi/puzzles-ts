@@ -1,16 +1,11 @@
 /**
  * Geometry helpers over a built `Grid` — the only floating-point code in the
- * grid module. Import from `grid.ts`, not from here.
+ * grid module. Import from `index.ts`, not from here.
  *
  * Both helpers are **input/display only**: `gridNearestEdge` decides which edge
- * a click lands on, and `gridFindIncenter` decides where a clue digit is drawn.
- * Neither influences a grid description, generation or solving, so neither is
- * byte-parity surface (this project's byte-parity scope covers
- * generator/solver/codec, not display — see `feedback_byte_parity_scope`).
- *
- * Ported for Loopy (openspec `extend-grid-tilings`), which is the sole
- * consumer: it has no keyboard input and no drag, so `gridNearestEdge` is its
- * *entire* input path.
+ * a click lands on (Loopy's whole pointer path), and `gridFindIncenter` decides
+ * where a clue digit is drawn. Neither influences a grid description,
+ * generation or solving, so neither needs to match the C bit for bit.
  */
 
 import type { Grid, GridDot, GridEdge, GridFace } from "./grid-core.ts";
@@ -191,24 +186,17 @@ export function gridFindIncenter(f: GridFace): void {
   }
 
   f.hasIncenter = true;
-  // Round to nearest — and this is the one place the port deliberately does not
-  // reproduce the C.
+  // Round to nearest, deliberately unlike the C. Upstream writes
+  // `(int)(v + 0.5)`, which truncates toward zero and so rounds to nearest only
+  // for a *positive* v: at v = -134.98 it gives -134. Grid coordinates are
+  // mostly negative (tilings are built around the origin, then re-centered), so
+  // the C form is off by up to a whole unit per axis over most of a board.
   //
-  // Upstream stores the result through a double->int assignment, which
-  // truncates toward zero, so it writes `(int)(v + 0.5)`. That is round-to-
-  // nearest only for a *positive* v: at v = -134.98 it gives -134, where the
-  // nearest integer is -135. Grid coordinates are overwhelmingly negative (the
-  // tilings are built around the origin and then re-centered), so the C
-  // expression is off by up to a whole unit per axis over most of a board —
-  // and the mistake to avoid here is reading `+ 0.5` and stopping.
-  //
-  // Measured, over every face of all 18 tilings (1,816 faces): the C form
-  // costs up to **1.229 units** of inscribed radius against the best the
-  // integer lattice admits, and `Math.round` costs **0.053**. So the search
-  // itself is essentially exact and that whole shortfall was this line. The
-  // incenter is display-only and never was byte-parity surface, so there is
-  // nothing to trade away. `grid-incenter.test.ts` holds the 0.053 figure to a
-  // bound; if it starts failing, this line is the first suspect.
+  // Measured over every face of all 18 tilings (1,816 faces): the C form costs
+  // up to **1.229 units** of inscribed radius against the best the integer
+  // lattice admits, and `Math.round` costs **0.053**, so the search itself is
+  // essentially exact. `grid-incenter.test.ts` holds that figure to a bound; if
+  // it starts failing, this line is the first suspect.
   f.ix = Math.round(xBest);
   f.iy = Math.round(yBest);
 }

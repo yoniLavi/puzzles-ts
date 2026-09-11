@@ -1,19 +1,16 @@
 /**
- * Differential check for the periodic tilings in `grid.ts` against the C
- * reference (`puzzles/grid.c`), via the frozen snapshot in
+ * Differential check for the periodic tilings against the C reference
+ * (`puzzles/grid.c`), via the frozen snapshot in
  * `__fixtures__/grid-c-reference.json`, captured by
- * `puzzles/auxiliary/grid-trace --all` before `retire-c-engine` deleted the C
- * and the build that ran it. It is frozen; see `engine/testing/differential.ts`.
+ * `puzzles/auxiliary/grid-trace --all`. It is frozen; see
+ * `engine/testing/differential.ts`.
  *
  * This is a **byte-match** differential, and an unusually strong one: dot
  * indices are assigned in first-encounter order driven by each generator's own
  * emission loop, so index-exact agreement proves the emission *order* matches,
  * not merely the resulting shape. A transposed coordinate or a swapped
- * face-corner order fails immediately and names the tiling.
- *
- * It is the mitigation for the main risk in `extend-grid-tilings`: 13
- * hand-transcribed generators with high typo volume. See that change's
- * design.md D7.
+ * face-corner order in a hand-transcribed generator fails immediately and
+ * names the tiling.
  */
 
 import { describe, expect, it } from "vitest";

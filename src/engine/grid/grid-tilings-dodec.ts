@@ -2,18 +2,16 @@
  * The four dodecagon-based periodic tilings of upstream `grid.c`
  * (`grid_new_dodecagonal`, `grid_new_greatdodecagonal`,
  * `grid_new_greatgreatdodecagonal`, `grid_new_compassdodecagonal`).
- * Import from `grid.ts`, not from here.
+ * Import from `index.ts`, not from here.
  *
  * All four share `DODEC_TILESIZE`/`DODEC_A`/`DODEC_B` and open every cell with
  * the same twelve-corner dodecagon; they differ in the cell pitch, the
  * odd-row stagger, and the filler faces packed between the dodecagons.
  *
- * The two load-bearing rules from `grid-tilings.ts` apply verbatim here:
- * integer arithmetic only (dot dedup is exact-coordinate), and emission order
- * is observable (dot indices are assigned in first-encounter order). The face
- * order, the corner order within each face, and each per-cell emission guard
- * are transcribed from upstream unchanged — including the guards' asymmetries,
- * which are what make the patch's boundary ragged in exactly upstream's way.
+ * The two rules in `grid-tilings.ts`'s header bind here. The face order, the
+ * corner order within each face, and each per-cell emission guard are
+ * upstream's unchanged — including the guards' asymmetries, which are what
+ * make the patch's boundary ragged in exactly upstream's way.
  */
 
 import type { Grid } from "./grid-core.ts";
