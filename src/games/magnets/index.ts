@@ -11,7 +11,7 @@
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
-import type { Game, UiUpdate } from "../../engine/game.ts";
+import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
@@ -24,9 +24,8 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newMagnetsDesc } from "./generator.ts";
 import {
   colors,
@@ -160,19 +159,11 @@ function solve(
   orig: MagnetsState,
   _curr: MagnetsState,
   aux?: string,
-): ReturnType<NonNullable<Game<MagnetsParams, MagnetsState, MagnetsMove>["solve"]>> {
-  const { wh, common } = orig;
-  if (aux && aux.length === wh) {
-    const solution = Array.from(aux, CHAR2GRID);
-    return { ok: true, move: { type: "solve", solution } };
+): SolveResult<MagnetsMove> {
+  if (aux && aux.length === orig.wh) {
+    return { ok: true, move: { type: "solve", solution: Array.from(aux, CHAR2GRID) } };
   }
-  const solver = new MagnetsSolver(
-    orig.w,
-    orig.h,
-    common.dominoes,
-    common.rowcount,
-    common.colcount,
-  );
+  const solver = new MagnetsSolver(orig.w, orig.h, orig.common);
   const ret = solver.solve(DIFF_COUNT);
   if (ret > 0) {
     return { ok: true, move: { type: "solve", solution: Array.from(solver.grid) } };
@@ -188,13 +179,7 @@ function solve(
  * mistakes; a non-uniquely-solvable board yields none). */
 function findMistakes(state: MagnetsState): readonly MagnetsMistake[] {
   const { w, wh, grid, flags, common } = state;
-  const solver = new MagnetsSolver(
-    w,
-    state.h,
-    common.dominoes,
-    common.rowcount,
-    common.colcount,
-  );
+  const solver = new MagnetsSolver(w, state.h, common);
   if (solver.solve(DIFF_COUNT) <= 0) return [];
   const out: MagnetsMistake[] = [];
   for (let i = 0; i < wh; i++) {
@@ -206,21 +191,12 @@ function findMistakes(state: MagnetsState): readonly MagnetsMistake[] {
   return out;
 }
 
-/** Magnets' difficulty contract (`engine/difficulty.ts`). `MagnetsSolver.solve`
- * documents its returns as −1 impossible, 0 ambiguous/unfinished, 1 solved. */
 const difficulty: DifficultyContract<MagnetsParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {
     const s = newState(p, desc);
-    const solver = new MagnetsSolver(
-      s.w,
-      s.h,
-      s.common.dominoes,
-      s.common.rowcount,
-      s.common.colcount,
-    );
-    const ret = solver.solve(cap);
+    const ret = new MagnetsSolver(s.w, s.h, s.common).solve(cap);
     return ret < 0 ? "impossible" : ret > 0 ? "solved" : "unsolved";
   },
 };
@@ -252,7 +228,7 @@ export const magnetsGame: Game<
     "strip-clues": p.stripclues,
   }),
 
-  newDesc: (p, rng: RandomState) => newMagnetsDesc(p, rng),
+  newDesc: newMagnetsDesc,
   validateDesc,
   newState,
   newUi,
@@ -268,15 +244,15 @@ export const magnetsGame: Game<
 
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: MagnetsParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },
   newDrawState,
-  redraw: (dr, ds, prev, s, dir, ui, animTime, flashTime, _hint, mistakes) =>
-    redraw(dr, ds, prev, s, dir, ui, animTime, flashTime, mistakes),
+  redraw: (dr, ds, _prev, s, _dir, ui, _animTime, flashTime, _hint, mistakes) =>
+    redraw(dr, ds, s, ui, flashTime, mistakes),
 
   flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };

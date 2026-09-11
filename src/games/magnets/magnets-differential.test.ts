@@ -1,14 +1,14 @@
 /**
- * Gated C-vs-TS differential for magnets (openspec add-magnets-ts-port).
+ * Gated C-vs-TS differential for magnets.
  *
  * Byte-for-byte desc match: the generator is a faithful port over the
  * bit-identical `random.ts` — the `dominoLayout` shuffles, the `layDominoes`
  * scratch shuffle, and the strip-clues shuffle all reproduce C's draws — so
- * `newDesc(params, randomNew(seed)).desc` reproduces C exactly (playbook
- * §4.3). Two follow-on assertions (§4.4): the recorded aux (C's solution)
- * matches, and the TS solver grades each C board at exactly the recorded
- * difficulty (solves at diff; for a Tricky board, fails at Easy) — the
- * generator is solver-gated, so the TS solver must reach C's verdict.
+ * `newDesc(params, randomNew(seed)).desc` reproduces C exactly. Two follow-on
+ * assertions: the recorded aux (C's solution) matches, and the TS solver
+ * grades each C board at exactly the recorded difficulty (solves at diff; for
+ * an upper-tier board, fails one tier down) — the generator is solver-gated,
+ * so the TS solver must reach C's verdict.
  *
  * The fixture is **frozen and cannot be regenerated**. It was captured by
  * `puzzles/auxiliary/magnets-trace.c` against upstream's C, under an
@@ -47,22 +47,10 @@ describeDescDifferential<Fixture, MagnetsParams>({
 
     // The TS solver grades the C board at exactly the recorded difficulty.
     const s = newState(p, f.desc);
-    const solver = new MagnetsSolver(
-      s.w,
-      s.h,
-      s.common.dominoes,
-      s.common.rowcount,
-      s.common.colcount,
-    );
+    const solver = new MagnetsSolver(s.w, s.h, s.common);
     expect(solver.solve(DIFF_COUNT)).toBe(1); // uniquely solvable
     if (f.diff > DIFF_EASY) {
-      const easier = new MagnetsSolver(
-        s.w,
-        s.h,
-        s.common.dominoes,
-        s.common.rowcount,
-        s.common.colcount,
-      );
+      const easier = new MagnetsSolver(s.w, s.h, s.common);
       expect(easier.solve(f.diff - 1)).toBeLessThanOrEqual(0); // ambiguous one level down
     }
   },

@@ -5,14 +5,13 @@
  * cross, a blue not-neutral `?`, singleton black squares, and the `+`/`−` clue
  * counts on all four borders with the corner `+`/`−` symbols.
  *
- * Geometry note: the web C build defines `NARROW_BORDERS`
- * (cmake/platforms/webapp.cmake), so `BORDER = 0` and the canvas is
- * `(w+2) × (h+2)` tiles (a one-tile clue margin each side + the play area).
+ * Geometry is upstream's `NARROW_BORDERS` layout: the canvas is `(w+2) × (h+2)`
+ * tiles, a one-tile clue margin each side and no border beyond it.
  *
  * The per-tile cache packs the cell value plus every overlay (set / error /
  * cursor / not-flags / flash / mistake) into one `Int32Array` word, so the
- * diff key covers every overlay (docs/games/rendering.md § "Overlay sidecars"); the four-border clue colors
- * diff parallel per-clue arrays.
+ * diff key covers every overlay (docs/games/rendering.md § "Overlay
+ * sidecars"); the four-border clue colors diff parallel per-clue arrays.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -38,7 +37,6 @@ import {
   GS_NOTPOSITIVE,
   GS_SET,
   type MagnetsMistake,
-  type MagnetsParams,
   type MagnetsState,
   type MagnetsUi,
   NEGATIVE,
@@ -98,17 +96,14 @@ const DS_NOTNEU = 0x200;
 const DS_FLASH = 0x400;
 const DS_MISTAKE = 0x800; // fork overlay
 
-// --- geometry (NARROW_BORDERS: BORDER = 0) --------------------------------
-const BORDER = 0;
-/** The board's pixel origin: the clue row and column take a whole tile, and
- * NARROW_BORDERS leaves no margin beyond it. Exported so `interpretMove` reads
- * the same number the painter does — one function, both callers
- * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
-export const origin = (ts: number): number => ts + BORDER;
-const coord = (n: number, ts: number) => (n + 1) * ts + BORDER;
+// --- geometry ---------------------------------------------------------------
+/** The board's pixel origin: the clue row and column take one whole tile.
+ * Exported so `interpretMove` reads the same number the painter does. */
+export const origin = (ts: number): number => ts;
+const coord = (n: number, ts: number) => (n + 1) * ts;
 
-export function computeSize(p: MagnetsParams, ts: number): Size {
-  return { w: ts * (p.w + 2) + 2 * BORDER, h: ts * (p.h + 2) + 2 * BORDER };
+export function computeSize(p: { w: number; h: number }, ts: number): Size {
+  return { w: ts * (p.w + 2), h: ts * (p.h + 2) };
 }
 
 // --- draw state -----------------------------------------------------------
@@ -224,7 +219,6 @@ function drawTileCol(
   if (other === i + 1) type = TYPE_L;
   else if (other === i - 1) type = TYPE_R;
   else if (other === i + ds.w) type = TYPE_T;
-  else if (other === i - ds.w) type = TYPE_B;
 
   const circ = (px: number, py: number) =>
     dr.drawCircle({ x: px, y: py }, radius, bg, bg);
@@ -315,34 +309,33 @@ function drawNum(
   rowcol: number,
   which: number,
   idx: number,
-  colbg: number,
   col: number,
   num: number,
 ): void {
   if (num < 0) return;
   const ts = ds.tilesize;
-  const buf = String(num);
+  const text = String(num);
   const tsz =
-    buf.length === 1
+    text.length === 1
       ? Math.floor((7 * ts) / 10)
-      : Math.floor((9 * ts) / 10 / buf.length);
+      : Math.floor((9 * ts) / 10 / text.length);
 
   let cx: number;
   let cy: number;
   if (rowcol === ROW) {
-    cx = BORDER + (which === NEGATIVE ? ts * (ds.w + 1) : 0);
-    cy = BORDER + ts * (idx + 1);
+    cx = which === NEGATIVE ? ts * (ds.w + 1) : 0;
+    cy = ts * (idx + 1);
   } else {
-    cx = BORDER + ts * (idx + 1);
-    cy = BORDER + (which === NEGATIVE ? ts * (ds.h + 1) : 0);
+    cx = ts * (idx + 1);
+    cy = which === NEGATIVE ? ts * (ds.h + 1) : 0;
   }
 
-  dr.drawRect({ x: cx, y: cy, w: ts, h: ts }, colbg);
+  dr.drawRect({ x: cx, y: cy, w: ts, h: ts }, COL_BACKGROUND);
   dr.drawText(
     { x: cx + Math.floor(ts / 2), y: cy + Math.floor(ts / 2) },
     { align: "center", baseline: "mathematical", fontType: "variable", size: tsz },
     col,
-    buf,
+    text,
   );
   dr.drawUpdate({ x: cx, y: cy, w: ts, h: ts });
 }
@@ -375,11 +368,8 @@ function getCountColor(
 export function redraw(
   dr: GameDrawing,
   ds: MagnetsDrawState,
-  _prev: MagnetsState | null,
   state: MagnetsState,
-  _dir: number,
   ui: MagnetsUi,
-  _animTime: number,
   flashTime: number,
   mistakes?: readonly MagnetsMistake[],
 ): void {
@@ -390,7 +380,7 @@ export function redraw(
   const flash = Math.floor((flashTime * 5) / FLASH_TIME) % 2 !== 0;
 
   if (!ds.started) {
-    const size = computeSize({ w, h, diff: 0, stripclues: false }, ts);
+    const size = computeSize(state, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
     // Corner +/− symbols.
     drawSym(dr, ts, -1, -1, POSITIVE, COL_TEXT);
@@ -425,22 +415,17 @@ export function redraw(
 
   // Clue counts around the four borders.
   for (const which of [POSITIVE, NEGATIVE]) {
-    for (let i = 0; i < w; i++) {
-      const index = i * 3 + which;
-      const target = colcount[index];
-      const color = getCountColor(state, COLUMN, which, i, target);
-      if (ds.colwhat[index] !== color) {
-        drawNum(dr, ds, COLUMN, which, i, COL_BACKGROUND, color, target);
-        ds.colwhat[index] = color;
-      }
-    }
-    for (let i = 0; i < h; i++) {
-      const index = i * 3 + which;
-      const target = rowcount[index];
-      const color = getCountColor(state, ROW, which, i, target);
-      if (ds.rowwhat[index] !== color) {
-        drawNum(dr, ds, ROW, which, i, COL_BACKGROUND, color, target);
-        ds.rowwhat[index] = color;
+    for (const [rowcol, n, targets, drawn] of [
+      [COLUMN, w, colcount, ds.colwhat],
+      [ROW, h, rowcount, ds.rowwhat],
+    ] as const) {
+      for (let i = 0; i < n; i++) {
+        const index = i * 3 + which;
+        const color = getCountColor(state, rowcol, which, i, targets[index]);
+        if (drawn[index] !== color) {
+          drawNum(dr, ds, rowcol, which, i, color, targets[index]);
+          drawn[index] = color;
+        }
       }
     }
   }

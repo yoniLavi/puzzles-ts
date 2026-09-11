@@ -50,11 +50,11 @@ export const notFlag = (which: number): number =>
         ? GS_NOTNEGATIVE
         : 0;
 
-// --- difficulty (upstream DIFFLIST: Easy, Tricky) -------------------------
+// --- difficulty (upstream's Easy and Tricky, named by the collection) ------
 export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFF_COUNT = 2;
-export const DIFF_NAMES: readonly string[] = tierNames(2);
+export const DIFF_NAMES: readonly string[] = tierNames(DIFF_COUNT);
 export const DIFF_CHARS = "et"; // ENCODE chars, indexed by difficulty
 
 // --- roworcol ------------------------------------------------------------
@@ -115,14 +115,9 @@ export interface MagnetsMistake {
 
 // --- char codec ----------------------------------------------------------
 
-/**
- * A row or column count as its description character, or `"."` for *no clue*.
- *
- * The `"."` is the only part of this Magnets owns; the alphabet underneath is
- * the shared one. Singles has no such sentinel, which is why it stays here
- * rather than moving down — a shared codec that knows one game's "no clue"
- * marker has taken on that game's meaning.
- */
+/** A row or column count as its description character, or `"."` for *no clue*.
+ * The sentinel is Magnets' own, so it stays here rather than in the shared
+ * alphabet underneath. */
 export function n2c(num: number): string {
   return num === -1 ? "." : descChar(num);
 }
@@ -192,11 +187,9 @@ export function validateParams(p: MagnetsParams, _full: boolean): string | null 
   if (p.w > Number.MAX_SAFE_INTEGER / p.h) {
     return "Width times height must not be unreasonably large";
   }
-  // A row clue counts up to `w` magnets and a column clue up to `h`, and each
-  // is written as one character of the desc alphabet — which has 62 slots,
-  // `0..61`. Upstream bounds neither dimension, so a 62-wide board encoded a
-  // count as `[` and its own `validateDesc` then rejected the description it
-  // had just written. Derived from the alphabet so the two cannot drift.
+  // A row clue counts up to `w` magnets and a column clue up to `h`, each
+  // written as one desc-alphabet character. Upstream bounds neither, so a
+  // 62-wide board wrote a desc its own `validateDesc` rejected.
   if (p.w >= DESC_ALPHABET_SIZE || p.h >= DESC_ALPHABET_SIZE) {
     return "Puzzle is too large";
   }
@@ -271,23 +264,18 @@ export function parseDesc(p: MagnetsParams, desc: string): Parsed | { error: str
     pos = r.pos;
   }
 
-  // Derive neutral counts (== size − pos − neg); a −1 pos/neg ⇒ unknown (−1).
-  for (let x = 0; x < w; x++) {
-    if (colcount[x * 3 + POSITIVE] < 0 || colcount[x * 3 + NEGATIVE] < 0) {
-      colcount[x * 3 + NEUTRAL] = -1;
-    } else {
-      const neu = h - colcount[x * 3 + POSITIVE] - colcount[x * 3 + NEGATIVE];
-      if (neu < 0) return { error: "Column counts inconsistent" };
-      colcount[x * 3 + NEUTRAL] = neu;
-    }
-  }
-  for (let y = 0; y < h; y++) {
-    if (rowcount[y * 3 + POSITIVE] < 0 || rowcount[y * 3 + NEGATIVE] < 0) {
-      rowcount[y * 3 + NEUTRAL] = -1;
-    } else {
-      const neu = w - rowcount[y * 3 + POSITIVE] - rowcount[y * 3 + NEGATIVE];
-      if (neu < 0) return { error: "Row counts inconsistent" };
-      rowcount[y * 3 + NEUTRAL] = neu;
+  // Derive neutral counts (== length − pos − neg); a −1 pos/neg ⇒ unknown (−1).
+  for (const [n, counts, length, name] of [
+    [w, colcount, h, "Column"],
+    [h, rowcount, w, "Row"],
+  ] as const) {
+    for (let i = 0; i < n; i++) {
+      const pos = counts[i * 3 + POSITIVE];
+      const neg = counts[i * 3 + NEGATIVE];
+      if (pos >= 0 && neg >= 0 && pos + neg > length) {
+        return { error: `${name} counts inconsistent` };
+      }
+      counts[i * 3 + NEUTRAL] = pos < 0 || neg < 0 ? -1 : length - pos - neg;
     }
   }
 
@@ -414,13 +402,18 @@ export function clueIndex(w: number, h: number, x: number, y: number): number {
 
 // --- counts / completion -------------------------------------------------
 
-const inGrid = (w: number, h: number, x: number, y: number): boolean =>
+export const inGrid = (w: number, h: number, x: number, y: number): boolean =>
   x >= 0 && x < w && y >= 0 && y < h;
+
+/** What completion checking reads: a game state, or the solver's scratch. */
+type Board = Pick<MagnetsState, "w" | "h" | "wh" | "flags" | "common"> & {
+  readonly grid: ArrayLike<number>;
+};
 
 /** Count cells of color `which` in a row/column, or (which < 0) the empty,
  * not-yet-set cells. Upstream count_rowcol. */
 export function countRowcol(
-  state: MagnetsState,
+  state: Board,
   num: number,
   roworcol: number,
   which: number,
@@ -453,7 +446,7 @@ export function countRowcol(
  * (clears then re-sets GS_ERROR). Returns −1 (wrong) / 0 (incomplete) / 1
  * (complete).
  */
-export function checkCompletion(state: MagnetsState): number {
+export function checkCompletion(state: Board): number {
   const { w, h, wh, grid, flags, common } = state;
   const { rowcount, colcount, dominoes } = common;
   let wrong = false;
@@ -507,38 +500,35 @@ export function executeMove(state: MagnetsState, move: MagnetsMove): MagnetsStat
   const { w, wh, grid, flags, common } = next;
   const { dominoes } = common;
 
-  const applyCell = (
-    idx: number,
-    m: Extract<MagnetsMove, { type: "set" | "flag" }>,
-  ) => {
-    const idx2 = dominoes[idx];
-    if (idx === idx2) throw new Error("magnets: move on a singleton");
-    flags[idx] &= ~GS_NOTMASK;
-    flags[idx2] &= ~GS_NOTMASK;
-    if (m.type === "flag" && (m.mode === "empty" || m.mode === "notneutral")) {
-      grid[idx] = EMPTY;
-      grid[idx2] = EMPTY;
-      flags[idx] &= ~GS_SET;
-      flags[idx2] &= ~GS_SET;
-      if (m.mode === "notneutral") {
-        flags[idx] |= GS_NOTNEUTRAL;
-        flags[idx2] |= GS_NOTNEUTRAL;
-      }
-    } else {
-      const which = m.type === "set" ? m.which : NEUTRAL;
-      grid[idx] = which;
-      grid[idx2] = opposite(which);
-      flags[idx] |= GS_SET;
-      flags[idx2] |= GS_SET;
-    }
-  };
-
   let cheated = next.cheated;
   switch (move.type) {
     case "set":
     case "flag": {
-      if (move.idx < 0 || move.idx >= wh) throw new Error("magnets: move out of range");
-      applyCell(move.idx, move);
+      const { idx } = move;
+      if (idx < 0 || idx >= wh) throw new Error("magnets: move out of range");
+      const idx2 = dominoes[idx];
+      if (idx === idx2) throw new Error("magnets: move on a singleton");
+      flags[idx] &= ~GS_NOTMASK;
+      flags[idx2] &= ~GS_NOTMASK;
+      if (
+        move.type === "flag" &&
+        (move.mode === "empty" || move.mode === "notneutral")
+      ) {
+        grid[idx] = EMPTY;
+        grid[idx2] = EMPTY;
+        flags[idx] &= ~GS_SET;
+        flags[idx2] &= ~GS_SET;
+        if (move.mode === "notneutral") {
+          flags[idx] |= GS_NOTNEUTRAL;
+          flags[idx2] |= GS_NOTNEUTRAL;
+        }
+      } else {
+        const which = move.type === "set" ? move.which : NEUTRAL;
+        grid[idx] = which;
+        grid[idx2] = opposite(which);
+        flags[idx] |= GS_SET;
+        flags[idx2] |= GS_SET;
+      }
       break;
     }
     case "clue": {

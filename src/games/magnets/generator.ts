@@ -1,10 +1,11 @@
 /**
  * Magnets generator — faithful port of `new_game_desc` and its helpers
  * (`gen_game`, `lay_dominoes`, `check_difficulty`) in `magnets.c`. Byte-match
- * critical (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"–4.4): every RNG draw reproduces C in order — the
- * `dominoLayout` list/BFS shuffles, the `layDominoes` scratch shuffle (once
- * per failed attempt), and — only when `stripclues` — the clue-strip shuffle —
- * and the solver's verdict on each intermediate board must match C.
+ * critical (docs/games/testing.md § "Byte-match: fidelity where there is a
+ * right answer"): every RNG draw reproduces C in order — the `dominoLayout`
+ * list/BFS shuffles, the `layDominoes` scratch shuffle (once per failed
+ * attempt), and — only when `stripclues` — the clue-strip shuffle — and the
+ * solver's verdict on each intermediate board must match C.
  *
  * Strategy: lay a random domino tiling, fill it with a valid solution (a few
  * neutral dominoes first, then prefer magnets), derive the row/column counts,
@@ -43,34 +44,30 @@ interface GenBoard {
   colcount: Int32Array;
 }
 
-/** Fill the domino tiling with a valid magnet/neutral solution. Returns the
- * final solver verdict (`layDominoes` retries while it is −1). */
+/** Fill the domino tiling with a valid magnet/neutral solution, or return
+ * null when this attempt reaches a contradiction. */
 function layDominoes(
   w: number,
   h: number,
   dominoes: Int32Array,
   rs: RandomState,
-): { grid: Int32Array; ret: number } {
+): Int32Array | null {
   const wh = w * h;
-  const solver = new MagnetsSolver(
-    w,
-    h,
+  const solver = new MagnetsSolver(w, h, {
     dominoes,
-    new Int32Array(3 * h),
-    new Int32Array(3 * w),
-  );
-  // Fresh empty board with singletons pre-set (constructor already did this).
-  const scratch: number[] = [];
-  for (let i = 0; i < wh; i++) scratch.push(i);
-  shuffle(scratch, rs);
+    rowcount: new Int32Array(3 * h),
+    colcount: new Int32Array(3 * w),
+  });
+  const order = Array.from({ length: wh }, (_, i) => i);
+  shuffle(order, rs);
 
   const nInitialNeutral = wh > 100 ? 5 : Math.floor(wh / 10);
-  let ret = 0;
 
   for (let n = 0; n < wh; n++) {
-    const i = scratch[n];
+    const i = order[n];
     if (solver.flags[i] & GS_SET) continue; // already laid here
 
+    let ret: number;
     if (n < nInitialNeutral) {
       ret = solver.set(i, NEUTRAL);
     } else if (!(solver.flags[i] & GS_NOTPOSITIVE)) {
@@ -80,33 +77,24 @@ function layDominoes(
     } else {
       ret = solver.set(i, NEUTRAL);
     }
-    if (!ret) {
-      // Couldn't lay anything here — give up on this attempt.
-      ret = -1;
-      break;
-    }
+    if (!ret) return null; // couldn't lay anything here
 
     ret = solver.solveUnnumbered();
-    if (ret !== 0) break;
+    if (ret < 0) return null;
+    if (ret > 0) break;
   }
-
-  return { grid: Int32Array.from(solver.grid), ret };
+  return solver.grid;
 }
 
 /** Lay a tiling and a full solution; derive the row/column counts. */
 function genGame(w: number, h: number, rs: RandomState): GenBoard {
   const dominoes = dominoLayout(w, h, rs);
 
-  let grid: Int32Array;
+  let grid: Int32Array | null = null;
   const attempt = retryLimit("magnets: layDominoes");
-  while (true) {
+  while (!grid) {
     attempt();
-
-    const r = layDominoes(w, h, dominoes, rs);
-    if (r.ret !== -1) {
-      grid = r.grid;
-      break;
-    }
+    grid = layDominoes(w, h, dominoes, rs);
   }
 
   const colcount = new Int32Array(3 * w);
@@ -127,53 +115,37 @@ function decodeClueSlot(
   h: number,
   num: number,
 ): { which: number; roworcol: number; index: number } {
-  let n = num;
-  let which: number;
-  if (n < w + h) which = POSITIVE;
-  else {
-    which = NEGATIVE;
-    n -= w + h;
-  }
-  let roworcol: number;
-  if (n < w) roworcol = COLUMN;
-  else {
-    roworcol = ROW;
-    n -= w;
-  }
-  return { which, roworcol, index: n };
+  const which = num < w + h ? POSITIVE : NEGATIVE;
+  const n = num % (w + h);
+  return n < w
+    ? { which, roworcol: COLUMN, index: n }
+    : { which, roworcol: ROW, index: n - w };
 }
 
 /**
  * Gate difficulty and (for strip mode) minimize the clue set, mutating
- * `board.rowcount`/`board.colcount` in place. Returns 0 to accept, −1 to
- * regenerate. Faithful to upstream `check_difficulty`.
+ * `board.rowcount`/`board.colcount` in place. Returns whether to accept the
+ * board. Faithful to upstream `check_difficulty`.
  */
-function checkDifficulty(p: MagnetsParams, board: GenBoard, rs: RandomState): number {
-  const { w, h, dominoes, rowcount, colcount } = board;
-  const wh = w * h;
+function checkDifficulty(p: MagnetsParams, board: GenBoard, rs: RandomState): boolean {
+  const { w, h, rowcount, colcount } = board;
 
   const solveFresh = (diff: number): { ret: number; grid: Int32Array } => {
-    const s = new MagnetsSolver(w, h, dominoes, rowcount, colcount);
+    const s = new MagnetsSolver(w, h, board);
     const ret = s.solve(diff);
     return { ret, grid: s.grid };
   };
 
-  if (p.diff > DIFF_EASY) {
-    if (solveFresh(p.diff - 1).ret > 0) return -1; // too easy
-  }
+  if (p.diff > DIFF_EASY && solveFresh(p.diff - 1).ret > 0) return false; // too easy
   const solved = solveFresh(p.diff);
-  if (solved.ret <= 0) return -1; // not soluble at requested difficulty
-  if (!p.stripclues) return 0;
+  if (solved.ret <= 0) return false; // not soluble at requested difficulty
+  if (!p.stripclues) return true;
 
-  const gridCorrect = solved.grid;
+  const order = Array.from({ length: 2 * (w + h) }, (_, i) => i);
+  shuffle(order, rs);
 
-  const slen = w * 2 + h * 2;
-  const scratch: number[] = [];
-  for (let i = 0; i < slen; i++) scratch.push(i);
-  shuffle(scratch, rs);
-
-  for (let i = 0; i < slen; i++) {
-    const { which, roworcol, index } = decodeClueSlot(w, h, scratch[i]);
+  for (const num of order) {
+    const { which, roworcol, index } = decodeClueSlot(w, h, num);
     const targets = roworcol === COLUMN ? colcount : rowcount;
     const base = index * 3;
 
@@ -183,43 +155,31 @@ function checkDifficulty(p: MagnetsParams, board: GenBoard, rs: RandomState): nu
     targets[base + which] = -1;
     targets[base + NEUTRAL] = -1;
 
-    const r = solveFresh(p.diff);
     // ret is never −1 here (removing a clue can't create a contradiction).
-    let differs = r.ret === 0;
-    if (!differs) {
-      for (let k = 0; k < wh; k++) {
-        if (r.grid[k] !== gridCorrect[k]) {
-          differs = true;
-          break;
-        }
-      }
-    }
-    if (differs) {
+    const r = solveFresh(p.diff);
+    if (r.ret === 0 || r.grid.some((v, k) => v !== solved.grid[k])) {
       // Made it ambiguous/different — put the clue back.
       targets[base + which] = target;
       targets[base + NEUTRAL] = targetn;
     }
   }
-  return 0;
+  return true;
 }
 
 export function newMagnetsDesc(
   p: MagnetsParams,
   rs: RandomState,
 ): { desc: string; aux: string } {
-  let board: GenBoard;
-  let aux: string;
   const attempt = retryLimit("magnets: generation");
   while (true) {
     attempt();
-
-    board = genGame(p.w, p.h, rs);
-    aux = "";
-    for (let i = 0; i < p.w * p.h; i++) aux += GRID2CHAR[board.grid[i]];
-    if (checkDifficulty(p, board, rs) >= 0) break;
+    const board = genGame(p.w, p.h, rs);
+    if (checkDifficulty(p, board, rs)) {
+      const { w, h, dominoes, grid, rowcount, colcount } = board;
+      return {
+        desc: encodeDesc(w, h, dominoes, rowcount, colcount),
+        aux: Array.from(grid, (v) => GRID2CHAR[v]).join(""),
+      };
+    }
   }
-
-  const { w, h, dominoes, rowcount, colcount } = board;
-  const desc = encodeDesc(w, h, dominoes, rowcount, colcount);
-  return { desc, aux };
 }

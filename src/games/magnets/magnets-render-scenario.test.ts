@@ -25,13 +25,10 @@ function board(p: MagnetsParams, seed: string) {
   return { id: `${encodeParams(p, true)}:${desc}`, state, aux: aux ?? "" };
 }
 
-/** The index and partner of some horizontal domino in a board. */
-function horizontalDomino(state: ReturnType<typeof newState>): {
-  idx: number;
-  partner: number;
-} {
+/** The left cell of some horizontal domino in a board. */
+function horizontalDomino(state: ReturnType<typeof newState>): number {
   for (let i = 0; i < state.wh; i++) {
-    if (state.common.dominoes[i] === i + 1) return { idx: i, partner: i + 1 };
+    if (state.common.dominoes[i] === i + 1) return i;
   }
   throw new Error("no horizontal domino in board");
 }
@@ -54,7 +51,7 @@ describe("magnets render scenarios", () => {
 
   it("a placed magnet draws + (positive) and − (negative) fills", () => {
     const { id, state } = board(P, "mrs-magnet");
-    const { idx } = horizontalDomino(state);
+    const idx = horizontalDomino(state);
     const moves: MagnetsMove[] = [{ type: "set", idx, which: 1 }];
     const { recording } = renderScenario({ game: magnetsGame, id, moves });
 
@@ -69,12 +66,11 @@ describe("magnets render scenarios", () => {
 
   it("findMistakes overlay repaints even when the cell was already drawn", () => {
     const { id, state, aux } = board(P, "mrs-mistake");
-    const { idx, partner } = horizontalDomino(state);
-    // Place this domino opposite to its solution so it is a mistake.
-    const solIdx = aux[idx] === "+" ? 1 : aux[idx] === "-" ? 2 : 0;
-    const wrong = solIdx === 1 ? 2 : 1; // opposite magnet (both ends are magnets)
-    // Only meaningful when the solution makes this a magnet.
-    if (solIdx === 0) return;
+    const idx = horizontalDomino(state);
+    // Place this domino opposite to its solution so it is a mistake; the seed
+    // is one whose domino is a magnet in the solution.
+    expect(aux[idx]).not.toBe(".");
+    const wrong = aux[idx] === "+" ? 2 : 1;
 
     const moves: MagnetsMove[] = [{ type: "set", idx, which: wrong }];
     const { recording } = renderScenario({
@@ -84,11 +80,10 @@ describe("magnets render scenarios", () => {
       showMistakes: true,
     });
     // The mistake overlay (inset red outline) appears on a frame *after* the
-    // move that placed the cell (docs/games/rendering.md § "Overlay sidecars" — overlay must be in the diff
-    // key). Both ends of the wrong magnet are flagged.
+    // move that placed the cell (docs/games/rendering.md § "Overlay sidecars":
+    // the overlay must be in the diff key).
     expect(recording.ops.some((o) => o.op === "rect" && o.color === COL_MISTAKE)).toBe(
       true,
     );
-    void partner;
   });
 });

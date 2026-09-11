@@ -1,14 +1,8 @@
 /*
- * Magnets' two ladders on `runDeductionFixpoint`, certified by equivalence
- * (`certify-the-magnets-ladder`). The harness and the argument for it are
- * `engine/testing/ladder-equivalence.ts`; this file is the declaration.
- *
- * **Why Magnets needed this after the fact.** It was on the runner before the
- * harness existed (`adopt-shared-deduction-fixpoint`, 2026-08-01), so it was
- * never in the population the harness was built for. Its frozen differential
- * proves no board moved, and the harness's header explains why that certifies
- * only the rungs the corpus happens to fire — which, until this file, nobody
- * had measured.
+ * Magnets' two ladders on `runDeductionFixpoint`, certified by equivalence.
+ * The harness and the argument for it are `engine/testing/ladder-equivalence.ts`;
+ * this file is the declaration. The frozen differential proves no board moved,
+ * which certifies only the rungs its corpus happens to fire.
  *
  * **Two runner call sites, so two blocks.** `solve` walks the eight-rung graded
  * ladder over a clued board; `solveUnnumbered` walks `force`/`neither` over a
@@ -51,7 +45,7 @@ const SHAPES: MagnetsParams[] = [
  * board where it is the first Tricky rung to fire from the Easy stall, and
  * fifteen boards contained none such — the differential caught the plant on
  * one fixture while the ladder stayed green. The corpus is sized so the tier
- * plant is red here too (task 4.2), which the whole cap walk is for. */
+ * plant is red here too, which the whole cap walk is for. */
 const SEEDS = ["lad-a", "lad-b", "lad-c", "lad-d", "lad-e", "lad-f", "lad-g", "lad-h"];
 
 const generated = SHAPES.flatMap((params) =>
@@ -66,13 +60,7 @@ const generated = SHAPES.flatMap((params) =>
 /** A solver over the board's clues, started empty — what `solve` expects. */
 function cluedSolver(params: MagnetsParams, desc: string): MagnetsSolver {
   const s = newState(params, desc);
-  return new MagnetsSolver(
-    s.w,
-    s.h,
-    s.common.dominoes,
-    s.common.rowcount,
-    s.common.colcount,
-  );
+  return new MagnetsSolver(s.w, s.h, s.common);
 }
 
 /**
@@ -139,13 +127,11 @@ const unnumbered = generated.flatMap((g) =>
     label: `${g.label} laid=${fraction}`,
     board: () => {
       const s = newState(g.params, g.desc);
-      const solver = new MagnetsSolver(
-        s.w,
-        s.h,
-        s.common.dominoes,
-        new Int32Array(3 * s.h),
-        new Int32Array(3 * s.w),
-      );
+      const solver = new MagnetsSolver(s.w, s.h, {
+        dominoes: s.common.dominoes,
+        rowcount: new Int32Array(3 * s.h),
+        colcount: new Int32Array(3 * s.w),
+      });
       const order = Array.from({ length: s.wh }, (_, i) => i);
       shuffle(order, randomNew(`magnets-ladder-lay-${g.label}`));
       for (const i of order.slice(0, Math.floor(s.wh * fraction))) {

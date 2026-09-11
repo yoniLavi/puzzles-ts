@@ -12,6 +12,7 @@ import {
   encodeParams,
   GS_SET,
   type MagnetsParams,
+  NEGATIVE,
   NEUTRAL,
   newState,
   POSITIVE,
@@ -84,13 +85,7 @@ describe("magnets generator + solver", () => {
     for (const p of [P(6, 5, DIFF_EASY), P(6, 5, DIFF_TRICKY), P(8, 7, DIFF_TRICKY)]) {
       const { desc, aux } = newMagnetsDesc(p, randomNew(`gen-${p.w}x${p.h}-${p.diff}`));
       const s = newState(p, desc);
-      const solver = new MagnetsSolver(
-        s.w,
-        s.h,
-        s.common.dominoes,
-        s.common.rowcount,
-        s.common.colcount,
-      );
+      const solver = new MagnetsSolver(s.w, s.h, s.common);
       expect(solver.solve(DIFF_COUNT)).toBe(1); // uniquely solvable
 
       // aux is the solution; the solver must reproduce it.
@@ -105,13 +100,7 @@ describe("magnets generator + solver", () => {
     const p = P(8, 7, DIFF_TRICKY);
     const { desc } = newMagnetsDesc(p, randomNew("tricky-not-easy"));
     const s = newState(p, desc);
-    const easy = new MagnetsSolver(
-      s.w,
-      s.h,
-      s.common.dominoes,
-      s.common.rowcount,
-      s.common.colcount,
-    );
+    const easy = new MagnetsSolver(s.w, s.h, s.common);
     expect(easy.solve(DIFF_EASY)).toBeLessThanOrEqual(0); // ambiguous at Easy
   });
 });
@@ -134,11 +123,11 @@ describe("magnets moves + findMistakes", () => {
 
     s = magnetsGame.executeMove(s, { type: "set", idx, which: POSITIVE });
     expect(s.grid[idx]).toBe(POSITIVE);
-    expect(s.grid[partner]).toBe(2); // NEGATIVE
+    expect(s.grid[partner]).toBe(NEGATIVE);
     expect(s.flags[idx] & GS_SET).toBeTruthy();
 
-    s = magnetsGame.executeMove(s, { type: "set", idx, which: 2 });
-    expect(s.grid[idx]).toBe(2);
+    s = magnetsGame.executeMove(s, { type: "set", idx, which: NEGATIVE });
+    expect(s.grid[idx]).toBe(NEGATIVE);
     expect(s.grid[partner]).toBe(POSITIVE);
   });
 
@@ -166,15 +155,13 @@ describe("magnets moves + findMistakes", () => {
         break;
       }
     }
-    if (wrongIdx >= 0) {
-      const dirty = magnetsGame.executeMove(s, {
-        type: "set",
-        idx: wrongIdx,
-        which: 2,
-      });
-      const mistakes = magnetsGame.findMistakes?.(dirty) ?? [];
-      expect(mistakes.length).toBeGreaterThan(0);
-    }
+    expect(wrongIdx).toBeGreaterThanOrEqual(0);
+    const dirty = magnetsGame.executeMove(s, {
+      type: "set",
+      idx: wrongIdx,
+      which: NEGATIVE,
+    });
+    expect(magnetsGame.findMistakes?.(dirty) ?? []).not.toEqual([]);
 
     // Solve reaches completion.
     const solveRes = magnetsGame.solve?.(s, s, aux);
@@ -186,9 +173,5 @@ describe("magnets moves + findMistakes", () => {
   });
 });
 
-// The cap-monotonicity property this file used to assert by hand now lives in
-// `engine/difficulty-contract.test.ts`, which asserts it for every one of the
-// twenty-eight tiered games through `Game.difficulty` rather than for Magnets
-// alone. Two tests asserting one property is how they drift apart — and they
-// had: the four hand-written versions ran to three different strengths, Magnets
-// sweeping every cap while Rome checked only the top.
+// Cap monotonicity is asserted for every tiered game, Magnets included, by
+// `engine/difficulty-contract.test.ts`; a second copy here would drift from it.
