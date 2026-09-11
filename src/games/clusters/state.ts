@@ -2,13 +2,11 @@
  * Clusters state, params, move/ui types, and the desc codec — port of the
  * corresponding parts of `puzzles/unreleased/clusters.c`.
  *
- * The board is one `Uint8Array` `grid` of the C flag byte per cell, exactly
- * as upstream's `char *grid`: a cell holds `F_COLOR_0` (red) or `F_COLOR_1`
- * (blue) or 0 (empty), OR-ed with `F_SINGLE` when it is a *given* dot clue.
- * The transient `F_ERROR` / `F_CURSOR` render flags upstream stores in the
- * grid are deliberately kept out of persisted state — every read masks
- * `COLMASK`/`F_SINGLE`, and errors are recomputed on demand (see solver.ts)
- * so the given bytes stay byte-match-clean for the desc encoder.
+ * The board is one `Uint8Array` of upstream's flag byte per cell: `F_COLOR_0`
+ * (red), `F_COLOR_1` (blue) or 0 (empty), OR-ed with `F_SINGLE` for a given dot.
+ * Upstream also stores its transient error and cursor flags in the grid; play
+ * state never carries them (errors are recomputed on demand, see solver.ts), so
+ * the given bytes stay clean for the desc encoder.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
@@ -27,16 +25,9 @@ export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFFCOUNT = 2;
 
-/** Both tiers were already implemented — as `solverTry` and `solverRecurse` —
- * and neither was offered: the generator gated every board on the deeper rung.
- * The names follow the collection's two-tier convention (magnets, pearl,
- * singles and tents all name exactly this pair Easy/Tricky, and in each the
- * harder tier is likewise "one hypothetical deep"), not upstream's, which has
- * none here. */
 export const DIFF_NAMES: readonly string[] = tierNames(2);
 
-/** Difficulty encode chars for the `d<char>` param suffix, index = tier — the
- * same `"et"` the other two-tier games use. */
+/** The `d<char>` param suffix, index = tier. */
 const DIFF_CHARS = "et";
 
 // --- cell flag bits (upstream) ---------------------------------------------
@@ -54,6 +45,9 @@ export const COLMASK = F_COLOR_0 | F_COLOR_1;
  * `F_COLOR_1` blue — the same byte value the grid stores (givens excepted,
  * which additionally carry `F_SINGLE`). */
 export type ClustersFill = 0 | typeof F_COLOR_0 | typeof F_COLOR_1;
+
+export const opposite = (fill: ClustersFill): ClustersFill =>
+  fill === F_COLOR_0 ? F_COLOR_1 : F_COLOR_0;
 
 // --- types -----------------------------------------------------------------
 
@@ -77,8 +71,7 @@ export interface ClustersState {
  * A move is either a *paint* — a list of cell edits committed together (one
  * click, one keyboard place, or a whole accreting drag) — or a *solve* — the
  * full-grid solution fill. Upstream serializes these as an `A%d;B%d;C%d;…`
- * string / an `S`-prefixed grid string; the discriminated union is the
- * idiomatic-TS equivalent (Loopy D5 / Pearl / Sokoban convention).
+ * string / an `S`-prefixed grid string.
  */
 export type ClustersMove =
   | { kind: "paint"; cells: ReadonlyArray<{ index: number; fill: ClustersFill }> }
@@ -87,11 +80,11 @@ export type ClustersMove =
 export interface ClustersUi {
   /** Keyboard cursor. */
   cursor: GridCursor;
-  /** The accreting paint drag (the shared accreting-drag model, also used by
-   * bricks/sticks). `dragType` is `-1` when no drag is active, else the
-   * {@link ClustersFill} being painted; `drag` accretes the cell indices the
-   * pointer has passed over, previewed by the renderer and committed as one
-   * `paint` move on release. Ephemeral — never in persisted state. */
+  /** The accreting paint drag (the model Bricks and Sticks share). `dragType`
+   * is `-1` until a press picks the {@link ClustersFill} to paint; `drag`
+   * accretes the cell indices the pointer has passed over, previewed by the
+   * renderer and committed as one `paint` move on release. Ephemeral — never in
+   * persisted state. */
   dragType: number;
   drag: number[];
 }
@@ -171,10 +164,9 @@ export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
  * one-wide board has at most two neighbors, so the single-cell rule decides it
  * immediately or not at all, and there is no chain for the lookahead to follow.
  *
- * Refusing is the collection's rule for a tier with no boards
- * (`grade-difficulty-tiers-honestly`): silently handing back an Easy board is the
- * same defect as a tier that does not bind, and an honest gate with nothing to
- * find would spin until its retry budget ran out.
+ * Refusing is the collection's rule for a tier with no boards: silently handing
+ * back an Easy board is the same defect as a tier that does not bind, and an
+ * honest gate with nothing to find would spin until its retry budget ran out.
  */
 const MIN_TRICKY_AREA = 12;
 
@@ -187,8 +179,7 @@ export function validateParams(p: ClustersParams, full: boolean): string | null 
   // its own color (which the generator flips away) or reduces to clues that
   // prune to nothing. Measured — those two shapes, alone among every shape up to
   // 4x7, never produced a board in 10,000 attempts; `max(w,h) >= 3` is exactly
-  // their complement. Before the retry bound existed this hung the worker for
-  // ever rather than reporting anything.
+  // their complement.
   if (Math.max(p.w, p.h) < 3) return "Width or height must be at least three";
   if (p.diff >= DIFFCOUNT) return "Unknown difficulty rating";
   // Generation only: a saved game or a game ID carrying its own description

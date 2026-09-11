@@ -9,10 +9,10 @@
  * scan orders, the flip-and-restart `break`, and the `force`-every-100 cadence
  * are transcribed verbatim — each decides the outcome.
  *
- * The two difficulty tiers (`add-clusters-difficulty-tiers`) change only *which
- * candidates are kept*, never how one is built. The single extra draw they can
- * make — the cell perturbed when a Tricky candidate turns out too easy — is
- * unreachable on the loose path, so the oracle above is untouched.
+ * The two difficulty tiers change only *which candidates are kept*, never how
+ * one is built. The single extra draw they can make — the cell perturbed when a
+ * Tricky candidate turns out too easy — is unreachable on the loose path, so
+ * the oracle above is untouched.
  */
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { retryLimit } from "../../engine/retry-limit.ts";
@@ -163,14 +163,14 @@ function clustersGenerate(
   // the solver proved and re-rolls the rest — so clearing the grid instead would
   // throw away the whole climb and buy a fresh one on every too-easy candidate.
   // Measured over 50 seeds: clearing costs 5x the median at 7x7 (316 ms against
-  // 66) and 7x at 8x8, where its worst case is 20.7 s against 3.7 s (design D4).
+  // 66) and 7x at 8x8, where its worst case is 20.7 s against 3.7 s.
   if (easy === COMPLETE) {
     const i = randomUpto(rng, s);
     grid[i] ^= COLMASK;
     return UNFINISHED;
   }
 
-  // A contradiction is an ordinary rejection at either tier, as it always was.
+  // A contradiction is an ordinary rejection at either tier.
   if (easy === INVALID) return INVALID;
 
   return solveGame(grid, w, h, DIFF_TRICKY);
@@ -178,12 +178,10 @@ function clustersGenerate(
 
 /**
  * Attempts before the generator gives up — the house default (`MAX_REGENERATE`).
- *
- * Clusters had **no** bound before the tiers: the old `MAX_ATTEMPTS` named only
- * the `force` cadence and nothing counted. That was survivable by accident — one
- * acceptance test whose every rejection leaves deduced cells behind cannot reject
- * for ever — and a second test removes the accident. A synchronous generator that
- * cannot succeed owns its thread outright; see `engine/retry-limit.ts`.
+ * A synchronous generator that cannot succeed owns its thread outright; see
+ * `engine/retry-limit.ts`. Without the Tricky gate every rejection leaves
+ * deduced cells behind, so the loop could not spin for ever; the gate's
+ * too-easy rejection removes that accident.
  *
  * The bound is not decorative and is not near any legal configuration. The tiers
  * that `validateParams` allows converge in well under a second of attempts at
@@ -196,15 +194,15 @@ const MAX_ATTEMPTS = 10_000;
 
 export interface ClustersGenerateOptions {
   /**
-   * Reproduce the pre-tier gate verbatim: solve at the deeper rung whatever the
-   * tier, and accept any board it completes.
+   * Reproduce upstream's single gate verbatim: solve at the deeper rung
+   * whatever the tier, and accept any board it completes.
    *
-   * Clusters shipped with that one gate, so every board was "solvable with one
-   * hypothetical" and none was *required* to need one — measured, 50–64% of them
-   * (by board size) fall to the single-cell rule alone. Gating Tricky on "and
-   * not solvable one rung down" is what makes the setting bind, and because the
-   * generator is solver-gated it changes which candidates are kept, hence every
-   * Tricky description.
+   * Under that gate every board is "solvable with one hypothetical" and none is
+   * *required* to need one — measured, 50–64% of them (by board size) fall to
+   * the single-cell rule alone. Gating Tricky on "and not solvable one rung
+   * down" is what makes the setting bind, and because the generator is
+   * solver-gated it changes which candidates are kept, hence every Tricky
+   * description.
    *
    * This flag keeps the byte-match oracle that validates the generator, the
    * solver's exact deductive power and the run-length codec in one assertion:

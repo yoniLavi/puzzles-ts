@@ -5,22 +5,18 @@
  * `narrate`); this file decides only how it reads. Each is a proof by
  * contradiction: premise, the rule the refuted color breaks, conclusion in the
  * necessity voice (docs/games/hints.md § "Necessity for deductions, imperative
- * for moves", D4).
+ * for moves").
  *
- * **Where a second mark is on the board, "this cell" is tied to it by geometry**
- * (owner-reported, 2026-08-14: with a solid-filled target *and* a ringed tile on
- * screen, a bare "this cell" points at neither). The fix is deliberately not
- * *"the cell marked purple"* — `hints.md` forbids color as the only cue, and a
- * sentence naming a hue is wrong the moment the scheme flips or the reader is
- * color-blind. It is the relation instead: `contradictionAround` only ever
- * reports the placed cell **or one of its four orthogonal neighbors**, so on
- * every branch below the ringed tile is literally *this cell's neighbor* and
- * the sentence can say so. That identifies both squares at once, and is more
- * informative than the wording it replaces rather than merely longer.
+ * **Where a second mark is on the board, "this cell" is tied to it by geometry**,
+ * because beside a ringed tile a bare "this cell" points at neither. Not by
+ * color (*"the cell marked purple"*): `hints.md` forbids color as the only cue,
+ * and a sentence naming a hue is wrong the moment the scheme flips or the reader
+ * is color-blind. `contradictionAround` only ever reports the placed cell **or
+ * one of its four orthogonal neighbors**, so on every branch below the ringed
+ * tile is literally *this cell's neighbor*, and the sentence says so.
  *
- * The two `at.cell === d.index` branches are left alone on purpose: there is no
- * second mark in those frames, so "this cell" is unambiguous and a
- * disambiguating phrase would be noise.
+ * The two `at.cell === d.index` branches have no second mark, so "this cell" is
+ * unambiguous there and a disambiguating phrase would be noise.
  */
 
 import type { ClustersDeduction } from "./solver.ts";
@@ -46,23 +42,15 @@ export const say = {
             ? "the ringed tile would be sealed off from its own color"
             : "the ringed tile could no longer touch two of its own color";
     // The chain's break is adjacent to the *last forced cell*, not to the
-    // target, so the neighbor relation above is unavailable here. What ties
-    // the three marks together instead is that the chain runs **from** this
-    // cell — which is also the one fact a reader needs to follow it.
+    // target, so the neighbor relation above is unavailable here. The tie is
+    // instead that the chain runs **from** this cell — the deixis the guard in
+    // `clusters-hint.test.ts` checks. The board's ordinals say which
+    // consequence came when; they do not say which mark "this cell" means.
     //
-    // **The sentence names the two ends and lets the numbers carry the
-    // middle** (`walk-tactic-hint-chains` D5). It used to say the marked cells
-    // "would each be forced in turn", which named no order the player could
-    // check — the marks were an unordered set — so the only way to verify it
-    // was to redo the deduction, the thing docs/games/hints.md § "The forcing
-    // boundary" forbids. The consequences are numbered on the board now, and
-    // this cites them by number; reciting the links here would put the chain
-    // back in the reader's head, which is what the picture exists to prevent.
-    //
-    // *"from it"* survives the rewrite deliberately: it is the deixis tie the
-    // guard in `clusters-hint.test.ts` checks, and the numbering does not
-    // replace it. The digits say which consequence came when; they do not say
-    // which of the three marks the opening "this cell" means.
+    // The sentence names the two ends and lets the numbers carry the middle:
+    // reciting the links would put the chain back in the reader's head, which
+    // is what the picture exists to prevent (docs/games/hints.md § "The forcing
+    // boundary").
     const run =
       n === 1
         ? "cell 1 is then forced from it, and"

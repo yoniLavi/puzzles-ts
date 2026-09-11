@@ -6,16 +6,14 @@
  * It is contradiction-based deduction, not guess-and-backtrack search:
  *   - `clustersValidate` classifies a grid COMPLETE / UNFINISHED / INVALID
  *     from local neighbor counts;
- *   - `solverTry` (difficulty 0) forces an empty cell's color whenever the
- *     opposite color would make the board INVALID — a single-cell proof by
+ *   - `solverTry` (difficulty 0, Easy) forces an empty cell's color whenever
+ *     the opposite color would make the board INVALID — a single-cell proof by
  *     contradiction;
- *   - `solverRecurse` (difficulty 1) does the same one hypothetical level
- *     deep, re-running the difficulty-0 fixpoint on a scratch copy.
- * A deterministic proof procedure — so Clusters exposes **no difficulty
- * tiers** (its docs say so), and the sole generation path gates on
- * `solveGame(…, 1)`. Because the generator is solver-gated, this solver's
- * exact verdict on every intermediate board decides which puzzles exist,
- * which is what the byte-match differential validates.
+ *   - `solverRecurse` (difficulty 1, Tricky) does the same one hypothetical
+ *     level deep, re-running the difficulty-0 fixpoint on a scratch copy.
+ * Because the generator is solver-gated, this solver's exact verdict on every
+ * intermediate board decides which puzzles exist, which is what the byte-match
+ * differential validates.
  *
  * ## The `F_ERROR` contamination quirk (byte-match critical)
  *
@@ -25,11 +23,11 @@
  * rewrites cleared cells), the isolated-cell flip (`^= COLMASK` leaves bit 3
  * untouched), and the reduce-to-dots (`|= F_SINGLE`), so it reaches the
  * prune's *full-byte* `grid[i] == grid[i-1]` comparison. Two adjacent dots
- * that would prune away survive if their `F_ERROR` bits differ. Reproducing
- * this bit is therefore mandatory for byte-match — the mutating validate the
- * solver/generator use ({@link clustersValidate}) writes it exactly as C does.
- * The pure play-side checks ({@link clustersStatus}, {@link findErrors}) do
- * NOT mutate, so persisted state and the renderer stay `F_ERROR`-free.
+ * that would prune away survive if their `F_ERROR` bits differ. So the
+ * mutating validate the solver/generator use ({@link clustersValidate}) writes
+ * it exactly as C does, while the play-side checks ({@link clustersStatus},
+ * {@link findErrors}) do not mutate, so persisted state and the renderer stay
+ * `F_ERROR`-free.
  */
 import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { deduceHintPlan as accumulateHintPlan } from "../../engine/hint-plan.ts";
@@ -41,6 +39,7 @@ import {
   F_COLOR_1,
   F_ERROR,
   F_SINGLE,
+  opposite,
 } from "./state.ts";
 
 export const COMPLETE = 0;
@@ -51,8 +50,8 @@ export type ClustersStatus = typeof COMPLETE | typeof UNFINISHED | typeof INVALI
 const DX = [-1, 1, 0, 0];
 const DY = [0, 0, -1, 1];
 
-/** Same/other/empty orthogonal-neighbor counts of cell `(x,y)` relative to
- * color `col` (a `COLMASK` value), plus how many neighbors exist at all
+/** Same- and other-color orthogonal-neighbor counts of cell `(x,y)` relative
+ * to color `col` (a `COLMASK` value), plus how many neighbors exist at all
  * (`max`) — upstream `clusters_count` summed over the four directions. */
 function neighborCounts(
   grid: Uint8Array,
@@ -61,10 +60,9 @@ function neighborCounts(
   x: number,
   y: number,
   col: number,
-): { same: number; other: number; empty: number; max: number } {
+): { same: number; other: number; max: number } {
   let same = 0;
   let other = 0;
-  let empty = 0;
   let max = 0;
   for (let d = 0; d < 4; d++) {
     const nx = x + DX[d];
@@ -73,28 +71,34 @@ function neighborCounts(
     max++;
     const nc = grid[ny * w + nx] & COLMASK;
     if (nc === col) same++;
-    else if (nc === 0) empty++;
-    else other++;
+    else if (nc !== 0) other++;
   }
-  return { same, other, empty, max };
+  return { same, other, max };
 }
 
-/** Is the filled cell `i` a rule violation? Upstream `clusters_validate`'s
- * three error conditions:
- *  - wholly surrounded by the other color (`other === max`);
- *  - a dot (`F_SINGLE`) touching more than one same-color neighbor;
- *  - a non-dot that can no longer reach two same-color neighbors
+/** Which rule the filled cell `i` breaks, or null — upstream
+ * `clusters_validate`'s three error conditions, in its order:
+ *  - `surrounded`: wholly surrounded by the other color (`other === max`);
+ *  - `dotOvercount`: a dot (`F_SINGLE`) touching more than one same-color
+ *    neighbor;
+ *  - `reachTwo`: a non-dot that can no longer reach two same-color neighbors
  *    (`other === max - 1`). */
-function cellInError(grid: Uint8Array, w: number, h: number, i: number): boolean {
+function errorKind(
+  grid: Uint8Array,
+  w: number,
+  h: number,
+  i: number,
+): ClustersRuleKind | null {
   const cell = grid[i];
   const col = cell & COLMASK;
+  if (col === 0) return null;
   const x = i % w;
   const y = (i - x) / w;
   const { same, other, max } = neighborCounts(grid, w, h, x, y, col);
-  if (other === max) return true;
-  if (cell & F_SINGLE && same > 1) return true;
-  if (!(cell & F_SINGLE) && other === max - 1) return true;
-  return false;
+  if (other === max) return "surrounded";
+  if (cell & F_SINGLE && same > 1) return "dotOvercount";
+  if (!(cell & F_SINGLE) && other === max - 1) return "reachTwo";
+  return null;
 }
 
 /** Core classifier. `markGrid` writes the `F_ERROR` bit into `grid` exactly as
@@ -116,7 +120,7 @@ function classify(
       anyEmpty = true;
       continue;
     }
-    if (cellInError(grid, w, h, i)) {
+    if (errorKind(grid, w, h, i) !== null) {
       anyError = true;
       errors?.push(i);
       if (markGrid) grid[i] |= F_ERROR;
@@ -201,13 +205,9 @@ function solverRecurse(grid: Uint8Array, w: number, h: number): number {
  * `solverRecurse`. Returns the final verdict — COMPLETE if fully solved,
  * INVALID on a contradiction, UNFINISHED if it gets stuck. Mutates `grid`.
  *
- * The three-valued early-out was once recorded as the reason Clusters could not
- * use the runner (`re-derive-the-fixpoint-no-gos`): `clustersValidate` both
- * stops the loop *and* supplies the return value, and the runner's `settled`
- * hook is a boolean. A local variable closes that gap — `settled` runs exactly
- * where the validate call ran, once per iteration, and keeps its verdict. A
- * `settled` generic over each caller's own verdict type would make the runner
- * generic over something it never inspects, to save one local.
+ * `clustersValidate` both stops the loop *and* supplies the verdict, while the
+ * runner's `settled` hook is a boolean, so the verdict rides out in a local:
+ * `settled` runs exactly where upstream's validate call ran, once per iteration.
  */
 export function solveGame(
   grid: Uint8Array,
@@ -215,9 +215,8 @@ export function solveGame(
   h: number,
   maxdiff: number,
 ): ClustersStatus {
-  // Holds whatever the last early-out saw. When the ladder stops because nothing
-  // fired rather than because the board settled, that is UNFINISHED — which is
-  // what this function returns in that case anyway.
+  // The last verdict `settled` saw — UNFINISHED when the ladder stops because
+  // nothing fired rather than because the board settled.
   let status: ClustersStatus = UNFINISHED;
   runDeductionFixpoint({
     techniques: [
@@ -233,28 +232,28 @@ export function solveGame(
   return status;
 }
 
-// --- hint plan (add-clusters-hint) -----------------------------------------
+// --- hint plan --------------------------------------------------------------
 //
-// A *parallel recorder* over the same contradiction deduction (the Undead /
-// Pattern shape, docs/games/hints.md § "A non-Latin candidate game (Undead)"/§5.6a): separate code reusing this
-// module's primitives, so the generator's `solveGame`/`clustersValidate` path
-// above stays byte-identical by construction — no recorder flag threads
-// through it. Where the generator only needs *that* a coloring is refuted,
-// the hint also needs *why* (which rule trips, at which cell, on which
-// premise), so each firing re-derives its contradiction in detail.
+// A *parallel recorder* over the same contradiction deduction
+// (docs/games/hints.md § "A non-Latin candidate game (Undead)"): separate code
+// reusing this module's primitives, so the generator's `solveGame` path above
+// stays byte-identical by construction — no recorder flag threads through it.
+// Where the generator only needs *that* a coloring is refuted, the hint also
+// needs *why* (which rule trips, at which cell), so each firing re-derives its
+// contradiction in detail.
 //
 // The plan discipline deliberately differs from `solveGame`'s pass-sweeps:
 // single-cell firings restart the row-major scan after each firing (one
 // deduction = one plan step, cheapest first), and a lookahead stall takes the
 // firing whose forcing chain is *shortest* (measured: median 2–3 forced cells
-// vs 6 for first-in-scan-order — see the change's design.md D2/D3). Both
-// rungs are deterministic, so a recomputed plan continues exactly where the
-// previous one left off. Confluence makes the different order safe: a
-// refuted coloring stays refuted as more cells fill in (the three error
-// conditions are monotone — filling cells can only create errors, never cure
-// them), so any scan order reaches the same verdict as the C solver's.
+// against 6 for first-in-scan-order). Both rungs are deterministic, so a
+// recomputed plan continues exactly where the previous one left off.
+// Confluence makes the different order safe: a refuted coloring stays refuted
+// as more cells fill in (the three error conditions are monotone — filling
+// cells can only create errors, never cure them), so any scan order reaches
+// the same verdict as the C solver's.
 
-/** Which of `cellInError`'s three clauses a refuted coloring trips. */
+/** Which of `errorKind`'s three rules a refuted coloring breaks. */
 export type ClustersRuleKind = "surrounded" | "dotOvercount" | "reachTwo";
 
 /** The rule violation a refuted coloring runs into: `cell` is where the
@@ -275,9 +274,7 @@ export type ClustersReason =
   | { kind: "chain"; steps: ChainStep[]; at: ClustersContradiction };
 
 /** One forced move: coloring `index` with `refuted` breaks `reason`, so it
- * must be `fill`. No separate evidence list: every premise tile of the three
- * local rules sits orthogonally adjacent to the broken cell, so the target /
- * danger highlights already put the evidence in view. */
+ * must be `fill`. */
 export interface ClustersDeduction {
   index: number;
   fill: ClustersFill;
@@ -292,27 +289,6 @@ export interface ClustersDeduction {
 export interface ClustersHintPlan {
   verdict: ClustersStatus;
   deductions: ClustersDeduction[];
-}
-
-const opposite = (fill: ClustersFill): ClustersFill =>
-  fill === F_COLOR_0 ? F_COLOR_1 : F_COLOR_0;
-
-/** Which clause the filled cell `i` trips, in `cellInError`'s order. */
-function errorKind(
-  grid: Uint8Array,
-  w: number,
-  h: number,
-  i: number,
-): ClustersRuleKind | null {
-  const cell = grid[i];
-  if ((cell & COLMASK) === 0) return null;
-  const x = i % w;
-  const y = (i - x) / w;
-  const { same, other, max } = neighborCounts(grid, w, h, x, y, cell & COLMASK);
-  if (other === max) return "surrounded";
-  if (cell & F_SINGLE && same > 1) return "dotOvercount";
-  if (!(cell & F_SINGLE) && other === max - 1) return "reachTwo";
-  return null;
 }
 
 /** After filling cell `i` on an otherwise error-free board, a new violation
@@ -456,7 +432,7 @@ export function deduceHintPlan(
   w: number,
   h: number,
 ): ClustersHintPlan {
-  // Hint-only path, so the budget is unconditional (Palisade precedent).
+  // Hint-only path, so the budget is unconditional.
   const budget = stepBudget("clusters hint");
   const { status, plan } = accumulateHintPlan<
     Uint8Array,

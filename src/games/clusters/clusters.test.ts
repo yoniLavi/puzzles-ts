@@ -127,8 +127,7 @@ describe("params", () => {
   });
 
   it("rejects the two shapes that have no puzzle at any difficulty", () => {
-    // 1x2 and 2x2 pass upstream's area check and generate nothing — which used
-    // to hang the generator outright, there being no retry bound.
+    // 1x2 and 2x2 pass upstream's area check and generate nothing.
     const easy = (w: number, h: number) => ({ w, h, diff: DIFF_EASY });
     const tooThin = "Width or height must be at least three";
     expect(validateParams(easy(1, 2), true)).toBe(tooThin);
@@ -158,9 +157,8 @@ describe("params", () => {
 });
 
 describe("difficulty tiers", () => {
-  // Both rungs already existed in the solver; before this the generator gated
-  // every board on the deeper one, so neither tier was offered. The property
-  // that makes a tier mean something is *exactly* these two assertions.
+  // The property that makes a tier mean something is *exactly* these two
+  // assertions.
   const SIZES = [
     [7, 7],
     [9, 9],
@@ -192,8 +190,7 @@ describe("difficulty tiers", () => {
       expect(validateParams(p, true)).toBeNull();
       // Read the game's own tier list rather than restating the words: the
       // property is "the preset title carries the tier it generates at", and a
-      // literal here would just be a second copy of the tier names to rot
-      // (`adopt-conventional-tier-names`).
+      // literal here would just be a second copy of the tier names to rot.
       expect(entry.title).toContain(DIFF_NAMES[p.diff]);
     }
   });
@@ -346,6 +343,10 @@ describe("interpretMove", () => {
     clustersGame.interpretMove(st, ui, ds, { x: 0, y: 0 }, 0x020c); // CURSOR_RIGHT
     const res = clustersGame.interpretMove(st, ui, ds, { x: 0, y: 0 }, CURSOR_SELECT);
     expect(res).toMatchObject({ kind: "paint" });
+    // '1' on the now-blue cell changes nothing, so no move reaches the undo chain.
+    const blue = clustersGame.executeMove(st, res as ClustersMove);
+    const one = "1".charCodeAt(0);
+    expect(clustersGame.interpretMove(blue, ui, ds, { x: 0, y: 0 }, one)).toBeNull();
   });
 });
 
@@ -385,6 +386,24 @@ function harness() {
   return { m, status };
 }
 
+/** A 7x7 game and moves that break a rule: its first non-given cell painted
+ * red, and every non-given neighbor of it blue. */
+function violation(): { desc: string; target: number; moves: ClustersMove[] } {
+  const params = decodeParams("7x7");
+  const { desc } = newClustersDesc(params, randomNew("clusters-mistake"));
+  const { grid } = newState(params, desc);
+  const target = grid.findIndex((cell) => !(cell & F_SINGLE));
+  const moves: ClustersMove[] = [
+    { kind: "paint", cells: [{ index: target, fill: F_COLOR_0 }] },
+  ];
+  for (const nb of [target - 1, target + 1, target - params.w, target + params.w]) {
+    if (nb >= 0 && nb < grid.length && !(grid[nb] & F_SINGLE)) {
+      moves.push({ kind: "paint", cells: [{ index: nb, fill: F_COLOR_1 }] });
+    }
+  }
+  return { desc, target, moves };
+}
+
 describe("midend integration", () => {
   it("Solve finishes with help; playing the solution wins plainly", () => {
     const params = decodeParams("7x7");
@@ -415,32 +434,10 @@ describe("midend integration", () => {
   });
 
   it("findMistakes flags a rule violation and clears when corrected", () => {
-    const params = decodeParams("7x7");
-    const { desc } = newClustersDesc(params, randomNew("clusters-mistake"));
+    const { desc, target, moves } = violation();
     const { m } = harness();
     expect(m.newGameFromId(`7x7:${desc}`)).toBeUndefined();
     expect(m.findMistakes()).toBe(0);
-
-    // Find a non-given cell and box it into the opposite color on all sides
-    // is overkill; simplest reliable violation: paint a lone cell whose every
-    // neighbor we also paint the other color. Use the top-left non-given.
-    const st = newState(params, desc);
-    let target = -1;
-    for (let i = 0; i < st.grid.length; i++) {
-      if (!(st.grid[i] & F_SINGLE)) {
-        target = i;
-        break;
-      }
-    }
-    const w = params.w;
-    const moves: ClustersMove[] = [
-      { kind: "paint", cells: [{ index: target, fill: F_COLOR_0 }] },
-    ];
-    for (const nb of [target - 1, target + 1, target - w, target + w]) {
-      if (nb >= 0 && nb < st.grid.length && !(st.grid[nb] & F_SINGLE)) {
-        moves.push({ kind: "paint", cells: [{ index: nb, fill: F_COLOR_1 }] });
-      }
-    }
     m.playMoves(moves);
     expect(m.findMistakes()).toBeGreaterThan(0);
 
@@ -450,32 +447,11 @@ describe("midend integration", () => {
   });
 
   it("Check & Save path: the mistake overlay is actually painted", () => {
-    // The test above proves `findMistakes` *finds* the violation. This one
-    // proves the frame *draws* it — the half that was uncovered here and in
-    // eighteen other games (`src/mistake-overlay-coverage.test.ts`), and that
-    // matters because the inset error frame is shared engine code: with
-    // `drawThickRectOutline` wired into eight games, deleting a side of it
-    // failed exactly one test in the collection.
-    const params = decodeParams("7x7");
-    const { desc } = newClustersDesc(params, randomNew("clusters-mistake"));
-    const st = newState(params, desc);
-    let target = -1;
-    for (let i = 0; i < st.grid.length; i++) {
-      if (!(st.grid[i] & F_SINGLE)) {
-        target = i;
-        break;
-      }
-    }
-    const w = params.w;
-    const moves: ClustersMove[] = [
-      { kind: "paint", cells: [{ index: target, fill: F_COLOR_0 }] },
-    ];
-    for (const nb of [target - 1, target + 1, target - w, target + w]) {
-      if (nb >= 0 && nb < st.grid.length && !(st.grid[nb] & F_SINGLE)) {
-        moves.push({ kind: "paint", cells: [{ index: nb, fill: F_COLOR_1 }] });
-      }
-    }
-
+    // The test above proves `findMistakes` *finds* the violation; this one
+    // proves the frame *draws* it (`src/mistake-overlay-coverage.test.ts`). The
+    // inset error frame is shared engine code, so this is also one of the few
+    // tests that fail when `drawThickRectOutline` loses a side.
+    const { desc, moves } = violation();
     const { recording, mistakeCount } = renderScenario({
       game: clustersGame,
       id: `7x7:${desc}`,

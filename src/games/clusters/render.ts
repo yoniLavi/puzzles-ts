@@ -9,8 +9,8 @@
  * drag color. On a fresh win the whole board flashes by swapping both
  * colors on alternate beats.
  *
- * Clusters is compiled with `NARROW_BORDERS` (cmake/platforms/webapp.cmake),
- * so `BORDER = tilesize / 10` — a thin grid margin, not the desktop
+ * The geometry is upstream's `NARROW_BORDERS` build, the one its web frontend
+ * used: `BORDER = tilesize / 10` — a thin grid margin, not the desktop
  * `tilesize / 2` — and `computeSize` subtracts 1 to meet the outer grid line.
  */
 
@@ -55,30 +55,21 @@ export const COL_0_DOT = 4; // dot on a red tile (dark)
 export const COL_1_DOT = 5; // dot on a blue tile (white)
 export const COL_ERROR = 6;
 export const COL_CURSOR = 7;
-// Hint legend (add-clusters-hint, §5.3/§5.4 of hint-authoring.md): the forced
-// cell fills COL_HINT; the tile the refuted coloring would break — the
-// one element the narration calls "ringed" — gets a double COL_HINT_DANGER
-// ring (an outline, because the tile's own color *is* part of the premise;
-// doubled so it cannot be confused with the single red live-error frame); a
-// lookahead chain's what-if cells shade COL_HINT_CELL with a small mark of
-// the color each would be forced to. No further premise role: every other
-// tile the narration cites is orthogonally adjacent to the target or the
-// danger tile, already in view.
+// Hint legend: the forced cell is marked COL_HINT; the tile the refuted
+// coloring would break — the one element the narration calls "ringed" — gets a
+// double COL_HINT_DANGER ring (an outline, because the tile's own color *is*
+// part of the premise; doubled so it cannot be confused with the single red
+// live-error frame); a lookahead chain's what-if cells are outlined
+// COL_HINT_CELL with a small mark of the color each would be forced to.
 //
-// **COL_HINT is PURPLE here, not the collection's `HINT_ACTION`**, and this is
-// the one game where that role cannot have its usual color. `HINT_ACTION` *is*
-// `BLUE`, and blue is one of the two colors a Clusters player paints — so
-// filling the target with it painted the cell the whole deduction starts from
-// in the exact color of a placed blue tile: invisible against its neighbors,
-// and actively wrong on a firing that concludes *red*, where the board said
-// blue while the sentence said red. `color-collide.test.ts` had been reporting
-// `COL_1 = COL_HINT` all along; it is advisory, so nothing failed.
-//
-// The cross-game role normally wins a collision and the local one yields
-// (`add-sticks-hint`) — but the local role here is a rule of the game, named to
-// the player by `help/games/clusters.md`, so it cannot move. PURPLE is the
-// substitute this repo already reaches for when blue is spoken for (Sticks',
-// Subsets' cursors).
+// **COL_HINT is PURPLE here, not the collection's `HINT_ACTION`**, because
+// `HINT_ACTION` *is* `BLUE`, one of the two colors a Clusters player paints: the
+// cell the whole deduction starts from would look like a placed blue tile, and
+// on a firing that concludes *red* the board would say blue while the sentence
+// says red. The cross-game role normally wins a collision and the local one
+// yields, but the local role here is a rule of the game, named to the player by
+// `help/games/clusters.md`, so it cannot move. PURPLE is the substitute this
+// repo already reaches for when blue is spoken for (Sticks', Subsets' cursors).
 export const COL_HINT = 8;
 /** The chain's outline, **and** a chain cell's ordinal — one index, because the
  * number indexes the evidence. */
@@ -95,12 +86,9 @@ export function colors(defaultBackground: Color): Color[] {
   out[COL_1_DOT] = PAPER;
   out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = CURSOR;
-  // Not `HINT_ACTION`: blue is `COL_1`, a rule of the game — see `COL_HINT`'s
-  // declaration.
-  out[COL_HINT] = PURPLE;
+  out[COL_HINT] = PURPLE; // not `HINT_ACTION` — see `COL_HINT`
   // The chain is outlined rather than washed, so it takes the mark form of the
-  // evidence role. `HINT_EVIDENCE` covers the chain ordinal too; see its doc
-  // comment for why the index and the thing it indexes are one role.
+  // evidence role, which covers the chain ordinal too (see `HINT_EVIDENCE`).
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   // A third hint premise no shared role names — the tile the refuted coloring
   // would break — in the one strong accent the board and the two hint marks
@@ -124,26 +112,20 @@ export function computeSize(p: ClustersParams, ts: number): Size {
 const F_ERR = 1 << 8;
 const F_CUR = 1 << 9;
 
-// Hint-overlay bits, packed per cell into the OverlaySidecar (docs/games/rendering.md § "Overlay sidecars":
-// the sidecar is part of the diff key, so a newly displayed or dropped hint
-// repaints on an otherwise-unchanged frame).
-const HB_TARGET = 1; // the forced cell — COL_HINT fill
+// Hint-overlay bits, packed per cell into the OverlaySidecar, which is part of
+// the diff key (docs/games/rendering.md § "Overlay sidecars").
+const HB_TARGET = 1; // the forced cell — COL_HINT mark
 const HB_DANGER = 1 << 1; // tile that would break — double COL_HINT_DANGER ring
 const HB_CHAIN_0 = 1 << 2; // what-if cell forced red in the hypothetical
 const HB_CHAIN_1 = 1 << 3; // what-if cell forced blue in the hypothetical
 //
 // A chain cell's **1-based position in the chain** is not a bit here: it rides
 // the sidecar's own ordinal lane (`OverlaySidecar.order`). See `drawHintOrdinal`
-// for why the mark is a number and not an arrow, and `OrderedCell` for why the
-// order needs a lane of its own.
-//
-// It is the one fact this board used to throw away — the player could see five
-// marked cells but not which fell first, so the narration's "each forced in
-// turn" was a claim only checkable by redoing the deduction. Clusters is the
-// game that decision was measured on: 34% of its consecutive links are not
-// implications at all. Nothing draws the last link either, because the
-// contradiction sits on, or orthogonally beside, the final forced cell in 140
-// of 140 firings — the ring is already next to the highest number.
+// for why the mark is a number and not an arrow (34% of Clusters' consecutive
+// links are not implications at all), and `OrderedCell` for why the order needs
+// a lane of its own. Nothing draws the last link: the contradiction sits on, or
+// orthogonally beside, the final forced cell in 140 of 140 firings measured, so
+// the ring is already next to the highest number.
 
 export interface ClustersDrawState {
   started: boolean;
@@ -152,8 +134,8 @@ export interface ClustersDrawState {
   h: number;
   cache: Int32Array;
   hint: OverlaySidecar;
-  /** The hint target's ring and the chain's outline (fork additions), drawn
-   * after the tile loop. See {@link markBand}. */
+  /** The hint target's ring and the chain's outline, drawn after the tile
+   * loop. See {@link markBand}. */
   marks: HintMarks;
 }
 
@@ -194,24 +176,6 @@ function markBand(ds: ClustersDrawState, x: number, y: number): MarkBand {
 }
 
 // --- cell drawing ----------------------------------------------------------
-
-/** A one-tile-inset square ring of thickness `t` (the premise/danger cue —
- * an outline, so the ringed tile's own color stays visible under it). */
-function drawRing(
-  dr: GameDrawing,
-  px: number,
-  py: number,
-  size: number,
-  inset: number,
-  t: number,
-  color: number,
-): void {
-  const o = size - 2 * inset;
-  dr.drawRect({ x: px + inset, y: py + inset, w: o, h: t }, color);
-  dr.drawRect({ x: px + inset, y: py + inset, w: t, h: o }, color);
-  dr.drawRect({ x: px + inset, y: py + inset + o - t, w: o, h: t }, color);
-  dr.drawRect({ x: px + inset + o - t, y: py + inset, w: t, h: o }, color);
-}
 
 function drawTile(
   dr: GameDrawing,
@@ -283,8 +247,10 @@ function drawTile(
   // not just hue, distinguishes it from the single red live-error frame.
   const rt = Math.max(2, Math.floor(ts / 12));
   if (hintBits & HB_DANGER) {
-    drawRing(dr, px, py, ts - 1, 1, rt, COL_HINT_DANGER);
-    drawRing(dr, px, py, ts - 1, 1 + 2 * rt, rt, COL_HINT_DANGER);
+    for (const inset of [1, 1 + 2 * rt]) {
+      const side = ts - 1 - 2 * inset;
+      drawThickRectOutline(dr, px + inset, py + inset, side, side, rt, COL_HINT_DANGER);
+    }
   }
 
   // The order this consequence falls in, drawn after the ring and inside it
@@ -337,8 +303,7 @@ export function redraw(
 
   // Live rule violations, recomputed from the committed grid every frame
   // (pure — never mutates the state's grid).
-  const errorList = findErrors(grid, w, h);
-  const errorSet = errorList.length > 0 ? new Set(errorList) : null;
+  const errors = new Set(findErrors(grid, w, h));
 
   const dragSet = ui.dragType !== -1 && ui.drag.length > 0 ? new Set(ui.drag) : null;
 
@@ -368,8 +333,7 @@ export function redraw(
 
       // A dragged (uncommitted) cell shows no error outline — its color is a
       // preview, not the committed state the error check ran on.
-      const error =
-        !(dragSet?.has(i) && !(grid[i] & F_SINGLE)) && (errorSet?.has(i) ?? false);
+      const error = !(dragSet?.has(i) && !(grid[i] & F_SINGLE)) && errors.has(i);
       const cursor = ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y;
 
       const packed = (tile & 0x7) | (error ? F_ERR : 0) | (cursor ? F_CUR : 0);

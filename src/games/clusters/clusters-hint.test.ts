@@ -1,5 +1,5 @@
 /**
- * Clusters explained hint (`add-clusters-hint`).
+ * Clusters explained hint.
  *
  * Tier 1: the recording deduction pass (`deduceHintPlan`) — every reason kind
  * fires with a true, checkable premise; the plan solves the board; the plan is
@@ -207,16 +207,15 @@ describe("hint", () => {
       } else if (kind === "reachTwo") {
         expect(step.explanation).toContain("touch two");
       }
-      // "ringed" is uttered iff the amber danger ring is on display.
+      // "ringed" is uttered iff the danger ring is on display.
       expect(step.explanation.includes("ringed")).toBe(hl.danger !== undefined);
 
       // A bare "this cell" points at nothing once a *second* mark is on the
-      // board — owner-reported on a frame showing a solid target and a ringed
-      // tile side by side. Wherever a second mark exists the sentence must tie
-      // the target to it, and the tie is geometric rather than a color name
-      // (`hints.md`: color is never the only cue). `beside this cell` / `its
-      // ringed … neighbor` for the adjacent break, `forced in turn from it`
-      // for a chain, whose break is adjacent to the last link instead.
+      // board, so wherever one exists the sentence must tie the target to it,
+      // and the tie is geometric rather than a color name (`hints.md`: color is
+      // never the only cue). `beside this cell` / `its ringed … neighbor` for
+      // the adjacent break, `from it` for a chain, whose break is adjacent to
+      // the last link instead.
       const secondMark = hl.danger !== undefined || hl.chain.length > 0;
       if (secondMark) {
         expect(
@@ -338,13 +337,9 @@ describe("hint through the midend", () => {
 describe("hint rendering (tier 2.5)", () => {
   // The palette itself, before any frame. Every other assertion in this block
   // compares a recorded op's `color` against a `COL_*` **index**, which is a
-  // proxy: the hint target was painted `COL_HINT` throughout the period when
-  // `COL_HINT` resolved to the very same blue as `COL_1`, the tile color a
-  // player paints — so the cell the whole deduction starts from was
-  // indistinguishable from a placed tile, and on a firing concluding *red* the
-  // board contradicted the sentence. Nothing failed, because an index is not a
-  // color. `color-collide.test.ts` had been reporting the pair all along and
-  // is advisory. This is the non-proxy form.
+  // proxy: two indices can resolve to one color, and a hint target in the
+  // `COL_1` tile's blue would pass them all while looking like a placed tile
+  // (`color-collide.test.ts` is advisory). This is the non-proxy form.
   it("every hint role is a color the board does not already use", () => {
     const palette = clustersGame.colors([1, 1, 1]);
     const key = (i: number) => palette[i].join(",");
@@ -382,7 +377,7 @@ describe("hint rendering (tier 2.5)", () => {
 
   it("a chain frame paints the what-if marks and the danger double ring", () => {
     // Fixed-seed scan for a board whose plan holds a chain step, then walk
-    // the displayed hint to it (§8's idiom).
+    // the displayed hint to it.
     let result: ReturnType<typeof renderScenario> | null = null;
     for (let i = 0; i < 40 && !result; i++) {
       const id = `${ID}#chain-frame-${i}`;
@@ -414,10 +409,9 @@ describe("hint rendering (tier 2.5)", () => {
       );
     }
 
-    // …and each carries its **ordinal**, the fact the marks used to omit: an
-    // unordered set of shaded cells cannot be checked against a narration that
-    // says they fall one after another (`walk-tactic-hint-chains` D5). Asserted
-    // as the exact set `1..n` rather than "some text was drawn", so a chain
+    // …and each carries its **ordinal**: an unordered set of shaded cells
+    // cannot be checked against a narration that says they fall one after
+    // another. Asserted as the exact set `1..n` rather than "some text was drawn", so a chain
     // that numbers only its first cell, numbers from 0, or repeats a digit
     // fails — the count is the guard that a snapshot re-baseline cannot erase.
     const digits = ops

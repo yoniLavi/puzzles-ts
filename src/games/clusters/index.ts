@@ -7,9 +7,9 @@
  * paints red; a keyboard cursor places colors with Enter/Space/0/1/2/
  * backspace. Rule violations are shown live (upstream behavior), and Check &
  * Save additionally refuses to save while any violation stands
- * (`findMistakes`). The explained hint (`add-clusters-hint`) narrates the
- * solver's proof by contradiction: which rule the opposite coloring of the
- * forced cell would break.
+ * (`findMistakes`). The explained hint narrates the solver's proof by
+ * contradiction: which rule the opposite coloring of the forced cell would
+ * break.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -49,9 +49,8 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, Point } from "../../engine/types.ts";
 import { newClustersDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -89,6 +88,7 @@ import {
   F_COLOR_1,
   F_SINGLE,
   newState,
+  opposite,
   paramConfig,
   presets,
   status,
@@ -97,8 +97,8 @@ import {
   validateParams,
 } from "./state.ts";
 
-/** A cell that breaks a rule in the current state (the local rule checker,
- * design D5 — identical to what the board draws live in red). */
+/** A cell that breaks a rule in the current state — identical to what the
+ * board draws live in red. */
 export interface ClustersMistake {
   index: number;
 }
@@ -107,10 +107,11 @@ function newUi(_state: ClustersState): ClustersUi {
   return { cursor: newCursor(), dragType: -1, drag: [] };
 }
 
-/** The `paint` letter → fill mapping (upstream 'A'=red, 'B'=blue, 'C'=clear),
- * expressed directly as the {@link ClustersFill} byte. */
-function fillFromDragType(dragType: number): ClustersFill {
-  return dragType & F_COLOR_0 ? F_COLOR_0 : dragType & F_COLOR_1 ? F_COLOR_1 : 0;
+/** One step of a click's color cycle: empty, then `first`, then the other
+ * color, then empty again. */
+function cycleFill(old: number, first: ClustersFill): ClustersFill {
+  if (old === 0) return first;
+  return old & first ? opposite(first) : 0;
 }
 
 function interpretMove(
@@ -181,14 +182,9 @@ function interpretMove(
   if (isMouseDown(button)) {
     const i = hy * w + hx;
     const old = grid[i];
-    if (button === LEFT_BUTTON) {
-      ui.dragType = old === 0 ? F_COLOR_1 : old & F_COLOR_1 ? F_COLOR_0 : 0;
-    } else if (button === RIGHT_BUTTON) {
-      ui.dragType = old === 0 ? F_COLOR_0 : old & F_COLOR_0 ? F_COLOR_1 : 0;
-    } else {
-      ui.dragType = 0;
-    }
-    ui.drag = [];
+    if (button === LEFT_BUTTON) ui.dragType = cycleFill(old, F_COLOR_1);
+    else if (button === RIGHT_BUTTON) ui.dragType = cycleFill(old, F_COLOR_0);
+    else ui.dragType = 0;
     if (ui.dragType || old) ui.drag.push(i);
     return UI_UPDATE;
   }
@@ -196,16 +192,15 @@ function interpretMove(
   // --- mouse drag: accrete cells onto the drag set ---
   if (isMouseDrag(button) && ui.dragType !== -1) {
     const i = hy * w + hx;
-    if (grid[i] === 0 && ui.dragType === 0) return null;
-    if (grid[i] & ui.dragType) return null;
-    if (ui.drag.includes(i)) return null;
+    if ((grid[i] & COLMASK) === ui.dragType || ui.drag.includes(i)) return null;
     ui.drag.push(i);
     return UI_UPDATE;
   }
 
   // --- mouse release: commit the drag as one paint move ---
   if (isMouseRelease(button) && ui.drag.length > 0) {
-    const fill = fillFromDragType(ui.dragType);
+    // The press that started the drag picked its fill.
+    const fill = ui.dragType as ClustersFill;
     const cells = ui.drag
       .filter((i) => !(grid[i] & F_SINGLE)) // never overwrite a given
       .map((index) => ({ index, fill }));
@@ -224,27 +219,17 @@ function interpretMove(
       (digit !== null && digit <= 2))
   ) {
     const i = hy * w + hx;
-    if (grid[i] & F_SINGLE) return null; // given
     const old = grid[i];
+    if (old & F_SINGLE) return null; // given
     let fill: ClustersFill;
-    if (digit === 0 || digit === 2)
-      fill = F_COLOR_0; // '0'/'2' → red
-    else if (digit === 1)
-      fill = F_COLOR_1; // '1' → blue
-    else if (button === CURSOR_SELECT2)
-      fill = old === 0 ? F_COLOR_0 : old & F_COLOR_0 ? F_COLOR_1 : 0; // cycle red→blue→clear
-    else if (button === CURSOR_SELECT)
-      fill = old === 0 ? F_COLOR_1 : old & F_COLOR_1 ? F_COLOR_0 : 0; // cycle blue→red→clear
-    else fill = 0; // backspace → clear
+    if (digit === 0 || digit === 2) fill = F_COLOR_0;
+    else if (digit === 1) fill = F_COLOR_1;
+    else if (button === CURSOR_SELECT2) fill = cycleFill(old, F_COLOR_0);
+    else if (button === CURSOR_SELECT) fill = cycleFill(old, F_COLOR_1);
+    else fill = 0; // an erase key
 
-    // No-op guard (upstream "don't put no-ops on the undo chain").
-    if (
-      (old & F_COLOR_0 && fill === F_COLOR_0) ||
-      (old & F_COLOR_1 && fill === F_COLOR_1) ||
-      (old === 0 && fill === 0)
-    ) {
-      return null;
-    }
+    // Upstream: "don't put no-ops on the undo chain".
+    if (fill === old) return null;
     return { kind: "paint", cells: [{ index: i, fill }] };
   }
 
@@ -293,23 +278,23 @@ function findMistakes(state: ClustersState): readonly ClustersMistake[] {
   return findErrors(state.grid, state.w, state.h).map((index) => ({ index }));
 }
 
-// --- hint (add-clusters-hint) ----------------------------------------------
+// --- hint ------------------------------------------------------------------
 
 /** Highlight roles of a Clusters hint step (the render legend — see the
  * COL_HINT block in render.ts). `target` is the forced cell; `danger` is the
  * tile the refuted coloring would break — the only element the narration
  * calls "ringed" — when that isn't the target itself; `chain` is a lookahead
  * firing's what-if walk, each cell marked with the color the hypothesis
- * would force it to. Every other premise tile of the three local rules sits
- * orthogonally adjacent to the target or the danger tile, so it is already
- * in view without a highlight of its own. */
+ * would force it to. No other premise needs a highlight or a palette role:
+ * every tile the three local rules read sits orthogonally adjacent to the
+ * target or the danger tile, so it is already in view. */
 export interface ClustersHintHighlights {
-  target: { x: number; y: number };
-  danger?: { x: number; y: number };
+  target: Point;
+  danger?: Point;
   /** `order` is the link's 1-based place in the chain, drawn as an ordinal
-   * (`drawHintOrdinal`). Carried explicitly rather than left as the array index:
-   * the order is the fact the narration cites, so it is data the renderer reads,
-   * not a positional convention two files have to agree about. */
+   * (`drawHintOrdinal`). Explicit rather than the array index because the
+   * narration cites it: it is data the renderer reads, not a positional
+   * convention two files have to agree about. */
   chain: (OrderedCell & { fill: ClustersFill })[];
 }
 
@@ -322,7 +307,7 @@ function narrate(d: ClustersDeduction): string {
 }
 
 function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlights {
-  const pt = (i: number): { x: number; y: number } => ({ x: i % w, y: (i / w) | 0 });
+  const pt = (i: number): Point => ({ x: i % w, y: (i / w) | 0 });
   const at = d.reason.at;
   return {
     target: pt(d.index),
@@ -335,29 +320,17 @@ function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlight
 }
 
 function hint(state: ClustersState): HintResult<ClustersMove, ClustersHintHighlights> {
-  // **Deliberately not `commonHintRefusal`** (`adopt-the-shared-refusal-opening`).
-  // Like Bricks, Clusters can reach a board that is inconsistent without any one
-  // cell being provably wrong, and answers that with `CONTRADICTION_UNLOCALIZED`
-  // below — so its wrong-board arm is a choice between two messages rather than
-  // the pair's single one. That choice is about the puzzle, which is what a
-  // first-class override is for; the helper grows no parameter for it.
+  // Deliberately not `commonHintRefusal`: like Bricks, Clusters can reach a board
+  // that is inconsistent without any one cell being provably wrong, and answers
+  // that with `CONTRADICTION_UNLOCALIZED` below, so its wrong-board arm chooses
+  // between two messages rather than the helper's single one.
   if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  if (findMistakes(state).length > 0) return { ok: false, error: FIX_MISTAKES_FIRST };
   const plan = deduceHintPlan(state.grid, state.w, state.h);
   // COMPLETE certifies the position (the error rules are monotone, so a wrong
   // tile can never extend to a zero-error grid); anything else means some
   // tile already placed must be wrong, and hinting would lead deeper in.
-  if (plan.verdict === INVALID) {
-    return {
-      ok: false,
-      error: CONTRADICTION_UNLOCALIZED,
-    };
-  }
+  if (plan.verdict === INVALID) return { ok: false, error: CONTRADICTION_UNLOCALIZED };
   if (plan.verdict !== COMPLETE || plan.deductions.length === 0) {
     return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
@@ -386,20 +359,10 @@ function hintKeepTrack(
   return got.index === want.index && got.fill === want.fill ? "completed" : "off";
 }
 
-function flashLength(
-  from: ClustersState,
-  to: ClustersState,
-  _dir: number,
-  _ui: ClustersUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
-}
-
-/** Clusters' difficulty contract (`engine/difficulty.ts`). `solveGame` returns
- * `COMPLETE` / `UNFINISHED` / `INVALID`; its two tiers are nested rungs of one
- * fixpoint (`maxdiff` 0 is `solverTry` alone, ≥ 1 adds `solverRecurse`), which
- * is why `solvableAtExactlyTier` asks the cheap rung first — the deeper solve
- * resumes from that same fixpoint (`add-clusters-difficulty-tiers` D3). */
+/** Clusters' difficulty contract (`engine/difficulty.ts`). The two tiers are
+ * nested rungs of one fixpoint (`maxdiff` 0 is `solverTry` alone, ≥ 1 adds
+ * `solverRecurse`), which is why `solvableAtExactlyTier` asks the cheap rung
+ * first — the deeper solve resumes from that same fixpoint. */
 const difficulty: DifficultyContract<ClustersParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
@@ -438,7 +401,7 @@ export const clustersGame: Game<
   }),
   paramConfig,
 
-  newDesc: (p: ClustersParams, rng: RandomState) => newClustersDesc(p, rng),
+  newDesc: (p, rng) => newClustersDesc(p, rng),
   validateDesc,
   newState,
   newUi,
@@ -454,15 +417,15 @@ export const clustersGame: Game<
   findMistakes,
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: ClustersParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(clustersGame);
