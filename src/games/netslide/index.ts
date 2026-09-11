@@ -13,7 +13,12 @@
 import { assertNever } from "../../engine/assert-never.ts";
 import type { Game, SolveResult } from "../../engine/game.ts";
 import { UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
-import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
+import {
+  atof,
+  dimensionParamConfig,
+  formatG,
+  parseConfigInt,
+} from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -22,7 +27,6 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { ConfigValues, GameStatus, Point } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
@@ -30,6 +34,7 @@ import { hint, hintKeepTrack, parseAux } from "./hint.ts";
 import { reconstructSolution } from "./reconstruct.ts";
 import {
   ANIM_TIME,
+  border,
   colors,
   computeSize,
   FLASH_FRAME,
@@ -40,15 +45,12 @@ import {
   setTileSize,
 } from "./render.ts";
 import {
-  atof,
   c2diff,
   c2pos,
-  cloneState,
   computeActive,
   decodeParams,
   defaultParams,
   encodeParams,
-  formatG,
   isComplete,
   type NetslideMove,
   type NetslideParams,
@@ -96,15 +98,14 @@ function executeMove(s: NetslideState, m: NetslideMove): NetslideState {
   if (m.type === "solve") {
     if (m.tiles.length !== s.w * s.h) throw new Error("solve move has the wrong size");
     return {
-      ...cloneState(s),
+      ...s,
       tiles: Uint8Array.from(m.tiles),
       cheated: true,
       completed: 1,
       moveCount: 1,
       // Upstream leaves the previous move's line here, so Solve animates a
-      // phantom slide of the finished grid. Clearing it is a small deliberate
-      // improvement (the byte-parity bar covers the generator, not the
-      // display — docs/games/solver-and-generator.md § "Divergence and what it costs"): Solve simply shows the answer.
+      // phantom slide of the finished grid; clearing it lets Solve simply show
+      // the answer.
       lastMoveRow: -1,
       lastMoveCol: -1,
       lastMoveDir: 0,
@@ -115,21 +116,20 @@ function executeMove(s: NetslideState, m: NetslideMove): NetslideState {
   const limit = m.axis === "col" ? s.w : s.h;
   if (m.index < 0 || m.index >= limit) throw new Error(`no such ${m.axis} ${m.index}`);
 
-  const next = cloneState(s);
-  if (m.axis === "col") slideCol(s.w, s.h, next.tiles, m.dir, m.index);
-  else slideRow(s.w, next.tiles, m.dir, m.index);
+  const tiles = new Uint8Array(s.tiles);
+  if (m.axis === "col") slideCol(s.w, s.h, tiles, m.dir, m.index);
+  else slideRow(s.w, tiles, m.dir, m.index);
 
   const moveCount = s.moveCount + 1;
-  const slid: NetslideState = {
-    ...next,
+  return {
+    ...s,
+    tiles,
     moveCount,
+    completed: s.completed || (isComplete(s, tiles) ? moveCount : 0),
     lastMoveRow: m.axis === "col" ? -1 : m.index,
     lastMoveCol: m.axis === "col" ? m.index : -1,
     lastMoveDir: m.dir,
   };
-
-  if (slid.completed) return slid;
-  return isComplete(slid) ? { ...slid, completed: moveCount } : slid;
 }
 
 /**
@@ -173,7 +173,7 @@ function interpretMove(
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     // The gutter cells are indices −1 and w (resp. h); the `+2 … −2` shuffle
     // keeps the division positive so it truncates the way C's does.
-    const b = Math.floor((3 * ts) / 4) + 1; // BORDER, NARROW_BORDERS variant
+    const b = border(ts);
     cx = Math.floor((p.x - (b + 1) + 2 * ts) / ts) - 2;
     cy = Math.floor((p.y - (b + 1) + 2 * ts) / ts) - 2;
     ui.cursor.visible = false;
@@ -189,33 +189,18 @@ function interpretMove(
     return null;
   }
 
-  let dx: number;
-  let dy: number;
-
-  if (cy >= 0 && cy < s.h && cy !== s.cy) {
-    // Beside a row: the left gutter slides it left, the right gutter right.
-    if (cx === -1) dx = +1;
-    else if (cx === s.w) dx = -1;
-    else return null;
-    dy = 0;
-  } else if (cx >= 0 && cx < s.w && cx !== s.cx) {
-    // Beside a column: the top gutter slides it up, the bottom gutter down.
-    if (cy === -1) dy = +1;
-    else if (cy === s.h) dy = -1;
-    else return null;
-    dx = 0;
-  } else {
-    return null;
+  const sign = button === RIGHT_BUTTON ? -1 : 1;
+  // Beside a row: the left gutter slides it left, the right gutter right.
+  if (cy >= 0 && cy < s.h && cy !== s.cy && (cx === -1 || cx === s.w)) {
+    const dir = (cx === -1 ? sign : -sign) as 1 | -1;
+    return { type: "slide", axis: "row", index: cy, dir };
   }
-
-  if (button === RIGHT_BUTTON) {
-    dx = -dx;
-    dy = -dy;
+  // Beside a column: the top gutter slides it up, the bottom gutter down.
+  if (cx >= 0 && cx < s.w && cx !== s.cx && (cy === -1 || cy === s.h)) {
+    const dir = (cy === -1 ? sign : -sign) as 1 | -1;
+    return { type: "slide", axis: "col", index: cx, dir };
   }
-
-  return dx === 0
-    ? { type: "slide", axis: "col", index: cx, dir: dy as 1 | -1 }
-    : { type: "slide", axis: "row", index: cy, dir: dx as 1 | -1 };
+  return null;
 }
 
 /* ----------------------------------------------------------------------
@@ -285,7 +270,7 @@ export const netslideGame: Game<
     },
   ],
 
-  newDesc: (p: NetslideParams, rng: RandomState) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -311,17 +296,12 @@ export const netslideGame: Game<
   hintKeepTrack,
 
   statusbarText: (s) => {
-    const active = computeActive(s, -1, -1).reduce<number>(
-      (n, a) => n + (a ? 1 : 0),
-      0,
-    );
-    const total = s.w * s.h;
-
+    const active = computeActive(s, -1, -1).filter((a) => a !== 0).length;
     let text = s.cheated
       ? `Moves since auto-solve: ${s.moveCount - s.completed}`
       : `${s.completed ? "COMPLETED! " : ""}Moves: ${s.completed || s.moveCount}`;
     if (s.movetarget) text += ` (target ${s.movetarget})`;
-    return `${text} Active: ${active}/${total}`;
+    return `${text} Active: ${active}/${s.w * s.h}`;
   },
 
   colors,

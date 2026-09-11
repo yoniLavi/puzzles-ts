@@ -8,7 +8,7 @@
  * ordered structure the generator indexes into — the sorted set of candidate
  * grid extensions, keyed by upstream's `xyd_cmp` — is reproduced exactly by
  * `SortedMultiset`. Nothing on the path to the desc is a `qsort`, so no
- * implementation-defined tie order can leak in (contrast Undead, §4.8).
+ * implementation-defined tie order can leak in.
  *
  * It pins, in particular, the three things a plausible-looking port gets subtly
  * wrong: the growth loop's draw-then-remove-at-index order; the shuffle's
@@ -16,9 +16,9 @@
  * draws, and must not be retried by re-rolling them); and that barriers are
  * chosen after the shuffle rather than before.
  *
- * The fixtures were recorded from `puzzles/auxiliary/netslide-trace.c`. That
- * harness and `puzzles/netslide.c` are deleted when the port ships at
- * owner-confirmed parity; this frozen snapshot is what survives.
+ * The fixtures are a frozen recording of upstream's C (via a trace harness,
+ * `netslide-trace.c`, that is not kept), so they can be checked against but
+ * never re-recorded.
  */
 
 import { describe, expect, it } from "vitest";

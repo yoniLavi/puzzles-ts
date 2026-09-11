@@ -525,11 +525,9 @@ describe("netslide solve and save", () => {
   });
 
   it("solves a game built from a descriptive id, which carries no aux", () => {
-    // Upstream gives up here, and so did this port: a `params:desc` id — what a
-    // shared link or a bookmark hands you — has no `aux`, and Netslide has no
-    // solver. The finished grid is recovered from the board itself instead
-    // (`reconstruct.ts`), so Solve works on any board a player can be looking at.
-    // Owner-reported against `?id=3x3:52h9hbd4h4v34`.
+    // Upstream gives up here: a `params:desc` id — what a shared link or a
+    // bookmark hands you — has no `aux`, and Netslide has no solver. The finished
+    // grid is recovered from the board itself instead (`reconstruct.ts`).
     const { desc } = newDesc(EASY_5x5, randomNew("no-aux"));
     const { me, statusBar } = driven(`5x5b1:${desc}`);
     expect(me.solve()).toBeUndefined();
@@ -595,8 +593,8 @@ describe("netslide rendering", () => {
     const id = "5x5b1#anim-seed";
 
     // Without `settle` the capture is animation frame *zero* — which for a slide
-    // is the maximum displacement, the pre-move grid still on screen (playbook
-    // §5). `settle` runs the clock out to the landed frame.
+    // is the maximum displacement, the pre-move grid still on screen. `settle`
+    // runs the clock out to the landed frame.
     const mid = renderScenario({ game: netslideGame, id, moves });
     const settled = renderScenario({ game: netslideGame, id, moves, settle: true });
 

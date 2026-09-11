@@ -3,7 +3,7 @@
  *
  * Three RNG-consuming phases, in this order — and the *order* is load-bearing,
  * because the differential asserts the desc byte-for-byte against C for the
- * same seed (see the port's design.md, D6):
+ * same seed:
  *
  *   1. Grow the solved grid outward from the center as a spanning tree.
  *   2. Shuffle it with random slides.
@@ -26,8 +26,6 @@ import {
 } from "../../engine/wires.ts";
 import { type NetslideParams, slideCol, slideRow } from "./state.ts";
 
-const HEX = "0123456789abcdef";
-
 export function newDesc(
   p: NetslideParams,
   rs: RandomState,
@@ -46,7 +44,7 @@ export function newDesc(
   const barrierCandidates = collectBarrierCandidates(tiles, w, h, p.wrapping);
 
   // The unshuffled grid is the solution; `solve()` just replays it.
-  const aux = Array.from(tiles, (t) => HEX[t & 0xf]).join("");
+  const aux = Array.from(tiles, (t) => (t & 0xf).toString(16)).join("");
 
   shuffle(tiles, p, cx, cy, rs);
   placeBarriers(barriers, barrierCandidates, w, h, p.barrierProbability, rs);

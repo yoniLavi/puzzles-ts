@@ -4,9 +4,8 @@
  * Netslide has no solver, so `solve` and `hint` both plan against the
  * generator's `aux` — the unshuffled grid, saved when the board was made. A game
  * that arrives as a **descriptive id** (`3x3:52h9hbd4h4v34`, the kind you get
- * from a shared link or a bookmark) carries no `aux`, and both used to give up
- * with "Solution not known for this puzzle". That is a perfectly ordinary way to
- * play a puzzle, so giving up is not good enough.
+ * from a shared link or a bookmark) carries no `aux`. That is an ordinary way to
+ * play, so the finished grid is recovered from the board instead.
  *
  * The finished grid *is* recoverable, because the board constrains it savagely:
  *
@@ -80,15 +79,21 @@ export function findSolutions(
 
   const grid = new Uint8Array(n);
   grid[center] = tiles[center];
+  const placed = new Uint8Array(n);
+  placed[center] = 1;
 
   const solutions: Uint8Array[] = [];
   const trees = new Dsf(n);
 
+  /** The cell one step from `cell` in `dir`, wrapping. */
+  const neighbor = (cell: number, dir: number): number => {
+    const nb = offset(cell % w, Math.floor(cell / w), dir, w, h);
+    return nb.y * w + nb.x;
+  };
+
   /** The wire bits a tile in `cell` is *forced* to have, and the ones it is
    * forbidden. Read off the neighbors already placed and the barriers. */
-  const constraints = (cell: number, placed: Uint8Array) => {
-    const x = cell % w;
-    const y = Math.floor(cell / w);
+  const constraints = (cell: number) => {
     let required = 0;
     let forbidden = 0;
 
@@ -99,8 +104,7 @@ export function findSolutions(
         forbidden |= dir;
         continue;
       }
-      const nb = offset(x, y, dir, w, h);
-      const other = nb.y * w + nb.x;
+      const other = neighbor(cell, dir);
       if (!placed[other]) continue; // not decided yet — this wire is still free
       // The neighbor has spoken: our wire must answer its wire, or its absence.
       if (grid[other] & opposite(dir)) required |= dir;
@@ -108,9 +112,6 @@ export function findSolutions(
     }
     return { required, forbidden };
   };
-
-  const placed = new Uint8Array(n);
-  placed[center] = 1;
 
   /**
    * Which cell to decide next: the one hemmed in by the most neighbors already
@@ -131,19 +132,28 @@ export function findSolutions(
     let bestNeighbors = -1;
     for (let cell = 0; cell < n; cell++) {
       if (placed[cell]) continue;
-      const x = cell % w;
-      const y = Math.floor(cell / w);
       let count = 0;
-      for (const dir of DIRS) {
-        const nb = offset(x, y, dir, w, h);
-        if (placed[nb.y * w + nb.x]) count++;
-      }
+      for (const dir of DIRS) if (placed[neighbor(cell, dir)]) count++;
       if (count > bestNeighbors) {
         bestNeighbors = count;
         best = cell;
       }
     }
     return best;
+  };
+
+  /** Rebuild the union-find from the tiles currently placed. */
+  const rebuild = (): void => {
+    trees.reinit();
+    for (let cell = 0; cell < n; cell++) {
+      if (!placed[cell]) continue;
+      for (const dir of [R, D]) {
+        if (!(grid[cell] & dir)) continue;
+        const other = neighbor(cell, dir);
+        if (!placed[other]) continue;
+        if (grid[other] & opposite(dir)) trees.merge(cell, other);
+      }
+    }
   };
 
   const search = (remaining: number): void => {
@@ -159,7 +169,7 @@ export function findSolutions(
     }
 
     const cell = mostConstrained();
-    const { required, forbidden } = constraints(cell, placed);
+    const { required, forbidden } = constraints(cell);
 
     for (let mask = 0; mask < 16; mask++) {
       if (available[mask] === 0) continue;
@@ -169,21 +179,18 @@ export function findSolutions(
       // Placing this tile joins it to every already-placed neighbor it wires to.
       // Joining two tiles already in the same component would close a loop, and
       // the wire budget has no room for one.
-      const x = cell % w;
-      const y = Math.floor(cell / w);
-      const joins: number[] = [];
+      let merged = false;
       let loops = false;
       for (const dir of DIRS) {
         if (!(mask & dir)) continue;
-        const nb = offset(x, y, dir, w, h);
-        const other = nb.y * w + nb.x;
+        const other = neighbor(cell, dir);
         if (!placed[other]) continue;
         if (trees.canonify(cell) === trees.canonify(other)) {
           loops = true;
           break;
         }
-        joins.push(other);
         trees.merge(cell, other);
+        merged = true;
       }
 
       if (!loops) {
@@ -200,7 +207,7 @@ export function findSolutions(
 
       // Undo the unions. `Dsf` has no split, so rebuild the components this cell
       // touched from the grid as it stands without it — cheap at these sizes.
-      if (joins.length > 0 || loops) rebuild(trees, grid, placed, w, h, n);
+      if (merged || loops) rebuild();
     }
   };
 
@@ -211,30 +218,6 @@ export function findSolutions(
 
   search(n - 1);
   return solutions;
-}
-
-/** Rebuild the union-find from the tiles currently placed. */
-function rebuild(
-  trees: Dsf,
-  grid: Uint8Array,
-  placed: Uint8Array,
-  w: number,
-  h: number,
-  n: number,
-): void {
-  trees.reinit();
-  for (let cell = 0; cell < n; cell++) {
-    if (!placed[cell]) continue;
-    const x = cell % w;
-    const y = Math.floor(cell / w);
-    for (const dir of [R, D]) {
-      if (!(grid[cell] & dir)) continue;
-      const nb = offset(x, y, dir, w, h);
-      const other = nb.y * w + nb.x;
-      if (!placed[other]) continue;
-      if (grid[other] & opposite(dir)) trees.merge(cell, other);
-    }
-  }
 }
 
 /**

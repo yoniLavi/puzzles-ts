@@ -1,9 +1,7 @@
 /**
  * Recovering the finished grid from the board alone — what lets Solve and Hint
  * work on a game that arrived as a shared link or a bookmark, carrying no `aux`.
- *
- * Owner-reported: `?id=3x3:52h9hbd4h4v34` (a descriptive id) hinted "Solution not
- * known for this puzzle" and could not be solved from any position.
+ * The reported board is `?id=3x3:52h9hbd4h4v34`, a descriptive id.
  */
 
 import { describe, expect, it } from "vitest";
@@ -163,10 +161,9 @@ describe("a board with no `aux` at all (the reported bug)", () => {
   });
 
   it("finishes any board on any preset, with nothing but the board to go on", () => {
-    // The guarantee the owner asked for in as many words: *solve from any
-    // position*. Every preset, the generator's answer withheld throughout, and the
-    // hint followed the way the midend follows it — a plan is kept while it is
-    // being followed, and recomputed when it runs out.
+    // *Solve from any position*: every preset, the generator's answer withheld
+    // throughout, and the hint followed the way the midend follows it — a plan is
+    // kept while it is being followed, and recomputed when it runs out.
     for (const params of PRESETS) {
       const label = `${params.w}x${params.h}${params.wrapping ? "w" : ""}`;
       for (const seed of ["walk-a", "walk-b"]) {

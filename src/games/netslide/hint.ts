@@ -13,7 +13,7 @@
  * - **How far from finished a board is.** Sixteen's tiles are numbered, so a
  *   tile's home is given and the distance is a sum. Netslide's are wire masks and
  *   **many are identical**, so there is no one place a tile belongs — see
- *   `travelToFinish`, and the false start recorded there.
+ *   `travelToFinish`.
  * - **What finished means** — every tile powered from the source, which is
  *   weaker than "the board equals `aux`" and must stay that way (see below).
  * - **The narration**, which leads with the one thing this game can prove about a
@@ -88,8 +88,7 @@ export function parseAux(aux: string | undefined, n: number): Uint8Array | null 
  * demands.
  *
  * It is called once per board the search looks at — hundreds of thousands of
- * times for one hint — so it is handed its scratch space rather than allocating
- * any (`makeMatcher`).
+ * times for one hint — so its scratch space is allocated once, here.
  */
 function makeMatcher(
   maxK: number,
@@ -167,9 +166,7 @@ function makeMatcher(
   };
 }
 
-/**
- * A tile's wire mask is four bits, so there are sixteen kinds of tile.
- */
+/** A tile's wire mask is four bits, so there are sixteen kinds of tile. */
 const MASK_COUNT = 16;
 
 /**
@@ -177,18 +174,12 @@ const MASK_COUNT = 16;
  * travel to show `target`, given that tiles with the same wires are
  * interchangeable. Zero exactly on the finished picture.
  *
- * This steers the planner's search, and getting it right took a false start
- * worth recording. The obvious move is to settle the whole question once — decide
- * up front which tile ends up in which cell, then just add up the distances. It
- * is far cheaper, and it is **wrong**: that assignment is only the cheapest one
- * *for the board it was
- * computed on*, and the further the search wanders from that board the more some
- * other assignment would have cost less. The frozen answer then starts scoring
- * moves that visibly make the picture worse as progress, and the plan wanders and
- * eventually loops. Measuring the board actually in front of it costs a matching
- * per node — the groups are tiny, and nothing here allocates — and buys a number
- * that means the same thing everywhere, which is also exactly what makes a
- * recomputed plan agree with the one before it.
+ * It is measured afresh on every board, one matching per node. Deciding once
+ * which tile goes to which cell is far cheaper and **wrong**: that assignment is
+ * cheapest only for the board it was computed on, so as the search wanders it
+ * scores moves that make the picture worse as progress, and the plan loops. A
+ * number that means the same thing everywhere is also what makes a recomputed
+ * plan agree with the one before it.
  */
 function travelToFinish(
   s: NetslideState,
@@ -271,11 +262,7 @@ function distanceTable(w: number, h: number): Int32Array {
   const n = w * h;
   const table = new Int32Array(n * n);
   for (let a = 0; a < n; a++) {
-    for (let b = 0; b < n; b++) {
-      table[a * n + b] =
-        toroidalDist(Math.floor(a / w), Math.floor(b / w), h) +
-        toroidalDist(a % w, b % w, w);
-    }
+    for (let b = 0; b < n; b++) table[a * n + b] = distanceTo(a, b, w, h);
   }
   return table;
 }
@@ -307,7 +294,9 @@ function legalMoves(s: NetslideState): SlideMove[] {
  * other way. So the two are negatives of each other, and every crossing of that
  * boundary goes through these two functions rather than an inline minus sign.
  */
-function toNetslideMove(m: SlideMove): NetslideMove {
+type Slide = Extract<NetslideMove, { type: "slide" }>;
+
+function toNetslideMove(m: SlideMove): Slide {
   return {
     type: "slide",
     axis: m.axis,
@@ -318,10 +307,7 @@ function toNetslideMove(m: SlideMove): NetslideMove {
 
 /** The border arrow that performs this slide (a ring cell just outside the
  * grid), so the renderer can light up the one the player should press. */
-function arrowFor(
-  s: NetslideState,
-  m: Extract<NetslideMove, { type: "slide" }>,
-): { arrowX: number; arrowY: number } {
+function arrowFor(s: NetslideState, m: Slide): { arrowX: number; arrowY: number } {
   if (m.axis === "row") {
     // A row slides left off the *left* gutter's arrow, right off the right's.
     return { arrowX: m.dir === 1 ? -1 : s.w, arrowY: m.index };
@@ -375,52 +361,34 @@ export function hint(
     moves: legalMoves(s),
     isGoal: powersEverything,
     maxStates: MAX_STATES,
-    // Try for a *shortest* solution before steering by any heuristic. This is
-    // what makes the endgame terminate rather than merely look sensible: a hint
-    // is recomputed whenever the player goes their own way, and a heuristic plan
-    // recomputed move after move demonstrably loops here — five slides of the
-    // same row, each one scoring as progress, land the board exactly where it
-    // started. The first move of a *shortest* plan shortens the true distance to
-    // the finish by one, so the walk cannot help but arrive.
+    // Try for a *shortest* solution before steering by any heuristic. A hint is
+    // recomputed whenever the player goes their own way, and a heuristic plan
+    // recomputed move after move loops here: five slides of one row, each
+    // scoring as progress, land the board where it started. The first move of a
+    // shortest plan shortens the true distance by one, so the walk arrives.
     //
-    // **The budget is large, because the boards that need it have earned it.**
-    // The endgame Sixteen calls a swapped pair — two tiles wanting each other's
-    // cells — reads as *two* cells from finished and is really ten moves away, with
-    // every slide from it looking worse. Nothing but an exact search crosses that.
+    // **The budget is large because the boards that need it have earned it.** A
+    // swapped pair (two tiles wanting each other's cells) reads as two cells from
+    // finished, is ten moves away, and every slide from it looks worse.
     //
-    // This search used to be held back until the heuristic had proved itself
-    // helpless, which reads as a saving and is where Sixteen's hint cycle came
-    // from (see `exactSearch` in the planner). Netslide never showed that cycle,
-    // but it did show its signature: over a walk that recomputes after every
-    // move, plan lengths fell 19, 18, 17, 16, 15, 14 and then rose to 16 as the
-    // heuristic took back over. Running the search on every board removed those
-    // and made the walks *shorter* — over the nine presets, 4×4 medium fell from
-    // 20 moves to 12 and 5×5 easy from 28 to 22 — for a worst single hint of
-    // about 1.3 s.
+    // It runs on every board, not only once the heuristic is helpless: held back,
+    // the heuristic took over again mid-walk and plan lengths rose (19 … 14, then
+    // 16). Always on, walks over the nine presets got *shorter* (4×4 medium 20
+    // moves to 12, 5×5 easy 28 to 22) for a worst single hint of about 1.3 s.
     exactSearch: { maxDepth: 14, maxStates: 1_200_000 },
     // Never open by undoing the slide the player just made. It is useless advice
     // ("you just did that"), and it is the exact shape a hint ping-pong takes
     // when a recompute picks a different route: the player follows the hint, the
     // next hint sends them straight back.
-    rejectFirstMove: (m) => {
-      if (s.lastMoveRow >= 0)
-        return (
-          m.axis === "row" && m.index === s.lastMoveRow && m.delta === s.lastMoveDir
-        );
-      if (s.lastMoveCol >= 0)
-        return (
-          m.axis === "col" && m.index === s.lastMoveCol && m.delta === s.lastMoveDir
-        );
-      return false;
-    },
+    rejectFirstMove: (m) =>
+      m.delta === s.lastMoveDir &&
+      (m.axis === "row" ? m.index === s.lastMoveRow : m.index === s.lastMoveCol),
   });
 
-  // The planner came back with nothing, which says the searches ran out of
-  // reach — never that the board has no better move. Netslide has not been seen
-  // here (its finish condition is any arrangement that powers the grid, so its
-  // distances are short), but the sentence has to be true if it ever is: this
-  // is the same empty plan Sixteen meets on its tangled endgames, and the
-  // refusal that used to stand here claimed something neither game checks.
+  // An empty plan says the searches ran out of reach, never that the board has
+  // no better move. Netslide has not been seen here (any arrangement that powers
+  // the grid finishes it, so its distances are short), but Sixteen meets the same
+  // empty plan on its tangled endgames, so the refusal claims only that.
   if (plan.moves.length === 0) {
     return { ok: false, error: SEARCH_OUT_OF_REACH };
   }
@@ -638,13 +606,18 @@ function narrateStep(
   const { w, cx, cy } = s;
   const move = toNetslideMove(m);
   const mask = s.tiles[focus.label];
+  const highlights: NetslideHint = {
+    tile: focus.from,
+    landing: focus.landing,
+    destination: focus.destination,
+    belongs: focus.belongs,
+    ...arrowFor(s, move),
+  };
 
-  const landRow = Math.floor(focus.landing / w);
-  const landCol = focus.landing % w;
   const to: Line =
     m.axis === "row"
-      ? { axis: "column", n: landCol + 1 }
-      : { axis: "row", n: landRow + 1 };
+      ? { axis: "column", n: (focus.landing % w) + 1 }
+      : { axis: "row", n: Math.floor(focus.landing / w) + 1 };
 
   // "Where it belongs" is a claim, so it is only made when the finished board
   // really does want this tile's wires in the cell the slide is delivering it to.
@@ -656,7 +629,7 @@ function narrateStep(
     return {
       move,
       explanation: say.next(to, arrivesHome),
-      highlights: highlightsFor(s, move, focus),
+      highlights,
       continuesPrevious: true,
     };
   }
@@ -679,7 +652,7 @@ function narrateStep(
     explanation = say.working(mask, to, arrivesHome);
   }
 
-  return { move, explanation, highlights: highlightsFor(s, move, focus) };
+  return { move, explanation, highlights };
 }
 
 /** Is `cell` orthogonally adjacent to the source — the tile power flows from, whose
@@ -689,21 +662,6 @@ function isBesideSource(cell: number, w: number, cx: number, cy: number): boolea
   const dx = Math.abs((cell % w) - cx);
   const dy = Math.abs(Math.floor(cell / w) - cy);
   return dx + dy === 1;
-}
-
-function highlightsFor(
-  s: NetslideState,
-  move: NetslideMove,
-  focus: Focus,
-): NetslideHint {
-  const slide = move as Extract<NetslideMove, { type: "slide" }>;
-  return {
-    tile: focus.from,
-    landing: focus.landing,
-    destination: focus.destination,
-    belongs: focus.belongs,
-    ...arrowFor(s, slide),
-  };
 }
 
 /* ----------------------------------------------------------------------

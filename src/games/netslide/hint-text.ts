@@ -66,16 +66,11 @@ export const say = {
   colFixed: (col: number, mask: number, to: Line, home: boolean): string =>
     `Column ${col} never slides, so only a row move can shift this ${tileName(mask)}: take it to ${place(to)}${tail(home)}.`,
 
-  // Stated, not argued: the network grows outward from the source, so a tile
-  // that belongs against it is worth naming — but *why* the source is fixed is a
-  // rule of the game, and the help text is where rules live.
-  //
-  // The consequence still has to be said, and "belongs beside the source" is
-  // itself the arrival marker: appending `tail`'s ", where it belongs" would say
-  // "belongs" twice in one sentence. So the arriving leg leads with the
-  // imperative and closes on the arrival; a leg still on its way keeps the
-  // shared "(setting up)" marker, which is what tells the player the cell it is
-  // being taken to is not the one it belongs in.
+  // Stated, not argued: *why* the source is fixed is a rule, and rules live in
+  // the help text. "Belongs beside the source" is itself the arrival marker, so
+  // the arriving leg closes on it rather than on `tail`'s ", where it belongs"
+  // (which would say "belongs" twice); a leg still on its way keeps the shared
+  // "(setting up)" marker.
   besideSource: (mask: number, to: Line, home: boolean): string =>
     home
       ? `Take this ${tileName(mask)} to ${place(to)}; it belongs beside the source.`

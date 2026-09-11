@@ -8,12 +8,13 @@
  * connected to, and therefore powered by, the center.
  */
 
-import { parseLeadingInt } from "../../engine/params.ts";
+import { atof, formatG, parseLeadingInt } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
   CURSOR_RIGHT,
   CURSOR_UP,
+  type GridCursor,
   newCursor,
 } from "../../engine/pointer.ts";
 import {
@@ -39,8 +40,7 @@ import {
  * junctions be drawn without a notch.
  */
 
-// Re-export the shared wire primitives so Netslide's own modules (and its
-// tests) keep importing them from `./state.ts` unchanged.
+// The game's modules take the shared wire vocabulary from here.
 export {
   anticlockwise,
   clockwise,
@@ -81,25 +81,6 @@ export interface NetslideParams {
   movetarget: number;
 }
 
-/**
- * Reproduces C's `%g` — six significant digits, trailing zeros stripped,
- * exponential form outside [1e-4, 1e6).
- *
- * `encodeParams` writes the barrier probability with `%g` and `decodeParams`
- * reads it back, and the *board* depends on the value (`floor(p × candidates)`
- * barriers get placed), so a round-trip that rounded differently would silently
- * generate a different game. `String(x)` is not `%g`: it renders 1/3 as
- * `0.3333333333333333`, which C would then read back as a slightly different
- * number than it wrote.
- */
-// `formatG` (%g) and `atof` moved to `engine/params.ts` when Rectangles became
-// the second float-param consumer; imported + re-exported so existing imports
-// (and this module's own encode/decode) hold.
-export { atof, formatG } from "../../engine/params.ts";
-
-import { atof, formatG } from "../../engine/params.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
-
 export function defaultParams(): NetslideParams {
   return { w: 3, h: 3, wrapping: false, barrierProbability: 1, movetarget: 0 };
 }
@@ -107,6 +88,9 @@ export function defaultParams(): NetslideParams {
 export function encodeParams(p: NetslideParams, full: boolean): string {
   let s = `${p.w}x${p.h}`;
   if (p.wrapping) s += "w";
+  // The board depends on the exact probability (`⌊p × candidates⌋` barriers),
+  // so it is written as C's `%g` and read back with `atof`: `String(x)` writes
+  // 1/3 as sixteen digits, which names a different board.
   if (full && p.barrierProbability) s += `b${formatG(p.barrierProbability)}`;
   // The shuffle limit is part of the *limited* parameters too: a game id has
   // to carry the target move count, since the status bar reports against it.
@@ -115,10 +99,8 @@ export function encodeParams(p: NetslideParams, full: boolean): string {
 }
 
 export function decodeParams(s: string): NetslideParams {
-  const p = defaultParams();
-  p.wrapping = false;
-  p.barrierProbability = 0;
-  p.movetarget = 0;
+  // Unlike the default params, an absent `b` means no barriers at all.
+  const p = { ...defaultParams(), barrierProbability: 0 };
 
   const width = parseLeadingInt(s, 0);
   p.w = width.value;
@@ -190,8 +172,7 @@ export interface NetslideState {
    *
    * It is `⌊w/2⌋, ⌊h/2⌋`, which is *not* the center of an even-sized board — so
    * player-facing text (hints, help) says "the source", never "the center", which
-   * a 4×4 player can see is false. Internal comments below still say center-ish
-   * things about the flood fill; the vocabulary rule is about what we show. */
+   * a 4×4 player can see is false. */
   readonly cx: number;
   readonly cy: number;
   readonly wrapping: boolean;
@@ -217,25 +198,18 @@ export interface NetslideState {
   readonly lastMoveDir: number;
 }
 
-export function cloneState(s: NetslideState): NetslideState {
-  return { ...s, tiles: new Uint8Array(s.tiles) };
-}
-
 /* ----------------------------------------------------------------------
  * Sliding.
  *
- * Upstream slides in place with a rotating walk over the array. Written here
- * as "each cell of the new line reads from the old line, `dir` places along,
- * modulo its length" — provably the same permutation, and immune to the
- * read-back-what-the-shuffle-vacated class of bug that in-place C array
- * surgery invites (docs/games/mechanics.md § "Idiomatic state, not a C transliteration").
+ * Each cell of the new line reads from a copy of the old one, `dir` places
+ * along: the same permutation as upstream's in-place rotating walk, without
+ * its read-back-what-was-vacated hazard
+ * (docs/games/mechanics.md § "Idiomatic state, not a C transliteration").
  */
 
 export function slideRow(w: number, tiles: Uint8Array, dir: number, row: number): void {
   const old = tiles.slice(row * w, row * w + w);
-  for (let x = 0; x < w; x++) {
-    tiles[row * w + x] = old[(x + dir + w) % w];
-  }
+  for (let x = 0; x < w; x++) tiles[row * w + x] = old[(x + dir + w) % w];
 }
 
 export function slideCol(
@@ -247,9 +221,7 @@ export function slideCol(
 ): void {
   const old = new Uint8Array(h);
   for (let y = 0; y < h; y++) old[y] = tiles[y * w + col];
-  for (let y = 0; y < h; y++) {
-    tiles[y * w + col] = old[(y + dir + h) % h];
-  }
+  for (let y = 0; y < h; y++) tiles[y * w + col] = old[(y + dir + h) % h];
 }
 
 /* ----------------------------------------------------------------------
@@ -336,23 +308,15 @@ function addBarrierCorners(barriers: Uint8Array, w: number, h: number): void {
  */
 
 /**
- * Flood outward from the center tile: a tile is *active* (powered) when it is
- * reachable from the center through wires that connect in both directions and
- * are not separated by a barrier. This is both the "how close am I?" visual aid
- * and the win condition — the game is complete when every tile is active.
+ * Which tiles are powered: `engine/wires.ts`'s flood from the source, marked
+ * with Netslide's `ACTIVE` bit. It is both the visual aid and the win condition.
  *
  * `movingRow` / `movingCol` blank out a line that is mid-slide, so the powered
- * highlight does not appear to leap across a line that is currently in motion.
- * (Upstream tests only the *destination* tile against them, not the source;
- * kept verbatim.)
+ * highlight does not leap across a line in motion. (Upstream tests only the
+ * *destination* tile against them, not the source, and so does this.)
  *
- * Upstream drains its worklist in sorted order via a `tree234`. That is
- * incidental — a flood fill's reachable set does not depend on visit order, and
- * this never feeds the desc — so a plain stack is used.
- *
- * `tiles` defaults to the state's own grid. The hint overrides it to ask the
- * same question of a *rearranged* grid — "would this arrangement win?" — without
- * building a whole state per candidate board.
+ * `tiles` defaults to the state's own grid; the hint passes a rearranged grid
+ * to ask "would this arrangement win?" without building a state per board.
  */
 export function computeActive(
   s: NetslideState,
@@ -373,8 +337,7 @@ export function computeActive(
   );
 }
 
-/** Is every tile powered from the center? `tiles` defaults to the state's own
- * grid; the hint passes a candidate arrangement to ask whether it would win. */
+/** Is every tile powered? `tiles` as for {@link computeActive}. */
 export function isComplete(s: NetslideState, tiles: Uint8Array = s.tiles): boolean {
   return computeActive(s, -1, -1, tiles).every((a) => a !== 0);
 }
@@ -382,10 +345,8 @@ export function isComplete(s: NetslideState, tiles: Uint8Array = s.tiles): boole
 /* ----------------------------------------------------------------------
  * The border-arrow ring cursor.
  *
- * Upstream's `c2pos` / `c2diff` / `pos2c` live in misc.c, but netslide is their
- * only consumer in the whole collection, so they live here rather than in
- * `engine/` (promote them if Net, which has a similar border cursor, is ported
- * and wants them).
+ * Upstream's `c2pos` / `c2diff` / `pos2c` (misc.c). Netslide is their only
+ * consumer, so they live here rather than in `engine/`.
  *
  * The arrow positions form a ring around the grid, addressed by a single cyclic
  * coordinate of length 2(w + h): the top row left-to-right, then the right

@@ -22,11 +22,15 @@ import {
   setTileSize,
 } from "./render.ts";
 import {
+  D,
   isComplete,
+  L,
   type NetslideMove,
   type NetslideParams,
   type NetslideState,
   newUi,
+  R,
+  U,
   wireCount,
 } from "./state.ts";
 
@@ -66,26 +70,17 @@ function hintOf(state: NetslideState, aux?: string) {
 }
 
 /**
- * A shared corpus of solved boards + their computed hint plans, spanning all
- * three sizes, computed **once** and reused by every test that checks a
- * *structural narration invariant* over a sample of boards (does any step ever
- * say "center", is any sentence too long, does every step state a purpose).
+ * A shared corpus of boards and their hint plans across all three sizes,
+ * computed **once** for the tests that check a *structural narration invariant*
+ * (does any step say "center", is any sentence too long, does every step state a
+ * purpose). The planner is the suite's most expensive operation (~0.3 s per 4×4
+ * board, ~0.6 s per 5×5), and these checks verify deterministic templates, so a
+ * diverse handful of boards covers what dozens would. Tests hunting a *specific*
+ * rare shape (a frozen-line move, a beside-source placement, a multi-leg
+ * journey) keep their own loops below.
  *
- * The hint planner is the suite's single most expensive operation (~0.3s per
- * 4×4 board, ~0.6s per 5×5 — generation is <1ms), and these narration checks
- * verify deterministic *templates*: a diverse handful of boards exercises the
- * same code paths as dozens, so regenerating 20–60 boards per test was pure
- * redundant planner work — minutes of it under a saturated box, for no added
- * coverage.
- * Sharing one corpus keeps the same invariants over a richer, consistent board
- * set while collapsing ~100 planner calls to ~30. Boards that hunt for a
- * *specific* rare shape (a frozen-line move, a beside-source placement, a
- * multi-leg journey) keep their own targeted loops below — they need a board
- * matching a predicate, not a representative sample.
- *
- * Module-level and lazy: computed on first use, then reused. Read-only and
- * deterministic, so it is safe under `isolate: false` (it is this file's own
- * module state, not shared across files).
+ * Lazy module state, read-only and deterministic, so it is safe under
+ * `isolate: false`.
  */
 type OkHint = Extract<ReturnType<typeof hintOf>, { ok: true }>;
 interface CorpusEntry {
@@ -126,6 +121,20 @@ function legalMoves(s: NetslideState): NetslideMove[] {
   return moves;
 }
 
+/** The shape name a tile's wires earn, worked out independently of the hint. */
+function shapeOf(mask: number): string {
+  switch (wireCount(mask)) {
+    case 1:
+      return "loose end";
+    case 3:
+      return "T-piece";
+    case 4:
+      return "cross";
+    default:
+      return mask === (L | R) || mask === (U | D) ? "straight" : "corner";
+  }
+}
+
 describe("the hint's idea of where a tile belongs", () => {
   // There is no single answer to "where does this tile go?" in Netslide — its
   // tiles are wire masks and many are identical, so a tile belongs anywhere the
@@ -155,9 +164,8 @@ describe("the hint's idea of where a tile belongs", () => {
   });
 
   it("says a slide that finishes the board puts a tile where it belongs", () => {
-    // The bug that made the plan-derived destination necessary: a board one slide
-    // from finished was narrated "(setting up)", because the tile the slide
-    // delivered was not the one the frozen assignment had picked out.
+    // A destination decided in advance narrates this finishing slide "(setting
+    // up)", because the tile the slide delivers need not be the one it picked.
     const { state, aux } = board(EASY_3X3, "final-move-1");
     const solve = netslideGame.solve?.(state, state, aux);
     if (!solve?.ok) throw new Error("solve refused");
@@ -204,10 +212,8 @@ describe("netslide hint", () => {
 
   it("works on a board with no `aux` at all, like Solve does", () => {
     // A `params:desc` id — a shared link or a bookmark — carries no `aux`, and
-    // Netslide has no solver. Both Hint and Solve used to give up there; both now
-    // recover the finished grid from the board itself (`reconstruct.ts`), so a
-    // board a player can actually be looking at is always one they can be helped
-    // with. Owner-reported.
+    // Netslide has no solver, so both Hint and Solve recover the finished grid
+    // from the board itself (`reconstruct.ts`).
     const { state } = board(EASY_3X3, "no-aux-1");
 
     const hint = hintOf(state, undefined);
@@ -232,8 +238,7 @@ describe("netslide hint", () => {
 
     let at = state;
     for (const step of res.steps) at = netslideGame.executeMove(at, step.move);
-    // The plan may be partial by design, but it must never make things worse.
-    expect(isComplete(at) || at.moveCount > state.moveCount).toBe(true);
+    expect(isComplete(at)).toBe(true);
   });
 
   it("never opens by undoing a slide it has just talked the player into", () => {
@@ -299,14 +304,15 @@ describe("netslide hint narration", () => {
     expect(res.ok).toBe(true);
     if (!res.ok) return;
 
+    // Each step is narrated against the board it applies to, so walk the plan.
+    let at = state;
     for (const step of res.steps) {
+      const mask = at.tiles[(step.highlights as NetslideHint).tile];
+      at = netslideGame.executeMove(at, step.move);
       if (step.continuesPrevious) continue;
-      const marks = step.highlights as NetslideHint;
-      const wires = wireCount(state.tiles[marks.tile] & 0x0f);
       // The name has to match the tile it is pointing at — a "corner" that is
       // really a T-piece is a lie the player can see through at a glance.
-      void wires;
-      expect(step.explanation).toMatch(/corner|straight|T-piece|loose end|cross/);
+      expect(step.explanation).toContain(shapeOf(mask));
     }
   });
 
@@ -355,17 +361,16 @@ describe("netslide hint narration", () => {
     // belongs" reads as a stutter.
     for (const { steps } of narrationCorpus()) {
       for (const step of steps) {
-        expect(step.explanation).not.toMatch(/center|center|middle/i);
+        expect(step.explanation).not.toMatch(/center|middle/i);
         expect(step.explanation.match(/belongs/g)?.length ?? 0).toBeLessThan(2);
       }
     }
   });
 
   it("keeps every sentence short enough to read at a glance", () => {
-    // The defect this guards: the beside-the-source step used to open with a
-    // preamble about the source never moving — a *rule of the game*, not a
-    // deduction about the move — which made the commonest sentence 146 characters,
-    // 1.8× every other step, so it wrapped to two lines on a 4×4.
+    // A preamble about the source never moving (a rule of the game, not a
+    // deduction about the move) made the commonest sentence 146 characters, 1.8×
+    // every other step, so it wrapped to two lines on a 4×4.
     let longest = 0;
     for (const { steps } of narrationCorpus()) {
       for (const step of steps) longest = Math.max(longest, step.explanation.length);
@@ -380,14 +385,9 @@ describe("netslide hint narration", () => {
       const res = hintOf(state, aux);
       if (!res.ok) continue;
       for (const step of res.steps) {
-        // Select on the **sentence**, not on a guess at which step will carry
-        // it. Picking steps by their marks — belongs, and a destination next to
-        // the source — over-selects: a tile on the source's own row or column is
-        // narrated by the frozen-line branch above this one, which takes
-        // precedence and says something else entirely. That predicate held only
-        // as long as no such step happened to come first in forty boards, and
-        // the moment better plans changed which step did, it convicted a
-        // perfectly good sentence.
+        // Select on the **sentence**, not on the marks: a tile on the source's
+        // own row or column can also belong beside it, but the frozen-line
+        // branch takes precedence and narrates it differently.
         if (!step.explanation.includes("belongs beside the source")) continue;
         // No preamble: the sentence opens on the tile or on the imperative,
         // never on a lecture about what the source can and cannot do.
@@ -454,24 +454,16 @@ describe("netslide hintKeepTrack", () => {
 });
 
 describe("netslide hint convergence", () => {
-  // The guarantee that actually matters, and the one two games in this codebase
-  // have shipped broken: from *any* position a player can reach, following the
-  // hint must finish the board — never give up, never walk in circles.
+  // The guarantee that actually matters: from *any* position a player can
+  // reach, following the hint must finish the board — never give up, never walk
+  // in circles.
   //
   // This walks it the way the midend does. A followed hint keeps its plan
   // (`hintKeepTrack` says "completed" and the plan advances), so a hint is
-  // recomputed only when its plan runs out. That is not a softer bar chosen for
-  // convenience — it is what the app does, and it is what makes the expensive
-  // endgame search affordable: it is paid once and its whole plan plays out.
-  //
-  // Netslide's first cut failed this twice over. Its plans wandered — a heuristic
-  // aimed at a target frozen at the start of the search happily scored moves that
-  // made the picture worse — and near the finish they looped outright: five slides
-  // of the same row, each separately looking like progress, put the board back
-  // exactly where it started. Both are fixed structurally: the distance measure is
-  // recomputed against the board in front of it, and an endgame the heuristic
-  // cannot see past is planned by an exact shortest-path search whose first move
-  // cannot fail to shorten the way home.
+  // recomputed only when its plan runs out — which is also what makes the
+  // expensive endgame search affordable: it is paid once and its whole plan plays
+  // out. How a plan can wander or loop, and what prevents each, is written at
+  // `travelToFinish` and at the planner call in `hint.ts`.
   const SEEDS = ["conv-a", "conv-b", "conv-c", "conv-d"];
 
   /** The 3x3 boards are cheap, so they keep all four seeds. The 5x5 wrapping
@@ -613,17 +605,14 @@ describe("netslide hint rendering", () => {
 });
 
 describe("the hint marks while the hinted slide animates", () => {
-  // Owner-reported: the marks sit correctly until the slide starts, and then both
-  // jump a cell. Two distinct causes, and the fix pulls them apart:
+  // Mid-slide, the two marks behave differently:
   //
-  //  - The *tile* mark is a mark on a **tile**, and the tile is moving. Its cell
-  //    index in the step is the cell the tile came *from* — the midend advances the
-  //    plan only when the animation ends — so painting it there marks whatever slid
-  //    into that cell instead. It must ride with the tile, i.e. be painted on the
-  //    cell the slide lands it in.
-  //  - The *destination* mark is a mark on a **cell**, and cells do not move. It was
-  //    painted inside the tile paint, which is shifted while the line slides, so it
-  //    slid too. It must stay put while the line slides under it.
+  //  - The *tile* mark is on a **tile**, and the tile is moving. The step's cell
+  //    index is the cell the tile came *from* (the midend advances the plan only
+  //    when the animation ends), so painting there would mark whatever slid into
+  //    that cell. It must ride with the tile, painted on the cell it lands in.
+  //  - The *destination* mark is on a **cell**, and cells do not move. It must
+  //    stay put while the line slides under it.
   const TS = 32;
   const TILE_BORDER = 1;
   const border = (ts: number) => Math.floor((3 * ts) / 4) + 1;
@@ -656,8 +645,8 @@ describe("the hint marks while the hinted slide animates", () => {
   }
 
   /** A mid-slide frame of the hinted move, on the first board whose hint step both
-   * moves a tile and aims at a cell on the line being slid — the case the owner hit,
-   * and the only one where a cell-mark riding the shift is visible. */
+   * moves a tile and aims at a cell on the line being slid — the only case where a
+   * cell mark riding the shift would be visible. */
   function animatingFrame() {
     for (let i = 0; i < 40; i++) {
       const { state, aux } = board(EVEN_4X4, `anim-${i}`);

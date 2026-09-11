@@ -2,14 +2,9 @@
  * Netslide rendering — a port of `game_redraw` / `draw_tile` / `draw_barrier` /
  * `draw_arrow` in netslide.c.
  *
- * Geometry note: the web C build defines `NARROW_BORDERS`
- * (cmake/platforms/webapp.cmake), so the border gutter is `3·ts/4 + 1`, not a
- * full tile — parity is with what the browser actually showed, not with the
- * desktop default (docs/games/rendering.md § "The tile cache and the diff key").
- *
- * The gutter holds the slide arrows. They are drawn on a full-tile footprint
- * and so overhang the narrow gutter slightly; that is exactly what the C web
- * build does.
+ * The border gutter is `3·ts/4 + 1`, upstream's `NARROW_BORDERS` width (what
+ * its web build showed), not a full tile. It holds the slide arrows, which are
+ * drawn on a full-tile footprint and so overhang it slightly, as upstream's do.
  */
 
 import { BLUE, RED, TEAL } from "../../engine/color/colors.ts";
@@ -55,7 +50,7 @@ export const FLASH_FRAME = 0.07;
 const TILE_BORDER = 1;
 
 /** Upstream's `BORDER` under `NARROW_BORDERS`: room for an arrow and a gutter. */
-function border(tileSize: number): number {
+export function border(tileSize: number): number {
   return Math.floor((3 * tileSize) / 4) + 1;
 }
 
@@ -105,11 +100,10 @@ export function colors(defaultBackground: Color): Color[] {
 /* ----------------------------------------------------------------------
  * Hint overlay bits.
  *
- * These ride in the per-tile cache word alongside the wires and the powered
- * flag, which is the whole point: the diff key is that word, so a hint requested
- * on a board that did not otherwise change still repaints. Keeping the overlay
- * *out* of the diff key is a real bug that has shipped in this codebase before
- * (docs/games/rendering.md § "The tile cache and the diff key") — the hint simply never appears until something else moves.
+ * These ride in the per-tile cache word, which is the diff key, so a hint
+ * requested on an otherwise unchanged board still repaints. Left out of the key,
+ * the hint never appears until something else moves
+ * (docs/games/rendering.md § "The tile cache and the diff key").
  */
 
 /** The tile the hint is placing. */
@@ -135,9 +129,7 @@ export interface NetslideDrawState {
   h: number;
   tilesize: number;
   /** Last-drawn value per tile (wires | ACTIVE | FLASHING | the HINT_* bits), or
-   * −1 for "dirty, repaint unconditionally" (upstream's `0xFF` sentinel). Every
-   * overlay the renderer can apply lives in this word, so the diff key covers
-   * them all by construction (docs/games/rendering.md § "The tile cache and the diff key"). */
+   * −1 for "dirty, repaint unconditionally" (upstream's `0xFF` sentinel). */
   visible: Int32Array;
   /** Last-drawn cursor arrow, so a cursor move repaints exactly two arrows. */
   curX: number;
@@ -243,27 +235,13 @@ function drawTile(
 
   // Black outlines first, then the colored cores over them, so a wire's
   // outline never paints over a neighboring wire's core.
-  for (const dir of DIRECTIONS) {
-    if (!(tile & dir)) continue;
-    const from = { x: bx + Math.trunc(cx), y: by + Math.trunc(cy) };
-    const to = {
-      x: bx + Math.trunc(cx + arm * dirX(dir)),
-      y: by + Math.trunc(cy + arm * dirY(dir)),
-    };
-    filledLine(dr, from, to, COL_WIRE);
-  }
-  for (const dir of DIRECTIONS) {
-    if (!(tile & dir)) continue;
-    dr.drawLine(
-      { x: bx + Math.trunc(cx), y: by + Math.trunc(cy) },
-      {
-        x: bx + Math.trunc(cx + arm * dirX(dir)),
-        y: by + Math.trunc(cy + arm * dirY(dir)),
-      },
-      wireColor,
-      1,
-    );
-  }
+  const center = { x: bx + Math.trunc(cx), y: by + Math.trunc(cy) };
+  const ends = DIRECTIONS.filter((dir) => tile & dir).map((dir) => ({
+    x: bx + Math.trunc(cx + arm * dirX(dir)),
+    y: by + Math.trunc(cy + arm * dirY(dir)),
+  }));
+  for (const end of ends) filledLine(dr, center, end, COL_WIRE);
+  for (const end of ends) dr.drawLine(center, end, wireColor, 1);
 
   // The box in the middle: black at the centerpiece, and at a dead end either
   // cyan (powered) or blue (not). Nothing at all on a through-tile.
@@ -315,14 +293,11 @@ function drawTile(
     }
   }
 
-  // The hinted tile's own mark: a **double** ring on the tile's frame, drawn
-  // last so no wire crosses it. Double, and on the frame rather than inset,
-  // because `drawHintOutline` already puts a single inset ring in this color on
-  // the destination *cell* — the two marks say different things ("move this
-  // piece" against "to here"), so they have to look different (the same reason
-  // Clusters doubles its danger ring). A mark on a **tile** belongs here rather
-  // than in `drawHintTargets`: `bx`/`by` are the shifted origin, so it rides with
-  // the tile through the slide instead of staying on the cell it left.
+  // The hinted tile's mark: a **double** ring on the tile's frame, drawn last so
+  // no wire crosses it. It must look unlike the single inset ring
+  // `drawHintOutline` puts on the destination *cell* ("move this piece" against
+  // "to here"). Drawn here, at the shifted origin, it rides with the tile
+  // through the slide.
   if (tile & HINT_TILE) {
     const t = Math.max(2, Math.round(ts / 16));
     const box = { x: bx, y: by, w: ts + TILE_BORDER, h: ts + TILE_BORDER };
@@ -344,15 +319,12 @@ function drawTile(
 
 /**
  * Where the hinted tile is headed. The cell it *belongs* in gets a solid outline;
- * a cell it is only passing through on the way gets a dashed one, so a staging
- * move never reads as "this is the answer".
+ * a cell it is only passing through gets a dashed one, so a staging move never
+ * reads as "this is the answer".
  *
- * This is a mark on a **cell**, so it is drawn here — after every tile, at the
- * cell's own unshifted position — and not inside `drawTile`, whose whole job is
- * to draw a tile *where the tile currently is*. Drawn there, the destination
- * outline slid along with the line under it (owner-reported): the tile moves, the
- * cell it is being taken to does not. Painting last also keeps a neighbor sliding
- * across the cell from covering the outline.
+ * A mark on a **cell**, so it is drawn after every tile at the cell's unshifted
+ * position, not inside `drawTile`, where it would slide with the line under it.
+ * Painting last also keeps a tile sliding across the cell from covering it.
  */
 function drawHintTargets(
   dr: GameDrawing,
@@ -388,18 +360,9 @@ function drawHintOutline(
   const x = bx + inset;
   const y = by + inset;
   const side = ts - 2 * inset;
-
-  if (!dashed) {
-    dr.drawRect({ x, y, w: side, h: thickness }, COL_HINT);
-    dr.drawRect({ x, y: y + side - thickness, w: side, h: thickness }, COL_HINT);
-    dr.drawRect({ x, y, w: thickness, h: side }, COL_HINT);
-    dr.drawRect({ x: x + side - thickness, y, w: thickness, h: side }, COL_HINT);
-    return;
-  }
-
-  const dash = Math.max(3, Math.round(ts / 8));
-  const step = dash * 2;
-  for (let d = 0; d < side; d += step) {
+  // A solid outline is a single dash the length of the side.
+  const dash = dashed ? Math.max(3, Math.round(ts / 8)) : side;
+  for (let d = 0; d < side; d += 2 * dash) {
     const run = Math.min(dash, side - d);
     dr.drawRect({ x: x + d, y, w: run, h: thickness }, COL_HINT);
     dr.drawRect({ x: x + d, y: y + side - thickness, w: run, h: thickness }, COL_HINT);
@@ -686,20 +649,12 @@ export function redraw(
 
   const frame = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) : -1;
 
-  // Which cell of *this* board holds the tile the hint is placing.
-  //
-  // A step's marks index the board the step was computed against, and while the
-  // hinted slide animates that is the board we have just left: the midend advances
-  // the plan when the animation *ends*, so the displayed step is still the one being
-  // played and `marks.tile` still names the cell the tile set off from. In the board
-  // being drawn, the tile is where the slide put it — `marks.landing` — and marking
-  // it there is also what makes the highlight travel with it, since a tile on the
-  // moving line is drawn shifted. Marking `marks.tile` instead highlighted whichever
-  // tile had slid into the vacated cell (owner-reported).
-  //
-  // Any other displayed step — the next leg of a journey, after the midend advanced
-  // on a manual completion — was computed against this board already, so its
-  // `marks.tile` is the cell to use.
+  // Which cell of *this* board holds the tile the hint is placing. The midend
+  // advances the plan when an animation *ends*, so while the hinted slide plays
+  // the displayed step still indexes the board just left: the tile is at
+  // `marks.landing`, and marking it there makes the highlight travel with it
+  // (`marks.tile` would mark whatever slid into the vacated cell). Any other
+  // displayed step was computed against this board, so `marks.tile` is right.
   const animating = oldstate !== null && t < ANIM_TIME;
   const playingThisStep =
     animating && hint !== undefined && isMoveBeingAnimated(hint.move, state);
@@ -724,16 +679,11 @@ export function redraw(
       const i = y * ds.w + x;
       let c = state.tiles[i] | active[i];
 
-      // The hint overlay goes into the cache word, not around it — see the note
-      // on the HINT_* bits. A hint is requested on a board that has not otherwise
-      // changed, so if these bits were not part of the diff, nothing would repaint
-      // and the hint would simply not appear.
+      // The hint overlay goes into the cache word (see the HINT_* bits).
       if (marks) {
         if (i === hintTile) c |= HINT_TILE;
-        // The outlines themselves are drawn by `drawHintTargets`, after every tile
-        // and at the cell's own position. They are still keyed into the cache word
-        // here, because that is what repaints the tile *under* a stale outline once
-        // the hint moves on — without the bit, the old outline would be left behind.
+        // `drawHintTargets` draws the outlines; their bits are keyed here so the
+        // tile under a stale outline repaints once the hint moves on.
         if (i === marks.destination) c |= marks.belongs ? HINT_HOME : HINT_LANDING;
         else if (i === marks.landing) c |= HINT_LANDING;
       }
