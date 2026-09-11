@@ -1,52 +1,41 @@
 /**
- * Group solver — the two Group-specific user-solvers (Normal associativity +
- * identity fill; Hard identity elimination) and the group validator, riding on
- * the shared generic `LatinSolver` (`engine/latin.ts`).
+ * Group solver — the two Group-specific user-solvers and the group validator,
+ * riding on the shared `latinSolver` (`engine/latin.ts`), which supplies every
+ * generic Latin layer (positional/set elimination, forcing chains, recursion).
+ * The tiers, by display name and constant:
  *
- * Group's `solver()` is `latin_solver_main` with Group supplying only its own
- * deductions; the generic Latin layers (positional/set elimination, forcing
- * chains, guess-and-verify recursion) supply everything else (design D1). The
- * difficulty mapping onto the config:
+ *   Easy (`DIFF_TRIVIAL`)   → generic simple (positional/numeric single).
+ *   Normal (`DIFF_NORMAL`)  → {@link solverNormal} (associativity forward-deduction).
+ *   Tricky (`DIFF_HARD`)    → {@link solverHard} (identity-hidden elimination).
+ *   Hard (`DIFF_EXTREME`)   → generic set-elimination + forcing.
+ *   Unreasonable            → generic recursion.
  *
- *   Trivial       → generic simple (positional/numeric single).
- *   Normal        → {@link solverNormal} (associativity forward-deduction).
- *   Hard          → {@link solverHard} (identity-hidden candidate elimination).
- *   Extreme       → generic set-elimination + forcing.
- *   Unreasonable  → generic recursion.
- *
- * The cube is indexed `(x·o + y)·o + (n−1)` (`cubepos`) and the grid `y·o + x`
- * (`gridpos`), exactly as latin.ts — so the deductions transcribe verbatim.
- * Note that `solver_normal` reads the grid with *raw* `grid[i*w+j]` indexing
- * while `solver_hard` / `group_valid` use the C `grid(x,y)` macro (`grid[y*w+x]`,
+ * The cube is indexed `(x·o + y)·o + (n−1)` and the grid `y·o + x`, as in
+ * latin.ts. `solver_normal` reads the grid with raw `grid[i*w+j]` indexing while
+ * `solver_hard` / `group_valid` use the C `grid(x,y)` macro (`grid[y*w+x]`,
  * transposed); each is ported with the matching index expression.
  *
- * **Hint recording** (the fork's explained-hint divergence): when
- * `solver.recorder` is set, each deduction is captured with the rule + premise
- * that fired it (design D2, `add-group-hint`). The recording branch is gated on
- * `solver.recorder` throughout, so with it unset — the generator/solve path —
- * every RNG draw and deduction verdict is byte-for-byte what the frozen
- * `group-c-reference.json` differential froze. The one control-flow change under
- * recording is `solverHard`'s per-element early return (so one recorded firing =
- * one "this element can't be the identity" deduction); `solverNormal` already
- * returns per firing on both paths.
+ * **Hint recording**: when `solver.recorder` is set, each deduction is captured
+ * with the rule and premise that fired it. Every recording branch is gated on
+ * it, so with it unset (the generator/solve path) every deduction verdict is
+ * what the frozen `group-c-reference.json` differential checks. The one
+ * control-flow change under recording is `solverHard`'s per-element early
+ * return; `solverNormal` returns per firing on both paths.
  */
 
 import {
   type DeductionRecord,
-  DIFF_AMBIGUOUS,
-  DIFF_IMPOSSIBLE,
   type LatinReason,
   type LatinSolver,
   latinSolver,
 } from "../../engine/latin.ts";
+import type { Point } from "../../engine/types.ts";
 import { DIFF_EXTREME, DIFF_HARD, DIFF_TRIVIAL, DIFF_UNREASONABLE } from "./state.ts";
 
-export { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE };
-
 /** Why a Group-specific deduction placed or eliminated — the premise the hint
- * narrates and highlights (design D2). Combined with {@link LatinReason} (the
- * generic positional/set/forcing deductions) it covers every technique the
- * recording solver fires; the `kind` fields never collide with the Latin ones.
+ * narrates and highlights. Combined with {@link LatinReason} (the generic
+ * positional/set/forcing deductions) it covers every technique the recording
+ * solver fires; the `kind` fields never collide with the Latin ones.
  *
  * All cell fields are **grid** coordinates (`{x = col, y = row}`); the value
  * fields (`a`/`b`/`c`/…) are 1-based element numbers.
@@ -66,9 +55,9 @@ export type GroupReason =
       bc: number;
       v: number;
       knownLeft: boolean;
-      abCell: { x: number; y: number };
-      bcCell: { x: number; y: number };
-      thirdCell: { x: number; y: number };
+      abCell: Point;
+      bcCell: Point;
+      thirdCell: Point;
     }
   /** The identity `e` is known (the filled cell `(viaX, viaY)` shows `a·b`
    * equals `a` or `b`, so the other factor is the identity), so the identity's
@@ -105,9 +94,6 @@ export type HintReason = GroupReason | LatinReason;
 export interface HintOp extends DeductionRecord {
   reason: HintReason;
 }
-
-/** Group's deductions need no external context (unlike Unequal's links). */
-type GroupCtx = null;
 
 /**
  * Find the group identity, if it can be read off a filled cell. Any filled
@@ -195,10 +181,9 @@ function solverNormal(solver: LatinSolver): number {
             );
             return 1;
           }
-          // The shipped build detects no contradiction here — the `return -1`
-          // lives inside `#ifdef STANDALONE_SOLVER`, so this else is empty and
-          // the search silently continues (design/byte-parity: faithful to the
-          // game build the differential matches, not the standalone solver).
+          // No contradiction is reported here: upstream's `return -1` is inside
+          // `#ifdef STANDALONE_SOLVER`, and the differential matches the game
+          // build, so the search continues.
         }
 
         // Know a(bc), want (ab)c: place (ab)c = a(bc) at (x=c, y=ab-1).
@@ -243,17 +228,7 @@ function solverNormal(solver: LatinSolver): number {
     if (doneSomething) {
       const witness = rec ? identityWitness(solver, idn) : null;
       const reasonFor = (): GroupReason | undefined =>
-        witness
-          ? {
-              kind: "identityFill",
-              e: idn,
-              viaX: witness.viaX,
-              viaY: witness.viaY,
-              a: witness.a,
-              b: witness.b,
-              prod: witness.prod,
-            }
-          : undefined;
+        witness ? { kind: "identityFill", e: idn, ...witness } : undefined;
       for (let j = 1; j <= w; j++) {
         if (!g[(j - 1) * w + (i - 1)]) {
           if (!solver.cubeGet(i - 1, j - 1, j)) return -1;
@@ -286,71 +261,50 @@ function solverHard(solver: LatinSolver): number {
   let doneSomething = false;
 
   for (let i = 0; i < w; i++) {
-    let iCanBeId = true;
-    // The filled product that proves element (i+1) is not the identity.
-    let wx = 0;
-    let wy = 0;
-    let wprod = 0;
-    let wother = 0;
-    let wleft = false;
-    for (let j = 0; j < w; j++) {
-      if (gm(i, j) && gm(i, j) !== j + 1) {
-        iCanBeId = false;
-        // gm(i,j) = grid[j*w+i] = (j+1)·(i+1): (i+1) fails as a *right* identity
-        // on (j+1) — cell (col i, row j).
-        wx = i;
-        wy = j;
-        wprod = gm(i, j);
-        wother = j + 1;
-        wleft = false;
-        break;
-      }
-      if (gm(j, i) && gm(j, i) !== j + 1) {
-        iCanBeId = false;
-        // gm(j,i) = grid[i*w+j] = (i+1)·(j+1): (i+1) fails as a *left* identity
-        // on (j+1) — cell (col j, row i).
-        wx = j;
-        wy = i;
-        wprod = gm(j, i);
-        wother = j + 1;
-        wleft = true;
-        break;
-      }
-    }
-
-    if (!iCanBeId) {
-      let fired = false;
-      const reason: GroupReason = {
+    // The filled product proving element (i+1) is not the identity: gm(i,j) is
+    // (j+1)·(i+1), where it fails as a *right* identity on (j+1); gm(j,i) is
+    // (i+1)·(j+1), where it fails as a *left* one.
+    let reason: GroupReason | null = null;
+    for (let j = 0; j < w && !reason; j++) {
+      let left: boolean;
+      if (gm(i, j) && gm(i, j) !== j + 1) left = false;
+      else if (gm(j, i) && gm(j, i) !== j + 1) left = true;
+      else continue;
+      const wx = left ? j : i;
+      const wy = left ? i : j;
+      reason = {
         kind: "identityElim",
         elem: i + 1,
-        other: wother,
-        product: wprod,
+        other: j + 1,
+        product: gm(wx, wy),
         wx,
         wy,
-        left: wleft,
+        left,
       };
-      for (let j = 0; j < w; j++) {
-        if (solver.cubeGet(i, j, j + 1)) {
-          if (rec)
-            rec({ kind: "elim", x: i, y: j, n: j + 1, reason, group: solver.group });
-          solver.cube[solver.cubepos(i, j, j + 1)] = 0;
-          doneSomething = true;
-          fired = true;
-        }
-        if (solver.cubeGet(j, i, j + 1)) {
-          if (rec)
-            rec({ kind: "elim", x: j, y: i, n: j + 1, reason, group: solver.group });
-          solver.cube[solver.cubepos(j, i, j + 1)] = 0;
-          doneSomething = true;
-          fired = true;
-        }
-      }
-      // One element ruled out = one firing; return per firing when recording so
-      // a hint step narrates a single "this element can't be the identity"
-      // deduction (the un-recorded path keeps accumulating across every element,
-      // byte-identical to the C reference).
-      if (rec && fired) return 1;
     }
+    if (!reason) continue;
+
+    let fired = false;
+    for (let j = 0; j < w; j++) {
+      if (solver.cubeGet(i, j, j + 1)) {
+        if (rec)
+          rec({ kind: "elim", x: i, y: j, n: j + 1, reason, group: solver.group });
+        solver.cube[solver.cubepos(i, j, j + 1)] = 0;
+        doneSomething = true;
+        fired = true;
+      }
+      if (solver.cubeGet(j, i, j + 1)) {
+        if (rec)
+          rec({ kind: "elim", x: j, y: i, n: j + 1, reason, group: solver.group });
+        solver.cube[solver.cubepos(j, i, j + 1)] = 0;
+        doneSomething = true;
+        fired = true;
+      }
+    }
+    // One element ruled out = one firing: return per firing when recording, so a
+    // hint step narrates a single "this element can't be the identity" deduction.
+    // Unrecorded, it accumulates across every element, as the C does.
+    if (rec && fired) return 1;
   }
 
   return doneSomething ? 1 : 0;
@@ -381,14 +335,10 @@ function groupValid(solver: LatinSolver): boolean {
 }
 
 /**
- * Solve a Group Cayley table in place up to difficulty `maxdiff`. `grid` is the
- * working grid (0 = blank) seeded with the givens; it is written back with the
- * first solution found. Returns the difficulty reached, or a
- * `DIFF_IMPOSSIBLE`/`DIFF_AMBIGUOUS`/`DIFF_UNFINISHED` sentinel — matching
- * `group.c`'s `solver()` and the shared latin.ts contract.
- *
- * `recorder` (hint path only) captures every deduction in solver order; leaving
- * it unset keeps the generator/solve path byte-for-byte unchanged.
+ * Solve a Group Cayley table in place up to difficulty `maxdiff`: `grid` holds
+ * the givens (0 = blank) and receives the first solution found. Returns the
+ * difficulty reached or one of latin.ts's sentinels, as `group.c`'s `solver()`
+ * does. `recorder` (hint path only) captures every deduction in solver order.
  */
 export function solveGroup(
   grid: Uint8Array,
@@ -396,7 +346,7 @@ export function solveGroup(
   maxdiff: number,
   recorder?: (rec: DeductionRecord) => void,
 ): number {
-  return latinSolver<GroupCtx>(grid, w, {
+  return latinSolver<null>(grid, w, {
     maxdiff,
     diffSimple: DIFF_TRIVIAL,
     diffSet0: DIFF_HARD,
@@ -411,13 +361,10 @@ export function solveGroup(
 }
 
 /**
- * Run the recording solver on a working grid seeded from the placed
- * givens/entries only (never the player's notes), up to `maxdiff`, and return
- * every candidate elimination and cell placement it makes, in solver order, each
- * tagged with the rule + premise that forced it. This is the raw deduction
- * script a hint narrates; the recorder-off path (`solveGroup` without a
- * callback) is byte-for-byte unchanged. `grid` is treated read-only (a working
- * copy is solved internally).
+ * Every candidate elimination and placement the recording solver makes from
+ * `grid`'s placed values (never the player's notes), up to `maxdiff`, in solver
+ * order, each tagged with the rule and premise that forced it: the script a hint
+ * narrates. `grid` is not modified.
  */
 export function recordGroupDeductions(
   grid: Uint8Array,

@@ -1,18 +1,16 @@
 /**
- * Group generator — a faithful port of `group.c`'s `new_game_desc`.
+ * Group generator — a port of `group.c`'s `new_game_desc`.
  *
- * Shape: pick a group of order `w` from the static {@link GROUP_DATA} table,
- * decompress it into a full Cayley table by BFS, randomly permute its
- * (non-identity) elements, then remove clues one at a time while the puzzle
- * stays solvable at the target difficulty. The generator is *solver-gated*, so
- * the emitted desc depends on the solver's verdict at every step — which is
- * exactly why one byte-match differential validates the whole solver + codec
- * chain (design D8).
+ * Pick a group of order `w` from {@link GROUP_DATA}, decompress it into a full
+ * Cayley table by BFS, randomly permute its (non-identity) elements, then remove
+ * clues one at a time while the puzzle stays solvable at the target difficulty.
+ * The generator is solver-gated, so the desc depends on the solver's verdict at
+ * every step, which is why one byte-match differential checks solver and codec
+ * too.
  *
- * RNG-faithful: the only draws are `randomUpto` (group choice, the extra
- * blanked row/column in identity-hidden mode) and `shuffle` (element
- * permutation, clue-removal order), reproduced in C's order so generation is
- * byte-for-byte identical.
+ * The only RNG draws are `randomUpto` (group choice, the extra blanked
+ * row/column in identity-hidden mode) and `shuffle` (element permutation,
+ * clue-removal order), in C's order so generation matches it byte for byte.
  */
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
@@ -30,18 +28,12 @@ import {
   toChar,
 } from "./state.ts";
 
-/** Shuffle `arr[start..start+len)` in place, matching C's
- * `shuffle(arr + start, len, …)` draw order (design/byte-parity). */
-function shuffleRange(
-  arr: Uint8Array,
-  start: number,
-  len: number,
-  rng: RandomState,
-): void {
-  const slice: number[] = [];
-  for (let i = 0; i < len; i++) slice.push(arr[start + i]);
-  shuffle(slice, rng);
-  for (let i = 0; i < len; i++) arr[start + i] = slice[i];
+/** Shuffle `arr[start..]` in place, with C's `shuffle(arr + start, …)` draw
+ * order. */
+function shuffleFrom(arr: Uint8Array, start: number, rng: RandomState): void {
+  const tail = Array.from(arr.subarray(start));
+  shuffle(tail, rng);
+  arr.set(tail, start);
 }
 
 export function newGameDesc(
@@ -99,10 +91,10 @@ export function newGameDesc(
       }
     }
 
-    // Shuffle the table's elements (fixing the identity in place iff id mode).
+    // Shuffle the table's elements, fixing the identity (index 0) in id mode.
+    const start = p.id ? 1 : 0;
     for (let i = 0; i < w; i++) perm[i] = i;
-    if (p.id) shuffleRange(perm, 1, w - 1, rng);
-    else shuffleRange(perm, 0, w, rng);
+    shuffleFrom(perm, start, rng);
     for (let i = 0; i < w; i++)
       for (let j = 0; j < w; j++)
         grid[perm[i] * w + perm[j]] = perm[soln[i * w + j] - 1] + 1;
@@ -125,8 +117,7 @@ export function newGameDesc(
     }
 
     // Remove entries one by one while the puzzle stays solvable at `diff`.
-    // In identity-shown mode the identity's row and column (index 0) stay given.
-    const start = p.id ? 1 : 0;
+    // In identity-shown mode the identity's row and column stay given.
     const indices: number[] = [];
     for (let i = start; i < w; i++)
       for (let j = start; j < w; j++) if (grid[i * w + j]) indices.push(i * w + j);

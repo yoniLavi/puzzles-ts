@@ -1,18 +1,13 @@
 /**
- * Group rendering — port of `game_redraw` / `draw_tile` / `game_colours` from
- * `group.c`.
+ * Group rendering — port of `game_redraw` / `draw_tile` from `group.c`.
  *
  * The board is a `w × w` Cayley table with a one-tile legend row/column showing
  * the element names, drawn in the current display `sequence` (which the player
  * can drag to reorder). Each cell shows its element (or pencil marks), with the
- * `x == y` diagonal shaded, subgroup dividers as thick edges, and — the fork's
- * Check & Save divergence — a red outline on any cell that contradicts the
- * unique solution. The renderer diffs every cell against a per-display-cell
- * cache (composed tile word + pencil bitmap + error word + mistake bit).
- *
- * Display code is out of byte-parity scope (the palette and geometry target
- * neat visuals), but the palette is transcribed from upstream anyway since it is
- * trivial and looks right.
+ * `x == y` diagonal shaded, subgroup dividers as thick edges, and a red outline
+ * on any cell that contradicts the unique solution (Check & Save). The renderer
+ * diffs every cell against a per-display-cell cache (composed tile word +
+ * pencil bitmap + error word + mistake bit).
  */
 
 import {
@@ -36,7 +31,7 @@ import {
   type OrderedCell,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import type { Color, DrawTextOptions, Size } from "../../engine/types.ts";
+import type { Color, DrawTextOptions, Point, Size } from "../../engine/types.ts";
 import type { GroupMove } from "./state.ts";
 import {
   checkErrors,
@@ -49,6 +44,7 @@ import {
   EF_RIGHT_SHIFT,
   type GroupState,
   type GroupUi,
+  moveInSequence,
   toChar,
 } from "./state.ts";
 
@@ -61,9 +57,9 @@ export const COL_HIGHLIGHT = 3;
 export const COL_ERROR = 4;
 export const COL_PENCIL = 5;
 export const COL_DIAGONAL = 6;
-/** Fork addition (past the upstream enum): the Check & Save mistake outline. */
+/** The Check & Save mistake outline. */
 export const COL_MISTAKE = 7;
-/** Hint overlay (fork addition): the acted-on cell's ring. */
+/** Hint overlay: the acted-on cell's ring. */
 export const COL_HINT = 8;
 /** Hint overlay: the premise cells outlined as evidence (associativity's three
  * known products, an identity fill's revealing cell), **and** a forcing chain's
@@ -83,9 +79,8 @@ export function colors(defaultBackground: Color): Color[] {
   out[COL_MISTAKE] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   // Both hint marks are outlines on the cell's border, so both take a strong
-  // color and differ in shape rather than in weight — a premise set's rings
-  // against one cell's ring. `HINT_EVIDENCE` covers the chain ordinal too; see
-  // its doc comment for why the index and the thing it indexes are one role.
+  // color and differ in shape, not weight. `HINT_EVIDENCE` also colors the chain
+  // ordinal; its doc comment says why the index and what it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
@@ -99,7 +94,7 @@ export interface GroupHint {
   /** A forcing chain's cells additionally carry their place in it, drawn as an
    * ordinal. */
   area: OrderedCell[];
-  targets: { x: number; y: number }[];
+  targets: Point[];
   marks: { x: number; y: number; n: number }[];
 }
 
@@ -117,8 +112,7 @@ const DF_DIGIT_MASK = 0x001f;
 
 export const FLASH_TIME = 0.4;
 
-// --- geometry (BORDER = TILESIZE/2, LEGEND = TILESIZE; NARROW_BORDERS is not
-// defined in this fork's build) ---------------------------------------------
+// --- geometry (BORDER = TILESIZE/2, LEGEND = TILESIZE) -----------------------
 
 export const PREFERRED_TILE_SIZE = 48;
 
@@ -164,14 +158,14 @@ export interface GroupDrawState {
   errors: Int32Array;
   /** Per-display-cell mistake-bit cache. */
   mistakes: Uint8Array;
-  /** Grid-indexed hint-overlay sidecar (fork addition): bit 0 = target cell,
-   * bit 1 = evidence, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Keyed
-   * by grid cell (`y·w + x`) so the overlay follows an element through a display
-   * reorder; owns its own drawn-vs-packed diff (docs/games/rendering.md § "Overlay sidecars" / OverlaySidecar). */
+  /** Grid-indexed hint-overlay sidecar: bit 0 = target cell, bit 1 = evidence,
+   * bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Keyed by grid cell
+   * (`y·w + x`) so the overlay follows an element through a display reorder
+   * (docs/games/rendering.md § "Overlay sidecars"). */
   hint: OverlaySidecar;
-  /** The hint target's ring and the evidence region's outline (fork additions),
-   * keyed by **display** position — a reorder moves the mark with its element.
-   * See {@link markBand}. */
+  /** The hint target's ring and the evidence region's outline, keyed by
+   * **display** position — a reorder moves the mark with its element. See
+   * {@link markBand}. */
   marks: HintMarks;
   /** Scratch: the drag-modified display sequence, rebuilt each redraw. */
   sequence: Uint8Array;
@@ -221,12 +215,7 @@ export function setTileSize(ds: GroupDrawState, ts: number): void {
 function markBand(ds: GroupDrawState, x: number, y: number): MarkBand {
   const ts = ds.tilesize;
   return {
-    box: {
-      x: border(ts) + legend(ts) + x * ts + 1,
-      y: border(ts) + legend(ts) + y * ts + 1,
-      w: ts - 1,
-      h: ts - 1,
-    },
+    box: { x: coord(x, ts) + 1, y: coord(y, ts) + 1, w: ts - 1, h: ts - 1 },
     outer: 1,
     inner: Math.max(2, ts >> 5),
   };
@@ -234,15 +223,8 @@ function markBand(ds: GroupDrawState, x: number, y: number): MarkBand {
 
 // --- per-tile drawing (draw_tile) ------------------------------------------
 
-const CENTER: DrawTextOptions = {
-  align: "center",
-  baseline: "mathematical",
-  fontType: "variable",
-  size: 0, // overwritten per call
-};
-
 function textOpts(size: number): DrawTextOptions {
-  return { ...CENTER, size };
+  return { align: "center", baseline: "mathematical", fontType: "variable", size };
 }
 
 function drawTile(
@@ -263,14 +245,13 @@ function drawTile(
   let tile = tileIn;
 
   // Hint overlay (docs/games/hints.md § "The element-type color legend"): both
-  // cell-level marks are read in `redraw`, which rings the target and outlines
-  // the evidence region on the cell's own border, so a hint never paints over
-  // the elements it is talking about. What is left here is `struck` (bit
-  // `2 + n`), the candidates this firing rules out, crossed through among marks.
+  // cell-level marks are drawn by `redraw` on the cell's own border, so a hint
+  // never paints over the elements it is talking about. What is left here is
+  // `struck` (bit `2 + n`): the candidates this firing rules out, crossed through.
   const struck = hint >> 2;
 
-  const tx = border(ts) + legend(ts) + x * ts + 1;
-  const ty = border(ts) + legend(ts) + y * ts + 1;
+  const tx = coord(x, ts) + 1;
+  const ty = coord(y, ts) + 1;
 
   let cx = tx;
   let cy = ty;
@@ -388,8 +369,8 @@ function drawTile(
           const px = pl + Math.trunc((fontsize * (2 * dx + 1)) / 2);
           const py = pt + Math.trunc((fontsize * (2 * dy + 1)) / 2);
           dr.drawText({ x: px, y: py }, textOpts(fontsize), COL_PENCIL, toChar(i, id));
-          // A hint-struck candidate keeps its normal pencil color with a
-          // same-color strikethrough as the "ruled out" cue (docs/games/hints.md § "The element-type color legend").
+          // A hint-struck candidate keeps its pencil color, with a same-color
+          // strikethrough as the "ruled out" cue.
           if (struck & (1 << i)) {
             const r = Math.max(2, Math.trunc(fontsize / 3));
             dr.drawLine({ x: px - r, y: py }, { x: px + r, y: py }, COL_PENCIL, 2);
@@ -400,7 +381,7 @@ function drawTile(
     }
   }
 
-  // Fork addition: the Check & Save mistake outline (a red inset border).
+  // The Check & Save mistake outline (a red inset border).
   if (mistake) {
     dr.drawRect({ x: cx, y: cy, w: cw, h: 2 }, COL_MISTAKE);
     dr.drawRect({ x: cx, y: cy + ch - 2, w: cw, h: 2 }, COL_MISTAKE);
@@ -409,9 +390,8 @@ function drawTile(
   }
 
   // A forcing chain's place in the order it fires, so the narration can cite
-  // the cells by number rather than asking the player to reconstruct the chain
-  // (`walk-tactic-hint-chains`). Inside the clip, so a legend cell's inset
-  // never lets it spill.
+  // the cells by number. Inside the clip, so a legend cell's inset never lets
+  // it spill.
   if (hintOrder > 0)
     drawHintOrdinal(dr, { x: cx, y: cy }, Math.min(cw, ch), hintOrder, COL_HINT_CELL);
 
@@ -431,7 +411,7 @@ export function redraw(
   _animTime: number,
   flashTime: number,
   hint?: HintStep<GroupMove, GroupHint>,
-  mistakes?: readonly { x: number; y: number }[],
+  mistakes?: readonly Point[],
 ): void {
   const w = state.w;
   const ts = ds.tilesize;
@@ -458,21 +438,9 @@ export function redraw(
 
   checkErrors(state, ds.errtmp);
 
-  // Build the drag-modified display sequence.
-  let dragElem = -1;
-  let dragPos = -1;
-  if (ui.drag) {
-    dragElem = ui.dragnum;
-    dragPos = ui.dragpos;
-  }
-  for (let i = 0, j = 0; i < w; i++) {
-    if (i === dragPos) {
-      ds.sequence[i] = dragElem;
-    } else {
-      if (state.sequence[j] === dragElem) j++;
-      ds.sequence[i] = state.sequence[j++];
-    }
-  }
+  // The display sequence, with a header being dragged shown where it is now.
+  if (ui.drag) moveInSequence(state.sequence, ui.dragnum, ui.dragpos, ds.sequence);
+  else ds.sequence.set(state.sequence);
 
   // Mistake lookup (grid-indexed).
   const mistakeFlags = new Uint8Array(w * w);
@@ -521,12 +489,7 @@ export function redraw(
         let highlight = false;
         if (ui.odn > 1) {
           const i = Math.abs(x - ui.ohx);
-          if (
-            i >= 0 &&
-            i < ui.odn &&
-            x === ui.ohx + i * ui.odx &&
-            y === ui.ohy + i * ui.ody
-          )
+          if (i < ui.odn && x === ui.ohx + i * ui.odx && y === ui.ohy + i * ui.ody)
             highlight = true;
         } else {
           highlight = ui.cursor.x === sx && ui.cursor.y === sy;

@@ -1,14 +1,14 @@
 /**
  * Group data table — the 77 groups (orders 2–26) and the by-order index,
- * transcribed *verbatim* from `puzzles/unfinished/group.c`'s `groupdata[]` /
+ * transcribed verbatim from `puzzles/unfinished/group.c`'s `groupdata[]` /
  * `groups[]` (generated upstream by `group.gap`, a GAP computer-algebra dump).
  *
- * This file is generated data, not logic (design D2): each group is a compressed
- * Cayley table — `gens` is `ngens` rows of `order` capital letters, one
- * generator per row, that the generator's BFS (`generator.ts`) decompresses into
- * the full table. `autosize` is upstream's automorphism-count annotation, unused
- * by game logic but carried for provenance. A transcription slip here is silent
- * until the byte-match differential fires, so it is machine-extracted from the C.
+ * Each group is a compressed Cayley table: `gens` is `ngens` rows of `order`
+ * capital letters, one generator per row, that the generator's BFS
+ * (`generator.ts`) decompresses into the full table. `autosize` is upstream's
+ * automorphism count, unused by game logic but carried for provenance. A
+ * transcription slip here is silent until the byte-match differential fires, so
+ * it is machine-extracted from the C.
  */
 
 export interface GroupDatum {

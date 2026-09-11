@@ -3,7 +3,7 @@
  * frame and assert the recorded draw ops (plus a snapshot regression baseline).
  * Covers the distinctive Group rendering — the element legend, the shaded main
  * diagonal, and a player-placed subgroup divider — reached in-process with no
- * browser (docs/games/testing.md § "The test tiers", `add-render-snapshot-harness`).
+ * browser (docs/games/testing.md § "The test tiers").
  *
  * A fixed fixture desc keeps every frame deterministic without depending on the
  * generator's RNG.

@@ -16,9 +16,7 @@ import {
 import { toChar } from "./state.ts";
 
 /** Group's value vocabulary for the shared generic-Latin narration arms: its
- * values are the elements `a`–`z`, not digits (`share-latin-reason-narration`
- * extended by `add-salad-hint` design D5 — Group was the copy that proved one
- * vocabulary parameter enough). */
+ * values are the elements `a`–`z`, not digits. */
 export function groupVocab(id: boolean): LatinVocab {
   return { noun: "element", value: (n) => toChar(n, id) };
 }

@@ -10,23 +10,25 @@
  * bitmap of pencil marks.
  *
  * Two Group-specific display concepts live in the state, not just the Ui,
- * because they are undoable player actions (design D5): `sequence` is the order
- * the `w` elements are shown in (draggable, to group a subgroup and its cosets),
- * and `dividers` are thick subgroup-boundary lines the player drops between
+ * because they are undoable player actions: `sequence` is the order the `w`
+ * elements are shown in (draggable, to group a subgroup and its cosets), and
+ * `dividers` are thick subgroup-boundary lines the player drops between
  * elements.
  *
  * The grid desc is **decimal** (element values run 1..26), unlike most Latin
- * games (design D10); the display letters (`toChar`) appear only on screen and
- * in the solution `aux` string, never in the desc.
+ * games; the display letters (`toChar`) appear only on screen and in the
+ * solution `aux` string, never in the desc.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
-import type { GameStatus } from "../../engine/types.ts";
+import type { GameStatus, Point } from "../../engine/types.ts";
 
 // --- difficulty ------------------------------------------------------------
-// Upstream DIFFLIST order: Trivial, Normal, Hard, Extreme, Unreasonable.
+// Upstream DIFFLIST order: Trivial, Normal, Hard, Extreme, Unreasonable. The
+// player sees the collection's tier names instead, so `DIFF_HARD` reads
+// "Tricky" and `DIFF_EXTREME` "Hard".
 
 export const DIFF_TRIVIAL = 0;
 export const DIFF_NORMAL = 1;
@@ -37,7 +39,7 @@ export const DIFF_COUNT = 5;
 
 /** `group_diffchars` — the per-level encode character. */
 export const DIFF_CHARS = "tnhxu";
-/** `group_diffnames` — the per-level display title. */
+/** The per-level display title. */
 export const DIFF_NAMES = tierNames(5, { search: true });
 
 // --- element numbering / character mapping (E_TO_FRONT / E_FROM_FRONT) ------
@@ -76,7 +78,7 @@ export interface GroupParams {
   /** Difficulty level (`DIFF_*`). */
   diff: number;
   /** "Show identity": when false the identity is hidden and elements read
-   * a,b,c,... in order (design D3). */
+   * a,b,c,... in order. */
   id: boolean;
 }
 
@@ -139,27 +141,27 @@ export function validateParams(p: GroupParams, _full: boolean): string | null {
   if (p.diff >= DIFF_COUNT) return "Unknown difficulty rating";
   if (!p.id && p.diff === DIFF_TRIVIAL) {
     // Identityless puzzles always have two entirely-blank rows and columns, and
-    // no Latin-square deduction can distinguish them — so a Trivial (Latin-only)
+    // no Latin-square deduction can distinguish them — so an Easy (Latin-only)
     // puzzle can't hide its identity.
     return "Trivial puzzles must have an identity";
   }
   if (!p.id && p.w === 3) {
-    // 3x3 puzzles can never be harder than Trivial (every 3x3 Latin square is
+    // 3x3 puzzles can never be harder than Easy (every 3x3 Latin square is
     // already a valid group table, so group deductions rule nothing out), and —
-    // as above — Trivial puzzles can't lack an identity.
+    // as above — Easy puzzles can't lack an identity.
     return "3x3 puzzles must have an identity";
   }
   return null;
 }
 
-// --- move model (discriminated union, design D6) ---------------------------
+// --- move model --------------------------------------------------------------
 
 export type GroupMove =
   /** Fill (or clear, `n = 0`) the listed cells with element `n`. A diagonal
    * multifill carries several cells; a single entry carries one. */
-  | { type: "set"; cells: readonly { x: number; y: number }[]; n: number }
+  | { type: "set"; cells: readonly Point[]; n: number }
   /** Toggle pencil mark `n` on the listed cells. */
-  | { type: "pencil"; cells: readonly { x: number; y: number }[]; n: number }
+  | { type: "pencil"; cells: readonly Point[]; n: number }
   /** Auto-solve to the given full grid (element per cell, 1-based). */
   | { type: "solve"; grid: readonly number[] }
   /** Reorder: move element `num` to display position `pos` (upstream `D`). */
@@ -168,20 +170,17 @@ export type GroupMove =
    * (upstream `V`). */
   | { type: "divider"; i: number; j: number }
   /** Pencil in every candidate in each empty cell — the "fill all pencil marks"
-   * action ('M'). Upstream dropped this as a standalone-solver diagnostic, but
-   * the fork re-adds it (owner-approved) as a real play move: it is the populate
-   * step the explained hint teaches, and the manual action a player follows it
-   * with (the hint's elimination steps need notes to cross out). */
+   * action ('M'). Upstream has it only as a standalone-solver diagnostic; here
+   * it is a play move: the populate step the explained hint teaches, and the
+   * manual action a player follows it with (the hint's elimination steps need
+   * notes to cross out). */
   | { type: "pencilAll" }
   /** Strike the listed pencil marks — the atomic form the hint's elimination
    * steps and the "clear obvious candidates" cleanup emit. */
   | { type: "pencilStrike"; marks: readonly { x: number; y: number; n: number }[] };
 
 /** A cell whose filled value contradicts the unique solution (Check & Save). */
-export interface GroupMistake {
-  x: number;
-  y: number;
-}
+export type GroupMistake = Point;
 
 // --- state -----------------------------------------------------------------
 
@@ -280,10 +279,9 @@ export function encodeGrid(grid: Uint8Array, area: number): string {
     } else {
       if (run) {
         while (run > 0) {
-          let c = 96 + run; // 'a'-1 + run
-          if (run > 26) c = 122; // 'z'
-          out += String.fromCharCode(c);
-          run -= c - 96;
+          const len = Math.min(run, 26); // 'a'..'z' = runs of 1..26
+          out += String.fromCharCode(96 + len);
+          run -= len;
         }
       } else if (out.length > 0 && n > 0) {
         // No unnecessary '_' before a number in the very top-left/bottom-right.
@@ -297,8 +295,8 @@ export function encodeGrid(grid: Uint8Array, area: number): string {
 }
 
 /** Parse the desc into `grid` in place (`spec_to_grid`), throwing on
- * malformed input. Returns the index past the grid (before any trailing `,`). */
-function specToGrid(desc: string, grid: Uint8Array, area: number): number {
+ * malformed input. */
+function specToGrid(desc: string, grid: Uint8Array, area: number): void {
   let i = 0;
   let p = 0;
   while (p < desc.length && desc[p] !== ",") {
@@ -319,7 +317,6 @@ function specToGrid(desc: string, grid: Uint8Array, area: number): number {
       throw new Error("Invalid character in game description");
     }
   }
-  return p;
 }
 
 /** Validate a grid desc without building the grid (`validate_grid_desc`):
@@ -407,7 +404,7 @@ export const EF_LATIN = 1 << (6 * EF_DIGIT_SHIFT);
  * duplicates and associativity failures, packed per cell into `errors` (an
  * `w²` Int32Array), and return whether any error fired. This is
  * self-consistency ("is the board a valid group table so far?"), distinct from
- * {@link GroupState} mistake-checking against the unique solution (design D7).
+ * mistake-checking against the unique solution.
  *
  * It suffices to check Latin-square-hood and associativity: all other group
  * axioms follow (identity and inverses are derivable — see the C proof).
@@ -419,40 +416,28 @@ export function checkErrors(state: GroupState, errors?: Int32Array): boolean {
 
   if (errors) errors.fill(0);
 
-  // Row Latin check.
-  for (let y = 0; y < w; y++) {
-    let mask = 0;
-    let errmask = 0;
-    for (let x = 0; x < w; x++) {
-      const bit = 1 << grid[y * w + x];
-      errmask |= mask & bit;
-      mask |= bit;
-    }
-    if (mask !== (1 << (w + 1)) - (1 << 1)) {
-      errs = true;
-      errmask &= ~1;
-      if (errors) {
-        for (let x = 0; x < w; x++)
-          if (errmask & (1 << grid[y * w + x])) errors[y * w + x] |= EF_LATIN;
+  // Latin check, rows then columns: cell k of line l is at l·lineStep + k·cellStep.
+  for (const [lineStep, cellStep] of [
+    [w, 1],
+    [1, w],
+  ] as const) {
+    for (let l = 0; l < w; l++) {
+      let mask = 0;
+      let errmask = 0;
+      for (let k = 0; k < w; k++) {
+        const bit = 1 << grid[l * lineStep + k * cellStep];
+        errmask |= mask & bit;
+        mask |= bit;
       }
-    }
-  }
-
-  // Column Latin check.
-  for (let x = 0; x < w; x++) {
-    let mask = 0;
-    let errmask = 0;
-    for (let y = 0; y < w; y++) {
-      const bit = 1 << grid[y * w + x];
-      errmask |= mask & bit;
-      mask |= bit;
-    }
-    if (mask !== (1 << (w + 1)) - (1 << 1)) {
-      errs = true;
-      errmask &= ~1;
-      if (errors) {
-        for (let y = 0; y < w; y++)
-          if (errmask & (1 << grid[y * w + x])) errors[y * w + x] |= EF_LATIN;
+      if (mask !== (1 << (w + 1)) - (1 << 1)) {
+        errs = true;
+        errmask &= ~1;
+        if (errors) {
+          for (let k = 0; k < w; k++) {
+            const i = l * lineStep + k * cellStep;
+            if (errmask & (1 << grid[i])) errors[i] |= EF_LATIN;
+          }
+        }
       }
     }
   }
@@ -460,41 +445,47 @@ export function checkErrors(state: GroupState, errors?: Int32Array): boolean {
   // Associativity check: (ab)c must equal a(bc) wherever all four are known.
   for (let i = 1; i < w; i++)
     for (let j = 1; j < w; j++)
-      for (let k = 1; k < w; k++)
+      for (let k = 1; k < w; k++) {
+        const ab = grid[i * w + j];
+        const bc = grid[j * w + k];
+        if (!ab || !bc) continue;
+        const left = (ab - 1) * w + k; // the (ab)c cell
+        const right = i * w + (bc - 1); // the a(bc) cell
+        if (!grid[left] || !grid[right] || grid[left] === grid[right]) continue;
+        errs = true;
+        // Skip if either slot is already used, so one square shows one error.
         if (
-          grid[i * w + j] &&
-          grid[j * w + k] &&
-          grid[(grid[i * w + j] - 1) * w + k] &&
-          grid[i * w + (grid[j * w + k] - 1)] &&
-          grid[(grid[i * w + j] - 1) * w + k] !== grid[i * w + (grid[j * w + k] - 1)]
+          errors &&
+          !(errors[left] & EF_LEFT_MASK) &&
+          !(errors[right] & EF_RIGHT_MASK)
         ) {
-          if (errors) {
-            const av = i + 1;
-            const bv = j + 1;
-            const cv = k + 1;
-            const ab = grid[i * w + j];
-            const bc = grid[j * w + k];
-            const left = (ab - 1) * w + (cv - 1);
-            const right = (av - 1) * w + (bc - 1);
-            // Skip if either slot is already used, so one square shows one error.
-            if (!(errors[left] & EF_LEFT_MASK) && !(errors[right] & EF_RIGHT_MASK)) {
-              let err = av;
-              err = (err << EF_DIGIT_SHIFT) | bv;
-              err = (err << EF_DIGIT_SHIFT) | cv;
-              errors[left] |= err << EF_LEFT_SHIFT;
-              errors[right] |= err << EF_RIGHT_SHIFT;
-            }
-          }
-          errs = true;
+          let err = i + 1;
+          err = (err << EF_DIGIT_SHIFT) | (j + 1);
+          err = (err << EF_DIGIT_SHIFT) | (k + 1);
+          errors[left] |= err << EF_LEFT_SHIFT;
+          errors[right] |= err << EF_RIGHT_SHIFT;
         }
+      }
 
   return errs;
 }
 
-/** Find the display position of element `n` in `seq` (`find_in_sequence`). */
-export function findInSequence(seq: Uint8Array, len: number, n: number): number {
-  for (let i = 0; i < len; i++) if (seq[i] === n) return i;
-  throw new Error("element not found in sequence");
+/** Write `seq` into `out` with element `num` moved to display position `pos`:
+ * a row/column reorder, and the live preview of one being dragged. */
+export function moveInSequence(
+  seq: Uint8Array,
+  num: number,
+  pos: number,
+  out: Uint8Array,
+): void {
+  for (let i = 0, j = 0; i < seq.length; i++) {
+    if (i === pos) {
+      out[i] = num;
+    } else {
+      if (seq[j] === num) j++;
+      out[i] = seq[j++];
+    }
+  }
 }
 
 // --- status / text ---------------------------------------------------------

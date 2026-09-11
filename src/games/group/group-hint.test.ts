@@ -1,6 +1,6 @@
 /**
- * Group hint tests (`add-group-hint`): the recorded deductions, the plan the
- * hint builds, its refusals, and the keep-track verdicts.
+ * Group hint tests: the recorded deductions, the plan the hint builds, its
+ * refusals, and the keep-track verdicts.
  *
  * The cross-game guards (`hint-resume` / `hint-quality` / `hint-overlay`) already
  * cover convergence, purity, narration form and overlay-reaches-cache once Group
@@ -98,8 +98,8 @@ describe("group hint — plan solves boards", () => {
   });
 
   it("solves an identity-hidden Hard board, teaching an identity-mark elimination", () => {
-    // The identity-hidden Hard tier is the one that exercises solverHard — the
-    // design D5 risk the shared first-leaf resume can't reach.
+    // The identity-hidden `DIFF_HARD` (Tricky) tier is the one that exercises
+    // solverHard, which the shared first-leaf resume never reaches.
     let sawElim = false;
     let anySolved = false;
     for (const seed of ["h1", "h2", "h3", "h4", "h5", "h6"]) {
@@ -147,7 +147,7 @@ describe("group hint — refusals", () => {
   it("refuses on a board with a mistake (and findMistakes flags it)", () => {
     const orig = board(NORMAL, "refuse-mistake");
     const sr = groupGame.solve?.(orig, orig, undefined);
-    if (!sr?.ok || sr.move.type !== "solve") return;
+    if (!sr?.ok || sr.move.type !== "solve") throw new Error("solve() failed");
     const soln = sr.move.grid;
     // Fill the first empty cell with a *wrong* value.
     const w = orig.w;
@@ -200,8 +200,8 @@ describe("group hint — keepTrack", () => {
   });
 
   it("a pencil toggle clearing a strike mark tracks the plan", () => {
-    // Reach a pencilStrike step on an identity-hidden Hard board whose first mark
-    // is live against the current board, then follow it with a right-click toggle.
+    // Reach a pencilStrike step on an identity-hidden Tricky board whose first
+    // mark is live against the current board, then follow it with a toggle.
     let found: { state: GroupState; step: HintStep<GroupMove> } | null = null;
     for (const seed of ["h1", "h2", "h3", "h4", "h5"]) {
       let s = board(HARD_HIDDEN, seed);
@@ -233,7 +233,7 @@ describe("group hint — keepTrack", () => {
   });
 
   it("a Mark-all completes a populate step", () => {
-    // Force a populate step by taking an identity-hidden Hard plan that needs it.
+    // Force a populate step by taking an identity-hidden Tricky plan that needs it.
     for (const seed of ["h1", "h2", "h3", "h4", "h5"]) {
       let s = board(HARD_HIDDEN, seed);
       for (let i = 0; i < 500 && groupGame.status(s) === "ongoing"; i++) {

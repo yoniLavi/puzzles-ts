@@ -65,7 +65,7 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
-import type { Color, ConfigValues, KeyLabel, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, KeyLabel, Point, Size } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
 import { groupVocab, say } from "./hint-text.ts";
 import {
@@ -102,6 +102,7 @@ import {
   type GroupState,
   type GroupUi,
   isChar,
+  moveInSequence,
   newState,
   newUi,
   PRESETS,
@@ -276,7 +277,7 @@ function interpretMove(
     let n = fromChar(button, state.id);
     if (button === CURSOR_SELECT2 || isEraseKey(button)) n = 0;
 
-    const cells: { x: number; y: number }[] = [];
+    const cells: Point[] = [];
     for (let i = 0; i < ui.odn; i++) {
       const x = state.sequence[ui.ohx + i * ui.odx];
       const y = state.sequence[ui.ohy + i * ui.ody];
@@ -311,10 +312,8 @@ function executeMove(from: GroupState, move: GroupMove): GroupState {
       const ret = cloneState(from);
       ret.completed = true;
       ret.cheated = true;
-      for (let i = 0; i < a; i++) {
-        ret.grid[i] = move.grid[i];
-        ret.pencil[i] = 0;
-      }
+      ret.grid.set(move.grid);
+      ret.pencil.fill(0);
       return ret;
     }
     case "set":
@@ -338,16 +337,7 @@ function executeMove(from: GroupState, move: GroupMove): GroupState {
     }
     case "reorder": {
       const ret = cloneState(from);
-      // Reorder so element `num` sits at display position `pos`.
-      let j = 0;
-      for (let i = 0; i < w; i++) {
-        if (i === move.pos) {
-          ret.sequence[i] = move.num;
-        } else {
-          if (from.sequence[j] === move.num) j++;
-          ret.sequence[i] = from.sequence[j++];
-        }
-      }
+      moveInSequence(from.sequence, move.num, move.pos, ret.sequence);
       // Eliminate dividers no longer between the same two adjacent elements.
       for (let x = 0; x < w; x++) {
         const el = ret.sequence[x];
@@ -450,8 +440,7 @@ function solve(
 }
 
 /** Flag every user entry that contradicts the unique solution (re-solved from
- * the givens only), for Check & Save. Group is uniquely solvable, so this is
- * well-defined (design D7). */
+ * the givens only), for Check & Save. */
 function findMistakes(state: GroupState): readonly GroupMistake[] {
   const w = state.w;
   const a = w * w;
@@ -476,14 +465,12 @@ function findMistakes(state: GroupState): readonly GroupMistake[] {
  * reason is re-derived into. */
 type NarratableReason = HintReason | SingleReason;
 
-/** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the narration"): indication → reasoning →
- * necessity-voice conclusion, every cell named by the element letter it shows.
- * `ns` is the value list the step acts on (a placement passes its single value; a
- * strike its struck values). The six generic Latin arms are delegated to
+/** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the
+ * narration"). `ns` is the value list the step acts on (a placement passes its
+ * single value; a strike its struck values). The generic Latin arms go to
  * `narrateLatinReason` under {@link groupVocab}; only Group's own three
- * techniques are spelled out here. `identityFill`'s *first-leg* text lives here;
- * its continuation legs are narrated in {@link emitIdentityFillJourney}. The
- * words are [`hint-text.ts`](./hint-text.ts)'s. */
+ * techniques are chosen here. `identityFill`'s continuation legs are narrated in
+ * {@link emitIdentityFillJourney}. The words are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(reason: NarratableReason, ns: number[], id: boolean): string {
   const ch = (n: number): string => toChar(n, id);
   switch (reason.kind) {
@@ -512,9 +499,6 @@ function narrate(reason: NarratableReason, ns: number[], id: boolean): string {
         reason.left,
       );
     default:
-      // The six generic arms, in element vocabulary. The shared `dup` arm picks
-      // "a"/"an" by the rendered value, which is what Group's local copy dodged
-      // by rewording ("already contain a" reads as an article for element `a`).
       return narrateLatinReason(reason, ns, groupVocab(id));
   }
 }
@@ -590,9 +574,9 @@ function emitPlacement(
   }
 }
 
-/** Emit the identity's whole row and column as **one multi-leg journey** (design
- * D4): the deduction that "learns" the identity forces every empty cell of its
- * row and column at once, so those placements read and auto-play as a single hint
+/** Emit the identity's whole row and column as **one multi-leg journey**: the
+ * deduction that "learns" the identity forces every empty cell of its row and
+ * column at once, so those placements read and auto-play as a single hint
  * (continuation legs flagged `continuesPrevious`), not `2w−1` disjoint ones. The
  * revealing cell is shaded on every leg as the shared premise. */
 function emitIdentityFillJourney(
@@ -626,7 +610,7 @@ function emitIdentityFillJourney(
 
 /** Emit one recorded placement (Group's own or a generic single), re-deriving a
  * generic `single` reason into naked/hidden/forced from the working board. */
-function emitercordedPlacement(
+function emitPlacementOp(
   steps: HintStep<GroupMove, GroupHint>[],
   wGrid: Uint8Array,
   wPen: Int32Array,
@@ -646,8 +630,8 @@ function emitercordedPlacement(
   emitPlacement(steps, wGrid, wPen, w, id, pl.x, pl.y, pl.n, reason);
 }
 
-/** Build the hint plan by walking a working copy the way a person solves it
- * (design D3, placement-first): a naked single first; else, when a placement is
+/** Build the hint plan by walking a working copy the way a person solves it,
+ * placement-first: a naked single first; else, when a placement is
  * the solver's *immediate* next deduction, teach it (Group's associativity or an
  * identity-row/column fill, or a generic single); else — when an elimination
  * precedes the next placement — a lazy populate + obvious-cull cleanup, then the
@@ -676,9 +660,7 @@ function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
   const cap = w * w * w * 4 + 4;
   for (let guard = 0; guard < cap; guard++) {
     budget.tick();
-    let filled = true;
-    for (let i = 0; i < w * w; i++) if (!wGrid[i]) filled = false;
-    if (filled) break;
+    if (!wGrid.includes(0)) break;
 
     // 1. A naked single — the next move a human makes.
     const ns = nakedSingle(wGrid, wPen, w);
@@ -691,19 +673,11 @@ function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
     // 2. A placement is the solver's immediate next deduction (nothing precedes
     //    it in solver order) — teach it directly, no notes needed (placement-
     //    first: Group's associativity / identity fill lead, not a populate).
-    // `ops.length > 0` is load-bearing, not defensive.
-    // `firstUnreflectedPlaceIndex` returns `ops.length` to mean "no placement
-    // found" — a sentinel that collides with a valid index of `0` exactly when
-    // `ops` is empty, so this read as "a placement leads, at index 0" and then
-    // dereferenced `ops[0]` (undefined) and crashed. An empty `ops` is reachable
-    // whenever deduction runs out under the hint's cap — on an `Unreasonable`
-    // board, whose rungs the cap deliberately withholds, that is ordinary rather
-    // than exotic. Found by the cross-game trial guard walking *every tier*
-    // rather than each game's easiest preset, which is the only reason it was
-    // ever reached: the guard's own tier sweep exists because a tier-gated rung
-    // can never fire on a game's easiest preset.
+    //    `ops.length > 0` is load-bearing: `firstUnreflectedPlaceIndex` returns
+    //    `ops.length` for "no placement", which is 0 when `ops` is empty, and
+    //    that is ordinary on an Unreasonable board, whose rungs the cap withholds.
     if (ops.length > 0 && firstUnreflectedPlaceIndex(ops, wGrid, w) === 0) {
-      emitercordedPlacement(steps, wGrid, wPen, w, id, ops, ops[0]);
+      emitPlacementOp(steps, wGrid, wPen, w, id, ops, ops[0]);
       ops = recordGroupDeductions(wGrid, w, maxdiff);
       continue;
     }
@@ -751,7 +725,7 @@ function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
     //    the notes now reflect) is next.
     const pl = nextPlace(ops, wGrid, w);
     if (pl) {
-      emitercordedPlacement(steps, wGrid, wPen, w, id, ops, pl);
+      emitPlacementOp(steps, wGrid, wPen, w, id, ops, pl);
       ops = recordGroupDeductions(wGrid, w, maxdiff);
       continue;
     }
@@ -767,16 +741,14 @@ function hint(
   _aux?: string,
   _ui?: GroupUi,
 ): HintResult<GroupMove, GroupHint> {
-  return candidateHint(state, undefined, findMistakes, (s) => buildSteps(s));
+  return candidateHint(state, undefined, findMistakes, buildSteps);
 }
 
 /**
  * How Group's `Move` union reads as the shared candidate shapes: its `set` /
  * `pencil` carry a *cell list* (for the diagonal multifill) rather than an
  * `x`/`y` pair, so a hint's single-cell move is `cells[0]` and a real multifill
- * is off-plan. Everything else — the shrink-in-place bookkeeping, the
- * "a toggle only counts when the candidate is present" rule — is the shared
- * mechanics, which this replaced a byte-identical hand-rolled copy of.
+ * is off-plan. Everything else is the shared mechanics.
  */
 const groupCandidateMoves: CandidateMoveAdapter<GroupMove> = {
   read: (m) => {
@@ -819,8 +791,7 @@ function refreshHintStep(
 // --- config / params summary -----------------------------------------------
 
 function describeParams(p: GroupParams): ConfigValues {
-  // Keys/shape match the `group` template in augmentation.ts
-  // ("{grid-size}x{grid-size} {difficulty:...}{show-identity:, identity hidden|}").
+  // Keys match the `group` template in `puzzle/augmentation.ts`.
   return { "grid-size": String(p.w), difficulty: p.diff, "show-identity": p.id };
 }
 
@@ -888,7 +859,7 @@ export const groupGame: Game<
   ],
   describeParams,
 
-  newDesc: (p, rng) => newGameDesc(p, rng),
+  newDesc: newGameDesc,
   validateDesc,
   newState,
   newUi,
@@ -909,7 +880,7 @@ export const groupGame: Game<
 
   prefs: [pencilKeepHighlightPref<GroupUi>()],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: GroupParams, ts: number): Size => computeSize(p.w, ts),
   setTileSize,

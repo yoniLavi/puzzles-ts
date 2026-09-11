@@ -7,12 +7,12 @@
  * board at the same minimal difficulty the C solver recorded. Because the
  * generator is solver-gated, that single byte-match validates the generator,
  * the solver's every deduction, the group data table and the codec together —
- * the strongest available bar (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4, design D8).
+ * the strongest available bar (docs/games/testing.md § "Byte-match: fidelity
+ * where there is a right answer").
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/group-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: it was captured by
+ * `puzzles/auxiliary/group-trace.c` against upstream's C, whose build and
+ * harness are gone — see `engine/testing/differential.ts`.
  */
 
 import { describe, expect, it } from "vitest";
