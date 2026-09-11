@@ -1,16 +1,15 @@
 /**
  * Gated C-vs-TS differential for Separate.
  *
- * Separate's generator is a faithful port over the bit-identical `random.ts`, so
- * `newDesc` reproduces the C desc byte-for-byte for a given seed (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
- * The generator is *solver-gated* (§4.4): it keeps a board only when the ported
- * solver fully solves it, so byte-match also demands the TS solver reach C's
- * exact verdict. The follow-on assertion re-solves each C board to confirm it.
+ * The generator runs over the bit-identical `random.ts`, so `newDesc`
+ * reproduces the C desc byte-for-byte for a given seed (docs/games/testing.md §
+ * "Byte-match: fidelity where there is a right answer"). It is *solver-gated*:
+ * it keeps a board only when the solver fully solves it, so byte-match also
+ * demands the TS solver reach C's exact verdict. The follow-on assertion
+ * re-solves each C board to confirm it.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/separate-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C build and the
+ * trace harness that captured it are gone — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

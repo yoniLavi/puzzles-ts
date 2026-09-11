@@ -6,7 +6,7 @@
  * mistakes-overlay frame) driven through a real Midend.
  */
 import { describe, expect, it } from "vitest";
-import { BORDER, BORDER_D, BORDER_R } from "../../engine/border-grid.ts";
+import { BORDER, BORDER_D, BORDER_L, BORDER_R } from "../../engine/border-grid.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { newSeparateDesc } from "./generator.ts";
@@ -85,7 +85,7 @@ describe("separate isSolved", () => {
         const i = y * P5.w + x;
         if (broken[i] & BORDER_R) {
           broken[i] &= ~BORDER_R;
-          broken[i + 1] &= ~8; // clear the neighbor's BORDER_L
+          broken[i + 1] &= ~BORDER_L;
           break outer;
         }
       }
@@ -223,7 +223,7 @@ describe("separate render scenarios", () => {
     const validRects = recording.ops.filter(
       (o) => o.op === "rect" && o.color === COL_CORRECT,
     ).length;
-    // Region 0 has exactly k=5 cells → 5 green tile backgrounds; the rest plain.
+    // Region 0 has exactly k=5 cells → 5 shaded tile backgrounds; the rest plain.
     expect(validRects).toBe(P5.k);
   });
 

@@ -1,5 +1,5 @@
 /**
- * Separate solver — faithful port of `separate.c`'s `solver_attempt`.
+ * Separate solver — a port of `separate.c`'s `solver_attempt`.
  *
  * Two deductions alternate to a fixpoint over a disjoint-set forest of squares:
  *
@@ -12,8 +12,7 @@
  * Per-component bookkeeping (all indexed by the dsf canonical root):
  *  - `size[root]` — component size.
  *  - `contents[root*k + letter]` — the grid index contributing `letter` to this
- *    component, or `-1` if the component lacks it. The C "add the two and add 1"
- *    merge trick (given at most one is ≥0) is kept verbatim.
+ *    component, or `-1` if the component lacks it.
  *  - `disconnect[root1*wh + root2]` — components known to be distinct regions.
  *
  * The generator only keeps a board the solver fully solves, so on a real board
@@ -35,7 +34,8 @@ export const STUCK = 0;
 export const PROGRESS = 1;
 export const SOLVED = 2;
 
-class SolverScratch {
+/** The solver's working state, reused by the generator across letter fills. */
+export class SolverScratch {
   readonly w: number;
   readonly h: number;
   readonly k: number;
@@ -59,8 +59,7 @@ class SolverScratch {
   }
 
   init(): void {
-    const { wh } = this;
-    this.dsf = new Dsf(wh);
+    this.dsf = new Dsf(this.wh);
     this.size.fill(1);
     this.disconnect.fill(0);
   }
@@ -69,7 +68,6 @@ class SolverScratch {
     const { k, wh } = this;
     yx1 = this.dsf.canonify(yx1);
     yx2 = this.dsf.canonify(yx2);
-    // assert(yx1 !== yx2)
     this.dsf.merge(yx1, yx2);
     const yxnew = this.dsf.canonify(yx2);
 
@@ -190,12 +188,6 @@ export function solverAttempt(
   return SOLVED;
 }
 
-/** A fresh scratch (for the generator, which reuses it across letter fills). */
-export function newSolverScratch(w: number, h: number, k: number): SolverScratch {
-  return new SolverScratch(w, h, k);
-}
-export type { SolverScratch };
-
 /**
  * Solve a board from its letters. Returns the deduced partition dsf if fully
  * solved, else `null` (not uniquely deducible by these rules).
@@ -203,8 +195,7 @@ export type { SolverScratch };
 export function solve(p: SeparateParams, letters: Uint8Array): Dsf | null {
   const sc = new SolverScratch(p.w, p.h, p.k);
   sc.init();
-  const r = solverAttempt(sc, letters, null);
-  return r === SOLVED ? sc.dsf : null;
+  return solverAttempt(sc, letters, null) === SOLVED ? sc.dsf : null;
 }
 
 /**

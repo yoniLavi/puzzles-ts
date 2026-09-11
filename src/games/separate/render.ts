@@ -90,9 +90,6 @@ const PALETTE: BorderGridColors = {
 
 // --- geometry -------------------------------------------------------------
 
-export { fromCoord, margin } from "../../engine/border-grid.ts";
-export { center, tileWidth } from "../../engine/border-grid-render.ts";
-
 export function computeSize(p: SeparateParams, ts: number): Size {
   return borderGridSize(p.w, p.h, ts);
 }
@@ -132,12 +129,10 @@ export function redraw(
   const blackDsf = buildDsf(w, h, borders, true);
   const yellowDsf = buildDsf(w, h, borders, false);
 
-  // Per black region: which letters appear, and how many times. A letter that
-  // repeats within a *completed* (size-k) wall-bounded region reddens every cell
-  // that carries it — the "you closed this region but it has two of the same
-  // letter" signal. We gate on size === k so the untouched board (one big region
-  // holding every letter k times) stays clean, mirroring Palisade's philosophy
-  // of only flagging provably-wrong state.
+  // Per black region: how many times each letter appears. A letter repeated
+  // within a *completed* (size-k) region reddens every cell carrying it. Gating
+  // on size k keeps the untouched board (one big region holding every letter k
+  // times) clean: as in Palisade, only provably-wrong state is flagged.
   const regionCounts = new Map<number, Int32Array>();
   for (let i = 0; i < wh; i++) {
     const root = blackDsf.canonify(i);
@@ -149,12 +144,9 @@ export function redraw(
     counts[letters[i]]++;
   }
 
-  // Completed-and-correct regions: a wall-bounded (black) component of exactly
-  // `k` cells holding one of each letter (no duplicate) with no wall interior to
-  // it. These shade with the shared completed-region color (Rect's convention)
-  // to signal validity — the same local-correctness feedback Galaxies/Rect give.
-  // Start each right-sized component valid, then invalidate on a duplicate letter
-  // or an interior (dangling) wall.
+  // A region is complete and correct when it has exactly `k` cells, no repeated
+  // letter and no wall interior to it. It shades with the shared completed-region
+  // color, the local-correctness feedback Galaxies and Rect give.
   const validRoot = new Map<number, boolean>();
   for (let i = 0; i < wh; i++) {
     const r = blackDsf.canonify(i);
@@ -175,11 +167,11 @@ export function redraw(
 
       if (flash) flags |= F_FLASH;
 
-      const counts = regionCounts.get(blackDsf.canonify(i));
+      const root = blackDsf.canonify(i);
+      const counts = regionCounts.get(root);
       if (counts && blackDsf.size(i) === k && counts[letters[i]] > 1)
         flags |= F_CLUE_ERROR;
-
-      if (validRoot.get(blackDsf.canonify(i))) flags |= F_CORRECT;
+      if (validRoot.get(root)) flags |= F_CORRECT;
 
       flags |= cursorBits(ui.cursor, c, r);
       flags |= borderErrorBits(c, r, w, h, k, borders, blackDsf, yellowDsf);

@@ -1,39 +1,21 @@
 /**
- * Separate ("Block Puzzle") — state, params, desc codec, completion test.
+ * Separate — state, params, desc codec, completion test.
  *
- * Every cell holds one of `k` letters (each occurring `w·h/k` times); the
- * player draws walls so the grid divides into connected `k`-ominoes, each
- * containing exactly one of each letter. Upstream (`separate.c`) only ever
- * wrote the solver/generator — the whole frontend is ours. We adopt Palisade's
- * mature wall model wholesale, since the task (partition the grid by drawing
- * walls) is identical; the difference is the cell content (a letter, not a
- * wall-count clue) and the win condition (one of each letter per region).
- *
- * Border encoding is Palisade's `borderflag` byte, kept verbatim: per cell, low
- * nibble bits 0..3 are walls on the U/R/D/L edges, high nibble bits 4..7 are
- * "no-wall" marks. An edge is three-valued (wall / no-wall-mark / unknown) and
- * shared between the two cells it separates, so every edit records both sides.
+ * The wall model is Palisade's, adopted wholesale because the task (partition
+ * the grid by drawing walls) is identical; what differs is the cell content (a
+ * letter, not a wall-count clue) and the win condition (one of each letter per
+ * region). The border byte is Palisade's `borderflag`: per cell, bits 0..3 are
+ * walls on the U/R/D/L edges and bits 4..7 are "no-wall" marks.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
-import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
-import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
-import { dims, num, paramsCodec } from "../../engine/params-codec.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
-import type { GameStatus } from "../../engine/types.ts";
-
-// The edge bit encoding, direction tables and bounds test are shared with the
-// other border-marking region game and live in `engine/border-grid.ts`. Each
-// module here imports them from there directly rather than through this file —
-// a pass-through re-export is a second name for one thing, and jscpd scored the
-// two games' identical re-export lists as duplication in their own right.
-
 import {
   BORDER,
   BORDER_D,
   BORDER_L,
   BORDER_R,
   BORDER_U,
+  type BorderEdit,
   buildDsf,
   DISABLED,
   DX,
@@ -41,6 +23,11 @@ import {
   initBorders,
   outOfBounds,
 } from "../../engine/border-grid.ts";
+import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
+import { dims, num, paramsCodec } from "../../engine/params-codec.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import type { GameStatus } from "../../engine/types.ts";
 
 // --- types ----------------------------------------------------------------
 
@@ -63,7 +50,7 @@ export interface SeparateState {
 }
 
 export type SeparateMove =
-  | { type: "edges"; edits: ReadonlyArray<{ x: number; y: number; flag: number }> }
+  | { type: "edges"; edits: readonly BorderEdit[] }
   | { type: "solve"; borders: number[] };
 
 export interface SeparateUi {
@@ -133,7 +120,6 @@ export function validateParams(p: SeparateParams, full: boolean): string | null 
   if (w < 1) return "Width must be at least one";
   if (h < 1) return "Height must be at least one";
   if (k < 1) return "Number of letters must be at least one";
-  // Width times height must not be unreasonably large.
   if (w > 0x7fffffff / h) return "Width times height must not be unreasonably large";
   const wh = w * h;
   if (wh % k) return "Number of letters must divide the grid area";
@@ -169,7 +155,7 @@ export function isSolved(
     if (dsf.size(root) !== k) return false;
     const bit = 1 << letters[i];
     const cur = seen.get(root) ?? 0;
-    if (cur & bit) return false; // duplicate letter in this region
+    if (cur & bit) return false;
     seen.set(root, cur | bit);
   }
 
@@ -223,27 +209,14 @@ export function newState(p: SeparateParams, desc: string): SeparateState {
   };
 }
 
-export function cloneState(state: SeparateState): SeparateState {
-  return {
-    w: state.w,
-    h: state.h,
-    k: state.k,
-    letters: state.letters, // shared, frozen
-    borders: state.borders.slice(),
-    completed: state.completed,
-    cheated: state.cheated,
-  };
-}
-
 // --- move execution -------------------------------------------------------
 
 export function executeMove(state: SeparateState, move: SeparateMove): SeparateState {
   const { w, h, k } = state;
-  const wh = w * h;
-  const ret = cloneState(state);
+  const ret: SeparateState = { ...state, borders: state.borders.slice() };
 
   if (move.type === "solve") {
-    if (move.borders.length !== wh) throw new Error("separate: bad solve move");
+    if (move.borders.length !== w * h) throw new Error("separate: bad solve move");
     ret.borders = Uint8Array.from(move.borders);
     ret.cheated = true;
     ret.completed = true;
@@ -262,7 +235,7 @@ export function executeMove(state: SeparateState, move: SeparateMove): SeparateS
   }
 
   // Recompute completion every move (Palisade's deliberate divergence): breaking
-  // a solved board reverts to unsolved so a later genuine re-completion is a real
+  // a solved board reverts to unsolved, so a later re-completion is a real
   // transition the win flash can fire on. `cheated` stays sticky.
   ret.completed = isSolved(w, h, k, ret.letters, ret.borders);
   return ret;

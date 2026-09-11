@@ -1,5 +1,5 @@
 /**
- * Separate generator — faithful port of `separate.c`'s `generate`.
+ * Separate generator — a port of `separate.c`'s `generate`.
  *
  * `divvyRectangle` picks a random `k`-omino partition; then we repeatedly fill
  * each omino with a shuffled set of the `k` letters and run the solver. The
@@ -9,30 +9,24 @@
  * solves it completely, guaranteeing unique deducibility; a partition that never
  * yields a solvable board is abandoned for a fresh `divvyRectangle`.
  *
- * Every RNG draw (the `divvy` draws, the per-omino `shuffle`) is over the
- * bit-identical `random.ts` in upstream's exact order, so `newDesc` reproduces
- * the C desc byte-for-byte for a given seed (differential §4.3). The solver's
- * verdict gates the loop, so — like every solver-gated generator (§4.4) — the TS
- * solver must reach C's exact verdict; it is a direct port of `solver_attempt`.
+ * Every RNG draw (the `divvy` draws, the per-omino `shuffle`) is in upstream's
+ * exact order over the bit-identical `random.ts`, and the solver's verdict gates
+ * the loop, so the desc byte-matches C's for a seed only while the solver
+ * reaches C's exact verdict too. The differential checks both.
  */
 import { divvyRectangle } from "../../engine/divvy.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { shuffle } from "../../engine/shuffle.ts";
-import { newSolverScratch, SOLVED, STUCK, solverAttempt } from "./solver.ts";
+import { SOLVED, SolverScratch, STUCK, solverAttempt } from "./solver.ts";
 import { encodeDesc, type SeparateParams } from "./state.ts";
 
 const MAX_REGENERATE = 10000;
 
-/** The letters grid for given params (each cell 0..k-1). */
-export function generate(
-  w: number,
-  h: number,
-  k: number,
-  rng: RandomState,
-): Uint8Array {
+export function newSeparateDesc(p: SeparateParams, rng: RandomState): { desc: string } {
+  const { w, h, k } = p;
   const wh = w * h;
   const n = wh / k; // number of ominoes
-  const sc = newSolverScratch(w, h, k);
+  const sc = new SolverScratch(w, h, k);
   const grid = new Uint8Array(wh);
   const permutation = new Int32Array(wh); // permutation[omino*k + slot] = square
   const genLock = new Uint8Array(wh);
@@ -80,12 +74,7 @@ export function generate(
       if (m !== STUCK) retries = k * k; // PROGRESS: reset the counter
     }
 
-    if (m === SOLVED) return grid;
+    if (m === SOLVED) return { desc: encodeDesc(grid, wh) };
   }
   throw new Error(`separate generate: no board after ${MAX_REGENERATE} attempts`);
-}
-
-export function newSeparateDesc(p: SeparateParams, rng: RandomState): { desc: string } {
-  const grid = generate(p.w, p.h, p.k, rng);
-  return { desc: encodeDesc(grid, p.w * p.h) };
 }

@@ -1,15 +1,13 @@
 /**
- * Separate ("Block Puzzle") — native TS port. Upstream (`separate.c`) is an
- * *unfinished* puzzle: only its solver/generator were written, so this finishes
- * it into a playable game. Every cell holds one of `k` letters; the player draws
- * walls so the grid divides into connected `k`-ominoes, each holding one of each
- * letter.
+ * Separate ("Block Puzzle"). Upstream (`separate.c`) is an *unfinished* puzzle:
+ * only its solver/generator were written, so the playable game is ours. Every
+ * cell holds one of `k` letters; the player draws walls so the grid divides into
+ * connected `k`-ominoes, each holding one of each letter.
  *
  * The interaction is Palisade's: edges are three-valued (wall / no-wall-mark /
  * unknown) and shared between two cells, so each edit records both sides; input
  * picks the edge nearest the click (left toggles wall, right toggles no-wall
- * mark) with a half-grid keyboard cursor. The explained hint is a follow-up
- * change (`add-separate-hint`).
+ * mark) with a half-grid keyboard cursor.
  */
 
 import {
@@ -22,7 +20,7 @@ import { winFlash } from "../../engine/flash.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, Point } from "../../engine/types.ts";
 import { newSeparateDesc } from "./generator.ts";
 import {
   colors,
@@ -52,8 +50,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-// Edge states for the click toggle cycle.
 
 function newUi(_state: SeparateState): SeparateUi {
   return { cursor: newCursor(1, 1) };
@@ -107,8 +103,8 @@ function findMistakes(state: SeparateState): readonly SeparateMistake[] {
       for (let dir = 0; dir < 4; dir++) {
         const b = BORDER(dir);
         const solWall = sol[i] & b;
-        if (borders[i] & b && !solWall) out.push({ x, y, dir });
-        else if (borders[i] & DISABLED(b) && solWall) out.push({ x, y, dir });
+        if ((borders[i] & b && !solWall) || (borders[i] & DISABLED(b) && solWall))
+          out.push({ x, y, dir });
       }
     }
   }
@@ -143,7 +139,7 @@ export const separateGame: Game<
     letters: String(p.k),
   }),
 
-  newDesc: (p, rng) => newSeparateDesc(p, rng),
+  newDesc: newSeparateDesc,
   validateDesc,
   newState,
   newUi,
@@ -164,9 +160,9 @@ export const separateGame: Game<
   textFormat,
   statusbarText: (s) => `${s.k} letters per region`,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SeparateParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tilesize = ts;
   },
