@@ -1,11 +1,8 @@
 /**
- * Ascent (Hidoku / Hidato) — types, constants, grid geometry, the path
- * helpers, the desc codec and state construction.
- *
- * Port of the pure/logic surface of `puzzles/unreleased/ascent.c`
- * (© 2015 Lennard Sprong). The five grid modes ride one square-grid
- * substrate selected by a movement table (design D2); `state.ts` is
- * therefore geometry-free apart from that table.
+ * Ascent (Hidoku / Hidato): types, constants, grid geometry, the path helpers,
+ * the desc codec and state construction, from upstream's unreleased `ascent.c`
+ * (© 2015 Lennard Sprong). The five grid modes share one square grid and differ
+ * only in their movement table, so nothing here knows any other geometry.
  */
 import { tierNames } from "../../engine/difficulty.ts";
 
@@ -22,7 +19,7 @@ export const NUMBER_MOVE = -4;
 /** Draw-only: the "clear this cell" cross. */
 export const NUMBER_CLEAR = -5;
 
-/** A cell is a wall of either kind. `IS_OBSTACLE(i) = i <= -2`. */
+/** A wall of either kind (upstream `IS_OBSTACLE`). */
 export function isObstacle(n: number): boolean {
   return n <= NUMBER_WALL;
 }
@@ -34,14 +31,13 @@ export function numberEdge(n: number): number {
 export function fromNumberEdge(n: number): number {
   return -10 - n;
 }
-/** `IS_NUMBER_EDGE(i) = i <= -10`. */
+/** Edges mode: the cell holds an arrow clue (upstream `IS_NUMBER_EDGE`). */
 export function isNumberEdge(n: number): boolean {
   return n <= -10;
 }
 
 /** Draw-only flag OR'd onto a real number to show a "move" affordance. */
 export const NUMBER_FLAG_MOVE = 0x4000;
-export const NUMBER_FLAG_MASK = NUMBER_FLAG_MOVE;
 
 /** Sentinel cell indices. */
 export const CELL_NONE = -1;
@@ -88,7 +84,7 @@ export function isHexagonal(mode: number): boolean {
   return mode === MODE_HEXAGON || mode === MODE_HONEYCOMB;
 }
 
-// --- movement table (design D2) ------------------------------------
+// --- movement table ------------------------------------------------
 
 export interface AscentStep {
   dx: number;
@@ -206,6 +202,13 @@ export function ascentGridSize(params: AscentParams): { w: number; h: number } {
   return { w, h };
 }
 
+/** Is cell `i` on the outermost ring of a `w`×`h` grid? */
+export function isBorderCell(i: number, w: number, h: number): boolean {
+  const x = i % w;
+  const y = Math.trunc(i / w);
+  return x === 0 || y === 0 || x === w - 1 || y === h - 1;
+}
+
 export function isNear(a: number, b: number, w: number, mode: number): boolean {
   const dx = (a % w) - (b % w);
   const dy = Math.trunc(a / w) - Math.trunc(b / w);
@@ -247,7 +250,7 @@ export function updatePositions(
   grid: Int16Array,
   s: number,
 ): void {
-  for (let n = 0; n < s; n++) positions[n] = CELL_NONE;
+  positions.fill(CELL_NONE, 0, s);
   for (let i = 0; i < s; i++) {
     const n = grid[i];
     if (n < 0 || n >= s) continue;
@@ -333,10 +336,8 @@ export function updatePathHints(
   state: AscentState,
 ): void {
   const s = state.w * state.h;
-  for (let i = 0; i < s; i++) {
-    prevhints[i] = NUMBER_EMPTY;
-    nexthints[i] = NUMBER_EMPTY;
-  }
+  prevhints.fill(NUMBER_EMPTY, 0, s);
+  nexthints.fill(NUMBER_EMPTY, 0, s);
   if (!state.path) return;
 
   for (let i = 0; i < s; i++) {
@@ -396,20 +397,13 @@ export function checkCompletion(
     y = y2;
   }
 
-  for (let yy = 0; yy < h; yy++) {
-    for (let xx = 0; xx < w; xx++) {
-      const i = yy * w + xx;
-      if (!isNumberEdge(grid[i])) continue;
-      const n = fromNumberEdge(grid[i]);
-      let found = false;
-      for (let y2 = 0; y2 < h; y2++) {
-        for (let x2 = 0; x2 < w; x2++) {
-          if (isEdgeValid(i, y2 * w + x2, w, h) && grid[y2 * w + x2] === n)
-            found = true;
-        }
-      }
-      if (!found) return false;
-    }
+  for (let i = 0; i < w * h; i++) {
+    if (!isNumberEdge(grid[i])) continue;
+    const n = fromNumberEdge(grid[i]);
+    let found = false;
+    for (let j = 0; j < w * h; j++)
+      if (grid[j] === n && isEdgeValid(i, j, w, h)) found = true;
+    if (!found) return false;
   }
 
   return true;
@@ -424,28 +418,22 @@ export function encodeGridDesc(grid: Int16Array, s: number): string {
   let out = "";
   let run = 0;
   let runtype: "none" | "blank" | "wall" | "number" = "none";
+  const flushRun = (a: string) => {
+    const base = a.charCodeAt(0);
+    while (run >= 26) {
+      out += String.fromCharCode(base + 25);
+      run -= 26;
+    }
+    if (run) out += String.fromCharCode(base + run - 1);
+    run = 0;
+  };
 
   for (let i = 0; i <= s; i++) {
     let n = i === s ? NUMBER_EMPTY : grid[i];
     if (isNumberEdge(n)) n = fromNumberEdge(n);
 
-    if (runtype === "blank" && (i === s || n !== NUMBER_EMPTY)) {
-      while (run >= 26) {
-        out += "z";
-        run -= 26;
-      }
-      if (run) out += String.fromCharCode("a".charCodeAt(0) + run - 1);
-      run = 0;
-    }
-    if (runtype === "wall" && (i === s || !isObstacle(n))) {
-      while (run >= 26) {
-        out += "Z";
-        run -= 26;
-      }
-      if (run) out += String.fromCharCode("A".charCodeAt(0) + run - 1);
-      run = 0;
-    }
-
+    if (runtype === "blank" && (i === s || n !== NUMBER_EMPTY)) flushRun("a");
+    if (runtype === "wall" && (i === s || !isObstacle(n))) flushRun("A");
     if (i === s) break;
 
     if (n >= 0) {
@@ -464,7 +452,11 @@ export function encodeGridDesc(grid: Int16Array, s: number): string {
   return out;
 }
 
-const isDigit = (c: string) => c >= "0" && c <= "9";
+/** A desc's tokens: a clue number, a blank run or a wall run. Anything else
+ * (the `_` between two numbers) is skipped. */
+const DESC_TOKEN = /(\d+)|([a-z])|([A-Z])/g;
+/** A run letter's length: `a`/`A` is 1, `z`/`Z` is 26. */
+const runLength = (c: string) => c.toLowerCase().charCodeAt(0) - "a".charCodeAt(0) + 1;
 
 /** `null` when valid, else the rejection reason (upstream `validate_desc`). */
 export function validateAscentDesc(params: AscentParams, desc: string): string | null {
@@ -472,23 +464,12 @@ export function validateAscentDesc(params: AscentParams, desc: string): string |
   const s = w * h;
   let last = 0;
   let i = 0;
-  let p = 0;
-  while (p < desc.length) {
-    const c = desc[p];
-    if (isDigit(c)) {
-      let numStr = "";
-      while (p < desc.length && isDigit(desc[p])) numStr += desc[p++];
-      const n = Number.parseInt(numStr, 10);
-      if (n > last) last = n;
-      ++i;
-    } else if (c >= "a" && c <= "z") {
-      i += c.charCodeAt(0) - "a".charCodeAt(0) + 1;
-      p++;
-    } else if (c >= "A" && c <= "Z") {
-      i += c.charCodeAt(0) - "A".charCodeAt(0) + 1;
-      p++;
+  for (const [, num, blank, wall] of desc.matchAll(DESC_TOKEN)) {
+    if (num) {
+      last = Math.max(last, Number.parseInt(num, 10));
+      i++;
     } else {
-      p++;
+      i += runLength(blank || wall);
     }
   }
 
@@ -509,58 +490,34 @@ export function newAscentState(params: AscentParams, desc: string): AscentState 
   let last = w * h - 1;
 
   let i = 0;
-  let p = 0;
-  while (p < desc.length) {
-    const c = desc[p];
-    if (isDigit(c)) {
-      let numStr = "";
-      while (p < desc.length && isDigit(desc[p])) numStr += desc[p++];
-      grid[i] = Number.parseInt(numStr, 10) - 1;
-      immutable[i] = 1;
-      ++i;
-    } else if (c >= "a" && c <= "z") {
-      i += c.charCodeAt(0) - "a".charCodeAt(0) + 1;
-      p++;
-    } else if (c >= "A" && c <= "Z") {
-      const walls = c.charCodeAt(0) - "A".charCodeAt(0) + 1;
-      for (let j = i; j < walls + i; j++) {
-        grid[j] = NUMBER_WALL;
-        immutable[j] = 1;
-      }
+  for (const [, num, blank, wall] of desc.matchAll(DESC_TOKEN)) {
+    if (num) {
+      grid[i] = Number.parseInt(num, 10) - 1;
+      immutable[i++] = 1;
+    } else if (blank) {
+      i += runLength(blank);
+    } else {
+      const walls = runLength(wall);
+      grid.fill(NUMBER_WALL, i, i + walls);
+      immutable.fill(1, i, i + walls);
       last -= walls;
       i += walls;
-      p++;
-    } else {
-      p++;
     }
   }
 
+  /* Edges mode: a number on the border is an arrow clue, not a path cell. */
   if (mode === MODE_EDGES) {
-    for (let k = 0; k < w; k++) {
-      let j = k;
-      if (grid[j] >= 0) grid[j] = numberEdge(grid[j]);
-      j = k + w * (h - 1);
-      if (grid[j] >= 0) grid[j] = numberEdge(grid[j]);
-    }
-    for (let k = 1; k < h - 1; k++) {
-      let j = w * k;
-      if (grid[j] >= 0) grid[j] = numberEdge(grid[j]);
-      j = w * k + (w - 1);
-      if (grid[j] >= 0) grid[j] = numberEdge(grid[j]);
-    }
     for (let k = 0; k < w * h; k++) {
-      if (isNumberEdge(grid[k])) last--;
+      if (isBorderCell(k, w, h) && grid[k] >= 0) {
+        grid[k] = numberEdge(grid[k]);
+        last--;
+      }
     }
   }
 
   /* Promote border walls to boundary walls, then flood the promotion. */
-  for (let k = 0; k < w; k++) {
-    if (grid[k] === NUMBER_WALL) grid[k] = NUMBER_BOUND;
-    if (grid[w * h - (k + 1)] === NUMBER_WALL) grid[w * h - (k + 1)] = NUMBER_BOUND;
-  }
-  for (let k = 0; k < h; k++) {
-    if (grid[k * w] === NUMBER_WALL) grid[k * w] = NUMBER_BOUND;
-    if (grid[k * w + (w - 1)] === NUMBER_WALL) grid[k * w + (w - 1)] = NUMBER_BOUND;
+  for (let k = 0; k < w * h; k++) {
+    if (isBorderCell(k, w, h) && grid[k] === NUMBER_WALL) grid[k] = NUMBER_BOUND;
   }
 
   let promoted: number;
@@ -573,11 +530,9 @@ export function newAscentState(params: AscentParams, desc: string): AscentState 
       if (
         (x < w - 1 && grid[k + 1] === NUMBER_BOUND) ||
         (x > 0 && grid[k - 1] === NUMBER_BOUND) ||
-        // Upstream compares `y < w - 1` (not `h - 1`) here; reproduced
-        // verbatim as byte-match surface. When h < w this can index one
-        // row past the grid: C reads heap garbage (≠ NUMBER_BOUND in
-        // practice), and an out-of-range Int16Array read is `undefined`
-        // (also ≠ NUMBER_BOUND), so the term is false either way.
+        // Upstream compares `y < w - 1`, not `h - 1`; kept as written. When
+        // h < w the last row reads past the grid: `undefined` here, heap
+        // garbage in C, and never NUMBER_BOUND in either.
         (y < w - 1 && grid[k + w] === NUMBER_BOUND) ||
         (y > 0 && grid[k - w] === NUMBER_BOUND)
       ) {
@@ -601,15 +556,5 @@ export function newAscentState(params: AscentParams, desc: string): AscentState 
 }
 
 export function cloneAscentState(s: AscentState): AscentState {
-  return {
-    w: s.w,
-    h: s.h,
-    mode: s.mode,
-    last: s.last,
-    grid: s.grid.slice(),
-    immutable: s.immutable, // shared by reference — never mutated
-    path: s.path ? s.path.slice() : null,
-    completed: s.completed,
-    cheated: s.cheated,
-  };
+  return { ...s, grid: s.grid.slice(), path: s.path?.slice() ?? null };
 }

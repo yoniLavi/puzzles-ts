@@ -1,17 +1,16 @@
 /**
- * Ascent solver — a four-tier deductive fixpoint (upstream `ascent_solve`).
+ * Ascent solver: a four-tier deductive fixpoint (upstream `ascent_solve`).
  *
  * **No tier guesses or backtracks.** Easy runs single-position + simple
  * proximity; Normal adds the path-segment reasoning; Tricky adds the simple
  * single-number rule; Hard adds the full single-number rule and the overlap
- * rule (also enabled at any difficulty in Edges mode). Because every rule is
- * a pure deduction, Ascent already satisfies the guess-free-generation policy
- * at all four tiers — there is no "Unreasonable" tier to add.
+ * rule (also enabled at any difficulty in Edges mode). Every rule is a pure
+ * deduction, so all four tiers are guess-free and there is no "Unreasonable"
+ * tier to add.
  *
- * The solver and the generator are two projections of this one engine: the
- * generator removes a clue only if the graded solver still solves the result,
- * which is what lets one byte-match differential validate solver, generator
- * and codec together (design D3/D7).
+ * The generator removes a clue only if the graded solver still solves the
+ * result, which is what lets one byte-match differential validate solver,
+ * generator and codec together.
  */
 
 import {
@@ -29,6 +28,7 @@ import {
   DIFF_TRICKY,
   FLAG_COMPLETE,
   FLAG_ENDPOINT,
+  findDirection,
   fromNumberEdge,
   isEdgeValid,
   isHexagonal,
@@ -130,8 +130,8 @@ function solverSingleNumber(sc: SolverScratch, simple: boolean): number {
     if (found >= 0) {
       if (
         simple &&
-        (found === 0 || sc.positions[found - 1] === -1) &&
-        (found === sc.end || sc.positions[found + 1] === -1)
+        (found === 0 || sc.positions[found - 1] === CELL_NONE) &&
+        (found === sc.end || sc.positions[found + 1] === CELL_NONE)
       ) {
         continue;
       }
@@ -211,13 +211,6 @@ function solverProximityFull(sc: SolverScratch): number {
   return ret;
 }
 
-function findDir(i1: number, i2: number, w: number, movement: AscentMovement): number {
-  for (let dir = 0; dir < movement.dircount; dir++) {
-    if (i2 - i1 === movement.dirs[dir].dy * w + movement.dirs[dir].dx) return dir;
-  }
-  return -1;
-}
-
 function solverInitializePath(sc: SolverScratch): void {
   const { w, h, movement } = sc;
   for (let y = 0; y < h; y++) {
@@ -254,11 +247,11 @@ function solverUpdatePath(sc: SolverScratch): number {
   let i = sc.positions[1];
   ib = sc.positions[0];
   if (i !== CELL_NONE && ib !== CELL_NONE && !(sc.path[ib] & FLAG_COMPLETE)) {
-    sc.path[ib] = (1 << findDir(ib, i, w, movement)) | FLAG_ENDPOINT;
+    sc.path[ib] = (1 << findDirection(ib, i, w, movement)) | FLAG_ENDPOINT;
   }
   i = sc.positions[end - 1];
   if (i !== CELL_NONE && ic !== CELL_NONE && !(sc.path[ic] & FLAG_COMPLETE)) {
-    sc.path[ic] = (1 << findDir(ic, i, w, movement)) | FLAG_ENDPOINT;
+    sc.path[ic] = (1 << findDirection(ic, i, w, movement)) | FLAG_ENDPOINT;
   }
 
   /* Middle numbers: set the path when both neighbors are known. */
@@ -268,8 +261,8 @@ function solverUpdatePath(sc: SolverScratch): number {
     const pib = sc.positions[n - 1];
     const pic = sc.positions[n + 1];
     if (pib === CELL_NONE || pic === CELL_NONE) continue;
-    sc.path[i] = 1 << findDir(i, pib, w, movement);
-    sc.path[i] |= 1 << findDir(i, pic, w, movement);
+    sc.path[i] = 1 << findDirection(i, pib, w, movement);
+    sc.path[i] |= 1 << findDirection(i, pic, w, movement);
   }
 
   for (let idx = 0; idx < s; idx++) {
@@ -459,13 +452,8 @@ function solverEdges(sc: SolverScratch): void {
   }
 }
 
-/** Run the tiered deductive fixpoint over `puzzle` into `sc.grid`. */
-export function ascentSolve(
-  puzzle: Int16Array,
-  diff: number,
-  sc: SolverScratch,
-  firings?: FiringTally,
-): void {
+/** Load `puzzle` into the scratch, seed every candidate, and set up the path. */
+function solverStart(puzzle: Int16Array, sc: SolverScratch): void {
   const s = sc.w * sc.h;
 
   if (puzzle !== sc.grid) sc.grid.set(puzzle);
@@ -486,46 +474,48 @@ export function ascentSolve(
 
   solverEdges(sc);
   solverInitializePath(sc);
-  /* NB: upstream deliberately does NOT reset `foundEndpoints` here — it is
-   * initialized false in the scratch constructor and then *persists* across
-   * every `ascentSolve` on the same scratch (the generator reuses one). Once
-   * true it stays true, so `solverUpdatePath`'s "mark all middles" step and
-   * `solverRemoveEndpoints` stop firing on every board after the first. That
-   * quirk weakens the solver and is baked into which boards the generator
-   * ships, so reproducing it is byte-match critical (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3). */
+  /* Upstream never resets `foundEndpoints`, so on a reused scratch it stays set
+   * from an earlier board, and `solverUpdatePath`'s endpoint clearing and
+   * `solverRemoveEndpoints` stop firing. The generator reuses one scratch, so
+   * this weakening decides which boards ship, and the differential holds it. */
   solverRemoveBlocks(sc);
+}
 
-  const ladder = ascentLadder(sc, diff);
+/** Run the tiered deductive fixpoint over `puzzle` into `sc.grid`. */
+export function ascentSolve(
+  puzzle: Int16Array,
+  diff: number,
+  sc: SolverScratch,
+  firings?: FiringTally,
+): void {
+  solverStart(puzzle, sc);
   runDeductionFixpoint({
-    techniques: ladder,
+    techniques: ascentLadder(sc, diff),
     firings,
-    // The gates were mid-ladder `break`s; the runner skips over-cap rungs
-    // instead, which agrees because this ladder is tier-sorted.
+    // The ladder is tier-sorted, so skipping over-cap rungs matches the legacy
+    // ladder's `break`s.
     maxTier: diff,
   });
 }
 
 /**
- * The nine rungs, easiest first. Ascent returns no grade — `diff` is purely a
- * cap — so the runner's grading is unused here and only its loop and cap are.
+ * The rungs, easiest first. Ascent returns no grade (`diff` is purely a cap),
+ * so only the runner's loop and cap are used.
  *
- * **Two rungs cannot be expressed as a tier and guard themselves instead**,
- * which is the convention `re-derive-the-fixpoint-no-gos` established rather
- * than a new option on the runner:
+ * **Two rungs cannot be expressed as a tier and guard themselves instead:**
  *
  *  - **`overlap` runs at Hard *or* in Edges mode at any difficulty.** Declaring
  *    it `tier: DIFF_HARD` would take it away from an Edges board at Normal,
  *    where upstream runs it. It is declared at the tier of the block it sits in
  *    and tests the disjunction itself.
- *  - **`single-number-simple` runs at Tricky and *not* at Hard** — availability
- *    that is **non-monotone in the cap**, which no `tier` can say, because
- *    `maxTier` includes every rung at or below it by construction. Declared at
- *    Tricky so a lower cap skips it, and self-guarded against Hard, where its
- *    thorough sibling replaces it.
+ *  - **`single-number-simple` runs at Tricky and *not* at Hard**: availability
+ *    that is non-monotone in the cap, which no `tier` can say, because
+ *    `maxTier` includes every rung at or below it. Declared at Tricky so a
+ *    lower cap skips it, and self-guarded against Hard, where its thorough
+ *    sibling replaces it.
  *
- * The second is the sharpest example in the collection of why the runner has no
- * `when` predicate: a predicate would be indistinguishable from returning `0`
- * and would exist only to document.
+ * A `when` predicate on the runner would be indistinguishable from returning
+ * `0`, which is why the runner has none.
  */
 function ascentLadder(sc: SolverScratch, diff: number): DeductionTechnique[] {
   return [
@@ -554,37 +544,14 @@ function ascentLadder(sc: SolverScratch, diff: number): DeductionTechnique[] {
   ];
 }
 
-/**
- * The hand-written ladder this solver ran until
- * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
- * `ascent-ladder.test.ts` proves the adoption against.
- */
+/** The hand-written ladder `ascentSolve` replaced, kept as the oracle
+ * `ascent-ladder.test.ts` checks it against. */
 export function ascentSolveLegacy(
   puzzle: Int16Array,
   diff: number,
   sc: SolverScratch,
 ): void {
-  const s = sc.w * sc.h;
-
-  if (puzzle !== sc.grid) sc.grid.set(puzzle);
-  updatePositions(sc.positions, sc.grid, s);
-  sc.marks.fill(0, 0, s * s);
-
-  for (let n = 0; n < s; n++) {
-    const i = sc.positions[n];
-    if (i >= 0) {
-      sc.marks[i * s + n] = 1;
-      continue;
-    }
-    for (let ii = 0; ii < s; ii++) {
-      if (sc.grid[ii] === NUMBER_EMPTY) sc.marks[ii * s + n] = 1;
-    }
-  }
-
-  solverEdges(sc);
-  solverInitializePath(sc);
-  solverRemoveBlocks(sc);
-
+  solverStart(puzzle, sc);
   while (true) {
     if (solverSinglePosition(sc)) continue;
     if (solverProximitySimple(sc)) continue;

@@ -1,5 +1,5 @@
 /**
- * Tier-2.5 render-scenario tests for Ascent (docs/games/rendering.md § "The tile cache and the diff key", add-render-snapshot-harness).
+ * Tier-2.5 render-scenario tests for Ascent (docs/games/rendering.md § "The tile cache and the diff key").
  *
  * Reaches a fresh board for the Rectangle, Hexagon and Edges modes through a
  * real `Midend`, asserts the ops that matter (background fill, square borders,
@@ -61,8 +61,8 @@ describe("ascent render", () => {
       id: id(HEXAGON, "render-hex"),
     });
     const ops = recording.ops;
-    // A hexagon cell outline is a 6-vertex COL_BORDER polygon (design F7) —
-    // not the 4-vertex square the offset-square rendering would emit.
+    // A hexagon cell outline is a 6-vertex COL_BORDER polygon, not the
+    // 4-vertex square an offset-square rendering would emit.
     expect(
       ops.some(
         (o) => o.op === "polygon" && o.outline === COL_BORDER && o.points.length === 6,

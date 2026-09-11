@@ -1,11 +1,10 @@
 /**
- * Ascent rendering — imperative `redraw` (upstream `game_redraw`).
+ * Ascent rendering: imperative `redraw` (upstream `game_redraw`).
  *
- * Display geometry is not byte-parity scope (docs/games/rendering.md § "The palette: three layers, meaning first"): the goal is
- * to match the look with clean code. The per-tile diff cache mirrors
- * upstream's `ds` arrays, with the keyboard cursor folded into the cell
- * repaint instead of a blitter (docs/games/rendering.md § "Overlay sidecars"). Moves are instant
- * (`animLength = 0`); the only motion is the completion flash.
+ * Display code is not byte-parity scope: the aim is upstream's look with clean
+ * code. The per-tile diff cache mirrors upstream's `ds` arrays, with the
+ * keyboard cursor folded into the cell repaint instead of a blitter (docs/games/rendering.md § "Overlay sidecars").
+ * Moves are instant; the only motion is the completion flash.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -13,10 +12,11 @@ import { BLUE, YELLOW_WASH } from "../../engine/color/colors.ts";
 import { CURSOR, ERROR, INK, playerEntryColor } from "../../engine/color/palette.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Color, Point } from "../../engine/types.ts";
+import type { Color, DrawTextOptions, Point } from "../../engine/types.ts";
 import {
   type AscentMistake,
   type AscentState,
+  CELL_MULTIPLE,
   FLAG_COMPLETE,
   FLAG_ERROR,
   FLAG_USER,
@@ -27,12 +27,12 @@ import {
   isNear,
   isNumberEdge,
   MODE_EDGES,
+  MODE_HEXAGON,
   MODE_HONEYCOMB,
   movementForMode,
   NUMBER_BOUND,
   NUMBER_CLEAR,
   NUMBER_EMPTY,
-  NUMBER_FLAG_MASK,
   NUMBER_FLAG_MOVE,
   NUMBER_MOVE,
   NUMBER_WALL,
@@ -59,8 +59,8 @@ export const COL_CURSOR = 7;
 export const COL_ARROW = 8;
 export const NCOLORS = 9;
 
-const FLASH_FRAME = 0.03;
-const FLASH_SIZE = 4;
+export const FLASH_FRAME = 0.03;
+export const FLASH_SIZE = 4;
 const ERROR_MARGIN = 0.1;
 
 export interface AscentDrawState {
@@ -132,18 +132,15 @@ export function newAscentDrawState(state: AscentState): AscentDrawState {
   };
 }
 
-// --- sizing --------------------------------------------------------
-
-// --- hexagonal geometry (deliberate divergence — see design F7) -----
+// --- geometry and sizing -------------------------------------------
 //
-// Hexagon/Honeycomb are drawn as *actual* pointy-top hexagons rather than
-// upstream's offset squares. The mechanics are already hexagonal (the
-// movement table gives 6 neighbors), so this is faithful to the rules and a
-// clearer picture. With circumradius R = ts/√3 and row pitch ts·√3/2, the
-// horizontal layout is identical to the square version (so `computeOffsets`
-// and the width are unchanged) and the six movement directions land exactly
-// on the six hexagon neighbors; only the vertical pitch, the cell outline
-// and pixel→cell hit-testing differ.
+// Hexagon/Honeycomb are drawn as real pointy-top hexagons rather than
+// upstream's offset squares: the movement table already gives six neighbors,
+// so this is faithful to the rules and a clearer picture. With circumradius
+// R = ts/√3 and row pitch ts·√3/2 the horizontal layout matches the square one
+// (so `computeOffsetX` and the width are unchanged), and the six movement
+// directions land on the six hexagon neighbors; only the vertical pitch, the
+// cell outline and pixel→cell hit-testing differ.
 
 /** Hexagon circumradius (center → vertex) for a given tile width. */
 export function hexR(tileSize: number): number {
@@ -159,7 +156,7 @@ function hexPixelHeight(h: number, tileSize: number): number {
 }
 
 /** Upstream `game_compute_size` under `NARROW_BORDERS` (BORDER = 0), with
- * the hexagonal modes sized for real hexagons (design F7). */
+ * the hexagonal modes sized for real hexagons. */
 export function ascentComputeSize(
   w: number,
   h: number,
@@ -217,29 +214,23 @@ function hexVertices(cx: number, cy: number, tileSize: number): Point[] {
   ];
 }
 
-/** Upstream `game_set_offsets` under `NARROW_BORDERS` (BORDER = 0). */
-function computeOffsets(
-  h: number,
-  mode: number,
-  tileSize: number,
-): { offsetX: number; offsetY: number } {
+/** Upstream `game_set_offsets` under `NARROW_BORDERS` (BORDER = 0), where only
+ * the hexagonal modes shift, and only horizontally. */
+function computeOffsetX(h: number, mode: number, tileSize: number): number {
   let offsetX = 0;
-  const offsetY = 0;
   if (mode === MODE_HONEYCOMB) {
     offsetX -= (Math.trunc(h / 2) - 1) * tileSize;
     if (h & 1) offsetX -= tileSize;
-  } else if (mode !== MODE_EDGES && isHexagonal(mode)) {
+  } else if (mode === MODE_HEXAGON) {
     offsetX -= Math.trunc(((h - 1) * tileSize) / 4);
   }
-  return { offsetX, offsetY };
+  return offsetX;
 }
 
 export function setAscentTileSize(ds: AscentDrawState, tileSize: number): void {
   ds.tileSize = tileSize;
   ds.thickness = Math.max(2, tileSize / 7);
-  const { offsetX, offsetY } = computeOffsets(ds.h, ds.mode, tileSize);
-  ds.offsetX = offsetX;
-  ds.offsetY = offsetY;
+  ds.offsetX = computeOffsetX(ds.h, ds.mode, tileSize);
   const size = ascentComputeSize(ds.userW, ds.userH, ds.mode, tileSize);
   ds.pxW = size.w;
   ds.pxH = size.h;
@@ -279,6 +270,23 @@ function thickLine(
     color,
     Math.max(1, Math.round(thickness)),
   );
+}
+
+const textStyle = (size: number): DrawTextOptions => ({
+  align: "center",
+  baseline: "mathematical",
+  fontType: "variable",
+  size,
+});
+
+/** The corners of a `size`-square with top-left `(x, y)`, clockwise. */
+function squareCorners(x: number, y: number, size: number): Point[] {
+  return [
+    { x, y },
+    { x: x + size, y },
+    { x: x + size, y: y + size },
+    { x, y: y + size },
+  ];
 }
 
 const HORIZONTAL_ARROW = [0.45, 0, 0.35, 0.45, -0.45, 0.45, -0.45, -0.45, 0.35, -0.45];
@@ -410,15 +418,16 @@ export function redrawAscent(
     let pathline = state.path ? state.path[i] : 0;
     let lines = 0;
     const n = state.grid[i];
+    const single = n >= 0 && positions[n] !== CELL_MULTIPLE;
 
-    if (n > 0 && positions[n] !== -2 && positions[n - 1] >= 0) {
+    if (single && n > 0 && positions[n - 1] >= 0) {
       const i2 = positions[n - 1];
       if (isNear(i, i2, w, state.mode))
         pathline |= 1 << findDirection(i, i2, w, movement);
       else pathline |= FLAG_ERROR;
       lines++;
     }
-    if (n >= 0 && n < state.last && positions[n] !== -2 && positions[n + 1] >= 0) {
+    if (single && n < state.last && positions[n + 1] >= 0) {
       const i2 = positions[n + 1];
       if (isNear(i, i2, w, state.mode))
         pathline |= 1 << findDirection(i, i2, w, movement);
@@ -504,6 +513,7 @@ export function redrawAscent(
     const { cx, cy } = cellCenter(i, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
     const tx1 = Math.round(cx);
     const ty1 = Math.round(cy);
+    const center = { x: tx1, y: ty1 };
     /* Top-left of a tile-sized box centered on the cell — used for the
      * square outline (non-hex) and for centered decorations. */
     const tx = Math.round(cx - tilesize / 2);
@@ -532,7 +542,7 @@ export function redrawAscent(
     if (ds.colors[i] === color) continue;
 
     const fn = displayNumber(i, ui, state);
-    sn = fn < 0 ? fn : fn & ~NUMBER_FLAG_MASK;
+    sn = fn < 0 ? fn : fn & ~NUMBER_FLAG_MOVE;
 
     const fillColor = isNumberEdge(sn) ? COL_MIDLIGHT : color;
     if (hex) {
@@ -561,7 +571,7 @@ export function redrawAscent(
     if (ui.typingCell !== i) {
       const linecolor = ds.path[i] & FLAG_USER ? COL_LINE : COL_HIGHLIGHT;
 
-      if (!isHexagonal(state.mode)) {
+      if (!hex) {
         for (let dy = -1; dy <= 1; dy += 2) {
           const i2 = i + w * dy;
           if (i2 < 0 || i2 >= w * h) continue;
@@ -587,31 +597,16 @@ export function redrawAscent(
       /* Circle on the beginning/end of the path. */
       if (
         (sn === 0 || sn === state.last) &&
-        (state.immutable[i] || positions[sn] !== -2)
+        (state.immutable[i] || positions[sn] !== CELL_MULTIPLE)
       ) {
         if (fn & NUMBER_FLAG_MOVE) {
-          dr.drawCircle({ x: tx1, y: ty1 }, tilesize * 0.4, COL_LOWLIGHT, COL_LOWLIGHT);
-          dr.drawCircle(
-            { x: tx1, y: ty1 },
-            tilesize * 0.3,
-            COL_HIGHLIGHT,
-            COL_HIGHLIGHT,
-          );
+          dr.drawCircle(center, tilesize * 0.4, COL_LOWLIGHT, COL_LOWLIGHT);
+          dr.drawCircle(center, tilesize * 0.3, COL_HIGHLIGHT, COL_HIGHLIGHT);
         } else {
-          dr.drawCircle(
-            { x: tx1, y: ty1 },
-            Math.trunc(tilesize / 3),
-            COL_HIGHLIGHT,
-            COL_HIGHLIGHT,
-          );
+          dr.drawCircle(center, Math.trunc(tilesize / 3), COL_HIGHLIGHT, COL_HIGHLIGHT);
         }
       } else if (ds.path[i] & ~FLAG_COMPLETE) {
-        dr.drawCircle(
-          { x: tx1, y: ty1 },
-          Math.trunc(ds.thickness / 2),
-          linecolor,
-          linecolor,
-        );
+        dr.drawCircle(center, Math.trunc(ds.thickness / 2), linecolor, linecolor);
       }
 
       /* Path lines to neighbors. In hex modes draw to the shared-edge
@@ -642,36 +637,26 @@ export function redrawAscent(
 
     /* Cell border. */
     if (!isNumberEdge(sn)) {
-      if (hex) {
-        dr.drawPolygon(hexVertices(cx, cy, tilesize), -1, COL_BORDER);
-      } else {
-        dr.drawPolygon(
-          [
-            { x: tx, y: ty },
-            { x: tx + tilesize, y: ty },
-            { x: tx + tilesize, y: ty + tilesize },
-            { x: tx, y: ty + tilesize },
-          ],
-          -1,
-          COL_BORDER,
-        );
-      }
+      const outline = hex
+        ? hexVertices(cx, cy, tilesize)
+        : squareCorners(tx, ty, tilesize);
+      dr.drawPolygon(outline, -1, COL_BORDER);
     }
 
     /* Light circle on possible endpoints. */
     if (state.grid[i] === NUMBER_EMPTY && (sn === 0 || sn === state.last)) {
-      dr.drawCircle({ x: tx1, y: ty1 }, Math.trunc(tilesize / 3), color, COL_LOWLIGHT);
+      dr.drawCircle(center, Math.trunc(tilesize / 3), color, COL_LOWLIGHT);
     }
 
     /* Background circle over lines so numbers stay readable. */
     if (sn > 0 && sn < state.last && state.path && state.path[i] & ~FLAG_COMPLETE) {
-      dr.drawCircle({ x: tx1, y: ty1 }, Math.trunc(tilesize / 3), color, color);
+      dr.drawCircle(center, Math.trunc(tilesize / 3), color, color);
       if (fn > 0 && fn & NUMBER_FLAG_MOVE)
-        dr.drawCircle({ x: tx1, y: ty1 }, tilesize * 0.22, COL_LOWLIGHT, COL_LOWLIGHT);
+        dr.drawCircle(center, tilesize * 0.22, COL_LOWLIGHT, COL_LOWLIGHT);
     } else if (sn > 0 && sn < state.last && fn & NUMBER_FLAG_MOVE) {
-      dr.drawCircle({ x: tx1, y: ty1 }, tilesize * 0.28, COL_LOWLIGHT, COL_LOWLIGHT);
+      dr.drawCircle(center, tilesize * 0.28, COL_LOWLIGHT, COL_LOWLIGHT);
     } else if (sn === NUMBER_MOVE) {
-      dr.drawCircle({ x: tx1, y: ty1 }, tilesize * 0.22, COL_LOWLIGHT, COL_LOWLIGHT);
+      dr.drawCircle(center, tilesize * 0.22, COL_LOWLIGHT, COL_LOWLIGHT);
     }
 
     if (sn === NUMBER_CLEAR) {
@@ -699,13 +684,8 @@ export function redrawAscent(
     /* Draw the number / edge arrow / candidate hints. */
     if (sn >= 0) {
       dr.drawText(
-        { x: tx1, y: ty1 },
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: Math.trunc(tilesize / 2),
-        },
+        center,
+        textStyle(Math.trunc(tilesize / 2)),
         state.immutable[i]
           ? COL_IMMUTABLE
           : state.grid[i] === NUMBER_EMPTY && ui.typingCell !== i
@@ -730,13 +710,8 @@ export function redrawAscent(
       const error = i2 >= 0 && !isEdgeValid(i, i2, w, h);
       drawArrow(dr, i, w, h, tx1, ty1, COL_ARROW, COL_BORDER, tilesize);
       dr.drawText(
-        { x: tx1, y: ty1 },
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: Math.trunc(tilesize / 2),
-        },
+        center,
+        textStyle(Math.trunc(tilesize / 2)),
         error ? COL_ERROR : i2 >= 0 ? COL_LOWLIGHT : COL_BORDER,
         String(fromNumberEdge(sn) + 1),
       );
@@ -744,24 +719,14 @@ export function redrawAscent(
       if (ui.prevhints[i] >= 0)
         dr.drawText(
           { x: tx1 - Math.trunc(tilesize / 4), y: ty1 - Math.trunc(tilesize / 4) },
-          {
-            align: "center",
-            baseline: "mathematical",
-            fontType: "variable",
-            size: Math.trunc(tilesize / 3),
-          },
+          textStyle(Math.trunc(tilesize / 3)),
           COL_BORDER,
           String(ui.prevhints[i] + 1),
         );
       if (ui.nexthints[i] >= 0)
         dr.drawText(
           { x: tx1 + Math.trunc(tilesize / 4), y: ty1 + Math.trunc(tilesize / 4) },
-          {
-            align: "center",
-            baseline: "mathematical",
-            fontType: "variable",
-            size: Math.trunc(tilesize / 3),
-          },
+          textStyle(Math.trunc(tilesize / 3)),
           COL_BORDER,
           String(ui.nexthints[i] + 1),
         );

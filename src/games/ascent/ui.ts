@@ -4,10 +4,9 @@
  * `game_changed_state`, `encode_ui`/`decode_ui`).
  *
  * The ephemeral entry state (held number, typing buffer, drag anchor,
- * keyboard cursor, candidate hints) lives here on the `Ui`, never on the
- * immutable game state — mirroring upstream. This is the most intricate
- * surface of the port: three number-entry methods plus free-form path
- * drawing plus the Edges arrow drag, all reduced to the single-fragment
+ * keyboard cursor, candidate hints) lives on the `Ui`, never on the game
+ * state, as upstream has it. Three number-entry methods, free-form path
+ * drawing and the Edges arrow drag all reduce to the single-fragment
  * `AscentMove` union.
  */
 
@@ -68,14 +67,10 @@ export const TARGET_SHOW = 0x1;
 export const TARGET_CONNECTED = 0x2;
 
 /** Whether the cursor is shown lives on `ui.cursor`, like every other game's.
- * What Ascent keeps beyond that is *which device* revealed it: a mouse hover
- * and a keyboard cursor are drawn differently, and a player can see the
- * difference — so `cursorFromKeyboard` is the game's own verb over the shared
- * noun. These two read the pair back as the states the code reasons in.
- *
- * The name and the polarity are the collection's, not Ascent's: eleven
- * note-taking games carry the same flag to decide whether an entry keeps the
- * highlight. One concept, one spelling, one direction. */
+ * Ascent also keeps *which device* revealed it, because a mouse hover and a
+ * keyboard cursor are drawn differently. `cursorFromKeyboard` is the
+ * collection's name and polarity for that flag, shared with the note-taking
+ * games; these two read the pair back as the states the code reasons in. */
 export const keyboardCursor = (ui: AscentUi): boolean =>
   ui.cursor.visible && ui.cursorFromKeyboard;
 export const mouseCursor = (ui: AscentUi): boolean =>
@@ -105,9 +100,8 @@ export interface AscentUi {
 
   cursor: GridCursor;
   /** Whether the visible cursor is a keyboard cursor rather than a mouse
-   * hover — see {@link keyboardCursor} / {@link mouseCursor}. Only ever read
-   * alongside `cursor.visible`, and only ever written by
-   * {@link revealCursor}, which is the sole route to `visible = true`. */
+   * hover. Read only alongside `cursor.visible`, and written only by
+   * {@link revealCursor}, the sole route to `visible = true`. */
   cursorFromKeyboard: boolean;
   typingCell: number;
   typingNumber: number;
@@ -141,9 +135,6 @@ export function newAscentUi(state: AscentState): AscentUi {
     nexthints: new Int32Array(s),
     s,
     cursor: newCursor(),
-    // Inert while `cursor.visible` is false, which it is here; `false` matches
-    // the other eleven games' initial value rather than the exact inverse of
-    // the old one, and no reader can tell the difference.
     cursorFromKeyboard: false,
     typingCell: CELL_NONE,
     typingNumber: 0,
@@ -247,7 +238,7 @@ function uiBacktrack(ui: AscentUi, state: AscentState): void {
     const i = ui.held;
     const path = state.path && i >= 0 ? state.path[i] : 0;
 
-    if (path && state.grid[i] === CELL_NONE) {
+    if (path && state.grid[i] === NUMBER_EMPTY) {
       const movement = movementForMode(state.mode);
       const w = state.w;
       n = 0;
@@ -349,8 +340,6 @@ export function validatePathMove(i: number, state: AscentState, ui: AscentUi): b
   return true;
 }
 
-/** Handle a click/drag at grid cell (gx,gy), mutating `ui` and returning a
- * move fragment or `null` (upstream `ascent_mouse_click`). */
 /**
  * The two candidate numbers a right-click cycles cell `i` through, or `null`
  * when the cell has no two-option ambiguity (so the normal clear applies).
@@ -419,6 +408,8 @@ function candidatesFor(
   return null;
 }
 
+/** Handle a click/drag at grid cell (gx,gy), mutating `ui` and returning a
+ * move fragment or `null` (upstream `ascent_mouse_click`). */
 function mouseClick(
   state: AscentState,
   ui: AscentUi,
@@ -433,9 +424,9 @@ function mouseClick(
   const n = state.grid[i];
   const start = ui.held >= 0 ? state.grid[ui.held] : NUMBER_EMPTY;
 
-  /* The LEFT_DRAG arm (upstream falls into it from the end of LEFT_BUTTON).
-   * It reads the outer `button`, so the LEFT_BUTTON-only sub-branches
-   * (`button === LEFT_BUTTON` / `LEFT_DRAG`) still gate correctly. */
+  /* The LEFT_DRAG arm, which upstream's LEFT_BUTTON case falls into. It reads
+   * the outer `button`, so its LEFT_BUTTON- and LEFT_DRAG-only branches still
+   * gate correctly. */
   const leftDragArm = (): AscentMove | null => {
     if (ui.doubleclickCell !== i) ui.doubleclickCell = -1;
 
@@ -807,18 +798,13 @@ export function interpretAscentMove(
   }
 
   /* **This arm needs a pointer button, not merely a pointer coordinate.**
-   * Keyboard events arrive at (0, 0), which is inside every grid, so a
-   * coordinate-only gate admits every key there is — `mouseClick` no-ops on a
-   * non-pointer button, but `finishTyping` is set and the tail below then
-   * answers `UI_UPDATE` to anything at all.
-   *
-   * That answer is a claim, and two things read it: the app derives its
+   * Keyboard events arrive at (0, 0), inside every grid, so a coordinate-only
+   * gate would set `finishTyping` for every key and the tail would answer
+   * `UI_UPDATE` to anything. That answer is read: the app derives its
    * bare-letter shortcuts from whether the game declined the key
-   * (`src/puzzle/shortcuts.ts`), and the collection's input guards ask their
-   * questions by the same value. Upstream can gate on coordinates alone because
-   * its midend claims `n`/`u`/`r`/`q` above the game; this frontend does the
-   * opposite, so declining honestly is load-bearing here in a way it is not
-   * in the C. */
+   * (`src/puzzle/shortcuts.ts`), and the input guards ask by the same value.
+   * Upstream can gate on coordinates alone because its midend claims
+   * `n`/`u`/`r`/`q` before the game sees them; this frontend does not. */
   const pointer = isMouseDown(button) || isMouseDrag(button) || isMouseRelease(button);
   if (pointer && gx >= 0 && gx < w && gy >= 0 && gy < h) {
     if (isMouseDrag(button) && ui.held >= 0 && !isNumberEdge(ui.select)) {
@@ -927,13 +913,10 @@ function decodeUiItem(
 export function decodeAscentUi(ui: AscentUi, encoding: string): void {
   if (!encoding || encoding[0] !== "P") return;
   const s = ui.s;
-  for (let i = 0; i < s; i++) {
-    ui.positions[i] = CELL_NONE;
-    ui.prevhints[i] = NUMBER_EMPTY;
-    ui.nexthints[i] = NUMBER_EMPTY;
-  }
-  let p = 1;
-  p = decodeUiItem(ui.positions, s, "H", encoding, p);
+  ui.positions.fill(CELL_NONE, 0, s);
+  ui.prevhints.fill(NUMBER_EMPTY, 0, s);
+  ui.nexthints.fill(NUMBER_EMPTY, 0, s);
+  let p = decodeUiItem(ui.positions, s, "H", encoding, 1);
   p = decodeUiItem(ui.prevhints, s, "N", encoding, p);
-  p = decodeUiItem(ui.nexthints, s, "\0", encoding, p);
+  decodeUiItem(ui.nexthints, s, "\0", encoding, p);
 }

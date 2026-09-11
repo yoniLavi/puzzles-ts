@@ -1,6 +1,6 @@
 /**
- * Ascent (Hidoku / Hidato) — native TS port. Implements the engine Game
- * interface. Port of `puzzles/unreleased/ascent.c` (© 2015 Lennard Sprong).
+ * Ascent (Hidoku / Hidato): the engine `Game` object. Port of upstream's
+ * unreleased `ascent.c` (© 2015 Lennard Sprong).
  */
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
@@ -10,24 +10,18 @@ import type {
   ParamConfigItem,
   PresetMenu,
   SolveResult,
-  UiUpdate,
 } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { ConfigValues } from "../../engine/types.ts";
 import { newAscentDesc } from "./generator.ts";
 import { executeAscentMove } from "./moves.ts";
 import {
   type AscentDrawState,
   ascentColors,
   ascentComputeSize,
+  FLASH_FRAME,
+  FLASH_SIZE,
   newAscentDrawState,
   redrawAscent,
   setAscentTileSize,
@@ -43,7 +37,6 @@ import {
   type AscentParams,
   type AscentState,
   checkCompletion,
-  cloneAscentState,
   DIFF_NORMAL,
   DIFFCOUNT,
   fromNumberEdge,
@@ -51,6 +44,7 @@ import {
   isNumberEdge,
   MODE_EDGES,
   MODE_HEXAGON,
+  MODE_HONEYCOMB,
   MODE_RECT,
   MODECOUNT,
   NUMBER_BOUND,
@@ -96,12 +90,12 @@ const MAIN_PRESETS: AscentParams[] = [
 ];
 
 const HONEYCOMB_PRESETS: AscentParams[] = [
-  mk(7, 6, 1, 3, false, false),
-  mk(7, 6, 2, 3, false, false),
-  mk(7, 6, 3, 3, false, false),
-  mk(10, 8, 1, 3, false, false),
-  mk(10, 8, 2, 3, false, false),
-  mk(10, 8, 3, 3, false, false),
+  mk(7, 6, 1, MODE_HONEYCOMB, false, false),
+  mk(7, 6, 2, MODE_HONEYCOMB, false, false),
+  mk(7, 6, 3, MODE_HONEYCOMB, false, false),
+  mk(10, 8, 1, MODE_HONEYCOMB, false, false),
+  mk(10, 8, 2, MODE_HONEYCOMB, false, false),
+  mk(10, 8, 3, MODE_HONEYCOMB, false, false),
 ];
 
 const HEXAGON_PRESETS: AscentParams[] = [
@@ -195,13 +189,7 @@ function decodeParams(s: string): AscentParams {
     p.diff = Math.max(p.diff, DIFF_NORMAL);
   }
 
-  if (s[i] === "S") {
-    p.symmetrical = true;
-    i++;
-  } else {
-    p.symmetrical = false;
-  }
-
+  p.symmetrical = s[i] === "S";
   return p;
 }
 
@@ -278,11 +266,10 @@ const paramConfig: ParamConfigItem<AscentParams>[] = [
 ];
 
 /** Ascent's difficulty contract (`engine/difficulty.ts`). `ascentSolve` reports
- * nothing itself — it deduces into `sc.grid` and the caller asks
- * `checkCompletion`, exactly as the generator's tier gate does — so there is no
- * "impossible" verdict to map. **The scratch is fresh per call**: its
- * `foundEndpoints` deliberately persists and permanently weakens the solver, and
- * reusing one is the defect `grade-difficulty-tiers-honestly` hit here first. */
+ * nothing itself: it deduces into `sc.grid` and the caller asks
+ * `checkCompletion`, as the generator's tier gate does, so there is no
+ * "impossible" verdict to map. **The scratch is fresh per call**, because its
+ * `foundEndpoints` persists and permanently weakens the solver. */
 const difficulty: DifficultyContract<AscentParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
@@ -373,9 +360,6 @@ function textFormat(state: AscentState): string | undefined {
 
 // --- flash ---------------------------------------------------------
 
-const FLASH_FRAME = 0.03;
-const FLASH_SIZE = 4;
-
 function flashLength(a: AscentState, b: AscentState): number {
   if (!a.completed && b.completed && !a.cheated && !b.cheated)
     return FLASH_FRAME * (b.w * b.h + FLASH_SIZE);
@@ -408,71 +392,29 @@ export const ascentGame: Game<
   paramConfig,
   prefs,
 
-  newDesc(p: AscentParams, rng: RandomState): { desc: string } {
-    return newAscentDesc(p, rng);
-  },
-  validateDesc(p: AscentParams, desc: string): string | null {
-    return validateAscentDesc(p, desc);
-  },
-  newState(p: AscentParams, desc: string): AscentState {
-    return newAscentState(p, desc);
-  },
-  newUi(state: AscentState): AscentUi {
-    return newAscentUi(state);
-  },
-  changedState(ui, oldState, newState): void {
-    changedState(ui, oldState, newState);
-  },
-  encodeUi(ui: AscentUi): string {
-    return encodeAscentUi(ui);
-  },
-  decodeUi(ui: AscentUi, encoded: string): void {
-    decodeAscentUi(ui, encoded);
-  },
+  newDesc: newAscentDesc,
+  validateDesc: validateAscentDesc,
+  newState: newAscentState,
+  newUi: newAscentUi,
+  changedState,
+  encodeUi: encodeAscentUi,
+  decodeUi: decodeAscentUi,
+  interpretMove: interpretAscentMove,
+  executeMove: executeAscentMove,
 
-  interpretMove(
-    s: AscentState,
-    ui: AscentUi,
-    ds: AscentDrawState,
-    p: Point,
-    button: number,
-  ): AscentMove | null | UiUpdate {
-    return interpretAscentMove(s, ui, ds, p, button);
-  },
-  executeMove(s: AscentState, m: AscentMove): AscentState {
-    return executeAscentMove(s, m);
-  },
-
-  solve(orig: AscentState): SolveResult<AscentMove> {
-    return solve(orig);
-  },
+  solve,
   findMistakes,
   difficulty,
   textFormat,
 
-  status(s: AscentState): GameStatus {
-    return s.completed ? "solved" : "ongoing";
-  },
+  status: (s) => (s.completed ? "solved" : "ongoing"),
 
-  colors(defaultBackground: Color): Color[] {
-    return ascentColors(defaultBackground);
-  },
-  computeSize(p: AscentParams, tileSize: number): Size {
-    return ascentComputeSize(p.w, p.h, p.mode, tileSize);
-  },
-  setTileSize(ds: AscentDrawState, tileSize: number): void {
-    setAscentTileSize(ds, tileSize);
-  },
-  newDrawState(s: AscentState): AscentDrawState {
-    return newAscentDrawState(s);
-  },
-  redraw(dr, ds, prev, s, dir, ui, animTime, flashTime, hint, mistakes): void {
-    redrawAscent(dr, ds, prev, s, dir, ui, animTime, flashTime, hint, mistakes);
-  },
+  colors: ascentColors,
+  computeSize: (p, tileSize) => ascentComputeSize(p.w, p.h, p.mode, tileSize),
+  setTileSize: setAscentTileSize,
+  newDrawState: newAscentDrawState,
+  redraw: redrawAscent,
   flashLength,
 };
-
-// `cloneAscentState` is exported for tests.
-export { cloneAscentState };
 
 registerGame(ascentGame);

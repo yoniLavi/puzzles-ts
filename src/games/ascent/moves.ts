@@ -44,6 +44,19 @@ function modifyPath(state: AscentState, add: boolean, i: number, i2: number): bo
   return true;
 }
 
+/** Remove every segment at `i`, from both of its ends. */
+function unlinkCell(state: AscentState, i: number): void {
+  const movement = movementForMode(state.mode);
+  const path = state.path;
+  if (!path) return;
+  for (let dir = 0; dir < movement.dircount; dir++) {
+    if (!(path[i] & (1 << dir))) continue;
+    const i2 = movement.dirs[dir].dy * state.w + movement.dirs[dir].dx + i;
+    modifyPath(state, false, i, i2);
+    modifyPath(state, false, i2, i);
+  }
+}
+
 /** Remove path segments between two placed numbers, and reduce any cell
  * with more than two segments (upstream `ascent_clean_path`). */
 function cleanPath(state: AscentState): void {
@@ -68,15 +81,7 @@ function cleanPath(state: AscentState): void {
     }
 
     /* If a number has more than two segments, unset all of them. */
-    if (countSegments(state, i) > 2) {
-      for (let dir = 0; dir < movement.dircount; dir++) {
-        if (path[i] & (1 << dir)) {
-          const i2 = movement.dirs[dir].dy * w + movement.dirs[dir].dx + i;
-          modifyPath(state, false, i, i2);
-          modifyPath(state, false, i2, i);
-        }
-      }
-    }
+    if (countSegments(state, i) > 2) unlinkCell(state, i);
   }
 }
 
@@ -154,14 +159,7 @@ export function executeAscentMove(state: AscentState, move: AscentMove): AscentS
       if (state.immutable[i]) throw new Error("ascent: clear on immutable cell");
       ret.grid[i] = NUMBER_EMPTY;
       if (ret.path?.[i]) {
-        const movement = movementForMode(ret.mode);
-        for (let dir = 0; dir < movement.dircount; dir++) {
-          if (ret.path[i] & (1 << dir)) {
-            const i2 = movement.dirs[dir].dy * w + movement.dirs[dir].dx + i;
-            modifyPath(ret, false, i, i2);
-            modifyPath(ret, false, i2, i);
-          }
-        }
+        unlinkCell(ret, i);
         ret.path[i] = 0;
       }
       break;
@@ -172,9 +170,8 @@ export function executeAscentMove(state: AscentState, move: AscentMove): AscentS
         if (n >= 0) ret.grid[i] = n;
         else if (!ret.immutable[i]) ret.grid[i] = NUMBER_EMPTY;
       }
-      /* Deliberate divergence from upstream, which never sets `cheated` in
-       * its 'S' arm (so the win flash would fire on a solver fill). Setting
-       * it here matches the collection convention (docs/games/solver-and-generator.md § "Solve and the generator's aux"). */
+      /* Upstream's 'S' arm never sets `cheated`, so its win flash fires on a
+       * solver fill; this follows the collection convention instead (docs/games/solver-and-generator.md § "Solve and the generator's aux"). */
       ret.cheated = true;
       break;
     }
@@ -189,14 +186,7 @@ export function executeAscentMove(state: AscentState, move: AscentMove): AscentS
       updatePositions(positions, ret.grid, w * h);
     } while (applyPath(ret, positions));
 
-    let anySegment = false;
-    for (let i = 0; i < w * h; i++) {
-      if (ret.path[i] & ~FLAG_COMPLETE) {
-        anySegment = true;
-        break;
-      }
-    }
-    if (!anySegment) ret.path = null;
+    if (!ret.path.some((bits) => bits & ~FLAG_COMPLETE)) ret.path = null;
   }
 
   if (checkCompletion(ret.grid, w, h, ret.mode)) ret.completed = true;

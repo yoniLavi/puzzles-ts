@@ -1,22 +1,17 @@
 /*
- * Ascent's adoption of `runDeductionFixpoint`, proved by equivalence
- * (`adopt-the-deduction-runner-where-it-rewires`). The harness and the argument
- * for it are `engine/testing/ladder-equivalence.ts`; this file is the
- * declaration.
+ * Ascent's adoption of `runDeductionFixpoint`, proved by equivalence against
+ * `ascentSolveLegacy`. The harness and the argument for it are
+ * `engine/testing/ladder-equivalence.ts`; this file is the declaration.
  *
- * **Ascent is the adopter that proves the runner needs no `when` predicate.**
- * Two of its nine rungs have availability no `tier` can express — `overlap` runs
- * at Hard *or* in Edges mode at any difficulty, and `single-number-simple` runs
- * at Tricky and **not** at Hard, which is non-monotone in the cap. Both guard
- * themselves and return `0`, the convention `re-derive-the-fixpoint-no-gos`
- * settled; `ascentLadder`'s doc comment carries the argument. This file is the
- * check, and it walks **all four caps** because that non-monotone rung is
- * visible only by comparing Tricky against Hard.
+ * Two rungs have availability no `tier` can express and guard themselves
+ * (`ascentLadder`'s doc comment has the argument). One of them,
+ * `single-number-simple`, runs at Tricky and **not** at Hard, which is visible
+ * only by comparing those two caps, so this walks **all four caps**.
  *
  * **Each case builds a fresh `SolverScratch` per solve, deliberately.**
- * `foundEndpoints` persists across solves on one scratch — a documented upstream
- * quirk that is byte-match critical — so sharing a scratch between the two sides
- * would make them diverge for a reason that has nothing to do with the ladder.
+ * `foundEndpoints` persists across solves on one scratch (an upstream quirk the
+ * differential holds), so sharing a scratch between the two sides would make
+ * them diverge for a reason that has nothing to do with the ladder.
  */
 import { randomNew } from "../../engine/random/index.ts";
 import { describeLadderEquivalence } from "../../engine/testing/ladder-equivalence.ts";

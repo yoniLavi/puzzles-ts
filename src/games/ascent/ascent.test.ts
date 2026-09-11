@@ -26,6 +26,7 @@ import {
   MODE_HONEYCOMB,
   MODE_ORTHOGONAL,
   MODE_RECT,
+  NUMBER_BOUND,
   NUMBER_EMPTY,
   newAscentState,
   validateAscentDesc,
@@ -73,9 +74,8 @@ describe("ascent generation + solving", () => {
   }
 });
 
-// The tier gate (grade-difficulty-tiers-honestly). Upstream had none, so a
-// tier frequently did not bind: 7 of the 22 frozen C fixtures above Easy, and
-// 56 of 180 freshly generated boards, fell to a lower tier than requested.
+// The tier gate. Upstream has none, and how often its tiers failed to bind is
+// measured on `AscentGenerateOptions.upstreamLooseGate`.
 describe("ascent difficulty tiers bind", () => {
   const TIERED: [string, AscentParams][] = [
     ["5x5 rect normal", mk(5, 5, 1, MODE_RECT)],
@@ -161,7 +161,7 @@ describe("ascent hexagonal hit-testing (design F7)", () => {
     let checked = 0;
     for (let i = 0; i < w * h; i++) {
       // Skip padding walls (the triangular hexagon corners).
-      if (state.grid[i] === -3 /* NUMBER_BOUND */) continue;
+      if (state.grid[i] === NUMBER_BOUND) continue;
       const col = i % w;
       const row = Math.trunc(i / w);
       const cx = ds.offsetX + col * ts + (row * ts) / 2 + ts / 2;
@@ -285,14 +285,9 @@ describe("ascent auto-advance past a placed run", () => {
 });
 
 describe("ascent cursor provenance", () => {
-  // Ascent draws a mouse hover differently from a keyboard cursor, and a player
-  // can see the difference. Nothing pinned which was which until
-  // `unify-the-note-taking-cell` renamed the flag and flipped its polarity to
-  // match the eleven note-taking games (`cursorFromKeyboard`) — an inversion no
-  // test would have caught, because Ascent's suite never pressed an arrow.
-  //
-  // Both directions are asserted, and both predicates each way: a one-sided
-  // check passes just as happily against a flag stuck true.
+  // Ascent draws a mouse hover differently from a keyboard cursor. Both
+  // directions are asserted, and both predicates each way: a one-sided check
+  // passes just as happily against a flag stuck true.
   it("an arrow reveals a keyboard cursor; a click reveals a mouse hover", () => {
     const { state, ui, ds, center } = scratch();
     expect(keyboardCursor(ui)).toBe(false); // hidden: neither, whatever the flag

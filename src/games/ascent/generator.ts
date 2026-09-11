@@ -7,7 +7,7 @@
  * `randomUpto` per backbite step, one `shuffle` before removal, and the
  * `matching(..., rs)` draws for the Edges variant. The reduction is gated
  * by the graded solver, so the emitted desc reproduces byte-for-byte and a
- * single differential validates generator + solver + codec (design D4/D7).
+ * single differential validates generator + solver + codec.
  */
 
 import { matching } from "../../engine/latin.ts";
@@ -16,13 +16,13 @@ import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { ascentSolve, SolverScratch } from "./solver.ts";
 import {
-  type AscentMovement,
   type AscentParams,
   type AscentStep,
   ascentGridSize,
   checkCompletion,
   DIFF_EASY,
   encodeGridDesc,
+  isBorderCell,
   isEdgeValid,
   isObstacle,
   MODE_EDGES,
@@ -124,7 +124,7 @@ function generateHamiltonianPath(
   const path = new Int32Array(w * h);
   let walls: Uint8Array | null = null;
   let wallcount = 0;
-  const movement: AscentMovement = movementForMode(params.mode);
+  const movement = movementForMode(params.mode);
 
   if (params.mode === MODE_HEXAGON) {
     const center = Math.trunc(h / 2);
@@ -154,15 +154,10 @@ function generateHamiltonianPath(
   }
   if (params.mode === MODE_EDGES) {
     walls = new Uint8Array(w * h);
-    for (let i = 0; i < w; i++) {
+    for (let i = 0; i < w * h; i++) {
+      if (!isBorderCell(i, w, h)) continue;
       walls[i] = 1;
-      walls[i + w * (h - 1)] = 1;
-      wallcount += 2;
-    }
-    for (let i = 1; i < h - 1; i++) {
-      walls[w * i] = 1;
-      walls[w * i + (w - 1)] = 1;
-      wallcount += 2;
+      wallcount++;
     }
   }
 
@@ -207,7 +202,6 @@ function ascentAddEdges(
   const ah = h - 2;
 
   const adjlists: number[][] = [];
-  const adjsizes: number[] = [];
   for (let i = 0; i < aw * ah; i++) {
     const x = (i % aw) + 1;
     const y = Math.trunc(i / aw) + 1;
@@ -215,24 +209,16 @@ function ascentAddEdges(
     /* Keep the starting position off the edge when "always show ends" is on. */
     if (!params.removeends && grid[y * w + x] === 0) {
       adjlists.push([]);
-      adjsizes.push(0);
       continue;
     }
 
     const list: number[] = [];
     for (let j = 0; j < w * h; j++) {
-      const x2 = j % w;
-      const y2 = Math.trunc(j / w);
-      if (
-        (x2 === 0 || x2 === w - 1 || y2 === 0 || y2 === h - 1) &&
-        isEdgeValid(j, y * w + x, w, h)
-      ) {
-        list.push(j);
-      }
+      if (isBorderCell(j, w, h) && isEdgeValid(j, y * w + x, w, h)) list.push(j);
     }
     adjlists.push(list);
-    adjsizes.push(list.length);
   }
+  const adjsizes = adjlists.map((list) => list.length);
 
   let attempts = 0;
   let match: Int32Array = new Int32Array(aw * ah).fill(-1);
@@ -268,7 +254,7 @@ function ascentAddEdges(
 
 /** Blank as many clues as the graded solver still permits (upstream
  * `ascent_remove_numbers`). Mutates `grid`; always succeeds. */
-function ascentermoveNumbers(
+function ascentBlankClues(
   sc: SolverScratch,
   grid: Int16Array,
   params: AscentParams,
@@ -276,9 +262,7 @@ function ascentermoveNumbers(
 ): boolean {
   const w = sc.w;
   const h = sc.h;
-  const spaces: number[] = [];
-  for (let j = 0; j < w * h; j++) spaces.push(j);
-
+  const spaces = Array.from({ length: w * h }, (_, j) => j);
   shuffle(spaces, rs);
   for (let j = 0; j < w * h; j++) {
     const i1 = spaces[j];
@@ -309,21 +293,17 @@ export interface AscentGenerateOptions {
    * Reproduce upstream's difficulty gate, which does not exist.
    *
    * Upstream blanks clues (or moves them to edge arrows) while the graded
-   * solver still finishes the board, and publishes whatever that leaves —
-   * it never asks whether an easier tier would also have done. So the tier
-   * frequently does not bind: measured over this game's own frozen C fixtures,
-   * **7 of the 22 boards above Easy fall to a lower tier**, and over 180
-   * freshly generated boards the rate is 56/180, reaching 12 of 20 at
-   * 5×5 Tricky. The player chose the tier, so {@link newAscentDesc} rejects
-   * such a candidate and generates another.
+   * solver still finishes the board, and never asks whether an easier tier
+   * would also have done. So the tier often does not bind: **7 of the 22 frozen
+   * C fixtures above Easy fall to a lower tier**, as do 56 of 180 freshly
+   * generated boards, reaching 12 of 20 at 5×5 Tricky. {@link newAscentDesc}
+   * therefore rejects such a candidate and generates another.
    *
-   * Because generation is solver-gated at every removal, that changes every
-   * description above Easy — which would cost the byte-match differential that
-   * validates the generator, the four-tier solver, the per-mode grid padding
-   * and the codec together. This flag keeps that oracle:
-   * `ascent-differential.test.ts` sets it, so the fixtures still match the C
-   * byte-for-byte and the only lines the oracle no longer covers are the tier
-   * check below. Nothing else should ever set it.
+   * That changes every description above Easy, which would cost the byte-match
+   * differential validating the generator, the solver, the per-mode grid
+   * padding and the codec together. `ascent-differential.test.ts` sets this
+   * flag so the fixtures still match the C; the tier check is the only line the
+   * oracle no longer covers. Nothing else should ever set it.
    */
   readonly upstreamLooseGate?: boolean;
 }
@@ -340,8 +320,8 @@ export function newAscentDesc(
   let grid: Int16Array | null = null;
   let success = false;
 
-  // Upstream loops unboundedly; the tier gate below rejects candidates, so the
-  // loop needs the house runaway guard (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned") rather than a promise.
+  // Upstream loops unboundedly, but the tier gate below rejects candidates, so
+  // the loop takes the house runaway guard (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned").
   const attempt = retryLimit(`ascent: generation (${w}x${h} d${params.diff})`);
   do {
     attempt();
@@ -359,21 +339,13 @@ export function newAscentDesc(
     success =
       params.mode === MODE_EDGES
         ? ascentAddEdges(sc, grid, params, rng)
-        : ascentermoveNumbers(sc, grid, params, rng);
+        : ascentBlankClues(sc, grid, params, rng);
 
     // The tier gate (the divergence): a board the tier below already cracks is
-    // not the difficulty the player asked for.
-    //
-    // **The probe gets its own scratch, and that is load-bearing.**
-    // `SolverScratch.foundEndpoints` deliberately persists across solves (see
-    // `ascentSolve`) and, once true, permanently weakens the solver. Reusing the
-    // generator's `sc` here would therefore ask a *weakened* solver whether the
-    // easier tier copes — under-rejecting, exactly the stale-scratch defect
-    // `spokes` documents ("its verdict is about the leftover position rather
-    // than about the puzzle"). It would also leave the probe's own marks and
-    // `foundEndpoints` behind for the next candidate, making which boards ship
-    // depend on the gate's side effects. A fresh scratch answers the question a
-    // player would ask: can the tier below solve *this board*, from nothing?
+    // not the difficulty the player asked for. **The probe gets its own
+    // scratch**: `foundEndpoints` persists across solves (see `solverStart`), so
+    // reusing `sc` would ask an already-weakened solver, under-rejecting, and
+    // would leave the probe's state behind to change which later boards ship.
     if (success && !loose && params.diff > DIFF_EASY) {
       const probe = new SolverScratch(w, h, params.mode, sc.end);
       ascentSolve(grid, params.diff - 1, probe);

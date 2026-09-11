@@ -1,28 +1,23 @@
 /**
- * Gated C-vs-TS differential for Ascent (design D7 of add-ascent-ts-port):
- * for each frozen fixture recorded from `puzzles/unreleased/ascent.c` via
- * `puzzles/auxiliary/ascent-trace.c`, `newAscentDesc` over the bit-identical
- * RNG must reproduce the C desc byte-for-byte.
+ * Frozen C-vs-TS differential for Ascent: for each fixture recorded from
+ * upstream's `ascent.c`, `newAscentDesc` over the bit-identical RNG must
+ * reproduce the C desc byte-for-byte.
  *
- * Because generation is solver-gated at every step (a clue is blanked, or a
- * number moved to an edge arrow, only if the graded solver still solves the
- * result), a single byte-match validates the generator's RNG draw order (the
- * backbite path, the removal shuffle, the Edges matching), the four-tier
- * solver's exact deductive power, the grid padding for every mode, and the
- * run-length codec — all at once. The `extra` check round-trips each C desc
- * through `validateDesc` + `newState` + `encodeGridDesc` (codec inverse).
+ * Generation is solver-gated at every step (a clue is blanked, or a number
+ * moved to an edge arrow, only if the graded solver still solves the result),
+ * so one byte-match validates the generator's RNG draw order (the backbite
+ * path, the removal shuffle, the Edges matching), the four-tier solver's exact
+ * deductive power, the grid padding for every mode, and the run-length codec.
+ * The `extra` check round-trips each C desc through `validateDesc` +
+ * `newState` + `encodeGridDesc`.
  *
- * **`upstreamLooseGate` is set here and nowhere else.** The shipped generator
- * rejects a board that the tier below already solves, which upstream never
- * checks (see `AscentGenerateOptions.upstreamLooseGate`; 7 of these very
- * fixtures are misgraded that way). That correction changes every description
- * above Easy, so the byte-match is preserved by running the fixtures against
- * upstream's original gate — the shape `spokes` established.
+ * **`upstreamLooseGate` is set here and nowhere else**: the shipped generator
+ * rejects a board the tier below already solves, which upstream never checks
+ * (see `AscentGenerateOptions.upstreamLooseGate`), and that changes every
+ * description above Easy.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/ascent-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C build and trace
+ * harness that recorded it are gone (see `engine/testing/differential.ts`).
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
