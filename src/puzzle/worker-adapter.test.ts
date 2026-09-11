@@ -21,7 +21,7 @@ describe("TsWorkerPuzzle — decodeCustomParams", () => {
   // This file is the only one that mutates the shared registry. Under
   // `isolate: false` the registry is module state shared across every file
   // in the worker, so leaving it half-populated would fail a sibling that
-  // depends on the full set (e.g. ts-ported-ids). Restore it once at the end.
+  // depends on the full set. Restore it once at the end.
   afterAll(() => {
     _resetRegistry();
     registerAllGames();
@@ -149,19 +149,15 @@ describe("TsWorkerPuzzle — decodeCustomParams", () => {
 
 describe("TsWorkerPuzzle — the first palette install must repaint", () => {
   /**
-   * Regression guard for a bug that shipped and stayed hidden for months.
-   *
    * `redraw()` is gated on `paletteReady` because the canvas `Drawing` throws
    * if asked to paint before a palette exists — so every repaint requested
    * before then is **silently dropped**. The midend requests one on the initial
    * game transition, which is a race the game loses whenever generation is
-   * fast, and nothing re-issued it: `setDrawingPalette` only repainted when it
-   * *replaced* an existing palette, never on the first install.
+   * fast, so the first palette install has to repaint, not only a replacement.
    *
-   * The user-visible symptom was a board that never appeared — deep-linking to
-   * a non-default type left the canvas blank indefinitely, while the same
-   * params chosen from the in-app menu painted at once (by then the palette was
-   * long installed). It affected every TS-ported game and no C/WASM one.
+   * The player-visible symptom was a board that never appeared: deep-linking to
+   * a non-default type left the canvas blank, while the same params chosen from
+   * the in-app menu painted at once (by then the palette was long installed).
    *
    * The test drives the adapter's real ordering — a repaint arriving *before*
    * the palette — through a fake engine that counts paints.
@@ -194,7 +190,7 @@ describe("TsWorkerPuzzle — the first palette install must repaint", () => {
   }
 
   function attach(worker: TsWorkerPuzzle, drawing: unknown): void {
-    // The real `createDrawing` needs an OffscreenCanvas; reach past it, since
+    // The real `attachCanvas` needs an OffscreenCanvas; reach past it, since
     // what is under test is the palette/redraw ordering, not canvas creation.
     (worker as unknown as { drawing: unknown }).drawing = drawing;
   }

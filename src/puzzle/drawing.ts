@@ -1,8 +1,6 @@
 import type { GameDrawing } from "../engine/game.ts";
 import type { DrawTextOptions, FontInfo, Point, Rect, Size } from "../engine/types.ts";
 
-// Type definitions
-
 export const defaultFontInfo: FontInfo = {
   fontFamily: "sans-serif",
   fontWeight: "normal",
@@ -16,32 +14,19 @@ interface Blitter {
   $type: "blitter";
 }
 
-/**
- * Drawing class for canvas-based rendering.
- *
- * It used to declare `implements DrawingImpl<Blitter>` — a type derived from
- * the Embind `DrawingWrapper`, because this class was originally handed to
- * `Module.Drawing.implement()` as the JS side of the C drawing API. With the C
- * engine retired (`retire-c-engine`) that indirection is gone, and the two
- * interfaces turned out to be the same interface written twice: the engine's
- * own `GameDrawing` is what every game actually draws through, and this class
- * already satisfied it structurally. It now says so.
- */
+/** The `GameDrawing` every game paints through: a 2D canvas context on the
+ * `OffscreenCanvas` transferred to the worker. */
 export class Drawing implements GameDrawing<Blitter> {
-  private readonly canvas: OffscreenCanvas;
   private context: OffscreenCanvasRenderingContext2D;
   private palette: string[] = [];
   private fontInfo: FontInfo;
   private dpr = 1; // devicePixelRatio of the canvas
 
-  /**
-   * Create a new Drawing instance
-   */
-  constructor(canvas: OffscreenCanvas, fontInfo?: FontInfo) {
-    this.canvas = canvas;
+  constructor(
+    private readonly canvas: OffscreenCanvas,
+    fontInfo?: FontInfo,
+  ) {
     this.fontInfo = fontInfo ?? defaultFontInfo;
-
-    // Get context
     const context = this.canvas.getContext("2d", {
       alpha: false,
       // willReadFrequently causes lost context when used with
@@ -69,15 +54,9 @@ export class Drawing implements GameDrawing<Blitter> {
   }
 
   // The font is chosen once, at `attachCanvas`, from the host page's computed
-  // style. A `setFontInfo` used to sit here, reachable through a
-  // `setDrawingFontInfo` on every layer from `Puzzle` down — and callable from
-  // none of them: nothing has re-issued a font since the first commit
-  // (`audit-vestigial-contract-surface`). Reinstating it needs a trigger that
-  // does not exist either, a font preference; add both together or neither.
+  // style. There is no `setFontInfo`, because nothing would call it without a
+  // font preference to trigger it: add both together or neither.
 
-  /**
-   * Resize the canvas
-   */
   public resize(w: number, h: number, dpr: number): void {
     // https://web.dev/articles/canvas-hidipi
     // Most canvas operations will be scaled by the dpr,
@@ -108,7 +87,7 @@ export class Drawing implements GameDrawing<Blitter> {
    */
 
   // cached text metrics
-  private mathematicalBaselineOffset: { [font: string]: number } = {};
+  private mathematicalBaselineOffset: Record<string, number> = {};
 
   drawText(
     { x, y }: Point,
@@ -116,10 +95,7 @@ export class Drawing implements GameDrawing<Blitter> {
     color: number,
     text: string,
   ): void {
-    if (size < 1) {
-      // console.warn(`Drawing.drawText ignoring size=${size}`);
-      return;
-    }
+    if (size < 1) return;
     this.context.font = [
       this.fontInfo.fontStyle,
       this.fontInfo.fontWeight,
@@ -151,19 +127,13 @@ export class Drawing implements GameDrawing<Blitter> {
   }
 
   drawRect({ x, y, w, h }: Rect, color: number): void {
-    if (w < 1 || h < 1) {
-      // console.warn(`Drawing.drawRect ignoring w=${w} h=${h}`);
-      return;
-    }
+    if (w < 1 || h < 1) return;
     this.setUpContext({ fillColor: color, strokeColor: color, lineWidth: 1 });
     this.context.fillRect(x, y, w, h);
   }
 
   drawLine(p1: Point, p2: Point, color: number, thickness: number): void {
-    if (thickness <= 0) {
-      // console.warn(`Drawing.drawLine ignoring thickness=${thickness}`);
-      return;
-    }
+    if (thickness <= 0) return;
     this.context.beginPath();
     // Drawing API points are pixel center; canvas is pixel top left.
     this.context.moveTo(p1.x + 0.5, p1.y + 0.5);
@@ -187,9 +157,7 @@ export class Drawing implements GameDrawing<Blitter> {
       strokeColor: outlinecolor,
       fillColor: fillcolor >= 0 ? fillcolor : undefined,
     });
-    if (fillcolor >= 0) {
-      this.context.fill();
-    }
+    if (fillcolor >= 0) this.context.fill();
     this.context.stroke();
   }
 
@@ -199,10 +167,7 @@ export class Drawing implements GameDrawing<Blitter> {
     fillcolor: number,
     outlinecolor: number,
   ): void {
-    if (radius <= 0) {
-      // console.warn(`Drawing.drawCircle ignoring radius=${radius}`);
-      return;
-    }
+    if (radius <= 0) return;
     this.context.beginPath();
     this.context.arc(cx + 0.5, cy + 0.5, radius, 0, Math.PI * 2, false);
     this.context.closePath();
@@ -210,9 +175,7 @@ export class Drawing implements GameDrawing<Blitter> {
       strokeColor: outlinecolor,
       fillColor: fillcolor >= 0 ? fillcolor : undefined,
     });
-    if (fillcolor >= 0) {
-      this.context.fill();
-    }
+    if (fillcolor >= 0) this.context.fill();
     this.context.stroke();
   }
 
@@ -227,10 +190,7 @@ export class Drawing implements GameDrawing<Blitter> {
 
   clip({ x, y, w, h }: Rect): void {
     this.context.save();
-    if (w < 1 || h < 1) {
-      // console.warn(`Drawing.clip ignoring w=${w} h=${h}`);
-      return;
-    }
+    if (w < 1 || h < 1) return;
     this.context.beginPath();
     this.context.rect(x, y, w, h);
     this.context.clip();
@@ -257,11 +217,7 @@ export class Drawing implements GameDrawing<Blitter> {
    */
   blitterSave(blitter: Blitter, { x, y }: Point): void {
     const { w, h } = blitter;
-    if (w < 1 || h < 1) {
-      // console.warn(`Drawing.blitterSave ignoring w=${w} h=${h}`);
-      return;
-    }
-
+    if (w < 1 || h < 1) return;
     // getImageData ignores the transformation matrix, so must apply dpr scaling.
     blitter.imageData = this.context.getImageData(
       x * this.dpr,
@@ -273,10 +229,7 @@ export class Drawing implements GameDrawing<Blitter> {
 
   blitterLoad(blitter: Blitter, { x, y }: Point): void {
     const { w, h } = blitter;
-    if (w < 1 || h < 1) {
-      // console.warn(`Drawing.blitterLoad ignoring w=${w} h=${h}`);
-      return;
-    }
+    if (w < 1 || h < 1) return;
     if (!blitter.imageData) {
       throw new Error("Blitter loaded before saved");
     }

@@ -1,5 +1,4 @@
-// The toolbar Hint button alternates show/apply (add-hint-button-stepper):
-// the first press *shows* a hint step; a second press with nothing done in
+// The toolbar Hint button alternates show/apply: the first press *shows* a hint step; a second press with nothing done in
 // between *applies* that one step via executeHint(true) (which hides the plan
 // rather than previewing the next) and disarms, so the player gets a clean
 // show, apply, show, apply rhythm — one applied hint per request. Any

@@ -1,27 +1,19 @@
 /**
  * Worker-side adapter: presents an `EngineCore` (a `Midend`) through the
- * Comlink surface the app's `Puzzle` consumes. The worker factory routes here
- * for every game in the registry — which, since `retire-c-engine`, is every
- * game there is; a `puzzleId` the registry does not know is simply unplayable,
- * and `catalog-registry.test.ts` guards that in both directions.
+ * Comlink surface the app's `Puzzle` consumes. A `puzzleId` the registry does
+ * not know is unplayable; `catalog-registry.test.ts` guards that in both
+ * directions.
  *
  * It lives on the **app** side of the seam, not inside the engine, because an
  * adapter belongs with the thing being adapted *to*: it is the only module that
  * knows both the engine's `EngineCore` and the app's `Drawing` /
- * `PuzzleEngineSurface`. Keeping it under the engine was what made the engine
- * import the shell (`retire-native-directory` D3).
+ * `PuzzleEngineSurface`, and under the engine it would make the engine import
+ * the shell.
  *
- * The drawing / color / UI-feedback contract the keystone left
- * minimal was resolved by the first port (`add-flip-ts-port`): the
- * full `GameDrawing` API, `colors(defaultBackground)`, and the
- * `UI_UPDATE` input result. The on-screen keys surface is modeled too
- * (`requestKeys` forwards `Game.requestKeys` via the midend —
- * `add-ts-onscreen-keys`). The custom-params AND preferences surfaces
- * are both modeled: each forwards to the midend, which builds the app's
- * config dialog from the game's declarative `paramConfig` / `prefs` and
- * parses the submitted values back. A game that declares neither yields
- * an empty-but-valid config (an empty custom dialog is correct for a
- * preset-only game like Flip, not a stub masking a defect).
+ * Custom params and preferences forward to the midend, which builds each config
+ * dialog from the game's declarative `paramConfig` / `prefs` and parses the
+ * submitted values back. A game that declares neither yields an empty-but-valid
+ * config, which is correct for a preset-only game like Flip.
  */
 
 import { transfer } from "comlink";
@@ -44,13 +36,11 @@ import { Drawing } from "./drawing.ts";
 import type { PuzzleEngineSurface } from "./engine-surface.ts";
 
 export class TsWorkerPuzzle implements PuzzleEngineSurface {
-  private readonly engine: EngineCore;
   private drawing?: Drawing;
   /** The canvas `Drawing` throws if asked to paint before a palette is
-   * installed. The midend now repaints on every transition (incl. the
-   * initial one), which can fire before `setDrawingPalette`; gate
-   * `redraw()` until the palette is ready (the app always sets it as
-   * part of canvas setup, mirroring the C path). */
+   * installed, and the midend repaints on every transition, the initial one
+   * included, which can fire before `setDrawingPalette`. So `redraw()` waits
+   * for the palette, which the app sets as part of canvas setup. */
   private paletteReady = false;
   private timerActive = false;
   private lastTimeMs = 0;
@@ -58,10 +48,8 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
 
   constructor(
     public readonly puzzleId: string,
-    engine: EngineCore,
-  ) {
-    this.engine = engine;
-  }
+    private readonly engine: EngineCore,
+  ) {}
 
   // --- callbacks / lifecycle --------------------------------------
 
@@ -76,8 +64,7 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
         if (active) this.activateTimer();
         else this.deactivateTimer();
       },
-      // Repaint into the canvas this adapter owns (the engine has no
-      // Drawing; this is the C frontend's draw-after-input role).
+      // Repaint into the canvas this adapter owns; the engine has no Drawing.
       () => this.redraw(),
     );
   }
@@ -147,10 +134,6 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     return this.engine.getPresets();
   }
 
-  // Custom-params / preferences UI surface: see file header. The engine
-  // builds the config from the game's declarative `paramConfig` and
-  // reads/writes the values off a params copy; the app's
-  // `puzzle-custom-params-form` drives these unchanged.
   getCustomParamsConfig(): ConfigDescription {
     return this.engine.getCustomParamsConfig();
   }
@@ -176,10 +159,10 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
       // own `describeParams`, replacing the empty base.
       const rec = p as Record<string, unknown>;
       const base: ConfigValues = {};
-      if ("w" in rec && rec["w"] !== undefined) {
+      if (rec["w"] !== undefined) {
         base["width"] = String(rec["w"]);
       }
-      if ("h" in rec && rec["h"] !== undefined) {
+      if (rec["h"] !== undefined) {
         base["height"] = String(rec["h"]);
       }
       return { ...base, ...game.describeParams?.(p) };
@@ -190,11 +173,6 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   encodeCustomParams(values: ConfigValues): string {
     return this.engine.encodeCustomParams(values);
   }
-  // Preferences ARE modeled on the TS path: the engine builds the
-  // config from the game's declarative `prefs` and reads/writes the
-  // values off the ui. The app's `puzzle-preferences-form` and
-  // per-puzzle IndexedDB persistence drive these unchanged; a game with
-  // no `prefs` yields an empty config (no regression for current ports).
   getPreferencesConfig(): ConfigDescription {
     return this.engine.getPreferencesConfig();
   }
@@ -247,13 +225,10 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   }
   resizeDrawing({ w, h }: Size, dpr: number): void {
     if (!this.drawing) throw new Error("resizeDrawing: no canvas attached");
-    // `Drawing.resize` sets `canvas.width`/`height`, which under
-    // `{alpha:false}` resets the backing store to opaque black. The
-    // engine's per-tile cache (what the game's `redraw` consults to
-    // skip unchanged cells) is now stale — every cached entry's
-    // pixels are gone. Tell the engine, so it drops the drawstate
-    // and the next `redraw` paints from scratch via the game's
-    // `!ds.started` branch.
+    // `Drawing.resize` sets `canvas.width`/`height`, which under `{alpha:false}`
+    // resets the backing store to opaque black, so every tile the game's
+    // `redraw` has cached is gone. `canvasCleared` drops the drawstate, and the
+    // next `redraw` paints from scratch via the game's `!ds.started` branch.
     this.drawing.resize(w, h, dpr);
     this.engine.canvasCleared();
   }
@@ -261,30 +236,20 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     if (!this.drawing) throw new Error("setDrawingPalette: no canvas attached");
     const firstInstall = !this.paletteReady && colors.length > 0;
     if (colors.length > 0) this.paletteReady = true;
-    // `setPalette` returns true only when an already-installed
-    // palette was replaced (light/dark toggle). In that case the
-    // per-tile cache any game holds was keyed against the old
-    // palette and is stale — drop the drawstate, arm first-draw and
-    // repaint, matching `puzzles/webapp.cpp`'s
-    // `setDrawingPalette → forceRedraw()`.
+    // `setPalette` returns true only when an already-installed palette was
+    // replaced (light/dark toggle), which leaves any game's per-tile cache keyed
+    // against the old palette: repaint from a fresh drawstate, as upstream's
+    // `webapp.cpp` did (`setDrawingPalette → forceRedraw()`).
     if (this.drawing.setPalette(colors)) {
       this.forceRedraw();
       return;
     }
-    // **The first install must also repaint, and this is the whole reason
-    // this branch exists.** `redraw()` below silently drops every repaint
-    // requested before the palette arrives — and the midend requests one on
-    // the *initial* game transition, which is a race the game usually loses
-    // when generation is fast. Nothing else re-issues that repaint, so the
-    // board stayed blank until some unrelated event (opening a menu,
-    // resizing) happened to force one.
-    //
-    // Symptom this fixes: deep-linking to a non-default type
-    // (`/loopy?type=5x4t9dh`, `/pearl?type=12x8dt`) left the canvas empty
-    // indefinitely, while the *same* params chosen from the Type menu painted
-    // immediately — because by then the palette was long installed. It
-    // affected every TS-ported game (reproduced on Pearl, shipped since
-    // 2026-07) and no C/WASM game, which is what pinned it to this adapter.
+    // **The first install must also repaint.** `redraw()` drops every repaint
+    // requested before the palette arrives, and the midend requests one on the
+    // *initial* game transition, a race the game usually loses when generation
+    // is fast. Nothing else re-issues it, so a deep link to a non-default type
+    // (`/loopy?type=5x4t9dh`) left the canvas blank until some unrelated event
+    // forced a repaint.
     if (firstInstall) this.forceRedraw();
   }
   async getImage(options?: ImageEncodeOptions): Promise<Blob> {
@@ -295,13 +260,9 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     if (this.drawing && this.paletteReady) this.engine.redraw(this.drawing);
   }
 
-  /** Internal-only mirror of `WorkerPuzzle.frontend.forceRedraw()`
-   * — the canvas-invalidating paths (palette/font replacement) want
-   * a full repaint with the per-game drawstate dropped, not just a
-   * plain `engine.redraw` that would honor the now-stale cache. Not
-   * on `PuzzleEngineSurface`: the app's own redraw path goes through
-   * `redraw()` plus `Midend.size`-driven first-draw, same as the C
-   * path. */
+  /** A full repaint with the per-game drawstate dropped, for a replaced
+   * palette, where a plain `engine.redraw` would honor the stale cache. Not on
+   * `PuzzleEngineSurface`: the app's own redraw path is `redraw()`. */
   private forceRedraw(): void {
     if (this.drawing && this.paletteReady) this.engine.forceRedraw(this.drawing);
   }

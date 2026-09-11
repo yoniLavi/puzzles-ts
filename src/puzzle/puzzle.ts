@@ -56,10 +56,7 @@ export const HINT_PENDING_MESSAGE = "Thinking…";
  * Public API to the puzzle engine running in a worker.
  *
  * Exposes reactive properties for puzzle state, and async methods that proxy
- * (over Comlink) to the worker-side `PuzzleEngineSurface`. That surface used to
- * be a WASM `Frontend` reached through Embind; since `retire-c-engine` it is the
- * native TypeScript midend, and nothing on this side changed when it swapped —
- * which was the point of stating the boundary as an interface.
+ * (over Comlink) to the worker-side `PuzzleEngineSurface`.
  */
 export class Puzzle {
   public static async create(puzzleId: string): Promise<Puzzle> {
@@ -113,15 +110,10 @@ export class Puzzle {
       wantsStatusbar,
     }: PuzzleStaticAttributes,
   ) {
-    // The catalog is the only place a display name lives. It used to be a
-    // `PuzzleStaticAttributes` field too, preferred-but-overridden here ("catalog
-    // 'Tracks' vs API 'Train Tracks'") — but that was the C midend reporting
-    // upstream's own name; the TS midend answers `game.id`, which is the
-    // lowercase puzzle id and never a name to show anyone. So the fallback could
-    // only ever have made things worse, and the field traveled three layers to
-    // be discarded. `catalog-registry.test.ts` holds the catalog and the registry
-    // equal in both directions, so the `?? puzzleId` below is unreachable for any
-    // puzzle the app can route to.
+    // The catalog is the only place a display name lives.
+    // `catalog-registry.test.ts` holds the catalog and the registry equal in both
+    // directions, so `?? puzzleId` is unreachable for any puzzle the app can
+    // route to.
     this.displayName = puzzleDataMap[puzzleId]?.name ?? puzzleId;
     this.canSolve = canSolve;
     this.canHint = canHint;
@@ -166,8 +158,7 @@ export class Puzzle {
   }
 
   private notifyChange = async (message: ChangeNotification) => {
-    // Callback from C++ Frontend: update signals with provided data.
-    // (Message originates in worker.)
+    // Callback from the worker's midend: mirror the notification into signals.
     function update<T>(signal: Signal.State<T>, newValue: T) {
       if (signal.get() !== newValue) {
         signal.set(newValue);
@@ -206,12 +197,6 @@ export class Puzzle {
         );
         break;
       default:
-        // The last hand-rolled copy of `assertNever`, written before the helper
-        // existed: a `@ts-expect-error: message.type never` over a bare throw.
-        // That form asserts the narrowing at the comment's own line but throws
-        // a message built from a value the compiler has just been told is
-        // `never`, so it named neither the notification nor where it came from
-        // (`audit-vestigial-contract-surface`).
         assertNever(message, "Puzzle: notifyChange");
     }
 
@@ -220,9 +205,7 @@ export class Puzzle {
 
   private inputQueue: Promise<void> = Promise.resolve();
 
-  /**
-   * Keep events that end up in midend_process_key() strictly ordered.
-   */
+  /** Keep input that reaches the midend strictly ordered. */
   protected enqueueInput<T>(fn: () => Promise<T>): Promise<T> {
     const result = this.inputQueue.then(fn);
     this.inputQueue = result.then(
@@ -257,15 +240,9 @@ export class Puzzle {
   private _currentParams = computed<string | undefined>(() =>
     // The **full** params of the board on screen — difficulty included, which
     // is what every consumer wants: the type-menu label, the share dialog's
-    // type description, and the keypad/view re-render keys.
-    //
-    // This used to read `randomSeed` before its '#' and fall back to
-    // `currentGameId` before its ':'. The preference existed precisely because
-    // the seed form carries the full params and the game-id form does not — so
-    // the fallback silently mislabeled the type on any board without a seed,
-    // which is every board restored from a descriptive id. `restoreGameId`
-    // carries the full params unconditionally, so there is nothing left to
-    // prefer between.
+    // type description, and the keypad/view re-render keys. Only
+    // `restoreGameId` carries them unconditionally: `currentGameId`'s params are
+    // lossy, and a board restored from a descriptive id has no `randomSeed`.
     this.restoreGameId?.split(":", 1).at(0),
   );
   private _currentGameId = signal<string | undefined>(undefined);
@@ -301,11 +278,9 @@ export class Puzzle {
   /**
    * True while a Hint press is being answered by the worker. A further press
    * meanwhile is **dropped**, not queued: `hint()` does not go through
-   * `enqueueInput`, so each press used to start another worker round-trip and
-   * Comlink ran them one after another — eighty presses on a Sixteen 5×5
-   * endgame, where one hint costs ~3–4 s, left the app looking frozen for
-   * minutes while it worked through a self-inflicted backlog
-   * (`coalesce-hint-requests`). Dropping is right in both beats: during a
+   * `enqueueInput`, so a queued press is another worker round-trip, and on a
+   * Sixteen 5×5 endgame, where one hint costs ~3–4 s, a burst of presses left
+   * the app looking frozen for minutes. Dropping is right in both beats: during a
    * *show* nothing is armed yet, and during an *apply* the step was disarmed
    * on the way in, so the press after the answer lands does what the player
    * would expect from a fresh press.
@@ -624,13 +599,10 @@ export class Puzzle {
    * Send a key to the game, and report whether the game took it.
    *
    * **A key the game declines is not a manual move**, so it must not cancel
-   * Auto-Hint or disarm the Hint stepper. Canceling first — which this used to
-   * do, unconditionally, before the game had even seen the key — made the app's
-   * bare-letter shortcuts unable to work at all: `h` reaches the game, is
-   * declined, comes back as `puzzle-key-unhandled`, and runs the `hint`
-   * command; but the disarm had already happened on the way in, so the stepper
-   * could never reach its second beat and a second `h` re-showed the same step
-   * for ever instead of playing it.
+   * Auto-Hint or disarm the Hint stepper. The bare-letter shortcuts depend on
+   * it: `h` reaches the game, is declined, comes back as `puzzle-key-unhandled`
+   * and runs the `hint` command, and a disarm on the way in would keep the
+   * stepper from ever reaching its second beat.
    *
    * Ordering is safe because both this and `executeHint` go through the same
    * `enqueueInput` queue: the auto-hint loop cannot slip a step in between.
@@ -665,14 +637,12 @@ export class Puzzle {
   }
 
   public async getParamsDescription(params: string): Promise<string> {
-    // First try preset names
     const presets = await this.getPresets(true);
     const preset = presets.find((preset) => preset.params === params);
     if (preset) {
       return preset.title;
     }
 
-    // Next try augmentations
     const augmentation = puzzleAugmentations[this.puzzleId];
     if (augmentation?.describeConfig) {
       const config = await this.decodeCustomParams(params);
@@ -685,22 +655,14 @@ export class Puzzle {
       return augmentation.describeConfig(config, await this.getChoiceNames());
     }
 
-    // Give up
     return "Custom type";
   }
 
   public async getPresets(flat = false): Promise<PresetMenuEntry[]> {
-    let presets = await this.workerPuzzle.getPresets();
-    if (flat) {
-      const flatten = (items: PresetMenuEntry[]): PresetMenuEntry[] => {
-        return items.flatMap((item) => [
-          item,
-          ...(item.submenu ? flatten(item.submenu) : []),
-        ]);
-      };
-      presets = flatten(presets);
-    }
-    return presets;
+    const flatten = (items: PresetMenuEntry[]): PresetMenuEntry[] =>
+      items.flatMap((item) => [item, ...(item.submenu ? flatten(item.submenu) : [])]);
+    const presets = await this.workerPuzzle.getPresets();
+    return flat ? flatten(presets) : presets;
   }
 
   public async getCustomParamsConfig(): Promise<ConfigDescription> {
@@ -822,6 +784,7 @@ export class Puzzle {
   // Checkpoints
   //
 
+  // TODO: use reactive set (from signal-utils) rather than replacing value
   private _checkpoints = signal<ReadonlySet<number>>(new Set());
 
   /**
@@ -841,7 +804,6 @@ export class Puzzle {
   public addCheckpoint(move?: number) {
     const checkpoint = move ?? this.currentMove;
     if (!this.checkpoints.has(checkpoint)) {
-      // TODO: use reactive set (from signal-utils) rather than replacing value
       const newCheckpoints = new Set(this.checkpoints);
       newCheckpoints.add(checkpoint);
       this._checkpoints.set(newCheckpoints);
@@ -853,7 +815,6 @@ export class Puzzle {
    */
   public removeCheckpoint(checkpoint: number) {
     if (this.checkpoints.has(checkpoint)) {
-      // TODO: use reactive set (from signal-utils) rather than replacing value
       const newCheckpoints = new Set(this.checkpoints);
       newCheckpoints.delete(checkpoint);
       this._checkpoints.set(newCheckpoints);
@@ -870,14 +831,8 @@ export class Puzzle {
       throw new RangeError(`Move ${checkpoint} out of bounds`);
     }
     const delta = checkpoint - this.currentMove;
-    if (delta < 0) {
-      for (let i = 0; i < -delta; i++) {
-        await this.undo();
-      }
-    } else if (delta > 0) {
-      for (let i = 0; i < delta; i++) {
-        await this.redo();
-      }
+    for (let i = 0; i < Math.abs(delta); i++) {
+      await (delta < 0 ? this.undo() : this.redo());
     }
   }
 
@@ -885,19 +840,13 @@ export class Puzzle {
     // Called before updating this.currentMove and this.totalMoves.
     // Prune any checkpoints past new totalMoves.
     if (totalMoves < this.totalMoves && this.checkpoints.size > 0) {
-      // TODO: use reactive set (from signal-utils) rather than replacing value
-      const newCheckpoints = new Set(this.checkpoints);
-      for (const checkpoint of newCheckpoints) {
-        // BUG: this can't distinguish these two cases:
-        //   - set checkpoint; undo; redo (shouldn't purge checkpoint == totalMoves)
-        //   - set checkpoint; undo; move (_should_ purge checkpoint >= totalMoves)
-        // To avoid unexpected purging, use `>` rather than `>=`:
-        if (checkpoint > totalMoves) {
-          newCheckpoints.delete(checkpoint);
-        }
-      }
-      if (newCheckpoints.size < this.checkpoints.size) {
-        this._checkpoints.set(newCheckpoints);
+      // BUG: this can't distinguish these two cases:
+      //   - set checkpoint; undo; redo (shouldn't purge checkpoint == totalMoves)
+      //   - set checkpoint; undo; move (_should_ purge checkpoint >= totalMoves)
+      // To avoid unexpected purging, keep a checkpoint at totalMoves:
+      const kept = [...this.checkpoints].filter((c) => c <= totalMoves);
+      if (kept.length < this.checkpoints.size) {
+        this._checkpoints.set(new Set(kept));
       }
     }
   }
@@ -919,10 +868,9 @@ export class Puzzle {
     await nextAnimationFrame();
   }
 
-  /** Private: the only caller is `delete()`. `view.ts`'s `destroyCanvas`
-   * deliberately does not call it (it would need the `Puzzle` that was live
-   * during `createCanvas`, which is not necessarily the current one), and no
-   * third caller has appeared since the fork. */
+  /** Only `delete()` calls this: `view.ts`'s `destroyCanvas` would need the
+   * `Puzzle` that was live during `createCanvas`, which is not necessarily the
+   * current one. */
   private async detachCanvas(): Promise<void> {
     await this.workerPuzzle.detachCanvas();
   }

@@ -11,8 +11,8 @@
  *
  * That is a claim about *roles*, and it is the claim these tests make: whatever
  * the pipeline does to the numbers, a bevel highlight has to stay lighter than
- * the surface it sits on and a lowlight darker, **in both schemes**. Nothing
- * asserted it before. A swap naming the wrong index — `[16, 18]` for `[16, 17]`
+ * the surface it sits on and a lowlight darker, **in both schemes**. A swap
+ * naming the wrong index — `[16, 18]` for `[16, 17]`
  * — leaves every test green, every color in the palette, and one game's blocks
  * lit from the wrong side in dark mode only.
  */
@@ -37,7 +37,7 @@ import "../games/index.ts";
 
 /** The lightness a dark-mode board background sits at, per `utils/color.ts`. */
 const DARK_BG_L = 0.2;
-/** What `puzzle-view.ts` hands the engine in dark mode, and why: games derive
+/** What `components/view.ts` hands the engine in dark mode, and why: games derive
  * colors by scaling the background down, so the palette is generated light and
  * inverted afterwards. (`resolvePalette` shifts it off pure white before the
  * game sees it, exactly as the midend does.) */
@@ -142,8 +142,8 @@ describe("slide's board", () => {
    * deep, and its layout is stated in `slide/render.ts`. That is what makes the
    * bevel assertion below possible here and not in the collection-wide block
    * above: **the invariant is about roles, and an index only names a role once
-   * you know the layout.** Establishing that for the other two games with swaps
-   * is worth doing and is not this change's job.
+   * you know the layout.** The other games with swaps state no layout, so they
+   * get only the collection-wide checks.
    */
   const TRIOS = [
     ["floor", 0],

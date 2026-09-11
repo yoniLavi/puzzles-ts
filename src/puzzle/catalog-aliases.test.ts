@@ -4,7 +4,7 @@
  * This collection renames most of the puzzles it ships: Sudoku is Solo,
  * Nonogram is Pattern, Minesweeper is Mines, Slitherlink is Loopy. A search box
  * that reads only the names *this* project uses answers "no puzzle matches" to
- * the most likely first query anyone types, which is exactly what it did.
+ * the most likely first query anyone types.
  *
  * Aliases are therefore catalog data, and two things are checked about them.
  *

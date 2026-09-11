@@ -1,12 +1,7 @@
 /**
  * **What a puzzle search matches on** — one definition, used by the home
- * screen's search box and by the `Ctrl/Cmd+K` quick-switch.
- *
- * The two had their own inline expressions and had already drifted: the home
- * box read name + objective + description, the switcher read name + objective.
- * A player who finds a game from one and not the other has met a bug, and the
- * only way two search boxes agree about what they search is for there to be one
- * answer.
+ * screen's search box and by the `Ctrl/Cmd+K` quick-switch, because two search
+ * boxes agree about what they search only if there is one answer.
  *
  * The haystack is deliberately wide — a **name, its other names, its one-line
  * category and its objective** — because a puzzle search is a recall aid, not a

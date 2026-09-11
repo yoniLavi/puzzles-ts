@@ -1,45 +1,31 @@
 /**
  * **The app's keyboard shortcuts — one table, read by both the binder and the
- * label.**
+ * label.** Keys otherwise go straight through `eventKeyToPuzzleKey` to the game.
  *
- * The port shipped with almost none. Keys go straight through
- * `eventKeyToPuzzleKey` to the game; only Escape, Tab, Ctrl+C and a
- * `Ctrl/Cmd+S` quick-save were ever claimed above it, so there was no way to
- * undo a move from the keyboard in any of the 57 games. Upstream had them —
- * `midend.c` maps `n`, `u`, `r` and `q` behind a `one_key_shortcuts` preference
- * (default on), plus control codes that work regardless — and the port carried
- * neither.
- *
- * Two tiers, per `design-front-page-and-chrome` design.md §4.7:
+ * Two tiers:
  *
  * - **Chords, always on.** `Ctrl/Cmd` + a letter cannot collide with a game's
  *   input, because the board never sees a key with `Ctrl` held
  *   (`wantsKeyEvent` declines them).
- * - **Bare letters, behind a preference.** These *can* collide, and the design
- *   asked for the collision to be resolved by deriving it from the game rather
- *   than from a roster.
+ * - **Bare letters, behind a preference.** These *can* collide, and the
+ *   collision is resolved by deriving it from the game rather than from a
+ *   roster.
  *
- * **How the derivation works, and why it is stronger than what was asked for.**
- * The design proposed reading a game's `requestKeys()` labels. But
- * `Midend.processInput` already returns `false` **exactly when the game's
- * `interpretMove` returned `null`** — that is, when the game declined the key.
- * So the rule is *offer the key to the game first, and act only if it declines*,
- * which needs no list of games, cannot be forgotten by a new one, and also
- * covers a game that consumes a letter without ever putting it on the keypad —
- * something the keypad labels alone could not see. (Upstream cannot do this: it
- * intercepts `n`/`u`/`r`/`q` before the game runs, which is precisely why its
- * preference has to exist.) The wiring is `view-interactive.ts`, which raises
+ * **How the derivation works.** `Midend.processInput` returns `false` **exactly
+ * when the game's `interpretMove` returned `null`** — that is, when the game
+ * declined the key. So the rule is *offer the key to the game first, and act
+ * only if it declines*, which needs no list of games, cannot be forgotten by a
+ * new one, and also covers a game that consumes a letter without ever putting
+ * it on the keypad. (Upstream's `midend.c` intercepts `n`/`u`/`r`/`q` before
+ * the game runs, which is precisely why its `one_key_shortcuts` preference has
+ * to exist.) The wiring is `view-interactive.ts`, which raises
  * `puzzle-key-unhandled` when the game declines, and `puzzle-screen.ts`, which
  * listens.
  *
- * **`Ctrl/Cmd+S` stays bound**, against the design's "not Ctrl+S — the browser
- * owns it". The chord was already bound to Check & save with a
- * `preventDefault()` that suppresses the browser's save dialog, and it works;
- * the design's premise that "there are no app-level shortcuts today" simply
- * missed it. Removing a working, deliberate, player-visible shortcut to satisfy
- * a sentence written without it in view would be a regression, so it is listed
- * here instead — which is also what puts it on the rail's Check & save row,
- * where it was never shown before.
+ * **`Ctrl/Cmd+S` is bound** to Check & save, with a `preventDefault()` that
+ * suppresses the browser's save dialog. Deliberately, though the design left
+ * that chord to the browser: it is a working, player-visible shortcut, and
+ * listing it here is what puts it on the rail's Check & save row.
  *
  * Nothing here decides *what* a command does; `puzzle-screen.ts`'s `commandMap`
  * does, and every `command` below is one of its keys (asserted by

@@ -1,21 +1,11 @@
 /**
- * The single Comlink-exposed surface a worker-side puzzle presents to the app.
+ * The Comlink surface a worker-side puzzle presents to the app.
  *
- * It was extracted when there were two implementations — the C/WASM-backed
- * `WorkerPuzzle` and the TS-midend-backed `TsWorkerPuzzle` — so that the
- * dispatch seam in `worker.ts` could construct either without an
- * `as unknown as` cast. `retire-c-engine` deleted the first, and
- * **`TsWorkerPuzzle` is now the only implementer.**
- *
- * It stays anyway, for a reason independent of that origin: the app types the
- * worker as `Remote<PuzzleEngineSurface>`. Collapsing it to
+ * `TsWorkerPuzzle` is its only implementer, and it is a hand-stated interface
+ * anyway: the app types the worker as `Remote<PuzzleEngineSurface>`, and
  * `Remote<TsWorkerPuzzle>` would drag the concrete class's whole surface across
  * the worker boundary, so every internal method would read as part of the
- * contract. A narrowed, hand-stated boundary type is worth having with one
- * implementer. `worker.ts` records the same decision at the construction site.
- *
- * Where the two implementations historically used slightly different
- * byte-buffer generics, the looser compatible type is kept here.
+ * contract.
  */
 
 import type {
@@ -85,13 +75,9 @@ export interface PuzzleEngineSurface {
   getPreferencesConfig(): ConfigDescription;
   getPreferences(): ConfigValues;
   setPreferences(values: ConfigValues): string | undefined;
-  // There was a `savePreferences(): Uint8Array` / `loadPreferences(data)` pair
-  // here, mirroring upstream's `midend_serialize_prefs`. It went with
-  // `retire-the-incentre-c-fixture`: the app persists `ConfigValues` per puzzle
-  // through get/setPreferences, so the binary form had no caller, and the TS
-  // adapter answered it with an empty buffer — a public method that silently
-  // returned nothing rather than refusing. If a preferences import/export
-  // feature ever wants a wire format, it should choose one, not inherit the C's.
+  // No binary preferences form (upstream's `midend_serialize_prefs`): the app
+  // persists `ConfigValues` per puzzle through get/setPreferences. A preferences
+  // import/export feature should choose its own wire format, not inherit the C's.
 
   redraw(): void;
   getColorPalette(defaultBackground: Color): Color[];

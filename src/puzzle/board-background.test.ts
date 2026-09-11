@@ -22,7 +22,7 @@ import { oklchToColor } from "../utils/color.ts";
 import { puzzleAugmentations } from "./augmentation.ts";
 import "../games/index.ts";
 
-/** What `puzzle-view.ts` hands the engine in dark mode. */
+/** What `components/view.ts` hands the engine in dark mode. */
 const WHITE = oklchToColor([1, 0, 0]);
 /** What it hands the engine under the light theme (L 0.87). */
 const LIGHT = oklchToColor([0.87, 0, 0]);

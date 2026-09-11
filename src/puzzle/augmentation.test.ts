@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Game, PresetMenu } from "../engine/game.ts";
 import { getTsGame } from "../engine/registry.ts";
-// Register every TS-ported game so the registry is populated and we can
+// Register every game so the registry is populated and we can
 // drive each game's `describeParams` through the matching `describeConfig`
 // augmentation template. `beforeAll` re-runs it because under
 // `isolate: false` a sibling file may have reset the shared registry after

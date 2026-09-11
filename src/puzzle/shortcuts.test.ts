@@ -150,11 +150,10 @@ describe("a bare shortcut letter reaches the app in every game", () => {
    * `shortcuts.ts` resolves a bare letter by offering it to the game first and
    * acting only if `interpretMove` returned `null`. The tests above prove the
    * table and the matchers are right; none of them proves the *game* lets the
-   * letter through, and that is the half a player feels. Ascent used to answer
-   * every key — its `interpretMove` gated on the pointer coordinates alone,
-   * and keys arrive at (0, 0) — so undo, redo, new game and hint were all dead
-   * there while every test in this file passed
-   * (`close-the-consumed-probe-blind-spot`).
+   * letter through, and that is the half a player feels. A game whose
+   * `interpretMove` gates on the pointer coordinates alone answers every key,
+   * since keys arrive at (0, 0), and then undo, redo, new game and hint are all
+   * dead there while every test above passes.
    *
    * The sweep is *sufficient*, not exhaustive: it asks on a fresh board and
    * with the cursor revealed, which is the state a player is in when they reach

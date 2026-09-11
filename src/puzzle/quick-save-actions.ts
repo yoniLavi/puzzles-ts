@@ -17,10 +17,9 @@ import type { Puzzle } from "./puzzle.ts";
  * mistake-checking, this is a plain quick-save. Success is confirmed with
  * a non-blocking toast, never a modal.
  *
- * **"Checkpoint" is the history panel's word and only its word.** This is the
- * one-slot quick-save; the panel's numbered, rewindable checkpoints are a
- * different feature, and a player who reads `help/features.md` §Checkpoints and
- * then meets this toast was being told two things about one word.
+ * **"Checkpoint" is the history panel's word and only its word**: this is the
+ * one-slot quick-save, a different feature from the panel's numbered,
+ * rewindable checkpoints (`help/features.md` §Checkpoints).
  *
  * The success label reports the *check*, not only the save, where there was one
  * to run: a player who pressed "Check and save" asked whether the board is

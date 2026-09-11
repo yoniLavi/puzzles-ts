@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest";
 import { computeAvailableCanvasSize } from "./canvas-sizing.ts";
 
 // Regression guard for the on-load "board renders too small and only a window
-// resize fixes it" race (fix-canvas-sizing-race). Root cause: the available
-// *width* used to be measured from `[part=content]`, which includes the hint
-// banner. The banner reserves `max(canvasSize.w, 34rem)`, and the first
+// resize fixes it" race. Root cause: the available *width* was measured from
+// `[part=content]`, which then included the hint banner. The banner reserves `max(canvasSize.w, 34rem)`, and the first
 // (pre-game) resize sets `canvasSize` to the full available width — so during
 // createCanvas() the banner made `content` full-width while the fresh canvas
 // was still at its default 300px, and subtracting that stale width shrank the

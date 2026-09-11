@@ -25,11 +25,9 @@ export interface PuzzleAugmentations {
    * conventions".
    *
    * **A tier list is never spelled out here.** Write a bare `{difficulty}` and
-   * pass `names`; a token that spells its own options is for presentation
-   * shaping (punctuation, leading spaces, an empty branch), which has no other
-   * source. Nineteen of the twenty-one games that spelled their tiers had them
-   * wrong, and the words a player saw in the dialog and in the header beside it
-   * disagreed.
+   * pass `names`, so the header and the Custom dialog beside it name a tier from
+   * one source; a token that spells its own options is for presentation shaping
+   * (punctuation, leading spaces, an empty branch), which has no other source.
    */
   describeConfig?: (config: ConfigValues, names?: ChoiceNames) => string;
 
@@ -237,8 +235,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       ],
     }),
     // The undecided and ruled-out edges take their dark values from the shared
-    // palette (`lineMaybeColor` / `lineNoColor`); the `{ 2: 0.6 }` multiplier
-    // that lived here darkened an already-dark inversion into invisibility.
+    // palette (`lineMaybeColor` / `lineNoColor`); a lightness multiplier here
+    // would darken an already-dark inversion into invisibility.
   },
   magnets: {
     describeConfig: configFormatter(
@@ -540,8 +538,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       paletteSwaps: [
         [2, 4], // highlight/lowlight 3D
         [3, 5], // gentle highlight/lowlight
-        // Indices 6 and 7 (the two cursor slots) both hold `CURSOR` now, so
-        // they need no swap.
+        // Indices 6 and 7 (the two cursor slots) both hold `CURSOR`, so they
+        // need no swap.
       ],
     },
   },
@@ -615,9 +613,8 @@ function configFormatter(
           return options[Number(value)] ?? "";
         }
         // A bare `{field}` on a choices field renders the name the *game*
-        // declares, so a tier list has one source. `names` comes from the same
-        // `ConfigDescription` the Custom dialog is built from, which is why the
-        // dialog has always shown the right words.
+        // declares, from the same `ConfigDescription` the Custom dialog is
+        // built from, so a tier list has one source.
         const declared = names?.[field];
         if (declared) {
           return declared[Number(value)] ?? String(value);

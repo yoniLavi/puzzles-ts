@@ -2,13 +2,10 @@
 // share dialog, and keys the keypad/view re-renders. It must therefore be the
 // **full** params of the board on screen, difficulty included.
 //
-// It used to be derived from `randomSeed` before its '#', falling back to
-// `currentGameId` before its ':'. That preference was itself the bug's
-// signature: the seed form carries full params and the game-id form does not, so
-// the fallback silently mislabeled every board that has no seed — which is every
-// board restored from a descriptive id, i.e. every reopened puzzle. Unruly at
-// 10x10 Normal came back labeled "10x10 Trivial", a type its preset menu does
-// not offer (`remember-the-difficulty-of-a-dealt-board`).
+// The trap is a board with no seed, which is every board restored from a
+// descriptive id, i.e. every reopened puzzle: read off the lossy game id instead,
+// Unruly at 10x10 Normal came back labeled with a tier its preset menu does not
+// offer.
 //
 // Drives the notification handler directly against a Puzzle built without a
 // worker, the way `puzzle-hint-stepper.test.ts` does.
@@ -68,9 +65,8 @@ function idChange(opts: {
 
 describe("Puzzle.currentParams", () => {
   it("keeps the difficulty on a board with no seed", async () => {
-    // The regression, exactly: a board restored from a descriptive id. Before
-    // the fix this reported "10x10" and the type menu rendered it as the
-    // default tier.
+    // A board restored from a descriptive id. Reading the short id reports
+    // "10x10", which the type menu renders as the default tier.
     const { puzzle, notify } = makePuzzle();
     await notify(idChange({ short: "10x10", full: "10x10dn", desc: "board" }));
     expect(puzzle.currentParams).toBe("10x10dn");
