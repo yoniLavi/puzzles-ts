@@ -17,10 +17,11 @@
 import { deduceHintPlan, type HintPlanResult } from "../../engine/hint-plan.ts";
 import type { HintStep } from "../../engine/index.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
+import type { Point } from "../../engine/types.ts";
 import { say } from "./hint-text.ts";
 import type { GalaxiesMove } from "./index.ts";
 import { okToAddAssocWithOpposite, reachableFromDot } from "./moves.ts";
-import { type GalaxiesFiring, type Pos, RUNGS } from "./solver.ts";
+import { type GalaxiesFiring, RUNGS } from "./solver.ts";
 import {
   addAssoc,
   checkComplete,
@@ -30,7 +31,7 @@ import {
   F_TILE_ASSOC,
   type GalaxiesState,
   idx,
-  inUi,
+  inInterior,
   SpaceType,
   spaceOppositeDot,
   spaceTypeAt,
@@ -51,51 +52,41 @@ export interface GalaxiesHint {
   /** Cells the move associates — the tile *and* its 180° partner, which the
    * game commits in the same move. Both are the action, and the plan tracks
    * both; {@link focus} is which of them the deduction is actually about. */
-  targets: Pos[];
+  targets: Point[];
   /**
-   * The one cell the narration is talking about, when the firing has one.
+   * The one cell the narration is about, when the firing has one. A deduction
+   * settles a cell and the game brings its 180° partner along: two cells, one
+   * move, but only one the player has to think about. So the deduced cell
+   * takes the solid action color and the partner a bare outline of it — same
+   * hue because they share a fate, different weight because only one is the
+   * point.
    *
-   * A deduction settles a cell and the game brings its 180° partner along —
-   * two cells, one move, but *not* two cells the player has to think about.
-   * Painted identically they made "this cell" ambiguous (owner-reported), and
-   * they are genuinely different roles: one is deduced, the other follows by a
-   * symmetry the player already knows. So the deduced cell takes the solid
-   * action color and the partner a bare outline of it — same hue, because
-   * they share a fate; different weight, because only one is the point.
-   *
-   * `null` where the cells really are equivalent (a dot's own cells, which are
-   * all forced by the same one-line rule) — there, all of them fill solid.
+   * `null` where the cells really are equivalent (a dot's own cells, all
+   * forced by one rule); there, all of them fill solid.
    */
-  focus: Pos | null;
+  focus: Point | null;
   /** Walls the move draws. */
-  targetWalls: Pos[];
+  targetWalls: Point[];
   /** The dot the association points at, ringed in the action color. */
-  targetDot: Pos | null;
+  targetDot: Point | null;
   /** Cells the deduction reasons over. */
-  area: Pos[];
+  area: Point[];
   /** Walls the deduction reasons over. */
-  walls: Pos[];
+  walls: Point[];
   /** Dots the argument cites (never the one it acts on — one ring role per
    * color, so "the ringed dot" is never ambiguous). */
-  refDots: Pos[];
+  refDots: Point[];
 }
 
 /**
- * How many *showable* steps one `hint()` call plans ahead. A UX bound, not a
- * correctness one: the player sees one step at a time and every request
- * recomputes, so a longer plan buys nothing and costs a slower press.
+ * How many *showable* steps one `hint()` call plans ahead. A UX bound: the
+ * player sees one step at a time and every request recomputes, so a longer
+ * plan only costs a slower press.
  *
- * Showable, not firings — the distinction was a shipped bug (owner-reported).
- * A dot sitting inside its own cell forces that cell, but the game refuses to
- * draw an arrow there, so the firing re-derives on every recompute and can
- * never be shown. Counting firings let those eat the entire budget on a 15x15
- * (twenty of them in a row, measured on the reported board) and the hint
- * reported "No further move can be deduced" on a board with plenty left.
- *
- * That is now `deduceHintPlan`'s own rule — its cap counts shown steps once a
- * `showable` is given — so this game no longer keeps a second, firing-counting
- * cap beside it. Termination needs none: every firing decides a cell or a wall,
- * and the step budget still catches one that does not.
+ * Showable, not firings: a dot inside its own cell forces that cell, but the
+ * game draws no arrow there, so the firing recurs on every recompute and is
+ * never shown. `deduceHintPlan` counts shown steps once a `showable` is given,
+ * and the step budget catches a firing that decides nothing.
  */
 const PLAN_CAP = 20;
 
@@ -114,40 +105,28 @@ const EMPTY: Omit<GalaxiesHint, "targets"> = {
  *
  * A cell's owner must be a dot whose 180° image of the cell is on the board,
  * dot-free, and reachable from it through cells no other dot already stands
- * on — which is exactly the predicate behind the rings a cell→dot drag shows.
- * When exactly one dot passes, the cell is forced, and the player can check it
- * by dragging: one ring means one answer.
+ * on — exactly the predicate behind the rings a cell→dot drag shows. When one
+ * dot passes, the cell is forced, and the player can check it by dragging: one
+ * ring means one answer.
  *
- * It is not in the C solver, and deliberately hint-only: it decides nothing
- * about which boards exist (the generator never calls it), and it is sound on
- * its own terms — every condition it tests is necessary for ownership. Its
- * value over the reach rung below is that it argues from the *dots*, which is
- * the thing the sentence is about and the thing the player can point at
- * (owner-suggested at acceptance). Where both apply this one wins, because it
- * is the shorter story.
+ * It is not in upstream's solver, and deliberately hint-only: the generator
+ * never calls it, and every condition it tests is necessary for ownership. It
+ * argues from the *dots*, which the player can point at, so where it and the
+ * reach rung both apply this one wins as the shorter story.
  */
 function soleOwnerFiring(s: GalaxiesState): GalaxiesFiring | null {
   const cols = checkComplete(s, true).colors;
   if (!cols) return null;
-  // One flood per dot, not one per (cell, dot) pair — the whole rung is then
-  // about as cheap as a single reach computation.
+  // One flood per dot, not one per (cell, dot) pair.
   const reach = s.dots.map((d) => reachableFromDot(s, d.x, d.y));
   for (let y = 1; y < s.sy - 1; y += 2) {
     for (let x = 1; x < s.sx - 1; x += 2) {
-      const i = idx(s, x, y);
-      if (s.flags[i] & F_TILE_ASSOC) continue;
-      let only: Pos | null = null;
-      let several = false;
-      for (let n = 0; n < s.dots.length; n++) {
-        const d = s.dots[n];
-        if (!okToAddAssocWithOpposite(s, x, y, d.x, d.y, cols, reach[n])) continue;
-        if (only) {
-          several = true;
-          break;
-        }
-        only = d;
-      }
-      if (several || !only) continue;
+      if (s.flags[idx(s, x, y)] & F_TILE_ASSOC) continue;
+      const owners = s.dots.filter((d, n) =>
+        okToAddAssocWithOpposite(s, x, y, d.x, d.y, cols, reach[n]),
+      );
+      if (owners.length !== 1) continue;
+      const [only] = owners;
       const opp = spaceOppositeDot(s, x, y, only.x, only.y);
       addAssoc(s, x, y, only.x, only.y);
       if (opp && (opp.x !== x || opp.y !== y)) {
@@ -186,12 +165,10 @@ function nextPlanFiring(b: GalaxiesState): GalaxiesFiring | null {
     // galaxies" narrates later, in the game's plainest terms. Demoted, it
     // fires only where it is genuinely the deduction that unsticks the board.
     RUNGS.mirrorWall.fire,
-    // And nothing after it. Where every direct rule is spent, the board can
-    // still be settled by hypothesizing a cell's dot and propagating until
-    // something breaks — that rung existed and was removed on owner
-    // acceptance: it is guessing, and "I tried them all and this one survived"
-    // is not a technique anyone can learn. The hint refuses instead, and the
-    // player has the save slot and the solver.
+    // And nothing after it. Hypothesizing a cell's dot and propagating until
+    // something breaks would settle more boards, and that rung was removed on
+    // owner acceptance: it is guessing, and "I tried them all and this one
+    // survived" teaches no technique. The hint refuses instead.
   ];
   for (const rung of ladder) {
     const firing = rung(b);
@@ -215,7 +192,7 @@ interface Planned {
  * the predicate depends on associations — only on the dots and the walls — so
  * asking after the working board has applied the firing gives the same answer
  * as asking before. */
-function committable(s: GalaxiesState, tile: Pos, dot: Pos): boolean {
+function committable(s: GalaxiesState, tile: Point, dot: Point): boolean {
   return okToAddAssocWithOpposite(s, tile.x, tile.y, dot.x, dot.y);
 }
 
@@ -263,11 +240,11 @@ export function galaxiesHintPlan(
 
 /** Is this wall part of the board's own rim? Those are set before the player
  * touches anything, so the narration names them as the board's edge. */
-function atBoardEdge(s: GalaxiesState, wall: Pos): boolean {
+function atBoardEdge(s: GalaxiesState, wall: Point): boolean {
   return wall.x === 0 || wall.y === 0 || wall.x === s.sx - 1 || wall.y === s.sy - 1;
 }
 
-function isBlack(s: GalaxiesState, dot: Pos): boolean {
+function isBlack(s: GalaxiesState, dot: Point): boolean {
   return (s.flags[idx(s, dot.x, dot.y)] & F_DOT_BLACK) !== 0;
 }
 
@@ -302,28 +279,24 @@ export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
 /** The cells an association claims: the tile and the partner the same move
  * commits. A tile that is its own partner (dead center of its galaxy) lists
  * once. */
-function pair(tile: Pos, opp: Pos | null): Pos[] {
+function pair(tile: Point, opp: Point | null): Point[] {
   if (!opp || (opp.x === tile.x && opp.y === tile.y)) return [tile];
   return [tile, opp];
 }
 
-/**
- * Only the cell being acted on is kept out of its own evidence area — the
- * partner stays shaded.
- *
- * Dropping both was wrong twice over: it made a claim false (the partner *is*
- * inside the reach the sentence describes, so a shaded area that skipped it
- * did not show "everywhere the galaxy can stretch"), and it left the partner
- * outlined on bare board, which reads as loudly as the solid fill it is
- * supposed to defer to. Shaded underneath, the outline is plainly the
- * quieter mark. Owner-reported.
- */
-function evidenceFor(cells: Pos[], focus: Pos): Pos[] {
-  return without(cells, [focus]);
+/** The action of an association firing: the claimed pair, the deduced cell
+ * and the dot. */
+function claim(f: { tile: Point; opp: Point | null; dot: Point }): GalaxiesHint {
+  return { ...EMPTY, targets: pair(f.tile, f.opp), focus: f.tile, targetDot: f.dot };
 }
 
-function without(cells: Pos[], drop: Pos[]): Pos[] {
-  return cells.filter((c) => !drop.some((d) => d.x === c.x && d.y === c.y));
+/**
+ * The evidence area minus the cell being acted on. The partner stays shaded:
+ * it is inside the area the sentence describes, and an outline over a shaded
+ * cell reads as the quieter mark it is meant to be.
+ */
+function evidenceFor(cells: Point[], focus: Point): Point[] {
+  return cells.filter((c) => c.x !== focus.x || c.y !== focus.y);
 }
 
 export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
@@ -350,98 +323,45 @@ export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
         walls: [firing.from],
         refDots: [firing.dot],
       };
-    case "enclosed": {
-      const targets = pair(firing.tile, firing.opp);
-      return {
-        ...EMPTY,
-        targets,
-        focus: firing.tile,
-        targetDot: firing.dot,
-        // The ways out are the whole premise, so the shaded count is exactly
-        // the number the sentence claims.
-        area: evidenceFor(firing.openings, firing.tile),
-      };
-    }
-    case "soleOwner": {
-      // No shaded area, and none is missing: this argument is about the dots,
-      // not about a region, and the one dot that survives it is ringed. The
-      // ruled-out dots are deliberately *not* marked — symmetry alone leaves
-      // up to eleven of them on a 15x15 (measured), and eleven crossed-out
-      // dots teach nothing.
-      const targets = pair(firing.tile, firing.opp);
-      return { ...EMPTY, targets, focus: firing.tile, targetDot: firing.dot };
-    }
-    case "onlyReach": {
-      const targets = pair(firing.tile, firing.opp);
-      return {
-        ...EMPTY,
-        targets,
-        focus: firing.tile,
-        targetDot: firing.dot,
-        area: evidenceFor(firing.region, firing.tile),
-      };
-    }
-    case "exclave": {
-      const targets = pair(firing.tile, firing.opp);
-      return {
-        ...EMPTY,
-        targets,
-        focus: firing.tile,
-        targetDot: firing.dot,
-        area: evidenceFor(firing.component, firing.tile),
-      };
-    }
+    case "enclosed":
+      // The ways out are the whole premise, so the shaded count is exactly
+      // the number the sentence claims.
+      return { ...claim(firing), area: evidenceFor(firing.openings, firing.tile) };
+    case "soleOwner":
+      // No shaded area: the argument is about the dots, and the one that
+      // survives is ringed. The ruled-out dots stay unmarked, since symmetry
+      // alone leaves up to eleven of them on a 15x15 (measured), and eleven
+      // crossed-out dots teach nothing.
+      return claim(firing);
+    case "onlyReach":
+      return { ...claim(firing), area: evidenceFor(firing.region, firing.tile) };
+    case "exclave":
+      return { ...claim(firing), area: evidenceFor(firing.component, firing.tile) };
   }
 }
 
-function dedupe(cells: Pos[]): Pos[] {
-  const out: Pos[] = [];
-  for (const c of cells) {
-    if (!out.some((o) => o.x === c.x && o.y === c.y)) out.push(c);
-  }
-  return out;
+function dedupe(cells: Point[]): Point[] {
+  return cells.filter(
+    (c, i) => cells.findIndex((o) => o.x === c.x && o.y === c.y) === i,
+  );
 }
 
 // --- the move ---------------------------------------------------------
 
 export function moveOf(firing: GalaxiesFiring): GalaxiesMove {
-  switch (firing.kind) {
-    case "separate":
-    case "mirrorWall":
-      return {
-        ops: [{ kind: "edge", x: firing.edge.x, y: firing.edge.y }],
-        solving: false,
-      };
-    case "dotTile":
-      // One op at the dot's own position claims every cell it sits on —
-      // `applyOp` walks the dot's 3x3 — so a vertex dot's four cells are one
-      // move, as one deduction should be.
-      return {
-        ops: [
-          {
-            kind: "assoc",
-            x: firing.dot.x,
-            y: firing.dot.y,
-            ax: firing.dot.x,
-            ay: firing.dot.y,
-          },
-        ],
-        solving: false,
-      };
-    default:
-      return {
-        ops: [
-          {
-            kind: "assoc",
-            x: firing.tile.x,
-            y: firing.tile.y,
-            ax: firing.dot.x,
-            ay: firing.dot.y,
-          },
-        ],
-        solving: false,
-      };
+  if (firing.kind === "separate" || firing.kind === "mirrorWall") {
+    return {
+      ops: [{ kind: "edge", x: firing.edge.x, y: firing.edge.y }],
+      solving: false,
+    };
   }
+  // A dot's own cells are one op at the dot itself (`applyOp` walks the dot's
+  // 3x3), so a vertex dot's four cells are one move, as one deduction should be.
+  const at = firing.kind === "dotTile" ? firing.dot : firing.tile;
+  return {
+    ops: [{ kind: "assoc", x: at.x, y: at.y, ax: firing.dot.x, ay: firing.dot.y }],
+    solving: false,
+  };
 }
 
 export function galaxiesHintSteps(
@@ -469,10 +389,10 @@ export function stepSatisfied(
 export function outstanding(
   s: GalaxiesState,
   step: HintStep<GalaxiesMove, GalaxiesHint>,
-): Pos[] {
+): Point[] {
   const hl = step.highlights;
   if (!hl) return [];
-  const out: Pos[] = [];
+  const out: Point[] = [];
   for (const w of hl.targetWalls) {
     if (!wallSet(s, w)) out.push(w);
   }
@@ -485,12 +405,14 @@ export function outstanding(
   return out;
 }
 
-function wallSet(s: GalaxiesState, w: Pos): boolean {
-  if (!inUi(s, w.x, w.y) || spaceTypeAt(w.x, w.y) !== SpaceType.Edge) return false;
+function wallSet(s: GalaxiesState, w: Point): boolean {
+  if (!inInterior(s, w.x, w.y) || spaceTypeAt(w.x, w.y) !== SpaceType.Edge) {
+    return false;
+  }
   return (s.flags[idx(s, w.x, w.y)] & F_EDGE_SET) !== 0;
 }
 
-function associatedWith(s: GalaxiesState, tile: Pos, dot: Pos): boolean {
+function associatedWith(s: GalaxiesState, tile: Point, dot: Point): boolean {
   const i = idx(s, tile.x, tile.y);
   if (!(s.flags[i] & F_TILE_ASSOC)) return false;
   return s.dotx[i] === dot.x && s.doty[i] === dot.y;

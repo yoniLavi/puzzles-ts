@@ -61,10 +61,14 @@ has held across all 57 games is `index.ts` (the `Game` object + glue),
 **Use upstream's C (in git history) as a reference for the logic, never as a
 control-flow template.** Classes over handle-passing, iterators over
 `while (next())`, `boolean` and unions over `0|1`, modern containers over
-C-array mirrors. The bar and rationale live in
+C-array mirrors. **Comments and names pass one reading test**: a comment says
+what the code cannot, and a name changes only when a reader has to ask what it
+stands for — [`repo-layout`](../../openspec/specs/repo-layout/spec.md), "A
+comment says what the code cannot, and a name answers its own question". The
+bar and rationale live in
 [`AGENTS.md`](../../AGENTS.md) § "TS port style"; the payoff is measured
-(Galaxies: ~3,000 idiomatic lines against ~4,500 in C, smaller *and* more
-readable).
+(Galaxies, 2026-09-11: 4,398 lines against upstream's 4,485, while also
+carrying an explained hint, mistake checking and a second drag gesture).
 
 **Watch for logic that is correct only because of what `memmove` leaves
 behind.** C's `memmove` copies without clearing the source, so code that opens

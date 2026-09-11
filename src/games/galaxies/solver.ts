@@ -1,13 +1,12 @@
 /**
- * Galaxies solver — difficulty-graded deduction chain plus bounded
- * recursion for `Unreasonable`. Idiomatic TS port of `solver_state`
- * and friends in galaxies.c.
+ * Galaxies solver: a difficulty-graded deduction chain plus bounded recursion
+ * for `Unreasonable`, derived from upstream's `solver_state`.
  *
- * The deduction rules take an optional {@link SolverRecorder}, which is how
- * `hint.ts` narrates them (one engine, two projections —
- * docs/games/hints.md § "Recording the deduction"). The generator and
- * `solve` pass none, so their path is byte-identical by construction and the
- * frozen differential is the guard.
+ * The rules take an optional {@link SolverRecorder}, which is how `hint.ts`
+ * narrates them (one engine, two projections — docs/games/hints.md §
+ * "Recording the deduction"). The generator and `solve` pass none, so their
+ * path is byte-identical by construction and the frozen differential is the
+ * guard.
  */
 import {
   type DeductionTechnique,
@@ -15,10 +14,12 @@ import {
   runDeductionFixpoint,
 } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
+import type { Point } from "../../engine/types.ts";
 import {
   addAssoc,
   adjacencies,
   checkComplete,
+  dotTiles,
   F_DOT,
   F_DOT_BLACK,
   F_EDGE_SET,
@@ -51,16 +52,7 @@ const IMPOSSIBLE = -1;
 const NOTHING = 0;
 const PROGRESS = 1;
 
-/** Re-exported so the hint can read the rules' return codes. */
-export const SOLVER_IMPOSSIBLE = IMPOSSIBLE;
-export const SOLVER_PROGRESS = PROGRESS;
-
 // --- the recorder (the hint's projection of these same rules) --------
-
-export interface Pos {
-  readonly x: number;
-  readonly y: number;
-}
 
 /**
  * One deduction firing, in the vocabulary of the rule that fired it. The
@@ -74,21 +66,34 @@ export interface Pos {
  */
 export type GalaxiesFiring =
   /** The cells a dot physically sits on belong to it. */
-  | { kind: "dotTile"; dot: Pos; tiles: Pos[] }
+  | { kind: "dotTile"; dot: Point; tiles: Point[] }
   /** Two neighbors in different galaxies: a wall must run between them. */
-  | { kind: "separate"; edge: Pos; tiles: [Pos, Pos]; dots: [Pos, Pos] }
+  | { kind: "separate"; edge: Point; tiles: [Point, Point]; dots: [Point, Point] }
   /** A galaxy's boundary is symmetric, so a wall is mirrored about the dot. */
-  | { kind: "mirrorWall"; edge: Pos; from: Pos; tile: Pos; opp: Pos; dot: Pos }
+  | {
+      kind: "mirrorWall";
+      edge: Point;
+      from: Point;
+      tile: Point;
+      opp: Point;
+      dot: Point;
+    }
   /** Every way out of a cell leads into the same galaxy. */
-  | { kind: "enclosed"; tile: Pos; opp: Pos | null; dot: Pos; openings: Pos[] }
+  | { kind: "enclosed"; tile: Point; opp: Point | null; dot: Point; openings: Point[] }
   /** Only one dot's galaxy can still stretch to a cell. */
-  | { kind: "onlyReach"; tile: Pos; opp: Pos | null; dot: Pos; region: Pos[] }
+  | { kind: "onlyReach"; tile: Point; opp: Point | null; dot: Point; region: Point[] }
   /** A detached piece of a galaxy has one square left to grow through. */
-  | { kind: "exclave"; tile: Pos; opp: Pos | null; dot: Pos; component: Pos[] }
+  | {
+      kind: "exclave";
+      tile: Point;
+      opp: Point | null;
+      dot: Point;
+      component: Point[];
+    }
   /** Only one dot could own this cell at all — symmetry and connectivity to
    * the dots, the same test the drag's candidate rings run (hint-only, built
    * in `hint.ts`). */
-  | { kind: "soleOwner"; tile: Pos; opp: Pos | null; dot: Pos };
+  | { kind: "soleOwner"; tile: Point; opp: Point | null; dot: Point };
 
 /**
  * The optional sink the rules record into.
@@ -114,15 +119,13 @@ function stop(rec: SolverRecorder | undefined): boolean {
   return rec?.stopAtFirstFiring === true && rec.firing !== null;
 }
 
-// Solver-internal scratch flags, kept in a side-buffer rather than
-// the public state's `flags` (we don't want the solver to leak
-// transient bits into a saved game).
+// Scratch flags live in a side buffer, so no transient bit reaches the state.
 const M_MARK = 1;
 const M_REACHABLE = 2;
 const M_MULTIPLE = 4;
 
-/** Try to add `tile ↔ dot` association; also mark the opposite tile.
- * Returns IMPOSSIBLE / NOTHING / PROGRESS. Mirrors `solver_add_assoc`. */
+/** Associate the tile and its 180° image with the dot, reporting IMPOSSIBLE,
+ * NOTHING or PROGRESS. Upstream's `solver_add_assoc`. */
 function solverAddAssoc(
   s: GalaxiesState,
   tx: number,
@@ -130,80 +133,57 @@ function solverAddAssoc(
   dx: number,
   dy: number,
 ): number {
-  const ti = idx(s, tx, ty);
-  if (s.flags[ti] & F_TILE_ASSOC) {
-    if (s.dotx[ti] !== dx || s.doty[ti] !== dy) return IMPOSSIBLE;
-    return NOTHING;
+  if (s.flags[idx(s, tx, ty)] & F_TILE_ASSOC) {
+    return canJoin(s, tx, ty, dx, dy) ? NOTHING : IMPOSSIBLE;
   }
   const opp = spaceOppositeDot(s, tx, ty, dx, dy);
-  if (!opp) return IMPOSSIBLE;
-  const oi = idx(s, opp.x, opp.y);
-  if (s.flags[oi] & F_TILE_ASSOC) {
-    if (s.dotx[oi] !== dx || s.doty[oi] !== dy) return IMPOSSIBLE;
-  }
+  if (!opp || !canJoin(s, opp.x, opp.y, dx, dy)) return IMPOSSIBLE;
   addAssoc(s, tx, ty, dx, dy);
   addAssoc(s, opp.x, opp.y, dx, dy);
   return PROGRESS;
 }
 
-/** Tiles directly orthogonally adjacent to a dot are associated with
- * it. Mirrors `solver_obvious_dot`. */
+/** The tiles a dot sits on are its own. Upstream's `solver_obvious_dot`. */
 function solverObviousDot(
   s: GalaxiesState,
   dx: number,
   dy: number,
   rec?: SolverRecorder,
 ): number {
-  let didsth = NOTHING;
-  // One dot's own cells are one deduction ("a galaxy covers the cells its dot
-  // sits on"), so the recorded firing is the whole set, not a cell at a time.
-  //
-  // Which cells changed is decided *before* the loop, not from its return
-  // codes: `solverAddAssoc` claims the 180° partner as well, so the partner
-  // reports NOTHING when its own turn comes round and a firing built from
-  // PROGRESS alone lists half the cells its move actually claims — a hint
-  // saying "this cell" while filling one of two (owner-visible, caught in the
-  // browser).
-  const own: Pos[] = [];
-  for (let ddy = -1; ddy <= 1; ddy++) {
-    for (let ddx = -1; ddx <= 1; ddx++) {
-      const tx = dx + ddx;
-      const ty = dy + ddy;
-      if (!inGrid(s, tx, ty)) continue;
-      if (spaceTypeAt(tx, ty) !== SpaceType.Tile) continue;
-      own.push({ x: tx, y: ty });
-    }
-  }
+  // One dot's own cells are one deduction, so the firing is the whole set. It
+  // lists the cells unclaimed *before* the loop: `solverAddAssoc` claims each
+  // cell's 180° partner too, so the partner reports NOTHING on its own turn,
+  // and a list built from PROGRESS would name half the cells the move claims.
+  const own = dotTiles(s, dx, dy);
   const fresh = own.filter((t) => !(s.flags[idx(s, t.x, t.y)] & F_TILE_ASSOC));
+  let progress = NOTHING;
   for (const t of own) {
     const r = solverAddAssoc(s, t.x, t.y, dx, dy);
     if (r === IMPOSSIBLE) return IMPOSSIBLE;
-    if (r === PROGRESS) didsth = PROGRESS;
+    if (r === PROGRESS) progress = PROGRESS;
   }
-  if (rec && didsth === PROGRESS) {
+  if (rec && progress === PROGRESS) {
     rec.firing = { kind: "dotTile", dot: { x: dx, y: dy }, tiles: fresh };
   }
-  return didsth;
+  return progress;
 }
 
 export function solverObvious(s: GalaxiesState, rec?: SolverRecorder): number {
-  let didsth = NOTHING;
+  let progress = NOTHING;
   for (const dot of s.dots) {
     const r = solverObviousDot(s, dot.x, dot.y, rec);
     if (r === IMPOSSIBLE) return IMPOSSIBLE;
-    if (r === PROGRESS) didsth = PROGRESS;
+    if (r === PROGRESS) progress = PROGRESS;
     if (stop(rec)) return PROGRESS;
   }
-  return didsth;
+  return progress;
 }
 
 /**
- * Which of this rule's two halves to apply. Both, always, on the solve path —
- * the parameter exists because the *hint* wants them as separate rungs: the
- * "different dots, so a wall" half is the technique that advances the board,
- * and the mirror half is the clever one, better shown when it is needed than
- * as the routine way walls appear. Splitting the order changes nothing about
- * what is deducible.
+ * Which halves of the wall rule to apply: both, on the solve path. The hint
+ * wants them as separate rungs, since "different dots, so a wall" is what
+ * advances the board and the mirror half is the clever one, better shown when
+ * it is needed than as the routine way walls appear.
  */
 interface LineRules {
   separate: boolean;
@@ -212,39 +192,33 @@ interface LineRules {
 
 const BOTH_LINE_RULES: LineRules = { separate: true, mirror: true };
 
-/** For each set edge, also set its 180°-opposite edge through the
- * associated tiles' dot. Mirrors `solver_lines_opposite_cb` run
- * across every edge. */
+/** Upstream's `solver_lines_opposite_cb`, run across every edge: two tiles of
+ * different dots get a wall between them, and a set wall is mirrored through
+ * the dot of each tile beside it. */
 function solverLinesOpposite(
   s: GalaxiesState,
   rec?: SolverRecorder,
   rules: LineRules = BOTH_LINE_RULES,
 ): number {
-  let didsth = NOTHING;
+  let progress = NOTHING;
   for (let y = 0; y < s.sy; y++) {
     for (let x = 0; x < s.sx; x++) {
       if (spaceTypeAt(x, y) !== SpaceType.Edge) continue;
       const ei = idx(s, x, y);
       const tiles = tilesFromEdge(s, x, y);
+      const [t0, t1] = tiles;
 
-      // If both tile-neighbors are associated with different dots,
-      // there must be an edge between them.
-      if (
-        rules.separate &&
-        !(s.flags[ei] & F_EDGE_SET) &&
-        tiles[0] &&
-        tiles[1] &&
-        s.flags[idx(s, tiles[0].x, tiles[0].y)] & F_TILE_ASSOC &&
-        s.flags[idx(s, tiles[1].x, tiles[1].y)] & F_TILE_ASSOC
-      ) {
-        const i0 = idx(s, tiles[0].x, tiles[0].y);
-        const i1 = idx(s, tiles[1].x, tiles[1].y);
-        if (s.dotx[i0] !== s.dotx[i1] || s.doty[i0] !== s.doty[i1]) {
+      if (rules.separate && !(s.flags[ei] & F_EDGE_SET) && t0 && t1) {
+        const i0 = idx(s, t0.x, t0.y);
+        const i1 = idx(s, t1.x, t1.y);
+        if (
+          s.flags[i0] & F_TILE_ASSOC &&
+          s.flags[i1] & F_TILE_ASSOC &&
+          (s.dotx[i0] !== s.dotx[i1] || s.doty[i0] !== s.doty[i1])
+        ) {
           s.flags[ei] |= F_EDGE_SET;
-          didsth = PROGRESS;
+          progress = PROGRESS;
           if (rec) {
-            const t0 = tiles[0];
-            const t1 = tiles[1];
             rec.firing = {
               kind: "separate",
               edge: { x, y },
@@ -262,23 +236,19 @@ function solverLinesOpposite(
       if (!rules.mirror) continue;
       if (!(s.flags[ei] & F_EDGE_SET)) continue;
 
-      // Mirror set edges across each adjacent associated tile's dot.
-      for (let n = 0; n < 2; n++) {
-        const t = tiles[n];
+      for (const t of tiles) {
         if (!t) continue;
         const ti = idx(s, t.x, t.y);
         if (!(s.flags[ti] & F_TILE_ASSOC)) continue;
         const opp = tileOpposite(s, t.x, t.y);
         if (!opp) return IMPOSSIBLE;
-        const ddx = t.x - x;
-        const ddy = t.y - y;
-        const ox = opp.x + ddx;
-        const oy = opp.y + ddy;
+        const ox = opp.x + t.x - x;
+        const oy = opp.y + t.y - y;
         if (!inGrid(s, ox, oy)) return IMPOSSIBLE;
         const oei = idx(s, ox, oy);
         if (!(s.flags[oei] & F_EDGE_SET)) {
           s.flags[oei] |= F_EDGE_SET;
-          didsth = PROGRESS;
+          progress = PROGRESS;
           if (rec) {
             rec.firing = {
               kind: "mirrorWall",
@@ -294,52 +264,47 @@ function solverLinesOpposite(
       }
     }
   }
-  return didsth;
+  return progress;
 }
 
-/** Each empty tile whose four adjacent edges are either set or
- * neighbor-an-already-associated-tile-of-the-same-dot must itself
- * be associated with that single dot. Mirrors
- * `solver_spaces_oneposs_cb` run across every tile. */
+/** A free tile whose every way out leads into one dot's tiles belongs to that
+ * dot. Upstream's `solver_spaces_oneposs_cb`, run across every tile. */
 function solverSpacesOneposs(s: GalaxiesState, rec?: SolverRecorder): number {
-  let didsth = NOTHING;
+  let progress = NOTHING;
   for (let y = 1; y < s.sy - 1; y += 2) {
     for (let x = 1; x < s.sx - 1; x += 2) {
-      const ti = idx(s, x, y);
-      if (s.flags[ti] & F_TILE_ASSOC) continue;
+      if (s.flags[idx(s, x, y)] & F_TILE_ASSOC) continue;
       const { edges, tiles } = adjacencies(s, x, y);
-      let eset = 0;
+      let walled = 0;
       let dx = -1;
       let dy = -1;
-      let abort = false;
-      // The ways out: neighbors reached through an unwalled side. Every one
-      // of them belongs to the single dot below, which is the whole premise.
-      const openings: Pos[] = [];
-      for (let n = 0; n < 4 && !abort; n++) {
+      let mixed = false;
+      // The ways out: neighbors through an unwalled side, all of which belong
+      // to the one dot below, which is the whole premise.
+      const openings: Point[] = [];
+      for (let n = 0; n < 4; n++) {
         const e = edges[n];
         if (!e) continue;
-        const ei = idx(s, e.x, e.y);
-        if (s.flags[ei] & F_EDGE_SET) {
-          eset++;
-        } else {
-          const t = tiles[n];
-          if (!t) continue;
-          const ai = idx(s, t.x, t.y);
-          if (!(s.flags[ai] & F_TILE_ASSOC)) {
-            abort = true;
-            continue;
-          }
-          if (dx !== -1 && (s.dotx[ai] !== dx || s.doty[ai] !== dy)) {
-            abort = true;
-            continue;
-          }
-          dx = s.dotx[ai];
-          dy = s.doty[ai];
-          openings.push({ x: t.x, y: t.y });
+        if (s.flags[idx(s, e.x, e.y)] & F_EDGE_SET) {
+          walled++;
+          continue;
         }
+        const t = tiles[n];
+        if (!t) continue;
+        const ai = idx(s, t.x, t.y);
+        if (
+          !(s.flags[ai] & F_TILE_ASSOC) ||
+          (dx !== -1 && (s.dotx[ai] !== dx || s.doty[ai] !== dy))
+        ) {
+          mixed = true;
+          break;
+        }
+        dx = s.dotx[ai];
+        dy = s.doty[ai];
+        openings.push({ x: t.x, y: t.y });
       }
-      if (abort) continue;
-      if (eset === 4) return IMPOSSIBLE;
+      if (mixed) continue;
+      if (walled === 4) return IMPOSSIBLE;
       if (dx === -1) continue;
       if (rec) {
         rec.firing = {
@@ -353,7 +318,7 @@ function solverSpacesOneposs(s: GalaxiesState, rec?: SolverRecorder): number {
       const r = solverAddAssoc(s, x, y, dx, dy);
       if (r === IMPOSSIBLE) return IMPOSSIBLE;
       if (r === PROGRESS) {
-        didsth = PROGRESS;
+        progress = PROGRESS;
         if (stop(rec)) return PROGRESS;
       } else if (rec) {
         // Recorded a firing that turned out to change nothing — drop it, or
@@ -362,26 +327,31 @@ function solverSpacesOneposs(s: GalaxiesState, rec?: SolverRecorder): number {
       }
     }
   }
-  return didsth;
+  return progress;
 }
 
 interface ExpandCtx {
   mark: Uint8Array;
-  scratch: Int32Array; // pairs of (x, y) flat: each entry is encoded x + y * sx
+  /** The flood's queue of tile indices, in 180° pairs. */
+  scratch: Int32Array;
   reach: Uint8Array;
   reachDotX: Int16Array;
   reachDotY: Int16Array;
 }
 
-/** Returns true iff `tile` is either unassociated or already
- * associated with `dot`. */
-function expandCheckdot(
-  s: GalaxiesState,
-  tx: number,
-  ty: number,
-  dx: number,
-  dy: number,
-): boolean {
+function newExpandCtx(s: GalaxiesState): ExpandCtx {
+  const sz = s.sx * s.sy;
+  return {
+    mark: new Uint8Array(sz),
+    scratch: new Int32Array(sz),
+    reach: new Uint8Array(sz),
+    reachDotX: new Int16Array(sz),
+    reachDotY: new Int16Array(sz),
+  };
+}
+
+/** Whether the tile is free, or already the dot's. */
+function canJoin(s: GalaxiesState, tx: number, ty: number, dx: number, dy: number) {
   const i = idx(s, tx, ty);
   if (!(s.flags[i] & F_TILE_ASSOC)) return true;
   return s.dotx[i] === dx && s.doty[i] === dy;
@@ -401,78 +371,51 @@ function solverExpandFromdot(
     }
   }
 
-  // Seed with two tiles known to be associated with this dot.
-  const t = spaceTypeAt(dx, dy);
-  let s0x: number;
-  let s0y: number;
-  let s1x: number;
-  let s1y: number;
-  if (t === SpaceType.Tile) {
-    s0x = s1x = dx;
-    s0y = s1y = dy;
-  } else if (t === SpaceType.Edge) {
-    const ts = tilesFromEdge(s, dx, dy);
-    if (!ts[0] || !ts[1]) return; // shouldn't happen for an interior dot
-    s0x = ts[0].x;
-    s0y = ts[0].y;
-    s1x = ts[1].x;
-    s1y = ts[1].y;
-  } else {
-    s0x = dx - 1;
-    s0y = dy - 1;
-    s1x = dx + 1;
-    s1y = dy + 1;
-  }
+  // Seed with two tiles the dot sits on, 180° partners about it: one space
+  // away along each axis on which the dot lies between tiles.
+  const ox = dx & 1 ? 0 : 1;
+  const oy = dy & 1 ? 0 : 1;
   const scratch = ctx.scratch;
-  scratch[0] = s0y * s.sx + s0x;
-  scratch[1] = s1y * s.sx + s1x;
+  scratch[0] = idx(s, dx - ox, dy - oy);
+  scratch[1] = idx(s, dx + ox, dy + oy);
   ctx.mark[scratch[0]] |= M_MARK;
   ctx.mark[scratch[1]] |= M_MARK;
 
-  let start = 0;
-  let end = 2;
+  // Expand from the first tile of each pair; its partner follows by symmetry.
   let next = 2;
-  while (true) {
-    for (let i = start; i < end; i += 2) {
-      const enc = scratch[i];
-      const tx = enc % s.sx;
-      const ty = (enc / s.sx) | 0;
-      const { edges, tiles } = adjacencies(s, tx, ty);
-      for (let j = 0; j < 4; j++) {
-        const e = edges[j];
-        if (!e) continue;
-        const ei = idx(s, e.x, e.y);
-        if (s.flags[ei] & F_EDGE_SET) continue;
-        const tj = tiles[j];
-        if (!tj) continue;
-        const tji = idx(s, tj.x, tj.y);
-        if (ctx.mark[tji] & M_MARK) continue;
+  for (let i = 0; i < next; i += 2) {
+    const enc = scratch[i];
+    const tx = enc % s.sx;
+    const ty = (enc / s.sx) | 0;
+    const { edges, tiles } = adjacencies(s, tx, ty);
+    for (let j = 0; j < 4; j++) {
+      const e = edges[j];
+      if (!e) continue;
+      const ei = idx(s, e.x, e.y);
+      if (s.flags[ei] & F_EDGE_SET) continue;
+      const tj = tiles[j];
+      if (!tj) continue;
+      const tji = idx(s, tj.x, tj.y);
+      if (ctx.mark[tji] & M_MARK) continue;
 
-        const opp = spaceOppositeDot(s, tj.x, tj.y, dx, dy);
-        if (!opp) {
-          ctx.mark[tji] |= M_MARK;
-          continue;
-        }
-        const oi = idx(s, opp.x, opp.y);
-        // C asserts neither tile is M_MARKed (both seen or neither).
-        if (
-          expandCheckdot(s, tj.x, tj.y, dx, dy) &&
-          expandCheckdot(s, opp.x, opp.y, dx, dy)
-        ) {
-          scratch[next++] = tji;
-          scratch[next++] = oi;
-        }
+      const opp = spaceOppositeDot(s, tj.x, tj.y, dx, dy);
+      if (!opp) {
         ctx.mark[tji] |= M_MARK;
-        ctx.mark[oi] |= M_MARK;
+        continue;
       }
+      const oi = idx(s, opp.x, opp.y);
+      // Partners are marked together, so `opp` is unmarked too.
+      if (canJoin(s, tj.x, tj.y, dx, dy) && canJoin(s, opp.x, opp.y, dx, dy)) {
+        scratch[next++] = tji;
+        scratch[next++] = oi;
+      }
+      ctx.mark[tji] |= M_MARK;
+      ctx.mark[oi] |= M_MARK;
     }
-    if (next === end) break;
-    start = end;
-    end = next;
   }
 
   // For every newly-reached empty tile, update reachability.
-  for (let i = 0; i < end; i++) {
+  for (let i = 0; i < next; i++) {
     const enc = scratch[i];
     // The queue is the *reachable* set; `ctx.mark` is wider than that (it also
     // marks neighbors the pair test rejected), so a hint that shaded `mark`
@@ -493,39 +436,17 @@ function solverExpandFromdot(
  * behind an `onlyReach` firing's "this is as far as that galaxy can stretch".
  * Recomputed for the one winning dot rather than kept for all of them: the
  * solve path never needs it, and a hint fires at most once per pass. */
-function reachOfDot(s: GalaxiesState, dx: number, dy: number): Pos[] {
-  const sz = s.sx * s.sy;
-  const ctx: ExpandCtx = {
-    mark: new Uint8Array(sz),
-    scratch: new Int32Array(sz),
-    reach: new Uint8Array(sz),
-    reachDotX: new Int16Array(sz),
-    reachDotY: new Int16Array(sz),
-  };
+function reachOfDot(s: GalaxiesState, dx: number, dy: number): Point[] {
   const reached: number[] = [];
-  solverExpandFromdot(s, dx, dy, ctx, reached);
-  const out: Pos[] = [];
-  const seen = new Set<number>();
-  for (const enc of reached) {
-    if (seen.has(enc)) continue;
-    seen.add(enc);
-    out.push({ x: enc % s.sx, y: (enc / s.sx) | 0 });
-  }
-  return out;
+  solverExpandFromdot(s, dx, dy, newExpandCtx(s), reached);
+  return [...new Set(reached)].map((enc) => ({ x: enc % s.sx, y: (enc / s.sx) | 0 }));
 }
 
 function solverExpandDots(s: GalaxiesState, rec?: SolverRecorder): number {
-  const sz = s.sx * s.sy;
-  const ctx: ExpandCtx = {
-    mark: new Uint8Array(sz),
-    scratch: new Int32Array(sz),
-    reach: new Uint8Array(sz),
-    reachDotX: new Int16Array(sz),
-    reachDotY: new Int16Array(sz),
-  };
+  const ctx = newExpandCtx(s);
   for (const dot of s.dots) solverExpandFromdot(s, dot.x, dot.y, ctx);
 
-  let didsth = NOTHING;
+  let progress = NOTHING;
   for (let y = 1; y < s.sy - 1; y += 2) {
     for (let x = 1; x < s.sx - 1; x += 2) {
       const ti = idx(s, x, y);
@@ -548,15 +469,22 @@ function solverExpandDots(s: GalaxiesState, rec?: SolverRecorder): number {
       const r = solverAddAssoc(s, x, y, dx, dy);
       if (r === IMPOSSIBLE) return IMPOSSIBLE;
       if (r === PROGRESS) {
-        didsth = PROGRESS;
+        progress = PROGRESS;
         if (stop(rec)) return PROGRESS;
       } else if (rec) {
         rec.firing = null;
       }
     }
   }
-  return didsth;
+  return progress;
 }
+
+const ORTHOGONAL = [
+  [-1, 0],
+  [0, -1],
+  [0, 1],
+  [1, 0],
+] as const;
 
 function solverExtendExclaves(s: GalaxiesState, rec?: SolverRecorder): number {
   const sz = s.sx * s.sy;
@@ -583,28 +511,16 @@ function solverExtendExclaves(s: GalaxiesState, rec?: SolverRecorder): number {
     }
   }
 
-  // Count the 'liberties' of each connected component, in the Go
-  // sense: the number of currently unassociated squares adjacent to
-  // the component. If an exclave has just one liberty, that square
-  // _must_ extend the exclave, or the exclave gets cut off from its
-  // home dot.
+  // Count each component's liberties, in the Go sense: the free tiles beside
+  // it. An exclave with one liberty must extend through it, or it is cut off
+  // from its dot. Each free tile de-duplicates its neighbors, so a tile
+  // touching a component on two sides counts once.
   //
-  // We count each adjacent square just once even if it borders the
-  // component on multiple edges, so we walk each unassociated square
-  // and de-duplicate its neighbors (not the other way round).
-  //
-  // Storage trick (from upstream's solver_extend_exclaves): we store
-  // the liberty count in `iscratch[i]` at the center of each square
-  // (odd coords), and use `iscratch[i-1]` (an even-coord cell to the
-  // left, which never carries any tile data itself) to remember the
-  // *index* of the single liberty when there is exactly one. The
-  // i-1 slot is a free sidecar — no overlap is possible because no
-  // two square centers share the same i-1 neighbor.
-  //
-  // Non-canonical square centers are marked with iscratch[i] = -1,
-  // so the later loop can detect "this square has since become
-  // associated and is no longer the canonical dsf element it was
-  // when the dsf was built" without re-walking the dsf.
+  // Upstream's storage trick: the count lives in `iscratch[i]` at a
+  // component's canonical tile center, and `iscratch[i - 1]`, an edge space
+  // that holds no tile data and no other tile center shares, remembers the
+  // liberty's index when there is only one. `-1` marks every tile that is not
+  // a canonical associated one.
   const iscratch = new Int32Array(sz);
   for (let x = 1; x < s.sx; x += 2) {
     for (let y = 1; y < s.sy; y += 2) {
@@ -623,27 +539,23 @@ function solverExtendExclaves(s: GalaxiesState, rec?: SolverRecorder): number {
     for (let y = 1; y < s.sy; y += 2) {
       const ti = idx(s, x, y);
       if (s.flags[ti] & F_TILE_ASSOC) continue;
-      const ni: number[] = [];
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          if (dx !== 0 && dy !== 0) continue;
-          if (dx === 0 && dy === 0) continue;
-          const nx = x + 2 * dx;
-          const ny = y + 2 * dy;
-          if (!inGrid(s, nx, ny)) continue;
-          const ai = idx(s, nx, ny);
-          if (!(s.flags[ai] & F_TILE_ASSOC)) continue;
-          const can = dsf.canonify(ai);
-          if (ni.includes(can)) continue;
-          iscratch[can]++;
-          iscratch[can - 1] = ti;
-          ni.push(can);
-        }
+      const seen: number[] = [];
+      for (const [dx, dy] of ORTHOGONAL) {
+        const nx = x + 2 * dx;
+        const ny = y + 2 * dy;
+        if (!inGrid(s, nx, ny)) continue;
+        const ai = idx(s, nx, ny);
+        if (!(s.flags[ai] & F_TILE_ASSOC)) continue;
+        const can = dsf.canonify(ai);
+        if (seen.includes(can)) continue;
+        iscratch[can]++;
+        iscratch[can - 1] = ti;
+        seen.push(can);
       }
     }
   }
 
-  let didsth = NOTHING;
+  let progress = NOTHING;
   for (let x = 1; x < s.sx; x += 2) {
     for (let y = 1; y < s.sy; y += 2) {
       const i = idx(s, x, y);
@@ -655,11 +567,10 @@ function solverExtendExclaves(s: GalaxiesState, rec?: SolverRecorder): number {
       if (i === dsf.canonify((dy | 1) * s.sx + (dx | 1))) continue;
       if (iscratch[i] === 0) return IMPOSSIBLE;
       if (iscratch[i] !== 1) continue;
-      const libIdx = iscratch[i - 1];
-      const lx = libIdx % s.sx;
-      const ly = (libIdx / s.sx) | 0;
-      const li = idx(s, lx, ly);
+      const li = iscratch[i - 1];
       if (s.flags[li] & F_TILE_ASSOC) continue;
+      const lx = li % s.sx;
+      const ly = (li / s.sx) | 0;
       if (rec) {
         rec.firing = {
           kind: "exclave",
@@ -672,20 +583,20 @@ function solverExtendExclaves(s: GalaxiesState, rec?: SolverRecorder): number {
       const r = solverAddAssoc(s, lx, ly, dx, dy);
       if (r === IMPOSSIBLE) return IMPOSSIBLE;
       if (r === PROGRESS) {
-        didsth = PROGRESS;
+        progress = PROGRESS;
         if (stop(rec)) return PROGRESS;
       } else if (rec) {
         rec.firing = null;
       }
     }
   }
-  return didsth;
+  return progress;
 }
 
 /** The tiles of one `solverExtendExclaves` component — the detached piece an
  * `exclave` firing shades as its evidence. */
-function membersOf(s: GalaxiesState, dsf: Dsf, canon: number): Pos[] {
-  const out: Pos[] = [];
+function membersOf(s: GalaxiesState, dsf: Dsf, canon: number): Point[] {
+  const out: Point[] = [];
   for (let y = 1; y < s.sy - 1; y += 2) {
     for (let x = 1; x < s.sx - 1; x += 2) {
       const i = idx(s, x, y);
@@ -696,58 +607,46 @@ function membersOf(s: GalaxiesState, dsf: Dsf, canon: number): Pos[] {
   return out;
 }
 
-/** Pick the unassociated tile with the most plausible dot
- * assignments — the recursion branch-point. */
-function pickRecurseTarget(s: GalaxiesState): {
-  x: number;
-  y: number;
-  n: number;
-} | null {
-  let bestX = -1;
-  let bestY = -1;
+/** Whether the dot could own the tile: its 180° image is on the board, and free
+ * or already the dot's. */
+function couldOwn(s: GalaxiesState, tx: number, ty: number, dx: number, dy: number) {
+  const opp = spaceOppositeDot(s, tx, ty, dx, dy);
+  return opp !== null && canJoin(s, opp.x, opp.y, dx, dy);
+}
+
+/** The free tile with the most candidate dots: the recursion's branch point. */
+function pickRecurseTarget(s: GalaxiesState): Point | null {
+  let best: Point | null = null;
   let bestN = 0;
   for (let y = 1; y < s.sy - 1; y += 2) {
     for (let x = 1; x < s.sx - 1; x += 2) {
-      const ti = idx(s, x, y);
-      if (s.flags[ti] & F_TILE_ASSOC) continue;
-      let n = 0;
-      for (const dot of s.dots) {
-        const opp = spaceOppositeDot(s, x, y, dot.x, dot.y);
-        if (!opp) continue;
-        const oi = idx(s, opp.x, opp.y);
-        if (
-          s.flags[oi] & F_TILE_ASSOC &&
-          (s.dotx[oi] !== dot.x || s.doty[oi] !== dot.y)
-        ) {
-          continue;
-        }
-        n++;
-      }
+      if (s.flags[idx(s, x, y)] & F_TILE_ASSOC) continue;
+      const n = s.dots.filter((d) => couldOwn(s, x, y, d.x, d.y)).length;
       if (n > bestN) {
         bestN = n;
-        bestX = x;
-        bestY = y;
+        best = { x, y };
       }
     }
   }
-  if (bestN === 0) return null;
-  return { x: bestX, y: bestY, n: bestN };
+  return best;
 }
 
-function dotForTile(
-  s: GalaxiesState,
-  tx: number,
-  ty: number,
-  dx: number,
-  dy: number,
-): boolean {
-  const opp = spaceOppositeDot(s, tx, ty, dx, dy);
-  if (!opp) return false;
-  const oi = idx(s, opp.x, opp.y);
-  if (s.flags[oi] & F_TILE_ASSOC && (s.dotx[oi] !== dx || s.doty[oi] !== dy)) {
-    return false;
-  }
-  return true;
+type Snapshot = Pick<GalaxiesState, "flags" | "dotx" | "doty" | "nassoc">;
+
+function snapshot(s: Snapshot): Snapshot {
+  return {
+    flags: new Uint16Array(s.flags),
+    dotx: new Int16Array(s.dotx),
+    doty: new Int16Array(s.doty),
+    nassoc: new Int16Array(s.nassoc),
+  };
+}
+
+function restore(s: Snapshot, from: Snapshot): void {
+  s.flags.set(from.flags);
+  s.dotx.set(from.dotx);
+  s.doty.set(from.doty);
+  s.nassoc.set(from.nassoc);
 }
 
 function solverRecurse(
@@ -759,37 +658,18 @@ function solverRecurse(
   const pick = pickRecurseTarget(s);
   if (!pick) return GalaxiesDiff.Impossible;
 
-  // Save the current grid so we can replay it for each branch.
-  const baseFlags = new Uint16Array(s.flags);
-  const baseDotx = new Int16Array(s.dotx);
-  const baseDoty = new Int16Array(s.doty);
-  const baseNassoc = new Int16Array(s.nassoc);
-
-  interface Snapshot {
-    flags: Uint16Array;
-    dotx: Int16Array;
-    doty: Int16Array;
-    nassoc: Int16Array;
-  }
+  const base = snapshot(s);
   let diff: GalaxiesDiff = GalaxiesDiff.Impossible;
   let best: Snapshot | null = null;
 
   for (const dot of s.dots) {
-    s.flags.set(baseFlags);
-    s.dotx.set(baseDotx);
-    s.doty.set(baseDoty);
-    s.nassoc.set(baseNassoc);
-    if (!dotForTile(s, pick.x, pick.y, dot.x, dot.y)) continue;
+    restore(s, base);
+    if (!couldOwn(s, pick.x, pick.y, dot.x, dot.y)) continue;
     solverAddAssoc(s, pick.x, pick.y, dot.x, dot.y);
 
     const ret = solverStateInner(s, maxDiff, depth + 1);
     if (diff === GalaxiesDiff.Impossible && ret !== GalaxiesDiff.Impossible) {
-      best = {
-        flags: new Uint16Array(s.flags),
-        dotx: new Int16Array(s.dotx),
-        doty: new Int16Array(s.doty),
-        nassoc: new Int16Array(s.nassoc),
-      };
+      best = snapshot(s);
     }
     if (ret === GalaxiesDiff.Ambiguous || ret === GalaxiesDiff.Unfinished) {
       diff = ret;
@@ -803,31 +683,15 @@ function solverRecurse(
     }
   }
 
-  if (best) {
-    s.flags.set(best.flags);
-    s.dotx.set(best.dotx);
-    s.doty.set(best.doty);
-    s.nassoc.set(best.nassoc);
-  } else {
-    s.flags.set(baseFlags);
-    s.dotx.set(baseDotx);
-    s.doty.set(baseDoty);
-    s.nassoc.set(baseNassoc);
-  }
+  restore(s, best ?? base);
   return diff;
 }
 
 /**
- * The four rungs, all at one tier — the ladder {@link solverStateInner} runs.
- *
- * **They already return the runner's exact convention**: `IMPOSSIBLE` is `-1`,
- * `PROGRESS` is `1`, `NOTHING` is `0`, so adoption needed no mapping layer at
- * all. And **the recorder passes straight through**, which is what made this
- * game safe to adopt: `runDeductionFixpoint` is oblivious to a rung's side
- * effects, so each rung still takes `rec` and still records exactly the firings
- * the hint narrates. Not one word of Galaxies' hint moved
- * (`adopt-the-deduction-runner-where-it-rewires` task 2.5: if the shared
- * recorder could not have carried it, Galaxies would have stayed out).
+ * The four rungs, all at one tier, for {@link solverStateInner}. They already
+ * return the runner's convention (`IMPOSSIBLE` -1, `NOTHING` 0, `PROGRESS` 1),
+ * and each still takes `rec`, so the runner carries the hint's recording
+ * through unchanged.
  */
 function galaxiesLadder(s: GalaxiesState, rec?: SolverRecorder): DeductionTechnique[] {
   return [
@@ -865,11 +729,8 @@ function solverStateInner(
   if (ret === IMPOSSIBLE) return GalaxiesDiff.Impossible;
 
   const ladder = galaxiesLadder(s, rec);
-  // **`GalaxiesDiff` is not a tier ladder** — `Normal` is 0 and `Impossible`
-  // and `Ambiguous` are sentinels *above* it, not harder tiers. Every rung is
-  // Normal, so the grade is a constant and the old loop's four
-  // `Math.max(diff, Normal)` lines were no-ops. `maxDiff` gates only the
-  // recursion below, never the ladder, so there is no `maxTier` here.
+  // `GalaxiesDiff`'s members above Normal are verdicts, not harder tiers:
+  // every rung is Normal, and `maxDiff` gates only the recursion below.
   const { grade: diff, impossible } = runDeductionFixpoint({
     techniques: ladder,
     firings,
@@ -897,13 +758,9 @@ export function solverState(
 }
 
 /**
- * The hand-written ladder this solver ran until
- * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
- * `galaxies-ladder.test.ts` proves the adoption against.
- *
- * It stops at the ladder rather than continuing into `solverRecurse`, because
- * the recursion is not what was re-plumbed and calling it here would compare
- * two identical code paths at great expense.
+ * The hand-written ladder the runner replaced, kept as the oracle
+ * `galaxies-ladder.test.ts` checks it against. It stops before the recursion,
+ * which was not re-plumbed and would only compare a path with itself.
  */
 export function galaxiesLadderLegacy(
   s: GalaxiesState,
@@ -1004,18 +861,8 @@ export const RUNGS = {
   mirrorWall: rungOf("mirrorWall", (b, r) => solverLinesOpposite(b, r, MIRROR_ONLY)),
 };
 
-// A `refuteAssoc` lived here — hypothesize a dot for a cell, run the whole
-// deduction fixpoint from it, and take the survivor when every alternative
-// breaks the board. It powered a hint rung on the Unreasonable tier and was
-// removed on owner acceptance (2026-08-11): a contradiction you only reach by
-// propagating is *guessing*, and a hint that says "I tried them all and this
-// one didn't break" teaches no technique a player can learn. An Unreasonable
-// board that needs it now gets an honest refusal instead. Recoverable from
-// git history if a narratable form is ever found.
-
-/** Mirrors C's `clear_game(state, false)`: erase non-dot flags in the
- * interior (keep dots and border edges). Used to set up a starting
- * position for the generator's solver check. */
+/** Upstream's `clear_game(state, false)`: clear everything but the dots and the
+ * border edges, giving the board's starting position. */
 export function clearForSolve(s: GalaxiesState): void {
   for (let y = 1; y < s.sy - 1; y++) {
     for (let x = 1; x < s.sx - 1; x++) {

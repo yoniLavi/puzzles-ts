@@ -9,11 +9,11 @@
 
 ## 2. Pilot
 
-- [ ] 2.1 Galaxies: apply the pass, and verify its tests pass with differentials
+- [x] 2.1 Galaxies: apply the pass, and verify its tests pass with differentials
       and snapshots unchanged and the diff net-negative; commit.
-- [ ] 2.2 Slide: same pass and verification; commit.
-- [ ] 2.3 Bridges: same pass and verification; commit.
-- [ ] 2.4 Compare the three diffs, revise the rubric where the pilot showed it
+- [x] 2.2 Slide: same pass and verification; commit.
+- [x] 2.3 Bridges: same pass and verification; commit.
+- [x] 2.4 Compare the three diffs, revise the rubric where the pilot showed it
       unclear, and verify the revision is reflected in the brief the agents
       receive.
 

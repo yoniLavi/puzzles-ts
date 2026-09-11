@@ -1,10 +1,6 @@
 /**
- * Galaxies rendering — imperative `redraw` per the post-Flip doctrine
- * (engine emits no pixels of its own; the game's `!ds.started` branch
- * owns the background fill; per-tile diff cache for incremental
- * repaints). The scene-graph reconciler experiment was withdrawn
- * 2026-05-21; ports stay on imperative `Game.redraw` with the
- * cache-fragility doctrine fixes from `fix-flip-canvas-reshape`.
+ * Galaxies rendering: per-tile repaints keyed on an Int32 cache word, with the
+ * transient UI, the hint and the wrong walls in three overlay sidecars.
  */
 
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
@@ -14,9 +10,8 @@ import {
   type HintStep,
 } from "../../engine/index.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
 import type { GalaxiesHint } from "./hint.ts";
-import type { GalaxiesMove } from "./index.ts";
+import type { GalaxiesMistake, GalaxiesMove, GalaxiesUi } from "./index.ts";
 import { legalDotsFor, okToAddAssocWithOpposite } from "./moves.ts";
 import {
   checkComplete,
@@ -44,11 +39,9 @@ export const COL_EDGE = 6;
 export const COL_ARROW = 7;
 export const COL_CURSOR = 8;
 export const COL_MISTAKE = 9;
-/** The in-progress association drag's preview — its own color, not the
- * cursor's. The two are different meanings ("where the keyboard is" vs "let go
- * and this is laid"), they are on screen together during a keyboard drag, and
- * the cursor's is a board-relative *tint*, which a transient affordance the
- * player is steering by must never be: see `DRAG_ADD`'s doc comment. */
+/** The in-progress association drag's preview: its own color, not the
+ * cursor's, since the two mean different things and are on screen together
+ * during a keyboard drag. See `DRAG_ADD`'s doc comment. */
 export const COL_DRAG = 10;
 /** The displayed hint's *action*: the cells an association claims, the wall it
  * draws, and a ring on the dot it points at. Purple rather than the
@@ -66,55 +59,43 @@ export interface GalaxiesDrawState {
   h: number;
   tileSize: number;
   started: boolean;
-  /** Per-tile cache key (flags | dots) from the last paint; -1 = never
-   * drawn, triggers a full redraw of that tile next time. Fits in
-   * 30 bits, so an Int32Array is enough. ddx/ddy live in `dx`/`dy`
-   * and are compared as separate cache-miss conditions. */
+  /** Per-tile cache key (flags | dots) from the last paint, a positive Int32;
+   * -1 = never drawn. The arrow's direction lives in `dx`/`dy` and is
+   * compared alongside it. */
   cache: Int32Array;
-  /** Per-tile arrow dx/dy cache; part of the cache-miss comparison. */
   dx: Int16Array;
   dy: Int16Array;
-  /** Everything the *transient* UI paints on a tile, in one sidecar word:
-   * the drag preview plane (bits 0-1, {@link PREVIEW_GHOST} /
-   * {@link PREVIEW_TARGET}) and the half-grid keyboard cursor's subcell
-   * position (bits 2-10, {@link cursorBit}). A sidecar rather than key bits
-   * because the Int32 key is full (bits 0-11 flags, 12-29 dots, 30 mistake) —
-   * same reasoning as `wrongEdges`.
+  /** Everything the *transient* UI paints on a tile, in one sidecar word: the
+   * drag preview (bits 0-1, {@link PREVIEW_GHOST} / {@link PREVIEW_TARGET}),
+   * the half-grid keyboard cursor (bits 2-10, {@link cursorBit}) and a
+   * cell→dot drag's candidate rings (bits 11-28). A sidecar because the Int32
+   * key is full (bits 0-11 flags, 12-29 dots, 30 mistake).
    *
-   * Both are here for the same reason: an overlay drawn *outside* the tile
-   * cache has nothing to erase it. The drag arrows shipped that way and
-   * smeared across every tile they crossed; the half-grid cursor shipped that
-   * way too and left a mark at every vertex and edge it visited, unnoticed
-   * only because its color was a near-invisible tint of the board. */
+   * They are cached at all because an overlay drawn outside the tile cache has
+   * nothing to erase it: the drag arrows and the half-grid cursor each shipped
+   * that way once and smeared across every tile they crossed. So nothing is
+   * painted after the tile loop. */
   overlay: OverlaySidecar;
-  /** Everything the displayed *hint* paints on a tile, in one sidecar word —
-   * see {@link HINT_TARGET_CELL} and friends. A third sidecar rather than more
-   * key bits for the same reason as the other two: the Int32 key is full.
-   * Packed by hand because a hint here has its own topology (walls belong to
-   * two tiles at once, and a dot ring belongs to up to four). */
+  /** Everything the displayed *hint* paints on a tile — see
+   * {@link HINT_TARGET_CELL} and friends. Packed by hand because a hint here
+   * has its own topology: a wall belongs to two tiles, a dot ring to up to
+   * four. */
   hint: OverlaySidecar;
-  /** Per-tile wrong-wall mask (DRAW_EDGE_L/R/U/D bits) for the mistake
-   * overlay — a sidecar rather than a cache-key bit because there are no
-   * free bits left in the Int32 key for four more edge flags. Part of
-   * the cache-miss comparison, so walls repaint clean when it clears.
-   * Packed by hand (`clear`/`add`) rather than from a cell list: one wrong
-   * wall is a *shared* edge, so it lights a different bit in each of the two
-   * tiles it separates. */
+  /** Per-tile wrong-wall mask (DRAW_EDGE_L/R/U/D bits) for the mistake overlay.
+   * One wrong wall lights a bit in each of the two tiles it separates. */
   wrongEdges: OverlaySidecar;
 }
 
-const PREFERRED_TILE_SIZE = 32;
+export const PREFERRED_TILE_SIZE = 32;
 
 export function newDrawState(s: GalaxiesState): GalaxiesDrawState {
   const n = s.w * s.h;
-  const cache = new Int32Array(n);
-  for (let i = 0; i < n; i++) cache[i] = -1;
   return {
     w: s.w,
     h: s.h,
     tileSize: PREFERRED_TILE_SIZE,
     started: false,
-    cache,
+    cache: new Int32Array(n).fill(-1),
     dx: new Int16Array(n),
     dy: new Int16Array(n),
     overlay: new OverlaySidecar(n),
@@ -137,7 +118,7 @@ export function setTileSize(ds: GalaxiesDrawState, tileSize: number): void {
   ds.started = false;
   // Every tile now misses on its key, so it repaints and re-commits its
   // wrong-wall mask along with it.
-  for (let i = 0; i < ds.cache.length; i++) ds.cache[i] = -1;
+  ds.cache.fill(-1);
 }
 
 // --- flags encoded into the per-tile cache key ---------------------
@@ -218,10 +199,26 @@ const hintDotBits = (dx0: number, dy0: number, v: number): number =>
 const hintDotAt = (hint: number, dx0: number, dy0: number): number =>
   (hint >>> (HINT_DOT_SHIFT + 2 * (dy0 * 3 + dx0))) & 3;
 
+/** The two tiles a wall at half-grid `(x, y)` separates, each with the side of
+ * it the wall lies on. Tiles off the board are the caller's to drop. */
+function forWallSides(
+  x: number,
+  y: number,
+  visit: (tx: number, ty: number, side: number) => void,
+): void {
+  if (x % 2 === 0) {
+    visit(x >> 1, (y - 1) >> 1, DRAW_EDGE_L);
+    visit((x >> 1) - 1, (y - 1) >> 1, DRAW_EDGE_R);
+  } else {
+    visit((x - 1) >> 1, y >> 1, DRAW_EDGE_U);
+    visit((x - 1) >> 1, (y >> 1) - 1, DRAW_EDGE_D);
+  }
+}
+
 /**
- * Pack one frame's hint overlay. A cell is one tile; a wall at half-grid
- * `(x, y)` lights the facing side of each of the two tiles it separates; a dot
- * ring is clipped by each tile whose 3x3 subcell block contains it.
+ * Pack one frame's hint overlay. A cell is one tile; a wall lights the facing
+ * side of each of the two tiles it separates; a dot ring is clipped by each
+ * tile whose 3x3 subcell block contains it.
  */
 function packHint(
   ds: GalaxiesDrawState,
@@ -238,15 +235,7 @@ function packHint(
     add((x - 1) >> 1, (y - 1) >> 1, bit);
   };
   const wall = (x: number, y: number, shift: number) => {
-    const vertical = x % 2 === 0;
-    const tx = vertical ? x >> 1 : (x - 1) >> 1;
-    const ty = vertical ? (y - 1) >> 1 : y >> 1;
-    add(tx, ty, (vertical ? DRAW_EDGE_L : DRAW_EDGE_U) << shift);
-    add(
-      vertical ? tx - 1 : tx,
-      vertical ? ty : ty - 1,
-      (vertical ? DRAW_EDGE_R : DRAW_EDGE_D) << shift,
-    );
+    forWallSides(x, y, (tx, ty, side) => add(tx, ty, side << shift));
   };
   const dot = (x: number, y: number, v: number) => {
     for (let ty = (y >> 1) - 1; ty <= y >> 1; ty++) {
@@ -282,14 +271,10 @@ function packHint(
 
 // --- rendering helpers ---------------------------------------------
 
-/** Clearance between an arrow's point and the dot it points at, as a fraction
- * of the tile. Not a taste choice: it is the gap a *diagonal* arrow already
- * had — a dot on a cell's corner is `√2/2` tiles away and the arrow reaches
- * `1/3`, leaving `√2/2 − 1/4 − 1/3 ≈ 1/8` — and the bug was that the shorter
- * orthogonal reach (a dot on a cell's *edge*, only `1/2` a tile away) had none
- * of it and drew straight into the circle. Capping every arrow at this
- * clearance leaves the diagonals within half a pixel of where they were and
- * pulls the orthogonal ones clear. */
+/** Clearance between an arrow's point and its dot, as a fraction of the tile:
+ * the gap a diagonal arrow already had (`√2/2 − 1/4 − 1/3 ≈ 1/8`). Capping
+ * every arrow at it pulls the orthogonal ones, whose dot is only half a tile
+ * away, clear of the circle. */
 const ARROW_DOT_CLEARANCE = 1 / 8;
 
 function drawArrow(
@@ -354,11 +339,9 @@ function drawSquare(
 
   dr.clip({ x: lx, y: ly, w: tileSize, h: tileSize });
 
-  // Background. No hint role appears here: a Galaxies cell's fill *is* its
-  // association — white with one dot, black with the other, plain when
-  // unassociated — which is the very thing a hint is reasoning about, so a fill
-  // over it takes the premise away. Both marks are inset rings instead, drawn
-  // below.
+  // Background. A cell's fill *is* its association — white with one dot, black
+  // with the other, plain when unassociated — which is the very thing a hint
+  // reasons about, so no hint role fills; its marks are inset rings, below.
   const bg =
     flags & DRAW_WHITE
       ? COL_WHITEBG
@@ -535,12 +518,10 @@ function drawSquare(
           y: ly + ((dy0 * tileSize) >> 1),
         };
         const col = v === HINT_DOT_ACTION ? COL_HINT : COL_HINT_CELL;
-        // A **filled halo**, then the dot painted back on top of it. Rings
-        // came first and were nearly invisible against the loud cell marks
-        // (owner-reported): `drawCircle` strokes one pixel wide, so a ring is
-        // a hairline however many you stack. Filling the dot itself was the
-        // other option and would cost the narration its noun — a hint that
-        // says "the white dot" must leave the dot visibly white.
+        // A **filled halo**, then the dot painted back on top: `drawCircle`
+        // strokes one pixel wide, so a ring is a hairline however many are
+        // stacked, and filling the dot itself would cost the narration its
+        // noun ("the white dot" must stay visibly white).
         const halo = Math.max(2, tileSize >> 4);
         dr.drawCircle(center, dotSize + halo, col, col);
         const val = (dots >>> (DOT_SHIFT_C + DOT_SHIFT_M * (dy0 * 3 + dx0))) & 3;
@@ -556,11 +537,9 @@ function drawSquare(
     }
   }
 
-  // The half-grid keyboard cursor (on a vertex or an edge, never a tile —
-  // a tile cursor is the DRAW_CURSOR outline above). Drawn here, clipped to
-  // and cached by this tile, so moving the cursor off it repaints it clean:
-  // the block that used to draw this after the tile loop had nothing to
-  // erase it and left a mark at every cell the cursor visited.
+  // The half-grid keyboard cursor, on a vertex or an edge (a tile cursor is
+  // the DRAW_CURSOR outline above). Clipped to and cached by this tile, so
+  // moving the cursor off it repaints it clean.
   if (overlay & ~PREVIEW_MASK) {
     for (let dy0 = 0; dy0 < 3; dy0++) {
       for (let dx0 = 0; dx0 < 3; dx0++) {
@@ -582,33 +561,18 @@ function drawSquare(
     }
   }
 
-  // The hint's cell marks, all three of them rings.
-  //
-  // **Inset, not on the cell's border**, because in Galaxies that border is
-  // where a *wall* lives: a mark drawn there would read as one, and a hint that
-  // suggests a wall already draws a `COL_HINT` bar in exactly that place. The
-  // inset borrows the drag preview's geometry deliberately — in both cases the
-  // mark means "this cell is part of what is about to be committed" — and
-  // differs only in color, which is the one thing that has to separate a hint
-  // from a drag.
-  //
-  // **And none of them is a fill**, because a Galaxies cell's fill *is* its
-  // association: white with one dot, black with the other, plain when
-  // unassociated. That is the very thing the deduction is about, so painting
-  // over it takes the premise away.
-  //
-  // The **focus** cell is doubled and the partner single. The words say "this
-  // cell", so only one cell may look like the thing being said (owner-reported
-  // when both were marked alike) — and with the fill gone, weight is what is
-  // left to say it with.
+  // The hint's cell marks, all rings. Inset rather than on the cell's border,
+  // because in Galaxies the border is where a *wall* lives, and a hint that
+  // suggests a wall already draws a `COL_HINT` bar there; the inset borrows
+  // the drag preview's geometry, since both mean "part of what is about to be
+  // committed". The focus cell is doubled and the partner single: the words
+  // say "this cell", so only one cell may look like it.
   const cellMark =
-    hint & HINT_TARGET_CELL
+    hint & (HINT_TARGET_CELL | HINT_PARTNER_CELL)
       ? COL_HINT
-      : hint & HINT_PARTNER_CELL
-        ? COL_HINT
-        : hint & HINT_AREA_CELL
-          ? COL_HINT_CELL
-          : -1;
+      : hint & HINT_AREA_CELL
+        ? COL_HINT_CELL
+        : -1;
   if (cellMark >= 0) {
     const inset = Math.max(edgeThickness + 1, (tileSize / 8) | 0);
     const ring = (extra: number) =>
@@ -634,7 +598,7 @@ function drawSquare(
   // The drop target itself gets an outline on top of its preview
   // arrow — "showing the target too": the mirror partner's ghost says
   // what comes along, the outline says where the pointer will commit.
-  if (preview === 2) {
+  if (preview === PREVIEW_TARGET) {
     const inset = Math.max(edgeThickness + 1, (tileSize / 8) | 0);
     drawRectOutline(
       dr,
@@ -670,44 +634,29 @@ function drawSquare(
 }
 
 /**
- * Split the engine's mistake overlay into wrong-association tiles
- * (returned as a set of tile indices, folded into the cache key as
- * DRAW_MISTAKE) and wrong walls (packed into the `wrongEdges`
- * sidecar). Clears and repacks the sidecar every call, so an empty
+ * Split the engine's mistake overlay into wrong-association tiles (returned as
+ * tile indices, folded into the cache key as DRAW_MISTAKE) and wrong walls
+ * (packed into the `wrongEdges` sidecar). Repacks on every call, so an empty
  * overlay erases a previous one.
- *
- * A wall lives on a half-grid coordinate *between* two tiles, so it
- * lights one bit in each of them: a vertical wall (even x, odd y) is
- * the right-hand tile's L edge and the left-hand tile's R edge, and
- * vice versa for a horizontal wall. Tiles off the board's rim simply
- * drop out.
  */
 function splitMistakeOverlay(
   ds: GalaxiesDrawState,
   w: number,
   h: number,
-  mistakes: readonly { kind: "tile" | "edge"; x: number; y: number }[] | undefined,
+  mistakes: readonly GalaxiesMistake[] | undefined,
 ): Set<number> {
   const mistakeTiles = new Set<number>();
   ds.wrongEdges.clear();
-  const addWall = (tx: number, ty: number, bit: number) => {
-    if (tx >= 0 && tx < w && ty >= 0 && ty < h) ds.wrongEdges.add(ty * w + tx, bit);
-  };
+  const onBoard = (tx: number, ty: number) => tx >= 0 && tx < w && ty >= 0 && ty < h;
   for (const m of mistakes ?? []) {
     if (m.kind === "edge") {
-      const vertical = m.x % 2 === 0;
-      const tx = vertical ? m.x >> 1 : (m.x - 1) >> 1;
-      const ty = vertical ? (m.y - 1) >> 1 : m.y >> 1;
-      addWall(tx, ty, vertical ? DRAW_EDGE_L : DRAW_EDGE_U);
-      addWall(
-        vertical ? tx - 1 : tx,
-        vertical ? ty : ty - 1,
-        vertical ? DRAW_EDGE_R : DRAW_EDGE_D,
-      );
+      forWallSides(m.x, m.y, (tx, ty, side) => {
+        if (onBoard(tx, ty)) ds.wrongEdges.add(ty * w + tx, side);
+      });
     } else {
       const tx = (m.x - 1) >> 1;
       const ty = (m.y - 1) >> 1;
-      if (tx >= 0 && tx < w && ty >= 0 && ty < h) mistakeTiles.add(ty * w + tx);
+      if (onBoard(tx, ty)) mistakeTiles.add(ty * w + tx);
     }
   }
   return mistakeTiles;
@@ -721,22 +670,11 @@ export function redraw(
   _prev: GalaxiesState | null,
   s: GalaxiesState,
   _dir: number,
-  ui: {
-    dragging: boolean;
-    dragToDot: boolean;
-    targetX: number;
-    targetY: number;
-    dotx: number;
-    doty: number;
-    srcx: number;
-    srcy: number;
-    showDragCandidates: boolean;
-    cursor: GridCursor;
-  },
+  ui: GalaxiesUi,
   _animTime: number,
   flashTime: number,
   hint?: HintStep<GalaxiesMove, GalaxiesHint>,
-  mistakes?: readonly { kind: "tile" | "edge"; x: number; y: number }[],
+  mistakes?: readonly GalaxiesMistake[],
 ): void {
   const w = ds.w;
   const h = ds.h;
@@ -752,12 +690,7 @@ export function redraw(
   const drawWidth = w * tile + 2 * border;
   const drawHeight = h * tile + 2 * border;
   const edgeThickness = Math.max(tile >> 4, 2);
-
-  let flashing = false;
-  if (flashTime > 0) {
-    const frame = (flashTime / 0.15) | 0;
-    flashing = frame % 2 === 0;
-  }
+  const flashing = flashTime > 0 && ((flashTime / 0.15) | 0) % 2 === 0;
 
   // First-draw: own the window background and the outer border.
   if (!ds.started) {
@@ -778,30 +711,18 @@ export function redraw(
 
   const cols = checkComplete(s, true).colors;
 
-  // The in-progress drag's snapped preview: the drop target and its
-  // 180° partner about the drag dot — exactly the pair a release
-  // commits — or nothing when a release would not commit there (the
-  // Inertia aim idiom: an uncommittable target shows no arrow, and
-  // that absence is the feedback). Legality is evaluated against the
-  // *current* state every redraw, so a mid-drag undo cannot leave the
-  // preview promising a move the release would refuse.
-  let pvX = -1;
-  let pvY = -1;
-  let pvOppX = -1;
-  let pvOppY = -1;
-  if (
+  // The drag's snapped preview: the drop target and its 180° partner about the
+  // drag dot, exactly the pair a release commits, or nothing when a release
+  // would not commit there (the Inertia aim idiom: the absence is the
+  // feedback). Legality is checked against the *current* state every redraw,
+  // so a mid-drag undo cannot leave the preview promising a refused move.
+  const previewing =
     ui.dragging &&
-    cols &&
-    okToAddAssocWithOpposite(s, ui.targetX, ui.targetY, ui.dotx, ui.doty, cols)
-  ) {
-    pvX = ui.targetX;
-    pvY = ui.targetY;
-    const opp = spaceOppositeDot(s, pvX, pvY, ui.dotx, ui.doty);
-    if (opp) {
-      pvOppX = opp.x;
-      pvOppY = opp.y;
-    }
-  }
+    cols !== undefined &&
+    okToAddAssocWithOpposite(s, ui.targetX, ui.targetY, ui.dotx, ui.doty, cols);
+  const ghost = previewing
+    ? spaceOppositeDot(s, ui.targetX, ui.targetY, ui.dotx, ui.doty)
+    : null;
 
   // A vertex or edge cursor lies on a tile boundary, so up to four tiles
   // paint their clipped share of it — each through its own 3x3 subcell
@@ -820,6 +741,10 @@ export function redraw(
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
+      // This tile's center, in grid coordinates.
+      const gx = 2 * x + 1;
+      const gy = 2 * y + 1;
+      const cacheI = y * w + x;
       let flags = 0;
       let ddx = 0;
       let ddy = 0;
@@ -858,26 +783,23 @@ export function redraw(
       }
 
       // Region color.
-      const ti = idx(s, 2 * x + 1, 2 * y + 1);
+      const ti = idx(s, gx, gy);
       const sFlags = s.flags[ti];
-      if (cols?.[y * w + x] && !flashing) {
-        flags |= cols[y * w + x] === 2 ? DRAW_BLACK : DRAW_WHITE;
+      if (cols?.[cacheI] && !flashing) {
+        flags |= cols[cacheI] === 2 ? DRAW_BLACK : DRAW_WHITE;
       }
 
-      // Arrow (association indicator).
-      let opp: { x: number; y: number } | null = null;
-      if (sFlags & F_TILE_ASSOC) opp = tileOpposite(s, 2 * x + 1, 2 * y + 1);
-      if (sFlags & F_TILE_ASSOC && cols && !cols[y * w + x]) {
-        let suppressArrow = false;
-        if (ui.dragging && ui.srcx === 2 * x + 1 && ui.srcy === 2 * y + 1) {
-          suppressArrow = true;
-        } else if (ui.dragging && opp && ui.srcx === opp.x && ui.srcy === opp.y) {
-          suppressArrow = true;
-        }
-        if (!suppressArrow && (s.doty[ti] !== 2 * y + 1 || s.dotx[ti] !== 2 * x + 1)) {
+      // Arrow (association indicator), hidden while a drag has lifted it.
+      if (sFlags & F_TILE_ASSOC && cols && !cols[cacheI]) {
+        const opp = tileOpposite(s, gx, gy);
+        const lifted =
+          ui.dragging &&
+          ((ui.srcx === gx && ui.srcy === gy) ||
+            (opp !== null && ui.srcx === opp.x && ui.srcy === opp.y));
+        if (!lifted && (s.doty[ti] !== gy || s.dotx[ti] !== gx)) {
           flags |= DRAW_ARROW;
-          ddy = s.doty[ti] - (2 * y + 1);
-          ddx = s.dotx[ti] - (2 * x + 1);
+          ddy = s.doty[ti] - gy;
+          ddx = s.dotx[ti] - gx;
         }
       }
 
@@ -895,29 +817,29 @@ export function redraw(
       // Cursor on tile.
       if (
         ui.cursor.visible &&
-        ui.cursor.x === 2 * x + 1 &&
-        ui.cursor.y === 2 * y + 1 &&
+        ui.cursor.x === gx &&
+        ui.cursor.y === gy &&
         !(sFlags & F_DOT)
       ) {
         flags |= DRAW_CURSOR;
       }
 
       // Wrong-association highlight (bit 30 of the key).
-      if (mistakeTiles.has(y * w + x)) flags |= DRAW_MISTAKE;
+      if (mistakeTiles.has(cacheI)) flags |= DRAW_MISTAKE;
 
       // Drag preview: the snapped target and its mirror partner show the
       // association a release would commit, overriding any committed
       // arrow's direction for the duration.
-      const tx2 = 2 * x + 1;
-      const ty2 = 2 * y + 1;
-      const cacheI = y * w + x;
       let preview = 0;
-      if (tx2 === pvX && ty2 === pvY) preview = PREVIEW_TARGET;
-      else if (tx2 === pvOppX && ty2 === pvOppY) preview = PREVIEW_GHOST;
+      if (previewing && gx === ui.targetX && gy === ui.targetY) {
+        preview = PREVIEW_TARGET;
+      } else if (ghost && gx === ghost.x && gy === ghost.y) {
+        preview = PREVIEW_GHOST;
+      }
       if (preview) {
         flags |= DRAW_ARROW;
-        ddx = ui.dotx - tx2;
-        ddy = ui.doty - ty2;
+        ddx = ui.dotx - gx;
+        ddy = ui.doty - gy;
       }
       ds.overlay.add(cacheI, preview);
 
@@ -981,15 +903,4 @@ export function redraw(
       }
     }
   }
-
-  // Nothing is painted after the tile loop, deliberately. Both transient
-  // overlays — the drag preview and the half-grid cursor — are folded into
-  // the per-tile cache above via `ds.overlay`, so every pixel they paint is
-  // clipped to a tile and erased by that tile's own repaint when the target
-  // or the cursor moves on. Each shipped the other way and each smeared: the
-  // drag as two unclipped pixel-following arrows that left stale ink on every
-  // tile crossed *and outside the board*, where nothing repaints at all
-  // (owner-reported 2026-08-08); the cursor as a bare drawRect that left a
-  // mark at every vertex and edge it visited, unnoticed only because it was
-  // painted in a near-invisible tint of the board.
 }

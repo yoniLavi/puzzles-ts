@@ -1,12 +1,12 @@
 /**
- * Galaxies generator — places dots, then validates that the
- * resulting board is uniquely solvable at the requested difficulty;
- * retries until it is. Idiomatic TS port of `new_game_desc` and
- * `generate_pass` in galaxies.c (D6).
+ * Galaxies generator: grow regions and place dots, then keep the board only if
+ * the solver grades it at the requested difficulty. Derived from upstream's
+ * `new_game_desc` and `generate_pass`.
  */
 
 import type { RandomState } from "../../engine/random/index.ts";
 import { shuffle } from "../../engine/shuffle.ts";
+import type { Point } from "../../engine/types.ts";
 import { clearForSolve, type GalaxiesDiff, solverState } from "./solver.ts";
 import {
   addAssoc,
@@ -15,6 +15,7 @@ import {
   blankGame,
   checkComplete,
   cloneState,
+  dotTiles,
   encodeGame,
   F_DOT,
   F_DOT_BLACK,
@@ -29,62 +30,44 @@ import {
   spaceTypeAt,
 } from "./state.ts";
 
-// --- dot/region utility helpers (mirror galaxies.c) ----------------
+// --- dot and region helpers ----------------------------------------
 
-/** True iff placing a dot at `(x,y)` would not collide with another
- * dot or set edge nearby. Mirrors `dot_is_possible(state, sp, false)`.
- * `allowAssoc=false` means we also reject if any neighbor is already
- * associated with another dot. */
-function dotIsPossible(s: GalaxiesState, sx: number, sy: number): boolean {
-  const t = spaceTypeAt(sx, sy);
-  let bx: number;
-  let by: number;
-  if (t === SpaceType.Tile) {
-    bx = by = 1;
-  } else if (t === SpaceType.Edge) {
-    if ((sx & 1) === 0) {
-      bx = 2;
-      by = 1;
-    } else {
-      bx = 1;
-      by = 2;
-    }
-  } else {
-    bx = by = 2;
-  }
+/** Whether a dot fits at `(x, y)`: no other dot, set edge or associated tile
+ * nearby. Upstream's `dot_is_possible(state, sp, false)`. */
+function dotIsPossible(s: GalaxiesState, x: number, y: number): boolean {
+  // The neighborhood reaches one space further along each axis on which the
+  // dot sits between tiles (an even coordinate).
+  const bx = x & 1 ? 1 : 2;
+  const by = y & 1 ? 1 : 2;
   for (let dx = -bx; dx <= bx; dx++) {
     for (let dy = -by; dy <= by; dy++) {
-      const nx = sx + dx;
-      const ny = sy + dy;
+      const nx = x + dx;
+      const ny = y + dy;
       if (!inGrid(s, nx, ny)) continue;
-      const ni = idx(s, nx, ny);
-      const f = s.flags[ni];
+      const f = s.flags[idx(s, nx, ny)];
       if (f & F_TILE_ASSOC) return false;
       if ((dx !== 0 || dy !== 0) && f & F_DOT) return false;
-      if (Math.abs(dx) < bx && Math.abs(dy) < by && f & F_EDGE_SET) {
-        return false;
-      }
+      if (Math.abs(dx) < bx && Math.abs(dy) < by && f & F_EDGE_SET) return false;
     }
   }
   return true;
 }
 
-/** Walk every tile associated with `oldDot` and check that, were the
- * dot moved to `(ndx, ndy)`, each tile would have a valid opposite
- * (empty, or also associated with `oldDot`). */
-function movedotCheck(
+/** Whether every tile of the dot at `(oldDx, oldDy)` would still have a usable
+ * 180° image, empty or the same dot's, about `(newDx, newDy)`. */
+function canMoveDot(
   s: GalaxiesState,
   oldDx: number,
   oldDy: number,
-  ndx: number,
-  ndy: number,
+  newDx: number,
+  newDy: number,
 ): boolean {
   for (let y = 1; y < s.sy - 1; y += 2) {
     for (let x = 1; x < s.sx - 1; x += 2) {
       const ti = idx(s, x, y);
       if (!(s.flags[ti] & F_TILE_ASSOC)) continue;
       if (s.dotx[ti] !== oldDx || s.doty[ti] !== oldDy) continue;
-      const opp = spaceOppositeDot(s, x, y, ndx, ndy);
+      const opp = spaceOppositeDot(s, x, y, newDx, newDy);
       if (!opp) return false;
       const oi = idx(s, opp.x, opp.y);
       if (s.flags[oi] & F_TILE_ASSOC) {
@@ -95,50 +78,43 @@ function movedotCheck(
   return true;
 }
 
-function movedotApply(
+/** Re-associate every tile of the old dot, and its new image, with the moved
+ * dot. */
+function moveDotAssociations(
   s: GalaxiesState,
   oldDx: number,
   oldDy: number,
-  ndx: number,
-  ndy: number,
+  newDx: number,
+  newDy: number,
 ): void {
-  // Re-associate every tile (and its new opposite) with the moved dot.
   for (let y = 1; y < s.sy - 1; y += 2) {
     for (let x = 1; x < s.sx - 1; x += 2) {
       const ti = idx(s, x, y);
       if (!(s.flags[ti] & F_TILE_ASSOC)) continue;
       if (s.dotx[ti] !== oldDx || s.doty[ti] !== oldDy) continue;
-      const opp = spaceOppositeDot(s, x, y, ndx, ndy);
+      const opp = spaceOppositeDot(s, x, y, newDx, newDy);
       if (!opp) continue;
-      addAssoc(s, x, y, ndx, ndy);
-      addAssoc(s, opp.x, opp.y, ndx, ndy);
+      addAssoc(s, x, y, newDx, newDy);
+      addAssoc(s, opp.x, opp.y, newDx, newDy);
     }
   }
 }
 
-interface ToAdd {
-  x: number;
-  y: number;
-}
-
-/** Try expanding `dot`'s region to cover `toadd`. If straight
- * expansion (with opposites on each new tile) isn't possible, try
- * shifting the dot to a new CoG so the region covers them. Mirrors
- * `dot_expand_or_move`. Returns whether the operation succeeded
- * (state is mutated on success). */
+/** Grow the dot's region to cover `toAdd`, each tile with its 180° image; if
+ * that is impossible, try moving the dot to the center of mass of its old and
+ * new tiles instead. Upstream's `dot_expand_or_move`; mutates `s` only on
+ * success. */
 function dotExpandOrMove(
   s: GalaxiesState,
   dx: number,
   dy: number,
-  toadd: ToAdd[],
+  toAdd: Point[],
 ): boolean {
   const di = idx(s, dx, dy);
-  // Straight expansion: every tile must have a valid empty opposite
-  // (wrt the current dot). Record opposites on the first pass so we
-  // don't recompute them on commit.
-  const expansions: { t: ToAdd; opp: { x: number; y: number } }[] = [];
+  // Straight expansion: every tile needs an empty image about the current dot.
+  const expansions: { t: Point; opp: Point }[] = [];
   let allExpandable = true;
-  for (const t of toadd) {
+  for (const t of toAdd) {
     const opp = spaceOppositeDot(s, t.x, t.y, dx, dy);
     if (!opp || s.flags[idx(s, opp.x, opp.y)] & F_TILE_ASSOC) {
       allExpandable = false;
@@ -154,26 +130,22 @@ function dotExpandOrMove(
     return true;
   }
 
-  // Otherwise, try moving the dot. CoG of (existing tiles + new tiles).
-  const nold = s.nassoc[di];
-  const nnew = nold + toadd.length;
-  let cx = dx * nold;
-  let cy = dy * nold;
-  for (const t of toadd) {
+  const oldCount = s.nassoc[di];
+  const newCount = oldCount + toAdd.length;
+  let cx = dx * oldCount;
+  let cy = dy * oldCount;
+  for (const t of toAdd) {
     cx += t.x;
     cy += t.y;
   }
-  if (cx % nnew !== 0 || cy % nnew !== 0) return false;
-  cx = (cx / nnew) | 0;
-  cy = (cy / nnew) | 0;
+  if (cx % newCount !== 0 || cy % newCount !== 0) return false;
+  cx = (cx / newCount) | 0;
+  cy = (cy / newCount) | 0;
   if (cx <= 0 || cy <= 0 || cx >= s.sx - 1 || cy >= s.sy - 1) return false;
 
-  // Every existing assoc'd tile must have a good opposite wrt the new
-  // dot position.
-  if (!movedotCheck(s, dx, dy, cx, cy)) return false;
-
-  // Every to-add tile must also have a valid opposite wrt the new dot.
-  for (const t of toadd) {
+  // Every tile, existing and new, needs a usable image about the new position.
+  if (!canMoveDot(s, dx, dy, cx, cy)) return false;
+  for (const t of toAdd) {
     const opp = spaceOppositeDot(s, t.x, t.y, cx, cy);
     if (!opp) return false;
     const oi = idx(s, opp.x, opp.y);
@@ -182,22 +154,20 @@ function dotExpandOrMove(
     }
   }
 
-  // OK to proceed: associate to-add tiles with the OLD dot first (so
-  // movedotApply picks them up), then move the dot.
-  for (const t of toadd) addAssoc(s, t.x, t.y, dx, dy);
+  // Give the new tiles to the old dot first, so the move carries them along.
+  for (const t of toAdd) addAssoc(s, t.x, t.y, dx, dy);
   const wasBlack = s.flags[di] & F_DOT_BLACK;
   s.flags[di] &= ~(F_DOT | F_DOT_BLACK);
   s.nassoc[di] = 0;
   s.flags[idx(s, cx, cy)] |= F_DOT | wasBlack;
   s.nassoc[idx(s, cx, cy)] = 0;
-  movedotApply(s, dx, dy, cx, cy);
-  // Refresh dots list (a dot moved).
+  moveDotAssociations(s, dx, dy, cx, cy);
   s.dots = rebuildDots(s);
   return true;
 }
 
-/** Try block-expansion (1x1 or 2x2) of an existing region into the
- * tiles inside `(x1,y1)-(x2,y2)`. */
+/** Try to grow a neighboring region over the tiles in `(x1, y1)`–`(x2, y2)`:
+ * one tile, or the two beside an edge. */
 function generateTryBlock(
   s: GalaxiesState,
   rng: RandomState,
@@ -210,17 +180,17 @@ function generateTryBlock(
   const maxsz = Math.floor(Math.sqrt(s.w * s.h)) * 2;
 
   // Inner block tiles.
-  const toadd: ToAdd[] = [];
+  const toAdd: Point[] = [];
   for (let x = x1; x <= x2; x += 2) {
     for (let y = y1; y <= y2; y += 2) {
       const i = idx(s, x, y);
       if (s.flags[i] & F_TILE_ASSOC) return false;
-      toadd.push({ x, y });
+      toAdd.push({ x, y });
     }
   }
 
   // Outside tiles surrounding the block.
-  const outside: { x: number; y: number }[] = [];
+  const outside: Point[] = [];
   const push = (x: number, y: number) => {
     if (inGrid(s, x, y)) outside.push({ x, y });
   };
@@ -241,26 +211,18 @@ function generateTryBlock(
     const ddy = s.doty[oi];
     const di = idx(s, ddx, ddy);
     if (s.nassoc[di] >= maxsz) continue;
-    if (dotExpandOrMove(s, ddx, ddy, toadd)) return true;
+    if (dotExpandOrMove(s, ddx, ddy, toAdd)) return true;
   }
   return false;
 }
 
-const GP_DOTS = 1;
-
-function generatePass(
-  s: GalaxiesState,
-  rng: RandomState,
-  perc: number,
-  flags: number,
-): void {
-  const sz = s.sx * s.sy;
-  const order: number[] = new Array(sz);
-  for (let i = 0; i < sz; i++) order[i] = i;
+/** One pass over every space in random order: grow a neighboring region over
+ * it, or failing that place a new dot there. */
+function generatePass(s: GalaxiesState, rng: RandomState): void {
+  const order = Array.from({ length: s.sx * s.sy }, (_, i) => i);
   shuffle(order, rng);
-  const nspc = Math.floor((perc * sz) / 100);
 
-  for (let k = 0; k < nspc; k++) {
+  for (let k = 0; k < order.length; k++) {
     const i = order[k];
     const px = i % s.sx;
     const py = (i / s.sx) | 0;
@@ -278,48 +240,32 @@ function generatePass(
         y2++;
       }
     }
-    if (t !== SpaceType.Vertex) {
-      if (generateTryBlock(s, rng, x1, y1, x2, y2)) continue;
-    }
-
-    if (!(flags & GP_DOTS)) continue;
+    if (t !== SpaceType.Vertex && generateTryBlock(s, rng, x1, y1, x2, y2)) continue;
     if (t === SpaceType.Edge && k % 2 === 1) continue;
 
     if (dotIsPossible(s, px, py)) {
       addDot(s, px, py);
       s.dots.push({ x: px, y: py });
-      // Immediately establish the obvious adjacencies (each cell
-      // sharing a face with the dot belongs to it). Mirrors
-      // generate_pass calling solver_obvious_dot.
-      solverObviousDotInline(s, px, py);
+      // A new dot claims the tiles it sits on at once, as upstream's
+      // generate_pass does through solver_obvious_dot.
+      claimDotTiles(s, px, py);
     }
   }
 }
 
-/** Inline solver_obvious_dot: associate every orthogonally-adjacent
- * tile with this dot (plus its 180°-opposite). Used only during
- * generation. */
-function solverObviousDotInline(s: GalaxiesState, dx: number, dy: number): void {
-  for (let ddy = -1; ddy <= 1; ddy++) {
-    for (let ddx = -1; ddx <= 1; ddx++) {
-      const tx = dx + ddx;
-      const ty = dy + ddy;
-      if (!inGrid(s, tx, ty)) continue;
-      if (spaceTypeAt(tx, ty) !== SpaceType.Tile) continue;
-      const ti = idx(s, tx, ty);
-      if (s.flags[ti] & F_TILE_ASSOC) continue;
-      const opp = spaceOppositeDot(s, tx, ty, dx, dy);
-      if (!opp) continue;
-      const oi = idx(s, opp.x, opp.y);
-      if (s.flags[oi] & F_TILE_ASSOC) continue;
-      addAssoc(s, tx, ty, dx, dy);
-      addAssoc(s, opp.x, opp.y, dx, dy);
-    }
+/** Associate each unclaimed tile the dot sits on, with its free 180° image. */
+function claimDotTiles(s: GalaxiesState, dx: number, dy: number): void {
+  for (const t of dotTiles(s, dx, dy)) {
+    if (s.flags[idx(s, t.x, t.y)] & F_TILE_ASSOC) continue;
+    const opp = spaceOppositeDot(s, t.x, t.y, dx, dy);
+    if (!opp || s.flags[idx(s, opp.x, opp.y)] & F_TILE_ASSOC) continue;
+    addAssoc(s, t.x, t.y, dx, dy);
+    addAssoc(s, opp.x, opp.y, dx, dy);
   }
 }
 
-/** Outline a single tile's region edges. Mirrors
- * `outline_tile_fordot(state, tile, true)` after final partition. */
+/** Set exactly the edges between this tile and neighbors in other regions.
+ * Upstream's `outline_tile_fordot(state, tile, true)`. */
 function outlineTileForDot(s: GalaxiesState, tx: number, ty: number): void {
   const ti = idx(s, tx, ty);
   const { edges, tiles } = adjacencies(s, tx, ty);
@@ -329,19 +275,17 @@ function outlineTileForDot(s: GalaxiesState, tx: number, ty: number): void {
     const ei = idx(s, e.x, e.y);
     const edgeSet = (s.flags[ei] & F_EDGE_SET) !== 0;
     const t2 = tiles[n];
-    let same: boolean;
+    let same = false;
     if (t2) {
+      const t2i = idx(s, t2.x, t2.y);
       if (!(s.flags[ti] & F_TILE_ASSOC)) {
-        same = !(s.flags[idx(s, t2.x, t2.y)] & F_TILE_ASSOC);
+        same = !(s.flags[t2i] & F_TILE_ASSOC);
       } else {
-        const t2i = idx(s, t2.x, t2.y);
         same =
           (s.flags[t2i] & F_TILE_ASSOC) !== 0 &&
           s.dotx[ti] === s.dotx[t2i] &&
           s.doty[ti] === s.doty[t2i];
       }
-    } else {
-      same = false;
     }
     if (!edgeSet && !same) s.flags[ei] |= F_EDGE_SET;
     else if (edgeSet && same) s.flags[ei] &= ~F_EDGE_SET;
@@ -378,9 +322,7 @@ function isWiggle(
   const ti = idx(s, x, y);
   const t1i = idx(s, x1, y1);
   const t2i = idx(s, x2, y2);
-  // All three must be associated; the C reads dotx/doty unguarded,
-  // which works because the generator only invokes this after every
-  // tile has been associated.
+  // Every tile is associated by the time this runs; the check is defensive.
   if (
     !(s.flags[ti] & F_TILE_ASSOC) ||
     !(s.flags[t1i] & F_TILE_ASSOC) ||
@@ -398,8 +340,7 @@ function isWiggle(
 const GENERATE_TRIES = 10;
 const MAX_REGENERATIONS = 200;
 
-/** Top-level: produce a desc string for params. Retries until the
- * solver-verified difficulty matches `diff`. */
+/** A desc for `params`, retried until the solver grades it at `params.diff`. */
 export function newGameDesc(
   params: { w: number; h: number; diff: GalaxiesDiff },
   rng: RandomState,
@@ -407,18 +348,18 @@ export function newGameDesc(
   const { w, h } = params;
 
   for (let regen = 0; regen < MAX_REGENERATIONS; regen++) {
+    // Keep the wiggliest of several boards.
     let best: GalaxiesState | null = null;
     let bestW = -1;
     for (let i = 0; i < GENERATE_TRIES; i++) {
-      let attempt = blankGame(w, h);
-      // Loop until at least two dots (single-dot puzzles are trivial).
-      // Bounded so we don't spin if the grid is too small.
-      for (let safety = 0; safety < 20; safety++) {
+      // At least two dots, since one dot is trivial; bounded for tiny grids.
+      let attempt: GalaxiesState;
+      let safety = 0;
+      do {
         attempt = blankGame(w, h);
-        generatePass(attempt, rng, 100, GP_DOTS);
+        generatePass(attempt, rng);
         attempt.dots = rebuildDots(attempt);
-        if (attempt.dots.length >= 2) break;
-      }
+      } while (attempt.dots.length < 2 && ++safety < 20);
       const wig = measureWiggliness(attempt);
       if (wig > bestW) {
         bestW = wig;
@@ -427,21 +368,18 @@ export function newGameDesc(
     }
     if (!best) continue;
 
-    // Outline every tile (partition edges).
+    // Draw the walls between the regions.
     for (let y = 1; y < best.sy - 1; y += 2) {
       for (let x = 1; x < best.sx - 1; x += 2) {
         outlineTileForDot(best, x, y);
       }
     }
-    // Sanity-check: the generator should produce a complete partition.
     if (!checkComplete(best, false).complete) continue;
 
-    // Now verify difficulty matches by running the solver from a
-    // clean state (no associations, no interior edges).
+    // Grade from the starting position: dots only.
     const probe = cloneState(best);
     clearForSolve(probe);
-    const diff = solverState(probe, params.diff);
-    if (diff !== params.diff) continue;
+    if (solverState(probe, params.diff) !== params.diff) continue;
 
     return encodeGame(best);
   }

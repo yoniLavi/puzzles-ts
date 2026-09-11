@@ -9,7 +9,7 @@ import {
   F_DOT_BLACK,
   F_EDGE_SET,
   idx,
-  inUi,
+  inInterior,
   isVerticalEdge,
   rebuildDots,
   SpaceType,
@@ -117,11 +117,11 @@ describe("checkComplete", () => {
     expect(s.flags[idx(s, 3, 3)] & F_DOT_BLACK).toBeFalsy();
   });
 
-  it("inUi excludes the perimeter", () => {
+  it("inInterior excludes the perimeter", () => {
     const s = blankGame(3, 3);
-    expect(inUi(s, 0, 1)).toBe(false);
-    expect(inUi(s, 1, 0)).toBe(false);
-    expect(inUi(s, 1, 1)).toBe(true);
-    expect(inUi(s, s.sx - 1, 1)).toBe(false);
+    expect(inInterior(s, 0, 1)).toBe(false);
+    expect(inInterior(s, 1, 0)).toBe(false);
+    expect(inInterior(s, 1, 1)).toBe(true);
+    expect(inInterior(s, s.sx - 1, 1)).toBe(false);
   });
 });

@@ -1,14 +1,6 @@
 /**
- * Galaxies (Tentai Show / Spiral Galaxies) — native TS port. The
- * goal-4 game from `AGENTS.md`: the cell↔dot aid is a follow-up
- * change once this port ships at owner-confirmed parity.
- *
- * Idiomatic rendering of `puzzles/galaxies.c` (deleted when this
- * change reaches catalog-seam wiring): immutable state at the public
- * boundary, discriminated `GalaxiesMove` of `E`/`U`/`M`/`A` ops, GC
- * not dup/free, the lazy local `Dsf` leaf, and `random.ts` for
- * `random_upto`. Logic mirrors the C reference; not a control-flow
- * transliteration.
+ * Galaxies (Tentai Show): divide the grid into regions, each rotationally
+ * symmetric about the one dot it contains.
  */
 
 import { assertNever, rejectMove } from "../../engine/assert-never.ts";
@@ -81,6 +73,7 @@ import {
   type GalaxiesDrawState,
   NCOLORS,
   newDrawState,
+  PREFERRED_TILE_SIZE,
   redraw,
   setTileSize,
 } from "./render.ts";
@@ -92,13 +85,14 @@ import {
   cloneState,
   decodeGame,
   F_DOT,
+  F_DOT_BLACK,
   F_DOT_HOLD,
   F_EDGE_SET,
   F_TILE_ASSOC,
   type GalaxiesState,
   idx,
   inGrid,
-  inUi,
+  inInterior,
   isVerticalEdge,
   rebuildDots,
   removeAssoc,
@@ -107,7 +101,6 @@ import {
   tilesFromEdge,
 } from "./state.ts";
 
-const PREFERRED_TILE_SIZE = 32;
 const FLASH_TIME = 0.15;
 
 // --- types -----------------------------------------------------------
@@ -126,8 +119,7 @@ export type GalaxiesOp =
 
 export interface GalaxiesMove {
   ops: GalaxiesOp[];
-  /** True ⇒ executeMove applies ops without the mirror-opposite
-   * semantics, matching the C "S;…" solve-mode prefix. */
+  /** True for the solver's move: its ops apply without their 180° partners. */
   solving: boolean;
 }
 
@@ -195,15 +187,8 @@ const DIFFCHARS = "nu";
 
 function decodeParams(s: string): GalaxiesParams {
   const { w, h, next } = parseDimensions(s, 0);
-  let i = next;
-  let diff: GalaxiesDiff = GalaxiesDiff.Normal;
-  if (s[i] === "d") {
-    i++;
-    const c = s[i];
-    const idxd = DIFFCHARS.indexOf(c ?? "");
-    if (idxd >= 0) diff = idxd as GalaxiesDiff;
-  }
-  return { w, h, diff };
+  const d = s[next] === "d" ? DIFFCHARS.indexOf(s[next + 1] ?? "") : -1;
+  return { w, h, diff: d >= 0 ? (d as GalaxiesDiff) : GalaxiesDiff.Normal };
 }
 
 function encodeParams(p: GalaxiesParams, full: boolean): string {
@@ -233,7 +218,7 @@ function coordRoundToEdge(
   py: number,
   tileSize: number,
   border: number,
-): { x: number; y: number } {
+): Point {
   const fx = (px - border) / tileSize;
   const fy = (py - border) / tileSize;
   const xs = Math.floor(fx) + 0.5;
@@ -255,7 +240,7 @@ function gridRoundDouble(
   py: number,
   tileSize: number,
   border: number,
-): { x: number; y: number } {
+): Point {
   const fx = (px - border) / tileSize;
   const fy = (py - border) / tileSize;
   return {
@@ -291,13 +276,13 @@ function snapToTile(p: number, tileSize: number, border: number): number {
 
 function applyOp(s: GalaxiesState, op: GalaxiesOp, solving: boolean): void {
   if (op.kind === "edge") {
-    if (!inUi(s, op.x, op.y) || spaceTypeAt(op.x, op.y) !== SpaceType.Edge) {
+    if (!inInterior(s, op.x, op.y) || spaceTypeAt(op.x, op.y) !== SpaceType.Edge) {
       throw new Error(`Galaxies: invalid edge move at (${op.x},${op.y})`);
     }
     s.flags[idx(s, op.x, op.y)] ^= F_EDGE_SET;
   } else if (op.kind === "unassoc") {
     if (
-      !inUi(s, op.x, op.y) ||
+      !inInterior(s, op.x, op.y) ||
       spaceTypeAt(op.x, op.y) !== SpaceType.Tile ||
       !(s.flags[idx(s, op.x, op.y)] & F_TILE_ASSOC)
     ) {
@@ -316,8 +301,8 @@ function applyOp(s: GalaxiesState, op: GalaxiesOp, solving: boolean): void {
     s.flags[i] ^= F_DOT_HOLD;
   } else if (op.kind === "assoc") {
     if (
-      !inUi(s, op.x, op.y) ||
-      !inUi(s, op.ax, op.ay) ||
+      !inInterior(s, op.x, op.y) ||
+      !inInterior(s, op.ax, op.ay) ||
       !(s.flags[idx(s, op.ax, op.ay)] & F_DOT)
     ) {
       throw new Error(
@@ -359,10 +344,6 @@ function executeMove(s: GalaxiesState, move: GalaxiesMove): GalaxiesState {
   for (const op of move.ops) applyOp(next, op, move.solving);
   if (move.solving) next.cheated = true;
   if (checkComplete(next, false).complete) next.completed = true;
-  // Difficulty is constant over the lifetime of the puzzle (it
-  // depends only on the dot layout). Preserve the cached value
-  // through executeMove so the statusbar avoids re-running the
-  // solver after every move.
   return next;
 }
 
@@ -372,6 +353,8 @@ function executeMove(s: GalaxiesState, move: GalaxiesMove): GalaxiesState {
  * deliberate drag is recognized at once, large enough that a finger's wobble
  * on a tap does not silently become one. */
 const DRAG_SLOP_PX = 5;
+
+const NO_DOT: Point = { x: -1, y: -1 };
 
 function traveled(ui: GalaxiesUi, x: number, y: number): boolean {
   const dx = x - ui.pressX;
@@ -387,23 +370,42 @@ function dotUnder(
   y: number,
   tile: number,
   border: number,
-): { x: number; y: number } | null {
+): Point | null {
   const g = gridRoundDouble(x, y, tile, border);
-  for (let dy1 = g.y - 1; dy1 <= g.y + 1; dy1++) {
-    for (let dx1 = g.x - 1; dx1 <= g.x + 1; dx1++) {
-      if (dx1 < 0 || dy1 < 0 || dx1 >= s.sx || dy1 >= s.sy) continue;
+  for (let gy = g.y - 1; gy <= g.y + 1; gy++) {
+    for (let gx = g.x - 1; gx <= g.x + 1; gx++) {
+      if (gx < 0 || gy < 0 || gx >= s.sx || gy >= s.sy) continue;
       if (
-        x >= scoord(dx1 - 1, tile, border) &&
-        x < scoord(dx1 + 1, tile, border) &&
-        y >= scoord(dy1 - 1, tile, border) &&
-        y < scoord(dy1 + 1, tile, border) &&
-        s.flags[idx(s, dx1, dy1)] & F_DOT
+        x >= scoord(gx - 1, tile, border) &&
+        x < scoord(gx + 1, tile, border) &&
+        y >= scoord(gy - 1, tile, border) &&
+        y < scoord(gy + 1, tile, border) &&
+        s.flags[idx(s, gx, gy)] & F_DOT
       ) {
-        return { x: dx1, y: dy1 };
+        return { x: gx, y: gy };
       }
     }
   }
   return null;
+}
+
+/** Enter a drag: from `src`, with the (tile, dot) pair held as `target` and
+ * `dot`, steering the dot end when `toDot`. */
+function startDrag(
+  ui: GalaxiesUi,
+  toDot: boolean,
+  src: Point,
+  dot: Point,
+  target: Point,
+): void {
+  ui.dragging = true;
+  ui.dragToDot = toDot;
+  ui.srcx = src.x;
+  ui.srcy = src.y;
+  ui.dotx = dot.x;
+  ui.doty = dot.y;
+  ui.targetX = target.x;
+  ui.targetY = target.y;
 }
 
 /**
@@ -428,46 +430,29 @@ function beginDrag(
   border: number,
   allowReverse: boolean,
 ): boolean {
+  const cell = { x: snapToTile(x, tile, border), y: snapToTile(y, tile, border) };
   const dot = dotUnder(s, x, y, tile, border);
   if (dot) {
-    ui.dragging = true;
-    ui.dragToDot = false;
-    ui.srcx = dot.x;
-    ui.srcy = dot.y;
-    ui.dotx = dot.x;
-    ui.doty = dot.y;
-    ui.targetX = snapToTile(x, tile, border);
-    ui.targetY = snapToTile(y, tile, border);
+    startDrag(ui, false, dot, dot, cell);
     return true;
   }
 
-  const tx = snapToTile(x, tile, border);
-  const ty = snapToTile(y, tile, border);
-  if (!inUi(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return false;
-  const ti = idx(s, tx, ty);
+  if (
+    !inInterior(s, cell.x, cell.y) ||
+    spaceTypeAt(cell.x, cell.y) !== SpaceType.Tile
+  ) {
+    return false;
+  }
+  const ti = idx(s, cell.x, cell.y);
   if (s.flags[ti] & F_DOT) return false;
 
   if (s.flags[ti] & F_TILE_ASSOC) {
-    ui.dragging = true;
-    ui.dragToDot = false;
-    ui.srcx = tx;
-    ui.srcy = ty;
-    ui.dotx = s.dotx[ti];
-    ui.doty = s.doty[ti];
-    ui.targetX = tx;
-    ui.targetY = ty;
+    startDrag(ui, false, cell, { x: s.dotx[ti], y: s.doty[ti] }, cell);
     return true;
   }
 
   if (!allowReverse) return false;
-  ui.dragging = true;
-  ui.dragToDot = true;
-  ui.srcx = tx;
-  ui.srcy = ty;
-  ui.targetX = tx;
-  ui.targetY = ty;
-  ui.dotx = -1;
-  ui.doty = -1;
+  startDrag(ui, true, cell, NO_DOT, cell);
   aimAtDot(s, ui, x, y, tile, border);
   return true;
 }
@@ -545,12 +530,9 @@ function interpretMove(
   // so a left press is *held* until the release or the first travel past
   // DRAG_SLOP_PX says which it was. That costs the edge toggle its
   // fire-on-press immediacy, and it is the only reason upstream put the drag
-  // on the right button (its own interpret_move header specifies
-  // "left-drag from dot"; the code has never matched it). Worth paying:
-  // right-drag reaches touch only through the 350 ms long-press promotion,
-  // which docs/games/input.md § "A touch hold arrives as the right button"
-  // records as fatal to exactly this gesture. Right-button drags keep
-  // working unchanged.
+  // on the right button. Worth paying: right-drag reaches touch only through
+  // the 350 ms long-press promotion, which docs/games/input.md § "A touch hold
+  // arrives as the right button" records as fatal to exactly this gesture.
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     ui.cursor.visible = false;
     ui.pressX = x;
@@ -559,10 +541,10 @@ function interpretMove(
     // The right button has no click meaning, so where the press point names
     // an unambiguous source — a dot, or a tile whose arrow is being picked
     // up — it can commit to the drag at once and let the arrow lift visibly
-    // under the finger, as it always has. The left button must wait: its
-    // click toggles an edge. Neither starts a *reverse* drag on the press,
-    // so a plain right-click on an empty cell stays the no-op it has always
-    // been rather than quietly associating it with the nearest dot.
+    // under the finger. The left button must wait: its click toggles an edge.
+    // Neither starts a *reverse* drag on the press, so a plain right-click on
+    // an empty cell stays a no-op rather than quietly associating it with
+    // the nearest dot.
     if (button === RIGHT_BUTTON && beginDrag(s, ui, x, y, tile, border, false)) {
       ui.pressPending = false;
     }
@@ -611,19 +593,15 @@ function interpretMove(
     // special case.
     if (button !== LEFT_RELEASE || !pending || traveled(ui, x, y)) return null;
     const e = coordRoundToEdge(ui.pressX, ui.pressY, tile, border);
-    if (!inUi(s, e.x, e.y)) return null;
+    if (!inInterior(s, e.x, e.y)) return null;
     if (!edgePlacementLegal(s, e.x, e.y)) return null;
     return { ops: [{ kind: "edge", x: e.x, y: e.y }], solving: false };
   }
 
   const cursorMove = cursorDelta(button);
   if (cursorMove) {
-    let nx = ui.cursor.x + cursorMove.dx;
-    let ny = ui.cursor.y + cursorMove.dy;
-    if (nx < 1) nx = 1;
-    if (ny < 1) ny = 1;
-    if (nx > s.sx - 2) nx = s.sx - 2;
-    if (ny > s.sy - 2) ny = s.sy - 2;
+    const nx = Math.max(1, Math.min(s.sx - 2, ui.cursor.x + cursorMove.dx));
+    const ny = Math.max(1, Math.min(s.sy - 2, ui.cursor.y + cursorMove.dy));
     const changed = nx !== ui.cursor.x || ny !== ui.cursor.y || !ui.cursor.visible;
     ui.cursor.x = nx;
     ui.cursor.y = ny;
@@ -633,7 +611,7 @@ function interpretMove(
       // one, drop the pick when it moves off (the preview then shows
       // nothing, exactly as with the pointer out of reach).
       const onDot =
-        inUi(s, nx, ny) &&
+        inInterior(s, nx, ny) &&
         s.flags[idx(s, nx, ny)] & F_DOT &&
         okToAddAssocWithOpposite(s, ui.targetX, ui.targetY, nx, ny);
       ui.dotx = onDot ? nx : -1;
@@ -660,24 +638,13 @@ function interpretMove(
         : dropDrag(s, ui, cx, cy);
     }
     const ci = idx(s, cx, cy);
+    const cell = { x: cx, y: cy };
     if (s.flags[ci] & F_DOT) {
-      ui.dragging = true;
-      ui.targetX = cx;
-      ui.targetY = cy;
-      ui.dotx = cx;
-      ui.doty = cy;
-      ui.srcx = cx;
-      ui.srcy = cy;
+      startDrag(ui, false, cell, cell, cell);
       return UI_UPDATE;
     }
     if (s.flags[ci] & F_TILE_ASSOC) {
-      ui.dragging = true;
-      ui.targetX = cx;
-      ui.targetY = cy;
-      ui.dotx = s.dotx[ci];
-      ui.doty = s.doty[ci];
-      ui.srcx = cx;
-      ui.srcy = cy;
+      startDrag(ui, false, cell, { x: s.dotx[ci], y: s.doty[ci] }, cell);
       return UI_UPDATE;
     }
     if (spaceTypeAt(cx, cy) === SpaceType.Edge && edgePlacementLegal(s, cx, cy)) {
@@ -686,15 +653,8 @@ function interpretMove(
     // A plain tile: start the reverse drag, so the keyboard reaches the
     // cell→dot gesture the pointer has (the input-parity bar). The cursor
     // keys then pick the dot and a second select commits.
-    if (spaceTypeAt(cx, cy) === SpaceType.Tile && inUi(s, cx, cy)) {
-      ui.dragging = true;
-      ui.dragToDot = true;
-      ui.srcx = cx;
-      ui.srcy = cy;
-      ui.targetX = cx;
-      ui.targetY = cy;
-      ui.dotx = -1;
-      ui.doty = -1;
+    if (spaceTypeAt(cx, cy) === SpaceType.Tile && inInterior(s, cx, cy)) {
+      startDrag(ui, true, cell, NO_DOT, cell);
       return UI_UPDATE;
     }
   }
@@ -711,13 +671,11 @@ function dropDrag(
   const toDot = ui.dragToDot;
   ui.dragging = false;
   ui.dragToDot = false;
-  // Two tests below belong to the classic drag only. In reverse mode the
-  // target *is* the source cell, so "dragged back where it started" would
-  // fire on every commit; and the source is by construction unassociated,
-  // so there is no arrow there to lift.
-  if (!toDot) {
-    if (px === ui.srcx && py === ui.srcy) return UI_UPDATE;
-  }
+  // Two tests belong to the classic drag only. In reverse mode the target *is*
+  // the source cell, so "dragged back where it started" would fire on every
+  // commit; and the source is unassociated by construction, so there is no
+  // arrow there to lift.
+  if (!toDot && px === ui.srcx && py === ui.srcy) return UI_UPDATE;
   const ops: GalaxiesOp[] = [];
   if (
     !toDot &&
@@ -726,11 +684,9 @@ function dropDrag(
   ) {
     ops.push({ kind: "unassoc", x: ui.srcx, y: ui.srcy });
   }
-  // Emit the assoc only where executeMove would actually commit it —
-  // the same predicate the drag preview draws from, so the preview,
-  // the release, and the state change cannot disagree. (The earlier
-  // shape emitted an assoc that applyOp would no-op, which cost the
-  // player an undo entry that changed nothing.)
+  // Emit the assoc only where executeMove would commit it — the predicate the
+  // preview draws from — so a release never costs an undo entry that changes
+  // nothing.
   if (okToAddAssocWithOpposite(s, px, py, ui.dotx, ui.doty)) {
     ops.push({ kind: "assoc", x: px, y: py, ax: ui.dotx, ay: ui.doty });
   }
@@ -740,111 +696,58 @@ function dropDrag(
 
 // --- solve --------------------------------------------------------
 
-function diffSolveMoves(curr: GalaxiesState, solved: GalaxiesState): GalaxiesMove {
-  const ops: GalaxiesOp[] = [];
-  // Tiles: curr's associations get cleared (the solved diff strips
-  // F_TILE_ASSOC and only differentiates on edges and tiles whose
-  // assoc state changed). Mirroring the C: it nukes assoc on tosolve
-  // first, so for every assoc'd tile in curr that's now unassoc'd in
-  // solved, emit a U.
-  for (let y = 1; y < curr.sy - 1; y += 2) {
-    for (let x = 1; x < curr.sx - 1; x += 2) {
-      const i = idx(curr, x, y);
-      const a = (curr.flags[i] & F_TILE_ASSOC) !== 0;
-      const b = (solved.flags[i] & F_TILE_ASSOC) !== 0;
-      if (a && !b) ops.push({ kind: "unassoc", x, y });
-      else if (a && b) {
-        if (curr.dotx[i] !== solved.dotx[i] || curr.doty[i] !== solved.doty[i]) {
-          ops.push({
-            kind: "assoc",
-            x,
-            y,
-            ax: solved.dotx[i],
-            ay: solved.doty[i],
-          });
-        }
-      } else if (!a && b) {
-        ops.push({
-          kind: "assoc",
-          x,
-          y,
-          ax: solved.dotx[i],
-          ay: solved.doty[i],
-        });
-      }
-    }
-  }
-  // Edges:
-  for (let y = 0; y < curr.sy; y++) {
-    for (let x = 0; x < curr.sx; x++) {
-      if (spaceTypeAt(x, y) !== SpaceType.Edge) continue;
-      const i = idx(curr, x, y);
-      const a = (curr.flags[i] & F_EDGE_SET) !== 0;
-      const b = (solved.flags[i] & F_EDGE_SET) !== 0;
-      if (a !== b) ops.push({ kind: "edge", x, y });
-    }
-  }
-  return { ops, solving: true };
+/** The solved board reached from `start`, or null if the solver cannot settle
+ * it. */
+function solveFrom(start: GalaxiesState, clear: boolean): GalaxiesState | null {
+  const b = cloneState(start);
+  if (clear) clearForSolve(b);
+  const diff = solverState(b, GalaxiesDiff.Unreasonable);
+  return diff === GalaxiesDiff.Normal || diff === GalaxiesDiff.Unreasonable ? b : null;
 }
 
 function solveGalaxies(
   orig: GalaxiesState,
   curr: GalaxiesState,
 ): SolveResult<GalaxiesMove> {
-  // Try solving from the current state first.
-  let attempt = cloneState(curr);
-  let diff = solverState(attempt, GalaxiesDiff.Unreasonable);
-  if (
-    diff === GalaxiesDiff.Unfinished ||
-    diff === GalaxiesDiff.Impossible ||
-    diff === GalaxiesDiff.Ambiguous
-  ) {
-    attempt = cloneState(orig);
-    clearForSolve(attempt);
-    diff = solverState(attempt, GalaxiesDiff.Unreasonable);
-    if (
-      diff === GalaxiesDiff.Unfinished ||
-      diff === GalaxiesDiff.Impossible ||
-      diff === GalaxiesDiff.Ambiguous
-    ) {
-      return { ok: false, error: "Solver could not find a solution" };
+  // From the player's position first, then from the start.
+  const solved = solveFrom(curr, false) ?? solveFrom(orig, true);
+  if (!solved) return { ok: false, error: "Solver could not find a solution" };
+  // The solution is walls only, as upstream's is: every arrow the player set
+  // is removed.
+  const ops: GalaxiesOp[] = [];
+  for (let y = 1; y < curr.sy - 1; y += 2) {
+    for (let x = 1; x < curr.sx - 1; x += 2) {
+      if (curr.flags[idx(curr, x, y)] & F_TILE_ASSOC)
+        ops.push({ kind: "unassoc", x, y });
     }
   }
-  // Strip associations from the solved state — the C does the same,
-  // so the move applied to the player's current state ends with only
-  // edges placed (associations the player set are removed by U ops).
-  for (let i = 0; i < attempt.sx * attempt.sy; i++) {
-    if (attempt.flags[i] & F_TILE_ASSOC) {
-      attempt.flags[i] &= ~F_TILE_ASSOC;
-      attempt.dotx[i] = 0;
-      attempt.doty[i] = 0;
+  for (let y = 0; y < curr.sy; y++) {
+    for (let x = 0; x < curr.sx; x++) {
+      if (spaceTypeAt(x, y) !== SpaceType.Edge) continue;
+      const i = idx(curr, x, y);
+      if ((curr.flags[i] & F_EDGE_SET) !== (solved.flags[i] & F_EDGE_SET)) {
+        ops.push({ kind: "edge", x, y });
+      }
     }
   }
-  return { ok: true, move: diffSolveMoves(curr, attempt) };
+  return { ok: true, move: { ops, solving: true } };
 }
 
 // --- mistake checking ----------------------------------------------
 
 /**
- * Flag every player action the unique solution contradicts — both the
- * two ways Galaxies is played (association arrows and walls):
+ * Flag every player action the unique solution contradicts, in both ways
+ * Galaxies is played:
  *
- *  - a **tile** associated with a dot other than the one the solution
- *    assigns it;
- *  - a **wall** the player set *inside* a region the solution leaves
- *    whole (its two adjacent tiles belong to the same solution galaxy).
+ *  - a **tile** associated with a dot other than the solution's;
+ *  - a **wall** set *inside* a region the solution leaves whole.
  *
- * The unique solution needs no stored aux: the dots are immutable clues,
- * so re-solving a cleared copy (dots only) recovers the canonical
- * tile→dot partition. A wrongly-associated tile and its 180° partner
- * (the player sets both atomically) are both genuinely wrong, so both
- * are flagged. Unassociated tiles are *incomplete*, not mistaken, and
- * are skipped. Walls are checked independently of associations, so a
- * board built entirely from walls (zero arrows) is still validated —
- * the case the association-only first cut missed. A board that does not
- * solve uniquely (only reachable by a hand-entered non-unique ID) yields
- * no flags — we cannot prove any cell wrong, and the "save only when
- * provably clean" contract must not block on an unprovable board.
+ * The dots are immutable clues, so re-solving a cleared copy recovers the
+ * solution with no stored aux. A wrong tile and its 180° partner are both
+ * flagged, since the player sets both at once. Unassociated tiles are
+ * incomplete rather than wrong. A board that does not solve uniquely (only a
+ * hand-entered ID) yields no flags: nothing can be proved wrong, and "save
+ * only when provably clean" must not block on an unprovable board.
  */
 function findMistakes(s: GalaxiesState): readonly GalaxiesMistake[] {
   const sol = cloneState(s);
@@ -869,10 +772,8 @@ function findMistakes(s: GalaxiesState): readonly GalaxiesMistake[] {
       }
     }
   }
-  // Wrong walls: an interior edge the player set whose two tiles share a
-  // solution dot — i.e. a wall slicing through a single galaxy. (Only
-  // interior edges qualify: the outer perimeter has a tile off-grid on
-  // one side, so `tilesFromEdge` yields a null and we skip it.)
+  // Wrong walls: an edge the player set whose two tiles share a solution dot.
+  // The rim has a tile off the board, so `tilesFromEdge` skips it.
   for (let y = 1; y < s.sy - 1; y++) {
     for (let x = 1; x < s.sx - 1; x++) {
       if (spaceTypeAt(x, y) !== SpaceType.Edge) continue;
@@ -902,17 +803,9 @@ function hint(s: GalaxiesState): HintResult<GalaxiesMove, GalaxiesHint> {
   if (refusal) return refusal;
   const steps = galaxiesHintSteps(s);
   if (steps.length === 0) {
-    // On an Unreasonable board this is the expected end of the road, not a
-    // failure: what remains needs a cell tried and followed until something
-    // breaks, and a hint that reported the survivor of a search would be
-    // teaching nothing (owner, 2026-08-11). Say what the position is and what
-    // the player's options are.
-    //
-    // These were Galaxies' own words until `refuse-honestly-at-every-tier`, and
-    // they are now the collection's: measured against every other hinting game,
-    // this was the only one of three phrasings that told the player what to do,
-    // and the only one an owner had accepted. It moved to
-    // `hint-refusal.ts` unchanged rather than the other way round.
+    // On an Unreasonable board this is the expected end of the road: what
+    // remains needs a cell tried and followed until something breaks, and the
+    // hint does not teach guessing (see `nextPlanFiring`).
     return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
   return { ok: true, steps };
@@ -967,7 +860,8 @@ function textFormat(s: GalaxiesState): string {
   const out: string[] = [];
   for (let y = 0; y < s.sy; y++) {
     for (let x = 0; x < s.sx; x++) {
-      const f = s.flags[idx(s, x, y)];
+      const i = idx(s, x, y);
+      const f = s.flags[i];
       if (f & F_DOT) {
         out.push("o");
         continue;
@@ -975,8 +869,8 @@ function textFormat(s: GalaxiesState): string {
       const t = spaceTypeAt(x, y);
       if (t === SpaceType.Tile) {
         if (f & F_TILE_ASSOC) {
-          const di = idx(s, s.dotx[idx(s, x, y)], s.doty[idx(s, x, y)]);
-          out.push(s.flags[di] & 8 /* F_DOT_BLACK */ ? "B" : "W");
+          const di = idx(s, s.dotx[i], s.doty[i]);
+          out.push(s.flags[di] & F_DOT_BLACK ? "B" : "W");
         } else {
           out.push(" ");
         }
@@ -1001,17 +895,13 @@ const GALAXIES_TIERS = tierNames(2, { search: true });
 const DIFF_NAMES = ["Normal", "Unreasonable", "Impossible", "Ambiguous", "Unfinished"];
 
 function statusbarText(s: GalaxiesState, _ui: GalaxiesUi): string {
-  // Compute current-puzzle difficulty if not cached. (Cheap on
-  // small boards; deferred so we don't pay it for boards a player
-  // is mid-edit on.)
-  let cd = s.cdiff;
-  if (cd === -1) {
+  // Solved once, on first ask, and kept: the verdict depends only on the dots.
+  if (s.cachedDiff === -1) {
     const probe = cloneState(s);
     clearForSolve(probe);
-    cd = solverState(probe, GalaxiesDiff.Unreasonable);
-    s.cdiff = cd;
+    s.cachedDiff = solverState(probe, GalaxiesDiff.Unreasonable);
   }
-  const diffWord = DIFF_NAMES[cd] ?? "Unknown";
+  const diffWord = DIFF_NAMES[s.cachedDiff] ?? "Unknown";
   if (s.completed) {
     return s.cheated
       ? `Auto-solved. Difficulty ${diffWord}.`
@@ -1022,13 +912,10 @@ function statusbarText(s: GalaxiesState, _ui: GalaxiesUi): string {
 
 // --- the Game object -----------------------------------------------
 
-/** Galaxies' difficulty contract (`engine/difficulty.ts`). `solverState` returns
- * the *minimum* difficulty at which the board is uniquely solvable, or one of
- * the `Impossible` / `Ambiguous` / `Unfinished` outcomes — so its `GalaxiesDiff`
- * enum is two tiers and three verdicts in one type, which is precisely why the
- * cross-game guard reads the `paramConfig` difficulty choices rather than
- * counting `DIFF_*` members. The
- * board is cleared to its starting position first, so the player's own edges and
+/** Galaxies' difficulty contract (`engine/difficulty.ts`). `GalaxiesDiff` is
+ * two tiers and three verdicts in one type, which is why the cross-game guard
+ * reads the `paramConfig` choices rather than counting its members. The board
+ * is cleared to its starting position first, so the player's own edges and
  * associations never enter the verdict. */
 const difficulty: DifficultyContract<GalaxiesParams> = {
   tierOf: (p) => p.diff,
@@ -1069,9 +956,7 @@ export const galaxiesGame: Game<
   presets() {
     const mk = (w: number, h: number, diff: GalaxiesDiff) => ({
       // The tier word comes from the collection's scale, not from the
-      // `GalaxiesDiff` member name: that enum is two tiers and three verdicts in
-      // one type, and its members are solver labels
-      // (`adopt-conventional-tier-names`).
+      // `GalaxiesDiff` member name, which is a solver label.
       title: `${w}x${h} ${GALAXIES_TIERS[diff === GalaxiesDiff.Normal ? 0 : 1]}`,
       params: { w, h, diff },
     });
@@ -1107,15 +992,11 @@ export const galaxiesGame: Game<
   describeParams: (p) => ({ difficulty: String(p.diff) }),
 
   newDesc(p: GalaxiesParams, rng: RandomState) {
-    const desc = newGameDesc(p, rng);
-    return { desc };
+    return { desc: newGameDesc(p, rng) };
   },
 
   validateDesc(p, desc): string | null {
-    // We can validate by attempting to decode; if it fits, it's valid.
-    const dummy = blankGame(p.w, p.h);
-    const err = decodeGame(dummy, desc);
-    return err;
+    return decodeGame(blankGame(p.w, p.h), desc);
   },
 
   newState(p, desc): GalaxiesState {
@@ -1159,17 +1040,13 @@ export const galaxiesGame: Game<
   hintKeepTrack,
   refreshHintStep,
 
-  /** The rings, not the gesture — and not the information either.
-   *
-   * Once the preview is *honest* (it offers only pairs some galaxy could
-   * actually contain — `reachableFromDot`), the set of dots a cell may join
-   * is discoverable by waving the pointer around and watching where the
-   * preview appears: on a fresh 10x10 it averages 1.5 dots per cell, so for
-   * many cells it is the answer. This preference cannot take that back; it
-   * decides only whether you read it at a glance or by probing. Hiding it
-   * properly would mean making the preview lenient again, which is the
-   * defect this all started from. Default on, since it is also what explains
-   * the gesture the first time someone stumbles into it. */
+  /** The rings, not the gesture, and not the information either. Once the
+   * preview is honest (`reachableFromDot`), waving the pointer around shows
+   * the dots a cell may join — on a fresh 10x10 about 1.5 per cell, so for
+   * many cells it is the answer. This preference decides only whether that is
+   * read at a glance or by probing; hiding it properly would make the preview
+   * lenient again. Default on, since the rings also explain the gesture the
+   * first time someone stumbles into it. */
   prefs: [
     {
       kw: "galaxies-show-drag-candidates",
@@ -1200,31 +1077,22 @@ export const galaxiesGame: Game<
     ret[COL_GRID] = GRID_MID;
     ret[COL_EDGE] = INK;
     ret[COL_ARROW] = INK;
-    // Both transient affordances are *authored* colors rather than
-    // board-relative tints. Upstream tinted both (a warm shift of the board,
-    // `#ffaaaa` on a `#d5d5d5` board), which is a color that cannot be
-    // prominent by construction — and being computed, dark mode adapts it by
-    // calculation, so it is a faint tint of the board in *both* schemes. The
-    // owner reported the drag preview as unreadable in each (2026-08-08); the
-    // cursor is the same color with the same problem. Galaxies' board spends
-    // grays, black, white and red, so the collection's default cursor green is
-    // free (`CURSOR`'s doc comment), and blue is free for the drag.
+    // Both transient affordances take authored colors rather than
+    // board-relative tints, since a tint of the board cannot be prominent by
+    // construction, in either scheme. Galaxies spends grays, black, white and
+    // red, so the default cursor green is free (`CURSOR`'s doc comment), and
+    // blue is free for the drag.
     ret[COL_CURSOR] = CURSOR;
     ret[COL_DRAG] = DRAG_ADD;
     // Mistake highlight: a strong red that reads on both white and black
     // region fills and the page background.
     ret[COL_MISTAKE] = ERROR;
-    // The hint takes **purple**, not the collection's `HINT_ACTION` blue,
-    // because Galaxies has already spent blue on the drag preview — and the
-    // two would collide in the worst possible way. Both ring a *dot*: a
-    // cell→dot drag rings every dot the cell may join, and the hint rings the
-    // one it must. Same shape, same object, on screen together the moment the
-    // player drags to follow the hint, so a shared hue would make the hint
-    // unreadable exactly when it is being used. Purple is the collection's
-    // answer when blue and green are both taken (`spokes`, `subsets`,
-    // `sticks`), and the drag's blue is the color owner acceptance settled in
-    // `widen-galaxies-association-gestures`. Evidence keeps the cross-game
-    // `HINT_EVIDENCE` teal, which is a different hue from both.
+    // The hint takes **purple**, not the collection's hint blue, because blue
+    // is the drag's. Both ring a *dot* — a cell→dot drag rings every dot the
+    // cell may join, the hint the one it must — and they are on screen
+    // together the moment the player drags to follow the hint. Purple is the
+    // collection's answer when blue and green are both taken. Evidence keeps
+    // the cross-game `HINT_EVIDENCE` teal, a different hue from both.
     ret[COL_HINT] = PURPLE;
     ret[COL_HINT_CELL] = HINT_EVIDENCE;
     return ret;

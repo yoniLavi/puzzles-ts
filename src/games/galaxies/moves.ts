@@ -1,83 +1,48 @@
 /**
- * Galaxies association-move helpers, shared by `index.ts`
- * (`executeMove`/`dropDrag`) and `render.ts` (the drag preview) — the
- * `moves.ts` split from docs/games/rendering.md § "A simulated-release
- * preview lives in `moves.ts`". The drag preview shows exactly the
- * association a release would commit, so the renderer and the move
- * path must share one legality predicate; if they drifted, the
- * preview would promise a move the release then refuses.
+ * The association moves, shared by `index.ts` and the drag preview in
+ * `render.ts` (docs/games/rendering.md § "A simulated-release preview lives in
+ * `moves.ts`"). The preview must show exactly the association a release
+ * commits, so both go through one legality predicate.
  */
+import type { Point } from "../../engine/types.ts";
 import {
   addAssoc,
   adjacencies,
   checkComplete,
+  dotTiles,
   F_DOT,
   F_TILE_ASSOC,
   type GalaxiesState,
   idx,
-  inUi,
+  inInterior,
   removeAssoc,
   SpaceType,
   spaceOppositeDot,
   spaceTypeAt,
   tileOpposite,
-  tilesFromEdge,
 } from "./state.ts";
 
 /**
- * The tiles a dot physically sits on: one for a dot at a tile's center, the
- * two it separates for a dot on an edge, the four it meets for a dot on a
- * vertex. Every one of them is in that dot's galaxy by definition — the
- * region contains its dot — which is what makes them a *rule* of the game
- * rather than a deduction, and therefore safe to reason from.
- */
-function dotTiles(
-  s: GalaxiesState,
-  dx: number,
-  dy: number,
-): { x: number; y: number }[] {
-  const t = spaceTypeAt(dx, dy);
-  if (t === SpaceType.Tile) return [{ x: dx, y: dy }];
-  if (t === SpaceType.Edge) {
-    const [a, b] = tilesFromEdge(s, dx, dy);
-    return [a, b].filter((v): v is { x: number; y: number } => v !== null);
-  }
-  return [
-    { x: dx - 1, y: dy - 1 },
-    { x: dx + 1, y: dy - 1 },
-    { x: dx - 1, y: dy + 1 },
-    { x: dx + 1, y: dy + 1 },
-  ].filter((v) => inUi(s, v.x, v.y));
-}
-
-/**
- * Which tiles could share a galaxy with the dot at `(dx, dy)` — a flood fill
- * outward from the dot's own tiles, in **mirror pairs**, blocked only by
- * another dot's own tiles and by the board's edge.
+ * The tiles that could share a galaxy with the dot at `(dx, dy)`: a flood fill
+ * outward from the dot's own tiles, in mirror pairs, blocked only by other
+ * dots' own tiles and by the board's edge.
  *
- * This exists because `okToAddAssocWithOpposite` alone is too lenient to be
- * honest. Upstream's precheck asks only whether the tile and its 180° image
- * are in-grid and dot-free, so it will happily accept an arrow for a cell no
- * galaxy centered on that dot could ever contain — owner-reported 2026-08-08,
- * with a cell two steps from its dot whose only routes were cut off. A
- * galaxy is a *connected* region, so connectivity is as much a rule as
- * symmetry is, and a preview that ignores it promises a move the puzzle
- * cannot honor.
+ * Upstream's precheck asks only whether a tile and its 180° image are on the
+ * board and dot-free, so it accepts arrows for cells no galaxy centered on that
+ * dot could contain. A galaxy is connected, so connectivity is as much a rule
+ * as symmetry, and a preview that ignores it promises a move the puzzle cannot
+ * honor.
  *
- * Two deliberate limits keep this a statement of the rules rather than a
- * solver:
+ * Two limits keep this a statement of the rules rather than a solver:
  *
- *  - **It blocks only on other dots' own tiles**, which are forced by the
- *    dot layout alone. Anything further — running the deduction chain — would
- *    narrow the offer towards the unique solution, and on a uniquely-solvable
- *    board a sufficiently clever predicate offers exactly one dot per cell,
- *    which is not an aid but an answer.
- *  - **It ignores the player's own walls and arrows.** Respecting them would
- *    be *consistent* but would let one mistake silently veto a correct arrow
- *    somewhere else, with nothing on screen to explain the refusal. Depending
- *    only on the dots means the predicate can never reject an association the
- *    real solution contains — asserted in `galaxies.test.ts` over generated
- *    boards, which is the property that makes tightening safe at all.
+ *  - **It blocks only on other dots' own tiles**, which the dot layout alone
+ *    forces. Anything further narrows the offer toward the unique solution,
+ *    and a clever enough predicate offers exactly one dot per cell, which is
+ *    an answer rather than an aid.
+ *  - **It ignores the player's own walls and arrows**, so one mistake cannot
+ *    silently veto a correct arrow elsewhere. Depending only on the dots means
+ *    it never rejects an association the solution contains, which
+ *    `galaxies.test.ts` asserts over generated boards.
  */
 export function reachableFromDot(s: GalaxiesState, dx: number, dy: number): Uint8Array {
   const reached = new Uint8Array(s.sx * s.sy);
@@ -88,9 +53,9 @@ export function reachableFromDot(s: GalaxiesState, dx: number, dy: number): Uint
     for (const tile of dotTiles(s, d.x, d.y)) blocked[idx(s, tile.x, tile.y)] = 1;
   }
 
-  const queue: { x: number; y: number }[] = [];
+  const queue: Point[] = [];
   const admit = (tx: number, ty: number): boolean => {
-    if (!inUi(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return false;
+    if (!inInterior(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return false;
     const i = idx(s, tx, ty);
     if (reached[i] || blocked[i]) return false;
     reached[i] = 1;
@@ -109,7 +74,7 @@ export function reachableFromDot(s: GalaxiesState, dx: number, dy: number): Uint
       // its 180° image can join too, so a neighbor whose image is off the
       // board or under another dot is not reachable however open it looks.
       const opp = spaceOppositeDot(s, n.x, n.y, dx, dy);
-      if (!opp || !inUi(s, opp.x, opp.y)) continue;
+      if (!opp || !inInterior(s, opp.x, opp.y)) continue;
       if (blocked[idx(s, opp.x, opp.y)]) continue;
       admit(n.x, n.y);
       admit(opp.x, opp.y);
@@ -119,22 +84,18 @@ export function reachableFromDot(s: GalaxiesState, dx: number, dy: number): Uint
 }
 
 /**
- * Would `addAssocWithOpposite(s, tx, ty, dx, dy)` actually commit?
- * Mirrors upstream's `ok_to_add_assoc_with_opposite` precheck: the
- * target must be an in-grid tile without a dot, its 180° image about
- * the dot must exist and be dot-free, and neither tile may sit inside
- * a locally-valid (colored) region. Safe on arbitrary coordinates —
- * the drag target tracks the raw pointer, which can be off the board.
+ * Would `addAssocWithOpposite(s, tx, ty, dx, dy)` commit? Upstream's
+ * `ok_to_add_assoc_with_opposite`: the target is an on-board tile without a
+ * dot, its 180° image about the dot exists and is dot-free, and neither sits in
+ * a locally valid (colored) region. Safe on any coordinates, since a drag
+ * target tracks the raw pointer.
  *
- * On top of upstream, the tile must also be **reachable** from the dot —
- * see {@link reachableFromDot}. Upstream's precheck is a local test and so
- * accepts arrows no galaxy could ever justify; ours refuses them, which is a
- * deliberate divergence on the input path only. Nothing in the generator or
- * the solver reaches this module, so no board changes.
+ * On top of upstream, the tile must be reachable from the dot
+ * ({@link reachableFromDot}). Only input reaches this module, never the
+ * generator or the solver, so no board changes.
  *
- * `cols` is the completion check's per-tile color array, and `reach` the
- * dot's reachable set; pass either when the caller already has one (the
- * renderer has both), or omit to compute.
+ * Pass `cols` (the completion check's colors) or `reach` when the caller
+ * already has them.
  */
 export function okToAddAssocWithOpposite(
   s: GalaxiesState,
@@ -145,7 +106,7 @@ export function okToAddAssocWithOpposite(
   cols?: Int8Array,
   reach?: Uint8Array,
 ): boolean {
-  if (!inUi(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return false;
+  if (!inInterior(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return false;
   if (s.flags[idx(s, tx, ty)] & F_DOT) return false;
   const opp = spaceOppositeDot(s, tx, ty, dx, dy);
   if (!opp) return false;
@@ -154,15 +115,12 @@ export function okToAddAssocWithOpposite(
   if (!colors) return false;
   if (colors[((ty - 1) >> 1) * s.w + ((tx - 1) >> 1)]) return false;
   if (colors[((opp.y - 1) >> 1) * s.w + ((opp.x - 1) >> 1)]) return false;
-  // The reachable set is symmetric about the dot, so testing the tile also
-  // tests its 180° image.
-  const reachable = reach ?? reachableFromDot(s, dx, dy);
-  if (!reachable[idx(s, tx, ty)]) return false;
-  return true;
+  // The reachable set is symmetric about the dot, so this tests the image too.
+  return (reach ?? reachableFromDot(s, dx, dy))[idx(s, tx, ty)] === 1;
 }
 
-/** Mirrors `add_assoc_with_opposite`: adds (tile, dot) and (opposite,
- * dot) atomically; no-ops if the precheck refuses. */
+/** Upstream's `add_assoc_with_opposite`: associate the tile and its 180° image
+ * with the dot, or do nothing if the precheck refuses. */
 export function addAssocWithOpposite(
   s: GalaxiesState,
   tx: number,
@@ -173,7 +131,7 @@ export function addAssocWithOpposite(
   if (!okToAddAssocWithOpposite(s, tx, ty, dx, dy)) return;
   const opp = spaceOppositeDot(s, tx, ty, dx, dy);
   if (!opp) return;
-  // Mirror upstream: drop the OLD opposite associations first.
+  // Each tile's old partner loses its association first.
   removeAssocWithOpposite(s, tx, ty);
   addAssoc(s, tx, ty, dx, dy);
   removeAssocWithOpposite(s, opp.x, opp.y);
@@ -195,18 +153,12 @@ export function removeAssocWithOpposite(
 }
 
 /**
- * Every dot the tile `(tx, ty)` could legally be associated with — the
- * candidate set the drag rings show, and the set a cell→dot drag snaps
- * within. It is `okToAddAssocWithOpposite` swept over the dots, for the same
- * reason this module exists at all: the ring must mark exactly what a release
- * would accept, so ring, snap and commit cannot drift.
+ * Every dot the tile could legally join: the candidate rings a cell→dot drag
+ * shows, and the set it snaps within. It is `okToAddAssocWithOpposite` swept
+ * over the dots, so ring, snap and commit cannot drift.
  */
-export function legalDotsFor(
-  s: GalaxiesState,
-  tx: number,
-  ty: number,
-): { x: number; y: number }[] {
-  if (!inUi(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return [];
+export function legalDotsFor(s: GalaxiesState, tx: number, ty: number): Point[] {
+  if (!inInterior(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return [];
   const cols = checkComplete(s, true).colors;
   if (!cols) return [];
   return s.dots.filter((d) =>

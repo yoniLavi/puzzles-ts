@@ -1,21 +1,17 @@
 /**
- * Galaxies state, flags, geometry helpers, encode/decode, and the
- * completion check.
+ * Galaxies state, geometry helpers, the desc codec and the completion check.
  *
- * The C `game_state` carries a `space *grid` of `(2w+1)(2h+1)` cell
- * structs; we keep the same coordinate model (cells include tiles,
- * edges, and vertices in one unified grid) but store the per-cell
- * data as parallel typed arrays for cheap clone-per-move (design D2).
- * `type` (tile/edge/vertex) and `(x, y)` per cell are derivable from
- * the index, so we elide them.
+ * The board is one `(2w+1)×(2h+1)` grid of spaces in which tiles, edges and
+ * vertices interleave, as upstream models it. Per-space data lives in parallel
+ * typed arrays so a clone per move is cheap; a space's type and position follow
+ * from its index.
  */
 import { Dsf } from "../../engine/dsf.ts";
+import type { Point } from "../../engine/types.ts";
 
-// --- flag bits (mirrors the C #defines we care about) --------------
+// --- flag bits -----------------------------------------------------
 
-// Persistent / save-relevant flags. Solver-internal scratch flags
-// (F_MARK, F_REACHABLE, F_SCRATCH, F_MULTIPLE, F_GOOD) are not part of
-// the public state; the solver uses its own scratch buffers.
+// The solver keeps its scratch flags in its own buffers, never in `flags`.
 export const F_DOT = 1;
 export const F_EDGE_SET = 2;
 export const F_TILE_ASSOC = 4;
@@ -36,47 +32,33 @@ export function spaceTypeAt(x: number, y: number): SpaceType {
   return SpaceType.Tile;
 }
 
-/** Upstream's IS_VERTICAL_EDGE(x): true when the edge sits between two
- * horizontally-adjacent tiles (i.e. lives on an even column). */
+/** An edge between two horizontally adjacent tiles, on an even column. */
 export function isVerticalEdge(x: number): boolean {
   return (x & 1) === 0;
 }
 
 // --- the State -----------------------------------------------------
 
-export interface DotPos {
-  readonly x: number;
-  readonly y: number;
-}
-
-/**
- * Public, externally-immutable state. Typed arrays are technically
- * mutable in JS — internal `cloneState` produces a fresh copy that
- * callers can mutate before freezing back into a returned state.
- * `executeMove` is the only path where the public API exposes this
- * pattern; everything else (solver, generator) operates on its own
- * working copies.
- */
+/** Immutable once returned: `cloneState` gives a copy to mutate first. */
 export interface GalaxiesState {
   readonly w: number;
   readonly h: number;
+  /** The space grid's size: `2w + 1` by `2h + 1`. */
   readonly sx: number;
   readonly sy: number;
   readonly flags: Uint16Array;
+  /** Per associated tile, the position of its dot. */
   readonly dotx: Int16Array;
   readonly doty: Int16Array;
+  /** Per dot, how many tiles are associated with it. */
   readonly nassoc: Int16Array;
-  /** Cached list of dot positions. Mutable by convention only — the
-   * generator updates it after a dot moves. External consumers must
-   * treat as read-only. */
-  dots: DotPos[];
+  /** Dot positions, derived from `flags`; only the generator rewrites it. */
+  dots: Point[];
   completed: boolean;
   cheated: boolean;
-  /** Difficulty diagnosis cached by the statusbar (constant given the
-   * dot configuration); `-1` until first computed. Mutable by
-   * convention only — written once, read many. Mirrors upstream's
-   * `cdiff`. */
-  cdiff: number;
+  /** The statusbar's difficulty verdict, constant for a dot layout; `-1`
+   * until first computed. */
+  cachedDiff: number;
 }
 
 export function idx(s: { sx: number }, x: number, y: number): number {
@@ -87,9 +69,12 @@ export function inGrid(s: { sx: number; sy: number }, x: number, y: number): boo
   return x >= 0 && y >= 0 && x < s.sx && y < s.sy;
 }
 
-/** Upstream's INUI: inside the user-interactive interior (excludes
- * the outer perimeter of edges/vertices). */
-export function inUi(s: { sx: number; sy: number }, x: number, y: number): boolean {
+/** Inside the playable interior: excludes the outer ring of edges and vertices. */
+export function inInterior(
+  s: { sx: number; sy: number },
+  x: number,
+  y: number,
+): boolean {
   return x > 0 && y > 0 && x < s.sx - 1 && y < s.sy - 1;
 }
 
@@ -99,10 +84,6 @@ export function blankGame(w: number, h: number): GalaxiesState {
   const sy = 2 * h + 1;
   const n = sx * sy;
   const flags = new Uint16Array(n);
-  const dotx = new Int16Array(n);
-  const doty = new Int16Array(n);
-  const nassoc = new Int16Array(n);
-  // Border edges (outer perimeter) start set.
   for (let x = 0; x < sx; x++) {
     if (spaceTypeAt(x, 0) === SpaceType.Edge) flags[idx({ sx }, x, 0)] |= F_EDGE_SET;
     if (spaceTypeAt(x, sy - 1) === SpaceType.Edge)
@@ -119,13 +100,13 @@ export function blankGame(w: number, h: number): GalaxiesState {
     sx,
     sy,
     flags,
-    dotx,
-    doty,
-    nassoc,
+    dotx: new Int16Array(n),
+    doty: new Int16Array(n),
+    nassoc: new Int16Array(n),
     dots: [],
     completed: false,
     cheated: false,
-    cdiff: -1,
+    cachedDiff: -1,
   };
 }
 
@@ -143,13 +124,13 @@ export function cloneState(s: GalaxiesState): GalaxiesState {
     dots: s.dots.slice(),
     completed: s.completed,
     cheated: s.cheated,
-    cdiff: s.cdiff,
+    cachedDiff: s.cachedDiff,
   };
 }
 
-/** Refresh the cached `dots` list from the current `flags` array. */
-export function rebuildDots(s: GalaxiesState): DotPos[] {
-  const dots: DotPos[] = [];
+/** The dot positions in `flags`, in reading order. */
+export function rebuildDots(s: GalaxiesState): Point[] {
+  const dots: Point[] = [];
   for (let y = 1; y < s.sy - 1; y++) {
     for (let x = 1; x < s.sx - 1; x++) {
       if (s.flags[idx(s, x, y)] & F_DOT) dots.push({ x, y });
@@ -199,48 +180,36 @@ export function addAssoc(
 
 // --- geometry helpers -----------------------------------------------
 
-/** The cell at position rotated 180° around `(dotX, dotY)` from
- * `(sx, sy)`. Returns null if it falls off-grid. */
+/** `(x, y)` rotated 180° about `(dotX, dotY)`, or null if that is off the grid. */
 export function spaceOppositeDot(
   s: GalaxiesState,
   x: number,
   y: number,
   dotX: number,
   dotY: number,
-): { x: number; y: number } | null {
-  const dx = x - dotX;
-  const dy = y - dotY;
-  const tx = dotX - dx;
-  const ty = dotY - dy;
-  if (!inGrid(s, tx, ty)) return null;
-  return { x: tx, y: ty };
+): Point | null {
+  const ox = 2 * dotX - x;
+  const oy = 2 * dotY - y;
+  return inGrid(s, ox, oy) ? { x: ox, y: oy } : null;
 }
 
-/** The tile rotated 180° around an *associated* tile's dot. Caller
- * must verify F_TILE_ASSOC; we read `dotx`/`doty` from that tile. */
-export function tileOpposite(
-  s: GalaxiesState,
-  tx: number,
-  ty: number,
-): { x: number; y: number } | null {
+/** The tile rotated 180° about the dot an *associated* tile belongs to. */
+export function tileOpposite(s: GalaxiesState, tx: number, ty: number): Point | null {
   const i = idx(s, tx, ty);
   return spaceOppositeDot(s, tx, ty, s.dotx[i], s.doty[i]);
 }
 
-/** For a center cell, the four edge-neighbors and tile-neighbors
- * (skipping two-cell jumps if off-grid). Order: left, right, up, down. */
+/** A space's four edge neighbors and the tiles beyond them, in the order left,
+ * right, up, down; null where off the grid. */
 export function adjacencies(
   s: GalaxiesState,
   x: number,
   y: number,
-): {
-  edges: ({ x: number; y: number } | null)[];
-  tiles: ({ x: number; y: number } | null)[];
-} {
+): { edges: (Point | null)[]; tiles: (Point | null)[] } {
   const dxs = [-1, 1, 0, 0];
   const dys = [0, 0, -1, 1];
-  const edges: ({ x: number; y: number } | null)[] = [null, null, null, null];
-  const tiles: ({ x: number; y: number } | null)[] = [null, null, null, null];
+  const edges: (Point | null)[] = [null, null, null, null];
+  const tiles: (Point | null)[] = [null, null, null, null];
   for (let n = 0; n < 4; n++) {
     const ex = x + dxs[n];
     const ey = y + dys[n];
@@ -253,26 +222,41 @@ export function adjacencies(
   return { edges, tiles };
 }
 
-/** The two tiles either side of an edge (or null if off-grid). */
+/** The two tiles either side of an edge, null where off the grid. */
 export function tilesFromEdge(
   s: GalaxiesState,
   ex: number,
   ey: number,
-): ({ x: number; y: number } | null)[] {
-  const xs: number[] = [];
-  const ys: number[] = [];
-  if (isVerticalEdge(ex)) {
-    xs.push(ex - 1, ex + 1);
-    ys.push(ey, ey);
-  } else {
-    xs.push(ex, ex);
-    ys.push(ey - 1, ey + 1);
+): (Point | null)[] {
+  const pair = isVerticalEdge(ex)
+    ? [
+        { x: ex - 1, y: ey },
+        { x: ex + 1, y: ey },
+      ]
+    : [
+        { x: ex, y: ey - 1 },
+        { x: ex, y: ey + 1 },
+      ];
+  return pair.map((t) => (inGrid(s, t.x, t.y) ? t : null));
+}
+
+/**
+ * The tiles a dot sits on: one for a dot at a tile's center, two for a dot on
+ * an edge, four for a dot on a vertex. They are in the dot's galaxy by the
+ * rules rather than by deduction, which is what makes them safe to reason from.
+ */
+export function dotTiles(s: GalaxiesState, dx: number, dy: number): Point[] {
+  const t = spaceTypeAt(dx, dy);
+  if (t === SpaceType.Tile) return [{ x: dx, y: dy }];
+  if (t === SpaceType.Edge) {
+    return tilesFromEdge(s, dx, dy).filter((v): v is Point => v !== null);
   }
-  const out: ({ x: number; y: number } | null)[] = [];
-  for (let i = 0; i < 2; i++) {
-    out.push(inGrid(s, xs[i], ys[i]) ? { x: xs[i], y: ys[i] } : null);
-  }
-  return out;
+  return [
+    { x: dx - 1, y: dy - 1 },
+    { x: dx + 1, y: dy - 1 },
+    { x: dx - 1, y: dy + 1 },
+    { x: dx + 1, y: dy + 1 },
+  ].filter((v) => inInterior(s, v.x, v.y));
 }
 
 // --- desc encode/decode --------------------------------------------
@@ -302,33 +286,30 @@ export function encodeGame(s: GalaxiesState): string {
   return out.join("");
 }
 
-/** Reverse of `encodeGame`; mutates `s` to place dots described by
- * `desc`. Returns an error message on invalid chars or out-of-grid
- * positions; null on success. */
+/** Place the dots `desc` describes on `s`: an error message, or null. */
 export function decodeGame(s: GalaxiesState, desc: string): string | null {
-  let i = 0;
   const innerW = s.sx - 2;
+  let i = 0;
   for (let p = 0; p < desc.length; p++) {
     const n = desc.charCodeAt(p);
-    let df = 0;
     if (n === 122 /* z */) {
       i += 25;
       continue;
     }
+    let black = 0;
     if (n >= 97 /* a */ && n <= 121 /* y */) {
       i += n - 97;
-      df = 0;
     } else if (n >= 65 /* A */ && n <= 89 /* Y */) {
       i += n - 65;
-      df = F_DOT_BLACK;
+      black = F_DOT_BLACK;
     } else {
       return "Invalid characters in game description";
     }
     const y = ((i / innerW) | 0) + 1;
     const x = (i % innerW) + 1;
-    if (!inUi(s, x, y)) return "Too much data to fit in grid";
+    if (!inInterior(s, x, y)) return "Too much data to fit in grid";
     addDot(s, x, y);
-    s.flags[idx(s, x, y)] |= df;
+    s.flags[idx(s, x, y)] |= black;
     i++;
   }
   return null;
@@ -344,10 +325,9 @@ export interface CompletionResult {
 }
 
 /**
- * Returns whether the current edge layout partitions the board into
- * valid components — each rotationally symmetric around a unique dot.
- * If `colors` is requested, fills it with per-cell region color.
- * Mirrors `check_complete` in galaxies.c.
+ * Whether the edges partition the board into valid galaxies, each symmetric
+ * about the one dot at its center (upstream's `check_complete`). With
+ * `wantColors`, also each cell's region color.
  */
 export function checkComplete(s: GalaxiesState, wantColors: boolean): CompletionResult {
   const w = s.w;

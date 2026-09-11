@@ -37,6 +37,17 @@ scanning further.** The idiom for reaching a specific deduction or board state
 without knowing its desc is a fixed-seed scan — loop ids, keep the first whose
 state matches — pinned by a recorded first-hit (see "Right-sizing the gate").
 
+**A game's own directory is not its coverage.** Its input paths, save
+round-trip, params codec and even its source text (color literals, hint
+wording, note vocabulary) are checked by cross-game guards that live outside
+`src/games/`, so `vitest run src/games/<game>` can be green on a change the
+commit hook then refuses. The hook's own list is
+`node scripts/checks/select-tests.mjs` over what is staged; the guards name
+their per-game cases after the game or its file path, so filter the list with
+`-t <game>` and check the count is not zero. Pass the list through `xargs`:
+zsh does not word-split an unquoted `$VAR`, and `vitest run $LIST` then finds
+no tests at all.
+
 ## Render scenarios
 
 **The default for any highlight / overlay / animation-frame work.**
