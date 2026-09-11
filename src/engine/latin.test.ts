@@ -1,13 +1,11 @@
 /**
  * Tests for the generic Latin-square solver/generator (`engine/latin.ts`).
  *
- * `latin.ts` is the largest module in the engine and the one eleven games sit
- * on. It used to have four tests here, all end-to-end through `latinSolver`,
- * and `strengthen-engine-test-feedback` measured what that bought: of fifteen
- * hand-chosen real defects planted in it, **this file caught five**. Every one
- * of the other ten was caught — the Towers and Singles differentials do their
- * job — but only after a generate-and-compare run, and reported as a differing
- * description string rather than as the deduction that broke.
+ * `latin.ts` is the largest module in the engine and the Latin family sits on
+ * it. Tested only end to end through `latinSolver`, a defect planted in one of
+ * its deductions surfaces in the Towers and Singles differentials, but only
+ * after a generate-and-compare run, and as a differing description string
+ * rather than as the deduction that broke.
  *
  * So the blocks below assert each deduction **directly**, in the vocabulary of
  * the technique it implements: `elim` places on a last remaining candidate and

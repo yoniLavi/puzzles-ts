@@ -5,18 +5,13 @@
  * least likely to interpret correctly, and `help/features.md` §Hints teaches the
  * two that matter as a pair — "there is a mistake on the board" and "deduction
  * has run out" call for opposite responses. That contract is only keepable if
- * the same situation says the same thing in every game; twenty-one games each
- * inventing a phrasing is how "I can't find a deduction from here" and "No
- * further move can be deduced from this position." came to be the same refusal
- * wearing two faces, in games a player moves between freely.
+ * the same situation says the same thing in every game, since a player moves
+ * between games freely.
  *
- * **Every builder of a `hint()` imports from here, including the shared ones.**
- * `candidate-hint.ts` — which is the whole `hint()` of eleven candidate games —
- * spelled out three of these as literals, so a third of the collection's
- * refusals sat outside this file while its own doc comment described them as
- * shared. `hint-refusal.test.ts` now reads the engine's hint builders as well as
- * `src/games/`, because a refusal lives wherever a `hint()` is built and eleven
- * of them are not built under `games/`.
+ * **Every builder of a `hint()` imports from here, including the shared ones**
+ * (`candidate-hint.ts` is the whole `hint()` of the candidate games), and
+ * `hint-refusal.test.ts` reads the engine's hint builders as well as
+ * `src/games/`, because a refusal lives wherever a `hint()` is built.
  *
  * **What a game may still differ on.** The bar is whether we can say what a game
  * would legitimately want to do differently, and there are four real answers:
@@ -60,27 +55,18 @@ export const CONTRADICTION_UNLOCALIZED =
  * out — which is what a tier named `Unreasonable` promises can happen.
  *
  * **There is one situation here, not two, and that is a measurement rather than
- * a judgment** (`refuse-honestly-at-every-tier`, 2026-09-08). This was two
- * constants — a bare one and one naming trial and error — and the distinction
- * between them had been asserted, never observed. Walking every preset of every
- * hinting game found **thirteen refusals and every one was on a board whose tier
- * permits search**; nothing refused on a deduction-complete tier at any size, in
- * any mode. A game whose tiers are all deduction-complete cannot reach this
- * message at all, so a wording that hedges about whether trial and error is
- * expected describes a state no player occupies. `hint-resume.test.ts` now holds
- * that: a refusal outside a search-permitting tier fails the walk.
+ * a judgment** (2026-09-08): walking every preset of every hinting game found
+ * **thirteen refusals and every one was on a board whose tier permits search**;
+ * nothing refused on a deduction-complete tier at any size, in any mode. A
+ * wording that hedges about whether trial and error is expected therefore
+ * describes a state no player occupies. `hint-resume.test.ts` holds that: a
+ * refusal outside a search-permitting tier fails the walk.
  *
- * **The wording is Galaxies', adopted verbatim** — it was the only one of the
- * three that had been through owner acceptance (owner, 2026-08-11), and the only
- * one that tells the player what to *do*. A refusal that says only that nothing
- * follows leaves them unable to tell a puzzle demanding a guess from a broken
- * hint, which is the pair `help/features.md` §Hints teaches as calling for
- * opposite responses.
- *
- * The name changed with the collapse deliberately. `NO_DEDUCTION_LEFT` read as
- * the *bare* message, and 21 call sites already used it — keeping the name and
- * changing the value would have moved every one of their words with nobody
- * looking at them.
+ * **The wording is Galaxies', the one that went through owner acceptance**, and
+ * the only one that tells the player what to *do*. A refusal that says only
+ * that nothing follows leaves them unable to tell a puzzle demanding a guess
+ * from a broken hint, which is the pair `help/features.md` §Hints teaches as
+ * calling for opposite responses.
  */
 export const DEDUCTION_EXHAUSTED =
   "Nothing further follows by deduction here. This board's difficulty allows positions that need trial and error: save a checkpoint, try one, and undo if it breaks.";
@@ -95,8 +81,7 @@ export const DEDUCTION_EXHAUSTED =
  * Inertia's tour — so the message is a backstop that states the truth if it
  * ever fires. A game whose hint is a bounded *search* is in the opposite
  * position: an empty result there says only that it did not find one, which is
- * {@link SEARCH_OUT_OF_REACH}. Sixteen said this sentence for two years on
- * boards where most moves got the player closer. */
+ * {@link SEARCH_OUT_OF_REACH}. */
 export const NO_MOVE_WORTH_MAKING = "No move here would get you closer.";
 
 /**

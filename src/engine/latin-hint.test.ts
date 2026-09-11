@@ -197,7 +197,7 @@ describe("narrateLatinReason (shared row/column-game narration)", () => {
     );
     // A forcing chain concludes from *both* branches of the origin's two
     // candidates, so both are stated; the links between are numbered on the
-    // board rather than recited (`walk-tactic-hint-chains`).
+    // board rather than recited.
     expect(
       narrateLatinReason(
         {

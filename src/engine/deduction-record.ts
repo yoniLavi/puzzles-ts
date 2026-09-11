@@ -6,13 +6,10 @@
  * produces these from its own techniques, and the shared readers (`nextStrike`,
  * `nextPlace`, `firstUnreflectedPlaceIndex`) consume them uniformly.
  *
- * It lived in `latin.ts` until `add-crossing-hint`, which made the coupling
- * awkward in both directions: the *shared* module imported a specific game
- * family's solver module to name the shape, and a non-Latin candidate game
- * would have had to import the Latin solver purely to speak it. Nothing here is
- * Latin — the reason is `unknown` precisely so each game attaches its own — so
- * it lives on its own. `latin.ts` re-exports both names, so the Latin games'
- * imports are untouched.
+ * Nothing here is Latin — the reason is `unknown` precisely so each game
+ * attaches its own — so it lives apart from `latin.ts`, and a non-Latin
+ * candidate game (Crossing) speaks it without importing the Latin solver.
+ * `latin.ts` re-exports both names for the Latin games.
  */
 
 /** One recorded deduction operation. Emitted in solver order on the hint path;

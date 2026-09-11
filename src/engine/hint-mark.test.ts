@@ -9,8 +9,7 @@
  *
  * **Shape, not color.** "Some rect carries the hint color" is satisfied by
  * exactly the thing this forbids — a solid fill over the digits a hint is
- * talking about — so it would have passed unchanged through the whole rewrite
- * that removed the fills. What is asserted is that no rect in a hint color is
+ * talking about. What is asserted is that no rect in a hint color is
  * *cell-sized and thick in both directions*.
  *
  * The measurement behind the rule is in `hint-mark.ts`; the per-game calls are
@@ -110,9 +109,8 @@ describe("a hint marks beside the content, never behind it", () => {
   const byId = renderersById();
   /** Games that declare a cell-level target color, i.e. the ones this sweep can
    * say anything about. The grid-move games (Fifteen, Flood, Sixteen, Netslide's
-   * arrows, Untangle, Inertia) mark something other than a cell and are absent —
-   * Fifteen and Sixteen now by keeping `COL_HINT` unexported rather than by
-   * having no `render.ts`, which is the same answer for a better reason. */
+   * arrows, Untangle, Inertia) mark something other than a cell and are absent
+   * (Fifteen and Sixteen by keeping `COL_HINT` unexported). */
   const CHECKED = HINT_GAMES.filter(
     ([id]) => typeof byId.get(id)?.["COL_HINT"] === "number",
   );
@@ -122,12 +120,9 @@ describe("a hint marks beside the content, never behind it", () => {
     // matches nothing yields `{}` and every assertion below then passes
     // vacuously — this repo has been bitten by that exact silence before.
     expect(byId.size).toBeGreaterThanOrEqual(50);
-    // **Every hinting game's renderer is now findable.** Fifteen and Sixteen
-    // used to be absent here, keeping their drawing in `index.ts`; they got a
-    // `render.ts` with the rest of the collection in
-    // `move-renderers-into-render-ts`, so the list is empty — and an empty list
-    // still asserts something, because a game that hides its renderer again
-    // shows up here.
+    // **Every hinting game's renderer is findable**, so the list is empty —
+    // and an empty list still asserts something, because a game that hides its
+    // renderer shows up here.
     expect(HINT_GAMES.filter(([id]) => !byId.has(id)).map(([id]) => id)).toEqual([]);
     // …and the sweep itself cannot quietly shrink: a game whose `COL_HINT`
     // export is renamed away drops out of `CHECKED` in silence otherwise.

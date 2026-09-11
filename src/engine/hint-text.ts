@@ -57,17 +57,15 @@ const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 // --- the sliding-tile games' goal prefix -------------------------------------
 //
 // Shared "goal: tactic" vocabulary for the sliding-tile games (Fifteen, Sixteen,
-// Netslide), aligned with the project hint quality bar (the Palisade exemplar:
-// explain *why* a move matters, not just what to do). Every step names the tile
-// it is working toward home ("Working on tile N:") and then states the tactic —
-// so the player always sees the goal behind a move, even when the tile being
-// slid is only clearing the way. A move that lands its tile in the solved cell
-// is a **home** move; one that only repositions toward a later home is a
-// **staging** move (marked with `HINT_SETTING_UP`).
+// Netslide). Every step names the tile it is working toward home ("Working on
+// tile N:") and then states the tactic, so the player always sees the goal
+// behind a move, even when the tile being slid is only clearing the way. A move
+// that lands its tile in the solved cell is a **home** move; one that only
+// repositions toward a later home is a **staging** move (marked with
+// `HINT_SETTING_UP`).
 
 /** The shared "goal" prefix naming the tile a step works toward home,
- * e.g. `Working on tile 3: `. Both games build their narration from it so
- * the hints read as one voice. */
+ * e.g. `Working on tile 3: `, so the games' hints read as one voice. */
 export function workingOn(tile: number): string {
   return `Working on tile ${tile}: `;
 }
@@ -98,22 +96,19 @@ export function cleanObviousText(
   regions: string,
   cell = "cell",
 ): string {
-  // The "fill all pencil marks" button does this same cleanup, and the help
-  // says so (help/features.md); repeating it on every such step was the
-  // rulebook-in-the-step shape docs/games/hints.md § "Rules belong in the help"
-  // retires.
+  // Says nothing about the "fill all pencil marks" button doing this same
+  // cleanup: help/features.md says so once (docs/games/hints.md § "Rules belong
+  // in the help").
   return `Now clear the easy ones: cross out any ${noun} already ${placedVerb} in each ${cell}'s ${regions}.`;
 }
 
 // --- the generic Latin arms --------------------------------------------------
 
 /**
- * The value vocabulary a game's cells are spoken in — the *only* thing that used
- * to keep a letter-valued Latin game off the shared narration arms below
- * (`add-salad-hint`, design D5). Three games kept private copies of the same six
- * arms; two of those copies differed **solely** in the noun and how a value
- * prints (Group's elements are letters `a`–`z`; Salad's symbols are `A`–`C` or
- * `1`–`3` depending on its mode).
+ * The value vocabulary a game's cells are spoken in, which is all that separates
+ * a letter-valued Latin game's generic arms from a digit game's (Group's
+ * elements are letters `a`–`z`; Salad's symbols are `A`–`C` or `1`–`3`
+ * depending on its mode).
  *
  * `noun` is the singular ("number", "element", "letter"); its plural is
  * `${noun}s`, which is right for every value word in the collection. `value`
@@ -146,9 +141,8 @@ const NUMBER_VOCAB: LatinVocab = { noun: "number", value: (n) => String(n) };
  * (letters or numbers). Shared so a wording improvement to, say, the
  * hidden-single sentence lands in one place instead of drifting between them.
  * `ns` is the value list the arm refers to (the placed value for a single, the
- * struck values for `set` / `forcing`).
+ * struck values for `set` / `forcing`). `vocab` defaults to plain numbers.
  *
- * `vocab` defaults to plain numbers, so the two original callers are unchanged.
  * Each game still owns its game-specific arms (Keen's cage*, Unequal's
  * greater/lesser/adjacent*, Salad's border/count/sync, Group's associativity)
  * and delegates only the generic ones here. */
@@ -161,8 +155,6 @@ export function narrateLatinReason(
   const v = vocab.value;
   const cell = vocab.cell ?? "cell";
   const cells = `${cell}s`;
-  // `joinWith(xs.map(String))` is exactly `joinNums(xs)`, so the digit games'
-  // lists are byte-identical to before.
   const list = (xs: number[]): string => joinWith(xs.map(v));
   switch (reason.kind) {
     case "single":
@@ -190,11 +182,9 @@ export function narrateLatinReason(
 }
 
 /**
- * Narrate a forcing chain as the argument it actually is
- * (`walk-tactic-hint-chains`). It replaces *"Following a chain of two-candidate
- * cells, placing 5 here would force a contradiction further along"*, which named
- * no contradiction, pointed at no cell and showed no chain — a claim the player
- * could only check by redoing the deduction.
+ * Narrate a forcing chain as the argument it actually is, rather than as "a
+ * contradiction further along" — a claim the player could only check by redoing
+ * the deduction.
  *
  * **The case split is the load-bearing part.** A forcing chain does not refute a
  * hypothesis; it concludes from *both* branches of one, and a walk that narrates
@@ -222,18 +212,18 @@ export function narrateLatinReason(
  * need a value qualified in *some* arms and bare in others, and a different
  * region set per arm — and neither is at issue here: "two heights left" already
  * contextualizes the bare numbers, and `region` is a parameter. A chain sentence
- * that drifted between six games would be six chances to say something the
- * board does not show.
+ * that drifted between games would be a chance to say something the board does
+ * not show.
  *
  * `region` is what the conclusion shares with the origin — a row or column
  * everywhere except Solo, which also reasons over blocks and diagonals.
  *
  * **The deixis tie is the numbering itself.** Two cell-marks on screen normally
- * make a bare "this cell" ambiguous (`disambiguate-hint-deixis`), and this frame
- * shows several — but every chain cell is *numbered* and the conclusion is not,
- * so "cell 1"/"cell 5" and "this cell" pick out different things by the presence
- * or absence of a label rather than by a color. See `docs/games/hints.md` §
- * "The fix is never the color".
+ * make a bare "this cell" ambiguous, and this frame shows several — but every
+ * chain cell is *numbered* and the conclusion is not, so "cell 1"/"cell 5" and
+ * "this cell" pick out different things by the presence or absence of a label
+ * rather than by a color. See `docs/games/hints.md` § "Two marks on the board,
+ * one "this cell" — tie them, and never by color".
  */
 export function narrateForcingChain(
   reason: { chain: readonly ForcingLink[] },

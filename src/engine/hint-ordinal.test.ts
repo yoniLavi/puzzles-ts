@@ -2,11 +2,10 @@
  * Cross-game guarantee: **an ordered chain reaches the canvas with its order on
  * it**.
  *
- * A Tactic-tier deduction is a bounded chain of forced consequences, and
- * `walk-tactic-hint-chains` settled that its hint owes the player the chain
- * *shown* — each link marked in the order it falls — rather than a claim they
- * can only check by redoing the deduction. Seven games ship one; six of them are
- * reachable under this sweep (see {@link ORDERING_GAMES}).
+ * A Tactic-tier deduction is a bounded chain of forced consequences, and its
+ * hint owes the player the chain *shown* — each link marked in the order it
+ * falls — rather than a claim they can only check by redoing the deduction.
+ * {@link ORDERING_GAMES} is the set reachable under this sweep.
  *
  * The mechanism is shared (`OrderedCell.order` → `OverlaySidecar.setOrder` →
  * `drawHintOrdinal`), but **the wiring is not**: each game's tile painter has to
@@ -26,11 +25,7 @@
  *    `rgb`, not against a palette index, because an index is a name for a color
  *    and not the color (the lesson `clusters-hint.test.ts` records at length).
  *
- * **The color clause is load-bearing, and it was proved so.** The first cut
- * asked only whether the text "1" appeared anywhere on the frame, and it passed
- * with Keen's ordinal draw deleted outright — because a Keen cell already prints
- * "1" as a pencil mark. A guard is worth exactly what it fails on, so this one
- * was checked by removing the wiring and watching it stay green.
+ * **The color clause is load-bearing**; the assertion says why.
  *
  * A forcing chain is tier-gated, so the sweep walks every tier — the reason
  * `hint-quality.test.ts` grew its own per-tier block. Games that never produce
@@ -60,10 +55,7 @@ const SEEDS = ["ord-a", "ord-b", "ord-c"];
  * settles before a two-candidate chain can form. Larger boards were not swept
  * because generating them is minutes per seed. Written down rather than left
  * implicit, so a later reader does not add Group back and spend the afternoon
- * wondering why it fails.
- *
- * The list was an assumption before it was a measurement, and the assumption was
- * wrong twice over — it also had Solo, which needs {@link BIGGER_BOARD} below.
+ * wondering why it fails. Solo is here only through {@link BIGGER_BOARD} below.
  */
 const ORDERING_GAMES = new Set([
   "clusters",

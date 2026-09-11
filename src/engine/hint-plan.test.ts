@@ -114,8 +114,8 @@ describe("deduceHintPlan", () => {
     });
 
     it("does not spend the plan cap: the cap counts shown steps", () => {
-      // Galaxies' shipped bug, closed structurally: three hidden firings ahead
-      // of the only showable one must not exhaust a cap of 1.
+      // The cap counts shown steps: three hidden firings ahead of the only
+      // showable one must not exhaust a cap of 1.
       const board: Toy = [null, null, null, null, null];
       const { plan, hidden } = deduceHintPlan(
         spec(board, { showable: (_b: Toy, i: number) => i === 3, planCap: 1 }),

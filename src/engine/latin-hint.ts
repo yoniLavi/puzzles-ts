@@ -1,11 +1,10 @@
 /**
- * Shared hint helpers for the Latin-square family (Towers, Unequal, Keen, and
- * future Solo / Undead). The generic `latin.ts` solver records *every* forced
- * single placement (its `elim`) under one reason — `{ kind: "single" }` — but
- * `elim` fires on three slice kinds: a *cell* slice (a genuine **naked** single,
- * the cell's own candidates collapsed to one) and a *row* / *column* slice (a
- * **hidden** single — a digit that fits only one cell of that line, while the cell
- * itself still shows several candidates).
+ * Shared hint helpers for the Latin-square family. The generic `latin.ts` solver
+ * records *every* forced single placement (its `elim`) under one reason —
+ * `{ kind: "single" }` — but `elim` fires on three slice kinds: a *cell* slice (a
+ * genuine **naked** single, the cell's own candidates collapsed to one) and a
+ * *row* / *column* slice (a **hidden** single — a digit that fits only one cell
+ * of that line, while the cell itself still shows several candidates).
  *
  * Narrating a hidden single as "every other number has been ruled out in this
  * cell" is wrong — the player is looking at a cell that still visibly holds
@@ -18,6 +17,7 @@
 import type { NoteEncoding } from "./candidate-hint.ts";
 import type { ForcingLink } from "./latin.ts";
 import type { OrderedCell } from "./overlay-sidecar.ts";
+import type { Point } from "./types.ts";
 
 /** Re-exported so a game declaring its own reason union reaches the chain shape
  * from the hint module it already imports (as `latin.ts` does for
@@ -45,11 +45,11 @@ export interface ClassifyRegion {
 /** Whether the forced placement of digit `n` at `cell` is a *naked* single (the
  * cell's notes are exactly `{n}`), a *hidden* single in one of `regions` (no other
  * empty cell of that region still notes `n`), or otherwise *forced* (the notes lag
- * a deeper deduction). The generic core of "re-derive the why" (hint-authoring
- * §9.3a) for any candidate-elimination game: the Latin row/column games pass
- * `[row, column]`; Solo passes `[row, column, block, diag0, diag1]`. Regions are
- * tested in order, so the first match wins (callers list them in narration
- * preference order). */
+ * a deeper deduction). The generic core of docs/games/hints.md § "Re-derive a
+ * placement's why" for any candidate-elimination game: the Latin row/column
+ * games pass `[row, column]`; Solo passes `[row, column, block, diag0, diag1]`.
+ * Regions are tested in order, so the first match wins (callers list them in
+ * narration preference order). */
 export function classifyPlacementInRegions<R extends ClassifyRegion>(
   grid: ArrayLike<number>,
   pencil: ArrayLike<number>,
@@ -172,8 +172,8 @@ export function hiddenSingleLine(
   line: "row" | "col",
   index: number,
   w: number,
-): { x: number; y: number }[] {
-  const cells: { x: number; y: number }[] = [];
+): Point[] {
+  const cells: Point[] = [];
   if (line === "row") for (let k = 0; k < w; k++) cells.push({ x: k, y: index });
   else for (let k = 0; k < w; k++) cells.push({ x: index, y: k });
   return cells;
@@ -191,9 +191,9 @@ export type GenericLatinReason =
 
 /**
  * A forcing chain's cells as **ordered** evidence, so the board shows which
- * consequence fell when and the narration can cite them by number
- * (`walk-tactic-hint-chains`). Shaded like any other evidence area; the ordinal
- * is what makes the shading a chain rather than a heap.
+ * consequence fell when and the narration can cite them by number. Shaded like
+ * any other evidence area; the ordinal is what makes the shading a chain rather
+ * than a heap.
  *
  * Shared by every game whose forcing reason comes from `latin.ts`, so the
  * numbering can never disagree with the sentence between games.

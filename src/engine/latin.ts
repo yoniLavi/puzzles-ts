@@ -1,23 +1,20 @@
 /**
- * Generic Latin-square solver and generator — the idiomatic-TS port of
- * upstream `latin.c` (the solver half) plus the RNG-faithful generator
- * promoted from the Singles port.
+ * Generic Latin-square solver and generator: upstream `latin.c`'s solver, and
+ * its RNG-faithful generator with `matching.c`.
  *
- * Shared by every Latin-square game: Towers first; Solo, Unequal, Keen and
- * Group later. A game supplies its own `usersolvers` (extra deductions keyed
- * to its difficulty levels) and a `valid` callback (does a completed grid
- * satisfy the game's extra constraints?), and `latinSolver` interleaves them
- * with the generic deductions — positional/numeric elimination, set
- * elimination, forcing chains — and, at the hardest level, guess-and-verify
- * recursion (which also doubles as the uniqueness check the generators rely
- * on).
+ * Shared by the games that call `latinSolver`. A game supplies its own
+ * `usersolvers` (extra deductions keyed to its difficulty levels) and a `valid`
+ * callback (does a completed grid satisfy the game's extra constraints?), and
+ * `latinSolver` interleaves them with the generic deductions — positional/numeric
+ * elimination, set elimination, forcing chains — and, at the hardest level,
+ * guess-and-verify recursion (which doubles as the generators' uniqueness check).
  *
- * Faithful to the C: the `o³` candidate cube is indexed by upstream
+ * The `o³` candidate cube is indexed as upstream's
  * `cubepos(x,y,n) = (x·o + y)·o + (n−1)`, `place`/`elim`/`set`/`forcing` are
- * the same deductions, and the negative-result sentinels keep upstream's
- * numeric values so a game's `ret <= diff` / `ret != diff` comparisons port
- * verbatim. Scratch buffers are owned by the solver instance (GC, no
- * new_scratch/free_scratch); recursion allocates a sub-solver per guess.
+ * upstream's deductions, and the negative-result sentinels keep upstream's
+ * numeric values so a game's `ret <= diff` / `ret != diff` comparisons read as
+ * upstream's. Scratch buffers are owned by the solver instance; recursion
+ * allocates a sub-solver per guess.
  *
  * ## A symbol that may repeat (this fork's extension)
  *
@@ -62,9 +59,7 @@ export const DIFF_UNFINISHED = 12;
  * means the board was solved within the cap it was given (the cap is what
  * stopped the ladder, so a level above it is unreachable, not reported). Lives
  * here rather than in each game's difficulty contract because it is a fact
- * about *this* return convention: `solveGroup`, `solveKeen`, `solveTowers` and
- * `solveUnequal` each document it in the same words, and four copies of one
- * mapping is four places for a sentinel to be forgotten.
+ * about *this* return convention, not about any one game.
  */
 export function latinVerdict(ret: number): DifficultyVerdict {
   if (ret === DIFF_IMPOSSIBLE) return "impossible";
@@ -496,10 +491,9 @@ export class LatinSolver {
   /** Forcing chains (upstream `latin_solver_forcing`): a chain of two-candidate
    * cells whose ends both line up with a third cell forces a digit out of it.
    *
-   * The BFS knows the chain it walked; on the hint path it now **reports** it
+   * On the hint path the recorded reason carries the chain the BFS walked
    * ({@link ForcingLink}), because a narration that says "a contradiction
-   * further along" names no cell the player can look at and can only be checked
-   * by redoing the deduction (`walk-tactic-hint-chains`). The path costs one
+   * further along" names no cell the player can look at. The path costs one
    * parent-pointer write per pushed cell, inside the `recorder` guard, so the
    * generator and solve paths are untouched. */
   forcing(): number {
@@ -673,35 +667,25 @@ export class LatinSolver {
   private diffSetGeneral(extreme: boolean): number {
     const o = this.o;
     const s = this.symbols;
-    const one = (): number[] => new Array(o).fill(1);
-    const bySymbol = (): number[] => {
-      const out: number[] = [];
-      for (let n = 1; n <= s; n++) out.push(this.multiplicity(n));
-      return out;
-    };
     if (!extreme) {
+      const ones: number[] = new Array(o).fill(1);
+      const bySymbol = Array.from({ length: s }, (_, k) => this.multiplicity(k + 1));
       for (let y = 0; y < o; y++) {
-        const ret = this.setGeneral(o, s, one(), bySymbol(), (x, k) =>
+        const ret = this.setGeneral(o, s, ones, bySymbol, (x, k) =>
           this.cubepos(x, y, k + 1),
         );
         if (ret !== 0) return ret;
       }
       for (let x = 0; x < o; x++) {
-        const ret = this.setGeneral(o, s, one(), bySymbol(), (y, k) =>
+        const ret = this.setGeneral(o, s, ones, bySymbol, (y, k) =>
           this.cubepos(x, y, k + 1),
         );
         if (ret !== 0) return ret;
       }
     } else {
       for (let n = 1; n <= s; n++) {
-        const m = this.multiplicity(n);
-        const ret = this.setGeneral(
-          o,
-          o,
-          new Array(o).fill(m),
-          new Array(o).fill(m),
-          (x, y) => this.cubepos(x, y, n),
-        );
+        const m: number[] = new Array(o).fill(this.multiplicity(n));
+        const ret = this.setGeneral(o, o, m, m, (x, y) => this.cubepos(x, y, n));
         if (ret !== 0) return ret;
       }
     }
@@ -806,8 +790,8 @@ function popcount(v: number): number {
   return c;
 }
 
-/** Optional per-recursion context cloning (upstream `ctxnew`/`ctxfree`). Most
- * games (Towers) share one immutable ctx and omit it. */
+/** How `latinSolver` runs: the difficulty level each generic technique sits at,
+ * the game's own deductions and validator, and the hint-path hooks. */
 export interface LatinSolverConfig<Ctx> {
   /** Declare the last symbol as repeating `times` per line (a pseudo-Latin
    * puzzle). Leave unset for a Latin square; see {@link LatinRepeats}. */
@@ -821,6 +805,8 @@ export interface LatinSolverConfig<Ctx> {
   usersolvers: (UserSolver<Ctx> | null)[];
   valid: Validator<Ctx> | null;
   ctx: Ctx;
+  /** Per-recursion context cloning (upstream `ctxnew`); a game whose ctx is
+   * immutable (Towers) omits it. */
   ctxNew?: (ctx: Ctx) => Ctx;
   /** Hint path only: record every candidate cleared / cell placed, in solver
    * order. When set, a fixpoint step budget is also installed. Leaving it unset
@@ -838,11 +824,10 @@ export interface LatinSolverConfig<Ctx> {
    * not") rules candidates out of a cell without placing any digit, so it
    * cannot be expressed through the seeded `grid`.
    *
-   * Deliberately **not** re-applied inside `latinSolverRecurse`, because
-   * upstream's recursion likewise re-allocs a bare sub-solver and re-runs only
-   * `latin_solver_top`. That is sound for the only consumer, which passes
-   * `diffRecursive = DIFF_IMPOSSIBLE` and so never recurses; a future recursing
-   * consumer would have to revisit it.
+   * Deliberately **not** re-applied inside `latinSolverRecurse`, as upstream's
+   * recursion re-runs only `latin_solver_top` on a bare sub-solver. Sound for
+   * Salad, which passes `diffRecursive = DIFF_IMPOSSIBLE` and so never recurses;
+   * a recursing consumer would have to revisit it.
    */
   seed?: (solver: LatinSolver) => void;
   /** Optional `o³` output buffer that receives the final candidate cube
@@ -966,29 +951,18 @@ function latinSolverRecurse<Ctx>(
 
     const newctx = cfg.ctxNew ? cfg.ctxNew(cfg.ctx) : cfg.ctx;
     const sub = new LatinSolver(o, cfg.repeats);
-    let ret: number;
-    if (sub.alloc(outgrid)) {
-      ret = latinSolverTop(sub, {
-        ...cfg,
-        maxdiff: cfg.diffRecursive,
-        ctx: newctx,
-      });
-    } else {
-      ret = DIFF_IMPOSSIBLE;
-    }
+    const ret = sub.alloc(outgrid)
+      ? latinSolverTop(sub, { ...cfg, maxdiff: cfg.diffRecursive, ctx: newctx })
+      : DIFF_IMPOSSIBLE;
 
-    if (diff === DIFF_IMPOSSIBLE && ret !== DIFF_IMPOSSIBLE) {
-      solver.grid.set(outgrid);
-    }
-
-    if (ret === DIFF_AMBIGUOUS) {
-      diff = DIFF_AMBIGUOUS;
-    } else if (ret === DIFF_IMPOSSIBLE) {
-      // leave diff unchanged
-    } else {
-      diff = diff === DIFF_IMPOSSIBLE ? cfg.diffRecursive : DIFF_AMBIGUOUS;
-    }
-
+    if (ret === DIFF_IMPOSSIBLE) continue;
+    // The first solution found is the one written back; a second makes it
+    // ambiguous.
+    if (diff === DIFF_IMPOSSIBLE) solver.grid.set(outgrid);
+    diff =
+      ret === DIFF_AMBIGUOUS || diff !== DIFF_IMPOSSIBLE
+        ? DIFF_AMBIGUOUS
+        : cfg.diffRecursive;
     if (diff === DIFF_AMBIGUOUS) break;
   }
 
@@ -1028,23 +1002,19 @@ export function latinSolver<Ctx>(
 }
 
 // --- generator (matching.c / latin.c, RNG-faithful) ------------------------
-// Promoted from singles/generator.ts on Towers becoming the second consumer.
 
 /**
  * Maximum bipartite matching (Hopcroft–Karp) between `nl` left and `nr`
  * right vertices. `adjlists[L]` lists L's neighbors (mutated in place by the
  * randomizing DFS, exactly as upstream). Returns the L→R assignment array
- * (`-1` = unmatched), the analog of upstream's `outl`. The two RNG draws —
- * `shuffle(Lorder)` per BFS pass and the in-place `random_upto` adjacency
- * swap during the DFS — are reproduced exactly so generation is byte-faithful.
+ * (`-1` = unmatched), upstream's `outl`; invert it for an R→L assignment.
  *
- * `rs` is optional: passing it perturbs the algorithm to choose randomly among
- * possible matchings (generation), while omitting it runs deterministically
- * — the two draw sites are guarded exactly as `matching.c`'s `if (rs)`. A
- * matching's *cardinality* is order-independent, so the `rs`-less mode is the
- * faithful analog of upstream's `rs = NULL` existence check (Tents'
- * completion check). Derive an `R→L` assignment, if needed, by inverting the
- * returned `L→R` array.
+ * With `rs`, the matching is chosen at random among the maximum ones
+ * (generation): upstream's two draws — `shuffle(Lorder)` per BFS pass and the
+ * in-place `random_upto` adjacency swap during the DFS — are reproduced
+ * exactly, so generation is byte-faithful. Without it the run is
+ * deterministic; a matching's *cardinality* does not depend on the choice, so
+ * that mode is upstream's `rs = NULL` existence check (Tents' completion check).
  */
 export function matching(
   nl: number,

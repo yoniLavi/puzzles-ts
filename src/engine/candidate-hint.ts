@@ -1,25 +1,20 @@
 /**
  * Shared hint-*plan* plumbing for the candidate-elimination games — every
  * pencil-notes puzzle whose hint sets and strikes candidate notes and places a
- * value when a cell's notes collapse to one (Towers, Unequal, Keen, Solo). The
- * games' *solvers* stay separate on purpose (Towers/Unequal/Keen ride
- * `latin.ts`; Solo is bespoke for byte-match fidelity); the already-shared seam
- * at the solver boundary is the {@link DeductionRecord} shape, which every game
- * produces from its own techniques and this module consumes uniformly.
+ * value when a cell's notes collapse to one. The games' *solvers* stay separate
+ * on purpose (the Latin games ride `latin.ts`; Solo's is bespoke, for byte-match
+ * fidelity); the shared seam at the solver boundary is the
+ * {@link DeductionRecord} shape, which every game produces from its own
+ * techniques and this module consumes uniformly.
  *
- * This module owns the parts that were byte-identical across those four games'
- * `index.ts` hint sections: the pure plan helpers (naked-single finder, the
- * lazy-populate check, the unreflected-placement index, the next-strike and
- * next-place lookups) and the generic `keepCandidateHintTrack` /
- * `refreshCandidateHintStep`. What stays per-game is the `buildSteps` *walk*
- * itself (its step order, strike-split policy and journey continuation differ per
- * game — a shared driver was evaluated and deliberately not built, see
- * `docs/games/hints.md § "Candidate-elimination games") together with the recording solver, the
- * narration and the reason union. The rule of thumb: this module owns the
- * reusable *mechanics*, the game owns the *walk and the meaning*.
- *
- * See `docs/games/hints.md § "Candidate-elimination games" for the candidate-elimination pattern
- * this module supports.
+ * This module owns the reusable *mechanics*: the pure plan helpers
+ * (naked-single finder, lazy populate, the unreflected-placement index, the
+ * next-strike and next-place lookups) and the generic `keepCandidateHintTrack` /
+ * `refreshCandidateHintStep`. The game owns the *walk and the meaning*: its
+ * `buildSteps` (step order, strike-split policy and journey continuation differ
+ * per game, so a shared driver was evaluated and deliberately not built), the
+ * recording solver, the narration and the reason union. See
+ * `docs/games/hints.md` § "Candidate-elimination games".
  */
 
 import type { DeductionRecord } from "./deduction-record.ts";
@@ -27,12 +22,10 @@ import type { HintResult, HintStep, HintTrackVerdict } from "./game.ts";
 import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "./hint-refusal.ts";
 import type { ClassifyRegion } from "./latin-hint.ts";
 import type { OrderedCell } from "./overlay-sidecar.ts";
+import type { Point } from "./types.ts";
 
 /** A board cell. */
-export interface Cell {
-  x: number;
-  y: number;
-}
+export type Cell = Point;
 
 /** A single pencil candidate `n` at cell `(x, y)` — the unit a strike acts on. */
 export interface Mark {
@@ -44,26 +37,20 @@ export interface Mark {
 /**
  * How a game projects the solver's values onto the player's pencil-note bits —
  * the one thing the mark helpers below need to know about a game's note
- * representation (`add-salad-hint`, design D3).
+ * representation. Omit it for the Latin family's `1 << n` over `1..w`.
  *
- * Two games differ from the Latin family's `1 << n`: **Crossing** and **Salad**
- * both store candidate `n` at bit `n − 1` (their values start at 1 and 0 means
- * "no note"), and Salad's note alphabet (`nums` symbols + one "might be empty"
- * mark) is *shorter* than its grid order. Supplying the encoding is strictly
- * cheaper than a game re-deriving the helpers, and omitting it reproduces
- * today's behavior exactly — so every existing call site is untouched.
+ * **Crossing** and **Salad** both store candidate `n` at bit `n − 1` (their
+ * values start at 1 and 0 means "no note"), and Salad's note alphabet (`nums`
+ * symbols + one "might be empty" mark) is *shorter* than its grid order.
  *
- * **What this deliberately is *not*.** `add-salad-hint`'s design proposed a
- * richer `CandidateVocabulary` with a *many-to-one* arm (`valuesFor(bit)`), for
- * Salad's `order − nums` interchangeable hole symbols that all collapse onto one
- * player note. Threading it through found **no consumer**: a helper here only
- * ever asks "which note bit does this *placed* value occupy?" or "is this cell's
- * note set down to one?", and on Salad's board no hole symbol is ever placed
- * (holes live in a separate marker array) nor ever singled (which hole symbol
- * sits where is undecidable, and immaterial). The collapse lives entirely in
- * Salad's own step emission — where it *is* the game's sync deduction. Recorded
- * as a non-migration in `docs/games/hints.md § "Non-uniform value sets (Salad)" rather than built
- * speculatively.
+ * **Deliberately no many-to-one arm** for Salad's `order − nums`
+ * interchangeable hole symbols, which all collapse onto one player note: a
+ * helper here only ever asks "which note bit does this *placed* value occupy?"
+ * or "is this cell's note set down to one?", and on Salad's board no hole
+ * symbol is ever placed (holes live in a separate marker array) nor ever
+ * singled (which hole symbol sits where is undecidable, and immaterial). The
+ * collapse lives in Salad's own step emission, where it *is* the game's sync
+ * deduction; see `docs/games/hints.md` § "Non-uniform value sets (Salad)".
  */
 export interface NoteEncoding {
   /** The pencil-mask bit for candidate `n`. Default `1 << n`. */
@@ -112,18 +99,8 @@ export interface CandidateHighlights {
  * solved board, refuse (pointing at the mistake overlay) on a wrong board, build
  * the plan, refuse when it is empty, else return it. The only per-game inputs are
  * the game's own `findMistakes` and `buildSteps` (the latter owns the walk that
- * genuinely differs); everything else — the three refusals and the `autoPencil`
- * default — comes from {@link ../hint-refusal.ts}, which is the collection's one
- * statement of what a refusal says.
- *
- * **The refusals used to be spelled out here as literals**, and this comment
- * used to justify that by saying a wording tweak would land "in one place". It
- * would have — this place, and not the other one. `unify-hint-refusals` had
- * converged 21 games onto `hint-refusal.ts` while the eleven candidate games
- * routed through here kept private copies of `ALREADY_SOLVED`,
- * `FIX_MISTAKES_FIRST` and `NO_DEDUCTION_LEFT`, so a change to either half left
- * the other lying and no grep for a constant *name* could see it (AGENTS.md,
- * "a grep for a constant's name is blind to a copy that spells out its value").
+ * genuinely differs); the three refusals come from `hint-refusal.ts`, the
+ * collection's one statement of what a refusal says.
  *
  * `autoPencil` defaults **off**: with no `ui` (tests/harness) the hint teaches the
  * trivial row/column/region eliminations as explicit strikes rather than folding
@@ -204,9 +181,7 @@ export function firstUnreflectedPlaceIndex(
  * eliminations valid against the current grid. One returned firing is one `group`
  * (one cage/line/region firing); the caller splits it into a per-cell (or whole)
  * journey. `dup` strikes are excluded — those are placement bookkeeping handled by
- * the placement emitter, not a technique to teach. (Solo never records a `dup`
- * elim, so the filter is a no-op there; Towers/Unequal/Keen's generic solver does,
- * so it is load-bearing for them — the shared filter is correct for all four.) */
+ * the placement emitter, not a technique to teach. */
 export function nextStrike<R extends DeductionRecord>(
   ops: readonly R[],
   grid: ArrayLike<number>,
@@ -337,7 +312,7 @@ export function findRegionDuplicate(
  * for every empty cell, each penciled value that already sits as a *placed* value
  * in one of that cell's uniqueness regions (per `regionsOf`). "Obvious" is always
  * judged against a placed value, never another pencil mark, so the result is a pure
- * function of the placed grid and pressing repeatedly converges (design D2).
+ * function of the placed grid and pressing repeatedly converges.
  *
  * Mistaken-board guard: never strike a cell's *last* surviving note. If every note
  * of a cell is region-eliminated — only possible on an already-wrong board — one
@@ -393,18 +368,15 @@ export function populateStep<M, H>(move: M, explanation: string): HintStep<M, H>
 }
 
 /** Lazy populate for a Latin-family candidate game: nothing is filled (and no
- * step emitted) until an elimination actually needs notes to cross out. The
- * four consumers (Towers, Unequal, Keen, Solo) shared this closure verbatim
- * before it was hoisted. `done()` reports whether notes already exist —
- * builders use it to decide when to emit the one-off obvious-cleanup step.
+ * step emitted) until an elimination actually needs notes to cross out.
+ * `done()` reports whether notes already exist — builders use it to decide when
+ * to emit the one-off obvious-cleanup step.
  *
  * The fill is **additive**, mirroring `pencilAll`'s move: a cell the player has
  * already narrowed keeps its notes. Both halves matter and for different
  * reasons — the *move* must not throw away the player's deductions, and this
  * *working copy* must agree with it or the plan goes on to teach strikes on
- * candidates that are no longer on their board (owner-reported on Salad,
- * 2026-07-29; the latch below hid it whenever every empty cell already had at
- * least one note). */
+ * candidates that are no longer on their board. */
 export function lazyPopulate<M, H>(
   state: { grid: ArrayLike<number>; pencil: ArrayLike<number> },
   wGrid: ArrayLike<number>,
@@ -447,18 +419,14 @@ export function lazyPopulate<M, H>(
  * **A `pencilAll` fills only the cells that have no notes yet. It never resets
  * one the player has narrowed.**
  *
- * This is the contract's load-bearing sentence, and it is here because it was
- * previously written out in nine games' `executeMove` — a correctness rule with
- * nine statements of itself, so that changing the rule would have left eight of
- * them lying. Each game now cites this heading instead
- * (`re-express-the-collection`, B1).
+ * This is the contract's load-bearing sentence, and each game's `executeMove`
+ * cites this heading rather than restating it, so the rule has one statement.
  *
- * **Why the rule is what it is.** Filling *every* empty cell threw away the
+ * **Why the rule is what it is.** Filling *every* empty cell throws away the
  * player's own deductions on any board with some penciled cells and some blank
- * ones — owner-reported on Salad, 2026-07-29, twice: once through the hint's
- * opener and once through the button, which share this move. It hid for months
- * because the usual latch ("does any empty cell lack notes?") only exposes it on
- * a mixed board.
+ * ones, through the hint's opener and the button alike, which share this move.
+ * It hides easily, because the usual latch ("does any empty cell lack notes?")
+ * only exposes it on a mixed board.
  *
  * **What a game still decides for itself**, and why the loop is not shared: what
  * *empty* means (Undead's `guess[i] === MON_NONE`, Salad's extra CROSS
@@ -497,14 +465,6 @@ export function adaptiveMarkAllMove<M>(
   );
 }
 
-/** A freshly-built pencil-strike move, typed as the game's move union `M`. The
- * `pencilStrike` variant is a member of every candidate-elimination game's
- * `Move`; TypeScript can't express that lower bound on a generic, so the
- * construction is asserted here, in one place, rather than at every call site. */
-function strikeMove<M>(marks: Mark[]): M {
-  return { type: "pencilStrike", marks } as unknown as M;
-}
-
 // --- the per-game move adapter ---------------------------------------------
 
 /**
@@ -513,14 +473,13 @@ function strikeMove<M>(marks: Mark[]): M {
  *
  * The mechanics below (`keepCandidateHintTrack`, `refreshCandidateHintStep`)
  * are pure bookkeeping over "is this a strike / a placement / a populate, and
- * which candidate does it touch?" — but they used to answer that by reading a
- * hard-coded `type` discriminator and a `1 << n` pencil bit. That is one
- * game family's dialect, not a property of the pattern: **Crossing
- * discriminates on `kind` and stores candidate `n` in bit `n − 1`**, and
- * **Group**'s moves carry a *cell list* rather than an `x`/`y` pair. Renaming
- * either game's discriminator is not an option — the save format replays the
- * move log, so it would break every existing save — so the mechanics take the
- * dialect as a parameter instead (`add-crossing-hint`, design D7).
+ * which candidate does it touch?", and a `type` discriminator with a `1 << n`
+ * pencil bit is one game family's dialect, not a property of the pattern:
+ * **Crossing discriminates on `kind` and stores candidate `n` in bit `n − 1`**,
+ * and **Group**'s moves carry a *cell list* rather than an `x`/`y` pair.
+ * Renaming either game's discriminator is not an option — the save format
+ * replays the move log, so it would break every existing save — so the
+ * mechanics take the dialect as a parameter.
  *
  * A game supplies two one-liners (plus a bit encoding where it differs); the
  * helper keeps all the logic.
@@ -548,7 +507,7 @@ export const typeKeyedCandidateMoves: CandidateMoveAdapter<{ type: string }> = {
       ? cm
       : null;
   },
-  strike: (marks) => strikeMove(marks),
+  strike: (marks) => ({ type: "pencilStrike", marks }),
 };
 
 function adapterOf<M>(adapter?: CandidateMoveAdapter<M>): CandidateMoveAdapter<M> {
@@ -609,12 +568,12 @@ export function emitObviousCleanStep<M, H>(
  * matches a `set` step; a pencil toggle that *clears* one of a strike step's
  * marks shrinks it (`onTrack`, mutating the step in place so a later auto-hint
  * strikes only the rest) or finishes it (`completed`); anything else drops the
- * plan (`off`). `state` is the PRE-move board.
+ * plan (`off`). `pencil` is the PRE-move notes.
  *
- * Generic over the game's move `M`: `m`/`step.move` are read structurally as
- * {@link CandidateMove} (non-candidate moves fall through to `off`), and a shrunk
- * step's new move is rebuilt via {@link strikeMove}. The highlights are the
- * concrete {@link CandidateHighlights} every such game shares; a game's
+ * Generic over the game's move `M`: `m`/`step.move` are read through the
+ * game's {@link CandidateMoveAdapter} (a move it reads as `null` is `off`), and
+ * a shrunk step's new move is rebuilt by it. The highlights are the concrete
+ * {@link CandidateHighlights} every such game shares; a game's
  * `HintStep<Move, GameHint>` is accepted because `GameHint` is structurally
  * `CandidateHighlights`. */
 export function keepCandidateHintTrack<M, H extends CandidateHighlights>(

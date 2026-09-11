@@ -9,7 +9,7 @@
  * schemes returns no feasible arrangement — the pale end of the palette holds
  * exactly one cool wash and the evidence has it, and the hues that clear ~2.6:1
  * sit beside `ERROR_WASH`, which would make the cell a hint points at look like
- * the cell that is *wrong* (`walk-tactic-hint-chains` D7). A mark drawn on the
+ * the cell that is *wrong*. A mark drawn on the
  * border is read *against* a surface rather than *through* it, so the constraint
  * disappears instead of being traded and the mark can take a strong color.
  *

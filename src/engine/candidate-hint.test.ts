@@ -78,9 +78,7 @@ describe("candidateHint (shared hint entry)", () => {
     expect(r).toEqual({
       ok: false,
       // Imported, not retyped — a test that restates the wording is the same
-      // defect `hint-refusal.ts` exists to prevent, one layer out, and these
-      // three (here, Boats, Crossing) were what actually broke when the
-      // collection collapsed to one out-of-deduction message.
+      // defect `hint-refusal.ts` exists to prevent, one layer out.
       error: DEDUCTION_EXHAUSTED,
     });
   });
@@ -634,7 +632,7 @@ describe("lazyPopulate", () => {
     // The fill mirrors the `pencilAll` *move*, which never throws away the
     // player's deductions — and this working copy has to agree with it, or the
     // plan goes on to teach strikes on candidates that are no longer on their
-    // board (owner-reported on Salad, 2026-07-29).
+    // board.
     const { pop, wPen } = setup([0, 0, 0, 0], [bits(1), 0, 0, 0], 2);
     pop.ensure();
     expect(wPen[0]).toBe(bits(1));

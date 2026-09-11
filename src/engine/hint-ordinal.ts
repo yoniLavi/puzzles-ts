@@ -2,17 +2,15 @@
  * The chain ordinal: a small number in a cell's corner saying **where in an
  * ordered chain of forced consequences that cell falls**.
  *
- * Eight games ship a Tactic — a bounded chain of forced consequences to a named
- * endpoint (`audit-guessing-tier-names` D9) — and every one of them used to
- * narrate it as a claim ("a contradiction further along", "the marked cells
- * would each be forced in turn") over an *unordered* set of shaded cells. A
- * claim the player can only check by redoing the deduction is what
- * docs/games/hints.md § "The forcing boundary" forbids; the order is what turns
- * the shading back into something walkable.
+ * A Tactic is a bounded chain of forced consequences to a named endpoint.
+ * Narrated over an *unordered* set of shaded cells ("a contradiction further
+ * along"), it is a claim the player can only check by redoing the deduction,
+ * which docs/games/hints.md § "The forcing boundary" forbids; the order is what
+ * turns the shading back into something walkable.
  *
  * **Why a number and not an arrow.** The obvious drawing is a path through the
- * chain, and it was prototyped and measured before being rejected
- * (`walk-tactic-hint-chains` D5). An arrow between two cells claims *this one
+ * chain, and it was prototyped and measured before being rejected. An arrow
+ * between two cells claims *this one
  * forces that one*, which in Clusters is false in a third of links — what forces
  * a cell there is its own neighborhood, not the cell before it in discovery
  * order — and half its links are not even adjacent, so the arrows crossed the

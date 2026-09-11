@@ -1,12 +1,11 @@
 /**
  * The shared plan-accumulation loop every recording deduction pass runs.
  *
- * A hint that is "a second projection of the solver" (docs/games/hints.md § "Re-derive the named technique")
- * always ends up writing the same five lines: from a working copy of the
- * player's board, while the board is still unfinished, ask for the *single*
- * next forced firing, stop when there is none, apply it, record it. Spokes,
- * Bricks, Clusters and Subsets each arrived at that loop independently, and
- * Boats would have been the fifth copy.
+ * A hint that is "a second projection of the solver" (docs/games/hints.md §
+ * "Re-derive the named technique") always ends up writing the same five lines:
+ * from a working copy of the player's board, while the board is still
+ * unfinished, ask for the *single* next forced firing, stop when there is none,
+ * apply it, record it.
  *
  * Only the **loop** is shared. Every `next` rung order, every reason type and
  * every narration string stays in its game — an exemplar hint never loses a
@@ -15,10 +14,9 @@
  * **Both bounds are parameters, deliberately.** Spokes and Bricks bound the
  * plan by *length* ("the player rarely follows more than a few steps before
  * diverging, and a recompute yields the next batch"); Clusters and Subsets
- * bound it by a {@link StepBudget} (the §7.2 non-termination guard, which
- * catches a rule reporting progress without changing the board). Those answer
- * different questions, so the helper takes both rather than picking one and
- * retuning two shipped hints.
+ * bound it by a {@link StepBudget} (the non-termination guard, which catches a
+ * rule reporting progress without changing the board). Those answer different
+ * questions, so the helper takes both.
  */
 
 import type { StepBudget } from "./step-budget.ts";
@@ -72,8 +70,7 @@ export interface HintPlanSpec<Board, Firing, Status> {
   /**
    * Hard cap on plan length — a UX bound, not a correctness one. It counts
    * **shown** steps: a cap on firings silently becomes a refusal when a run of
-   * hidden ones spends it (Galaxies shipped exactly that, and the hint told a
-   * player "no further move" with a hundred left).
+   * hidden ones spends it.
    */
   planCap?: number;
   /** Non-termination guard, ticked once per iteration (docs/games/hints.md § "The step budget"). */

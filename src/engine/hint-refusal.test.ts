@@ -5,21 +5,13 @@
  * `help/features.md` §Hints teaches two of them as a pair — "there is a mistake
  * on the board" and "deduction has run out" — because they call for opposite
  * responses. That is only teachable if the same situation is worded the same
- * way everywhere. Before `hint-refusal.ts`, twenty-two games had invented
- * seventeen phrasings between them: "I can't find a deduction from here." and
- * "No further move can be deduced from this position." were the same refusal in
- * games a player moves between freely.
+ * way everywhere, in games a player moves between freely.
  *
- * ON THE INSTRUMENT, twice over.
- *
- * The first cut collected refusals from functions **named** `hint`, and so it
- * never saw Netslide's, which was then called `netslideHint` (it is `hint` now —
- * `re-express-the-collection` B5) — a whole game, absent from every count it reported,
- * including the "seventeen phrasings" figure. That is this repo's recurring
- * instrument error (`emittable-keys.test.ts`'s first cut keyed on a name and
- * missed `const CLEAR = 8`), and the fix is the same: key on the **shape**.
- * This walks every non-test source file under `src/games/` and collects every
- * `{ ok: false, error: <string literal> }` wherever it appears.
+ * ON THE INSTRUMENT. Collecting refusals from functions **named** `hint` misses
+ * every game whose hint is named otherwise — this repo's recurring instrument
+ * error — so this keys on the **shape**: it walks every non-test source file
+ * under `src/games/` and collects every `{ ok: false, error: <string literal> }`
+ * wherever it appears.
  *
  * That is deliberately a **superset**: `SolveResult` has the same shape, so
  * Solve's own errors and the description parsers' are caught too. Rather than
@@ -49,16 +41,10 @@ const gameSources = {
     import: "default",
     eager: true,
   }),
-  // **And the engine's shared hint modules**, which the scan used to miss
-  // entirely. `candidate-hint.ts` builds the `hint()` of eleven candidate games
-  // and spelled out `ALREADY_SOLVED`, `FIX_MISTAKES_FIRST` and the
-  // out-of-deduction refusal as **literals** — so a third of the collection's
-  // refusals lived outside the one file this guard reads, and no grep for a
-  // constant's name could see them either (`refuse-honestly-at-every-tier`).
-  //
-  // The lesson is this file's own, applied to itself: it keys on the right
-  // *shape* and still scanned the wrong *place*. A refusal is wherever a
-  // `hint()` is built, and eleven of them are not built under `games/`.
+  // **And the engine's shared hint modules**: `candidate-hint.ts` builds the
+  // `hint()` of the candidate games, and a refusal is wherever a `hint()` is
+  // built. Keying on the right *shape* is not enough if the scan reads the
+  // wrong *place*.
   ...import.meta.glob<string>("./{candidate-hint,latin-hint,hint-plan}.ts", {
     query: "?raw",
     import: "default",
@@ -249,9 +235,9 @@ const OPENS_ITS_OWN_REFUSAL: Record<string, string> = {
 };
 
 describe("the shared refusal opening", () => {
-  /** Games whose `index.ts` still names either half of the pair. After
-   * `adopt-the-shared-refusal-opening` an adopter names neither — it calls
-   * `commonHintRefusal` — so this set *is* the non-adopters. */
+  /** Games whose `index.ts` still names either half of the pair. An adopter
+   * names neither — it calls `commonHintRefusal` — so this set *is* the
+   * non-adopters. */
   const opensItsOwn = new Set<string>();
   let adopters = 0;
   for (const [path, text] of Object.entries(gameSources)) {

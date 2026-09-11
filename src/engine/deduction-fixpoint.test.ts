@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { type DeductionTechnique, runDeductionFixpoint } from "./deduction-fixpoint.ts";
 import { StepBudgetExceeded, stepBudget } from "./step-budget.ts";
 
-/** A technique whose tier is its position — the shape every ladder had before
- * tiers were declarable, and the baseline the tier-specific tests below vary
- * from. Keeping it as a helper means a test that says `tier` means it. */
+/** A technique whose tier is its position — the baseline the tier-specific
+ * tests below vary from. Keeping it as a helper means a test that says `tier`
+ * means it. */
 const rung = (index: number, run: () => number): DeductionTechnique => ({
   id: `rung-${index}`,
   tier: index,
@@ -89,9 +89,8 @@ describe("runDeductionFixpoint", () => {
     // highest, and that grade is what a solver-gated generator accepts a board's
     // difficulty on.
     //
-    // Found by the mutation audit (`audit-test-suite-strength`): with this
-    // assertion absent, `grade = r` survived this file, `latin.test.ts` and all
-    // four consumer game directories, and was killed only by the full suite.
+    // Without this assertion, `grade = r` survived this file, `latin.test.ts`
+    // and four consumer game directories, and was killed only by the full suite.
     let r2 = 1;
     let r0 = 0;
     const techniques = [
@@ -209,11 +208,9 @@ describe("runDeductionFixpoint", () => {
 
   // --- tiers are declared, never positions -------------------------------
   //
-  // The three tests below are the whole point of `declare-deduction-techniques`.
-  // Each was proved to fail against the previous index-based runner before being
-  // trusted (AGENTS.md, "Prove a new guard fails before trusting it"): regrading
-  // by index reddens the first, re-capping by index reddens the second and
-  // third.
+  // Each of the three tests below was proved to fail against an index-based
+  // runner: regrading by index reddens the first, re-capping by index reddens
+  // the second and third.
 
   describe("tiers", () => {
     it("grades two techniques sharing one tier alike", () => {
