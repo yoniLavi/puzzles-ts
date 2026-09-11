@@ -16,25 +16,22 @@
  *   board, commit the other.
  *
  * **The look-ahead is one function under two tiers, and they are two different
- * rungs** (`audit-guessing-tier-names`, design D9 + D10). Neither guesses — both
- * are exhaustive and deterministic, and every commit is forced by a proof that
- * the alternative is impossible. What separates them is how much reasoning the
- * *player* has to carry to check that proof, and only the sub-tier argument says
- * so:
+ * rungs.** Neither guesses — both are exhaustive and deterministic, and every
+ * commit is forced by a proof that the alternative is impossible. What
+ * separates them is how much reasoning the *player* has to carry to check that
+ * proof, and only the sub-tier argument says so:
  *
  * - **Tricky** passes `DIFF_LIMITED`, an Easy pass that stops at
- *   `ACTION_LIMIT`. A bounded chain — measured at a median of 2 and a max of 9
- *   deductions — which a player can walk. A *Tactic*, and legal at a middle
- *   tier.
- * - **Unreasonable** passes `DIFF_EASY`, the same pass with no bound. Measured
- *   at a median of 2 as well, so the two are indistinguishable on a typical
- *   board — but its p90 is 11 and its max is **35 hubs on a 36-hub grid**, i.e.
- *   it solves the rest of the puzzle from the hypothesis. That is a *Search*,
- *   and it is why the tier upstream calls `Hard` is named `Unreasonable` here.
+ *   `ACTION_LIMIT`: a bounded chain a player can walk. A *Tactic*, and legal
+ *   at a middle tier.
+ * - **Unreasonable** passes `DIFF_EASY`, the same pass with no bound, which can
+ *   solve the rest of the puzzle from the hypothesis. That is a *Search*, and
+ *   it is why the tier upstream calls `Hard` is named `Unreasonable` here.
  *
- * The lesson worth keeping: **classify a trial rung by the bound it guarantees,
- * not by the depth it typically reaches.** The medians agree; only the
- * guarantees differ, and a hint can only promise what is guaranteed.
+ * **Classify a trial rung by the bound it guarantees, not by the depth it
+ * typically reaches.** The two have the same median depth (see
+ * `ACTION_LIMIT`); only the guarantees differ, and a hint can only promise
+ * what is guaranteed.
  *
  * Validity is decided by counting lines/marks per hub, rejecting crossing
  * diagonals, and — over a `Dsf` of the line-connected hubs, plus a per-class
@@ -60,14 +57,14 @@ import {
   SPOKE_LINE,
   SPOKE_MARKED,
   type SpokesBoard,
+  type SpokesSpokeRef,
   spokeCounts,
   spokesCount,
   spokesPlace,
   syncDiagonalBlock,
 } from "./state.ts";
 
-/** Upstream's `STATUS_INVALID` / `STATUS_INCOMPLETE` / `STATUS_VALID`, as a
- * union rather than a magic `0/1/2`. */
+/** Upstream's `STATUS_INVALID` / `STATUS_INCOMPLETE` / `STATUS_VALID`. */
 export type SpokesStatus = "invalid" | "incomplete" | "valid";
 
 /**
@@ -78,14 +75,11 @@ export type SpokesStatus = "invalid" | "incomplete" | "valid";
  * load-bearing for the tier names, not a tuning dial. Measured over 30 boards
  * per configuration: with the cap, a sub-solve makes a median of 2 and at most
  * 9 deductions; without it, the median is *also* 2 but the p90 is 11 and the max
- * is 35 hubs on a 36-hub board. See `audit-guessing-tier-names` §6.
+ * is 35 hubs on a 36-hub board.
  */
 const ACTION_LIMIT = 4;
 
-/**
- * The solver's reusable scratch (upstream `struct spokes_scratch`), allocated
- * once per solve rather than `snew`/`sfree`d per call.
- */
+/** The solver's reusable scratch (upstream `struct spokes_scratch`). */
 export class SpokesScratch {
   /** Placeable spokes per hub (8 minus the hidden ones). */
   readonly nodes: Int32Array;
@@ -126,7 +120,6 @@ export function spokesSolverRecount(
   const n = w * h;
 
   for (let i = 0; i < n; i++) {
-    // One table lookup yields all four counts (see `spokeCounts`).
     const counts = spokeCounts(b.spokes[i]);
     s.nodes[i] = 8 - (counts & 0xff);
     s.lines[i] = (counts >>> (SPOKE_LINE * 8)) & 0xff;
@@ -224,9 +217,8 @@ export function spokesValidate(b: SpokesBoard, scratch?: SpokesScratch): SpokesS
 
   for (let i = 0; i < n && ret !== "invalid"; i++) {
     // Crossing diagonals. The `i + 1 < n` guard is ours: upstream reads one
-    // past the end, which is harmless there only because `&&` short-circuits
-    // (a right-edge or bottom-row hub has no BOTRIGHT spoke, so the second
-    // operand is never evaluated). Keeping the guard makes that explicit.
+    // past the end, harmlessly, because the last hub's BOTRIGHT is hidden and
+    // `&&` stops first.
     if (
       i + 1 < n &&
       getSpoke(b.spokes[i], DIR_BOTRIGHT) === SPOKE_LINE &&
@@ -255,11 +247,9 @@ export function spokesValidate(b: SpokesBoard, scratch?: SpokesScratch): SpokesS
  * a group of two with no way to reach the rest. Skipped when the whole grid is
  * exactly two hubs, where that pair *is* the answer.
  *
- * Faithful quirk: the mark is placed unconditionally, without first checking
- * that the spoke is `EMPTY` — on a board where an `'X'` hole has already
- * hidden that diagonal, upstream overwrites the hidden state with a mark. This
- * is a one-shot pre-pass on a freshly cleared board, and the generator never
- * emits `'X'`, so it only reaches hand-authored descriptions.
+ * Faithful quirk: the mark is placed without checking that the spoke is
+ * `EMPTY`, so it overwrites a diagonal an `'X'` hole has hidden. Only
+ * hand-authored descriptions reach that: the generator never emits `'X'`.
  */
 export function spokesSolverOnes(b: SpokesBoard): number {
   const { w, h } = b;
@@ -272,10 +262,10 @@ export function spokesSolverOnes(b: SpokesBoard): number {
     for (let x = 0; x < w; x++) {
       if (b.numbers[y * w + x] !== 1) continue;
       for (let j = 0; j < 4; j++) {
-        const dx = x + SPOKE_DIRS[j].dx;
-        const dy = y + SPOKE_DIRS[j].dy;
-        if (dx < 0 || dx >= w || dy < 0 || dy >= h) continue;
-        if (b.numbers[dy * w + dx] === 1) {
+        const nx = x + SPOKE_DIRS[j].dx;
+        const ny = y + SPOKE_DIRS[j].dy;
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        if (b.numbers[ny * w + nx] === 1) {
           spokesPlace(b, y * w + x, j, SPOKE_MARKED);
           ret++;
         }
@@ -386,26 +376,14 @@ export function spokesSolverAttempt(
   return ret;
 }
 
-// --- the solve loop ---------------------------------------------------------
-
 // --- the recording deduction pass (the hint's second projection) -----------
 
-/**
- * Which rung forced a firing — a discriminated tag rather than a magic number,
- * so the hint's narrator can `switch` over it exhaustively.
- */
+/** Which rung forced a firing. */
 export type SpokesFiringKind =
   | "twoOnes"
   | "saturation"
   | "exhaustion"
   | "contradiction";
-
-/** One spoke a firing forces or cites — one end of an edge. */
-export interface SpokesSpokeRef {
-  index: number;
-  dir: number;
-  state: number;
-}
 
 /** How a contradiction look-ahead's trial board turns out to be impossible. */
 export type SpokesBreakKind = "overfilled" | "crossing" | "sealed";
@@ -427,8 +405,8 @@ export interface SpokesFiring {
   breakKind?: SpokesBreakKind;
 }
 
-/** Runaway/UX cap on plan length (design D1): the look-ahead rung is expensive
- * and a player rarely follows more than a few steps before diverging, so a
+/** Runaway/UX cap on plan length: the look-ahead rung is expensive and a
+ * player rarely follows more than a few steps before diverging, so a
  * recompute yields the next batch. */
 export const HINT_PLAN_MAX = 40;
 
@@ -439,24 +417,17 @@ function emptyDirs(hub: number): number[] {
   return dirs;
 }
 
-/** Lines already drawn out of a hub. */
-function linesOf(b: SpokesBoard, i: number): number {
-  return spokesCount(b.spokes[i], SPOKE_LINE);
-}
-
 /** Whether a hub still needs more lines than it has drawn. */
 function unsatisfied(b: SpokesBoard, i: number): boolean {
-  return linesOf(b, i) < b.numbers[i];
+  return spokesCount(b.spokes[i], SPOKE_LINE) < b.numbers[i];
 }
 
 /**
- * Whether ruling out the spoke `(i, d)` actually advances the puzzle: a rule-out
- * only helps a hub that still needs lines (it narrows that hub's options toward
- * a forced connection). A mark between two *already-satisfied* hubs advances
- * nothing — neither can take the spoke anyway — so we never hint it (owner
- * directive: only rule out when it helps the goal). Such a mark is also never
- * load-bearing: completion needs the required *lines* drawn, and a both-ends-full
- * spoke feeds no hub's saturation, so skipping it cannot stall the plan.
+ * Whether ruling out the spoke `(i, d)` actually advances the puzzle: only when
+ * a hub at either end still needs lines. A mark between two satisfied hubs
+ * narrows nothing, so it is never hinted. Nor is it ever load-bearing:
+ * completion needs only the lines, and a spoke with both ends full feeds no
+ * hub's saturation, so skipping it cannot stall the plan.
  */
 function markHelps(b: SpokesBoard, i: number, d: number): boolean {
   if (unsatisfied(b, i)) return true;
@@ -471,12 +442,11 @@ function markHelps(b: SpokesBoard, i: number, d: number): boolean {
  * The two-ones rung as a firing: the still-EMPTY spoke joining two clue-`1`
  * hubs that **both still need their line**. Connecting them would satisfy both
  * yet seal the pair off, so the spoke is ruled out. Once either hub has its
- * line the deduction is moot (they can no longer connect), so we require both
- * unsatisfied — which is exactly when the rule-out helps.
+ * line the pair can no longer connect, so the deduction is moot.
  *
  * Iterating `d < 4` visits each such edge once, from its lower-indexed end.
- * Skipped on a two-hub board, where the pair *is* the answer — faithful to
- * {@link spokesSolverOnes}, which the generator never emits at these presets.
+ * Skipped on a two-hub board, where the pair *is* the answer, as
+ * {@link spokesSolverOnes} is.
  */
 function findTwoOnes(b: SpokesBoard): SpokesFiring | null {
   const { w, h } = b;
@@ -513,8 +483,8 @@ function findTwoOnes(b: SpokesBoard): SpokesFiring | null {
 /**
  * Hub saturation: a hub with exactly as many free spokes as the lines it still
  * needs — so every one of them is a line. The connection-drawing rung, and the
- * most direct progress, so it is tried first (owner directive: prioritize
- * connections). Reads the tallies {@link spokesValidate} last left in `s`.
+ * most direct progress, so it is tried first. Reads the tallies
+ * {@link spokesValidate} last left in `s`.
  */
 function findSaturation(b: SpokesBoard, s: SpokesScratch): SpokesFiring | null {
   const n = b.w * b.h;
@@ -598,7 +568,7 @@ function analyzeBreak(
  * The contradiction look-ahead as a firing: the first EMPTY spoke one of whose
  * values provably drives a `subdiff` sub-solve to `invalid`. Mirrors
  * {@link spokesSolverAttempt}, but stops at the first hit and records the
- * refuted hypothesis plus where the trial board breaks (design D3).
+ * refuted hypothesis plus where the trial board breaks.
  */
 function findContradiction(
   b: SpokesBoard,
@@ -613,7 +583,7 @@ function findContradiction(
       for (let l = 0; l < 2; l++) {
         const forcedState = l ? SPOKE_MARKED : SPOKE_LINE;
         // A forced rule-out that helps neither hub is busywork; a forced *line*
-        // is always progress (owner directive).
+        // is always progress.
         if (forcedState === SPOKE_MARKED && !markHelps(b, i, dir)) continue;
         const trialState = l ? SPOKE_LINE : SPOKE_MARKED;
         copyBoard(b, copy);
@@ -654,35 +624,31 @@ function applyFiring(b: SpokesBoard, f: SpokesFiring): void {
  * only needs each firing to be *forced*, not to match the solver's internal
  * order, and leading with connections keeps the plan from dribbling out
  * busywork marks. `s` must already hold `b`'s recounted tallies (`full = false`);
- * `copy` is contradiction scratch, non-null iff `diff >= DIFF_TRICKY`.
+ * `copy` is contradiction scratch, and `null` below Tricky.
  *
  * **The `Unreasonable` rung is deliberately absent.** `spokesSolve` runs the
  * look-ahead a second time at `DIFF_EASY` — the same trial with no bound on the
  * sub-solve — and that is a search, not a technique, so no hint narrates it on
- * any tier (`audit-guessing-tier-names` design D9; the Galaxies precedent). The
- * plan therefore stalls where bounded reasoning stalls and `hint` says so, which
- * is the honest answer. The *solver* keeps the rung: the generator grades on it,
- * so no board moves.
+ * any tier. The plan therefore stalls where bounded reasoning stalls and `hint`
+ * says so, which is the honest answer. The *solver* keeps the rung: the
+ * generator grades on it.
  */
 function nextSpokesFiring(
   b: SpokesBoard,
   s: SpokesScratch,
   copy: SpokesBoard | null,
-  diff: number,
 ): SpokesFiring | null {
   return (
     findSaturation(b, s) ??
     findTwoOnes(b) ??
     findExhaustion(b, s) ??
-    (diff >= DIFF_TRICKY && copy ? findContradiction(b, copy, s, DIFF_LIMITED) : null)
+    (copy ? findContradiction(b, copy, s, DIFF_LIMITED) : null)
   );
 }
 
 /**
  * Replay the solver from the player's board, one firing at a time, returning
- * the ordered plan (design D1). Pure on its argument: it clones first. The
- * generator and {@link spokesSolve} are untouched, so the byte-match
- * differential is unaffected.
+ * the ordered plan. Pure on its argument: it clones first.
  *
  * The default is `DIFF_TRICKY`, not the top tier: the hint reasons as hard as it
  * is *allowed* to, and the rung above Tricky is a search
@@ -700,11 +666,13 @@ export function deduceSpokesPlan(
     board: b,
     status: (board) => spokesValidate(board, s),
     incomplete: "incomplete",
-    next: (board) => nextSpokesFiring(board, s, copy, diff),
+    next: (board) => nextSpokesFiring(board, s, copy),
     apply: applyFiring,
     planCap: HINT_PLAN_MAX,
   }).plan;
 }
+
+// --- the solve loop ---------------------------------------------------------
 
 /**
  * Deduce as far as `diff` allows, mutating `b` in place, and report the
@@ -717,35 +685,29 @@ export function spokesSolve(
   diff: number,
 ): SpokesStatus {
   const s = scratch ?? new SpokesScratch(b.w * b.h);
-  // Deductions made so far, for `DIFF_LIMITED`'s bound only. Accumulated by the
-  // two techniques that accumulate it upstream — the look-aheads never did, and
-  // they never run at `DIFF_LIMITED` anyway, so this is faithful rather than
-  // merely equivalent.
+  // Deductions made so far, for `DIFF_LIMITED`'s bound only. As upstream, the
+  // two cheap techniques count them; the look-aheads never run at that tier.
   let total = 0;
 
   spokesSolverOnes(b); // one-shot pre-pass; never a ladder member
 
   const copy = diff >= DIFF_TRICKY ? cloneBoard(b) : null;
 
-  // The shared ordered technique ladder (`engine/deduction-fixpoint.ts`). Two
-  // subtleties, both of which were once recorded as reasons Spokes could not use
-  // the runner (`re-derive-the-fixpoint-no-gos`):
+  // The shared ordered technique ladder (`engine/deduction-fixpoint.ts`), with
+  // two subtleties:
   //
   //  - **The cap is clamped to `DIFF_EASY`.** `DIFF_LIMITED` (= `DIFF_EASY - 1`)
-  //    is "an Easy pass capped at `ACTION_LIMIT`" — its technique *set* is
+  //    is "an Easy pass capped at `ACTION_LIMIT`": its technique *set* is
   //    Easy's, and the bound is what makes it Limited. So the two cheap
-  //    techniques declare `tier: DIFF_EASY` and the cap floors at Easy; giving
-  //    them `tier: DIFF_LIMITED` would claim they belong to a tier that is only
-  //    an internal budget, which is the opposite of true.
+  //    techniques declare `tier: DIFF_EASY` (Limited is a budget, not a set of
+  //    techniques) and the cap floors at Easy.
   //  - **The bounded look-ahead runs at *exactly* Tricky**, so the ladder is not
-  //    a tier prefix and the technique guards itself in `run` (the convention
-  //    Unruly's `unique` guard set). Turning it into a prefix would run the
-  //    bounded trial before the unbounded one at Hard; the trial mutates the
-  //    board, so a different contradiction would be committed first and every
-  //    Hard board would move.
+  //    a tier prefix and the technique guards itself in `run`. As a prefix, the
+  //    bounded trial would run before the unbounded one at Hard; the trial
+  //    mutates the board, so a different contradiction would be committed first
+  //    and every Hard board would move.
   //
-  // `total` is not a grade: this solver reports a *status*, and the runner's
-  // grade is unused here.
+  // This solver reports a *status*, so the runner's grade is unused.
   runDeductionFixpoint({
     techniques: [
       {

@@ -67,8 +67,8 @@ function applyForced(
 
 const EASY: SpokesParams = { w: 4, h: 4, diff: "easy" };
 const TRICKY: SpokesParams = { w: 4, h: 4, diff: "tricky" };
-/** The top tier, `Unreasonable` in the menu and `"hard"` in the params
- * (`audit-guessing-tier-names` D10). Used below as a *board* selector, never as
+/** The top tier, `Unreasonable` in the menu and `"hard"` in the params. Used
+ * below as a *board* selector, never as
  * a rung selector: its own rung is unreachable from the hint by design, which
  * the last test in this file proves rather than assumes. */
 const UNREASONABLE: SpokesParams = { w: 4, h: 4, diff: "hard" };
@@ -205,7 +205,7 @@ describe("narration states the premise, in the necessity voice", () => {
 describe("hints only rule out a spoke when it helps a hub still needing lines", () => {
   it("never marks a spoke whose both hubs are already satisfied", () => {
     // Across many boards, walk the whole plan and assert every rule-out touches
-    // at least one hub that still needs lines (the busywork the owner flagged).
+    // at least one hub that still needs lines.
     //
     // The seed count is a confidence dial, not a threshold: a rule that emitted
     // useless rule-outs would do so on nearly every board, so the gate's 8 seeds
@@ -354,7 +354,7 @@ describe("refusals", () => {
 
 describe("the hint frame paints the overlay", () => {
   /** A descriptive id whose deductive plan reaches a forced *diagonal* line —
-   * the corner-invalidation case (design D5) — found by scanning seeds. */
+   * the corner-invalidation case — found by scanning seeds. */
   function diagonalHintId(): string | null {
     for (let seed = 0; seed < 250; seed++) {
       const { desc } = newSpokesDesc(TRICKY, randomNew(`diag-frame-${seed}`));
@@ -395,7 +395,7 @@ describe("the hint frame paints the overlay", () => {
 
     const ops = result.recording.ops;
     // The forced diagonal line at hint color — completed across the grid
-    // corner (design D5), so both a plus-shape half and a corner-box half
+    // corner, so both a plus-shape half and a corner-box half
     // come out COL_HINT.
     expect(ops.some((o) => o.op === "line" && o.color === COL_HINT)).toBe(true);
     // The evidence ring behind a hub.
@@ -415,8 +415,7 @@ describe("the top tier's look-ahead never reaches a hint", () => {
    * a `DIFF_LIMITED` sub-solve (capped at `ACTION_LIMIT`, a bounded chain — a
    * *Tactic*), and again at the top tier with a `DIFF_EASY` sub-solve that has
    * no bound at all and was measured settling **35 of 36 hubs** on a 6x6 board.
-   * Only the second is a search, and no hint narrates a search on any tier
-   * (`audit-guessing-tier-names` design D9; the Galaxies precedent).
+   * Only the second is a search, and no hint narrates a search on any tier.
    *
    * The two rungs are the *same function* and their narration is word-for-word
    * identical, so `hint-quality.test.ts`'s vocabulary check cannot tell them

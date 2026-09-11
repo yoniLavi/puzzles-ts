@@ -16,10 +16,9 @@
  * a second pass redraws just the 2·`CORNER` box around each grid corner
  * whenever the diagonal through it changed (or a repainted cell invalidated
  * it). That is also why the keyboard cursor stays a **blitter** rather than
- * folding into the per-cell cache key as the playbook's default suggests: at
- * its diagonal offsets the cursor overlaps exactly the corner squares a cell
- * repaint deliberately does *not* clear, so a key-folded cursor could not be
- * erased reliably.
+ * folding into the per-cell cache key: at its diagonal offsets the cursor
+ * overlaps exactly the corner squares a cell repaint deliberately does *not*
+ * clear, so a key-folded cursor could not be erased reliably.
  */
 
 import { BLUE, PURPLE } from "../../engine/color/colors.ts";
@@ -71,8 +70,6 @@ const MIN_CORNER_TILESIZE = 24;
 /** Width of the `COL_HINT_CELL` evidence ring outside the hub rim. */
 const HINT_RING_WIDTH = 5;
 
-const SQRTHALF = Math.SQRT1_2;
-
 // --- palette (index-for-index with the upstream COL_* enum) ------------------
 
 export const COL_BACKGROUND = 0;
@@ -80,8 +77,8 @@ export const COL_BORDER = 1;
 export const COL_HOLDING = 2;
 export const COL_LINE = 3;
 export const COL_MARK = 4;
-/** Upstream's white; here it survives only as the completion-flash rim —
- * see {@link COL_SATISFIED} for why it no longer fills a finished hub. */
+/** The completion-flash rim. Upstream's white, which also filled a finished
+ * hub; see {@link COL_SATISFIED} for why that fill is gray here. */
 export const COL_DONE = 5;
 export const COL_ERROR = 6;
 export const COL_CURSOR = 7;
@@ -90,21 +87,19 @@ export const COL_CURSOR = 7;
  * "stop thinking about this one" cue, the same fork aid Bridges grays a
  * satisfied island with.
  *
- * Upstream nominally has this cue already (it fills such a hub with pure white)
- * but it is invisible in practice: against a near-white light-mode background
- * it is barely a shade, and in dark mode `puzzle-view.ts` hands the game *pure
- * white* as its background, so the "highlight" is exactly the background. The
- * shared completed-region shade is a clear step down from the background and
- * reads in both modes, since the dark-mode adaptation inverts gray lightness
- * about the real background.
+ * Upstream fills such a hub with pure white, which is invisible in practice:
+ * barely a shade off a near-white light-mode background, and in dark mode
+ * `puzzle-view.ts` hands the game *pure white* as its background, so the
+ * "highlight" is exactly the background. The shared completed-region shade is a
+ * clear step down from the background and reads in both modes, since the
+ * dark-mode adaptation inverts gray lightness about the real background.
  */
 export const COL_SATISFIED = 8;
-/** The forced spoke(s) of the displayed hint — drawn like a line, at hint
- * color, so the player sees *which* spoke to act on without the move being
- * performed for them (docs/games/testing.md § "Render-op vocabulary"). Every leg of one firing shares it. */
+/** The forced spoke(s) of the displayed hint: a line to draw, or a rim dot for
+ * a spoke to rule out (docs/games/hints.md § "Echo the move's shape in the hint
+ * color"). Every leg of one firing shares it. */
 export const COL_HINT = 9;
-/** A ring around each evidence hub the hint reasons over (a light blue, the
- * cross-game "shade the evidence" color — docs/games/testing.md § "Seed-deterministic, never clock-gated"). */
+/** A ring around each evidence hub the hint reasons over. */
 export const COL_HINT_CELL = 10;
 
 /**
@@ -173,7 +168,7 @@ export interface SpokesDrawState {
    * (`COL_HINT`, "draw this"), {@link HINT_RING} ⇒ ring this hub as evidence
    * (`COL_HINT_CELL`), bits `9..16` (see {@link hintMarkBit}) ⇒ spoke `d` is a
    * hint *mark* (a `COL_HINT` rim dot, "rule this out"). Its own sidecar for the
-   * same reason as {@link wrong} (docs/games/rendering.md § "The tile cache and the diff key"). */
+   * same reason as {@link wrong}. */
   hint: OverlaySidecar;
   /** Blitter holding the pixels under the keyboard cursor, and where. */
   cursorBlitter: unknown;
@@ -235,7 +230,7 @@ export function setTileSize(ds: SpokesDrawState, ts: number): void {
 function spokeUnit(d: number): Point {
   const { dx, dy } = SPOKE_DIRS[d];
   const diagonal = dx !== 0 && dy !== 0;
-  return { x: diagonal ? dx * SQRTHALF : dx, y: diagonal ? dy * SQRTHALF : dy };
+  return { x: diagonal ? dx * Math.SQRT1_2 : dx, y: diagonal ? dy * Math.SQRT1_2 : dy };
 }
 
 /** The hub itself: rim, one dot per placeable spoke, then the inner fill. */
@@ -401,8 +396,9 @@ export function redraw(
 
       const wrongBits = ds.wrong.packed[i];
       const hintBits = ds.hint.packed[i];
+      const tile = { x: x * ts, y: y * ts, w: ts, h: ts };
 
-      dr.clip({ x: x * ts, y: y * ts, w: ts, h: ts });
+      dr.clip(tile);
       // Clear a plus-shape, leaving the four corners for the diagonal pass.
       dr.drawRect(
         { x: x * ts + CORNER, y: y * ts, w: ts - 2 * CORNER, h: ts },
@@ -412,36 +408,30 @@ export function redraw(
         { x: x * ts, y: y * ts + CORNER, w: ts, h: ts - 2 * CORNER },
         COL_BACKGROUND,
       );
-      dr.drawUpdate({ x: x * ts, y: y * ts, w: ts, h: ts });
+      dr.drawUpdate(tile);
+
+      // Both ends of an edge must draw the identical segment in the identical
+      // direction, or rounding leaves a seam at the midpoint.
+      const drawSpoke = (d: number, color: number): void => {
+        const hub = { x: tx, y: ty };
+        const end = { x: tx + SPOKE_DIRS[d].dx * ts, y: ty + SPOKE_DIRS[d].dy * ts };
+        if (d < 4) dr.drawLine(end, hub, color, thick);
+        else dr.drawLine(hub, end, color, thick);
+      };
 
       for (let d = 0; d < 8; d++) {
         if (getSpoke(state.spokes[i], d) !== SPOKE_LINE) continue;
-        const tx2 = tx + SPOKE_DIRS[d].dx * ts;
-        const ty2 = ty + SPOKE_DIRS[d].dy * ts;
-        const col = wrongBits & (1 << d) ? COL_ERROR : COL_LINE;
-        // Both ends of an edge must draw the identical segment in the
-        // identical direction, or rounding leaves a seam at the midpoint.
-        if (d < 4) {
-          dr.drawLine({ x: tx2, y: ty2 }, { x: tx, y: ty }, col, thick);
-        } else {
-          dr.drawLine({ x: tx, y: ty }, { x: tx2, y: ty2 }, col, thick);
-        }
+        drawSpoke(d, wrongBits & (1 << d) ? COL_ERROR : COL_LINE);
       }
 
       // Hint spokes: draw each forced spoke like a line in COL_HINT, but only
       // where it is still EMPTY — a leg the player has followed is now a real
-      // black line and must not be re-tinted (docs/games/testing.md § "Render-op vocabulary"). Diagonals are
-      // completed across the corner by the diagonal pass, same as real lines.
+      // black line and must not be re-tinted. Diagonals are completed across
+      // the corner by the diagonal pass, same as real lines.
       for (let d = 0; d < 8; d++) {
         if (!(hintBits & (1 << d))) continue;
         if (getSpoke(state.spokes[i], d) !== SPOKE_EMPTY) continue;
-        const tx2 = tx + SPOKE_DIRS[d].dx * ts;
-        const ty2 = ty + SPOKE_DIRS[d].dy * ts;
-        if (d < 4) {
-          dr.drawLine({ x: tx2, y: ty2 }, { x: tx, y: ty }, COL_HINT, thick);
-        } else {
-          dr.drawLine({ x: tx, y: ty }, { x: tx2, y: ty2 }, COL_HINT, thick);
-        }
+        drawSpoke(d, COL_HINT);
       }
 
       // Evidence ring: a light-blue annulus just outside the hub rim.
@@ -506,8 +496,8 @@ export function redraw(
   if (ts >= MIN_CORNER_TILESIZE) drawCorners(dr, ds, state, thick);
 
   if (cshow) {
-    ds.cursorX = cx * ts + ((ts / 2) | 0) + ((cdx * (ts * 0.4) * SQRTHALF) | 0);
-    ds.cursorY = cy * ts + ((ts / 2) | 0) + ((cdy * (ts * 0.4) * SQRTHALF) | 0);
+    ds.cursorX = cx * ts + ((ts / 2) | 0) + ((cdx * (ts * 0.4) * Math.SQRT1_2) | 0);
+    ds.cursorY = cy * ts + ((ts / 2) | 0) + ((cdy * (ts * 0.4) * Math.SQRT1_2) | 0);
 
     if (!ds.cursorBlitter) {
       ds.cursorBlitter = dr.blitterNew({ w: ds.cursorSize, h: ds.cursorSize });
@@ -572,17 +562,10 @@ function drawCorners(
 
       const bx = (x + 1) * ts;
       const by = (y + 1) * ts;
-      dr.clip({ x: bx - CORNER, y: by - CORNER, w: 2 * CORNER, h: 2 * CORNER });
-      dr.drawRect(
-        { x: bx - CORNER, y: by - CORNER, w: 2 * CORNER, h: 2 * CORNER },
-        COL_BACKGROUND,
-      );
-      dr.drawUpdate({
-        x: bx - CORNER,
-        y: by - CORNER,
-        w: 2 * CORNER,
-        h: 2 * CORNER,
-      });
+      const box = { x: bx - CORNER, y: by - CORNER, w: 2 * CORNER, h: 2 * CORNER };
+      dr.clip(box);
+      dr.drawRect(box, COL_BACKGROUND);
+      dr.drawUpdate(box);
 
       const tx = toCoord(x, ts);
       const ty = toCoord(y, ts);

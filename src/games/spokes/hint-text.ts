@@ -36,9 +36,8 @@ export const say = {
       : `Ruling this out would ${consequence}, so it must be a line.`;
   },
 
-  // Legs 2+ of a multi-spoke firing: still necessity-voiced, and reading as
-  // "same deduction".
-  /** A later leg; `line` when the firing draws lines rather than marks. */
+  /** Legs 2+ of a multi-spoke firing, reading as the same deduction; `line`
+   * when the firing draws lines rather than marks. */
   continuation: (line: boolean): string =>
     line ? "And this one must be a line too." : "And rule this one out too.",
 };

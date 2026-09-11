@@ -1,6 +1,3 @@
-import { tierNames } from "../../engine/difficulty.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
-import { newCursor } from "../../engine/pointer.ts";
 /**
  * Spokes — types, the hub/spoke model, and the description codec.
  *
@@ -22,10 +19,12 @@ import { newCursor } from "../../engine/pointer.ts";
  * - {@link SpokesState} is the game's **immutable** state — it structurally
  *   *is* a board, but `executeMove` clones before touching it, and `numbers`
  *   is shared by reference across every clone because clues never change
- *   after `newState` (the playbook's "shared frozen array" pattern; note
- *   `Object.freeze` throws on a populated typed array, so the `readonly` type
- *   is the whole guarantee).
+ *   after `newState` (`Object.freeze` throws on a populated typed array, so
+ *   the `readonly` type is the whole guarantee).
  */
+
+import { tierNames } from "../../engine/difficulty.ts";
+import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 
 // --- spoke states -----------------------------------------------------------
 
@@ -85,17 +84,9 @@ export const DIFFCOUNT = 3;
 export const DIFF_LIMITED = DIFF_EASY - 1;
 
 export const DIFFS: readonly SpokesDiff[] = ["easy", "tricky", "hard"];
-// The top tier is `Unreasonable` where upstream says `Hard`
-// (`audit-guessing-tier-names`, design D9 + D10). Spokes runs *one* look-ahead
-// function under two tiers with two different sub-tier arguments, and they land
-// on opposite sides of the line: Tricky's sub-solve stops at `ACTION_LIMIT`, a
-// bounded chain a player can walk; the top tier's has no bound at all and was
-// measured settling up to 35 hubs on a 36-hub board — the whole solver, run from
-// a hypothesis, which is the shape only an `Unreasonable` tier may ship.
-//
-// The internal key (`"hard"`) and the difficulty character (`h`) are untouched,
-// so game IDs, saved games and shared links survive the rename; only the menu
-// label moves. That is the D7 precedent, from Unequal and Mathrax.
+// The top tier is `Unreasonable` where upstream says `Hard`: its look-ahead has
+// no bound on the sub-solve, which is a search (see `solver.ts`). The key
+// `"hard"` and the character `h` are upstream's, so game IDs and saves agree.
 export const DIFF_NAMES: readonly string[] = tierNames(3, { search: true });
 const DIFF_CHARS = "eth";
 
@@ -153,11 +144,9 @@ export function decodeParams(s: string): SpokesParams {
   }
   if (s[i] === "d") {
     i++;
-    // An unrecognized (or missing) letter leaves the difficulty invalid, which
-    // `validateParams` rejects. Upstream stores an out-of-range integer here
-    // and then never checks it (its `validate_params` tests only w and h), so
-    // a game id like `6x6dz` would index `spokes_diffchars` out of bounds; the
-    // extra check is a deliberate divergence, inert on the generator path.
+    // An unrecognized or missing letter leaves the difficulty invalid, for
+    // `validateParams` to reject. Upstream never checks it, so `6x6dz` would
+    // index its `spokes_diffchars` out of bounds.
     const idx = i < s.length ? DIFF_CHARS.indexOf(s[i]) : -1;
     p.diff = idx >= 0 ? diffFromLevel(idx) : ("invalid" as SpokesDiff);
     if (i < s.length) i++;
@@ -371,14 +360,10 @@ export function clearBoard(b: SpokesBoard): void {
  * byte-match differential a plain string compare.
  */
 export function validateDesc(p: SpokesParams, desc: string): string | null {
-  const s = p.w * p.h;
-  for (let i = 0; i < s; i++) {
-    if (i >= desc.length) return "Description too short";
-    const c = desc[i];
-    if ((c >= "0" && c <= "8") || c === "X") continue;
-    return "Invalid character in description";
-  }
-  if (desc.length > s) return "Description too long";
+  const n = p.w * p.h;
+  if (/[^0-8X]/.test(desc.slice(0, n))) return "Invalid character in description";
+  if (desc.length < n) return "Description too short";
+  if (desc.length > n) return "Description too long";
   return null;
 }
 
@@ -418,10 +403,10 @@ export function newState(p: SpokesParams, desc: string): SpokesState {
 
       b.spokes[i] = 0;
       for (let d = 0; d < 8; d++) {
-        const dx = x + SPOKE_DIRS[d].dx;
-        const dy = y + SPOKE_DIRS[d].dy;
-        if (dx < 0 || dx >= w || dy < 0 || dy >= h) continue;
-        setSpoke(b.spokes, dy * w + dx, invDir(d), SPOKE_HIDDEN);
+        const nx = x + SPOKE_DIRS[d].dx;
+        const ny = y + SPOKE_DIRS[d].dy;
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        setSpoke(b.spokes, ny * w + nx, invDir(d), SPOKE_HIDDEN);
       }
 
       // Only an 'X' hole (clue -1) also blocks the diagonals grazing past it.
@@ -447,38 +432,26 @@ export function newState(p: SpokesParams, desc: string): SpokesState {
     }
   }
 
-  return {
-    w,
-    h,
-    params: p,
-    numbers: b.numbers,
-    spokes: b.spokes,
-    completed: false,
-    cheated: false,
-  };
+  return { ...b, params: p, completed: false, cheated: false };
 }
 
 /** A new state sharing the (immutable) clues and copying the spokes. */
 export function cloneState(s: SpokesState): SpokesState {
-  return {
-    w: s.w,
-    h: s.h,
-    params: s.params,
-    numbers: s.numbers,
-    spokes: Uint16Array.from(s.spokes),
-    completed: s.completed,
-    cheated: s.cheated,
-  };
+  return { ...s, spokes: Uint16Array.from(s.spokes) };
 }
 
 // --- moves and ui -----------------------------------------------------------
 
+/** One end of an edge, and a state for it. */
+export interface SpokesSpokeRef {
+  index: number;
+  dir: number;
+  state: number;
+}
+
 export type SpokesMove =
   | { kind: "set"; index: number; dir: number; state: number }
-  | {
-      kind: "solve";
-      spokes: readonly { index: number; dir: number; state: number }[];
-    };
+  | { kind: "solve"; spokes: readonly SpokesSpokeRef[] };
 
 /**
  * A spoke the unique solution contradicts — the `findMistakes` payload. A
@@ -500,11 +473,10 @@ export interface SpokesUi {
   /** Cell the drag currently points at, or `-1` (dead zone / off-grid). */
   dragEnd: number;
   drag: SpokesDrag;
-  /** Whether the keyboard cursor is visible. */
-  cursor: GridCursor;
-  /** Cursor position on the `(3w−2) × (3h−2)` half-grid: a hub sits on a
+  /** The keyboard cursor, on the `(3w−2) × (3h−2)` half-grid: a hub sits on a
    * sub-cell ≡ 0 (mod 3), and the two between each pair of hubs are that
    * pair's direction pickers. */
+  cursor: GridCursor;
   /** Fork aid: gray out a hub once its spoke count matches its clue. Visual
    * only — a satisfied hub stays fully editable. */
   markSatisfied: boolean;

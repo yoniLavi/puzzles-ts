@@ -12,10 +12,9 @@
  * Fork addition: `findMistakes` re-solves from the clues and flags every line
  * the unique solution forbids (and every mark it needs a line at), so Check &
  * Save refuses to checkpoint a board that has already gone wrong. That is
- * distinct from the live error coloring the game has always had — a red rim
- * on a group that can no longer reach the rest, a red clue on an over-filled
- * hub — which is immediate local validation, not a comparison against the
- * answer.
+ * distinct from the live error coloring — a red rim on a group that can no
+ * longer reach the rest, a red clue on an over-filled hub — which is immediate
+ * local validation, not a comparison against the answer.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -51,9 +50,8 @@ import {
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { ConfigValues, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, GameStatus, Point } from "../../engine/types.ts";
 import { newSpokesDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -100,6 +98,7 @@ import {
   type SpokesMistake,
   type SpokesMove,
   type SpokesParams,
+  type SpokesSpokeRef,
   type SpokesState,
   type SpokesUi,
   spokesPlace,
@@ -217,15 +216,9 @@ function interpretMove(
         return UI_UPDATE;
       }
 
+      // An empty spoke takes the button's state; anything else is cleared.
       const next =
-        drag === "left"
-          ? old === SPOKE_EMPTY
-            ? SPOKE_LINE
-            : SPOKE_EMPTY
-          : old === SPOKE_EMPTY
-            ? SPOKE_MARKED
-            : SPOKE_EMPTY;
-
+        old !== SPOKE_EMPTY ? SPOKE_EMPTY : drag === "left" ? SPOKE_LINE : SPOKE_MARKED;
       return { kind: "set", index: start, dir, state: next };
     }
 
@@ -278,12 +271,9 @@ function executeMove(state: SpokesState, move: SpokesMove): SpokesState {
   }
   if (move.kind !== "set") return assertNever(move, "spokes: executeMove");
 
-  if (getSpoke(next.spokes[move.index], move.dir) !== SPOKE_HIDDEN) {
-    const old = getSpoke(next.spokes[move.index], move.dir);
+  const old = getSpoke(next.spokes[move.index], move.dir);
+  if (old !== SPOKE_HIDDEN) {
     spokesPlace(next, move.index, move.dir, move.state);
-    // Drawing a diagonal line auto-rules-out its crossing; erasing it clears
-    // that (the player can see a line blocks the crossing, so the game marks
-    // it rather than making them).
     syncDiagonalBlock(next, move.index, move.dir, old, move.state);
   }
   if (spokesValidate(next) === "valid") next.completed = true;
@@ -306,7 +296,7 @@ function solve(orig: SpokesState): SolveResult<SpokesMove> {
   const solved = solveFromClues(orig);
   if (!solved) return { ok: false, error: "No solution exists for this puzzle" };
 
-  const spokes: { index: number; dir: number; state: number }[] = [];
+  const spokes: SpokesSpokeRef[] = [];
   for (let i = 0; i < solved.w * solved.h; i++) {
     for (let d = 0; d < 4; d++) {
       const s = getSpoke(solved.spokes[i], d);
@@ -348,10 +338,10 @@ function findMistakes(state: SpokesState): readonly SpokesMistake[] {
  * different action than the words. `evidence` are the hubs whose clue or lines
  * are the argument, ringed `COL_HINT_CELL`. Every leg of one firing carries the
  * same object, so the whole deduction stays visible while its legs are followed
- * one at a time (design D2).
+ * one at a time.
  */
 export interface SpokesHint {
-  spokes: { index: number; dir: number; state: number }[];
+  spokes: SpokesSpokeRef[];
   evidence: number[];
 }
 
@@ -378,25 +368,13 @@ function continuation(f: SpokesFiring): string {
   return say.continuation(f.kind === "saturation");
 }
 
-/** All of a firing's forced spokes, as highlight geometry — the renderer draws
- * each still-empty one in `COL_HINT` (a line for `SPOKE_LINE`, a dot for
- * `SPOKE_MARKED`). */
-function firingSpokes(
-  f: SpokesFiring,
-): { index: number; dir: number; state: number }[] {
-  return f.forced.map(({ index, dir, state }) => ({ index, dir, state }));
-}
-
 /** Flatten one firing into its journey of legs: leg 0 carries the full
- * narration, the rest continue it (design D2). All legs share the highlight, so
- * the whole deduction stays on screen as its spokes are drawn one by one. */
+ * narration, the rest continue it. All legs share the highlight, so the whole
+ * deduction stays on screen as its spokes are drawn one by one. */
 function stepsOfFiring(f: SpokesFiring): HintStep<SpokesMove, SpokesHint>[] {
-  const highlights: SpokesHint = {
-    spokes: firingSpokes(f),
-    evidence: f.evidenceHubs,
-  };
+  const highlights: SpokesHint = { spokes: f.forced, evidence: f.evidenceHubs };
   return f.forced.map((sp, leg) => ({
-    move: { kind: "set", index: sp.index, dir: sp.dir, state: sp.state },
+    move: { kind: "set", ...sp },
     explanation: leg === 0 ? narrate(f) : continuation(f),
     highlights,
     continuesPrevious: leg > 0,
@@ -406,7 +384,7 @@ function stepsOfFiring(f: SpokesFiring): HintStep<SpokesMove, SpokesHint>[] {
 function hint(state: SpokesState): HintResult<SpokesMove, SpokesHint> {
   // A hint off a contradictory board would present a "forced" move that only
   // follows from the player's own error, so refuse and light up the offenders
-  // (Check & Save paints the same overlay — design D4).
+  // (Check & Save paints the same overlay).
   const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
   if (refusal) return refusal;
   if (!solveFromClues(state)) {
@@ -417,24 +395,22 @@ function hint(state: SpokesState): HintResult<SpokesMove, SpokesHint> {
   if (plan.length === 0) {
     return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
-  return { ok: true, steps: plan.flatMap((f) => stepsOfFiring(f)) };
+  return { ok: true, steps: plan.flatMap(stepsOfFiring) };
 }
 
 /** A move completes the current leg when it sets the leg's exact spoke to the
  * hinted state. Following a *different* spoke of the same firing reads as
  * off-plan, but a recompute simply re-offers the firing's remaining spokes, so
- * the deduction resumes either way (design D1 recompute-stability). */
+ * the deduction resumes either way. */
 function hintKeepTrack(
   m: SpokesMove,
   step: HintStep<SpokesMove, SpokesHint>,
-  _state: SpokesState,
+  state: SpokesState,
 ): HintTrackVerdict {
   if (m.kind !== "set") return "off";
   const target = step.move;
   if (target.kind !== "set") return "off";
-  return sameEdge(m, target, _state.w) && m.state === target.state
-    ? "completed"
-    : "off";
+  return sameEdge(m, target, state.w) && m.state === target.state ? "completed" : "off";
 }
 
 /** Do two `set` moves name the same edge? A spoke has two ends; a move may cite
@@ -466,15 +442,12 @@ function canonicalEdge(
 
 /** Spokes' difficulty contract (`engine/difficulty.ts`). `spokesSolve` returns
  * `"valid"` (fully and uniquely solved — what the generator gates on),
- * `"incomplete"` or `"invalid"`; the board is cleared of the player's marks
- * first, exactly as `solveFromClues` does. */
+ * `"incomplete"` or `"invalid"`, run on a fresh board from the clues alone. */
 const difficulty: DifficultyContract<SpokesParams> = {
   tierOf: (p) => diffToLevel(p.diff),
   withTier: (p, tier) => ({ ...p, diff: DIFFS[tier] }),
   solveAtCap: (p, desc, cap) => {
-    const board = cloneBoard(newState(p, desc));
-    clearBoard(board);
-    const ret = spokesSolve(board, null, cap);
+    const ret = spokesSolve(newState(p, desc), null, cap);
     return ret === "valid" ? "solved" : ret === "invalid" ? "impossible" : "unsolved";
   },
 };
@@ -518,16 +491,14 @@ export const spokesGame: Game<
     difficulty: diffToLevel(p.diff),
   }),
 
-  newDesc: (p: SpokesParams, rng: RandomState) => newSpokesDesc(p, rng),
+  newDesc: newSpokesDesc,
   validateDesc,
   newState,
-  newUi: () => newUi(),
+  newUi,
   prefs: [
     {
-      // Fork aid: gray a hub once its clue is met (visual only, no lock) —
-      // the same cue Bridges offers on a satisfied island. Upstream nominally
-      // filled such a hub white, which is invisible against either mode's
-      // background; see `COL_SATISFIED`.
+      // Fork aid: gray a hub once its clue is met (visual only, no lock), the
+      // cue Bridges offers on a satisfied island; see `COL_SATISFIED`.
       kw: "mark-satisfied",
       name: "Gray out hubs once their spoke count is met",
       type: "boolean",
@@ -551,7 +522,7 @@ export const spokesGame: Game<
 
   colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SpokesParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

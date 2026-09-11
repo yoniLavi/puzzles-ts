@@ -165,18 +165,15 @@ describe("spokes params", () => {
     expect(validateParams({ w: 2, h: 2, diff: "hard" }, true)).toBeNull();
   });
 
-  // The top tier reads `Unreasonable` where upstream says `Hard`
-  // (`audit-guessing-tier-names` D10): its look-ahead runs an *unbounded*
-  // sub-solve from a hypothesis. The `"hard"` key and the `h` difficulty
-  // character are untouched, which the round-trip tests below assert — a game ID
-  // written before the rename still names the same board.
+  // The top tier reads `Unreasonable` where upstream says `Hard`, but keeps the
+  // `"hard"` key and the `h` character, so a game ID still names the same board
+  // (the round-trip test above asserts it).
   it("offers the six upstream presets, defaulting to 6x6 Easy", () => {
     const menu = spokesGame.presets();
     // Every size crossed with every tier, in that order — asserted as the
     // *shape* rather than as six literal strings, because the tier words are the
-    // collection's and come from `DIFF_NAMES` by position
-    // (`adopt-conventional-tier-names`). A literal list here would be a second
-    // copy of the tier names, which is the thing that change removed.
+    // collection's and come from `DIFF_NAMES`: a literal list here would be a
+    // second copy of them.
     expect(menu.submenu?.map((e) => e.title)).toEqual(
       ["4x4", "6x6"].flatMap((size) => DIFF_NAMES.map((tier) => `${size} ${tier}`)),
     );

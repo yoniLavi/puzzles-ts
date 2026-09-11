@@ -16,13 +16,13 @@
  * `SpokesGenerateOptions.upstreamDirtyGate`). That correction changes every
  * Tricky and Hard desc, so the flag restores upstream's exact gate for the
  * differential alone — keeping this oracle over the generator's draw order, the
- * whole tiered solver and the codec, and leaving only the four-line clear in
- * `spokesGenerate` outside its reach. `spokes.test.ts` covers the corrected
- * gate behaviorally, by grading the boards the game actually ships.
+ * whole tiered solver and the codec, and leaving only the clear before that
+ * gate in `spokesGenerate` outside its reach. `spokes.test.ts` covers the
+ * corrected gate behaviorally, by grading the boards the game actually ships.
  *
  * The fixture was recorded from `puzzles/auxiliary/spokes-trace.c` while
- * `puzzles/unreleased/spokes.c` still existed; see that harness's header for
- * the regeneration commands.
+ * `puzzles/unreleased/spokes.c` still existed, and is frozen (see
+ * `engine/testing/differential.ts`).
  */
 
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

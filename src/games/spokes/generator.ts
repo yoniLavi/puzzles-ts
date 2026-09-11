@@ -15,7 +15,8 @@
  *    no easier tier). **This step diverges from upstream, which runs it on a
  *    dirty board** — see {@link SpokesGenerateOptions.upstreamDirtyGate}.
  *
- * The description is then just each hub's line count as a digit.
+ * The description is then just each hub's line count as a digit. Every hub
+ * keeps a line, so no clue is `0` and a generated board has no holes.
  *
  * **This whole path is byte-match surface.** The only randomness is one
  * `randomUpto(rng, 2)` per interior cell (which diagonal) and the single
@@ -28,6 +29,7 @@
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { retryLimit } from "../../engine/retry-limit.ts";
+import { shuffle } from "../../engine/shuffle.ts";
 import { SpokesScratch, spokesSolve } from "./solver.ts";
 import {
   blankBoard,
@@ -37,172 +39,96 @@ import {
   DIR_BOTRIGHT,
   DIR_RIGHT,
   diffToLevel,
-  getSpoke,
-  invDir,
   SPOKE_DIRS,
   SPOKE_EMPTY,
-  SPOKE_HIDDEN,
   SPOKE_LINE,
   type SpokesBoard,
   type SpokesParams,
-  setSpoke,
   spokesCount,
   spokesPlace,
 } from "./state.ts";
 
 /**
  * Fill the board with every horizontal and vertical line plus one random
- * diagonal per interior cell, recording each drawn line into `temp` as
- * `(cellIndex << 3) | dir`. Returns how many entries were written.
+ * diagonal per interior cell, returning each drawn line as
+ * `(cellIndex << 3) | dir`.
  *
  * The sole RNG surface here is the one `randomUpto(rng, 2)` per interior cell.
  */
 function spokesGenerateHubs(
   p: SpokesParams,
   b: SpokesBoard,
-  temp: Int32Array,
   rng: RandomState,
-): number {
+): number[] {
   const { w, h } = p;
-  let n = 0;
+  const lines: number[] = [];
+  const draw = (i: number, d: number): void => {
+    spokesPlace(b, i, d, SPOKE_LINE);
+    lines.push((i << 3) | d);
+  };
 
   for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w - 1; x++) {
-      spokesPlace(b, y * w + x, DIR_RIGHT, SPOKE_LINE);
-      temp[n++] = ((y * w + x) << 3) | DIR_RIGHT;
-    }
+    for (let x = 0; x < w - 1; x++) draw(y * w + x, DIR_RIGHT);
   }
-
   for (let y = 0; y < h - 1; y++) {
-    for (let x = 0; x < w; x++) {
-      spokesPlace(b, y * w + x, DIR_BOT, SPOKE_LINE);
-      temp[n++] = ((y * w + x) << 3) | DIR_BOT;
-    }
+    for (let x = 0; x < w; x++) draw(y * w + x, DIR_BOT);
   }
-
   for (let y = 0; y < h - 1; y++) {
     for (let x = 0; x < w - 1; x++) {
-      if (randomUpto(rng, 2)) {
-        spokesPlace(b, y * w + x, DIR_BOTRIGHT, SPOKE_LINE);
-        temp[n++] = ((y * w + x) << 3) | DIR_BOTRIGHT;
-      } else {
-        spokesPlace(b, y * w + x + 1, DIR_BOTLEFT, SPOKE_LINE);
-        temp[n++] = ((y * w + x + 1) << 3) | DIR_BOTLEFT;
-      }
+      if (randomUpto(rng, 2)) draw(y * w + x, DIR_BOTRIGHT);
+      else draw(y * w + x + 1, DIR_BOTLEFT);
     }
   }
-
-  return n;
-}
-
-/**
- * Reset a board's playable spokes to `EMPTY` and re-derive the hidden ones
- * from the clue numbers (upstream `spokes_generate_clear`) — a hub with clue
- * `0` is a hole, so it loses its spokes and its neighbors lose theirs
- * pointing at it. This is the `'0'` half of `newState`'s hole processing; the
- * generator never produces the wider `'X'` hole.
- */
-function spokesGenerateClear(b: SpokesBoard): void {
-  const { w, h } = b;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (b.numbers[i]) {
-        for (let d = 0; d < 8; d++) {
-          if (getSpoke(b.spokes[i], d) !== SPOKE_HIDDEN)
-            setSpoke(b.spokes, i, d, SPOKE_EMPTY);
-        }
-      } else {
-        b.spokes[i] = 0;
-        for (let d = 0; d < 8; d++) {
-          const dx = x + SPOKE_DIRS[d].dx;
-          const dy = y + SPOKE_DIRS[d].dy;
-          if (dx < 0 || dx >= w || dy < 0 || dy >= h) continue;
-          setSpoke(b.spokes, dy * w + dx, invDir(d), SPOKE_HIDDEN);
-        }
-      }
-    }
-  }
-}
-
-/** Upstream `shuffle()` over the first `count` entries of `temp`. */
-function shufflePrefix(temp: Int32Array, count: number, rng: RandomState): void {
-  for (let i = count - 1; i > 0; i--) {
-    const j = randomUpto(rng, i + 1);
-    if (j !== i) {
-      const t = temp[i];
-      temp[i] = temp[j];
-      temp[j] = t;
-    }
-  }
+  return lines;
 }
 
 /**
  * One generation attempt. `generated` accumulates the drawn lines (the answer
  * board) and `board` is the scratch the solver runs on; both are reused across
- * attempts, exactly as upstream reuses its two `game_state`s.
+ * attempts, exactly as upstream reuses its two `game_state`s. On return,
+ * `board.numbers` holds the clues.
  *
  * Returns whether the result is acceptable at the requested difficulty.
- *
- * **The final gate diverges from upstream deliberately — see
- * {@link SpokesGenerateOptions.upstreamDirtyGate}.**
  */
 function spokesGenerate(
   p: SpokesParams,
   generated: SpokesBoard,
   board: SpokesBoard,
   scratch: SpokesScratch,
-  temp: Int32Array,
   rng: RandomState,
   upstreamDirtyGate: boolean,
 ): boolean {
   const { w, h } = p;
   const n = w * h;
   const diff = diffToLevel(p.diff);
+  const linesAt = (i: number): number => spokesCount(generated.spokes[i], SPOKE_LINE);
 
   blankBoard(w, h, generated);
-  const count = spokesGenerateHubs(p, generated, temp, rng);
-  shufflePrefix(temp, count, rng);
+  const lines = spokesGenerateHubs(p, generated, rng);
+  shuffle(lines, rng);
 
-  for (let j = 0; j < count; j++) {
-    const i = temp[j] >> 3;
-    const d = temp[j] & 7;
+  for (const line of lines) {
+    const i = line >> 3;
+    const d = line & 7;
     const i2 = i + SPOKE_DIRS[d].dy * w + SPOKE_DIRS[d].dx;
 
-    for (let k = 0; k < n; k++)
-      board.numbers[k] = spokesCount(generated.spokes[k], SPOKE_LINE);
-
     // Every hub keeps at least one line.
-    if (board.numbers[i] === 1 || board.numbers[i2] === 1) continue;
+    if (linesAt(i) === 1 || linesAt(i2) === 1) continue;
 
-    blankBoard(w, h, board);
     spokesPlace(generated, i, d, SPOKE_EMPTY);
-
-    for (let k = 0; k < n; k++)
-      board.numbers[k] = spokesCount(generated.spokes[k], SPOKE_LINE);
-    spokesGenerateClear(board);
-
+    blankBoard(w, h, board);
+    for (let k = 0; k < n; k++) board.numbers[k] = linesAt(k);
     if (spokesSolve(board, scratch, diff) !== "valid") {
       spokesPlace(generated, i, d, SPOKE_LINE);
     }
   }
 
-  // `board.numbers` is also what the caller reads to emit the desc, so this
-  // refresh happens on every path, Easy included.
-  for (let k = 0; k < n; k++)
-    board.numbers[k] = spokesCount(generated.spokes[k], SPOKE_LINE);
-  if (diff === DIFF_EASY) return true;
-
-  if (!upstreamDirtyGate) {
-    // The divergence: run the gate's re-solve from an *empty* position, exactly
-    // as the strip loop above does, so its verdict is about this puzzle rather
-    // than about whatever the previous candidate left in the scratch board.
-    blankBoard(w, h, board);
-    for (let k = 0; k < n; k++)
-      board.numbers[k] = spokesCount(generated.spokes[k], SPOKE_LINE);
-    spokesGenerateClear(board);
-  }
-  return spokesSolve(board, scratch, diff - 1) !== "valid";
+  // The divergence: re-solve from an *empty* position, as the strip loop does,
+  // so the gate's verdict is about this puzzle rather than about whatever the
+  // last solve left on the scratch board.
+  if (!upstreamDirtyGate) blankBoard(w, h, board);
+  for (let k = 0; k < n; k++) board.numbers[k] = linesAt(k);
+  return diff === DIFF_EASY || spokesSolve(board, scratch, diff - 1) !== "valid";
 }
 
 export interface SpokesGenerateOptions {
@@ -226,7 +152,7 @@ export interface SpokesGenerateOptions {
    * the generator, the whole tiered solver and the codec together. This flag
    * keeps that oracle: `spokes-differential.test.ts` sets it, so the fixtures
    * still match the C byte-for-byte and the only line the oracle no longer
-   * covers is the four-line clear below. Nothing else should ever set it.
+   * covers is the clear before the gate. Nothing else should ever set it.
    */
   readonly upstreamDirtyGate?: boolean;
 }
@@ -245,17 +171,13 @@ export function newSpokesDesc(
   options: SpokesGenerateOptions = {},
 ): { desc: string } {
   const { w, h } = p;
-  const n = w * h;
   const board = blankBoard(w, h);
   const generated = blankBoard(w, h);
-  const temp = new Int32Array(n * 3);
-  const scratch = new SpokesScratch(n);
+  const scratch = new SpokesScratch(w * h);
 
   const dirty = options.upstreamDirtyGate ?? false;
   const attempt = retryLimit(`spokes: generation (${w}x${h} ${p.diff})`);
-  while (!spokesGenerate(p, generated, board, scratch, temp, rng, dirty)) attempt();
+  while (!spokesGenerate(p, generated, board, scratch, rng, dirty)) attempt();
 
-  let desc = "";
-  for (let i = 0; i < n; i++) desc += String.fromCharCode(board.numbers[i] + 48);
-  return { desc };
+  return { desc: board.numbers.join("") };
 }
