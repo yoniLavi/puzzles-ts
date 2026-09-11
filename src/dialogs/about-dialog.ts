@@ -38,9 +38,8 @@ const puzzlesWebLink = "https://github.com/medmunds/puzzles-web";
 const androidAppLink =
   "https://play.google.com/store/apps/details?id=name.boyle.chris.sgtpuzzles";
 const iOSAppLink = "https://apps.apple.com/in/app/puzzles-reloaded/id6504365885";
-// const iOSOldAppLink = "https://apps.apple.com/us/app/simon-tathams-puzzles/id622220631";
 
-// Form of dependencies.json
+// Form of dependencies-app.json
 interface DependencyInfo {
   dependencies: {
     name: string;
@@ -333,12 +332,9 @@ export class AboutDialog extends LitElement {
         return dependencies;
       }
 
-      // package.json dependencies, from rollup-plugin-license via vite.
-      // There used to be a second source here — `dependencies.json`, the
-      // Emscripten/musl notices produced by puzzles/emcc-dependency-info.py
-      // from the wasm source maps. `retire-c-engine` removed it: we no longer
-      // ship any of that code, so attributing it would be inaccurate rather
-      // than generous.
+      // package.json dependencies, from rollup-plugin-license via vite. The
+      // only source: no Emscripten or musl code ships here, so attributing it
+      // would be inaccurate rather than generous.
       const dependencies = await loadJson(
         `${import.meta.env.BASE_URL}dependencies-app.json`,
       );
@@ -515,7 +511,7 @@ export class AboutDialog extends LitElement {
       font::before,
       font::after {
         content: " ";
-      },
+      }
   `,
   ];
 }

@@ -1,6 +1,6 @@
 import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
-import { css, html, LitElement, nothing, type TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { puzzleDataMap } from "../puzzle/catalog.ts";
@@ -151,7 +151,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
     hint,
     value,
   }: {
-    label?: string | TemplateResult;
+    label: string;
     hint?: string;
     value: string | URL | undefined;
   }) {
@@ -160,13 +160,12 @@ export class ShareDialog extends SignalWatcher(LitElement) {
     }
     return html`
       <wa-input
-          label=${typeof label === "string" ? label : nothing}
+          label=${label}
           hint=${hint}
           readonly
           .value=${value}
           @focus=${this.selectAllOnFocus}
       >
-        ${typeof label === "string" ? nothing : html`<div slot="label">${label}</div>`}
         <wa-copy-button slot="end" value=${value}></wa-copy-button>
       </wa-input>
     `;
@@ -185,13 +184,6 @@ export class ShareDialog extends SignalWatcher(LitElement) {
   }) {
     // Upstream's site carries its own games, so the link is offered for those
     // and no others.
-    //
-    // This used to also exclude puzzles flagged `unfinished`, with an escape
-    // hatch reading "Despite being 'unfinished', Group actually _is_ available
-    // at SGT's site". Both are gone with the flag: Group's collection is
-    // "original", so it never reached the escape hatch, and every puzzle that
-    // did reach it was by construction not Group — which made the guard
-    // unconditionally true and the branch an unconditional return.
     if (!puzzleId || puzzleDataMap[puzzleId]?.collection !== "original") {
       return nothing;
     }
@@ -241,11 +233,9 @@ export class ShareDialog extends SignalWatcher(LitElement) {
   }
 
   private renderOffsiteLink({
-    label,
     hint,
     url,
   }: {
-    label?: string;
     hint?: string;
     url: string | URL | undefined;
   }) {
@@ -254,7 +244,6 @@ export class ShareDialog extends SignalWatcher(LitElement) {
     }
     return html`
       <div>
-        ${label ? html`<div>${label}</div>` : nothing}
         <div class="link">
           <a href=${url} target="_blank">${url}</a>
           <wa-copy-button value=${url}></wa-copy-button>
@@ -272,7 +261,6 @@ export class ShareDialog extends SignalWatcher(LitElement) {
   }
 
   private selectAllOnFocus(event: FocusEvent) {
-    // Select all on focus
     (event.target as HTMLInputElement | HTMLTextAreaElement).select();
   }
 

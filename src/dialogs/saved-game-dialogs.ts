@@ -41,6 +41,12 @@ abstract class GameFileDialog extends LitElement {
     }
   }
 
+  protected handleSavedGameSelect(
+    event: HTMLElementEventMap["saved-game-list-select"],
+  ) {
+    this.filename = event.detail.item.filename;
+  }
+
   protected dispatchEventAndClose(type: string) {
     const event = new CustomEvent<GameDialogEventDetail>(type, {
       bubbles: true,
@@ -150,11 +156,6 @@ export class LoadGameDialog extends GameFileDialog {
     `;
   }
 
-  private handleSavedGameSelect(event: HTMLElementEventMap["saved-game-list-select"]) {
-    const { filename } = event.detail.item;
-    this.filename = filename;
-  }
-
   private handleSavedGameDoubleClick() {
     if (this.filename) {
       this.handleLoadClick();
@@ -225,11 +226,6 @@ export class SaveGameDialog extends GameFileDialog {
         >Save</wa-button>
       </wa-dialog>
     `;
-  }
-
-  private handleSavedGameSelect(event: HTMLElementEventMap["saved-game-list-select"]) {
-    const { filename } = event.detail.item;
-    this.filename = filename;
   }
 
   private handleFilenameInputChange(event: UIEvent) {

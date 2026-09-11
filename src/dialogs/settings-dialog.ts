@@ -330,15 +330,14 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     pwaManager.reloadApp();
   }
 
-  private async handleAllowOfflineChange(event: UIEvent) {
+  private handleAllowOfflineChange(event: UIEvent) {
     pwaManager.allowOfflineUse = (event.target as HTMLInputElement).checked;
   }
 
-  private async handleAutoUpdateChange(event: UIEvent) {
+  private handleAutoUpdateChange(event: UIEvent) {
     pwaManager.autoUpdate = (event.target as HTMLInputElement).checked;
   }
 
-  // private async handleDataCommand(event: HTMLElementEventMap["wa-select"]) {
   private async handleDataCommand(event: WaSelectEvent) {
     const item = event.detail.item as HTMLElementTagNameMap["wa-dropdown-item"];
     const command = item.value;

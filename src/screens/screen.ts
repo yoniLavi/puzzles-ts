@@ -24,7 +24,7 @@ export class Screen extends LitElement {
 
   /** Which command surface the puzzle screen wears — see `--app-chrome` in
    * `common.css`. Read here because this is where the layout tokens are read;
-   * only `PuzzleScreen` consumes it. */
+   * only `PuzzleScreen` acts on it. */
   @property({ type: String, reflect: true })
   chrome: "rail" | "bar" = "rail";
 
@@ -148,10 +148,8 @@ export class Screen extends LitElement {
     }
   };
 
-  /**
-   * Parses command and args; if registered handles command and returns true.
-   * Otherwise returns false.
-   */
+  /** Runs the handler registered for `name` in `name:arg1:arg2…`, if there is
+   * one; false says nobody handled it. */
   protected handleCommand(command: string) {
     const [name, ...args] = command.split(":");
     if (Object.hasOwn(this.commandMap, name)) {

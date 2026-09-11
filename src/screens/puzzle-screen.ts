@@ -209,11 +209,9 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
 
   /**
    * The phone's top bar: back, the game's name, its two parameter chips and
-   * the move count. **Four items**, which is the point — the bar this replaces
-   * was a non-wrapping flex row with no minimum-width budget, so at 390px
-   * "Other puzzles" ran underneath Help and the type menu truncated to `7…`.
-   * The overflow cannot recur here because the commands are not laid out
-   * horizontally at all any more; they are in the bottom bar and behind it.
+   * the move count. **Four items**, which is the point — a non-wrapping row of
+   * commands overflows at 390px. The commands live in the bottom bar and behind
+   * it instead, so nothing here competes for the width.
    */
   private renderTopBar(): TemplateResult {
     return html`
@@ -250,11 +248,10 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     const status = puzzle?.wantsStatusbar ? puzzle.statusbarText : null;
     return html`
       ${
-        // The nine games that print a status line need it while *playing*, not
-        // behind a sheet: Flood's move limit and Mines' remaining count are
-        // part of the board, not a command. So on a phone it rides above the
-        // bar with the hint rather than in the rail, which is where the rail
-        // is not.
+        // A status line is part of the board, not a command — Flood's move
+        // limit, Mines' remaining count — so it must be readable while playing
+        // rather than behind the More sheet. On a phone it rides above the bar
+        // with the hint; on a desktop it is in the rail.
         status ? html`<div class="phone-status" role="status">${status}</div>` : nothing
       }
       ${
@@ -475,16 +472,12 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   /**
    * Give the keyboard back to the board.
    *
-   * Every control on this screen is a one-shot action on the puzzle, and the
-   * board is what the player wants to be typing at once it has run. Without
-   * this it isn't: the game menu focuses its own trigger button as it closes,
-   * a clicked toolbar button keeps focus on itself, and the stray-key redirect
-   * in `handleBubbledKeyDown` only steps in when *nothing at all* is focused.
-   * So a single click on any control left the board deaf to the keyboard until
-   * you clicked it again — Enter reopened the menu, and the cursor keys went
-   * nowhere. Inertia shows this up worst (its solution-following aid is
-   * literally "pick Solve from the menu, then press Enter to walk the route"),
-   * but it swallowed the cursor keys in every keyboard-playable game.
+   * Every control here is a one-shot action on the puzzle, and the board is
+   * what the player wants to be typing at once it has run. Nothing else does
+   * it: the game menu focuses its own trigger as it closes, a clicked button
+   * keeps focus on itself, and `handleBubbledKeyDown`'s redirect only steps in
+   * when *nothing at all* is focused — so without this a single click leaves
+   * the board deaf in every keyboard-playable game.
    *
    * Always deferred a microtask, because both `wa-dropdown` (as it closes) and
    * a clicked button focus themselves out from under us otherwise.
@@ -713,8 +706,8 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
 
   private async handleCaptureIcons() {
     // Dev-only: produce the two committed icon PNGs from the live board.
-    // (A prototype method, not an arrow field, so it is defined when the
-    // base-class constructor calls registerCommandHandlers.)
+    // A prototype method, not an arrow field, so it exists when the base-class
+    // constructor calls registerCommandHandlers.
     const puzzle = this.puzzle;
     if (!puzzle) return;
     const { captureIcons } = await import("../puzzle/icon-capture.ts");
@@ -724,7 +717,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   /**
    * Combined Check-&-Save (shared with the toolbar button and Cmd/Ctrl+S
    * — logic in `quick-save-actions.ts`). A prototype method, not an arrow
-   * field, so it is defined when the base-class constructor calls
+   * field, so it exists when the base-class constructor calls
    * `registerCommandHandlers`.
    */
   private async handleCheckAndSave() {
@@ -749,10 +742,9 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
    * they were keeping. That player wants this.
    *
    * The engine has already highlighted the mistakes by the time this resolves,
-   * so the report is a non-blocking toast either way — including the clean
-   * case, which the combined command reports too. An interrupting modal is what
-   * Check & save uses to say "and I did not save"; there is nothing here to not
-   * do, so there is nothing to interrupt for.
+   * so the report is a non-blocking toast either way. An interrupting modal is
+   * what Check & save uses to say "and I did not save"; there is nothing here
+   * to not do, so there is nothing to interrupt for.
    */
   private async handleCheckOnly() {
     const puzzle = this.puzzle;
@@ -777,8 +769,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
 
   /** Inject the 'M' key (ASCII 77): the game's adaptive Mark-all press — fill
    * every cell that has no pencil marks yet, else clear the candidates already
-   * ruled out by a placed value. Only ever adds or removes, so a press can't
-   * undo the player's own deductions. Only games with `canMarkAll` show this
+   * ruled out by a placed value. Only games with `canMarkAll` show the
    * control. */
   private async handleMarkAll() {
     await this.puzzle?.processKey(77);
@@ -796,12 +787,10 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   }
 
   /**
-   * Open the timeline.
-   *
-   * The move counter *is* the control, so a real click on it opens its own
-   * dropdown and never reaches here; this exists for the command bus — a
-   * keyboard shortcut, or any other surface that wants to name the timeline —
-   * and it drives the same dropdown rather than a second copy of it.
+   * Open the timeline. The move counter *is* the control, so a real click on it
+   * opens its own dropdown and never reaches here; this exists for the command
+   * bus (a keyboard shortcut, say), and drives that same dropdown rather than a
+   * second copy of it.
    */
   private showTimeline() {
     const history = this.shadowRoot?.querySelector("puzzle-history");
@@ -969,11 +958,10 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         // not change. Not an autosave — see `PuzzleSettings.lastGameId`.
         //
         // `restoreGameId`, NOT `currentGameId`: the latter is the id to share,
-        // and it omits difficulty by design, so remembering it re-opened every
-        // tiered puzzle at its default tier and then wrote that tier back into
-        // settings. `currentGameId` stays the change-detection key above — it
-        // changes exactly when the board does, and it is what `savedGameId` has
-        // always compared.
+        // and it omits difficulty by design, so remembering it re-opens every
+        // tiered puzzle at its default tier. `currentGameId` stays the
+        // change-detection key above, because it changes exactly when the board
+        // does.
         await settings.setLastGameId(puzzle.puzzleId, puzzle.restoreGameId);
       }
       if (puzzle.totalMoves > 0 && !puzzle.isSolved) {
@@ -1054,11 +1042,9 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     if (command) this.handleCommand(command);
   };
 
-  /* There is no unfinished-puzzle warning. It fired when the catalog's
-   * `unfinished` flag was set, throttled to once a day per puzzle — and no
-   * puzzle has ever set that flag. All 57 ship finished, and new games are
-   * implemented in one go, so the alert, its throttle and the preference that
-   * revealed those puzzles were three surfaces over an empty set. */
+  /* There is no unfinished-puzzle warning, and no catalog `unfinished` flag for
+   * one to fire on: every puzzle ships finished, and a new game is implemented
+   * in one go. */
 
   //
   // Styles
@@ -1130,11 +1116,9 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
        * rail: a 284px command column beside the board.
        * bar:  a four-item top bar, the board, and a five-slot bottom bar.
        *
-       * The board area is the flex child that grows in both, which is the fix
-       * for the third finding behind this redesign: the canvas used to be
-       * centered small inside a gray panel that filled the whole flex region,
-       * so at desktop width the board was roughly a third of its own panel,
-       * framed by dead surface.
+       * The board area is the flex child that grows in both, so the canvas
+       * fills what the chrome leaves rather than sitting small inside a panel
+       * of dead surface.
        */
 
       :host([chrome="rail"]) main {
@@ -1188,8 +1172,6 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         --border-radius: var(--app-radius-container);
       }
 
-      /* The phone's top bar: back, name, chips, move count. Four items, which
-       * is why the overflow that broke the old header at 390px cannot recur. */
       .top-bar {
         flex: 0 0 auto;
         box-sizing: border-box;
@@ -1316,18 +1298,9 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       /* The hint takes the free space, because its label grows when the hint is
        * armed and the bar reads better with it wide either way.
        *
-       * Its two beats — show, then apply — are spelled out here as well as in
-       * the rail. The phone bar used to hardcode one word for both, which is
-       * the surprise the rail's label exists to prevent, on the surface where a
-       * player is most likely to meet it.
-       *
-       * It is NOT filled. It used to be — the single accent control on the
-       * screen, on the reasoning that explained hints are what this fork is
-       * for. That is a fact about the fork, and as a filled button it read to a
-       * player as advice: take a hint. Taking one is the player's choice, and
-       * wanting to solve it unaided is the better instinct to leave room for.
-       * So the hint is offered plainly, in the same place, with the same label
-       * and the same two beats, and nothing about the chrome urges it. */
+       * It is NOT filled, deliberately: an accent control reads as advice, and
+       * whether to take a hint is the player's choice. The hint is offered
+       * plainly, and nothing about the chrome urges it. */
       .phone-action.hint {
         flex: 1 1 auto;
         flex-direction: row;

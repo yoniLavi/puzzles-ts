@@ -1,26 +1,11 @@
 /**
- * The front page.
+ * The front page: an intro, then the whole catalog as a dense list of
+ * `catalog-card` rows, narrowed by a search box and an `All / Favorites /
+ * In progress` filter.
  *
- * Rebuilt to the Index direction (`design-front-page-and-chrome` design.md §4).
- * Four things changed, three of them defects measured against the running app:
- *
- * 1. **One content axis.** The intro was `max-width: 61ch; margin: 0 auto` and
- *    the catalog was `max-width: 75rem` from the left padding, so at desktop
- *    width the prose floated mid-viewport while the cards sat hard left — a
- *    visible jag down the page. Everything now shares one column and one left
- *    edge; the intro keeps a reading measure by *capping* its width, not by
- *    centering itself in a wider one.
- * 2. **A dense list instead of a card grid**, two columns at desktop and one on
- *    a phone: ~26 games a screen rather than ~12, so the collection can be
- *    browsed without three scrolls. The row is `catalog-card`, restyled.
- * 3. **Search and filters.** 57 games is more than a page of rows, and a player
- *    who knows what they want should not have to hunt. `All / Favorites /
- *    In progress` replaces the separate Favorites *section* — a section and a
- *    filter are two answers to one question, and the filter is the one that
- *    also covers "what have I got going?".
- * 4. **A Resume row.** `savedGames.autoSavedPuzzles` already knew which games
- *    are part-played and spent that knowledge on a corner badge. It is the
- *    first thing a returning player wants, so it is the first thing on the page.
+ * **One content axis.** The intro and the list share one column and one left
+ * edge; the intro keeps a reading measure by *capping* its width, never by
+ * centering itself in a wider one, which leaves a visible jag down the page.
  *
  * The search and filter state is deliberately **not** persisted: it is a way of
  * looking at this page right now, not a preference, and a player who returns to
@@ -130,9 +115,6 @@ export class HomeScreen extends SignalWatcher(Screen) {
   }
 
   private renderCompactHeader() {
-    // The title is a title. It used to be the options menu's trigger, which is
-    // an odd thing for a page's own name to be; with the menu gone it has no
-    // reason to be a control.
     return html`
       <img class="logo" src="/favicon.svg" alt="" role="presentation">
       <div class="title">
@@ -162,20 +144,9 @@ export class HomeScreen extends SignalWatcher(Screen) {
   }
 
   /*
-   * There is no Options menu.
-   *
-   * It held three items: a "Show intro message" checkbox, Preferences and
-   * About. The intro is one line now, so a control for hiding it costs a player
-   * more attention than it saves them — and with it gone the menu held two
-   * items, which is a dropdown standing between the player and two taps.
-   *
-   * About did not need a home here: the footer already links to it in prose,
-   * naming exactly what is inside ("Credits, privacy info, copyright notices
-   * and licenses are in the about box"), which is a better signpost than a menu
-   * row labeled "About" ever was.
-   *
-   * So Preferences is a button beside Help, and the compact header's title went
-   * back to being a title rather than a menu trigger.
+   * There is no Options menu: Preferences is a button beside Help, and About is
+   * reached from the footer's prose, which names what is inside it. A dropdown
+   * over two items stands between the player and two taps.
    */
 
   private renderIntro() {
@@ -187,29 +158,18 @@ export class HomeScreen extends SignalWatcher(Screen) {
   }
 
   /*
-   * There is no separate "Continue" block, deliberately.
-   *
-   * One was tried: the games with an auto-save, lifted to the top of the
-   * catalog. It duplicates rows that are already in the list a screen below,
-   * and it moves a game *out of alphabetical order* on the one page whose job
-   * is to let you find a game by name — so the row you know is in the Cs is
-   * suddenly at the top, and also still in the Cs.
+   * There is no separate "Continue" block, deliberately. Lifting the games with
+   * an auto-save to the top duplicates rows that are already in the list below,
+   * and moves a game out of alphabetical order on the one page whose job is to
+   * let you find a game by name.
    *
    * A game in progress is marked **in place** instead, by the blue triangle on
-   * its row, exactly as a favorite is marked in place by its filled heart
-   * (owner, 2026-09-07). The `In progress` filter is what turns that mark into
-   * a list, and it costs one tap rather than a permanent second copy of part of
-   * the catalog.
+   * its row, exactly as a favorite is marked by its filled heart (owner,
+   * 2026-09-07); the `In progress` filter turns that mark into a list.
    */
 
-  /** Every puzzle this player can see, which is all of them. The search and the
-   * filters narrow *this*.
-   *
-   * It used to subtract the catalog's `unfinished` games unless a preference
-   * asked for them. No puzzle has ever set that flag — all 57 ship finished, and
-   * new games are implemented in one go — so the preference, this filter, the
-   * card's badge and the puzzle screen's warning were four surfaces over an
-   * empty set. */
+  /** Every puzzle this player can see, which is all of them: nothing in the
+   * catalog is held back. The search and the filters narrow *this*. */
   private get visibleIds(): readonly string[] {
     return puzzleIds;
   }

@@ -11,16 +11,12 @@
 // transitive Dexie users in puzzle-screen's import graph (e.g. `settings.ts`)
 // open cleanly instead of throwing under happy-dom.
 //
-// ONE FILE ON PURPOSE. The board-choice tests lived in their own
-// `puzzle-screen-load.test.ts` and mocked **the same two modules** —
-// `store/saved-games.ts` and `dialogs/alert-dialog.ts` — with *different*
-// factories. Under `isolate: false` the module registry is shared per worker, so
-// whichever file loaded first won and the other silently got someone else's
-// spies: all four Check-&-Save assertions failed with "expected to be called
-// once, got 0 times" whenever the pair landed in one worker, which is a green
-// commit rejected for where its files happened to be scheduled. Merging is what
-// removes the collision; `no-duplicate-module-mocks.test.ts` is what stops the
-// next one.
+// ONE FILE ON PURPOSE. Under `isolate: false` the module registry is shared per
+// worker, so two files mocking **the same module** race: whichever loads first
+// wins and the other silently gets someone else's spies, which is a green commit
+// rejected for where its files happened to be scheduled. Keeping every test that
+// mocks `store/saved-games.ts` and `dialogs/alert-dialog.ts` here is what avoids
+// the collision; `no-duplicate-module-mocks.test.ts` is what stops the next one.
 import "../test-setup/indexeddb.ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -423,11 +419,10 @@ async function load(
   await screen.handlePuzzleLoaded(event);
   // `handlePuzzleGameStateChange` is @debounced(250); awaiting the debounce
   // window would make every test sleep. Record through the same public API it
-  // uses instead — **and record the same value it does**: this shortcut once
-  // stored `currentGameId` while production stored it too, and when production
-  // moved to `restoreGameId` the shortcut would have kept the tests green over
-  // a defect neither could see. `records the board it will re-deal from` below
-  // pays the debounce once so the real handler is exercised at least somewhere.
+  // uses instead — **and record the same value it does**, or a shortcut storing
+  // the other id would keep these tests green over a defect neither could see.
+  // `records the board it will re-deal from` below pays the debounce once so the
+  // real handler is exercised at least somewhere.
   await settings.setLastGameId(puzzle.puzzleId, puzzle.restoreGameId);
 }
 
