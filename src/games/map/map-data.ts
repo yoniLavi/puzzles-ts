@@ -40,6 +40,17 @@ export interface MapData {
   readonly regiony: Int32Array;
 }
 
+/**
+ * The two cells either side of edge `i`, in the desc's edge order: horizontal
+ * edges row by row, then vertical edges column by column.
+ */
+function edgeCells(w: number, h: number, i: number): [number, number] {
+  if (i < w * (h - 1)) return [i, i + w];
+  const x = Math.floor((i - w * (h - 1)) / h);
+  const y = (i - w * (h - 1)) % h;
+  return [y * w + x, y * w + x + 1];
+}
+
 interface ParsedEdges {
   map: Int32Array;
   next: number;
@@ -64,7 +75,8 @@ export function parseEdgeList(
   start: number,
 ): ParsedEdges {
   const wh = w * h;
-  const map = new Int32Array(wh);
+  const nedges = w * (h - 1) + (w - 1) * h;
+  const map = new Int32Array(wh).fill(-1);
   const dsf = new Dsf(wh);
 
   let pos = -1;
@@ -82,37 +94,21 @@ export function parseEdgeList(
         pos++;
         continue;
       }
-      let x: number;
-      let y: number;
-      let dx: number;
-      let dy: number;
-      if (pos < w * (h - 1)) {
-        y = Math.floor(pos / w);
-        x = pos % w;
-        dx = 0;
-        dy = 1;
-      } else if (pos < 2 * wh - w - h) {
-        x = Math.floor((pos - w * (h - 1)) / h);
-        y = (pos - w * (h - 1)) % h;
-        dx = 1;
-        dy = 0;
-      } else {
-        return { map, next: p, error: "Too much data in edge list" };
+      if (pos >= nedges) return { map, next: p, error: "Too much data in edge list" };
+      if (!state) {
+        const [a, b] = edgeCells(w, h, pos);
+        dsf.merge(a, b);
       }
-      if (!state) dsf.merge(y * w + x, (y + dy) * w + (x + dx));
       pos++;
     }
     if (ch !== "z") state = !state;
     p++;
   }
 
-  if (pos < 2 * wh - w - h) {
-    return { map, next: p, error: "Too little data in edge list" };
-  }
+  if (pos < nedges) return { map, next: p, error: "Too little data in edge list" };
 
   // Number the regions.
   let np = 0;
-  for (let i = 0; i < wh; i++) map[i] = -1;
   for (let i = 0; i < wh; i++) {
     const canon = dsf.canonify(i);
     if (map[canon] < 0) map[canon] = np++;
@@ -159,10 +155,9 @@ export function newMapData(
   const wh = w * h;
 
   const parsed = parseEdgeList(w, h, n, desc, 0);
-  // The map array holds all four quadrants; quadrant 0 is the parsed grid.
+  // One plane per quadrant, each starting as the parsed grid.
   const map = new Int32Array(4 * wh);
-  map.set(parsed.map, 0);
-  for (let i = wh; i < 4 * wh; i++) map[i] = map[i % wh];
+  for (let q = 0; q < 4; q++) map.set(parsed.map, q * wh);
 
   // Parse the clue list.
   const coloring = new Int32Array(n).fill(-1);
@@ -197,24 +192,12 @@ export function newMapData(
   );
 
   return {
-    map: {
-      w,
-      h,
-      n,
-      map,
-      graph,
-      ngraph,
-      immutable,
-      edgex,
-      edgey,
-      regionx,
-      regiony,
-    },
+    map: { w, h, n, map, graph, ngraph, immutable, edgex, edgey, regionx, regiony },
     coloring,
   };
 }
 
-/** Upstream diagonal-smoothing pass in `new_game` (1913-1961). */
+/** Upstream `new_game`'s diagonal-smoothing pass. */
 function smoothDiagonals(
   w: number,
   h: number,
@@ -257,10 +240,9 @@ function smoothDiagonals(
 }
 
 /**
- * Upstream `new_game`'s two-pass float averaging (1963-2181): find a canonical
- * point for each graph edge (error-marker positions) and region (label
- * positions). Coordinates are stored as ×2 so half-integers are representable.
- * Display-only (byte-parity scope doctrine, design D2).
+ * Upstream `new_game`'s two-pass float averaging: find a canonical point for
+ * each graph edge (error-marker positions) and region (label positions).
+ * Coordinates are stored ×2 so half-integers are representable. Display-only.
  */
 function computeLabelPoints(
   w: number,
@@ -407,45 +389,27 @@ export function encodeMapDesc(
 ): string {
   let ret = "";
 
-  // Edge list: runs of edge/non-edge, horizontal edges row by row then
-  // vertical edges column by column. A notional leading non-edge, and `z` =
-  // run of 25 with NO state switch.
-  {
-    let run = 1;
-    let pv = false;
-    const nedges = w * (h - 1) + (w - 1) * h;
-    for (let i = 0; i < nedges; i++) {
-      let x: number;
-      let y: number;
-      let dx: number;
-      let dy: number;
-      if (i < w * (h - 1)) {
-        y = Math.floor(i / w);
-        x = i % w;
-        dx = 0;
-        dy = 1;
-      } else {
-        x = Math.floor((i - w * (h - 1)) / h);
-        y = (i - w * (h - 1)) % h;
-        dx = 1;
-        dy = 0;
+  // Edge list: runs of edge/non-edge in `edgeCells` order. A notional leading
+  // non-edge, and `z` = run of 25 with NO state switch.
+  let run = 1;
+  let pv = false;
+  const nedges = w * (h - 1) + (w - 1) * h;
+  for (let i = 0; i < nedges; i++) {
+    const [a, b] = edgeCells(w, h, i);
+    const v = map[a] !== map[b];
+    if (pv !== v) {
+      ret += String.fromCharCode(96 + run);
+      run = 1;
+      pv = v;
+    } else {
+      if (run === 25) {
+        ret += "z";
+        run = 0;
       }
-      const v = map[y * w + x] !== map[(y + dy) * w + (x + dx)];
-      if (pv !== v) {
-        ret += String.fromCharCode(96 + run);
-        run = 1;
-        pv = v;
-      } else {
-        if (run === 25) {
-          ret += "z";
-          run = 0;
-        }
-        run++;
-      }
+      run++;
     }
-    ret += String.fromCharCode(96 + run);
-    ret += ",";
   }
+  ret += `${String.fromCharCode(96 + run)},`;
 
   // Clue list: the shared run-length grammar over the regions — digits 0-3
   // interspersed with blank-run letters, `z` = 26 with no state switch. The

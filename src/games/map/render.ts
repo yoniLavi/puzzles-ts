@@ -1,10 +1,8 @@
 /**
  * Rendering for Map (upstream `game_colours`, `game_compute_size`,
  * `draw_square`, `draw_error`, `game_redraw`), plus the pixel↔region hit-test
- * helpers shared with `index.ts` (kept here so `index → render` is the only
- * dependency direction — no cycle).
- *
- * NARROW_BORDERS (the web build): `BORDER = 0`.
+ * helpers `index.ts` uses (kept here so `index → render` is the only dependency
+ * direction). The layout is upstream's NARROW_BORDERS one: no border.
  */
 
 import { FOUR_FILLS } from "../../engine/color/colors.ts";
@@ -38,7 +36,7 @@ export const COL_2 = 4;
 export const COL_3 = 5;
 export const COL_ERROR = 6;
 export const COL_ERRTEXT = 7;
-/** Appended past the upstream enum — a wrong-region outline (design D6). */
+/** Appended past the upstream enum — a wrong-region outline. */
 export const COL_MISTAKE = 8;
 
 const FOUR = 4;
@@ -71,14 +69,12 @@ const ERR_MASK = 0xff800000;
 
 // --- geometry --------------------------------------------------------
 
-export const BORDER = 0;
-
-export function coord(x: number, ts: number): number {
-  return x * ts + BORDER;
+function coord(x: number, ts: number): number {
+  return x * ts;
 }
 
-export function fromCoord(px: number, ts: number): number {
-  return fromCoordE(px, ts, BORDER);
+function fromCoord(px: number, ts: number): number {
+  return fromCoordE(px, ts, 0);
 }
 
 function epsilonX(button: number): number {
@@ -88,8 +84,6 @@ function epsilonX(button: number): number {
 function epsilonY(button: number): number {
   return button === CURSOR_DOWN ? 1 : button === CURSOR_UP ? -1 : 0;
 }
-
-export { epsilonX, epsilonY };
 
 /**
  * The region containing a point in tile `(tx, ty)` offset by `(xEps, yEps)` from
@@ -147,8 +141,6 @@ export function regionFromUiCursor(map: MapData, ui: MapUi): number {
 export interface MapDrawState {
   started: boolean;
   tileSize: number;
-  w: number;
-  h: number;
   /** Per-cell packed cache word; `-1` forces a repaint. */
   drawn: Int32Array;
   todraw: Int32Array;
@@ -161,10 +153,7 @@ export interface MapDrawState {
 }
 
 export function computeSize(p: MapParams, tileSize: number): Size {
-  return {
-    w: p.w * tileSize + 2 * BORDER + 1,
-    h: p.h * tileSize + 2 * BORDER + 1,
-  };
+  return { w: p.w * tileSize + 1, h: p.h * tileSize + 1 };
 }
 
 export function newDrawState(s: MapState): MapDrawState {
@@ -172,8 +161,6 @@ export function newDrawState(s: MapState): MapDrawState {
   return {
     started: false,
     tileSize: 0,
-    w: s.params.w,
-    h: s.params.h,
     drawn: new Int32Array(wh).fill(-1),
     todraw: new Int32Array(wh),
     bl: null,

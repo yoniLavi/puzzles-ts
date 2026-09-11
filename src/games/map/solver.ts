@@ -1,13 +1,10 @@
 /**
- * Map's graph-coloring solver (upstream `map_solver`), graded by difficulty:
- *   - EASY   — place a region with exactly one possible color left;
- *   - NORMAL — exclude a shared color pair from the common neighbors of an
- *              adjacent same-two-possibilities pair;
- *   - HARD   — forcing-chain BFS;
- *   - RECURSE — guess and verify (also proves uniqueness at every level).
- *
- * Returns the three-valued verdict: 0 = impossible, 1 = unique solution,
- * 2 = stuck (ambiguous or too hard for the given difficulty).
+ * Map's graph-coloring solver (upstream `map_solver`), graded by tier:
+ *   - DIFF_EASY    — place a region with exactly one possible color left;
+ *   - DIFF_NORMAL  — exclude a shared color pair from the common neighbors of
+ *                    an adjacent same-two-possibilities pair;
+ *   - DIFF_HARD    — forcing-chain BFS (the "Tricky" tier);
+ *   - DIFF_RECURSE — guess and verify (also proves uniqueness at every level).
  */
 
 import { graphAdjacent, graphVertexStart } from "./graph.ts";
@@ -17,6 +14,7 @@ const FOUR = 4;
 
 export const SOLVER_IMPOSSIBLE = 0;
 export const SOLVER_UNIQUE = 1;
+/** Ambiguous, or too hard for the given difficulty. */
 export const SOLVER_STUCK = 2;
 
 interface Scratch {
@@ -75,22 +73,13 @@ function placeColor(
   return true;
 }
 
-function solve(
-  sc: Scratch,
-  graph: Int32Array,
-  n: number,
-  ngraph: number,
-  coloring: Int32Array,
-  difficulty: number,
-): number {
+function solve(sc: Scratch, coloring: Int32Array, difficulty: number): number {
+  const { graph, n, ngraph } = sc;
   if (sc.depth === 0) {
     for (let i = 0; i < n; i++) sc.possible[i] = (1 << FOUR) - 1;
     for (let i = 0; i < n; i++)
-      if (coloring[i] >= 0) {
-        if (!placeColor(sc, coloring, i, coloring[i])) {
-          return SOLVER_IMPOSSIBLE; // clues aren't even consistent
-        }
-      }
+      if (coloring[i] >= 0 && !placeColor(sc, coloring, i, coloring[i]))
+        return SOLVER_IMPOSSIBLE; // clues aren't even consistent
   }
 
   // Deduction loop.
@@ -125,9 +114,7 @@ function solve(
       if (sc.possible[j1] !== sc.possible[j2]) continue;
 
       const v = sc.possible[j1];
-      let v2 = v & -v; // lowest set bit
-      v2 = v & ~v2; // clear it
-      if (v2 === 0 || (v2 & (v2 - 1)) !== 0) continue; // not exactly two bits
+      if (bitcount(v) !== 2) continue;
 
       for (
         let j = graphVertexStart(graph, n, ngraph, j1);
@@ -197,14 +184,7 @@ function solve(
     if (!doneSomething) break;
   }
 
-  // A complete solution?
-  let complete = true;
-  for (let i = 0; i < n; i++)
-    if (coloring[i] < 0) {
-      complete = false;
-      break;
-    }
-  if (complete) return SOLVER_UNIQUE;
+  if (!coloring.includes(-1)) return SOLVER_UNIQUE; // every region colored
 
   if (difficulty < DIFF_RECURSE) return SOLVER_STUCK;
 
@@ -234,7 +214,7 @@ function solve(
     subcoloring.set(origcoloring);
     placeColor(rsc, subcoloring, best, i);
 
-    const subret = solve(rsc, graph, n, ngraph, subcoloring, difficulty);
+    const subret = solve(rsc, subcoloring, difficulty);
 
     if (subret === SOLVER_STUCK || (subret === SOLVER_UNIQUE && weAlreadyGotOne)) {
       ret = SOLVER_STUCK;
@@ -261,8 +241,7 @@ export function mapSolver(
   coloring: Int32Array,
   difficulty: number,
 ): number {
-  const sc = newScratch(graph, n, ngraph);
-  return solve(sc, graph, n, ngraph, coloring, difficulty);
+  return solve(newScratch(graph, n, ngraph), coloring, difficulty);
 }
 
 /**

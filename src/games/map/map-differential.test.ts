@@ -1,5 +1,5 @@
 /**
- * Gated C-vs-TS byte-match differential for Map (openspec add-map-ts-port).
+ * Gated C-vs-TS byte-match differential for Map.
  *
  * The generator is RNG-draw-order-critical (genmap's cumulative-frequency
  * draws, fourcolor's shuffle + random-most-constrained pick, the clue-reduction

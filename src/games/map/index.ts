@@ -1,14 +1,12 @@
 /**
- * Map (`map.c`) — native TS port. Color every region of a map so no two
- * adjacent regions share a color, given some regions pre-colored as clues.
+ * Map (`map.c`). Color every region of a map so no two adjacent regions share a
+ * color, given some regions pre-colored as clues.
  *
  * Press picks up the color of the region under the pointer (or, on a blank
  * region, its pencil marks) into a floating drag blob; release drops it onto
  * the region under the pointer. A right-drag from a color onto a blank region
- * toggles one pencil bit; a keyboard cursor picks/drops via select. The
- * diagonally-split-cell quadrant hit-test (`region_from_coords`) is ported
- * exactly. A drop that changes nothing produces no move (local no-op
- * suppression — no state-string undo).
+ * toggles one pencil bit; a keyboard cursor picks/drops via select. A drop that
+ * changes nothing produces no move.
  */
 
 import { assertNever, rejectMove } from "../../engine/assert-never.ts";
@@ -29,9 +27,8 @@ import {
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { GameStatus, Point } from "../../engine/types.ts";
 import { newMapDesc } from "./generator.ts";
 import { newMapData, validateDesc } from "./map-data.ts";
 import {
@@ -45,7 +42,7 @@ import {
   regionFromUiCursor,
   setTileSize,
 } from "./render.ts";
-import { gradeMap, mapSolver, SOLVER_IMPOSSIBLE, SOLVER_UNIQUE } from "./solver.ts";
+import { mapSolver, SOLVER_IMPOSSIBLE, SOLVER_UNIQUE } from "./solver.ts";
 import {
   cloneState,
   DIFF_NAMES,
@@ -82,15 +79,28 @@ function newState(p: MapParams, desc: string): MapState {
 
 // --- moves -----------------------------------------------------------
 
-/** Build the ops for dropping color `c`/pencil `p` on region `r`, or null
- * for a no-op (upstream `drag_dropped`). */
-function dragOps(
+/** Start a drag from region `r`: its color, or when blank its pencil marks. */
+function pickUp(state: MapState, ui: MapUi, r: number): void {
+  if (r < 0) {
+    ui.dragColor = -1;
+    ui.dragPencil = 0;
+  } else {
+    ui.dragColor = state.coloring[r];
+    ui.dragPencil = ui.dragColor >= 0 ? 0 : state.pencil[r];
+  }
+}
+
+/** End the drag by dropping its color/pencil on region `r` (upstream
+ * `drag_dropped`). */
+function drop(
   state: MapState,
+  ui: MapUi,
   r: number,
-  c: number,
-  p: number,
   altButton: boolean,
 ): MapMove | UiUpdate {
+  let c = ui.dragColor;
+  let p = ui.dragPencil;
+  ui.dragColor = -2;
   if (r < 0) return UI_UPDATE; // drag into border
   if (state.map.immutable[r]) return UI_UPDATE; // can't change a clue
   if (state.coloring[r] === c && state.pencil[r] === p) return UI_UPDATE; // no change
@@ -111,13 +121,10 @@ function dragOps(
     ops.push({ op: "color", region: r, color: c < 0 ? null : c });
     if (c >= 0) oldp = 0;
   }
-  if (p !== oldp) {
-    for (let i = 0; i < FOUR; i++)
-      if ((oldp ^ p) & (1 << i)) ops.push({ op: "pencil", region: r, bit: i });
-  }
+  for (let i = 0; i < FOUR; i++)
+    if ((oldp ^ p) & (1 << i)) ops.push({ op: "pencil", region: r, bit: i });
 
-  if (ops.length === 0) return UI_UPDATE;
-  return { ops };
+  return ops.length ? { ops } : UI_UPDATE;
 }
 
 function interpretMove(
@@ -150,38 +157,17 @@ function interpretMove(
       return UI_UPDATE;
     }
     if (ui.dragColor === -2) {
-      // Start a cursor drag: pick up the region under the cursor.
-      const r = regionFromUiCursor(state.map, ui);
-      if (r >= 0) {
-        ui.dragColor = state.coloring[r];
-        ui.dragPencil = ui.dragColor >= 0 ? 0 : state.pencil[r];
-      } else {
-        ui.dragColor = -1;
-        ui.dragPencil = 0;
-      }
+      pickUp(state, ui, regionFromUiCursor(state.map, ui));
       ui.curMoved = false;
       return UI_UPDATE;
     }
-    // Drop the held color into the region under the cursor.
-    const altButton = button === CURSOR_SELECT2;
     if (!ui.curMoved) ui.dragColor = -1; // double-select removes the color
     const r = regionFromUiCursor(state.map, ui);
-    const c = ui.dragColor;
-    const p = ui.dragPencil;
-    ui.dragColor = -2;
-    return dragOps(state, r, c, p, altButton);
+    return drop(state, ui, r, button === CURSOR_SELECT2);
   }
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    const r = regionFromCoords(state.map, ts, point.x, point.y);
-    if (r >= 0) {
-      ui.dragColor = state.coloring[r];
-      ui.dragPencil = state.pencil[r];
-      if (ui.dragColor >= 0) ui.dragPencil = 0;
-    } else {
-      ui.dragColor = -1;
-      ui.dragPencil = 0;
-    }
+    pickUp(state, ui, regionFromCoords(state.map, ts, point.x, point.y));
     ui.dragx = point.x;
     ui.dragy = point.y;
     ui.cursor.visible = false;
@@ -195,12 +181,8 @@ function interpretMove(
   }
 
   if ((button === LEFT_RELEASE || button === RIGHT_RELEASE) && ui.dragColor > -2) {
-    const altButton = button === RIGHT_RELEASE;
     const r = regionFromCoords(state.map, ts, point.x, point.y);
-    const c = ui.dragColor;
-    const p = ui.dragPencil;
-    ui.dragColor = -2;
-    return dragOps(state, r, c, p, altButton);
+    return drop(state, ui, r, button === RIGHT_RELEASE);
   }
 
   return null;
@@ -229,7 +211,7 @@ function executeMove(s: MapState, m: MapMove): MapState {
       ret.coloring[op.region] = op.color ?? -1;
       ret.pencil[op.region] = 0;
     } else if (op.op === "pencil") {
-      // pencil toggle — illegal on a colored region (upstream returns NULL).
+      // Illegal on a colored region (upstream returns NULL).
       if (ret.coloring[op.region] >= 0)
         throw new Error("map: pencil on a colored region");
       ret.pencil[op.region] ^= 1 << op.bit;
@@ -287,7 +269,7 @@ function solve(orig: MapState, curr: MapState, aux?: string): SolveResult<MapMov
     return {
       ok: false,
       error:
-        ret === 0
+        ret === SOLVER_IMPOSSIBLE
           ? "Puzzle is inconsistent"
           : "Unable to find a unique solution for this puzzle",
     };
@@ -297,8 +279,8 @@ function solve(orig: MapState, curr: MapState, aux?: string): SolveResult<MapMov
 
 /**
  * Boards are uniquely solvable, so any region colored against the unique
- * solution is a definite mistake (design D6). Re-solve from the clues; if not
- * unique, report none.
+ * solution is a definite mistake. Re-solve from the clues; if not unique,
+ * report none.
  */
 function findMistakes(state: MapState): readonly MapMistake[] {
   const n = state.params.n;
@@ -331,10 +313,9 @@ function flashLength(
 
 // --- register --------------------------------------------------------
 
-/** Map's difficulty contract (`engine/difficulty.ts`). `mapSolver` reports
- * `SOLVER_IMPOSSIBLE` / `SOLVER_UNIQUE` / `SOLVER_STUCK`; the coloring it works
- * from is `clueColoring`, the givens alone, so the player's own colors never
- * enter the verdict. */
+/** Map's difficulty contract (`engine/difficulty.ts`). The coloring `mapSolver`
+ * works from is `clueColoring`, the givens alone, so the player's own colors
+ * never enter the verdict. */
 const difficulty: DifficultyContract<MapParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
@@ -394,7 +375,7 @@ export const mapGame: Game<
     difficulty: p.diff,
   }),
 
-  newDesc: (p: MapParams, rng: RandomState) => newMapDesc(p, rng),
+  newDesc: newMapDesc,
   validateDesc,
   newState,
   newUi,
@@ -439,9 +420,9 @@ export const mapGame: Game<
     },
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: 20,
-  computeSize: (p: MapParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
@@ -450,6 +431,3 @@ export const mapGame: Game<
 };
 
 registerGame(mapGame);
-
-// Re-exported for tests.
-export { cloneState, gradeMap };

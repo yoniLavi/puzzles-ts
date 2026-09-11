@@ -25,11 +25,7 @@ const WEIGHT_UNCHANGED = 3;
 
 // --- cumulative-frequency (Fenwick-like) table -----------------------
 
-function cfInit(table: Int32Array, n: number): void {
-  for (let i = 0; i < n; i++) table[i] = 0;
-}
-
-function cfAdd(table: Int32Array, _n: number, sym: number, count: number): void {
+function cfAdd(table: Int32Array, sym: number, count: number): void {
   let bit = 1;
   while (sym !== 0) {
     if (sym & bit) {
@@ -164,10 +160,10 @@ function genmap(
   }
 
   // Reuse tmp as the cumulative-frequency table of extend options per square.
-  cfInit(tmp, wh);
+  tmp.fill(0);
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++)
-      cfAdd(tmp, wh, y * w + x, extendOptions(w, h, n, map, x, y, -1));
+      cfAdd(tmp, y * w + x, extendOptions(w, h, n, map, x, y, -1));
 
   // Grow the regions.
   while (tmp[0] > 0) {
@@ -184,7 +180,6 @@ function genmap(
       for (let xx = Math.max(x - 1, 0); xx < Math.min(x + 2, w); xx++)
         cfAdd(
           tmp,
-          wh,
           yy * w + xx,
           -cfSlookup(tmp, wh, yy * w + xx) + extendOptions(w, h, n, map, xx, yy, -1),
         );
@@ -268,9 +263,11 @@ function fourcolor(
   coloring: Int32Array,
   rs: RandomState,
 ): void {
+  // Per vertex, FIVE slots: how many neighbors hold each color, then how many
+  // colors are still free.
   const scratch = new Int32Array(n * FIVE);
   for (let i = 0; i < n * FIVE; i++) scratch[i] = i % FIVE === FOUR ? FOUR : 0;
-  for (let i = 0; i < n; i++) coloring[i] = -1;
+  coloring.fill(-1);
   fourcolorRecurse(graph, n, ngraph, coloring, scratch, rs);
 }
 
@@ -290,7 +287,6 @@ export function newMapDesc(
 
   let mindiff = p.diff;
   let tries = 50;
-  let aux = "";
 
   const attempt = retryLimit("map: generation");
   for (;;) {
@@ -301,7 +297,7 @@ export function newMapDesc(
     fourcolor(graph, n, ngraph, coloring, rs);
 
     // Encode the full solution as the aux string.
-    aux = "";
+    let aux = "";
     for (let i = 0; i < n; i++) {
       if (coloring[i] < 0) continue;
       aux += `${i ? ";" : "S;"}${coloring[i]}:${i}`;
@@ -322,20 +318,18 @@ export function newMapDesc(
       if (cfreq[coloring[j]] === 1) continue; // keep last of its color
       coloring2.set(coloring);
       coloring2[j] = -1;
-      const solveret = mapSolver(graph, n, ngraph, coloring2, p.diff);
-      if (solveret === SOLVER_UNIQUE) {
+      if (mapSolver(graph, n, ngraph, coloring2, p.diff) === SOLVER_UNIQUE) {
         cfreq[coloring[j]]--;
         coloring[j] = -1;
       }
     }
 
     // Must be at least as hard as required (and not already solved by a solver
-    // that does nothing).
+    // that does nothing). Very few or very many regions may never reach the
+    // tier, so after 50 tries give up and accept Easy.
     coloring2.set(coloring);
     if (mapSolver(graph, n, ngraph, coloring2, mindiff - 1) === SOLVER_UNIQUE) {
-      if (mindiff > 0 && (n < 9 || n > (2 * wh) / 3)) {
-        if (tries-- <= 0) mindiff = 0; // give up and accept Easy
-      }
+      if (mindiff > 0 && (n < 9 || n > (2 * wh) / 3) && tries-- <= 0) mindiff = 0;
       continue;
     }
 

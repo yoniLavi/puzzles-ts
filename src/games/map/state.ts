@@ -7,9 +7,8 @@
  * The immutable board geometry lives in a shared {@link MapData} (see
  * `map-data.ts`) — the region-per-quadrant grid, the adjacency graph, the clue
  * flags and the label points — shared by reference across every cloned
- * {@link MapState} (upstream's refcounted `struct map`, GC in place of the
- * refcount; design D1). A move copies only the mutable per-region `coloring`
- * and `pencil` arrays.
+ * {@link MapState} (upstream's refcounted `struct map`). A move copies only the
+ * mutable per-region `coloring` and `pencil` arrays.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
@@ -27,8 +26,7 @@ export const DIFF_HARD = 2;
 export const DIFF_RECURSE = 3;
 export const DIFFCOUNT = 4;
 
-/** Upstream `map_diffnames`. */
-export const DIFF_NAMES: readonly string[] = tierNames(4, { search: true });
+export const DIFF_NAMES: readonly string[] = tierNames(DIFFCOUNT, { search: true });
 /** Upstream `map_diffchars`. */
 export const DIFF_CHARS = "enhu";
 
@@ -39,7 +37,7 @@ export interface MapParams {
   h: number;
   /** Number of regions. */
   n: number;
-  /** 0..3 = Easy/Normal/Hard/Unreasonable. */
+  /** Tier index into `DIFF_NAMES`. */
   diff: number;
 }
 
@@ -117,7 +115,7 @@ export function decodeParams(s: string): MapParams {
 
 export function validateParams(p: MapParams, _full: boolean): string | null {
   if (p.w < 2 || p.h < 2) return "Width and height must be at least two";
-  if (p.h > 0 && p.w > Math.floor(2147483647 / 2 / p.h))
+  if (p.w > Math.floor(2147483647 / 2 / p.h))
     return "Width times height must not be unreasonably large";
   if (p.n < 5) return "Must have at least five regions";
   if (p.n > p.w * p.h) return "Too many regions to fit in grid";
@@ -126,7 +124,7 @@ export function validateParams(p: MapParams, _full: boolean): string | null {
 
 // --- moves -----------------------------------------------------------
 
-/** One region edit within a move (design D3). */
+/** One region edit within a move. */
 export type MapOp =
   /** Set a region's color (`color` null = clear); clears its pencil. */
   | { op: "color"; region: number; color: number | null }
@@ -162,7 +160,7 @@ export interface MapUi {
   curLastmove: number;
   curMoved: boolean;
 
-  // preferences (design D7)
+  // preferences
   /** 0 = cyclic, 1 = each-to-white, 2 = all-to-white. */
   flashType: number;
   showNumbers: boolean;
@@ -199,17 +197,10 @@ export interface MapState {
 }
 
 export function cloneState(s: MapState): MapState {
-  return {
-    params: s.params,
-    map: s.map,
-    coloring: s.coloring.slice(),
-    pencil: s.pencil.slice(),
-    completed: s.completed,
-    cheated: s.cheated,
-  };
+  return { ...s, coloring: s.coloring.slice(), pencil: s.pencil.slice() };
 }
 
-/** A flagged region whose color contradicts the unique solution (design D6). */
+/** A flagged region whose color contradicts the unique solution. */
 export interface MapMistake {
   region: number;
 }
