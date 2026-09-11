@@ -10,28 +10,24 @@
  * `dist + 1`. So a five-square shuffle around a corner counts as one move,
  * matching what the player does with one drag.
  *
- * ## Why there is no `tree234` port here (design D1)
+ * ## Why there is no `tree234` here
  *
- * Upstream uses `tree234` twice in this one function, in two *different*
- * roles, and neither is an ordered multiset — so this is deliberately **not**
- * a `tree234` port and deliberately **not** `SortedMultiset`, which is the
- * right answer for almost every other `tree234` in the collection
+ * Upstream uses `tree234` twice in this one function, and in neither role is it
+ * an ordered multiset — so this is deliberately **not** a `tree234` port and
+ * **not** `SortedMultiset`, which is the right answer for almost every other
+ * `tree234` in the collection
  * (docs/games/engine-catalog.md § "Reach for these, don't re-roll"):
  *
- *  - `sorted` is a set of already-seen boards under the comparator
- *    `memcmp(a->data, b->data, w*h)`. It exists purely to **deduplicate by
- *    exact board bytes**; the ordering is never read out. ⇒ a `Map` keyed by
- *    the canonical bytes, which gives byte-exact dedup and somewhere to hang
- *    the BFS parent pointer for path reconstruction.
- *  - `queue` is created with a **`NULL` comparator** and driven by
- *    `addpos234(queue, b, qlen)` / `delpos234(queue, 0)`. A null comparator
- *    means it is not a sorted collection at all — it is an index-addressed
+ *  - `sorted`, under the comparator `memcmp(a->data, b->data, w*h)`, only
+ *    **deduplicates by exact board bytes**; its ordering is never read out.
+ *    ⇒ the hashed visited set below ({@link hashOf}).
+ *  - `queue` has a **`NULL` comparator** and is driven by
+ *    `addpos234(queue, b, qlen)` / `delpos234(queue, 0)`: an index-addressed
  *    list used as a **FIFO**. ⇒ a plain array with a head index.
  *
- * Neither substitution is observable. The result depends only on FIFO order
- * (which gives the shortest-path property) and on exact dedup; the tree's
- * internal ordering never decides which board is expanded next. Do not
- * "restore fidelity" by porting `tree234` here.
+ * Neither substitution is observable: the result depends only on FIFO order
+ * (the shortest-path property) and exact dedup. Do not "restore fidelity" by
+ * porting `tree234` here.
  *
  * The *enumeration* order, by contrast, **is** observable — it decides which
  * of several equally short solutions is reported, and the generator is gated
@@ -58,16 +54,11 @@ interface BoardNode {
 }
 
 /**
- * The visited set is bucketed by a 32-bit FNV-1a hash of the board bytes, with
- * an exact byte comparison inside each bucket — so its *semantics* are `memcmp`
- * equality, exactly as upstream's `boardcmp`, while nothing per-candidate is
- * allocated.
- *
- * The obvious encoding (a `Map` keyed by `String.fromCharCode(...data)`) was
- * measured at **35% of total generation time** on the 8×6 preset, because a
- * board string is built for every candidate move and most candidates turn out
- * to be duplicates. Hashing costs no allocation, and the byte-for-byte desc
- * differential proves the substitution changed no behavior.
+ * The visited set buckets boards by this 32-bit FNV-1a hash, with an exact byte
+ * comparison inside each bucket — `memcmp` equality, as upstream's `boardcmp`,
+ * with nothing allocated per candidate. A `Map` keyed by a board string
+ * measured **35% of total generation time** on the 8×6 preset, because most
+ * candidates are duplicates whose key is built and thrown away.
  */
 function hashOf(data: Uint8Array): number {
   let h = 0x811c9dc5;
@@ -113,7 +104,10 @@ export function solveBoard(
   const scratch = new Uint8Array(wh);
 
   // Per-board scratch: `next[i]` is the following square of i's block,
-  // `which[i]` the anchor its block belongs to.
+  // `which[i]` the anchor its block belongs to, `anchors[i]` whether i is one.
+  // This is the generator's hot loop, so its shape is measured, not tidied:
+  // testing `isAnchor` directly instead of caching `anchors` ran ~9% slower
+  // (paired timing, 2026-09-11).
   const next = new Int32Array(wh);
   const which = new Int32Array(wh);
   const anchors = new Uint8Array(wh);
@@ -128,10 +122,8 @@ export function solveBoard(
 
   search: while (qhead < queue.length) {
     const b = queue[qhead++];
-    if (movelimit >= 0 && b.dist >= movelimit) {
-      // Not soluble in under `movelimit` moves, so stop right now.
-      break;
-    }
+    // Not soluble in under `movelimit` moves, so stop right now.
+    if (movelimit >= 0 && b.dist >= movelimit) break;
     const data = b.data;
 
     // Find every anchor and thread each block's squares into a linked list.

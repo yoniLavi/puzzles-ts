@@ -14,12 +14,10 @@
  * published board with the TS solver, so the solver is also checked against a
  * number the generator didn't hand it.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/slide-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
- * Both died in the `add-slide-ts-port` stage-2 commit, if git history is ever
- * needed.
+ * The fixture is **frozen and cannot be regenerated**: the build it was
+ * captured under is gone with the C sources and the harness (see
+ * `engine/testing/differential.ts`). Both are in git history before the
+ * `add-slide-ts-port` stage-2 commit.
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";

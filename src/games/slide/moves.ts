@@ -1,11 +1,9 @@
 /**
- * Slide's move application and drag reachability.
- *
- * These live in their own module because `render.ts` needs them: upstream's
- * `game_redraw` reflects an in-progress drag by *simulating the release move*
- * and drawing the resulting board, so the renderer calls `movePiece`. If that
- * lived in `index.ts` the two would form an import cycle (docs/games/rendering.md § "The tile cache and the diff key", the
- * Signpost precedent).
+ * Slide's move application and drag reachability, in their own module because
+ * `render.ts` needs them too: upstream's `game_redraw` shows an in-progress
+ * drag by *simulating the release move*, so the renderer calls `movePiece`, and
+ * from `index.ts` that would be an import cycle
+ * (docs/games/rendering.md § "A simulated-release preview lives in `moves.ts`").
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -140,10 +138,7 @@ export function nearestReachable(
   tx: number,
   ty: number,
 ): number | null {
-  let distlimit = w + tx;
-  distlimit = Math.max(distlimit, h + ty);
-  distlimit = Math.max(distlimit, tx);
-  distlimit = Math.max(distlimit, ty);
+  const distlimit = Math.max(w + tx, h + ty, tx, ty);
 
   for (let dist = 0; dist <= distlimit; dist++) {
     for (let dx = -dist; dx <= dist; dx++) {
@@ -162,8 +157,7 @@ export function nearestReachable(
 /**
  * Apply a move (upstream `execute_move`). Pure: returns a new state.
  *
- * Two pieces of real gameplay logic ride along here, neither of which is
- * animation or display:
+ * Two pieces of gameplay logic ride along here:
  *
  *  - **Move counting.** Sliding the *same* block again does not increment the
  *    counter, and sliding it back where it started *decrements* it — so a

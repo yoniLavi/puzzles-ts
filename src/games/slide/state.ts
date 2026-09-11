@@ -20,9 +20,9 @@
  * `DIST(w-1), DIST(1)`. Forcefields (squares only the main block may cross)
  * cannot live in this encoding — the main block would erase them as it passed
  * — so they are a separate, never-changing array, shared by reference across
- * every state (the docs/games/mechanics.md § "Idiomatic state, not a C transliteration" shared-frozen pattern; a runtime
- * `Object.freeze` throws on a populated typed array, so `readonly` is the
- * whole guarantee).
+ * every state (docs/games/mechanics.md § "Idiomatic state, not a C
+ * transliteration", the shared-frozen pattern; a runtime `Object.freeze` throws
+ * on a populated typed array, so `readonly` is the whole guarantee).
  *
  * That canonical encoding is exactly what makes the exhaustive BFS solver in
  * `solver.ts` feasible, and what the generator's block-merge phase rewrites.
@@ -66,7 +66,7 @@ export interface SlideParams {
   h: number;
   /** Upper bound on the generated puzzle's minimum solution length, or `-1`
    * for no limit. This bounds *length*, not technique — Slide has no
-   * difficulty tiers (design D2). */
+   * difficulty tiers. */
   maxmoves: number;
 }
 
@@ -152,7 +152,6 @@ export const MAX_CELLS = 48;
 
 export function validateParams(p: SlideParams, _full: boolean): string | null {
   if (p.w > MAXWID) return `Width must be at most ${MAXWID}`;
-
   if (p.w < 5) return "Width must be at least 5";
   if (p.h < 4) return "Height must be at least 4";
 
@@ -287,14 +286,13 @@ export function cursorPos(ui: SlideUi, w: number): number {
 // --- moves ------------------------------------------------------------
 
 /**
- * A discriminated union rather than upstream's `"M<from>-<to>"` /
- * `"S<from>-<to>,…"` move strings (design D4): a slide of one block's anchor,
- * or the arming of a Solve path.
+ * A slide of one block's anchor, or the arming of a Solve route — where
+ * upstream used `"M<from>-<to>"` / `"S<from>-<to>,…"` move strings.
  *
- * Note that a `"solve"` move does **not** fill the board in — Slide's Solve
- * installs a route the player walks with the step key, exactly as Inertia's
- * does. That is a real game feature, not the missing-bookkeeping case
- * docs/games/solver-and-generator.md § "Solve and the generator's aux" is about.
+ * A `"solve"` move does **not** fill the board in: it installs a route the
+ * player walks with the step key, as Inertia's does. That is a game feature,
+ * not the missing-bookkeeping case of
+ * docs/games/solver-and-generator.md § "Solve and the generator's aux".
  */
 export type SlideMove =
   | { kind: "move"; from: number; to: number }
@@ -304,6 +302,15 @@ export type SlideMove =
 
 const isDigitAt = (s: string, i: number): boolean =>
   i < s.length && s[i] >= "0" && s[i] <= "9";
+
+/** The board byte each run-length letter stands for; the desc accepts either
+ * case. */
+const CELL_OF_LETTER: Partial<Record<string, number>> = {
+  a: ANCHOR,
+  m: MAINANCHOR,
+  e: EMPTY,
+  w: WALL,
+};
 
 /**
  * Encode a board as a game description (upstream `new_game_desc`'s tail): a
@@ -348,15 +355,13 @@ export function encodeDesc(
 }
 
 /**
- * Read the `,tx,ty[,minmoves]` tail, mirroring
- * `sscanf(desc, ",%d,%d,%d", …)`: returns how many integers converted, and
- * the values (leaving the caller's defaults for the ones that didn't).
+ * Read the `,tx,ty[,minmoves]` tail, mirroring `sscanf(desc, ",%d,%d,%d", …)`:
+ * returns the integers that converted, stopping at the first that doesn't.
  */
-function scanTargetCoords(s: string, max: number): { count: number; values: number[] } {
+function scanTargetCoords(s: string): number[] {
   const values: number[] = [];
   let i = 0;
-  while (values.length < max) {
-    if (s[i] !== ",") break;
+  while (values.length < 3 && s[i] === ",") {
     i++;
     let j = i;
     while (j < s.length && (s[j] === " " || s[j] === "\t")) j++;
@@ -373,22 +378,21 @@ function scanTargetCoords(s: string, max: number): { count: number; values: numb
     values.push(sign * Number.parseInt(s.slice(start, j), 10));
     i = j;
   }
-  return { count: values.length, values };
+  return values;
 }
 
 /** Upstream `validate_desc`. */
 export function validateDesc(p: SlideParams, desc: string): string | null {
   const wh = p.w * p.h;
+  // Whether each square is the latest square so far of its block — the only
+  // square a later `d` may link back to.
   const active = new Uint8Array(wh);
-  const link = new Int32Array(wh).fill(-1);
   let mains = 0;
   let i = 0;
   let k = 0;
 
   while (k < desc.length && desc[k] !== ",") {
     if (i >= wh) return "Too much data in game description";
-    link[i] = -1;
-    active[i] = 0;
     if (desc[k] === "f" || desc[k] === "F") {
       k++;
       if (k >= desc.length)
@@ -398,38 +402,31 @@ export function validateDesc(p: SlideParams, desc: string): string | null {
     if (desc[k] === "d" || desc[k] === "D") {
       k++;
       if (!isDigitAt(desc, k)) return "Expected a number after 'd' in game description";
-      const parsed = parseLeadingInt(desc, k);
-      const dist = parsed.value;
-      k = parsed.next;
+      const { value: dist, next } = parseLeadingInt(desc, k);
+      k = next;
 
       if (dist <= 0 || dist > i)
         return "Out-of-range number after 'd' in game description";
       if (!active[i - dist]) return "Invalid back-reference in game description";
 
-      link[i] = i - dist;
+      active[i - dist] = 0;
       active[i] = 1;
-      active[link[i]] = 0;
       i++;
     } else {
-      const c = desc[k];
+      const cell = CELL_OF_LETTER[desc[k].toLowerCase()];
       k++;
-      let count = 1;
+      if (cell === undefined) return "Invalid character in game description";
 
-      if (!"aAmMeEwW".includes(c)) return "Invalid character in game description";
+      let count = 1;
       if (isDigitAt(desc, k)) {
         const parsed = parseLeadingInt(desc, k);
         count = parsed.value;
         k = parsed.next;
       }
       if (i + count > wh) return "Too much data in game description";
-      const isAnchorChar = "aAmM".includes(c);
-      const isMainChar = "mM".includes(c);
-      while (count-- > 0) {
-        active[i] = isAnchorChar ? 1 : 0;
-        link[i] = -1;
-        if (isMainChar) mains++;
-        i++;
-      }
+      active.fill(isAnchor(cell) ? 1 : 0, i, i + count);
+      if (cell === MAINANCHOR) mains += count;
+      i += count;
     }
   }
 
@@ -439,17 +436,16 @@ export function validateDesc(p: SlideParams, desc: string): string | null {
       : "More than one main piece specified in game description";
   if (i < wh) return "Not enough data in game description";
 
-  if (scanTargetCoords(desc.slice(k), 3).count < 2)
+  // minmoves is optional.
+  if (scanTargetCoords(desc.slice(k)).length < 2)
     return "No target coordinates specified";
-  // (minmoves is optional.)
 
   return null;
 }
 
 /** Upstream `new_game`. */
 export function newState(p: SlideParams, desc: string): SlideState {
-  const w = p.w;
-  const h = p.h;
+  const { w, h } = p;
   const wh = w * h;
   const board = new Uint8Array(wh);
   const forcefield = new Uint8Array(wh);
@@ -473,17 +469,16 @@ export function newState(p: SlideParams, desc: string): SlideState {
     }
 
     if (desc[k] === "d" || desc[k] === "D") {
-      k++;
-      const parsed = parseLeadingInt(desc, k);
+      const parsed = parseLeadingInt(desc, k + 1);
       k = parsed.next;
       board[i] = parsed.value;
       forcefield[i] = f ? 1 : 0;
       i++;
     } else {
-      const c = desc[k];
+      const cell = CELL_OF_LETTER[desc[k].toLowerCase()] ?? WALL;
       k++;
-      let count = 1;
 
+      let count = 1;
       if (isDigitAt(desc, k)) {
         const parsed = parseLeadingInt(desc, k);
         count = parsed.value;
@@ -491,27 +486,13 @@ export function newState(p: SlideParams, desc: string): SlideState {
       }
       if (i + count > wh) throw new Error("slide: too much data in game description");
 
-      const cell =
-        c === "a" || c === "A"
-          ? ANCHOR
-          : c === "m" || c === "M"
-            ? MAINANCHOR
-            : c === "e" || c === "E"
-              ? EMPTY
-              : WALL;
-
-      while (count-- > 0) {
-        board[i] = cell;
-        forcefield[i] = f ? 1 : 0;
-        i++;
-      }
+      board.fill(cell, i, i + count);
+      forcefield.fill(f ? 1 : 0, i, i + count);
+      i += count;
     }
   }
 
-  const { values } = scanTargetCoords(desc.slice(k), 3);
-  const tx = values[0] ?? 0;
-  const ty = values[1] ?? 0;
-  const minmoves = values[2] ?? -1;
+  const [tx = 0, ty = 0, minmoves = -1] = scanTargetCoords(desc.slice(k));
 
   return {
     w,
@@ -580,11 +561,11 @@ export function boardTextFormat(w: number, h: number, data: Uint8Array): string 
 
       if (y % 2 && x % 2) {
         v = dchar(dtype(i));
-      } else if (y % 2 && !(x % 2)) {
+      } else if (y % 2) {
         const j1 = x > 0 ? dtype(i - 1) : T_OUTSIDE;
         const j2 = x < 2 * w ? dtype(i) : T_OUTSIDE;
         v = j1 !== j2 ? "|" : dchar(j1);
-      } else if (!(y % 2) && x % 2) {
+      } else if (x % 2) {
         const j1 = y > 0 ? dtype(i - w) : T_OUTSIDE;
         const j2 = y < 2 * h ? dtype(i) : T_OUTSIDE;
         v = j1 !== j2 ? "-" : dchar(j1);

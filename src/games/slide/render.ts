@@ -2,8 +2,8 @@
  * Slide's palette and renderer (upstream `game_colours` / `game_redraw` /
  * `draw_tile` / `draw_piecepart` / `draw_wallpart`).
  *
- * There is **no slide animation**: upstream's `game_anim_length` returns 0, and
- * all the movement feedback lives here (design D3) —
+ * There is **no slide animation** (upstream's `game_anim_length` is 0), so all
+ * the movement feedback lives here:
  *
  *  - while a block is held, it is drawn *where it would land*, lit up
  *    (`FG_GRABBED`), by simulating the release move and drawing the result —
@@ -19,32 +19,30 @@
  *    up (`FG_SHADOW`);
  *  - completing the puzzle plays a three-interval flash.
  *
- * ## The board's four materials
+ * ## The palette
  *
- * `refine-slide-appearance` gave the floor, the wall, an ordinary block and the
- * key block **four different fills**, where upstream derived all of them from a
- * single `game_mkhighlight` trio and told them apart by their bevels alone. The
- * ladder and the reasoning behind it live with the colors, in
- * `engine/color/palette-games.ts` under {@link slideWallBase}; what belongs
- * here is the mechanical consequence, which is that `drawTile` now selects a
- * *base index per material* and derives the bevel from it exactly as before.
+ * The floor, the wall, an ordinary block and the key block have four different
+ * fills, where upstream derived all of them from one `game_mkhighlight` trio
+ * and told them apart by their bevels alone. The ladder and the reasoning
+ * behind it live with the colors, in `engine/color/palette-games.ts` under
+ * {@link slideWallBase}.
  *
- * The palette keeps the C enum's index order exactly, and appends past it,
- * because `src/puzzle/augmentation.ts` gives slide dark-mode `paletteSwaps`
- * keyed by **color index** (each base color's highlight/lowlight pair, which
- * is why every material's trio is three *consecutive* indices and why a new
- * material adds a swap pair there as well as a color here). Reindexing would
- * silently mis-target those (docs/games/rendering.md § "The palette: three layers, meaning first"). The order is also load-bearing
- * inside `drawTile`, which derives a highlight/lowlight from a base as
- * `cc+1`/`cc+2` — the C's comment "Do not break this, or draw_tile() will get
- * confused."
+ * Every material is a base/highlight/lowlight trio at three *consecutive*
+ * indices, because `drawTile` derives the bevel from a base as `cc+1`/`cc+2`
+ * (the C: "Do not break this, or draw_tile() will get confused"). Upstream's
+ * enum order is kept and new entries are appended, because
+ * `src/puzzle/augmentation.ts` keys Slide's dark-mode `paletteSwaps` by **color
+ * index** — so a new material adds a swap pair there as well as a color here,
+ * and reindexing would silently mis-target them
+ * (docs/games/rendering.md § "The palette: three layers, meaning first").
  *
  * `draw_piecepart` is the one place this port stays a close transcription
  * rather than a rewrite. Its own author wrote "there's a lot of very fiddly
  * logic here and all I could really think to do was give it my best shot and
  * then test it and correct all the typos" — a 5×5 subdivision of the tile with
  * up to five cases per section. Verbatim transcription is the low-risk way to
- * reproduce a shape like that (docs/games/solver-and-generator.md § "Divergence and what it costs", "porting ease"), so the 29
+ * reproduce a shape like that
+ * (docs/games/solver-and-generator.md § "Divergence and what it costs"), so the
  * `maybeRect` calls below stay 1:1 with the C and auditable against it.
  */
 
@@ -93,9 +91,8 @@ export const COL_MAIN_GRABBED_LOWLIGHT = 11;
 export const COL_TARGET = 12;
 export const COL_TARGET_HIGHLIGHT = 13;
 export const COL_TARGET_LOWLIGHT = 14;
-// Appended past upstream's enum (`ts-engine`: "A game's palette index order is
-// stable"). Each trio stays base/highlight/lowlight-consecutive because
-// `drawTile` derives `cc+1`/`cc+2`, and each adds a `paletteSwaps` pair.
+// Appended past upstream's enum, because a game's palette index order is stable
+// (`ts-engine` spec); each trio adds a `paletteSwaps` pair.
 export const COL_WALL = 15;
 export const COL_WALL_HIGHLIGHT = 16;
 export const COL_WALL_LOWLIGHT = 17;
@@ -128,8 +125,7 @@ export function colors(defaultBackground: Color): Color[] {
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
 
-  // An ordinary block: an object resting on that floor. Upstream drew it in the
-  // floor's own color, which is why the board had to be read off its bevels.
+  // An ordinary block: an object resting on that floor.
   const block = mkhighlightSpecific(slideBlockBase(background));
   out[COL_BLOCK] = block.base;
   out[COL_BLOCK_HIGHLIGHT] = block.highlight;
@@ -168,21 +164,18 @@ export function colors(defaultBackground: Color): Color[] {
   out[COL_ROUTE] = ORANGE;
   out[COL_ROUTE_SHADOW] = slideRouteShadow(background);
 
-  // The keyboard cursor. `palette.ts`'s default `CURSOR` is green, and reaching
-  // past it needs a reason at the assignment: **Slide has already spent green**
-  // on the exit area, which the help page names to the player in as many words.
-  // A green mark elsewhere on this board would read as "the exit is here", and a
-  // green mark *on* the exit would vanish into it.
+  // The keyboard cursor. `palette.ts`'s default `CURSOR` is green, but Slide has
+  // already spent green on the exit area, which the help page names to the
+  // player: a green mark elsewhere would read as "the exit is here", and a green
+  // mark *on* the exit would vanish into it.
   //
-  // Of what is left, red is the one that works everywhere the cursor can go,
-  // and the board's own spread is why. The cursor is clamped to the whole grid,
-  // so the mark sits on materials from the key block (L 0.44) and the wall
-  // (0.48) up to the floor (0.83) and the exit (0.94) — a span no mid-tone can
-  // straddle, which rules out teal, pink and orange, and yellow (0.80)
-  // disappears into the floor outright. That leaves the dark end, and there red
-  // beats purple twice: darker (0.29 against 0.33), and opposite in hue to the
-  // one saturated thing on the board rather than adjacent to it — purple on the
-  // blue-violet key block was tried first and read as a smudge.
+  // Red works everywhere the cursor can go. The cursor is clamped to the whole
+  // grid, so the mark sits on materials from the key block (L 0.44) and the
+  // wall (0.48) up to the floor (0.83) and the exit (0.94) — a span no mid-tone
+  // can straddle, which rules out teal, pink and orange, and yellow (0.80)
+  // disappears into the floor. At the dark end red beats purple twice: darker
+  // (0.29 against 0.33), and opposite in hue to the blue-violet key block rather
+  // than adjacent to it, where purple read as a smudge.
   //
   // Red carries no "mistake" meaning to steal here: Slide declares no
   // `findMistakes` hook, because every reachable position is legal.
@@ -211,17 +204,14 @@ export function computeSize(p: { w: number; h: number }, ts: number): Size {
 // --- the packed per-tile value ----------------------------------------
 
 /**
- * The keyboard cursor is on this square.
+ * The keyboard cursor is on this square. It takes bit 0, which upstream spent
+ * on a write-only `BG_NORMAL`.
  *
- * It sits on bit 0 because upstream's `BG_NORMAL` did, and `BG_NORMAL` was
- * **write-only** — set on every non-target square and never once tested, since
- * `drawTile` asks `val & BG_TARGET` and takes the floor as the else. It cost a
- * bit to say nothing, which is exactly the bit an overlay needed: bits 0–30 are
- * now all spoken for (bit 31 is the `Int32Array`'s sign), so **the next overlay
- * has to widen the diff key rather than find a spare flag**. Widening it is the
- * cheap option — it is a repaint cache, not a wire format — but it must be a
- * deliberate step, because an overlay that cannot fit in the word silently
- * fails to repaint (docs/games/rendering.md § "Overlay sidecars").
+ * Bits 0–30 are now all in use (bit 31 is the `Int32Array`'s sign), so the next
+ * overlay has to widen the diff key rather than find a spare flag. Widening is
+ * cheap — it is a repaint cache, not a wire format — but must be deliberate,
+ * because an overlay that does not fit in the word silently fails to repaint
+ * (docs/games/rendering.md § "A packed diff key runs out of bits, and dead flags are where the next one comes from").
  */
 const FG_CURSOR = 0x00000001;
 const BG_TARGET = 0x00000002;
@@ -238,14 +228,9 @@ const FG_SOLVEPIECE = 0x00000400;
 const FG_MAINPIECESH = 11;
 /** Shift of the solve-shadow's border/corner flags. */
 const FG_SHADOWSH = 19;
-/**
- * Which of this square's four sides face *out* of the exit gate — the four bits
- * left over above the shadow's flags (27..30; bit 31 is the sign of the
- * `Int32Array` the diff key lives in). The gate is drawn as an outline around
- * the whole gate region rather than a per-square fill, so a square has to know
- * about its neighbors, and every overlay has to sit inside the one packed word
- * or it silently fails to repaint (docs/games/rendering.md § "Overlay sidecars").
- */
+/** Which of this square's four sides face *out* of the exit gate (bits 27–30).
+ * The gate is outlined around its whole region rather than filled per square,
+ * so a square has to know about its neighbors. */
 const GATE_LBORDER = 0x08000000;
 const GATE_TBORDER = 0x10000000;
 const GATE_RBORDER = 0x20000000;
@@ -261,7 +246,6 @@ const PIECE_BLCORNER = 0x40;
 const PIECE_BRCORNER = 0x80;
 const PIECE_MASK = 0xff;
 
-/** `!((a|b) &~ val)` — both flags present. */
 const hasAll = (val: number, mask: number): boolean => (val & mask) === mask;
 
 // --- draw state -------------------------------------------------------
@@ -269,8 +253,6 @@ const hasAll = (val: number, mask: number): boolean => (val & mask) === mask;
 export interface SlideDrawState {
   started: boolean;
   tilesize: number;
-  w: number;
-  h: number;
   /** Last-drawn packed value per cell; `-1` forces a repaint. Every overlay
    * (drag, solve highlight, shadow, flash) is part of this one word, so they
    * all sit in the diff key by construction (docs/games/rendering.md § "The tile cache and the diff key"). */
@@ -281,8 +263,6 @@ export function newDrawState(state: SlideState): SlideDrawState {
   return {
     started: false,
     tilesize: 0,
-    w: state.w,
-    h: state.h,
     grid: new Int32Array(state.w * state.h).fill(-1),
   };
 }
@@ -340,28 +320,13 @@ function maybeRect(dr: GameDrawing, rect: Rect, coltype: number, col2: number): 
     while (by >= bx) {
       const x1 = cx + xm * bx;
       const y1 = cy + ym * bx;
-      let x2 = cx + xm * by;
-      let y2 = y1;
+      const x2 = cx + xm * by;
+      const y2 = cy + ym * by;
       dr.drawRect(
-        {
-          x: Math.min(x1, x2),
-          y: Math.min(y1, y2),
-          w: Math.abs(x1 - x2) + 1,
-          h: Math.abs(y1 - y2) + 1,
-        },
+        { x: Math.min(x1, x2), y: y1, w: Math.abs(x1 - x2) + 1, h: 1 },
         color,
       );
-      x2 = x1;
-      y2 = cy + ym * by;
-      dr.drawRect(
-        {
-          x: Math.min(x1, x2),
-          y: Math.min(y1, y2),
-          w: Math.abs(x1 - x2) + 1,
-          h: Math.abs(y1 - y2) + 1,
-        },
-        col2,
-      );
+      dr.drawRect({ x: x1, y: Math.min(y1, y2), w: 1, h: Math.abs(y1 - y2) + 1 }, col2);
 
       bd += 2 * bx + 1;
       const bd2 = bd - (2 * by - 1);
@@ -400,6 +365,21 @@ function drawWallpart(
   if (val & PIECE_TBORDER) dr.drawRect({ x: tx, y: ty, w: ts, h: hw }, ch);
   if (val & PIECE_BBORDER) dr.drawRect({ x: tx, y: ty + ts - hw, w: ts, h: hw }, cl);
 
+  /** One `hw`-square corner at `(x, y)`: filled `under`, with the triangle
+   * drawn `over` it. */
+  const miter = (
+    x: number,
+    y: number,
+    triangle: Point[],
+    under: number,
+    over: number,
+  ) => {
+    const corner = { x, y, w: hw, h: hw };
+    dr.drawRect(corner, under);
+    dr.clip(corner);
+    dr.drawPolygon(triangle, over, over);
+    dr.unclip();
+  };
   const bottomLeftTriangle: Point[] = [
     { x: tx - 1, y: ty + ts - hw - 1 },
     { x: tx + hw, y: ty + ts - hw - 1 },
@@ -411,29 +391,13 @@ function drawWallpart(
     { x: tx + ts - hw - 1, y: ty + hw },
   ];
 
-  if (hasAll(val, PIECE_BBORDER | PIECE_LBORDER)) {
-    dr.drawRect({ x: tx, y: ty + ts - hw, w: hw, h: hw }, cl);
-    dr.clip({ x: tx, y: ty + ts - hw, w: hw, h: hw });
-    dr.drawPolygon(bottomLeftTriangle, ch, ch);
-    dr.unclip();
-  } else if (val & PIECE_BLCORNER) {
-    dr.drawRect({ x: tx, y: ty + ts - hw, w: hw, h: hw }, ch);
-    dr.clip({ x: tx, y: ty + ts - hw, w: hw, h: hw });
-    dr.drawPolygon(bottomLeftTriangle, cl, cl);
-    dr.unclip();
-  }
+  if (hasAll(val, PIECE_BBORDER | PIECE_LBORDER))
+    miter(tx, ty + ts - hw, bottomLeftTriangle, cl, ch);
+  else if (val & PIECE_BLCORNER) miter(tx, ty + ts - hw, bottomLeftTriangle, ch, cl);
 
-  if (hasAll(val, PIECE_TBORDER | PIECE_RBORDER)) {
-    dr.drawRect({ x: tx + ts - hw, y: ty, w: hw, h: hw }, cl);
-    dr.clip({ x: tx + ts - hw, y: ty, w: hw, h: hw });
-    dr.drawPolygon(topRightTriangle, ch, ch);
-    dr.unclip();
-  } else if (val & PIECE_TRCORNER) {
-    dr.drawRect({ x: tx + ts - hw, y: ty, w: hw, h: hw }, ch);
-    dr.clip({ x: tx + ts - hw, y: ty, w: hw, h: hw });
-    dr.drawPolygon(topRightTriangle, cl, cl);
-    dr.unclip();
-  }
+  if (hasAll(val, PIECE_TBORDER | PIECE_RBORDER))
+    miter(tx + ts - hw, ty, topRightTriangle, cl, ch);
+  else if (val & PIECE_TRCORNER) miter(tx + ts - hw, ty, topRightTriangle, ch, cl);
 
   if (val & PIECE_TLCORNER) dr.drawRect({ x: tx, y: ty, w: hw, h: hw }, ch);
   if (val & PIECE_BRCORNER)
@@ -574,14 +538,12 @@ function drawPiecepart(
  * wall, and this one is permeable.
  *
  * It replaces upstream's "cattle grid", which its author called *"disgusting"*
- * and asked to have replaced with "something completely different". It was not
- * in fact a cattle grid: a cattle grid is parallel bars, and `draw_tile` drew a
- * full lattice, six thick lowlight bars per square in both directions, over the
- * whole cell. Two things follow from marking the boundary instead of filling the
- * cell. It stays legible as tiles get small, where a texture turns to mud. And
- * it can lie **on top of** the exit's green — the gate is usually inside the
- * exit area — without either marking obscuring the other, which a second fill
- * could not do.
+ * and asked to have replaced with "something completely different" (it was in
+ * fact a full lattice of thick lowlight bars over the whole cell). Marking the
+ * boundary instead of filling the cell stays legible as tiles get small, where
+ * a texture turns to mud, and lets it lie **on top of** the exit's green — the
+ * gate is usually inside the exit area — without either marking obscuring the
+ * other, which a second fill could not do.
  */
 function drawGate(
   dr: GameDrawing,
@@ -644,9 +606,8 @@ function drawTile(
   // color leaves `drawPiecepart` painting only the bevel bands, which trace
   // the shape exactly. A filled ghost reads as another piece, whatever color
   // it is; an empty one reads as a space shaped like the piece, which is what a
-  // destination is. Upstream filled it with the *lowlight*, and its own author
-  // recorded the consequence: "the shadow blends in too well with the piece
-  // lowlights".
+  // destination is. (Upstream filled it with the lowlight, and its author
+  // noted "the shadow blends in too well with the piece lowlights".)
   if (val & FG_SHADOW)
     drawPiecepart(
       dr,
@@ -678,9 +639,9 @@ function drawTile(
     else if (val & FLASH_HIGH) cc = ch;
 
     // The Solve route's next piece keeps its own fill and wears the accent as a
-    // band where its bevel would be. Upstream painted the whole piece in its own
-    // *highlight* — pure white on a light host — which its author called
-    // excessive: a light source, where what is wanted is an ordering cue.
+    // band where its bevel would be. (Upstream painted the whole piece in its
+    // highlight — pure white on a light host — which its author called
+    // excessive: a light source, where an ordering cue is wanted.)
     if (val & FG_SOLVEPIECE) {
       ch = COL_ROUTE;
       cl = COL_ROUTE;
@@ -690,17 +651,12 @@ function drawTile(
   }
 
   // Topmost: the keyboard cursor, as the collection's four corner brackets.
-  // Brackets rather than a fill or an outline, for two reasons that both matter
-  // here: they sit *beside* the content instead of over it, so a block's bevel
-  // and the exit's tint still read underneath (the mark-beside-the-content
-  // rule); and they are the mark every other game in the collection uses for
-  // "the keyboard is here", so it needs no learning.
-  //
-  // The bracket arms are half the radius, so at the smallest shipped tile they
-  // are still two distinct strokes per corner rather than a smudge — `r` is
-  // floored to at least 2 for that reason. The stroke scales with the tile:
-  // upstream's hairline is sized for ink on paper, and this board is four
-  // shades of one gray, so a one-pixel line has nothing carrying it.
+  // They sit *beside* the content rather than over it, so a block's bevel and
+  // the exit's tint still read underneath, and every game uses them for "the
+  // keyboard is here". `r` is floored at 2 so the arms stay two distinct
+  // strokes per corner at the smallest tile; the stroke scales with the tile,
+  // because this board is four shades of one gray and a hairline has nothing
+  // carrying it.
   if (val & FG_CURSOR) {
     const r = Math.max(2, Math.floor(ts / 2) - highlightWidth(ts));
     drawRectCorners(
@@ -759,7 +715,8 @@ export function redraw(
   const ts = ds.tilesize;
 
   if (!ds.started) {
-    // The engine paints no pixels of its own (docs/games/rendering.md § "The rendering doctrine" doctrine).
+    // The engine paints no pixels of its own
+    // (docs/games/rendering.md § "The rendering doctrine").
     const size = computeSize({ w, h }, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
     ds.started = true;
@@ -769,26 +726,24 @@ export function redraw(
   // the held block is drawn where it would land if it were put down now. That
   // is the whole of the keyboard's move preview too — a keyboard grab moves the
   // same `grabCurrpos`, so it needs no rendering of its own.
+  //
+  // Upstream asserts if the held block no longer fits. Only a state change under
+  // a live grab could cause that, and `changedState` cancels the grab — but draw
+  // the plain board rather than throw if it ever happens anyway.
   const board = state.board.slice();
-  if (ui.grabbed) {
-    if (
-      !movePiece(
-        w,
-        h,
-        state.board,
-        board,
-        state.forcefield,
-        ui.grabAnchor,
-        ui.grabCurrpos,
-      )
-    ) {
-      // Upstream asserts here. A grab can only be left dangling against a
-      // board it no longer fits if the state changed underneath it (an undo
-      // with the pointer still down), which `changedState` cancels — but draw
-      // the plain board rather than throwing if it ever happens anyway.
-      board.set(state.board);
-    }
-  }
+  if (
+    ui.grabbed &&
+    !movePiece(
+      w,
+      h,
+      state.board,
+      board,
+      state.forcefield,
+      ui.grabAnchor,
+      ui.grabCurrpos,
+    )
+  )
+    board.set(state.board);
 
   // Where the installed Solve route wants to move next, if any.
   let solvesrc = -1;
@@ -822,6 +777,9 @@ export function redraw(
   const grabpos = ui.grabCurrpos > 0 ? dsf.canonify(ui.grabCurrpos) : -1;
   const solvepos = solvesrc >= 0 ? dsf.canonify(solvesrc) : -1;
   const cursor = ui.cursor.visible ? cursorPos(ui, w) : -1;
+  let flash = 0;
+  if (flashTime > 0)
+    flash = Math.floor(flashTime / FLASH_INTERVAL) & 1 ? FLASH_LOW : FLASH_HIGH;
 
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
@@ -846,10 +804,7 @@ export function redraw(
         if (y === h - 1 || !state.forcefield[i + w]) val |= GATE_BBORDER;
       }
 
-      if (flashTime > 0) {
-        const flashtype = Math.floor(flashTime / FLASH_INTERVAL) & 1;
-        val |= flashtype ? FLASH_LOW : FLASH_HIGH;
-      }
+      val |= flash;
 
       if (board[i] !== EMPTY) {
         const canon = dsf.canonify(i);

@@ -3,23 +3,22 @@
  * rectangular blocks around a walled board until the blue main block reaches
  * the green target and escapes through the hole in the wall.
  *
- * Slide was a *finished* upstream game that only ever shipped behind
- * `PUZZLES_ENABLE_UNFINISHED`, so it reached nobody: its generator, its
- * exhaustive BFS solver and its drag interaction all work, and its TODOs are
- * generator variety and graphics polish. This port finishes it rather than
- * merely transliterating it.
+ * Upstream finished Slide — generator, exhaustive BFS solver and drag
+ * interaction all work — but only ever shipped it behind
+ * `PUZZLES_ENABLE_UNFINISHED`, with generator variety and graphics polish left
+ * as TODOs. This port finishes it rather than merely transliterating it.
  *
- * Scoping calls, each deliberate (design D2):
+ * Deliberately absent:
  *
- *  - **No `findMistakes`.** Slide has no wrong-but-legal state — *every*
- *    reachable position is legal, you are simply nearer to or further from the
- *    exit — so there is nothing to flag, exactly as for the permutation games
- *    (docs/games/solver-and-generator.md § "The solvable-game contract"). Check & Save correctly degrades to a plain quick-save.
- *  - **No guess-free-generation obligation.** That policy binds logic puzzles;
- *    Slide is a movement puzzle whose "solver" is a shortest-path search, with
- *    no difficulty tiers at all (`maxmoves` bounds solution *length*).
- *  - **No explained hint** in this change. If Slide gets one it is a
- *    solver-path hint of its own, like every prior port's.
+ *  - **`findMistakes`.** Every reachable position is legal — you are simply
+ *    nearer to or further from the exit — so there is nothing to flag, as for
+ *    the permutation games
+ *    (docs/games/solver-and-generator.md § "The solvable-game contract").
+ *    Check & Save degrades to a plain quick-save.
+ *  - **A guess-free-generation obligation.** That binds logic puzzles; Slide is
+ *    a movement puzzle whose "solver" is a shortest-path search, with no
+ *    difficulty tiers (`maxmoves` bounds solution *length*).
+ *  - **An explained hint**, so far. One would be a solver-path hint of its own.
  */
 
 import type {
@@ -46,9 +45,8 @@ import {
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, GameStatus, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newSlideDesc } from "./generator.ts";
 import { computeReachable, executeMove, nearestReachable } from "./moves.ts";
 import {
@@ -89,19 +87,16 @@ import {
 // --- input ------------------------------------------------------------
 
 /**
- * Slide's entire pointer vocabulary is one press-and-drag, and it has no use
- * whatever for a secondary button — which makes it exactly the case playbook
- * §3.8c is about. `detectSecondaryButton` delivers a touch that stays within
- * 8px for 350ms as `RIGHT_BUTTON`, so "press a block, pause to work out where
- * you want it, then drag" dies precisely when the player stops to think, and
- * only on touch. Folding right onto left makes the gesture work whichever the
- * long-press detector decided it saw.
+ * Fold the right button onto the left. Slide's whole pointer vocabulary is one
+ * press-and-drag, and a touch that holds still arrives as `RIGHT_BUTTON`
+ * (docs/games/input.md § "A touch hold arrives as the right button"), so
+ * "press a block, pause to aim, then drag" would die exactly when the player
+ * stops to think.
  *
- * The fold is about *pointer* buttons and touches nothing else: it names three
- * codes explicitly, so no cursor key, select key or cancel key can arrive at
- * the pointer arms disguised as a press (design D3). `cursor keys are unmoved
- * by asPrimary` in `slide.test.ts` is the guard, and it asserts the mapping
- * rather than the outcome, so a fold widened to a range would fail it.
+ * It names the three codes rather than a range, so no cursor, select or cancel
+ * key can reach the pointer arms disguised as a press. The "right→left fold"
+ * test in `slide.test.ts` asserts the mapping rather than an outcome, so a fold
+ * widened to a range fails it.
  */
 function asPrimary(button: number): number {
   if (button === RIGHT_BUTTON) return LEFT_BUTTON;
@@ -111,12 +106,11 @@ function asPrimary(button: number): number {
 }
 
 /**
- * Advance the installed Solve route by one step. Upstream binds this to
- * `button == ' '`, which **cannot fire in this frontend**: `puzzleKeyMap` maps
- * Space to `CURSOR_SELECT2` and Enter to `CURSOR_SELECT`, so a literal
- * transcription would ship a dead key and leave a Solve route unwalkable
- * (the §3.8a family of trap). We accept the two select buttons the frontend
- * actually delivers, plus a bare space for anything that sends one.
+ * Advance the installed Solve route by one step. Upstream binds `' '`, which
+ * this frontend never sends: `puzzleKeyMap` delivers Space as `CURSOR_SELECT2`
+ * and Enter as `CURSOR_SELECT`, so a literal transcription would leave a Solve
+ * route unwalkable. Accept both select buttons, plus a bare space for anything
+ * that sends one.
  */
 function isStepKey(button: number): boolean {
   return (
@@ -129,10 +123,9 @@ function isStepKey(button: number): boolean {
  * once — every square its anchor can be slid to. Returns false when there is
  * no block there.
  *
- * The one grab implementation. The pointer press and the keyboard select
- * differ only in where `(cx, cy)` comes from, which is the whole of what makes
- * a keyboard journey produce the *same* move as the equivalent drag rather
- * than a parallel one.
+ * The pointer press and the keyboard select both grab here and differ only in
+ * where `(cx, cy)` comes from, which is what makes a keyboard journey produce
+ * the *same* move as the equivalent drag rather than a parallel one.
  */
 function grabBlockAt(state: SlideState, ui: SlideUi, cx: number, cy: number): boolean {
   const { w, h, board } = state;
@@ -191,10 +184,9 @@ function interpretMove(
     const tx = fromCoord(p.x, ts, BORDER) - ui.grabOffsetX;
     const ty = fromCoord(p.y, ts, BORDER) - ui.grabOffsetY;
     const target = nearestReachable(w, h, ui.reachable, tx, ty);
-    // No reachable square within range, or the block is already where the
-    // pointer wants it: nothing to repaint. (Upstream repaints unconditionally
-    // on a hit; suppressing the no-change case saves a notification per pixel
-    // of pointer movement and is invisible.)
+    // Nothing to repaint when no square is in range or the block is already
+    // there. (Upstream repaints on every hit; skipping the no-op saves a
+    // notification per pixel of pointer movement.)
     if (target === null || target === ui.grabCurrpos) return null;
     ui.grabCurrpos = target;
     return UI_UPDATE;
@@ -202,9 +194,8 @@ function interpretMove(
 
   if (button === LEFT_RELEASE && ui.grabbed) return releaseGrab(ui);
 
-  // The Solve route owns the select key for as long as one is installed
-  // (design D2). It is gated on `state.soln`, so the two uses never contend:
-  // straying from the route discards it, and the select key grabs again.
+  // An installed Solve route owns the select key. Straying from the route
+  // discards it, and then the select key grabs again.
   if (isStepKey(button) && state.soln) {
     const step = state.soln[state.solnIndex];
     // If the player has already part-way nudged this block, the route's source
@@ -250,11 +241,9 @@ function interpretMove(
  * refusing a step that would leave it — and the cursor goes with the block, so
  * it stays on the square the block was picked up by.
  *
- * One cell per press, not slide-as-far-as-it-goes (design D1's open point).
- * Sliding to the end is fewer presses down a long corridor, but it cannot stop
- * *inside* one, so it cannot reach every cell of the reachable set — and a
- * keyboard that cannot reach a cell the drag can reach is the same defect D1
- * rejected the free cursor for.
+ * One cell per press, not slide-as-far-as-it-goes. Sliding to the end is fewer
+ * presses down a long corridor, but it cannot stop *inside* one, so the
+ * keyboard could not reach every cell the drag can.
  */
 function moveSlideCursor(
   state: SlideState,
@@ -283,28 +272,27 @@ function moveSlideCursor(
 
 /**
  * Install the shortest route from here to the exit, for the player to walk one
- * step at a time with Space/Enter. Slide's Solve deliberately does **not** fill
- * the board in — the route *is* the feature, and Inertia's Solve works the same
- * way (docs/games/input.md § "The board keeps the keyboard after a control") — so it sets `cheated` but leaves the position alone.
+ * step at a time with Space/Enter. Solve deliberately does **not** fill the
+ * board in: the route *is* the feature, as in Inertia
+ * (docs/games/input.md § "The board keeps the keyboard after a control"). It
+ * sets `cheated` and leaves the position alone.
  *
- * One divergence: upstream solves `state`, the *initial* board, though its own
- * comment says "from the current position" and its `execute_move` goes to
- * trouble adjusting the route's first move for a partly-nudged block, which
- * only makes sense from the current one. As written, any Solve after any move
- * yields a route whose first step is illegal, so pressing Space does nothing at
- * all — a genuine player-visible defect (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3), and one no desc
- * differential can see. We solve `curr`.
+ * Divergence: upstream solves the *initial* board, though its own comment says
+ * "from the current position" and its `execute_move` adjusts the route for a
+ * partly-nudged block, which only makes sense from the current one. As
+ * written, any Solve after any move yields a route whose first step is illegal,
+ * so the step key does nothing — a player-visible defect no desc differential
+ * can see (docs/games/solver-and-generator.md § "Divergence and what it costs"
+ * rule 3). We solve `curr`.
  */
 function solve(_orig: SlideState, curr: SlideState): SolveResult<SlideMove> {
-  // Upstream's own `nmoves == 0` guard is unreachable: `solve_board` tests the
-  // goal only on a board it has just *generated*, never on the one it started
-  // from, so on a finished board it reports the one irrelevant move that leaves
-  // the main block where it already is. Testing the start board makes the
-  // message upstream clearly intended actually appear.
+  // Upstream's `nmoves == 0` guard never fires: `solve_board` tests the goal
+  // only on boards it generates, never on the one it starts from, so it is
+  // tested here instead.
   if (curr.board[curr.ty * curr.w + curr.tx] === MAINANCHOR)
     return { ok: false, error: "Puzzle is already solved" };
 
-  const { moves, path } = solveBoard(
+  const { path } = solveBoard(
     curr.w,
     curr.h,
     curr.board,
@@ -314,10 +302,7 @@ function solve(_orig: SlideState, curr: SlideState): SolveResult<SlideMove> {
     -1,
     true,
   );
-
-  if (moves < 0 || !path)
-    return { ok: false, error: "Unable to find a solution to this puzzle" };
-  if (moves === 0) return { ok: false, error: "Puzzle is already solved" };
+  if (!path) return { ok: false, error: "Unable to find a solution to this puzzle" };
   return { ok: true, move: { kind: "solve", moves: path } };
 }
 
@@ -331,10 +316,8 @@ const paramConfig: ParamConfigItem<SlideParams>[] = [
     type: "string",
     get: (p) => String(p.maxmoves),
     set: (p, v) => {
-      // `atoi` semantics, and note upstream's own `custom_params` reads this
-      // with plain `atoi` too — so a blank field means 0, i.e. "no solution at
-      // all is short enough", which the generator then satisfies with the
-      // first soluble board it finds. A negative value means no limit.
+      // `atoi`, as upstream's `custom_params` reads it: a blank field is 0,
+      // which `validateParams` rejects. Any negative value means no limit.
       p.maxmoves = v.trim().startsWith("-") ? -1 : parseConfigInt(v);
     },
   },
@@ -363,45 +346,37 @@ export const slideGame: Game<
   describeParams,
   paramConfig,
 
-  newDesc: (p: SlideParams, rng: RandomState): { desc: string } => newSlideDesc(p, rng),
+  newDesc: newSlideDesc,
   validateDesc,
   newState,
   newUi,
 
   /** Upstream's `game_changed_state` is empty, but a grab left dangling across
-   * an undo (pointer still down, or a block held by the keyboard, while the
-   * toolbar rewinds the board) points at an anchor the new board may not have
-   * — which upstream's `game_redraw` asserts on. Canceling the grab when the
-   * state moves under it is the fix, and costs nothing: a `UI_UPDATE` (which is
-   * all a grab or a drag-follow is) never reaches here.
-   *
-   * It applies to a keyboard grab for the same reason and not merely by
-   * inheritance: the reachable set was computed against the board that has just
-   * been replaced, so it is stale however the block was picked up. The *cursor*
-   * deliberately survives — it is a position on a grid whose size has not
-   * changed, and dropping it would read as a lost keypress. */
-  changedState(ui: SlideUi): void {
-    cancelGrab(ui);
-  },
+   * an undo (pointer still down, or a block held by the keyboard) points at an
+   * anchor the new board may not have — which upstream's `game_redraw` asserts
+   * on — and its reachable set was computed against the board just replaced.
+   * Canceling it costs nothing: a `UI_UPDATE`, which is all a grab or a
+   * drag-follow is, never reaches here. The cursor survives (see `SlideUi`). */
+  changedState: cancelGrab,
 
   interpretMove,
   executeMove,
-  status: (s: SlideState): GameStatus => status(s),
+  status,
 
   solve,
   textFormat,
-  statusbarText: (s: SlideState): string => statusbarText(s),
+  statusbarText,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SlideParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   // Blocks jump straight to where they were dragged: upstream's
   // `game_anim_length` is 0, and the live feedback is the block following the
-  // pointer (design D3).
+  // pointer.
   animLength: () => 0,
   flashLength: (a: SlideState, b: SlideState): number =>
     a.completed < 0 && b.completed >= 0 ? FLASH_TIME : 0,

@@ -65,6 +65,24 @@ const H = 5;
 const WH = W * H;
 const idx = (x: number, y: number): number => y * W + x;
 
+/** The walls and the main 2×2 that both boards below are built on. */
+function walledBoard(): Uint8Array {
+  const board = new Uint8Array(WH).fill(EMPTY);
+  for (let x = 0; x < W; x++) {
+    board[x] = WALL;
+    board[(H - 1) * W + x] = WALL;
+  }
+  for (let y = 0; y < H; y++) {
+    board[y * W] = WALL;
+    board[y * W + (W - 1)] = WALL;
+  }
+  board[idx(1, 1)] = MAINANCHOR;
+  board[idx(2, 1)] = 1;
+  board[idx(1, 2)] = W - 1;
+  board[idx(2, 2)] = 1;
+  return board;
+}
+
 /**
  * ```
  * # # # # # #
@@ -78,52 +96,26 @@ const idx = (x: number, y: number): number => y * W + x;
  * assertions can name particular tiles (see `slide.test.ts` for the same shape
  * used by the logic tests).
  */
-const DESC = (() => {
-  const board = new Uint8Array(WH).fill(EMPTY);
-  for (let x = 0; x < W; x++) {
-    board[x] = WALL;
-    board[(H - 1) * W + x] = WALL;
-  }
-  for (let y = 0; y < H; y++) {
-    board[y * W] = WALL;
-    board[y * W + (W - 1)] = WALL;
-  }
-  board[idx(1, 1)] = MAINANCHOR;
-  board[idx(2, 1)] = 1;
-  board[idx(1, 2)] = W - 1;
-  board[idx(2, 2)] = 1;
+const ID = (() => {
+  const board = walledBoard();
   board[idx(3, 1)] = ANCHOR;
-  return encodeDesc(WH, board, new Uint8Array(WH), 2, 1, 2);
+  return `6x5u:${encodeDesc(WH, board, new Uint8Array(WH), 2, 1, 2)}`;
 })();
-const ID = `6x5u:${DESC}`;
 
 /**
- * The same board with a two-square **exit gate** at (4,1)-(4,2) — the squares
- * only the key block may cross. It sits partly on the exit area, which is the
- * normal arrangement and the case the gate marking has to survive: the two
- * markings overlap, so one of them cannot be a fill.
+ * The same board, without `A`, with a two-square **exit gate** at (3,1)-(3,2) —
+ * the squares only the key block may cross. It sits partly on the exit area,
+ * which is the normal arrangement and the case the gate marking has to survive:
+ * the two markings overlap, so one of them cannot be a fill.
  */
 const GATE_CELLS = [
   [3, 1],
   [3, 2],
 ] as const;
 const GATE_ID = (() => {
-  const board = new Uint8Array(WH).fill(EMPTY);
-  for (let x = 0; x < W; x++) {
-    board[x] = WALL;
-    board[(H - 1) * W + x] = WALL;
-  }
-  for (let y = 0; y < H; y++) {
-    board[y * W] = WALL;
-    board[y * W + (W - 1)] = WALL;
-  }
-  board[idx(1, 1)] = MAINANCHOR;
-  board[idx(2, 1)] = 1;
-  board[idx(1, 2)] = W - 1;
-  board[idx(2, 2)] = 1;
   const ff = new Uint8Array(WH);
   for (const [x, y] of GATE_CELLS) ff[idx(x, y)] = 1;
-  return `6x5u:${encodeDesc(WH, board, ff, 2, 1, 2)}`;
+  return `6x5u:${encodeDesc(WH, walledBoard(), ff, 2, 1, 2)}`;
 })();
 
 const NUDGE: SlideMove = { kind: "move", from: idx(3, 1), to: idx(4, 1) };
@@ -196,7 +188,8 @@ describe("slide opening frame", () => {
     const ops = capture(newBoard());
 
     // The engine paints no pixels of its own, so the game fills its own
-    // background on the first frame (docs/games/rendering.md § "The rendering doctrine" doctrine).
+    // background on the first frame
+    // (docs/games/rendering.md § "The rendering doctrine").
     expect(ops[0]).toMatchObject({
       op: "rect",
       x: 0,
@@ -237,9 +230,9 @@ describe("slide opening frame", () => {
   });
 
   it("gives the floor, the wall and an ordinary block three different fills", () => {
-    // The point of the whole change, and the one assertion that would have
-    // failed against upstream: `game_colours` derived all three from a single
-    // `game_mkhighlight` trio, so a board could only be read off its bevels.
+    // The assertion upstream's palette fails: `game_colours` derived all three
+    // from a single `game_mkhighlight` trio, so a board could only be read off
+    // its bevels.
     const ops = capture(newBoard());
     const floor = ops[0]; // the opening background fill
     expect(floor).toMatchObject({ op: "rect", color: COL_BACKGROUND });
@@ -258,10 +251,10 @@ describe("slide opening frame", () => {
 
   it("keeps the four fills apart by lightness, not merely by index", () => {
     // An index check alone would pass on four names for one color, which is
-    // the state this change found the game in. Assert the *ladder*: each
-    // material is a visible step from the next, and the exit stays the palest
-    // thing on the board. Thresholds are deliberately loose — this pins the
-    // ordering and a minimum separation, not the constants.
+    // what upstream's palette amounts to. Assert the *ladder*: each material is
+    // a visible step from the next, and the exit stays the palest thing on the
+    // board. Thresholds are deliberately loose — this pins the ordering and a
+    // minimum separation, not the constants.
     const l = (i: number) => lightness(PALETTE[i]);
 
     expect(l(COL_TARGET)).toBeGreaterThan(l(COL_BACKGROUND));
@@ -368,8 +361,8 @@ describe("slide keyboard frame", () => {
   it("marks the cursor's cell, and only that cell", () => {
     const ops = capture(cursorOnBlock());
     expect(cursorLines(ops, 3, 1)).toHaveLength(8);
-    // The vacuity guard this file's doctrine asks for: count what was looked
-    // at, so "no cursor drawn anywhere" cannot pass as "drawn in one place".
+    // A vacuity guard: count every cursor stroke in the frame, so "no cursor
+    // drawn anywhere" cannot pass as "drawn in one place".
     expect(ops.filter((o) => o.op === "line" && o.color === COL_CURSOR)).toHaveLength(
       8,
     );
@@ -575,8 +568,7 @@ describe("slide completion flash", () => {
   it("recolors the floor while flashing, and moves between phases", () => {
     // FLASH_INTERVAL is 0.1s and the flash alternates high/low each interval,
     // so 0.05s and 0.15s are different phases. Asserting *two* phases is what
-    // proves the animation is moving; a snapshot alone would not (playbook
-    // §3.2, the Crossing `bool flash` case).
+    // proves the animation is moving; a snapshot alone would not.
     const early = flashAt(0.05);
     const late = flashAt(0.15);
 

@@ -16,12 +16,12 @@
  * makes a single byte-for-byte desc match validate generator, solver and codec
  * together (docs/games/solver-and-generator.md § "Solver-gated generation").
  *
- * Upstream's FIXMEs ask for variety in stage 2 ("vary the extreme, and the
- * piece", "vary this too") and it never delivers any: the main block is always
- * a 2×2 at the top left and the exit is always a two-square hole punched in the
- * right wall, guarded by forcefield squares only the main block can cross. That
- * unvaried placement is ported as-is — a less varied generator is the curve
- * upstream shipped, not a defect (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3, design D6).
+ * Upstream's FIXMEs ask for variety in stage 2 and it never delivers any: the
+ * main block is always a 2×2 at the top left and the exit is always a
+ * two-square hole punched in the right wall, guarded by forcefield squares only
+ * the main block can cross. That is ported as-is — a less varied generator is
+ * the curve upstream shipped, not a defect
+ * (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3).
  */
 
 import { Dsf } from "../../engine/dsf.ts";
@@ -59,7 +59,6 @@ export function generateBoard(
   // 1. A board of singletons inside a wall border.
   const board = new Uint8Array(wh).fill(ANCHOR);
   const forcefield = new Uint8Array(wh);
-  const board2 = new Uint8Array(wh);
   for (let i = 0; i < w; i++) {
     board[i] = WALL;
     board[i + w * (h - 1)] = WALL;
@@ -69,11 +68,8 @@ export function generateBoard(
     board[i * w + (w - 1)] = WALL;
   }
 
-  const triedMerge = new Uint8Array(wh * wh);
-  const dsf = new Dsf(wh);
-
-  // 2. The main piece, at one extreme. (Upstream FIXME: vary the extreme, and
-  // the piece.) A 2×2 whose anchor sits just inside the top-left corner.
+  // 2. The main piece, at one extreme: a 2×2 whose anchor sits just inside the
+  // top-left corner. (Upstream FIXME: vary the extreme, and the piece.)
   board[w + 1] = MAINANCHOR;
   board[w + 2] = 1;
   board[w * 2 + 1] = w - 1;
@@ -90,60 +86,47 @@ export function generateBoard(
   board[ty * w + tx + 1] = EMPTY;
   board[(ty + 1) * w + tx + 1] = EMPTY;
 
-  // 3. Gradually remove singletons until the game becomes soluble. Note the
-  // check happens *before* each removal, so the board kept is the first one
-  // that solves.
-  let moves = 0;
-  let soluble = false;
-  scan: for (let j = w; j-- > 0; ) {
-    for (let i = h; i-- > 0; ) {
-      if (board[i * w + j] === ANCHOR) {
-        moves = solveBoard(w, h, board, forcefield, tx, ty, movelimit).moves;
-        if (moves >= 0) {
-          soluble = true;
-          break scan;
-        }
-        board[i * w + j] = EMPTY;
-      }
+  // 3. Gradually remove singletons until the game becomes soluble. The check
+  // happens *before* each removal, so the board kept is the first that solves.
+  let moves = -1;
+  scan: for (let x = w - 1; x >= 0; x--) {
+    for (let y = h - 1; y >= 0; y--) {
+      if (board[y * w + x] !== ANCHOR) continue;
+      moves = solveBoard(w, h, board, forcefield, tx, ty, movelimit).moves;
+      if (moves >= 0) break scan;
+      board[y * w + x] = EMPTY;
     }
   }
-  if (!soluble) {
-    // Upstream tests solubility *before* each removal and never after the last
-    // one, so a board that only becomes soluble once the final singleton goes
-    // falls out of the loop into `assert(!"We shouldn't get here")`. That is not
-    // hypothetical: it is every 5×4 board, the smallest size `validateParams`
-    // admits, where the interior holds just two singletons and removing both is
-    // exactly what frees the main block.
-    //
-    // So this is docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1 — divergence is free where the C has no
-    // defined behavior. Running the missing final check costs nothing anywhere
-    // the C works (those boards leave the loop early, by the branch above) and
-    // draws no randomness, so every byte-matched desc is untouched; it only
-    // gives an answer where upstream aborted.
-    moves = solveBoard(w, h, board, forcefield, tx, ty, movelimit).moves;
-    soluble = moves >= 0;
-  }
-  if (!soluble)
+  // Upstream never checks after the last removal, so a board that only becomes
+  // soluble once the final singleton goes falls into `assert(!"We shouldn't get
+  // here")`. That is every 5×4 board, the smallest size `validateParams`
+  // admits, where removing both interior singletons is exactly what frees the
+  // main block. Divergence is free where the C has no defined behavior
+  // (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1):
+  // the missing check draws no randomness and runs only where the C aborts.
+  if (moves < 0) moves = solveBoard(w, h, board, forcefield, tx, ty, movelimit).moves;
+  if (moves < 0)
     throw new Error("slide: no board of this size is soluble within the move limit");
 
-  // 4. Every edge between two adjacent squares, shuffled once — the whole RNG
-  // surface of the generator.
+  // 4. Every edge between two adjacent squares, as `square * 2` for the edge to
+  // its right and `square * 2 + 1` for the edge below, shuffled once — the
+  // whole RNG surface of the generator.
   const list: number[] = [];
-  for (let i = 0; i + 1 < w; i++)
-    for (let j = 0; j < h; j++) list.push((j * w + i) * 2 + 0); // right of (i,j)
-  for (let j = 0; j + 1 < h; j++)
-    for (let i = 0; i < w; i++) list.push((j * w + i) * 2 + 1); // below (i,j)
+  for (let x = 0; x + 1 < w; x++)
+    for (let y = 0; y < h; y++) list.push((y * w + x) * 2);
+  for (let y = 0; y + 1 < h; y++)
+    for (let x = 0; x < w; x++) list.push((y * w + x) * 2 + 1);
   shuffle(list, rng);
+
+  const triedMerge = new Uint8Array(wh * wh);
+  const dsf = new Dsf(wh);
+  const unmerged = new Uint8Array(wh);
 
   // Walked from the end, as upstream's `list[--nlist]` does.
   while (list.length > 0) {
     const pos = list.pop() as number;
-    const y1 = Math.floor(pos / (w * 2));
-    const x1 = Math.floor(pos / 2) % w;
-    const y2 = pos % 2 ? y1 + 1 : y1;
-    const x2 = pos % 2 ? x1 : x1 + 1;
-    let p1 = y1 * w + x1;
-    let p2 = y2 * w + x2;
+    let p1 = Math.floor(pos / 2);
+    let p2 = pos % 2 ? p1 + w : p1 + 1;
 
     // Abandon immediately if this same *pair of blocks* has already been tried
     // along a different edge.
@@ -161,18 +144,18 @@ export function generateBoard(
     // see whether the puzzle survives. Writes run in increasing index order and
     // the scans read strictly ahead of them, so reading the board while
     // rewriting it is safe — as it is in the C.
-    board2.set(board);
-    let j = -1;
+    unmerged.set(board);
+    let prev = -1;
     while (p1 < wh || p2 < wh) {
       const i = Math.min(p1, p2);
-      if (j < 0) {
+      if (prev < 0) {
         board[i] = ANCHOR;
       } else {
-        if (i - j > MAXDIST)
+        if (i - prev > MAXDIST)
           throw new Error("slide: merged block spans more than a DIST byte");
-        board[i] = i - j;
+        board[i] = i - prev;
       }
-      j = i;
+      prev = i;
 
       // Advance whichever list that square came from, to its next member.
       if (i === p1) {
@@ -189,7 +172,7 @@ export function generateBoard(
     const solved = solveBoard(w, h, board, forcefield, tx, ty, movelimit).moves;
     if (solved < 0) {
       // Didn't work. Revert the merge, and remember not to retry this pair.
-      board.set(board2);
+      board.set(unmerged);
       triedMerge[c1 * wh + c2] = 1;
       triedMerge[c2 * wh + c1] = 1;
     } else {
@@ -214,11 +197,6 @@ export function generateBoard(
 }
 
 export function newSlideDesc(p: SlideParams, rng: RandomState): { desc: string } {
-  const { board, forcefield, tx, ty, minmoves } = generateBoard(
-    p.w,
-    p.h,
-    rng,
-    p.maxmoves,
-  );
-  return { desc: encodeDesc(p.w * p.h, board, forcefield, tx, ty, minmoves) };
+  const b = generateBoard(p.w, p.h, rng, p.maxmoves);
+  return { desc: encodeDesc(p.w * p.h, b.board, b.forcefield, b.tx, b.ty, b.minmoves) };
 }
