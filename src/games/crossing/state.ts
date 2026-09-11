@@ -8,22 +8,16 @@
  * maximal horizontal and vertical runs (length ≥ 2) are read left-to-right /
  * top-to-bottom.
  *
- * The port's central shape: the *puzzle* (walls, the sorted number list, and
- * the runs derived from the walls) never changes after `newState`, so every
- * cloned state aliases one frozen {@link CrossingPuzzle} by reference and a
- * move copies only `grid` + `marks` (the §3.1 shared-frozen pattern —
- * `Object.freeze` throws on a populated typed array, so `readonly` is the
- * whole guarantee).
- *
- * Two upstream behaviors are deliberately preserved rather than "improved";
- * both are flagged at their sites below: the desc decoder's hard-coded
- * `maxrow = 9`, and the `done[]` array in {@link validateBoard} that is sized
- * by number count but re-scanned by run count.
+ * The *puzzle* (walls, the sorted number list, and the runs derived from the
+ * walls) never changes after `newState`, so every cloned state aliases one
+ * {@link CrossingPuzzle} by reference and a move copies only `grid` + `pencil`.
+ * `Object.freeze` throws on a populated typed array, so `readonly` is the whole
+ * guarantee.
  */
 
 import { parseLeadingInt } from "../../engine/params.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
-import { newCursor } from "../../engine/pointer.ts";
+import { type GridCursor, newCursor } from "../../engine/pointer.ts";
+import type { Point } from "../../engine/types.ts";
 
 // --- params ----------------------------------------------------------------
 
@@ -68,20 +62,9 @@ export function encodeParams(p: CrossingParams, full: boolean): string {
 }
 
 export function decodeParams(s: string): CrossingParams {
-  const p = defaultParams();
-  p.sym = false;
-  const wParse = parseLeadingInt(s, 0);
-  p.w = wParse.value;
-  let i = wParse.next;
-  if (s[i] === "x") {
-    const hParse = parseLeadingInt(s, i + 1);
-    p.h = hParse.value;
-    i = hParse.next;
-  } else {
-    p.h = p.w;
-  }
-  if (s[i] === "S") p.sym = true;
-  return p;
+  const w = parseLeadingInt(s, 0);
+  const h = s[w.next] === "x" ? parseLeadingInt(s, w.next + 1) : w;
+  return { w: w.value, h: h.value, sym: s[h.next] === "S" };
 }
 
 /**
@@ -97,10 +80,11 @@ export function decodeParams(s: string): CrossingParams {
  * squares or fewer** generated 3/3 (worst case 0.9 s at 16×14), every
  * configuration of 240 or more failed at least once, and nothing at 280+ ever
  * generated (18×16, 20×14, 24×12, 18×18 — all 0/3 within a 10,000-attempt
- * budget). So this is the docs/games/solver-and-generator.md § "Unlucky, impossible, and load-bearing validation" "impossible ⇒ reject in `validateParams`"
- * case rather than the "unlucky ⇒ retry" one, and 225 is the measured boundary
- * rather than a guess. It also bounds the clue list, which is what makes the
- * author's "no reliable way to always fit the list on screen" tractable here.
+ * budget). So this is the "impossible ⇒ reject in `validateParams`" case, not
+ * the "unlucky ⇒ retry" one (docs/games/solver-and-generator.md § "Unlucky, impossible, and load-bearing validation"),
+ * and 225 is the measured boundary rather than a guess. It also bounds the clue
+ * list, which is what makes the author's "no reliable way to always fit the
+ * list on screen" tractable here.
  */
 export const MAX_AREA = 225;
 
@@ -123,10 +107,6 @@ export function validateParams(p: CrossingParams, full: boolean): string | null 
 /** A maximal horizontal or vertical strip of ≥ 2 open cells — the slots the
  * listed numbers are placed into. */
 export interface CrossingRun {
-  /** `y` for a horizontal run, `x` for a vertical one. */
-  readonly row: number;
-  /** `x` for a horizontal run, `y` for a vertical one. */
-  readonly start: number;
   readonly horizontal: boolean;
   /** Cell indices in reading order (left→right / top→bottom). Upstream carries
    * a `len` and re-derives the start/stride with `crossing_iterate`; holding
@@ -158,7 +138,7 @@ export function collectRuns(w: number, h: number, walls: Uint8Array): CrossingRu
         const i = index(a, b);
         if (walls[i]) {
           if (cells) {
-            runs.push({ row: a, start: b - cells.length, horizontal, cells });
+            runs.push({ horizontal, cells });
             cells = null;
           }
           continue;
@@ -170,7 +150,7 @@ export function collectRuns(w: number, h: number, walls: Uint8Array): CrossingRu
         }
         cells.push(i);
       }
-      if (cells) runs.push({ row: a, start: inner - cells.length, horizontal, cells });
+      if (cells) runs.push({ horizontal, cells });
     }
   };
 
@@ -251,8 +231,7 @@ export function snapDirection(
 ): CrossingDirection {
   const across = puzzle.acrossRun[y * puzzle.w + x] >= 0;
   const down = puzzle.downRun[y * puzzle.w + x] >= 0;
-  if (across && !down) return "across";
-  if (down && !across) return "down";
+  if (across !== down) return across ? "across" : "down";
   return dir;
 }
 
@@ -269,7 +248,7 @@ export function nextInRun(
   x: number,
   y: number,
   dir: CrossingDirection,
-): { x: number; y: number } | null {
+): Point | null {
   const run = runThrough(puzzle, x, y, dir);
   if (!run) return null;
   const at = run.cells.indexOf(y * puzzle.w + x);
@@ -551,7 +530,7 @@ export function validateBoard(
  * player does by eye down the clue list — it uses nothing but their own
  * entries. Judging a number by whether it would leave the *crossing* runs
  * satisfiable is constraint propagation, i.e. the puzzle itself, and belongs to
- * a hint rather than to an input aid (owner-decided).
+ * a hint rather than to an input aid.
  */
 export function numberFitsRun(
   puzzle: CrossingPuzzle,
@@ -616,12 +595,11 @@ export function numberAvailableTo(
  * its length and so is no evidence at all. Only a genuine tie — both runs
  * equally constrained — is settled by the current fill direction.
  *
- * That ordering was the wrong way round at first, and it is worth stating why
- * the obvious rule fails: with `4_1` written across and the crossing down run
- * still blank, clicking clue `421` wrote it *downwards*, because the sticky
- * fill direction happened to be "down" and got to decide. The board plainly
- * showed a nearly-finished word that only `421` completes; no player reads that
- * as an instruction to fill three empty squares instead.
+ * Letting the fill direction decide first is the obvious rule, and it is wrong:
+ * with `4_1` written across and the crossing down run still blank, clicking
+ * clue `421` would write it *downwards* whenever the sticky direction is
+ * "down", though the board plainly shows a nearly finished word that only `421`
+ * completes.
  *
  * The renderer colors the clue list through this same function, so the color
  * a clue is written in always names the run a click would actually send it to.
@@ -646,7 +624,7 @@ export function runForNumber(
 
   // Both admit it: how much of each run is already written decides.
   const entered = (r: number): number =>
-    puzzle.runs[r].cells.reduce((n, c) => n + (grid[c] !== 0 ? 1 : 0), 0);
+    puzzle.runs[r].cells.filter((c) => grid[c] !== 0).length;
   return entered(other) > entered(preferred) ? other : preferred;
 }
 
@@ -661,7 +639,7 @@ export type CrossingMove =
    * toggle is *one* candidate and is not idempotent (re-applying it would put
    * the note back), so one deduction ruling out several candidates needs a move
    * that only ever removes (docs/games/hints.md § "Persist, populate, and the moves"). Players produce it only by
-   * following a hint; typing produces `pencil` toggles as before. */
+   * following a hint; typing produces `pencil` toggles. */
   | { kind: "pencilStrike"; marks: readonly { x: number; y: number; n: number }[] }
   /** Write listed number `number` into run `run` — the whole clue at once,
    * as one undo step (the fork's number-list placement aid). */

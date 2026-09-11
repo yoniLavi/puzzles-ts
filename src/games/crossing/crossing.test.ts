@@ -1,7 +1,7 @@
 /**
- * Behavioral tests for the Crossing port (add-crossing-ts-port): the params
- * and desc codecs (including upstream's exact validation messages and its
- * deliberate leniency), run collection, the two-technique solver, the
+ * Behavioral tests for the Crossing port: the params and desc codecs
+ * (including upstream's exact validation messages and its deliberate
+ * leniency), run collection, the two-technique solver, the
  * solver-gated generator's tier-1 properties, Solo-style input with the sticky
  * pencil mode, `executeMove` through to completion via a real `Midend`, Solve,
  * `findMistakes` (wrong digits *and* notes that rule the answer out), the text
@@ -337,7 +337,7 @@ describe("crossing generator", () => {
     // The byte-match differential runs with `upstreamIsolatedCells`, so this
     // guards the thing that would otherwise rot silently: that the flag really
     // does change the generated board, and the oracle is therefore still
-    // checking upstream's algorithm rather than the shipped one (docs/games/solver-and-generator.md § "Solver-gated generation").
+    // checking upstream's algorithm rather than the shipped one (docs/games/solver-and-generator.md § "Keep the oracle and ship the fix").
     const seed = "iso-seed-14"; // found by scan: upstream yields an isolated cell here
     const upstream = newCrossingDesc(P5, randomNew(seed), {
       upstreamIsolatedCells: true,
@@ -621,13 +621,32 @@ describe("crossing cursor auto-advance", () => {
 
   it("arrow keys set the direction they move in", () => {
     const state = newState(P5, FIX.desc);
-    const ui = newUi();
-    press(state, ui, CURSOR_DOWN, 0, 0);
-    // Down is only kept where the cell can actually be filled downwards.
-    expect(["down", "across"]).toContain(ui.dir);
     const puzzle = state.puzzle;
+    const crossing = (i: number): boolean =>
+      puzzle.acrossRun[i] >= 0 && puzzle.downRun[i] >= 0;
+    /** Arrow from cell `from`, starting in direction `dir`. */
+    const arrow = (from: number, dir: "across" | "down", button: number) => {
+      const ui = { ...newUi(), cursor: newCursor(from % 5, Math.floor(from / 5)), dir };
+      press(state, ui, button, 0, 0);
+      return ui;
+    };
+
+    // Between two crossings the arrow's own axis decides.
+    const down = [...puzzle.walls.keys()].find(
+      (i) => i < 20 && crossing(i) && crossing(i + 5),
+    );
+    const right = [...puzzle.walls.keys()].find(
+      (i) => i % 5 < 4 && crossing(i) && crossing(i + 1),
+    );
+    if (down === undefined || right === undefined)
+      throw new Error("fixture has no crossing pair");
+    expect(arrow(down, "across", CURSOR_DOWN).dir).toBe("down");
+    expect(arrow(right, "down", CURSOR_RIGHT).dir).toBe("across");
+
+    // Down is only kept where the cell can actually be filled downwards.
+    const ui = arrow(0, "across", CURSOR_DOWN);
     const i = ui.cursor.y * 5 + ui.cursor.x;
-    if (puzzle.downRun[i] >= 0) expect(ui.dir).toBe("down");
+    expect(ui.dir).toBe(puzzle.downRun[i] >= 0 ? "down" : "across");
   });
 });
 
@@ -832,7 +851,6 @@ describe("crossing number-list placement", () => {
 
   it("splits the list by where each clue could go from the selected cell", () => {
     const state = newState(P5, FIX.desc);
-    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
     const textColors = (ui: CrossingUi): Map<string, number> => {
       const dr = paintWith(state, ui);
       const m = new Map<string, number>();
@@ -843,7 +861,6 @@ describe("crossing number-list placement", () => {
       }
       return m;
     };
-    void palette;
 
     // Nothing selected: every clue reads as available.
     for (const c of textColors(newUi()).values()) expect(c).toBe(COL_GRID);
@@ -888,9 +905,8 @@ describe("crossing number-list placement", () => {
   it("paints the two dimensions at equal perceived strength", () => {
     // Checked against what is actually painted, and in OKLCH rather than RGB:
     // matching the channels numerically is *not* the same as matching what the
-    // eye sees, since blue carries far less luminance than amber. An earlier
-    // RGB-mirrored pair measured L=0.789/C=0.051 against L=0.818/C=0.059 and
-    // read as the vertical run mattering more.
+    // eye sees, since blue carries far less luminance than amber: an
+    // RGB-mirrored pair reads as the vertical run mattering more.
     const state = newState(P5, FIX.desc);
     const puzzle = state.puzzle;
     let cell = -1;
@@ -959,7 +975,7 @@ describe("crossing number-list placement", () => {
 
   it("crosses a clue off the list once it is on the board, without dimming alone", () => {
     // "Already used" and "cannot go in this run" both gray out, so the used
-    // ones are struck through — the distinction the owner lost otherwise.
+    // ones are struck through to keep the two apart.
     const state = newState(P5, FIX.desc);
     const { run, number } = fittingPair();
     const after = crossingGame.executeMove(state, { kind: "place", run, number });
@@ -1091,8 +1107,7 @@ describe("crossing findMistakes", () => {
 
   it("Check & Save path: the mistake overlay is actually painted", () => {
     // The test above proves `findMistakes` *finds* the wrong digit; this proves
-    // the frame *draws* it, which is the half nineteen games were missing
-    // (`src/mistake-overlay-coverage.test.ts`).
+    // the frame *draws* it (`src/mistake-overlay-coverage.test.ts`).
     //
     // Crossing's mistake mark is **not** the run-error frame the test below
     // covers: it is two nested `drawRectOutline` boxes inset well inside the
@@ -1257,7 +1272,7 @@ describe("crossing rendering", () => {
     };
     // Its own color, NOT the bevel highlight: the highlight is mkhighlight's
     // near-white and the dark-mode pass inverts it, so the one square that should
-    // be the most inviting on the board came out pure black.
+    // be the most inviting on the board would come out pure black.
     expect(
       paint(selected).ops.filter((o) => o.op === "rect" && o.color === COL_SELECTED)
         .length,
@@ -1290,7 +1305,7 @@ describe("crossing rendering", () => {
     const ds = newDrawState(noted);
     setTileSize(ds, TS);
     const dr = new RecordingDrawing(palette);
-    redraw(dr, ds, null, noted, 1, ui0(), 0, 0);
+    redraw(dr, ds, null, noted, 1, newUi(), 0, 0);
     expect(dr.ops.some((o) => o.op === "text" && o.text === "4")).toBe(true);
   });
 
@@ -1304,7 +1319,7 @@ describe("crossing rendering", () => {
       const ds = newDrawState(solved);
       setTileSize(ds, TS);
       const dr = new RecordingDrawing(palette);
-      redraw(dr, ds, null, solved, 1, ui0(), 0, flashTime);
+      redraw(dr, ds, null, solved, 1, newUi(), 0, flashTime);
       return [
         ...new Set(dr.ops.flatMap((o) => (o.op === "rect" ? [o.color] : []))),
       ].sort((a, b) => a - b);
@@ -1322,7 +1337,7 @@ describe("crossing rendering", () => {
       const ds = newDrawState(solved);
       setTileSize(ds, TS);
       const dr = new RecordingDrawing(palette);
-      redraw(dr, ds, null, solved, 1, ui0(), 0, flashTime);
+      redraw(dr, ds, null, solved, 1, newUi(), 0, flashTime);
       return dr.ops.flatMap((o) =>
         o.op === "rect" && o.color === COL_HIGHLIGHT ? [`${o.x},${o.y}`] : [],
       );
@@ -1342,7 +1357,7 @@ describe("crossing rendering", () => {
     const ds = newDrawState(withDigits);
     setTileSize(ds, TS);
     const dr = new RecordingDrawing(palette);
-    redraw(dr, ds, null, withDigits, 1, ui0(), 0, 0);
+    redraw(dr, ds, null, withDigits, 1, newUi(), 0, 0);
 
     // Every digit is drawn in the same (grid) color…
     const digitColors = dr.ops.flatMap((o) =>
@@ -1366,8 +1381,3 @@ describe("crossing rendering", () => {
     }
   });
 });
-
-/** A fresh ui, for the direct-redraw tests. */
-function ui0(): CrossingUi {
-  return newUi();
-}

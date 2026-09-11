@@ -52,14 +52,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { ConfigValues, KeyLabel, Point } from "../../engine/types.ts";
 import { newCrossingDesc } from "./generator.ts";
 import {
   type CrossingFiring,
@@ -125,11 +118,9 @@ function keyDigit(button: number): number | null | undefined {
   return undefined;
 }
 
-/** Would writing listed number `l` into run `r` change anything? It fits, so
- * every filled cell already agrees — only an empty cell makes it a real move
- * (docs/games/README.md § "Before you start": suppress no-ops locally rather than comparing states). */
-function placementChanges(state: CrossingState, r: number, l: number): boolean {
-  void l;
+/** Would writing a number that fits run `r` change anything? Every filled cell
+ * already agrees with it, so only an empty cell makes it a real move. */
+function placementChanges(state: CrossingState, r: number): boolean {
   return state.puzzle.runs[r].cells.some((i) => state.grid[i] === 0);
 }
 
@@ -165,7 +156,7 @@ function interpretMove(
           l,
           ui.dir,
         );
-        if (run >= 0 && placementChanges(state, run, l)) {
+        if (run >= 0 && placementChanges(state, run)) {
           ui.heldNumber = null;
           return { kind: "place", run, number: l };
         }
@@ -186,7 +177,7 @@ function interpretMove(
       const held = ui.heldNumber;
       const placed = placedRuns(state.puzzle, state.grid);
       const run = runForNumber(state.puzzle, state.grid, placed, gx, gy, held, ui.dir);
-      if (run >= 0 && placementChanges(state, run, held)) {
+      if (run >= 0 && placementChanges(state, run)) {
         ui.heldNumber = null;
         ui.cursor.x = gx;
         ui.cursor.y = gy;
@@ -201,11 +192,9 @@ function interpretMove(
     }
 
     // Crossword convention (fork): clicking the selected cell again flips
-    // between filling across and down — but only where there is something to
-    // flip, so everywhere else the press falls through and deselects, exactly
-    // as upstream. It has to be decided *before* the shared arm rather than
-    // undone after, and `highlightIsOn` is that arm's own notion of "you
-    // pressed the cell you already had", so the two cannot drift apart.
+    // between across and down, but only at a crossing; elsewhere the press falls
+    // through and deselects, as upstream. It is decided before the shared arm,
+    // by that arm's own `highlightIsOn`, so the two cannot drift apart.
     if (
       button === LEFT_BUTTON &&
       highlightIsOn(ui, gx, gy) &&
@@ -326,10 +315,9 @@ function executeMove(state: CrossingState, move: CrossingMove): CrossingState {
     return next;
   }
 
-  // Everything below is a single-cell ink-or-note move, and shares a prologue.
-  // The guard is here rather than in the tail's `if/else` because the prologue
-  // reads `move.y`/`move.x` first, and a missing coordinate makes every bound
-  // check below false rather than true.
+  // The rest are single-cell ink-or-note moves. The guard comes before their
+  // shared prologue because that reads `move.x`/`move.y`, and a missing
+  // coordinate makes every bound check below false rather than true.
   if (move.kind !== "set" && move.kind !== "pencil") {
     return assertNever(move, "crossing: executeMove");
   }
@@ -375,7 +363,7 @@ function solve(orig: CrossingState): SolveResult<CrossingMove> {
   return { ok: true, move: { kind: "solve", grid: Array.from(result.grid) } };
 }
 
-// --- hint (add-crossing-hint) -----------------------------------------------
+// --- hint -------------------------------------------------------------------
 
 /**
  * How Crossing's `Move` union reads as the shared candidate shapes. Crossing
@@ -396,13 +384,13 @@ const crossingCandidateMoves: CandidateMoveAdapter<CrossingMove> = {
   bit: (n) => 1 << (n - 1),
 };
 
-const cellAt = (puzzle: CrossingPuzzle, i: number): { x: number; y: number } => ({
+const cellAt = (puzzle: CrossingPuzzle, i: number): Point => ({
   x: i % puzzle.w,
   y: Math.floor(i / puzzle.w),
 });
 
 /** The move a firing asks for, in the game's own vocabulary — a whole number
- * into a run, one digit, or a rule-out (design D3). */
+ * into a run, one digit, or a rule-out. */
 function hintMove(puzzle: CrossingPuzzle, f: CrossingFiring): CrossingMove {
   switch (f.technique) {
     case "onlyNumber":
@@ -419,49 +407,39 @@ function hintMove(puzzle: CrossingPuzzle, f: CrossingFiring): CrossingMove {
 }
 
 /**
- * What the hint draws. The evidence for every technique is "which listed
- * numbers still fit this run", and that set lives in the **clue list**, not on
- * the board — so the premise the narration cites is only visible if the panel
- * is part of the highlight (design D2). Hence `numbers` beside the usual
+ * What the hint draws. Every technique's evidence is "which listed numbers
+ * still fit this run", and that set lives in the **clue list**, not on the
+ * board, so `numbers` puts the panel in the highlight beside the usual
  * area/targets/marks.
  */
 function hintHighlights(puzzle: CrossingPuzzle, f: CrossingFiring): CrossingHint {
-  const runCells = (r: number): { x: number; y: number }[] =>
-    puzzle.runs[r].cells.map((i) => cellAt(puzzle, i));
+  const at = (i: number): Point => cellAt(puzzle, i);
+  const runCells = (r: number): Point[] => puzzle.runs[r].cells.map(at);
+  const common = { marks: [], numbers: f.fitting, numberTarget: null };
   switch (f.technique) {
     case "onlyNumber":
       return {
         area: runCells(f.run),
         // Only the squares the move actually writes into; the ones already
         // filled are the premise, and stay part of the shaded area.
-        targets: f.fill.map((i) => cellAt(puzzle, i)),
-        marks: [],
-        numbers: f.fitting,
+        targets: f.fill.map(at),
+        ...common,
         numberTarget: f.number,
       };
     case "sharedDigit":
-      return {
-        area: runCells(f.run),
-        targets: [cellAt(puzzle, f.cell)],
-        marks: [],
-        numbers: f.fitting,
-        numberTarget: null,
-      };
+      return { area: runCells(f.run), targets: [at(f.cell)], ...common };
     case "crossRuns":
       return {
         area: [...runCells(f.acrossRun), ...runCells(f.downRun)],
-        targets: [cellAt(puzzle, f.cell)],
-        marks: [],
-        numbers: f.fitting,
-        numberTarget: null,
+        targets: [at(f.cell)],
+        ...common,
       };
     case "noteStrike":
       return {
         area: runCells(f.run),
-        targets: [cellAt(puzzle, f.cell)],
-        marks: f.digits.map((n) => ({ ...cellAt(puzzle, f.cell), n })),
-        numbers: f.fitting,
-        numberTarget: null,
+        targets: [at(f.cell)],
+        ...common,
+        marks: f.digits.map((n) => ({ ...at(f.cell), n })),
       };
   }
 }
@@ -518,9 +496,8 @@ function hintKeepTrack(
   );
 }
 
-/** Validate-at-display (§7.3): a whole-run step is resolved once the run is
- * full, and shrinks its targets to the squares still to write; everything else
- * is the shared behavior. */
+/** A whole-run step is resolved once the run is full, and shrinks its targets
+ * to the squares still to write; everything else is the shared behavior. */
 function refreshHintStep(
   step: HintStep<CrossingMove, CrossingHint>,
   state: CrossingState,
@@ -546,10 +523,6 @@ function refreshHintStep(
     state.puzzle.w,
     crossingCandidateMoves,
   );
-}
-
-function flashLength(from: CrossingState, to: CrossingState): number {
-  return winFlash(from, to, FLASH_TIME);
 }
 
 export const crossingGame: Game<
@@ -597,7 +570,7 @@ export const crossingGame: Game<
 
   interpretMove,
   executeMove,
-  status: (s): GameStatus => status(s),
+  status,
 
   solve,
   findMistakes,
@@ -607,16 +580,15 @@ export const crossingGame: Game<
   /**
    * Selecting a square, moving the cursor or picking a clue up puts a displayed
    * hint away — **unless the player is working inside the squares the hint is
-   * about** (owner-directed).
+   * about**.
    *
-   * The flag is needed at all because Crossing's hint *suppresses* the
-   * selection's run wash, so the two never mean "washed square" at once: without
-   * it a click did nothing visible, and there was no way out of hint mode
-   * (Subsets shipped the same bug for the same reason). The exception is what
-   * keeps following a hint by hand workable — clicking into a hinted run to type
-   * its number in must not delete the explanation of what to type. The cursor
-   * stays visible on those squares because `render.ts` switches to a dark corner
-   * cue wherever the hint owns the background.
+   * Dismissal is needed at all because Crossing's hint *suppresses* the
+   * selection's run wash: without it a click would do nothing visible, leaving
+   * no way out of hint mode. The exception is what keeps following a hint by
+   * hand workable — clicking into a hinted run to type its number in must not
+   * delete the explanation of what to type. The selection stays visible on
+   * those squares because the hint marks them with a ring on the border,
+   * leaving the background to the selection (`render.ts`).
    *
    * Everything a firing is about — the run(s) it reasons over and the squares it
    * acts on — is already in `area`/`targets`, so this is exactly "am I inside
@@ -625,7 +597,7 @@ export const crossingGame: Game<
   uiUpdateClearsHint(step, _state, ui) {
     const hl = step.highlights as CrossingHint | undefined;
     if (!hl || !ui.cursor.visible) return true; // nothing shown, or nothing selected
-    const here = (cs: readonly { x: number; y: number }[]): boolean =>
+    const here = (cs: readonly Point[]): boolean =>
       cs.some((c) => c.x === ui.cursor.x && c.y === ui.cursor.y);
     return !(here(hl.area) || here(hl.targets));
   },
@@ -664,15 +636,15 @@ export const crossingGame: Game<
     pencilKeepHighlightPref<CrossingUi>(),
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: CrossingParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(crossingGame);

@@ -20,7 +20,7 @@
  * `randomUpto(9)` draws per attempt, so the description is a pure function of
  * the seed and reproduces the C byte-for-byte — and because step 4 gates on the
  * solver, that one byte-match validates the generator, the solver *and* the
- * codec together (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
+ * codec together (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  */
 
 import { Dsf } from "../../engine/dsf.ts";
@@ -95,8 +95,7 @@ function checkPool(w: number, h: number, cells: Uint8Array): boolean {
  * every open cell" is exactly the connectivity test.
  *
  * Only class membership and size are read, both independent of which element
- * the union-find picks as root, so the shared `Dsf` is byte-match safe here
- * (docs/games/solver-and-generator.md § "The Latin family").
+ * the union-find picks as root, so the shared `Dsf` is byte-match safe here.
  */
 function checkDsf(w: number, h: number, cells: Uint8Array): boolean {
   const dsf = new Dsf(w * h);
@@ -138,9 +137,7 @@ function genWalls(w: number, h: number, sym: boolean, rng: RandomState): Uint8Ar
     if (sym && cells[size - (i + 1)] === BLANK) cells[size - (i + 1)] = CELL;
   }
 
-  const walls = new Uint8Array(size);
-  for (let i = 0; i < size; i++) walls[i] = cells[i] !== CELL ? 1 : 0;
-  return walls;
+  return cells.map((c) => (c === CELL ? 0 : 1));
 }
 
 /** Upstream `crossing_gen_grid`: a random digit `1`–`9` in every cell. */
@@ -186,11 +183,10 @@ export interface CrossingGenOptions {
    * player can even type any digit into it and still win.
    *
    * The shipped game rejects such boards; this option exists **only** so the
-   * byte-match differential can reproduce upstream exactly (docs/games/solver-and-generator.md § "Solver-gated generation" —
-   * keep the oracle *and* ship the fix). Measured cost of the fix: 4% of 5×5
-   * boards, 7% of 7×7, 17-18% of 9×9 and 12×12 are rejected, i.e. a few percent
-   * more attempts on a generator that makes a 9×9 board in well under a
-   * millisecond.
+   * byte-match differential can reproduce upstream exactly (docs/games/solver-and-generator.md § "Keep the oracle and ship the fix").
+   * Measured cost of the fix: 4% of 5×5 boards, 7% of 7×7, 17-18% of 9×9 and
+   * 12×12 are rejected, i.e. a few percent more attempts on a generator that
+   * makes a 9×9 board in well under a millisecond.
    */
   upstreamIsolatedCells?: boolean;
 }

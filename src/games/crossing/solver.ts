@@ -109,34 +109,22 @@ function solverConfirm(grid: Uint8Array, cand: Int32Array): number {
 }
 
 /**
- * Run the solver from `start` (default: an empty grid). Mutates neither
- * argument. `"valid"` means the puzzle was solved outright — every run full and
- * every number used exactly once — which is what the generator gates on.
+ * Run the solver from an empty grid. `"valid"` means the puzzle was solved
+ * outright — every run full and every number used exactly once — which is what
+ * the generator gates on.
  */
-export function solveCrossing(
-  puzzle: CrossingPuzzle,
-  start?: Uint8Array,
-): CrossingSolveResult {
+export function solveCrossing(puzzle: CrossingPuzzle): CrossingSolveResult {
   const { w, h, walls } = puzzle;
-  const grid = start ? start.slice() : new Uint8Array(w * h);
+  const grid = new Uint8Array(w * h);
   const cand = new Int32Array(w * h);
   for (let i = 0; i < w * h; i++) cand[i] = walls[i] ? 0 : ALL_DIGITS;
 
-  let status: SolveStatus;
   for (;;) {
-    const verdict = validateBoard(puzzle, grid);
-    status = verdict.status;
-    if (status !== "progress") break;
-
-    let changed = 0;
-    changed += solverMarks(puzzle, grid, cand, verdict.done);
-    changed += solverConfirm(grid, cand);
-    if (changed) continue;
-
-    break; // stuck: no harder techniques exist upstream
+    const { status, done } = validateBoard(puzzle, grid);
+    if (status !== "progress") return { status, grid };
+    const changed = solverMarks(puzzle, grid, cand, done) + solverConfirm(grid, cand);
+    if (!changed) return { status, grid }; // stuck: no harder techniques exist upstream
   }
-
-  return { status, grid };
 }
 
 // --- mistake checking (fork addition) --------------------------------------
@@ -175,7 +163,7 @@ export function findMistakes(state: CrossingState): CrossingMistake[] {
       const entered = state.grid[i];
       if (entered !== 0) {
         if (entered !== answer) out.push({ x, y, kind: "cell" });
-      } else if (state.pencil[i] !== 0 && !(state.pencil[i] & (1 << (answer - 1)))) {
+      } else if (state.pencil[i] !== 0 && !(state.pencil[i] & bit(answer))) {
         out.push({ x, y, kind: "note" });
       }
     }

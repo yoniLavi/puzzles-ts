@@ -5,20 +5,20 @@
  * (`hint-solver.ts`'s `narrateCrossing`, which reads the runs and numbers off
  * the puzzle); this file decides only how it reads. One firing, one sentence:
  * the indication (the pattern to learn to spot), then the premise, then the
- * forced action in the necessity voice (§2.1–§2.6).
+ * forced action in the necessity voice.
  *
  * The two `deep` variants exist because the premise is *half off the board*.
  * "Only one number still fits" is directly checkable when it holds against the
  * digits already entered — the clue list is literally coloring that scan
  * already. When it holds only after the crossing numbers have ruled the others
  * out, saying so plainly beats asserting something the player would check and
- * find false (§2.4).
+ * find false.
  */
 
 import { indefinite, joinOr } from "../../engine/hint-text.ts";
 import type { CrossingFiring } from "./hint-solver.ts";
 
-type F<K extends CrossingFiring["technique"]> = Extract<
+type Firing<K extends CrossingFiring["technique"]> = Extract<
   CrossingFiring,
   { technique: K }
 >;
@@ -29,7 +29,7 @@ const way = (horizontal: boolean): string => (horizontal ? "across" : "down");
 export const say = {
   /** The run (`horizontal`, `len` squares) can only be `num`. */
   onlyNumber: (
-    f: F<"onlyNumber">,
+    f: Firing<"onlyNumber">,
     horizontal: boolean,
     len: number,
     num: string,
@@ -38,8 +38,8 @@ export const say = {
       return `Once the crossing numbers rule the others out, only one number is left for this ${way(horizontal)} run, so it must be ${num}.`;
     }
     // The fresh-board opener says nothing about entered digits: on an empty
-    // run there are none, so that premise does no work (§2.4) and reads as
-    // plainly false (§2.7) — the length is the whole argument there.
+    // run there are none, so that premise does no work and reads as plainly
+    // false — the length is the whole argument there.
     if (f.because === "length") {
       return `This run is ${len} squares long, and only one number in the list is ${len} digits, so it must be ${num}.`;
     }
@@ -49,18 +49,18 @@ export const say = {
     return `Only one ${len}-digit number left matches the digits already in this run, so it must be ${num}.`;
   },
 
-  sharedDigit: (f: F<"sharedDigit">, horizontal: boolean): string =>
+  sharedDigit: (f: Firing<"sharedDigit">, horizontal: boolean): string =>
     f.deep
       ? `Once the crossing numbers rule the rest out, every number left for this ${way(horizontal)} run has ${indefinite(String(f.digit))} ${f.digit} here, so it must be ${f.digit}.`
       : `Every number that still fits this ${way(horizontal)} run has ${indefinite(String(f.digit))} ${f.digit} in this square, so it must be ${f.digit}.`,
 
-  crossRuns: (f: F<"crossRuns">): string => {
+  crossRuns: (f: Firing<"crossRuns">): string => {
     // Lead with whichever run is the *tighter* constraint and let the other
     // knock out the rest: listing both sets in full is the same proof, but
-    // one of them routinely runs to six digits and reads as noise (§2.5).
-    // Only a set of two or more can be led with — a singleton would leave
-    // "cannot take  here" — and the earlier rung guarantees one exists (a
-    // run that pinned the square on its own is a `sharedDigit`, not this).
+    // one of them routinely runs to six digits and reads as noise. Only a set
+    // of two or more can be led with — a singleton would leave "cannot take
+    // here" — and the earlier rung guarantees one exists (a run that pinned
+    // the square on its own is a `sharedDigit`, not this).
     const across = f.acrossDigits;
     const down = f.downDigits;
     const leadAcross =
@@ -70,7 +70,7 @@ export const say = {
     return `${near}, this square can only be ${joinOr(small)}, and the ${far} number rules out all but ${f.digit}, so it must be ${f.digit}.`;
   },
 
-  noteStrike: (f: F<"noteStrike">, horizontal: boolean): string => {
+  noteStrike: (f: Firing<"noteStrike">, horizontal: boolean): string => {
     const ds = joinOr(f.digits);
     return f.digits.length === 1
       ? `No number that still fits this ${way(horizontal)} run puts ${indefinite(ds)} ${ds} in this square, so rule it out.`

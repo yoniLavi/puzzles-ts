@@ -1,5 +1,5 @@
 /**
- * Crossing's explained hint (`add-crossing-hint`).
+ * Crossing's explained hint.
  *
  * The load-bearing guard is **soundness**: the recording pass re-derives the
  * named technique from its own candidate lattice rather than calling
@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
 import { ALREADY_SOLVED, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusal.ts";
 import { Midend } from "../../engine/index.ts";
-import { LEFT_BUTTON } from "../../engine/pointer.ts";
+import { LEFT_BUTTON, newCursor } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { expectRing, markSides } from "../../engine/testing/mark-shape.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
@@ -34,6 +34,8 @@ import {
 } from "./hint-solver.ts";
 import { crossingGame } from "./index.ts";
 import {
+  COL_ACROSS,
+  COL_DOWN,
   COL_HINT,
   COL_HINT_CELL,
   COL_SELECTED,
@@ -64,12 +66,8 @@ function board(p: CrossingParams, seed: string): CrossingState {
 
 /** Apply a firing to a state, as the plan's own working board does. */
 function afterFiring(state: CrossingState, f: CrossingFiring): CrossingState {
-  const next = {
-    ...state,
-    grid: state.grid.slice(),
-    marks: state.pencil.slice(),
-  };
-  applyCrossingFiring({ puzzle: next.puzzle, grid: next.grid, marks: next.marks }, f);
+  const next = { ...state, grid: state.grid.slice(), pencil: state.pencil.slice() };
+  applyCrossingFiring({ puzzle: next.puzzle, grid: next.grid, marks: next.pencil }, f);
   return next;
 }
 
@@ -103,7 +101,6 @@ describe("crossing hint — soundness", () => {
       expect(answer.status).toBe("valid");
       let checked = 0;
       walk(state, (f) => {
-        const w = state.puzzle.w;
         if (f.technique === "onlyNumber") {
           const cells = state.puzzle.runs[f.run].cells;
           const num = state.puzzle.numbers[f.number];
@@ -119,7 +116,6 @@ describe("crossing hint — soundness", () => {
           expect(f.digits).not.toContain(answer.grid[f.cell]);
           checked++;
         }
-        void w;
       });
       expect(checked, `${p.w}x${p.h}: plan forced nothing`).toBeGreaterThan(0);
     }
@@ -135,7 +131,7 @@ describe("crossing hint — soundness", () => {
 
   it("resumes from a board the player has partly filled themselves", () => {
     // Seed the board with a few *correct* entries made out of plan order, then
-    // require the hint to carry on from there (§7.1).
+    // require the hint to carry on from there.
     const p = crossingPresets[2];
     const state = board(p, "hint-resume-9");
     const answer = solveCrossing(state.puzzle);
@@ -181,10 +177,10 @@ describe("crossing hint — techniques and narration", () => {
 
   it("states the premise that actually rules the other numbers out", () => {
     // A whole-run placement can be forced three different ways, and saying the
-    // wrong one is a §2.4 bug even though the move is right. In particular the
+    // wrong one is a bug even though the move is right. In particular the
     // fresh-board opener must not claim to match "the digits already in this
     // run" — on an empty run there are none, so the premise is both vacuous
-    // and visibly false (§2.7).
+    // and visibly false.
     const seen = new Set<string>();
     for (let s = 0; s < 12 && seen.size < 3; s++) {
       const state = board(crossingPresets[0], `hint-because-${s}`);
@@ -271,7 +267,7 @@ describe("crossing hint — ruling a candidate out", () => {
     });
     expect(step.explanation).toMatch(/^No number that still fits this across run/);
     expect(step.explanation).toMatch(/so rule it out\.$/);
-    // §5.1a: the rule-out is marked on the candidate, not as a placement.
+    // The rule-out is marked on the candidate, not as a placement.
     expect(step.highlights?.marks).toEqual([{ x: 0, y: 0, n: 9 }]);
   });
 
@@ -470,8 +466,8 @@ describe("crossing hint — the frame", () => {
   });
 
   it("names at least one listed number as evidence, and paints it in the panel", () => {
-    // Design D2: both techniques reason over *which listed numbers still fit*,
-    // and that set lives in the clue list. A grid-only highlight would make the
+    // Every technique reasons over *which listed numbers still fit*, and that
+    // set lives in the clue list. A grid-only highlight would make the
     // narration point at something the player cannot see.
     const res = scenario("hint-frame");
     const hint = res.hint as Step | undefined;
@@ -494,29 +490,41 @@ describe("crossing hint — the frame", () => {
     // Crossing's pale blue "this is an across run" wash and the collection's
     // hint blue are near-identical, so the hint takes green and owns the
     // board's coloring for as long as it is up.
-    const midend = new Midend(crossingGame);
-    const id = `${crossingGame.encodeParams(crossingPresets[0], true)}#hint-wash`;
-    expect(midend.newGameFromId(id)).toBeUndefined();
-    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
-
-    midend.timer(60);
-    midend.redraw(new RecordingDrawing(palette));
-    expect(midend.hint()).toBeUndefined();
-    const withHint = new RecordingDrawing(palette);
-    midend.redraw(withHint);
-    expect(withHint.ops.length).toBeGreaterThan(0);
+    const params = crossingPresets[0];
+    const state = board(params, "hint-wash");
+    const res = crossingGame.hint?.(state);
+    if (!res?.ok) throw new Error("hint refused");
+    // A square in a run is selected, so without the hint its runs are washed.
+    const cell = state.puzzle.runs[0].cells[0];
+    const ui: CrossingUi = {
+      ...crossingGame.newUi(state),
+      cursor: newCursor(cell % params.w, Math.floor(cell / params.w), true),
+    };
+    const washes = (step?: Step): number => {
+      const ds = crossingGame.newDrawState(state);
+      crossingGame.setTileSize?.(ds, PREFERRED_TILE_SIZE);
+      const dr = new RecordingDrawing(crossingGame.colors(DEFAULT_BACKGROUND));
+      crossingGame.redraw(dr, ds, null, state, 1, ui, 0, 0, step);
+      return dr.ops.filter(
+        (o) => o.op === "rect" && (o.color === COL_ACROSS || o.color === COL_DOWN),
+      ).length;
+    };
+    expect(washes()).toBeGreaterThan(0);
+    expect(washes(res.steps[0] as Step)).toBe(0);
   });
+
+  type CrossingMidend = Midend<
+    CrossingParams,
+    CrossingState,
+    CrossingMove,
+    CrossingUi,
+    CrossingDrawState
+  >;
 
   /** Click the square at cell index `i` (a selection, not a move). With no
    * drawstate the midend falls back to the preferred tile size. */
   const clickCell = (
-    midend: Midend<
-      CrossingParams,
-      CrossingState,
-      CrossingMove,
-      CrossingUi,
-      CrossingDrawState
-    >,
+    midend: CrossingMidend,
     w: number,
     i: number,
     ts: number = PREFERRED_TILE_SIZE,
@@ -530,18 +538,7 @@ describe("crossing hint — the frame", () => {
   };
 
   /** A midend on a fresh board with its first hint displayed. */
-  const hinted = (
-    seed: string,
-  ): {
-    midend: Midend<
-      CrossingParams,
-      CrossingState,
-      CrossingMove,
-      CrossingUi,
-      CrossingDrawState
-    >;
-    step: Step;
-  } => {
+  const hinted = (seed: string): { midend: CrossingMidend; step: Step } => {
     const midend = new Midend(crossingGame);
     const id = `${crossingGame.encodeParams(crossingPresets[0], true)}#${seed}`;
     expect(midend.newGameFromId(id)).toBeUndefined();
@@ -553,10 +550,10 @@ describe("crossing hint — the frame", () => {
   };
 
   it("a click outside the hint puts it away and gives the board back", () => {
-    // Owner-reported: clicking a square to carry on by hand left the hint on
-    // screen *and* — because a displayed hint suppresses the run wash — did
-    // nothing visible at all, so there was no way out of hint mode. A
-    // selection change is a `UI_UPDATE`, which `hintKeepTrack` never sees;
+    // Without this, clicking a square to carry on by hand would leave the hint
+    // on screen *and* — because a displayed hint suppresses the run wash — do
+    // nothing visible at all, leaving no way out of hint mode. A selection
+    // change is a `UI_UPDATE`, which `hintKeepTrack` never sees;
     // `uiUpdateClearsHint` is what dismisses it (Subsets' precedent).
     const { midend, step } = hinted("hint-dismiss");
     const params = crossingPresets[0];
@@ -576,8 +573,8 @@ describe("crossing hint — the frame", () => {
   });
 
   it("a click inside the hint keeps it up, so it can be followed by hand", () => {
-    // Owner-directed: clicking into the squares the hint is about must not
-    // delete the explanation of what to type there.
+    // Clicking into the squares the hint is about must not delete the
+    // explanation of what to type there.
     const { midend, step } = hinted("hint-dismiss");
     const params = crossingPresets[0];
     const inside = step.highlights?.area[0];
@@ -660,11 +657,11 @@ const CROSS_DESC = "a1b3b1b,421,265";
 
 describe("crossing clue placement — which run a clue goes in", () => {
   it("prefers the run the board already constrains, not the fill direction", () => {
-    // Owner-reported: with "4_1" written across and the crossing down run still
-    // blank, clicking 421 wrote it *down* — because both runs admit it and the
-    // sticky fill direction happened to be "down". Agreeing with digits the
-    // player has already entered is evidence of what they meant; a blank run
-    // admits every number of its length, so it is no evidence at all.
+    // With "4_1" written across and the crossing down run still blank, both
+    // runs admit 421, and the sticky fill direction must not decide: agreeing
+    // with digits the player has already entered is evidence of what they
+    // meant; a blank run admits every number of its length, so it is no
+    // evidence at all.
     let state = newState(CROSS, CROSS_DESC);
     state = crossingGame.executeMove(state, { kind: "set", x: 0, y: 1, digit: 4 });
     state = crossingGame.executeMove(state, { kind: "set", x: 2, y: 1, digit: 1 });
@@ -677,7 +674,7 @@ describe("crossing clue placement — which run a clue goes in", () => {
     expect(across).toBeGreaterThanOrEqual(0);
     expect(down).toBeGreaterThanOrEqual(0);
 
-    // Both runs admit it, so this is exactly the tie the old rule got wrong.
+    // Both runs admit it, so this is exactly the tie in question.
     expect(numberAvailableTo(state.puzzle, state.grid, placed, across, l)).toBe(true);
     expect(numberAvailableTo(state.puzzle, state.grid, placed, down, l)).toBe(true);
 

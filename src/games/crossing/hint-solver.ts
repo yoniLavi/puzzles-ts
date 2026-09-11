@@ -1,9 +1,9 @@
 /**
  * Crossing's recording deduction pass — the hint's half of the "one engine, two
- * projections" rule (docs/games/solver-and-generator.md § "Guess-free generation").
+ * projections" rule (docs/games/solver-and-generator.md § "One engine, two projections").
  *
  * It sits **beside** the untouched {@link solveCrossing} rather than threading a
- * recorder through it (the `add-boats-hint` / Pattern §5.6a shape): the
+ * recorder through it (the shape Boats' and Pattern's hints use): the
  * generator is solver-gated and covered end to end by a frozen byte-match
  * differential, so keeping the recording pass in its own module makes "the
  * solver didn't move" checkable from the file list.
@@ -34,11 +34,11 @@
  * over-estimates which numbers fit, so a set either narrows to one is narrowed
  * to the truth), but only the shallow one is checkable at a glance — so 1→3 run
  * over the shallow tables first, and a firing that needed the deep ones says so
- * in its own words (§5.6's honest non-local tier) rather than asserting
- * something the player would check and find false.
+ * in its own words rather than asserting something the player would check and
+ * find false.
  *
- * Within a depth the order is goal-first (§2.10): fill a whole run, else pin a
- * square, else rule a note out. That makes `noteStrike` a **tail technique by
+ * Within a depth the order is goal-first: fill a whole run, else pin a square,
+ * else rule a note out. That makes `noteStrike` a **tail technique by
  * construction** — it can only surface once every placement rung is exhausted,
  * which on a solver-gated board means never before the board is solved. It is
  * kept because it is the only honest advice on a position where deduction *is*
@@ -100,11 +100,10 @@ interface Analysis {
   /** Per cell, the digits it can hold — the intersection over its runs. */
   cand: Int32Array;
   /** The same as {@link fitting}, but judged **only** against the digits
-   * already entered in the run — i.e. the scan a player does by eye down the
-   * clue list, which is exactly what the number panel already colors. A
-   * firing whose premise holds under this weaker reading is directly
-   * checkable; one that needs the full lattice says so in its narration
-   * (§5.6, "when the evidence is genuinely non-local — say so honestly"). */
+   * already entered in the run — the scan a player does by eye down the clue
+   * list, which is exactly what the number panel already colors. A firing
+   * whose premise holds under this weaker reading is directly checkable; one
+   * that needs the full lattice says so in its narration. */
   shallowFitting: number[][];
   shallowAcc: Int32Array[];
 }
@@ -203,8 +202,8 @@ function analyze(puzzle: CrossingPuzzle, grid: Uint8Array): Analysis {
     shallowAcc.push(a);
   }
 
-  // §7.2: the fixpoint is guarded, and only here — the generator's copy of it
-  // in `solver.ts` runs unbudgeted and byte-for-byte unchanged.
+  // The fixpoint is budgeted here only; the generator's copy of it in
+  // `solver.ts` runs unbudgeted.
   const budget = stepBudget("crossing hint narrowing");
   let pass = narrowPass(puzzle, grid, cand, placed);
   while (pass.changed) {
@@ -235,14 +234,14 @@ export type CrossingFiring =
       /** The listed number it must be. */
       number: number;
       /** The run's still-empty cells **as this firing fires** — the squares the
-       * move actually writes into, and so the ones the hint marks (§5.2: build
-       * a step's picture against the board of that step, not the original). */
+       * move actually writes into, and so the ones the hint marks (built against
+       * the board of this step, not the original). */
       fill: number[];
       /** The premise: the numbers that still fit (here, just `number`). */
       fitting: number[];
       /** **What actually rules the others out** — the premise the narration
-       * must state, since all three read very differently on the board
-       * (§2.4: a premise that doesn't single out this conclusion is a bug):
+       * must state, since all three read very differently on the board (a
+       * premise that doesn't single out this conclusion is a bug):
        * `"length"` — no other listed number is even this long (the whole story
        * on a fresh board); `"used"` — the other numbers of this length are
        * already written in elsewhere; `"digits"` — the digits already in this
@@ -284,8 +283,7 @@ export type CrossingFiring =
     };
 
 /** The board the deduction walks: the player's entries plus their notes (the
- * notes are never read as *facts* — the soundness boundary of §9.1 — only as
- * the thing a strike acts on). */
+ * notes are never read as *facts*, only as the thing a strike acts on). */
 export interface CrossingHintBoard {
   puzzle: CrossingPuzzle;
   grid: Uint8Array;
@@ -298,20 +296,17 @@ function posInRun(puzzle: CrossingPuzzle, r: number, i: number): number {
 }
 
 /**
- * The next forced deduction, in **goal-first** order (§2.10): fill a whole run,
- * else pin one square, else pin one square from its two crossing numbers, else
- * rule a refuted note out. Leading with the whole-run placement is both the
+ * The next forced deduction, in **goal-first** order: fill a whole run, else
+ * pin one square, else pin one square from its two crossing numbers, else rule
+ * a refuted note out. Leading with the whole-run placement is both the
  * strongest teaching and the most satisfying move; a plan that dribbled out
  * note strikes before the run they belong to would read as busywork.
+ *
+ * The shallow tables go first, so a plainer argument is never passed over for
+ * one that needs the crossing numbers (see the module note).
  */
 export function nextCrossingFiring(board: CrossingHintBoard): CrossingFiring | null {
   const a = analyze(board.puzzle, board.grid);
-
-  // Checkable premises before non-local ones. Both readings are sound (each
-  // over-estimates which numbers still fit, so a set it narrows to one is
-  // narrowed to the truth), but the shallow one is the scan the player can do
-  // by eye down the clue list — reaching for the crossing numbers when a
-  // plainer argument was available would teach the harder technique first.
   return (
     placementFiring(board, a.shallowFitting, a.shallowAcc, false) ??
     placementFiring(board, a.fitting, a.acc, true) ??
@@ -320,10 +315,9 @@ export function nextCrossingFiring(board: CrossingHintBoard): CrossingFiring | n
 }
 
 /**
- * The three placement techniques, in goal-first order (§2.10): fill a whole
- * run, else pin one square from one run, else pin one square from the two runs
- * crossing in it. Reads whichever pair of (fitting, acc) tables it is given, so
- * the same code serves the directly-checkable and the non-local readings.
+ * The three placement techniques, in goal-first order. Reads whichever pair of
+ * (fitting, acc) tables it is given, so the same code serves the
+ * directly-checkable and the non-local readings.
  */
 function placementFiring(
   board: CrossingHintBoard,
@@ -495,14 +489,6 @@ export function deduceCrossingPlan(state: CrossingState): CrossingPlan {
 
 // --- narration --------------------------------------------------------------
 
-/** How long a run is, in words the player counts on the board. */
-const lengthOf = (puzzle: CrossingPuzzle, r: number): number =>
-  puzzle.runs[r].cells.length;
-
-/** Whether a run lies across (else down). */
-const isAcross = (puzzle: CrossingPuzzle, r: number): boolean =>
-  puzzle.runs[r].horizontal;
-
 /**
  * One firing, in one sentence: which one, with the run's length, direction and
  * number read off the puzzle. The words are [`hint-text.ts`](./hint-text.ts)'s.
@@ -512,18 +498,20 @@ export function narrateCrossing(
   firing: CrossingFiring,
 ): string {
   switch (firing.technique) {
-    case "onlyNumber":
+    case "onlyNumber": {
+      const run = puzzle.runs[firing.run];
       return say.onlyNumber(
         firing,
-        isAcross(puzzle, firing.run),
-        lengthOf(puzzle, firing.run),
+        run.horizontal,
+        run.cells.length,
         puzzle.numbers[firing.number],
       );
+    }
     case "sharedDigit":
-      return say.sharedDigit(firing, isAcross(puzzle, firing.run));
+      return say.sharedDigit(firing, puzzle.runs[firing.run].horizontal);
     case "crossRuns":
       return say.crossRuns(firing);
     case "noteStrike":
-      return say.noteStrike(firing, isAcross(puzzle, firing.run));
+      return say.noteStrike(firing, puzzle.runs[firing.run].horizontal);
   }
 }
