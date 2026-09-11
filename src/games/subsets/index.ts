@@ -1,7 +1,6 @@
 /**
  * Subsets — native TS port of `puzzles/unreleased/subsets.c` (Lennard
- * Sprong's implementation of Inaba Naoki's puzzle; openspec
- * add-subsets-ts-port).
+ * Sprong's implementation of Inaba Naoki's puzzle).
  *
  * Place every set over an `n`-letter universe into the grid exactly once. A
  * horseshoe arrow points from a superset to a subset it contains, and *all*
@@ -15,9 +14,8 @@
  *
  * Upstream locks the board to one configuration (4×4, four letters — the only
  * size where the sixteen possible sets exactly fill the sixteen cells), so the
- * only thing there is to choose is how deep the deductions go:
- * `add-subsets-difficulty-tiers` gives the game two tiers, one preset each, and
- * a Custom dialog offering the tier alone.
+ * only choice is how deep the deductions go: two tiers, one preset each, and a
+ * Custom dialog offering the tier alone.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
@@ -51,9 +49,8 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newSubsetsDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -78,6 +75,7 @@ import {
   subsetsValidate,
 } from "./solver.ts";
 import {
+  ALL_BITS,
   CELL_HEIGHT,
   CELL_WIDTH,
   cloneState,
@@ -273,20 +271,18 @@ function executeMove(state: SubsetsState, move: SubsetsMove): SubsetsState {
       next.known[i] = move.known[i];
       next.mask[i] = move.mask[i];
     }
-    // Deliberate divergence (owner 2026-07-21, docs/games/solver-and-generator.md § "Solve and the generator's aux"): upstream's
-    // 'S' branch returns before the completion check and never sets
-    // `cheated`, leaving a solved-by-solver board "ongoing" for ever. Every
-    // other port follows the collection convention — the solve move
-    // completes the game (reported solved-with-help) and marks it cheated
-    // so the win flash doesn't fire. Not byte-match surface (the desc
-    // differential never runs executeMove).
+    // Deliberate divergence, per docs/games/solver-and-generator.md
+    // § "Solve and the generator's aux": upstream's 'S' branch skips the
+    // completion check and never sets `cheated`, leaving a solved board
+    // "ongoing" for ever. The collection's solve move completes the game
+    // (solved-with-help) and marks it cheated so the win flash doesn't fire.
+    // Not byte-match surface: the desc differential never runs executeMove.
     if (subsetsValidate(next) === "complete") next.completed = true;
     next.cheated = next.completed;
     return next;
   }
-  // Before the range checks below, not after: `pos < 0` and `pos >= n` are
-  // *both* false for a missing `pos`, so a foreign move walked straight through
-  // them and out of the inner `switch` as an unchanged board.
+  // Before the range checks: a missing `pos` makes `pos < 0` and `pos >= n`
+  // *both* false, so a foreign move would pass them as an unchanged board.
   if (move.kind !== "set") return assertNever(move, "subsets: executeMove");
 
   const { pos, bit } = move;
@@ -333,7 +329,7 @@ function solve(orig: SubsetsState): SolveResult<SubsetsMove> {
   };
 }
 
-// --- hint (add-subsets-hint) ------------------------------------------------
+// --- hint -------------------------------------------------------------------
 
 /** Highlight roles of a Subsets hint step (see the COL_HINT block in
  * render.ts). Every narration is *attention → deduction → action*, per slot:
@@ -347,10 +343,10 @@ function solve(orig: SubsetsState): SolveResult<SubsetsMove> {
  *   home), lit `COL_HINT_SPOT` — the same set→placement spotlight the
  *   player-facing reference aid draws. */
 export interface SubsetsHintHighlights {
-  target: { x: number; y: number };
-  cells: { x: number; y: number }[];
+  target: Point;
+  cells: Point[];
   sets: number[];
-  spotlight: { x: number; y: number }[];
+  spotlight: Point[];
 }
 
 function buildHighlights(
@@ -359,15 +355,12 @@ function buildHighlights(
   exclusion: CollapseExclusion | null,
 ): SubsetsHintHighlights {
   const w = state.w;
-  const pt = (i: number): { x: number; y: number } => ({
-    x: i % w,
-    y: Math.floor(i / w),
-  });
+  const pt = (i: number): Point => ({ x: i % w, y: Math.floor(i / w) });
   const r = d.reason;
   // Arrows point at a neighbor *cell*; a placement points at the *set* in the
   // tally; a hidden single also *spotlights* where the set can go (its one
-  // home). A collapse highlights the excluded competitor's blocker cell (#2),
-  // so "the highlighted cell" in the "why not …" clause has a referent.
+  // home). A collapse highlights the excluded competitor's blocker cell, so
+  // "the highlighted cell" in the "why not …" clause has a referent.
   const blockerCell = (ex: CollapseExclusion): number =>
     ex.block.kind === "placed"
       ? ex.block.cell
@@ -395,9 +388,8 @@ function buildHighlights(
 
 /** A firing (one deduction deciding a cell's letters) becomes one sub-goal
  * journey: leg 0 leads with the why, the rest follow as `continuesPrevious`
- * legs — each with its own per-slot string (owner redesign 2026-07-21). A
- * collapse's lead also gets a "why not X" clause (#2). All of a journey's
- * marks render in the same `COL_HINT`. */
+ * legs — each with its own per-slot string. A collapse's lead also gets a "why
+ * not X" clause. All of a journey's marks render in the same `COL_HINT`. */
 function stepsForFiring(
   state: SubsetsState,
   d: SubsetsDeduction,
@@ -424,35 +416,20 @@ function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlight
 
   // A mark can be wrong without yet breaking a local rule (a letter the unique
   // solution excludes). The solution is derivable from the givens, so compare
-  // and refuse honestly rather than hint on into a doomed position (design D5).
+  // and refuse honestly rather than hint on into a doomed position.
   const { solved, result } = solveCopy(state);
   if (result === "complete") {
     for (let i = 0; i < state.w * state.h; i++) {
-      // `solved` reset non-givens and re-derived them; wherever the player has
-      // decided a letter, it must agree with the solution.
-      for (let b = 0; b < state.n; b++) {
-        const bit = 1 << b;
-        const playerKnows = (state.known[i] & bit) !== 0;
-        const playerClears = (state.mask[i] & bit) === 0;
-        if (!playerKnows && !playerClears) continue; // undecided letter
-        const solutionHas = (solved.known[i] & bit) !== 0;
-        if (playerKnows !== solutionHas) {
-          return {
-            ok: false,
-            error: CONTRADICTION_UNLOCALIZED,
-          };
-        }
-      }
+      // `solved` reset non-givens and re-derived them; every letter the player
+      // has decided (marked or cleared) must agree with the solution.
+      const decided = state.known[i] | (ALL_BITS(state.n) & ~state.mask[i]);
+      if ((state.known[i] ^ solved.known[i]) & decided)
+        return { ok: false, error: CONTRADICTION_UNLOCALIZED };
     }
   }
 
   const plan = deduceHintPlan(state);
-  if (plan.status === "invalid") {
-    return {
-      ok: false,
-      error: CONTRADICTION_UNLOCALIZED,
-    };
-  }
+  if (plan.status === "invalid") return { ok: false, error: CONTRADICTION_UNLOCALIZED };
   if (plan.deductions.length === 0) {
     return { ok: false, error: DEDUCTION_EXHAUSTED };
   }
@@ -463,7 +440,7 @@ function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlight
 
 /** A move completes the step iff it is exactly the hinted letter toggle
  * (position, letter and target tri-state all match); anything else drops the
- * plan to recompute (design D6). */
+ * plan to recompute. */
 function hintKeepTrack(
   m: SubsetsMove,
   step: HintStep<SubsetsMove>,
@@ -484,10 +461,10 @@ function flashLength(
   return winFlash(from, to, FLASH_TIME);
 }
 
-/** The cross-game difficulty contract (`add-game-difficulty-contract`): declaring
- * it enrolls Subsets in the shared cap-monotonicity and tier-reachability
- * guards. `solveAtCap` rebuilds the board from its desc — never from a live
- * state — because `subsetsSolveGame` resets and mutates what it is given. */
+/** The cross-game difficulty contract: declaring it enrolls Subsets in the
+ * shared cap-monotonicity and tier-reachability guards. `solveAtCap` rebuilds
+ * the board from its desc — never from a live state — because
+ * `subsetsSolveGame` resets and mutates what it is given. */
 const difficulty: DifficultyContract<SubsetsParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
@@ -527,10 +504,9 @@ export const subsetsGame: Game<
   decodeParams,
   validateParams,
 
-  // Upstream's configure slot is `false` — 4×4 over four letters is the only
-  // legal board (the sixteen sets exactly fill the sixteen cells), so the port
-  // shipped with no Custom dialog at all (design D8). The tier is the one axis
-  // this game *can* vary, so it is the whole dialog.
+  // Upstream has no configure dialog: 4×4 over four letters is the only legal
+  // board. The tier is the one axis this game *can* vary, so it is the whole
+  // dialog.
   paramConfig: [
     {
       kw: "difficulty",
@@ -544,7 +520,7 @@ export const subsetsGame: Game<
     },
   ],
 
-  newDesc: (p: SubsetsParams, rng: RandomState) => newSubsetsDesc(p, rng),
+  newDesc: newSubsetsDesc,
   validateDesc,
   newState,
   newUi,
@@ -560,9 +536,9 @@ export const subsetsGame: Game<
   findMistakes,
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: SubsetsParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

@@ -1,8 +1,7 @@
 /*
- * Subsets' adoption of `runDeductionFixpoint`, proved by equivalence
- * (`adopt-the-deduction-runner-where-it-rewires`). The harness and the argument
- * for it are `engine/testing/ladder-equivalence.ts`; this file is the
- * declaration.
+ * Subsets' adoption of `runDeductionFixpoint`, proved by equivalence. The
+ * harness and the argument for it are `engine/testing/ladder-equivalence.ts`;
+ * this file is the declaration.
  *
  * **Two things about Subsets that no other adopter has**, both recorded on
  * `subsetsSolveGameLegacy`: its per-iteration prologue moved into `settled`

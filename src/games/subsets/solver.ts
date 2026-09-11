@@ -11,11 +11,10 @@
  * complete solution, so the precise set of deductions decides which cells stay
  * givens and therefore every generated desc. `DIFF_EASY` is upstream's compiled
  * strength exactly — rules and loop order verbatim, neither strengthened nor
- * weakened, which is what keeps the twelve C fixtures reproducing byte-for-byte
- * (subsets-differential.test.ts). `DIFF_TRICKY` adds one rule *on top*:
- * `add-subsets-difficulty-tiers` restored the half of `applyArrowsAdvanced`
- * that upstream wrote, commented out and never compiled. Adding above rather
- * than editing in place is why that change kept the oracle intact.
+ * weakened, which is what keeps the C fixtures reproducing byte-for-byte
+ * (subsets-differential.test.ts). `DIFF_TRICKY` adds one rule *on top*: the
+ * half of `applyArrowsAdvanced` that upstream wrote, commented out and never
+ * compiled. Being added above rather than in place keeps the oracle intact.
  */
 import {
   type DeductionTechnique,
@@ -207,10 +206,9 @@ function solveSinglePosition(
 
 /** Collapse the surviving candidates back into `known`/`mask` (upstream
  * `subsets_bits_from_cube`). A cell with no surviving candidate — a
- * contradiction — gets `known |= ~0`, upstream behavior reproduced: the
- * Uint16Array stores 0xFFFF where C stores 0xFFFFFFFF, which is
- * observationally identical because `mask` never exceeds `ALL_BITS(n)`, so
- * such a cell can never read as decided or index the counts array. */
+ * contradiction — gets `known |= ~0` as upstream: the Uint16Array stores
+ * 0xFFFF where C stores 0xFFFFFFFF, which is observationally identical because
+ * `mask` never exceeds `ALL_BITS(n)`, so such a cell never reads as decided. */
 function bitsFromCube(state: SubsetsState, cube: Uint8Array): number {
   const s = state.w * state.h;
   const n2 = 1 << state.n;
@@ -252,8 +250,7 @@ function bitsFromCube(state: SubsetsState, cube: Uint8Array): number {
  * - **Head half** (`strong` only): the mirror — drop a subset candidate at
  *   `i2` that has no strictly-larger live candidate at `i1`. Upstream wrote
  *   this, commented it out under `// TODO repair this`, and shipped without
- *   it; `add-subsets-difficulty-tiers` restored it as the Tricky rung. See
- *   that change's `design.md` D1 for what was actually wrong with it.
+ *   it; here it is the Tricky rung.
  */
 function applyArrowsAdvanced(
   state: SubsetsState,
@@ -316,14 +313,10 @@ function disjoint(state: SubsetsState, cube: Uint8Array): number {
       for (let d = 0; d < 4; d++) {
         const i1 = y * w + x;
         if (state.clues[i1] & ADJTHAN[d].f) continue;
-        if (
-          x + ADJTHAN[d].dx < 0 ||
-          x + ADJTHAN[d].dx >= w ||
-          y + ADJTHAN[d].dy < 0 ||
-          y + ADJTHAN[d].dy >= h
-        )
-          continue;
-        const i2 = i1 + ADJTHAN[d].dy * w + ADJTHAN[d].dx;
+        const x2 = x + ADJTHAN[d].dx;
+        const y2 = y + ADJTHAN[d].dy;
+        if (x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+        const i2 = y2 * w + x2;
         if (state.clues[i2] & ADJTHAN[d].fo) continue;
 
         if (state.known[i1] !== state.mask[i1]) {
@@ -381,8 +374,7 @@ export function subsetsSolveGame(
     state.mask[i] = ALL_BITS(state.n);
   }
 
-  // The verdict the loop stopped on. `settled` owns the classification because
-  // it runs exactly where the hand-written loop's prologue ran — see below.
+  // The verdict the loop stopped on, set by `settled` below.
   let status: SubsetsStatus = "unfinished";
 
   const ladder: DeductionTechnique[] = [
@@ -394,11 +386,9 @@ export function subsetsSolveGame(
       tier: DIFF_EASY,
       run: () => solveSinglePosition(state, counts, cube),
     },
-    // **The cap is an argument, not a tier**, which is the guards-itself
-    // convention rather than a new option on the runner: this rung runs at every
-    // tier and does *more* at Tricky (its head half is Easy's shipped strength).
-    // Declaring it `tier: DIFF_TRICKY` would be wrong — it would stop running at
-    // Easy, where upstream runs it.
+    // **The cap is an argument, not a tier** (the guards-itself convention):
+    // this rung runs at every tier and does *more* at Tricky. Declaring it
+    // `tier: DIFF_TRICKY` would stop it running at Easy, where upstream runs it.
     {
       id: "arrows-advanced",
       tier: DIFF_EASY,
@@ -409,14 +399,11 @@ export function subsetsSolveGame(
   runDeductionFixpoint({
     techniques: ladder,
     firings,
-    // **`settled` carries the per-iteration prologue, and that is exact rather
-    // than convenient.** The hand-written loop opened every pass by classifying
-    // the board (returning if it was no longer unfinished) and then re-syncing
-    // the candidate cube; `settled` is called at the top of every iteration,
-    // before any rung, which is precisely that position. The alternative — a
-    // rung at position 0 that always returns `0`, the Singles precedent — works
-    // too but would put a never-firing entry in the ladder, and the firing
-    // census would then have to excuse it.
+    // **`settled` carries the per-iteration prologue** — classify the board,
+    // then re-sync the cube — because it runs at the top of every iteration,
+    // before any rung, which is exactly where upstream's loop ran it. A
+    // never-firing rung at position 0 (the Singles shape) would work too, but
+    // the firing census would then have to excuse it.
     settled: () => {
       status = subsetsValidate(state, null, counts);
       if (status !== "unfinished") return true;
@@ -430,18 +417,14 @@ export function subsetsSolveGame(
 }
 
 /**
- * The hand-written ladder this solver ran until
- * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
- * `subsets-ladder.test.ts` proves the adoption against.
+ * The hand-written ladder, upstream's loop shape, kept as the oracle
+ * `subsets-ladder.test.ts` proves {@link subsetsSolveGame} against.
  *
- * **What adoption bought here is smaller than for the other adopters, and worth
- * saying so.** Subsets uses neither of the runner's two graded features: it
- * returns a *verdict*, not a tier, so there is no grade; and its difficulty is a
- * boolean handed to one rung rather than a cap over the ladder, so `maxTier` is
- * unused. What it gets is the loop, the restart discipline, named rungs in the
- * step-budget's non-termination message, and the firing census the equivalence
- * test takes. That is real but modest, and it is the honest reason this game
- * sits low on the adoption list rather than high.
+ * Subsets uses neither of the runner's graded features: it returns a
+ * *verdict*, not a tier, and its difficulty is a boolean handed to one rung
+ * rather than a cap over the ladder, so `maxTier` is unused. What the runner
+ * gives it is the loop, the restart discipline, named rungs in the
+ * step-budget's non-termination message, and the firing census.
  */
 export function subsetsSolveGameLegacy(
   state: SubsetsState,
@@ -475,7 +458,7 @@ export function subsetsSolveGameLegacy(
   }
 }
 
-// --- findMistakes (design D5: the rule validator's error set) ----------------
+// --- findMistakes: the rule validator's error set ----------------------------
 
 /**
  * The Check & Save mistake set: exactly what upstream's own error display
@@ -518,31 +501,29 @@ export function solveCopy(
   return { solved, result: subsetsSolveGame(solved, maxdiff) };
 }
 
-// --- hint recorder (add-subsets-hint) ---------------------------------------
+// --- hint recorder ----------------------------------------------------------
 //
-// A *parallel recorder* over the same six rules (the Undead §9.4 / Clusters F1
-// shape): separate code reusing this module's primitives, run **from the
-// player's current marks** (no reset — a hint continues from where the player
-// is), emitting the deductions one narratable letter-firing at a time. Because
-// `subsetsSolveGame`/`subsetsValidate` — the byte-match differential surface —
-// never call any of this, the generator's desc is unaffected *by construction*
-// (design D1); there is no recorder flag on the hot path.
+// A *parallel recorder* over the same six rules: separate code reusing this
+// module's primitives, run **from the player's current marks** (no reset — a
+// hint continues from where the player is), emitting the deductions one
+// narratable letter-firing at a time. Because `subsetsSolveGame` and
+// `subsetsValidate` — the byte-match differential surface — never call any of
+// this, the generator's desc is unaffected *by construction*; there is no
+// recorder flag on the hot path.
 //
-// The projection problem (design D3): three of the six rules — `cubeSingleCount`,
+// The projection problem: three of the six rules — `cubeSingleCount`,
 // `disjoint`, `applyArrowsAdvanced` — eliminate candidate *values* the player
 // never sees. They are not steps of their own (there is no letter move to
 // attach them to); instead they set up a `bitsFromCube` collapse, whose firing
 // carries the elimination *evidence* that drove it. Only three rules produce a
 // player-visible letter change: `applyArrows` (a horseshoe propagating letters),
 // `bitsFromCube` (a candidate collapse), and `solveSinglePosition` (a set with
-// one place left). Those are the three reason kinds a firing can have.
+// one place left).
 //
 // Confluence makes the one-firing-at-a-time order safe: every rule only *adds*
-// information (letters confirmed/cleared, candidates removed) monotonically, so
-// the mutual fixpoint is order-independent — the recorder reaches exactly the
-// same decided board as `subsetsSolveGame` would from the same position, using
-// exactly the same rules, i.e. never deducing more than the uniqueness gate
-// vetted.
+// information monotonically, so the fixpoint is order-independent — the
+// recorder reaches exactly the board `subsetsSolveGame` would from the same
+// position, never deducing more than the uniqueness gate vetted.
 
 /** One letter slot a firing decides. */
 export interface SubsetsDeductionSet {
@@ -563,18 +544,17 @@ export type SubsetsReason =
   | { kind: "arrowMask"; from: number; to: number }
   /** A *hidden single* (Dominosa `onlySpot` analog): set `value` fits — shallow,
    * from the board — in only the one cell `pos`, so it must go there. The
-   * spotlight of `value`'s candidate cells is that single cell (design owner
-   * redesign 2026-07-21). */
+   * spotlight of `value`'s candidate cells is that single cell. */
   | { kind: "hiddenSingle"; value: number }
   /** A candidate collapse (`bitsFromCube`): the sets that can still go in the
    * cell all agree on the decided letters. `survivors` is that surviving
    * set-value list (the self-contained premise — every one contains each
-   * now-Known letter, none contains a now-Cleared letter; design D3, measured
-   * ≤3 in 94% of collapses). `neighbors` are the few local arrow/adjacency
-   * cells whose relation removed candidates (shaded as evidence);
-   * `placedDriven` is true when exactly-once placements elsewhere also
-   * removed candidates (narrated generically, shown ambiently in the tally —
-   * §5.6, up to 14 cells, never enumerated). */
+   * now-Known letter, none contains a now-Cleared letter; measured ≤3 in 94%
+   * of collapses). `neighbors` are the few local arrow/adjacency cells whose
+   * relation removed candidates (shaded as evidence); `placedDriven` is true
+   * when exactly-once placements elsewhere also removed candidates (narrated
+   * generically, shown ambiently in the tally — up to 14 cells, never
+   * enumerated). */
   | {
       kind: "collapse";
       survivors: number[];
@@ -586,7 +566,7 @@ export type SubsetsReason =
   | { kind: "singlePosition"; value: number };
 
 /** One recorded firing: the cell acted on, the letters it decides together
- * (one journey — design D4), and the deduction that forces them. */
+ * (one journey), and the deduction that forces them. */
 export interface SubsetsDeduction {
   pos: number;
   sets: SubsetsDeductionSet[];
@@ -603,13 +583,31 @@ export interface SubsetsHintPlan {
 }
 
 /** Bit positions set in `mask`, ascending. */
-function bitList(mask: number, n: number): number[] {
+export function bitList(mask: number, n: number): number[] {
   const out: number[] = [];
   for (let b = 0; b < n; b++) if (mask & (1 << b)) out.push(b);
   return out;
 }
 
-/** Why a cube candidate was eliminated, for a collapse's evidence (design D3).
+/** The letter moves that turn cell `pos` into exactly set `value`, in letter
+ * order. */
+function lettersToPlace(
+  state: SubsetsState,
+  pos: number,
+  value: number,
+): SubsetsDeductionSet[] {
+  const sets: SubsetsDeductionSet[] = [];
+  for (let b = 0; b < state.n; b++) {
+    if (value & (1 << b)) {
+      if (!(state.known[pos] & (1 << b))) sets.push({ bit: b, type: "known" });
+    } else if (state.mask[pos] & (1 << b)) {
+      sets.push({ bit: b, type: "cleared" });
+    }
+  }
+  return sets;
+}
+
+/** Why a cube candidate was eliminated, for a collapse's evidence.
  * `undefined` in the sink means "not eliminated, or eliminated by the cell's
  * own marks (syncCube)" — the latter carries no external evidence cell. */
 type ElimEvidence =
@@ -700,14 +698,10 @@ function recDisjoint(
       for (let d = 0; d < 4; d++) {
         const i1 = y * w + x;
         if (state.clues[i1] & ADJTHAN[d].f) continue;
-        if (
-          x + ADJTHAN[d].dx < 0 ||
-          x + ADJTHAN[d].dx >= w ||
-          y + ADJTHAN[d].dy < 0 ||
-          y + ADJTHAN[d].dy >= h
-        )
-          continue;
-        const i2 = i1 + ADJTHAN[d].dy * w + ADJTHAN[d].dx;
+        const x2 = x + ADJTHAN[d].dx;
+        const y2 = y + ADJTHAN[d].dy;
+        if (x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+        const i2 = y2 * w + x2;
         if (state.clues[i2] & ADJTHAN[d].fo) continue;
 
         if (state.known[i1] !== state.mask[i1]) {
@@ -839,8 +833,8 @@ function nextCollapseFiring(
       }
     }
     // A cell with no surviving candidate is a contradiction — the position is
-    // unsolvable. Skip it (the hint refuses such boards up front, design D5);
-    // never emit a garbage firing.
+    // unsolvable. Skip it (the hint refuses such boards up front); never emit
+    // a garbage firing.
     if (survivors.length === 0) continue;
 
     const gainedKnown = newknown & ALL_BITS(n) & ~state.known[i];
@@ -894,7 +888,6 @@ function nextSinglePosition(
 ): SubsetsDeduction | null {
   const s = state.w * state.h;
   const n2 = 1 << state.n;
-  const n = state.n;
   for (let nj = 0; nj < n2; nj++) {
     if (counts[nj] !== 0) continue;
     let found = -1;
@@ -904,14 +897,7 @@ function nextSinglePosition(
     }
     if (found < 0) continue;
 
-    const sets: SubsetsDeductionSet[] = [];
-    for (let b = 0; b < n; b++) {
-      if (nj & (1 << b)) {
-        if (!(state.known[found] & (1 << b))) sets.push({ bit: b, type: "known" });
-      } else if (state.mask[found] & (1 << b)) {
-        sets.push({ bit: b, type: "cleared" });
-      }
-    }
+    const sets = lettersToPlace(state, found, nj);
     state.known[found] = nj;
     state.mask[found] = nj;
     return { pos: found, sets, reason: { kind: "singlePosition", value: nj } };
@@ -976,8 +962,8 @@ export function whyCantPlace(
 
 /**
  * The cells set-value `value` can still legally occupy, judged **shallowly from
- * the board** — the Dominosa "no solver, no solution leak" rule (owner redesign
- * 2026-07-21). A **placed** set can go nowhere else, so its decided home
+ * the board** — the Dominosa "no solver, no solution leak" rule. A **placed**
+ * set can go nowhere else, so its decided home
  * cell(s) are returned alone; an **unplaced** set returns every undecided cell
  * where placing it breaks no visible rule (marks + decided-neighbor
  * horseshoes). This powers the reference-aid spotlight and the hidden-single
@@ -1048,12 +1034,7 @@ export function pickExclusion(
   // subtle missing-horseshoe rule); ties broken by nearest miss.
   const rankOf = (block: CollapseExclusion["block"]): number =>
     block.kind === "arrow" ? 0 : block.kind === "placed" ? 1 : 2;
-  let best: {
-    value: number;
-    block: CollapseExclusion["block"];
-    rank: number;
-    dist: number;
-  } | null = null;
+  let best: (CollapseExclusion & { rank: number; dist: number }) | null = null;
   for (let value = 0; value < n2; value++) {
     if (surv.has(value)) continue;
     // Only competitors consistent with the cell's own marks are illustrative
@@ -1100,20 +1081,12 @@ function nextHiddenSingle(
   counts: Int32Array,
 ): SubsetsDeduction | null {
   const n2 = 1 << state.n;
-  const n = state.n;
   for (let value = 0; value < n2; value++) {
     if (counts[value] !== 0) continue; // placed already (or duplicated)
     const cells = candidateCells(state, value);
     if (cells.length !== 1) continue;
     const pos = cells[0];
-    const sets: SubsetsDeductionSet[] = [];
-    for (let b = 0; b < n; b++) {
-      if (value & (1 << b)) {
-        if (!(state.known[pos] & (1 << b))) sets.push({ bit: b, type: "known" });
-      } else if (state.mask[pos] & (1 << b)) {
-        sets.push({ bit: b, type: "cleared" });
-      }
-    }
+    const sets = lettersToPlace(state, pos, value);
     if (sets.length === 0) continue;
     state.known[pos] = value;
     state.mask[pos] = value;
@@ -1123,10 +1096,10 @@ function nextHiddenSingle(
 }
 
 /**
- * Record the deduction plan from the player's current marks (design D1):
- * continue from the position (no reset of non-given cells), emitting one
- * narratable firing at a time. Rung order surfaces the most teachable form
- * first (owner redesign 2026-07-21): horseshoe arrows → **hidden single**
+ * Record the deduction plan from the player's current marks: continue from the
+ * position (no reset of non-given cells), emitting one narratable firing at a
+ * time. Rung order surfaces the most teachable form first: horseshoe arrows →
+ * **hidden single**
  * (a set with one spot left — the crisp, spotlight-shaped counting) → the
  * cube collapse (a cell with one set left) → a last-place cube placement.
  * Stops at `complete`/`invalid`, or `unfinished` when no rule fires.
@@ -1174,14 +1147,11 @@ export function deduceHintPlan(
 
     // Rung 4 (`DIFF_TRICKY`): only once every cheaper rung is exhausted, add
     // the head half of the advanced arrow rule and try the cube again. Reaching
-    // for it *last* is what keeps an Easy board's plan identical to the one it
-    // had before the tier existed — the rung is unreachable there, because the
-    // cheaper vocabulary never runs out on a board vetted as solvable without
-    // it. (This is the shape the Clusters hint uses for its lookahead rung; the
-    // first cut of this change ran the head half unconditionally instead, which
-    // is *sound* but silently re-planned Easy boards — a render snapshot caught
-    // it.) Both `next*Firing` calls above returned null without mutating, so
-    // re-running them here repeats no work and drops no firing.
+    // for it *last* keeps an Easy board's plan free of it — the cheaper
+    // vocabulary never runs out on a board vetted as solvable without it. (The
+    // Clusters hint's lookahead rung has the same shape.) Both `next*Firing`
+    // calls above returned null without mutating, so re-running them here
+    // repeats no work and drops no firing.
     if (maxdiff < DIFF_TRICKY) return null;
     shrinkCube(state, cube, counts, elim, true);
     return (

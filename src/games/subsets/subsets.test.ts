@@ -1,12 +1,10 @@
 /**
- * Behavioral tests for the Subsets port (add-subsets-ts-port): params and
- * desc codecs with upstream's exact validation messages, the six-rule
- * solver's three verdicts, the generator's tier-1 properties, the
- * tri-state slot input (pointer + keyboard, gap-skipping cursor),
- * `executeMove` and completion, Solve through a real `Midend` (including
- * the faithful upstream quirk that Solve does not mark the game
- * completed), `findMistakes`, text format, and tier-2.5 render scenarios
- * with snapshots.
+ * Behavioral tests for Subsets: params and desc codecs with upstream's exact
+ * validation messages, the six-rule solver's three verdicts, the generator's
+ * tier-1 properties, the tri-state slot input (pointer + keyboard,
+ * gap-skipping cursor), `executeMove` and completion, Solve through a real
+ * `Midend` (which completes the game, unlike upstream), `findMistakes`, text
+ * format, and tier-2.5 render scenarios with snapshots.
  */
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
@@ -269,7 +267,7 @@ describe("subsets generator (tier 1)", () => {
   });
 });
 
-// --- difficulty tiers (add-subsets-difficulty-tiers) ------------------------
+// --- difficulty tiers -------------------------------------------------------
 //
 // The cross-game contract guards (`engine/difficulty-contract.test.ts`) already
 // hold cap-monotonicity and tier-reachability for this game; what is left here
@@ -306,10 +304,10 @@ describe("subsets difficulty tiers", () => {
   });
 
   it("Easy generation is untouched: it draws upstream's rules, in order", () => {
-    // The differential fixtures are the real statement of this (12 C-recorded
+    // The differential fixtures are the real statement of this (C-recorded
     // descs, reproduced byte-for-byte on the live default path). This is the
-    // local restatement: the tier that reproduces today's boards exists, and it
-    // is the default.
+    // local restatement: the tier that reproduces upstream's boards is the
+    // default.
     expect(defaultParams().diff).toBe(DIFF_EASY);
     const { desc } = newSubsetsDesc(PARAMS, randomNew("tier1-seed"));
     expect(newSubsetsDesc(defaultParams(), randomNew("tier1-seed")).desc).toBe(desc);
@@ -334,14 +332,11 @@ describe("subsets difficulty tiers", () => {
 
   it("an Easy board's hint plan does not reach for the Tricky rung", () => {
     // The rung is a *fallback*, engaged only once the cheaper vocabulary runs
-    // out — which on an Easy board it never does. So an Easy plan is exactly
-    // the plan this game shipped before it had tiers.
-    //
-    // Asserted, not assumed: the same board is planned by the production
-    // recorder (which *can* reach the rung) and by one capped below it, and the
-    // two plans must be identical firing for firing. An earlier cut ran the
-    // rung unconditionally, which is sound but silently re-planned Easy boards;
-    // this is the check that would have caught it without a render snapshot.
+    // out — which on an Easy board it never does. Asserted, not assumed: the
+    // same board is planned by the production recorder (which *can* reach the
+    // rung) and by one capped below it, and the two plans must be identical
+    // firing for firing. Running the rung unconditionally is sound but would
+    // silently re-plan Easy boards.
     const boards = seedBudget(4, 20);
     for (let s = 0; s < boards; s++) {
       const { desc } = newSubsetsDesc(PARAMS, randomNew(`easyplan-${s}`));

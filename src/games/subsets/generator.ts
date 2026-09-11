@@ -33,8 +33,8 @@ import {
  *
  * **The Easy tier is upstream byte-for-byte.** `DIFF_EASY` is upstream's
  * shipped solver strength, the RNG draw order is untouched, and tier 0 needs
- * no "and not easier" gate — so the differential fixtures still bind (design
- * D3). Only Tricky is new.
+ * no "and not easier" gate — so the differential fixtures still bind. Only
+ * Tricky is new.
  */
 export function generateCandidate(p: SubsetsParams, rng: RandomState): SubsetsState {
   const state = blankState(p);
@@ -55,18 +55,13 @@ export function generateCandidate(p: SubsetsParams, rng: RandomState): SubsetsSt
   // Derive every arrow clue from the subset relation.
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      for (let d = 0; d < 4; d++) {
-        if (
-          x + ADJTHAN[d].dx < 0 ||
-          x + ADJTHAN[d].dx >= w ||
-          y + ADJTHAN[d].dy < 0 ||
-          y + ADJTHAN[d].dy >= h
-        )
-          continue;
+      for (const { f, dx, dy } of ADJTHAN) {
+        const x2 = x + dx;
+        const y2 = y + dy;
+        if (x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
         const i = y * w + x;
-        const i2 = i + ADJTHAN[d].dy * w + ADJTHAN[d].dx;
-        if ((state.known[i] & state.known[i2]) === state.known[i2])
-          state.clues[i] |= ADJTHAN[d].f;
+        const i2 = y2 * w + x2;
+        if ((state.known[i] & state.known[i2]) === state.known[i2]) state.clues[i] |= f;
       }
     }
   }
@@ -89,9 +84,8 @@ export function generateCandidate(p: SubsetsParams, rng: RandomState): SubsetsSt
  *
  * Unlike Clusters', this generator has **no state carried between attempts**:
  * every candidate redraws both shuffles, so the whole board is fresh
- * randomness and a plain retry cannot re-derive the board it just rejected
- * (the hazard `add-clusters-difficulty-tiers` hit — see the proposal). That is
- * why the tier gate is a bare loop rather than a perturbation.
+ * randomness and a plain retry cannot re-derive the board it just rejected.
+ * That is why the tier gate is a bare loop rather than a perturbation.
  *
  * Easy takes the first candidate: tier 0 has no tier below to be too easy for,
  * so its acceptance rule is upstream's unchanged and its descs are unchanged

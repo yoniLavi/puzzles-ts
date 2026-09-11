@@ -15,12 +15,11 @@
  *
  * Divergence from the C: the keyboard cursor's corner marks are drawn
  * through the per-cell diff (the cursor slot is part of the cache key)
- * instead of upstream's save/restore blitter — same pixels, no blitter
- * plumbing (display concern, outside byte-parity scope).
+ * instead of upstream's save/restore blitter — same pixels, no blitter.
  *
  * `findMistakes` duplicates get an inset red frame via an `OverlaySidecar`
- * (docs/games/rendering.md § "The tile cache and the diff key"); violated edges are already red live, exactly as the C
- * shows them.
+ * (docs/games/rendering.md § "The tile cache and the diff key"); violated
+ * edges are already red live, exactly as the C shows them.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -33,7 +32,7 @@ import {
   INK,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
-import { drawRectCorners } from "../../engine/draw.ts";
+import { drawRectCorners, drawThickRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import {
@@ -73,22 +72,26 @@ export const COL_FIXED = 5;
 export const COL_GUESS = 6;
 export const COL_ERROR = 7;
 export const COL_CURSOR = 8;
-// Hint / reference-aid legend (add-subsets-hint): the slot the current step
-// decides gets a bold COL_HINT frame; a highlighted neighbor cell (across a
-// horseshoe) or highlighted tally set is COL_HINT_CELL; and the cells a
-// spotlit set can still go in (a hidden single's one home, or the player-clicked
-// reference-aid set) get a COL_HINT_SPOT frame.
+// Hint / reference-aid legend: the slot the current step decides gets a bold
+// COL_HINT frame; a highlighted neighbor cell (across a horseshoe) or
+// highlighted tally set is COL_HINT_CELL; and the cells a spotlit set can still
+// go in (a hidden single's one home, or the player-clicked reference-aid set)
+// get a COL_HINT_SPOT frame.
 export const COL_HINT = 9;
 export const COL_HINT_CELL = 10;
 export const COL_HINT_SPOT = 11;
-// The cell where a *placed* set already sits (reference aid #3) — distinct from
-// the green "could still go here" spotlight.
+// The cell where a clicked, already *placed* set sits.
 export const COL_HINT_PLACED = 12;
 
 /** Sidecar bit: a cell a spotlit set can still be placed in. */
 const HINT_SPOT = 4;
 /** Sidecar bit: the cell a clicked *placed* set already sits in. */
 const HINT_PLACED = 8;
+/** Bit offset of the target slot index in the hint sidecar's packed word,
+ * above the four flag bits. */
+const HINT_SLOT_SHIFT = 4;
+
+const CODE_A = "A".charCodeAt(0);
 
 export function colors(defaultBackground: Color): Color[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -138,8 +141,9 @@ export interface SubsetsDrawState {
   /** Tally counts currently drawn per set-value (upstream `oldcounts`). */
   oldCounts: Int32Array;
   mistakes: OverlaySidecar;
-  /** Hint overlay: `HINT_TARGET | HINT_AREA` per cell, plus the target slot
-   * index packed in bits 4+ (`(slot + 1) << 4`, 0 = no target slot). */
+  /** Hint overlay: `HINT_TARGET`/`HINT_AREA`/`HINT_SPOT`/`HINT_PLACED` per
+   * cell, plus the target slot index packed in bits 4+ (`(slot + 1) << 4`,
+   * 0 = no target slot). */
   hint: OverlaySidecar;
   /** Set-values the hint highlights in the tally band (1 = highlighted),
    * indexed by set-value; compared against {@link SubsetsDrawState.oldHintSets}
@@ -163,17 +167,9 @@ export function newDrawState(state: SubsetsState): SubsetsDrawState {
   };
 }
 
-/** Bit offset for the target slot index within the hint sidecar's packed word
- * (`HINT_TARGET`/`HINT_AREA` occupy bits 0–1). */
-const HINT_SLOT_SHIFT = 4;
-
 export function setTileSize(ds: SubsetsDrawState, ts: number): void {
   ds.tilesize = ts;
 }
-
-// --- helpers ----------------------------------------------------------------
-
-const CODE_A = "A".charCodeAt(0);
 
 // --- redraw -----------------------------------------------------------------
 
@@ -237,7 +233,7 @@ export function redraw(
   ) {
     // Reference aid, set→cells: a clicked tally set lights up every cell it can
     // still go in (green). If the set is already placed, its home cell is lit a
-    // distinct color instead — where it *is*, not where it could go (#3).
+    // distinct color instead — where it *is*, not where it could go.
     ds.hintSets[ui.highlightSet] = 1;
     for (const i of candidateCells(state, ui.highlightSet)) {
       const placed = state.known[i] === state.mask[i];
@@ -248,24 +244,25 @@ export function redraw(
     ui.highlightCell >= 0 &&
     ui.highlightCell < w * h
   ) {
-    // Reference aid, cell→sets (#1): a focused cell lights up, and every set it
+    // Reference aid, cell→sets: a focused cell lights up, and every set it
     // could still hold is tinted in the tally.
     ds.hint.add(ui.highlightCell, HINT_SPOT);
     for (const v of candidateSets(state, ui.highlightCell)) ds.hintSets[v] = 1;
   }
 
   if (firstDraw) {
-    const size = computeSize({ w, h }, ts);
-    dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_OUTERBG);
-    dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
+    const all = { x: 0, y: 0, ...computeSize({ w, h }, ts) };
+    dr.drawRect(all, COL_OUTERBG);
+    dr.drawUpdate(all);
     // Gray backing behind each cell block; the slot squares drawn one pixel
     // smaller leave it showing as the inner grid lines.
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const tx = Math.floor((x * (cw + 1) + 0.5) * ts);
         const ty = Math.floor((y * (ch + 1) + 0.5) * ts);
-        dr.drawRect({ x: tx - 1, y: ty - 1, w: ts * cw + 1, h: ts * ch + 1 }, COL_GRID);
-        dr.drawUpdate({ x: tx - 1, y: ty - 1, w: ts * cw + 1, h: ts * ch + 1 });
+        const backing = { x: tx - 1, y: ty - 1, w: ts * cw + 1, h: ts * ch + 1 };
+        dr.drawRect(backing, COL_GRID);
+        dr.drawUpdate(backing);
       }
     }
   }
@@ -326,17 +323,21 @@ export function redraw(
           if (slot === cn) {
             // Keyboard cursor: corner brackets at the slot center
             // (upstream draws these via a blitter; see the header).
-            const blr = Math.floor(ts * 0.4);
             drawRectCorners(
               dr,
               tx + Math.floor(ts / 2),
               ty + Math.floor(ts / 2),
-              blr - 1,
+              Math.floor(ts * 0.4) - 1,
               COL_CURSOR,
             );
           }
         }
       }
+
+      // The cell block's top-left corner and side.
+      const bx = Math.floor((x * (cw + 1) + 0.5) * ts);
+      const by = Math.floor((y * (ch + 1) + 0.5) * ts);
+      const bw = ts * cw - 1;
 
       // Reference-aid inspect icon: a badge in the margin *above* the block —
       // outside it, so it reads as belonging to the whole cell, not one slot.
@@ -345,59 +346,50 @@ export function redraw(
       // green while this cell is focused. Player focus is suppressed while a
       // hint is displayed, so `hl` gates the lit state.
       const iconR = Math.max(3, Math.floor(ts * 0.16));
-      const iconY = Math.floor((y * (ch + 1) + 0.5) * ts) - Math.floor(ts * 0.28);
-      {
-        const icx = Math.floor((x * (cw + 1) + 0.5) * ts) + Math.floor(ts * 0.22);
-        const active = !hl && ui.highlightCell === i;
-        // Clear the badge's patch of margin, then draw the ring / green disc.
-        dr.drawRect(
-          {
-            x: icx - iconR - 1,
-            y: iconY - iconR - 1,
-            w: 2 * iconR + 3,
-            h: 2 * iconR + 3,
-          },
-          COL_OUTERBG,
-        );
-        dr.drawCircle(
-          { x: icx, y: iconY },
-          iconR,
-          active ? COL_HINT_SPOT : COL_LOWLIGHT,
-          active ? COL_HINT_SPOT : COL_OUTERBG,
-        );
-      }
+      const iconY = by - Math.floor(ts * 0.28);
+      const icx = bx + Math.floor(ts * 0.22);
+      const active = !hl && ui.highlightCell === i;
+      // Clear the badge's patch of margin, then draw the ring / green disc.
+      dr.drawRect(
+        {
+          x: icx - iconR - 1,
+          y: iconY - iconR - 1,
+          w: 2 * iconR + 3,
+          h: 2 * iconR + 3,
+        },
+        COL_OUTERBG,
+      );
+      dr.drawCircle(
+        { x: icx, y: iconY },
+        iconR,
+        active ? COL_HINT_SPOT : COL_LOWLIGHT,
+        active ? COL_HINT_SPOT : COL_OUTERBG,
+      );
 
-      if (ds.mistakes.packed[i]) {
-        // Duplicated placement (Check & Save): inset red frame on the block.
-        const bx = Math.floor((x * (cw + 1) + 0.5) * ts);
-        const by = Math.floor((y * (ch + 1) + 0.5) * ts);
-        const bw = ts * cw - 1;
-        const t = Math.floor(ts / 8);
-        dr.drawRect({ x: bx, y: by, w: bw, h: t }, COL_ERROR);
-        dr.drawRect({ x: bx, y: by, w: t, h: bw }, COL_ERROR);
-        dr.drawRect({ x: bx, y: by + bw - t, w: bw, h: t }, COL_ERROR);
-        dr.drawRect({ x: bx + bw - t, y: by, w: t, h: bw }, COL_ERROR);
-      }
+      // Duplicated placement (Check & Save): inset red frame on the block.
+      if (ds.mistakes.packed[i])
+        drawThickRectOutline(dr, bx, by, bw, bw, Math.floor(ts / 8), COL_ERROR);
 
       const hintBits = ds.hint.packed[i];
       if (hintBits & (HINT_AREA | HINT_SPOT | HINT_PLACED)) {
         // Evidence frame: the "highlighted cell" a hint points at (light), a
         // spotlit placement a set could go in / a focused cell (green), or the
-        // home of a clicked placed set (amber, #3).
+        // home of a clicked placed set (amber).
         const color =
           hintBits & HINT_PLACED
             ? COL_HINT_PLACED
             : hintBits & HINT_SPOT
               ? COL_HINT_SPOT
               : COL_HINT_CELL;
-        const bx = Math.floor((x * (cw + 1) + 0.5) * ts);
-        const by = Math.floor((y * (ch + 1) + 0.5) * ts);
-        const bw = ts * cw - 1;
-        const t = Math.max(1, Math.floor(ts / 10));
-        dr.drawRect({ x: bx, y: by, w: bw, h: t }, color);
-        dr.drawRect({ x: bx, y: by, w: t, h: bw }, color);
-        dr.drawRect({ x: bx, y: by + bw - t, w: bw, h: t }, color);
-        dr.drawRect({ x: bx + bw - t, y: by, w: t, h: bw }, color);
+        drawThickRectOutline(
+          dr,
+          bx,
+          by,
+          bw,
+          bw,
+          Math.max(1, Math.floor(ts / 10)),
+          color,
+        );
       }
       if (hintBits & HINT_TARGET) {
         // The slot the current step decides: a bold frame around that one slot
@@ -405,24 +397,18 @@ export function redraw(
         // player marks it).
         const targetSlot = (hintBits >> HINT_SLOT_SHIFT) - 1;
         if (targetSlot >= 0 && targetSlot < cw * ch) {
-          const scx = targetSlot % cw;
-          const scy = Math.floor(targetSlot / cw);
-          const tx = Math.floor((x * (cw + 1) + scx + 0.5) * ts);
-          const ty = Math.floor((y * (ch + 1) + scy + 0.5) * ts);
-          const sw = ts - 1;
+          const tx = Math.floor((x * (cw + 1) + (targetSlot % cw) + 0.5) * ts);
+          const ty = Math.floor(
+            (y * (ch + 1) + Math.floor(targetSlot / cw) + 0.5) * ts,
+          );
           const t = Math.max(2, Math.floor(ts / 8));
-          dr.drawRect({ x: tx, y: ty, w: sw, h: t }, COL_HINT);
-          dr.drawRect({ x: tx, y: ty, w: t, h: sw }, COL_HINT);
-          dr.drawRect({ x: tx, y: ty + sw - t, w: sw, h: t }, COL_HINT);
-          dr.drawRect({ x: tx + sw - t, y: ty, w: t, h: sw }, COL_HINT);
+          drawThickRectOutline(dr, tx, ty, ts - 1, ts - 1, t, COL_HINT);
         }
       }
 
-      const ux = Math.floor((x * (cw + 1) + 0.5) * ts);
-      const uy = Math.floor((y * (ch + 1) + 0.5) * ts);
       // Extend the update region up to cover the inspect badge above the block.
-      const topPad = uy - (iconY - iconR - 1);
-      dr.drawUpdate({ x: ux, y: uy - topPad, w: ts * cw, h: ts * ch + topPad });
+      const top = iconY - iconR - 1;
+      dr.drawUpdate({ x: bx, y: top, w: ts * cw, h: by + ts * ch - top });
 
       ds.cellCache[i] = packed;
       ds.mistakes.commit(i);
@@ -446,25 +432,18 @@ export function redraw(
           (y * (ch + 1) + ch * 0.5 + 0.5) * ts + dy * (ch - 0.5) * ts,
         );
 
-        dr.clip({
+        const box = {
           x: tx - radius - 1,
           y: ty - radius - 1,
           w: diameter + 2,
           h: diameter + 2,
-        });
+        };
+        dr.clip(box);
 
         if (state.clues[i1] & f) {
           if (firstDraw || (flags[i1] & f) !== (ds.oldFlags[i1] & f)) {
             const color = flags[i1] & f ? COL_ERROR : COL_FIXED;
-            dr.drawRect(
-              {
-                x: tx - radius - 1,
-                y: ty - radius - 1,
-                w: diameter + 2,
-                h: diameter + 2,
-              },
-              COL_OUTERBG,
-            );
+            dr.drawRect(box, COL_OUTERBG);
             dr.drawCircle({ x: tx, y: ty }, radius, color, color);
             dr.drawCircle({ x: tx, y: ty }, radius - 2, COL_OUTERBG, COL_OUTERBG);
 
@@ -486,6 +465,7 @@ export function redraw(
                 COL_OUTERBG,
               );
             }
+            // The update rect follows the legs' shifted `tx`/`ty`.
             dr.drawUpdate({
               x: tx - radius - 1,
               y: ty - radius - 1,
@@ -513,29 +493,11 @@ export function redraw(
               COL_ERROR,
               2,
             );
-            dr.drawUpdate({
-              x: tx - radius - 1,
-              y: ty - radius - 1,
-              w: diameter + 2,
-              h: diameter + 2,
-            });
+            dr.drawUpdate(box);
             ds.oldFlags[i1] |= f;
           } else {
-            dr.drawRect(
-              {
-                x: tx - radius - 1,
-                y: ty - radius - 1,
-                w: diameter + 2,
-                h: diameter + 2,
-              },
-              COL_OUTERBG,
-            );
-            dr.drawUpdate({
-              x: tx - radius - 1,
-              y: ty - radius - 1,
-              w: diameter + 2,
-              h: diameter + 2,
-            });
+            dr.drawRect(box, COL_OUTERBG);
+            dr.drawUpdate(box);
             ds.oldFlags[i1] &= ~f;
           }
         }
@@ -567,13 +529,13 @@ export function redraw(
       const color =
         counts[cn] > 1 ? COL_ERROR : counts[cn] === 1 ? COL_LOWLIGHT : COL_FIXED;
 
-      const slot = {
+      const entry = {
         x: tx - ts,
         y: ty - Math.floor(ts * 0.375),
         w: ts * 2,
         h: Math.floor(ts * 0.75),
       };
-      dr.drawRect(slot, COL_OUTERBG);
+      dr.drawRect(entry, COL_OUTERBG);
       // "The highlighted set": a hint **boxes** the tally entry it points at,
       // the same mark it uses on the board rather than a tint behind the label.
       // The label's own color is information here — error red, used-up gray,
@@ -582,7 +544,7 @@ export function redraw(
       if (hinted)
         drawMarkSides(
           dr,
-          { box: slot, outer: 0, inner: Math.max(1, Math.floor(ts / 10)) },
+          { box: entry, outer: 0, inner: Math.max(1, Math.floor(ts / 10)) },
           MARK_ALL,
           COL_HINT_CELL,
         );
@@ -597,12 +559,7 @@ export function redraw(
         color,
         label,
       );
-      dr.drawUpdate({
-        x: tx - ts,
-        y: ty - Math.floor(ts * 0.375),
-        w: ts * 2,
-        h: Math.floor(ts * 0.75),
-      });
+      dr.drawUpdate(entry);
 
       ds.oldCounts[cn] = counts[cn];
       ds.oldHintSets[cn] = hinted;

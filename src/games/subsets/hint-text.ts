@@ -3,14 +3,15 @@
  *
  * The deduction decides which sentence and with what values (`index.ts`'s
  * `stepsForFiring`); this file decides only how it reads. Each leg of a firing
- * is one letter with its own string, *attention → deduction → action* (owner
- * redesign 2026-07-21), and a collapse's lead leg gains a "why not X" clause.
+ * is one letter with its own string, *attention → deduction → action*, and a
+ * collapse's lead leg gains a "why not X" clause.
  */
 
-import type {
-  CollapseExclusion,
-  SubsetsDeduction,
-  SubsetsDeductionSet,
+import {
+  bitList,
+  type CollapseExclusion,
+  type SubsetsDeduction,
+  type SubsetsDeductionSet,
 } from "./solver.ts";
 
 const LETTER = (bit: number): string => String.fromCharCode(65 + bit);
@@ -25,16 +26,12 @@ function joinAnd(parts: string[]): string {
 
 /** A set-value as "{A, C}", or "the empty set" for `{}`. */
 function setLabel(value: number, n: number): string {
-  const letters: string[] = [];
-  for (let b = 0; b < n; b++) if (value & (1 << b)) letters.push(LETTER(b));
+  const letters = bitList(value, n).map(LETTER);
   return letters.length ? `{${letters.join(",")}}` : "the empty set";
 }
 
-const lettersOf = (mask: number, n: number): string => {
-  const out: string[] = [];
-  for (let b = 0; b < n; b++) if (mask & (1 << b)) out.push(LETTER(b));
-  return joinAnd(out);
-};
+const lettersOf = (mask: number, n: number): string =>
+  joinAnd(bitList(mask, n).map(LETTER));
 
 /** The action a leg makes, lowercase: "mark A present" / "clear B". */
 function legAction(set: SubsetsDeductionSet): string {
@@ -45,10 +42,9 @@ function legAction(set: SubsetsDeductionSet): string {
 
 export const say = {
   /**
-   * The per-slot narration of leg `k` of a firing — one letter, its own string,
-   * *attention → deduction → action* (owner redesign 2026-07-21). The lead leg
-   * (`k === 0`) states the sub-goal (why this set/cell); continuation legs are
-   * terser but still specific to their own slot toward that sub-goal.
+   * The per-slot narration of leg `k` of a firing. The lead leg (`k === 0`)
+   * states the sub-goal (why this set/cell); continuation legs are terser but
+   * still specific to their own slot toward that sub-goal.
    */
   leg: (d: SubsetsDeduction, k: number): string => {
     const set = d.sets[k];
@@ -60,7 +56,7 @@ export const say = {
     if (r.kind === "arrowKnown") {
       // Every leg is a letter confirmed in the subset cell. Continuation legs
       // name the highlighted cell explicitly, so the referent is never a bare
-      // pronoun (owner 2026-07-21).
+      // pronoun.
       return first
         ? `The highlighted cell's set lies inside this one and has ${L} marked, so ${L} must be here too. ${capitalize(act)}.`
         : `Still filling this cell: the highlighted cell's ${L} is marked too, so ${act} here.`;
@@ -108,8 +104,8 @@ export const say = {
     return `${attn} ${capitalize(hasClause)}, so ${act}.`;
   },
 
-  /** The "why not X" clause a collapse appends (owner enhancement 2026-07-21):
-   * name a competitor set and the visible rule that blocks it. */
+  /** The "why not X" clause a collapse appends: name a competitor set and the
+   * visible rule that blocks it. */
   exclusion: (ex: CollapseExclusion, n: number): string => {
     const label = setLabel(ex.value, n);
     const b = ex.block;

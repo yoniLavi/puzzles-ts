@@ -1,7 +1,6 @@
 /**
- * Gated C-vs-TS differential for Subsets (design D6 of add-subsets-ts-port):
- * for each frozen fixture recorded from `puzzles/unreleased/subsets.c` via
- * `puzzles/auxiliary/subsets-trace.c`, the TS `newSubsetsDesc` over the
+ * Gated C-vs-TS differential for Subsets: for each frozen fixture recorded
+ * from `puzzles/unreleased/subsets.c`, the TS `newSubsetsDesc` over the
  * bit-identical RNG must reproduce the C desc byte-for-byte.
  *
  * Because generation gates every cell-blanking step on `subsetsSolveGame`
@@ -11,13 +10,11 @@
  * together. The `extra` check also round-trips each C desc through
  * `validateDesc` + `newState` + `encodeDesc` (codec inverse property).
  *
- * **`add-subsets-difficulty-tiers` kept this oracle in full**, and needed no
- * `upstreamLooseGate` flag to do it. The new Tricky rung was added *above*
- * upstream's shipped strength rather than replacing it, so `DIFF_EASY` runs
+ * **The oracle binds in full, with no `upstreamLooseGate` flag.** The Tricky
+ * rung sits *above* upstream's shipped strength, so `DIFF_EASY` runs
  * upstream's exact rule set with upstream's exact RNG draw order — and tier 0
- * has no tier below to be graded against, so its acceptance rule is unchanged
- * too. These fixtures therefore still bind on the live default path, not
- * behind a test-only flag. See that change's `design.md` D3.
+ * has no tier below to be graded against, so its acceptance rule is upstream's
+ * too. These fixtures bind on the live default path, not behind a flag.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

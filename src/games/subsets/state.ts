@@ -30,9 +30,7 @@ export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFFCOUNT = 2;
 
-/** The collection's two-tier convention (clusters, magnets, pearl, singles and
- * tents all name exactly this pair), not upstream's, which offers no
- * difficulty at all here. */
+/** The collection's two-tier names; upstream offers no difficulty here. */
 export const DIFF_NAMES: readonly string[] = tierNames(2);
 
 /** Difficulty encode chars for the `d<char>` param suffix, index = tier. */
@@ -48,22 +46,21 @@ export const F_ADJ_DOWN = 4;
 export const F_ADJ_LEFT = 8;
 
 /** One row of upstream's `adjthan[]` table: the arrow flag `f` on the cell it
- * leaves, the opposing flag `fo` on the cell it enters, the direction, the
- * text-format glyph and the desc-encoding letter. */
+ * leaves, the opposing flag `fo` on the cell it enters, the direction, and the
+ * desc-encoding letter. */
 export interface AdjDir {
   readonly f: number;
   readonly fo: number;
   readonly dx: number;
   readonly dy: number;
-  readonly c: string;
   readonly enc: string;
 }
 
 export const ADJTHAN: readonly AdjDir[] = [
-  { f: F_ADJ_UP, fo: F_ADJ_DOWN, dx: 0, dy: -1, c: "^", enc: "U" },
-  { f: F_ADJ_RIGHT, fo: F_ADJ_LEFT, dx: 1, dy: 0, c: ">", enc: "R" },
-  { f: F_ADJ_DOWN, fo: F_ADJ_UP, dx: 0, dy: 1, c: "v", enc: "D" },
-  { f: F_ADJ_LEFT, fo: F_ADJ_RIGHT, dx: -1, dy: 0, c: "<", enc: "L" },
+  { f: F_ADJ_UP, fo: F_ADJ_DOWN, dx: 0, dy: -1, enc: "U" },
+  { f: F_ADJ_RIGHT, fo: F_ADJ_LEFT, dx: 1, dy: 0, enc: "R" },
+  { f: F_ADJ_DOWN, fo: F_ADJ_UP, dx: 0, dy: 1, enc: "D" },
+  { f: F_ADJ_LEFT, fo: F_ADJ_RIGHT, dx: -1, dy: 0, enc: "L" },
 ];
 
 /* Upstream stubs these to a constant 2 with a "TODO: When other sizes are
@@ -96,9 +93,8 @@ export interface SubsetsState {
   /** Letters not yet ruled out, per cell. */
   mask: Uint16Array;
   completed: boolean;
-  /** Set by the solve move (with `completed`) per the collection convention
-   * — a deliberate divergence from upstream, which declares this field but
-   * never sets it (see `executeMove`'s solve arm). */
+  /** Set by the solve move, with `completed` (see `executeMove`'s solve arm);
+   * upstream declares this field but never sets it. */
   cheated: boolean;
 }
 
@@ -134,14 +130,8 @@ export type SubsetsMistake =
 
 // --- params -----------------------------------------------------------------
 
-/**
- * Easy is the default, and the argument is unusually clean here: Easy *is*
- * upstream's shipped solver strength, so it is the board today's players
- * already get and the tier the differential fixtures record. The phrase
- * `add-clusters-difficulty-tiers` had to argue around — "the tier that
- * reproduces today's boards may not exist" — does exist for Subsets, because
- * the new rung was added *above* the shipped one rather than beside it.
- */
+/** Easy is the default: it *is* upstream's shipped solver strength, so it is
+ * the tier the differential fixtures record. */
 export function defaultParams(): SubsetsParams {
   return { w: 4, h: 4, n: 4, diff: DIFF_EASY };
 }
@@ -163,10 +153,13 @@ export function encodeParams(p: SubsetsParams, full: boolean): string {
   return full ? `${base}d${DIFF_CHARS[p.diff] ?? "?"}` : base;
 }
 
+const isDigit = (c: string | undefined): boolean =>
+  c !== undefined && c >= "0" && c <= "9";
+
 /** atoi at `s[pos]`: parse a leading run of digits, 0 when there are none. */
 function eatNum(s: string, pos: number): { value: number; next: number } {
   let next = pos;
-  while (next < s.length && s[next] >= "0" && s[next] <= "9") next++;
+  while (isDigit(s[next])) next++;
   return { value: next > pos ? Number.parseInt(s.slice(pos, next), 10) : 0, next };
 }
 
@@ -238,9 +231,6 @@ export function status(s: SubsetsState): GameStatus {
 
 // --- desc codec (byte-match surface) ----------------------------------------
 
-const isDigit = (c: string | undefined): boolean =>
-  c !== undefined && c >= "0" && c <= "9";
-
 /**
  * Load a desc into a blank state (upstream `attempt_load_game`): one token
  * per cell in row-major order, comma-separated — a decimal set number for a
@@ -270,21 +260,10 @@ function attemptLoadGame(state: SubsetsState, desc: string): string | null {
       return "Expecting number in game description";
     }
 
-    while (desc[p] === "U" || desc[p] === "R" || desc[p] === "D" || desc[p] === "L") {
-      switch (desc[p]) {
-        case "U":
-          state.clues[i] |= F_ADJ_UP;
-          break;
-        case "R":
-          state.clues[i] |= F_ADJ_RIGHT;
-          break;
-        case "D":
-          state.clues[i] |= F_ADJ_DOWN;
-          break;
-        default:
-          state.clues[i] |= F_ADJ_LEFT;
-          break;
-      }
+    for (;;) {
+      const dir = ADJTHAN.find((a) => a.enc === desc[p]);
+      if (!dir) break;
+      state.clues[i] |= dir.f;
       p++;
     }
     i++;
@@ -382,7 +361,7 @@ export function textFormat(state: SubsetsState): string {
             : state.clues[(y + 1) * w + x] & F_ADJ_UP
               ? "^"
               : " ";
-        for (let cx = 1; cx < cw; cx++) out += " ";
+        out += " ".repeat(cw - 1);
         if (x < w - 1) out += " ";
       }
       out += "\n";

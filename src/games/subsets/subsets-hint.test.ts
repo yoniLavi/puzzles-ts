@@ -1,5 +1,5 @@
 /**
- * Subsets explained hint (add-subsets-hint).
+ * Subsets explained hint.
  *
  * Tier 1: the recording deduction pass (`deduceHintPlan`) — every reason kind,
  * completeness and recompute-stability from any position, and the `hint()`
@@ -189,8 +189,9 @@ describe("deduceHintPlan", () => {
   });
 
   it("a singlePosition firing places a set with exactly one candidate cell", () => {
+    // A rare deep fallback, but the scan's seeds do reach it.
     const hit = findFiring((d) => d.reason.kind === "singlePosition");
-    // singlePosition is a rare deep fallback — may not appear in the scan.
+    expect(hit).not.toBeNull();
     if (!hit) return;
     const r = hit.d.reason;
     if (r.kind !== "singlePosition") return;
@@ -431,7 +432,7 @@ describe("highlights", () => {
       const hl = cHl.steps[0].highlights as SubsetsHintHighlights;
       expect(hl.sets.length).toBeGreaterThan(0);
       // A collapse points at the surviving sets in the tally, plus at most one
-      // grid cell — the excluded competitor's blocker (#2).
+      // grid cell — the excluded competitor's blocker.
       expect(hl.cells.length).toBeLessThanOrEqual(1);
       expect(hl.spotlight.length).toBe(0);
     }
@@ -520,8 +521,8 @@ describe("reference-aid affordance", () => {
   });
 
   it("touching the reference aid dismisses a displayed hint (uiUpdateClearsHint)", () => {
-    // Regression: a displayed hint suppressed the aid, so aid clicks did
-    // nothing visible. Now a UI_UPDATE (aid interaction) clears the hint.
+    // A displayed hint suppresses the aid, so an aid click must clear the hint
+    // or it does nothing visible.
     const midend = new Midend(subsetsGame);
     expect(midend.newGameFromId("4x4n4#aid-dismiss")).toBeUndefined();
     expect(midend.hint()).toBeUndefined();
@@ -654,7 +655,7 @@ describe("hint rendering (tier 2.5)", () => {
     expect(result.hint).toBeDefined();
     const hl = result.hint?.highlights as SubsetsHintHighlights;
     // A collapse boxes the surviving sets in the tally (COL_HINT_CELL), and may
-    // also frame one blocker cell for the "why not X" clause (#2). A box rather
+    // also frame one blocker cell for the "why not X" clause. A box rather
     // than a tint: the label's own color carries the state (error red, used-up
     // gray), so a fill behind it competes with what has to be read.
     expect(hl.sets.length).toBeGreaterThan(0);
