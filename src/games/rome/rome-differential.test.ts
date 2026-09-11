@@ -2,12 +2,11 @@
  * Rome — gated differential against a frozen snapshot of C-generated reference
  * boards (`__fixtures__/rome-c-reference.json`).
  *
- * C-free: this test does not link the C build. Rome's generator is
- * solver-gated at every clue removal *and* gated out of the tier below, so the
- * strongest meaningful bar is that the TS `newDesc` reproduces the C engine's
- * description byte-for-byte for the same seed. That one assertion validates,
- * together: the three generation stages and their RNG draw order, all eight
- * deduction rules and their firing order, both disjoint-set forests (including
+ * Rome's generator is solver-gated at every clue removal *and* gated out of
+ * the tier below, so the strongest meaningful bar is that the TS `newDesc`
+ * reproduces the C engine's description byte-for-byte for the same seed. That
+ * one assertion validates, together: the three generation stages and their
+ * RNG draw order, all seven deduction rules and their firing order, both disjoint-set forests (including
  * the union-by-size root identity that naked-pairs reads as an element), and
  * the two-part run-length codec (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  *
@@ -15,10 +14,8 @@
  * description validates, and that the TS solver grades the board at exactly
  * the tier the C solver did.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/rome-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C build and the
+ * harness that captured it are gone (see `engine/testing/differential.ts`).
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

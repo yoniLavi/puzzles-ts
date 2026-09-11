@@ -251,10 +251,8 @@ describe("solver", () => {
     }
   });
 
-  // Cap-monotonicity is asserted for Rome — and for every other tiered game —
-  // by `engine/difficulty-contract.test.ts`, through `Game.difficulty`. This
-  // file's own version checked only the top cap, which is weaker than the
-  // property; keeping both is how two tests asserting one property drift apart.
+  // Cap-monotonicity is asserted for every tiered game, Rome included, by
+  // `engine/difficulty-contract.test.ts` through `Game.difficulty`.
 
   it("reports an over-constrained board invalid rather than looping", () => {
     const st = board(3, 3, `${ALL_WALLS_3},RDaULd`);
@@ -262,9 +260,8 @@ describe("solver", () => {
   });
 
   it("fills a square whose candidates have been narrowed to one", () => {
-    // A 3x1-wide column of separate regions: the top square cannot point up
-    // (border), and pointing left/right leaves a 1-wide grid, so `single`
-    // forces it down — reachable with no other technique.
+    // `single` is the only rung that writes the grid, so finishing a board
+    // that had empty squares at the Easy cap proves it fired.
     const p: RomeParams = { w: 3, h: 3, diff: DIFF_EASY };
     const { desc } = newRomeDesc(p, randomNew("rome-single"));
     const st = board(3, 3, desc);

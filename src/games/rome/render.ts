@@ -14,17 +14,15 @@
  *
  * ## Borders
  *
- * The web build compiles `NARROW_BORDERS` (`cmake/platforms/webapp.cmake`), so
- * `BORDER` is `GRIDEXTRA * 2` — **not** the desktop `tilesize / 2` — and
- * `computeSize` subtracts `GRIDEXTRA * 2` back off because the outer grid
- * outline is drawn inside the border area (docs/games/rendering.md § "The tile cache and the diff key").
+ * `BORDER` is upstream's `NARROW_BORDERS` arm, `GRIDEXTRA * 2` — **not** the
+ * desktop `tilesize / 2` — and `computeSize` subtracts `GRIDEXTRA * 2` back off
+ * because the outer grid outline is drawn inside the border area.
  *
  * ## Colors
  *
- * The palette is upstream's, index for index, derived from the host
- * background with no luminance adjustment: `puzzle-view.ts` hands the engine
- * pure white in dark mode precisely so `background × 0.95` derivations still
- * work, then adapts the returned palette itself (docs/games/rendering.md § "The palette: three layers, meaning first").
+ * The `COL_*` indices are upstream's; the colors are the shared palette's
+ * meanings (docs/games/rendering.md § "The palette: three layers, meaning
+ * first").
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -133,8 +131,6 @@ const HB_MISTAKE = 1;
 export interface RomeDrawState {
   started: boolean;
   tilesize: number;
-  w: number;
-  h: number;
   /** Packed `(effective cell, effective marks, flash phase)` per square. */
   cache: Int32Array;
   mistakes: OverlaySidecar;
@@ -145,8 +141,6 @@ export function newDrawState(state: RomeState): RomeDrawState {
   return {
     started: false,
     tilesize: 0,
-    w: state.w,
-    h: state.h,
     cache: new Int32Array(s).fill(-1),
     mistakes: new OverlaySidecar(s),
   };

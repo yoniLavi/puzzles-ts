@@ -1,6 +1,6 @@
 /**
  * Rome's validity check and its pure-deduction solver — port of
- * `rome_validate_game` and `rome_solve` (plus the eight deduction rules) in
+ * `rome_validate_game` and `rome_solve` (plus the seven deduction rules) in
  * `puzzles/unreleased/rome.c`.
  *
  * ## The validity check is the engine, not a postscript
@@ -48,7 +48,6 @@ import {
 } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import {
-  DESC_ERRORS,
   DIFF_EASY,
   DIFF_NORMAL,
   DIFF_TRICKY,
@@ -65,22 +64,18 @@ import {
   FM_LEFT,
   FM_RIGHT,
   FM_UP,
-  INVALID_GOALS,
-  INVALID_REGIONS,
   type RomeBoard,
   type RomeParams,
   readDesc,
   STATUS_COMPLETE,
   STATUS_INCOMPLETE,
   STATUS_INVALID,
-  VALID,
 } from "./state.ts";
 
 // --- validity check ---------------------------------------------------------
 
 /** Reusable working buffers for {@link validateGame}, so the solver's fixpoint
- * loop allocates nothing per iteration (upstream reuses the forest and `sets`
- * but re-allocates `seterrs` each call — an unobservable inefficiency). */
+ * loop allocates nothing per iteration. */
 export interface ValidateScratch {
   /** Arrow connectivity, reinitialized on every call. */
   dsf: Dsf;
@@ -169,10 +164,8 @@ export function validateGame(
   }
 
   if (fullErrors) {
-    // Mark every square whose arrows lead to a goal. Upstream expresses this
-    // as `dsf_minimal(dsf, x) == dsf_minimal(dsf, i)`, which is exactly a
-    // same-component test (its scan from the class minimum is an
-    // optimization, not a semantic).
+    // Mark every square whose arrows lead to a goal: upstream's
+    // `dsf_minimal(dsf, x) == dsf_minimal(dsf, i)` is a same-component test.
     for (let i = 0; i < s; i++) {
       if (!(grid[i] & FM_GOAL)) continue;
       for (let x = 0; x < s; x++) {
@@ -199,8 +192,7 @@ export function validateGame(
  * directed *towards* `i`, so that path reads `j → … → i` and closing it with
  * `i → j` makes a directed cycle through `i`. Following arrows from `i`
  * therefore returns to `i`, which is itself a `FE_LOOPSTART`. The explicit
- * bound is a runaway guard for a port bug, not a real exit (docs/games/testing.md § "Seed-deterministic, never clock-gated":
- * bound non-termination where it can actually be caught).
+ * bound is a runaway guard for a port bug, not a real exit.
  */
 function markLoops(board: RomeBoard): void {
   const { w, h, grid } = board;
@@ -228,35 +220,32 @@ function markLoops(board: RomeBoard): void {
 /**
  * Upstream `validate_desc`: decode, reject a description that is already
  * finished or already broken, then reject a region larger than the four
- * distinct arrows it could hold, or a goal outside a single-square region.
- * Lives here rather than beside the codec because its central assertion is a
- * validity verdict.
+ * distinct arrows it could hold, or a goal outside a single-square region (the
+ * last offending square decides which). Lives here rather than beside the
+ * codec because its central assertion is a validity verdict.
  */
 export function validateDesc(p: RomeParams, desc: string): string | null {
-  const { board, valid: decoded } = readDesc(p, desc);
-  let valid = decoded;
+  const { board, error } = readDesc(p, desc);
+  if (error) return error;
+  if (validateGame(board, true) !== STATUS_INCOMPLETE) return "Puzzle contains errors";
 
-  if (valid === VALID) {
-    if (validateGame(board, true) !== STATUS_INCOMPLETE)
-      return "Puzzle contains errors";
-    const s = p.w * p.h;
-    for (let i = 0; i < s; i++) {
-      const size = board.regions.size(i);
-      if (size > 4) valid = INVALID_REGIONS;
-      if (board.grid[i] & FM_GOAL && size > 1) valid = INVALID_GOALS;
+  let result: string | null = null;
+  for (let i = 0; i < p.w * p.h; i++) {
+    const size = board.regions.size(i);
+    if (size > 4) result = "A region is too large";
+    if (board.grid[i] & FM_GOAL && size > 1) {
+      result = "A goal is not placed in an area of 1 cell";
     }
   }
-
-  return valid === VALID ? null : (DESC_ERRORS[valid] ?? "Invalid description");
+  return result;
 }
 
 // --- deduction rules --------------------------------------------------------
 
 /** Ascending member lists per region canonical root. The region partition is
  * fixed for a whole solve, so {@link nakedPairs} builds this once instead of
- * rescanning the board — provably the same traversal, since both the `j` and
- * `k` scans are "region members in ascending index order" filtered by a lower
- * bound. */
+ * rescanning the board — the same traversal, since both its `j` and `k` scans
+ * are "region members in ascending index order" filtered by a lower bound. */
 function regionMembers(board: RomeBoard): Map<number, number[]> {
   const { regions } = board;
   const out = new Map<number, number[]>();
@@ -299,10 +288,10 @@ function solverDoubles(board: RomeBoard, sets: Int32Array): number {
 /** EASY: a candidate that would point into the square's own arrow component
  * would close a loop, so it is impossible.
  *
- * The bounds guards are provably redundant — {@link romeSolve} clears the
- * border-illegal candidates before the fixpoint starts, so the off-grid
- * neighbor is never reached — but upstream relies on that silently and reads
- * out of bounds if it ever stops holding. */
+ * The bounds guards are redundant — {@link initCandidates} clears the
+ * border-illegal candidates, so the off-grid neighbor is never reached — but
+ * upstream relies on that silently and reads out of bounds if it ever stops
+ * holding. */
 function solverLoops(board: RomeBoard, dsf: Dsf): number {
   const { w, h, pencil } = board;
   let ret = 0;
@@ -501,6 +490,23 @@ function solverOpposites(board: RomeBoard): number {
 
 // --- the fixpoint -----------------------------------------------------------
 
+/** Seed the candidates: all four arrows on an empty square, its own arrow on a
+ * filled one, less any arrow that would point off the grid. */
+function initCandidates(board: RomeBoard): void {
+  const { w, h, grid, pencil } = board;
+  for (let i = 0; i < w * h; i++) {
+    pencil[i] = grid[i] === EMPTY ? FM_ARROWMASK : grid[i] & FM_ARROWMASK;
+  }
+  for (let x = 0; x < w; x++) {
+    pencil[x] &= ~FM_UP;
+    pencil[(h - 1) * w + x] &= ~FM_DOWN;
+  }
+  for (let y = 0; y < h; y++) {
+    pencil[y * w] &= ~FM_LEFT;
+    pencil[y * w + (w - 1)] &= ~FM_RIGHT;
+  }
+}
+
 /**
  * Solve `board` in place by pure deduction up to `maxdiff`, returning the
  * final `STATUS_*`. Upstream `rome_solve`.
@@ -515,23 +521,10 @@ export function romeSolve(
   maxdiff: number,
   firings?: FiringTally,
 ): number {
-  const { w, h, grid, pencil } = board;
-  const s = w * h;
+  const s = board.w * board.h;
   const scratch = newValidateScratch(s);
   const { dsf, sets } = scratch;
-
-  for (let i = 0; i < s; i++) {
-    pencil[i] = grid[i] === EMPTY ? FM_ARROWMASK : grid[i] & FM_ARROWMASK;
-  }
-  // Candidates that would point off the grid are impossible from the start.
-  for (let x = 0; x < w; x++) {
-    pencil[x] &= ~FM_UP;
-    pencil[(h - 1) * w + x] &= ~FM_DOWN;
-  }
-  for (let y = 0; y < h; y++) {
-    pencil[y * w] &= ~FM_LEFT;
-    pencil[y * w + (w - 1)] &= ~FM_RIGHT;
-  }
+  initCandidates(board);
 
   const members = regionMembers(board);
   const singles = new Int32Array(s);
@@ -557,20 +550,14 @@ export function romeSolve(
   runDeductionFixpoint({
     techniques: ladder,
     firings,
-    // **The tier gates were mid-ladder `break`s and this is a `maxTier` skip,
-    // and the two agree only because the ladder is tier-sorted.** Breaking on
-    // the first over-cap rung abandons everything after it; skipping abandons
-    // only the rungs that are themselves over-cap. Identical here because tiers
-    // ascend down the ladder — and *not* identical for a game whose ladder puts
-    // a cheap rung after an expensive one, which the runner deliberately still
-    // runs. Check the ordering before copying this.
+    // Upstream breaks out of the ladder at the first over-cap rung, where
+    // `maxTier` skips only the over-cap rungs. The two agree because this
+    // ladder is tier-sorted — they would not for a ladder that puts a cheap
+    // rung after an expensive one. Check the ordering before copying this.
     maxTier: maxdiff,
-    // **Rome's own non-convergence guard, kept rather than replaced.** It ran at
-    // the top of every iteration, which is where `settled` runs; the shared
-    // `stepBudget` would have been the tidier home but it is documented as the
-    // recording path's guard, and this is the byte-match-critical solve path
-    // whose throw message and limit are part of its behavior. Moving it is a
-    // separate decision from adopting the loop.
+    // Rome's own non-convergence guard, run where upstream ran it: at the top
+    // of every iteration. Not the shared `stepBudget`, which is the recording
+    // path's guard; the throw message and limit are this path's behavior.
     settled: () => {
       if (iteration++ > maxIterations) {
         throw new Error("rome: solver did not converge");
@@ -584,30 +571,17 @@ export function romeSolve(
 }
 
 /**
- * The hand-written ladder this solver ran until
- * `adopt-the-deduction-runner-where-it-rewires`, kept as the oracle
- * `rome-ladder.test.ts` proves the adoption against.
+ * Upstream's hand-written ladder, which `romeSolve` replaced with the shared
+ * runner; kept as the oracle `rome-ladder.test.ts` checks the runner against.
  *
  * Rome returns a *status*, not a tier, so the runner's grade is unused here —
  * what it takes is the loop, the tier cap and the named rungs.
  */
 export function romeSolveLegacy(board: RomeBoard, maxdiff: number): number {
-  const { w, h, grid, pencil } = board;
-  const s = w * h;
+  const s = board.w * board.h;
   const scratch = newValidateScratch(s);
   const { dsf, sets } = scratch;
-
-  for (let i = 0; i < s; i++) {
-    pencil[i] = grid[i] === EMPTY ? FM_ARROWMASK : grid[i] & FM_ARROWMASK;
-  }
-  for (let x = 0; x < w; x++) {
-    pencil[x] &= ~FM_UP;
-    pencil[(h - 1) * w + x] &= ~FM_DOWN;
-  }
-  for (let y = 0; y < h; y++) {
-    pencil[y * w] &= ~FM_LEFT;
-    pencil[y * w + (w - 1)] &= ~FM_RIGHT;
-  }
+  initCandidates(board);
 
   const members = regionMembers(board);
   const singles = new Int32Array(s);

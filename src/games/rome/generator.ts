@@ -23,8 +23,8 @@
  *
  * Every draw is a `shuffle`, and the solver in between is deterministic, so
  * the description is a pure function of the seed over the bit-identical
- * `random.ts` — which is what makes the byte-for-byte differential possible,
- * and why nothing here may be tidied without checking it against the C.
+ * `random.ts`. That is what the byte-for-byte differential checks, so the
+ * draw order and the iteration order here are both fixed.
  */
 
 import { Dsf } from "../../engine/dsf.ts";
@@ -33,7 +33,7 @@ import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { romeSolve, validateGame } from "./solver.ts";
 import {
-  cloneBoard,
+  cloneState,
   DIFF_EASY,
   EMPTY,
   encodeDesc,
@@ -47,7 +47,6 @@ import {
   type RomeParams,
   type RomeState,
   STATUS_COMPLETE,
-  wallCount,
 } from "./state.ts";
 
 /**
@@ -110,12 +109,10 @@ function generateArrows(board: RomeState, rng: RandomState): boolean {
   // once-allocated array.
   const arrows = [FM_UP, FM_DOWN, FM_LEFT, FM_RIGHT];
 
-  for (let i = 0; i < s; i++) pencil[i] = FM_ARROWMASK;
-
+  pencil.fill(FM_ARROWMASK);
   shuffle(spaces, rng);
 
-  for (let j = 0; j < s; j++) {
-    const i = spaces[j];
+  for (const i of spaces) {
     if (grid[i] !== EMPTY) continue;
 
     // No arrow can legally go here, so this square becomes a goal.
@@ -130,30 +127,22 @@ function generateArrows(board: RomeState, rng: RandomState): boolean {
     if (pencil[i] & ~suggest[i]) pencil[i] &= ~suggest[i];
 
     shuffle(arrows, rng);
-    for (let k = 0; k < 4; k++) {
-      if (pencil[i] & arrows[k]) {
-        grid[i] = arrows[k];
-        break;
-      }
-    }
+    grid[i] = arrows.find((arrow) => pencil[i] & arrow) ?? EMPTY;
 
-    // Propagate: this also refreshes `marks` for the squares still to come.
+    // Propagate: this also refreshes `pencil` for the squares still to come.
     romeSolve(board, DIFF_EASY);
   }
 
-  let goals = 0;
-  for (let i = 0; i < s; i++) if (grid[i] & FM_GOAL) goals++;
-
   // Keep the number of goal squares to a minimum.
+  const goals = grid.filter((c) => c & FM_GOAL).length;
   if (goals > Math.max(1, Math.floor(s / 25))) return false;
   return validateGame(board, false) === STATUS_COMPLETE;
 }
 
 /** Stage 2: grow the outlined regions by removing borders at random. */
-function generateRegions(board: RomeState, rng: RandomState): boolean {
+function generateRegions(board: RomeState, rng: RandomState): void {
   const { w, h, grid, regions } = board;
   const s = w * h;
-  const ws = wallCount(w, h);
 
   // A horizontal merger is encoded as its left square's index; a vertical one
   // as that index plus `w*h`.
@@ -167,14 +156,13 @@ function generateRegions(board: RomeState, rng: RandomState): boolean {
 
   // Every square is its own region at this point, so each entry is both the
   // square's index and its region's canonical root.
-  const cells = new Int32Array(s);
-  for (let i = 0; i < s; i++) cells[i] = grid[i];
+  const cells = grid.slice();
 
   shuffle(spaces, rng);
 
-  for (let k = 0; k < ws; k++) {
-    const i1 = spaces[k] % s;
-    const i2 = spaces[k] >= s ? i1 + w : i1 + 1;
+  for (const merger of spaces) {
+    const i1 = merger % s;
+    const i2 = merger >= s ? i1 + w : i1 + 1;
 
     const c1 = cells[regions.canonify(i1)];
     const c2 = cells[regions.canonify(i2)];
@@ -188,21 +176,17 @@ function generateRegions(board: RomeState, rng: RandomState): boolean {
     regions.merge(i1, i2);
     cells[regions.canonify(i1)] |= c;
   }
-
-  return true;
 }
 
 /** Stage 3: blank every clue the puzzle can be solved without. */
-function generateClues(board: RomeState, rng: RandomState, diff: number): boolean {
+function generateClues(board: RomeState, rng: RandomState, diff: number): void {
   const { grid } = board;
-  const s = grid.length;
 
-  const spaces = Array.from({ length: s }, (_, i) => i);
+  const spaces = Array.from({ length: grid.length }, (_, i) => i);
   shuffle(spaces, rng);
   const kept = grid.slice();
 
-  for (let j = 0; j < s; j++) {
-    const i = spaces[j];
+  for (const i of spaces) {
     if (grid[i] & FM_GOAL) continue;
 
     grid[i] = EMPTY;
@@ -214,29 +198,18 @@ function generateClues(board: RomeState, rng: RandomState, diff: number): boolea
       kept[i] = EMPTY;
     }
   }
-
-  return true;
 }
 
 /** One generation attempt: the three stages plus the exact-difficulty gate. */
 function romeGenerate(board: RomeState, rng: RandomState, diff: number): boolean {
   if (!generateArrows(board, rng)) return false;
-  if (!generateRegions(board, rng)) return false;
-  if (!generateClues(board, rng, diff)) return false;
+  generateRegions(board, rng);
+  generateClues(board, rng, diff);
 
   // It must solve at the target difficulty...
-  const atDiff = cloneBoard(board);
-  romeSolve(atDiff, diff);
-  if (validateGame(atDiff, false) !== STATUS_COMPLETE) return false;
-
+  if (romeSolve(cloneState(board), diff) !== STATUS_COMPLETE) return false;
   // ...and must NOT solve one tier easier, so the tier is exactly right.
-  if (diff > 0) {
-    const belowDiff = cloneBoard(board);
-    romeSolve(belowDiff, diff - 1);
-    if (validateGame(belowDiff, false) === STATUS_COMPLETE) return false;
-  }
-
-  return true;
+  return diff === 0 || romeSolve(cloneState(board), diff - 1) !== STATUS_COMPLETE;
 }
 
 /** Upstream `new_game_desc`. Retries the whole pipeline until an attempt

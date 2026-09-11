@@ -39,7 +39,6 @@ import {
   EMPTY,
   FM_ARROWMASK,
   FM_DOWN,
-  FM_FIXED,
   FM_LEFT,
   FM_RIGHT,
   FM_UP,
@@ -396,7 +395,6 @@ function legalLookingMistake(): {
           dir: wrong,
         });
         if (validateGame(trial, true) !== STATUS_INCOMPLETE) continue;
-        if (state.grid[i] & FM_FIXED) continue;
         return { desc, index: i, wrong };
       }
     }

@@ -19,13 +19,12 @@
  * - a *transient arrow-connectivity* forest, rebuilt from scratch on every
  *   validity check (see `solver.ts`) and never stored on a state.
  *
- * A cell is one packed `int` exactly as upstream's `typedef int cell`: the
- * `FM_*` content bits plus the `FE_*` rule-violation and `FD_*` display bits
- * the validity check ORs back in. Unlike most ports in this tree, the error
- * bits are deliberately kept *in* the grid rather than recomputed on demand —
- * that is what upstream does, every consumer (renderer, `findMistakes`, the
- * solver's `EMPTY` tests) reads them, and the generator's own comparisons run
- * against cells carrying them, so keeping them is both faithful and simpler.
+ * A cell is one packed `int`, as upstream's: the `FM_*` content bits plus the
+ * `FE_*` rule-violation and `FD_*` display bits the validity check ORs back
+ * in. The error bits are kept *in* the grid rather than recomputed on demand
+ * because every consumer (renderer, `findMistakes`, the solver's `EMPTY`
+ * tests) reads them, and the generator's comparisons run against cells
+ * carrying them.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
@@ -80,20 +79,13 @@ export const DIFFCOUNT = 3;
 
 /** Difficulty encode chars (upstream `rome_diffchars`), index = tier. */
 export const DIFF_CHARS = "ent";
-export const DIFF_NAMES = tierNames(3);
+export const DIFF_NAMES = tierNames(DIFFCOUNT);
 
 // --- validity verdicts ------------------------------------------------------
 
 export const STATUS_COMPLETE = 0;
 export const STATUS_INCOMPLETE = 1;
 export const STATUS_INVALID = 2;
-
-/** Upstream's `validate_desc` rejection codes. */
-export const VALID = 0;
-export const INVALID_WALLS = 1;
-export const INVALID_CLUES = 2;
-export const INVALID_REGIONS = 3;
-export const INVALID_GOALS = 4;
 
 // --- types ------------------------------------------------------------------
 
@@ -130,10 +122,8 @@ export interface RomeState extends RomeBoard {
 
 /**
  * A move is a *place* (set or clear an arrow), a *pencil* (toggle one mark, or
- * clear the square's marks), or a *solve* (the full-grid solution). Upstream
- * serializes these as `"R x,y,c"` / `"P x,y,c"` / `"S<letters>"`; the
- * discriminated union is the idiomatic-TS equivalent (Loopy D5 / Pearl /
- * Clusters convention).
+ * clear the square's marks), or a *solve* (the full-grid solution): upstream's
+ * `"R x,y,c"` / `"P x,y,c"` / `"S<letters>"`.
  */
 export type RomeMove =
   | { kind: "place"; x: number; y: number; dir: RomeDir | null }
@@ -172,20 +162,10 @@ export interface RomeUi {
 
 const DEFAULT_PRESET = 3;
 
-const PRESETS: RomeParams[] = [
-  { w: 4, h: 4, diff: DIFF_EASY },
-  { w: 4, h: 4, diff: DIFF_NORMAL },
-  { w: 4, h: 4, diff: DIFF_TRICKY },
-  { w: 6, h: 6, diff: DIFF_EASY },
-  { w: 6, h: 6, diff: DIFF_NORMAL },
-  { w: 6, h: 6, diff: DIFF_TRICKY },
-  { w: 8, h: 8, diff: DIFF_EASY },
-  { w: 8, h: 8, diff: DIFF_NORMAL },
-  { w: 8, h: 8, diff: DIFF_TRICKY },
-  { w: 10, h: 10, diff: DIFF_EASY },
-  { w: 10, h: 10, diff: DIFF_NORMAL },
-  { w: 10, h: 10, diff: DIFF_TRICKY },
-];
+/** Every tier at 4x4, 6x6, 8x8 and 10x10. */
+const PRESETS: RomeParams[] = [4, 6, 8, 10].flatMap((n) =>
+  DIFF_NAMES.map((_, diff) => ({ w: n, h: n, diff })),
+);
 
 export function defaultParams(): RomeParams {
   return { ...PRESETS[DEFAULT_PRESET] };
@@ -238,7 +218,7 @@ export function validateParams(p: RomeParams, _full: boolean): string | null {
 
 /** Number of inter-cell edges: `(w-1)*h` horizontal, then `w*(h-1)` vertical —
  * the order the desc's wall list uses. */
-export function wallCount(w: number, h: number): number {
+function wallCount(w: number, h: number): number {
   return (w - 1) * h + w * (h - 1);
 }
 
@@ -255,23 +235,10 @@ export function newBoard(w: number, h: number): RomeState {
   };
 }
 
-/** A deep copy — upstream `dup_game`, which copies the region forest too. */
-export function cloneBoard(s: RomeState): RomeState {
-  return {
-    w: s.w,
-    h: s.h,
-    regions: s.regions.clone(),
-    grid: s.grid.slice(),
-    pencil: s.pencil.slice(),
-    completed: s.completed,
-    cheated: s.cheated,
-  };
-}
-
 /**
- * A clone for play. The region layout never changes after decode, so it is
- * shared by reference (design D1) — only path compression touches it, which
- * cannot alter the partition.
+ * A clone that shares the region layout by reference: it never changes after
+ * decode, and path compression, the only thing that touches it, cannot alter
+ * the partition or its roots.
  */
 export function cloneState(s: RomeState): RomeState {
   return {
@@ -292,14 +259,11 @@ export function cloneState(s: RomeState): RomeState {
  * unique solution from this rather than from the live grid.
  */
 export function boardFromClues(s: RomeState): RomeState {
-  const board = newBoard(s.w, s.h);
-  const out = board.grid;
-  for (let i = 0; i < out.length; i++) {
-    const c = s.grid[i];
-    if (c & FM_FIXED) out[i] = c & (FM_FIXED | FM_GOAL | FM_ARROWMASK);
-  }
+  const grid = s.grid.map((c) =>
+    c & FM_FIXED ? c & (FM_FIXED | FM_GOAL | FM_ARROWMASK) : EMPTY,
+  );
   // Share the region layout: `romeSolve` never merges it.
-  return { ...board, regions: s.regions };
+  return { ...newBoard(s.w, s.h), regions: s.regions, grid };
 }
 
 export function status(s: RomeState): GameStatus {
@@ -310,9 +274,18 @@ export function status(s: RomeState): GameStatus {
 
 const CODE_a = "a".charCodeAt(0);
 
+/** The clue letters, in the order the encoder writes a cell's bits. */
+const CLUE_BITS: Readonly<Record<string, number>> = {
+  U: FM_UP,
+  D: FM_DOWN,
+  L: FM_LEFT,
+  R: FM_RIGHT,
+  X: FM_GOAL,
+};
+
 /**
- * Decode a description into a board — upstream `rome_read_desc`, ported as the
- * exact inverse of {@link encodeDesc}.
+ * Decode a description into a board — upstream `rome_read_desc`, the inverse
+ * of {@link encodeDesc}.
  *
  * Part 1 is a run-length list over the `(w-1)*h + w*(h-1)` inter-cell edges: a
  * decimal number is a run of that many walls; a letter `a`–`y` is a run of
@@ -320,14 +293,14 @@ const CODE_a = "a".charCodeAt(0);
  * wall. Part 2, after the `,`, run-length encodes the clue grid: a letter is a
  * run of empty squares, and `U`/`D`/`L`/`R`/`X` are fixed arrows and goals.
  *
- * Returns the decoded board alongside upstream's `valid` code so
- * {@link validateDesc} can report the same distinct messages. Invalid input is
- * decoded as far as it goes rather than throwing, exactly as the C does.
+ * Returns the codec's own rejection message alongside the board, for
+ * {@link validateDesc}. Invalid input is decoded as far as it goes rather than
+ * throwing, exactly as the C does.
  */
 export function readDesc(
   p: RomeParams,
   desc: string,
-): { board: RomeState; valid: number } {
+): { board: RomeState; error: string | null } {
   const { w, h } = p;
   const s = w * h;
   const hs = (w - 1) * h;
@@ -335,19 +308,19 @@ export function readDesc(
   const board = newBoard(w, h);
   const { grid, regions } = board;
   const walls = new Uint8Array(ws);
-  let valid = VALID;
+  let error: string | null = null;
 
   let pos = 0;
   let erun = 0;
   let wrun = 0;
   for (let i = 0; i < ws; i++) {
     if (erun === 0 && wrun === 0) {
-      const ch = desc[pos];
-      if (ch !== undefined && ch >= "0" && ch <= "9") {
+      const ch = desc[pos] ?? "";
+      if (ch >= "0" && ch <= "9") {
         const r = parseLeadingInt(desc, pos);
         wrun = r.value;
         pos = r.next;
-      } else if (ch !== undefined && ch >= "a" && ch <= "y") {
+      } else if (ch >= "a" && ch <= "y") {
         erun = ch.charCodeAt(0) - CODE_a + 1;
         wrun = 1;
         pos++;
@@ -355,7 +328,7 @@ export function readDesc(
         erun = 26;
         pos++;
       } else {
-        valid = INVALID_WALLS;
+        error = "Region description contains invalid characters";
       }
     }
     if (erun > 0) {
@@ -384,53 +357,29 @@ export function readDesc(
   pos++; // the ',' separator
   erun = 0;
   for (let i = 0; i < s; i++) {
-    let c = "";
     if (erun === 0) {
-      c = desc[pos++] ?? "";
+      const c = desc[pos++] ?? "";
+      const clue: number | undefined = CLUE_BITS[c];
       if (c >= "a" && c <= "z") erun = c.charCodeAt(0) - CODE_a + 1;
+      else if (clue !== undefined) grid[i] = clue | FM_FIXED;
+      else error = "Clues contain invalid characters";
     }
-    if (erun > 0) {
-      c = "S";
-      erun--;
-    }
-    switch (c) {
-      case "S":
-        break; // empty
-      case "U":
-        grid[i] = FM_UP | FM_FIXED;
-        break;
-      case "D":
-        grid[i] = FM_DOWN | FM_FIXED;
-        break;
-      case "L":
-        grid[i] = FM_LEFT | FM_FIXED;
-        break;
-      case "R":
-        grid[i] = FM_RIGHT | FM_FIXED;
-        break;
-      case "X":
-        grid[i] = FM_GOAL | FM_FIXED;
-        break;
-      default:
-        valid = INVALID_CLUES;
-    }
+    if (erun > 0) erun--; // an empty square
   }
 
-  return { board, valid };
+  return { board, error };
 }
 
 /**
  * Encode a finished board as a description — upstream's `new_game_desc` tail,
- * the exact inverse of {@link readDesc}.
+ * the inverse of {@link readDesc}.
  *
- * One upstream asymmetry is preserved deliberately: a run of exactly 26
- * non-walls encodes as `z` *and consumes the wall that follows it*, whereas
- * the reader takes `z` as 26 non-walls with **no** trailing wall (and a longer
- * run leaves the alphabet entirely). The two disagree — but only above 25
- * consecutive non-walls, which no Rome board can produce: a region holds at
- * most four squares, so a row contributes at most three consecutive
- * horizontal non-walls and the longest reachable run is a handful. Reproduce
- * both sides verbatim rather than "completing" either (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
+ * One upstream asymmetry is kept deliberately: a run of exactly 26 non-walls
+ * encodes as `z` *and consumes the wall that follows it*, whereas the reader
+ * takes `z` as 26 non-walls with **no** trailing wall (and a longer run leaves
+ * the alphabet entirely). The two disagree only above 25 consecutive
+ * non-walls. Reproduce both sides verbatim rather than "completing" either
+ * (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  */
 export function encodeDesc(
   w: number,
@@ -482,27 +431,10 @@ export function encodeDesc(
       out += String.fromCharCode(CODE_a + erun - 1);
       erun = 0;
     }
-    if (c & FM_UP) out += "U";
-    if (c & FM_DOWN) out += "D";
-    if (c & FM_LEFT) out += "L";
-    if (c & FM_RIGHT) out += "R";
-    if (c & FM_GOAL) out += "X";
+    for (const [ch, bit] of Object.entries(CLUE_BITS)) if (c & bit) out += ch;
     if (c === EMPTY) erun++;
   }
   if (erun > 0) out += String.fromCharCode(CODE_a + erun - 1);
 
   return out;
 }
-
-/**
- * Message for each of upstream `validate_desc`'s rejection codes. The
- * structural checks that need the validity pass live in `solver.ts`
- * (`validateDesc`), which is the module that owns it; this table keeps the
- * codec's own two codes next to the codec.
- */
-export const DESC_ERRORS: Readonly<Record<number, string>> = {
-  [INVALID_WALLS]: "Region description contains invalid characters",
-  [INVALID_CLUES]: "Clues contain invalid characters",
-  [INVALID_REGIONS]: "A region is too large",
-  [INVALID_GOALS]: "A goal is not placed in an area of 1 cell",
-};

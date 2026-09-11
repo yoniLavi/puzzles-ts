@@ -40,9 +40,8 @@ import {
   showCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, Point } from "../../engine/types.ts";
 import { newRomeDesc } from "./generator.ts";
 import {
   BORDER,
@@ -126,9 +125,9 @@ function newUi(_state: RomeState): RomeUi {
 
 // --- input ------------------------------------------------------------------
 
-/** Direct arrow entry by character code. Upstream keys off the bare
- * characters, having already stripped `MOD_NUM_KEYPAD` — which this frontend
- * never sets anyway (docs/games/input.md § "The numeric keypad never arrives"), so the number-row digits work too. */
+/** Direct arrow entry by character code, keyed off the bare characters as
+ * upstream does, so the number-row digits work too (docs/games/input.md §
+ * "The numeric keypad never arrives"). */
 const DIGIT_DIRS: Readonly<Record<number, RomeDir>> = {
   56: FM_UP, // '8'
   50: FM_DOWN, // '2'
@@ -136,9 +135,9 @@ const DIGIT_DIRS: Readonly<Record<number, RomeDir>> = {
   54: FM_RIGHT, // '6'
 };
 
-/** Upstream `FROMCOORD`: C integer division, which **truncates toward zero**,
- * so a pixel inside the two-pixel border maps to row/column 0 rather than to
- * -1. `Math.trunc`, not the shared `fromCoord`'s floor (same idiom as Sticks). */
+/** Upstream `FROMCOORD`: C integer division **truncates toward zero**, so a
+ * pixel inside the two-pixel border maps to row/column 0 rather than to -1 —
+ * hence `Math.trunc`, not the shared `fromCoord`'s floor. */
 function fromCoordTrunc(pixel: number, ts: number): number {
   return Math.trunc((pixel - BORDER) / ts);
 }
@@ -206,8 +205,7 @@ function interpretMove(
             : button === CURSOR_LEFT
               ? FM_LEFT
               : FM_RIGHT;
-      // Placing the arrow that is already there is a no-op, not a history
-      // entry (upstream suppresses it locally here — docs/games/README.md § "Before you start").
+      // Placing the arrow that is already there is a no-op, not a history entry.
       if (here & dir) return UI_UPDATE;
       return { kind: pencil ? "pencil" : "place", x, y, dir };
     }
@@ -265,10 +263,8 @@ function interpretMove(
       const pencil = ui.mmode === MOUSEMODE_PENCIL;
       ui.mmode = MOUSEMODE_OFF;
       if (c === EMPTY && pencil) return UI_UPDATE;
-      // Upstream compares the *whole* cell here, so a square already carrying
-      // an error bit emits a move that changes nothing. Masking to the arrow
-      // bits suppresses that genuine no-op instead (input layer only — the
-      // desc differential never runs `interpretMove`).
+      // Masked to the arrow bits: upstream compares the whole cell, so an
+      // arrow carrying an error bit would emit a move that changes nothing.
       if (!pencil && c === (here & FM_ARROWMASK)) return UI_UPDATE;
 
       return {
@@ -339,44 +335,38 @@ function solve(orig: RomeState): SolveResult<RomeMove> {
 }
 
 /**
- * Two layers, because either alone would bless a wrong board (docs/games/solver-and-generator.md § "The solvable-game contract").
+ * Two layers, because either alone would bless a wrong board
+ * (docs/games/solver-and-generator.md § "The solvable-game contract").
  *
  * The **rule violations** — an off-grid arrow, an arrow duplicated inside a
- * region, an arrow on a loop — are what upstream already paints as you play,
- * and they are free: the validity check has computed them into the grid
- * already.
+ * region, an arrow on a loop — are what the board already paints as you play,
+ * and the validity check has already computed them into the grid.
  *
- * But they are a strict subset of "wrong". An arrow can break no rule at all
- * and still contradict the puzzle's unique answer, and a live-only check would
- * let Check & Save store that board — which is exactly the failure the hook
- * exists to prevent. So the second layer re-solves from the fixed clues and
- * flags every arrow the player has placed that the solution disagrees with.
+ * But an arrow can break no rule and still contradict the puzzle's unique
+ * answer, and Check & Save must not store that board. So the second layer
+ * re-solves from the fixed clues and flags every placed arrow the solution
+ * disagrees with.
  *
- * Pencil marks are deliberately **not** checked. In the candidate-elimination
- * games a note that has crossed out the true value is a mistake, but Rome's
- * own documentation says its pencil marks "can be used for any purpose" — a
- * player may equally be marking the arrows they have *ruled out*, so there is
- * no reading of a note that can be called wrong.
+ * Pencil marks are deliberately **not** checked: Rome's own documentation says
+ * they "can be used for any purpose" — a player may be marking the arrows they
+ * have *ruled out* — so no note can be called wrong.
  */
 function findMistakes(state: RomeState): readonly RomeMistake[] {
   const out: RomeMistake[] = [];
-  const flagged = new Set<number>();
   const { grid } = state;
 
   for (let i = 0; i < grid.length; i++) {
     const c = grid[i];
     const kind =
       c & FE_BOUNDS ? "bounds" : c & FE_DOUBLE ? "double" : c & FE_LOOP ? "loop" : null;
-    if (kind) {
-      out.push({ index: i, kind });
-      flagged.add(i);
-    }
+    if (kind) out.push({ index: i, kind });
   }
 
   const solution = solutionGrid(state);
   if (solution) {
     for (let i = 0; i < grid.length; i++) {
-      if (grid[i] & FM_FIXED || flagged.has(i)) continue;
+      // A clue is never wrong, and a rule violation is already reported.
+      if (grid[i] & (FM_FIXED | FE_BOUNDS | FE_DOUBLE | FE_LOOP)) continue;
       const arrow = grid[i] & FM_ARROWMASK;
       // An empty square is incomplete, never wrong.
       if (arrow !== 0 && arrow !== (solution[i] & FM_ARROWMASK)) {
@@ -399,10 +389,8 @@ function flashLength(
 
 // --- the game ---------------------------------------------------------------
 
-/** Rome's difficulty contract (`engine/difficulty.ts`). `romeSolve` returns a
- * `STATUS_*`; `boardFromClues` is the game's own "the position the puzzle
- * started from" helper, so the verdict is about the puzzle and not about what
- * the player has entered. */
+/** Rome's difficulty contract (`engine/difficulty.ts`), judged from
+ * {@link boardFromClues} so the verdict is about the puzzle alone. */
 const difficulty: DifficultyContract<RomeParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
@@ -440,7 +428,7 @@ export const romeGame: Game<
   }),
   paramConfig,
 
-  newDesc: (p: RomeParams, rng: RandomState) => newRomeDesc(p, rng),
+  newDesc: newRomeDesc,
   validateDesc,
   newState,
   newUi,
@@ -475,9 +463,9 @@ export const romeGame: Game<
     },
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: RomeParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,

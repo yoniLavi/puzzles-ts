@@ -1,8 +1,7 @@
 /*
- * Rome's adoption of `runDeductionFixpoint`, proved by equivalence
- * (`adopt-the-deduction-runner-where-it-rewires`). The harness and the argument
- * for it are `engine/testing/ladder-equivalence.ts`; this file is the
- * declaration.
+ * Rome's adoption of `runDeductionFixpoint`, proved by equivalence. The
+ * harness and the argument for it are `engine/testing/ladder-equivalence.ts`;
+ * this file is the declaration.
  *
  * **Rome is the adopter whose tier gates were mid-ladder `break`s**, and the
  * runner *skips* over-cap rungs instead. The two agree only because Rome's
