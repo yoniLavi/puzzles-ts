@@ -1,13 +1,16 @@
 /**
- * Pearl (Masyu) state, params, direction algebra and the RLE desc codec —
- * the idiomatic-TS core of `pearl.c`. Draw one closed loop through grid
- * cells that turns a right angle at every black pearl (going straight on at
- * least one cell each side) and passes straight through every white pearl
- * (turning immediately before or after).
+ * Pearl (Masyu) state, params, direction algebra and the RLE desc codec.
  *
  * State is immutable: `lines` / `marks` / `errors` are per-move copies; the
  * `clues` grid is shared frozen (upstream's ref-counted `shared_state`).
  */
+
+import { tierNames } from "../../engine/difficulty.ts";
+import type { PresetMenu } from "../../engine/game.ts";
+import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
+import type { GameStatus } from "../../engine/types.ts";
 
 // --- clue kinds (upstream NOCLUE / CORNER=black / STRAIGHT=white) ----------
 export const NOCLUE = 0;
@@ -66,8 +69,7 @@ export const ERROR_CLUE = 16;
 export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFF_COUNT = 2;
-/** Full difficulty names for menu labels (upstream `pearl_diffnames`). */
-export const DIFF_NAMES: readonly string[] = tierNames(2);
+export const DIFF_NAMES: readonly string[] = tierNames(DIFF_COUNT);
 /** Encoding chars for the `d<char>` param suffix (upstream `pearl_diffchars`). */
 export const DIFF_CHARS = "et";
 
@@ -96,10 +98,6 @@ export function defaultParams(): PearlParams {
   return { ...PEARL_PRESETS[DEFAULT_PRESET] };
 }
 
-import { tierNames } from "../../engine/difficulty.ts";
-import type { PresetMenu } from "../../engine/game.ts";
-import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
-
 export function presets(): PresetMenu<PearlParams> {
   return {
     title: "Pearl",
@@ -111,35 +109,15 @@ export function presets(): PresetMenu<PearlParams> {
 }
 
 export function decodeParams(s: string): PearlParams {
-  const p: PearlParams = { w: 6, h: 6, difficulty: DIFF_EASY, nosolve: false };
-  let i = 0;
-  const readInt = (): number => {
-    let n = 0;
-    let any = false;
-    while (i < s.length && s[i] >= "0" && s[i] <= "9") {
-      n = n * 10 + (s.charCodeAt(i) - 48);
-      i++;
-      any = true;
-    }
-    return any ? n : 0;
-  };
-  p.w = p.h = readInt();
-  if (s[i] === "x") {
-    i++;
-    p.h = readInt();
-  }
-  p.difficulty = DIFF_EASY;
+  const { w, h, next } = parseDimensions(s);
+  let i = next;
+  let difficulty = DIFF_EASY;
   if (s[i] === "d") {
     i++;
-    for (let d = 0; d < DIFF_COUNT; d++) if (s[i] === DIFF_CHARS[d]) p.difficulty = d;
+    for (let d = 0; d < DIFF_COUNT; d++) if (s[i] === DIFF_CHARS[d]) difficulty = d;
     if (i < s.length) i++;
   }
-  p.nosolve = false;
-  if (s[i] === "n") {
-    p.nosolve = true;
-    i++;
-  }
-  return p;
+  return { w, h, difficulty, nosolve: s[i] === "n" };
 }
 
 export function encodeParams(p: PearlParams, full: boolean): string {
@@ -162,16 +140,13 @@ export function validateParams(p: PearlParams, _full: boolean): string | null {
 // --- desc codec ------------------------------------------------------------
 /**
  * Run-length encode a clue grid: lowercase runs compress unclued cells, `B` is
- * a black pearl, `W` a white pearl.
+ * a black pearl, `W` a white pearl. Trailing blanks are kept because
+ * {@link validateDesc} rejects a desc that does not cover the whole grid.
  *
- * `keepTrailingBlanks` because {@link validateDesc} rejects a desc whose cells
- * do not add up to the whole grid ("string too short").
- *
- * Upstream grows a run by *incrementing the letter it already wrote*, starting
- * a fresh `a` once it reaches `z`. That is a third spelling of the same
- * grammar, not a different one: incrementing to `z` and restarting produces
- * exactly the 26-cell chunks {@link encodeRunLength} writes, which the frozen
- * differential checks byte for byte.
+ * Upstream grows a run by incrementing the letter it already wrote, starting a
+ * fresh `a` after `z`. That produces exactly the 26-cell chunks
+ * {@link encodeRunLength} writes, which the frozen differential checks byte for
+ * byte.
  */
 export function encodeClues(clues: Uint8Array, sz: number): string {
   return encodeRunLength(
@@ -232,26 +207,10 @@ export function newState(p: PearlParams, desc: string): PearlState {
   };
 }
 
-export function cloneState(s: PearlState): PearlState {
-  return {
-    w: s.w,
-    h: s.h,
-    clues: s.clues, // shared
-    lines: s.lines.slice(),
-    marks: s.marks.slice(),
-    errors: s.errors.slice(),
-    completed: s.completed,
-    cheated: s.cheated,
-  };
-}
-
 /** True iff `(x, y)` is on the grid (upstream `INGRID`). */
 export function inGrid(s: { w: number; h: number }, x: number, y: number): boolean {
   return x >= 0 && x < s.w && y >= 0 && y < s.h;
 }
-
-import type { GridCursor } from "../../engine/pointer.ts";
-import type { GameStatus } from "../../engine/types.ts";
 
 export function status(s: PearlState): GameStatus {
   return s.completed ? "solved" : "ongoing";
@@ -290,39 +249,28 @@ export interface PearlUi {
   guiStyle: number;
 }
 
-/** Text format for save/share (upstream `game_text_format`). */
+/** Text format for save/share (upstream `game_text_format`): pearls on a grid
+ * of `+`, with `-` / `|` for lines and `x` for no-line marks between them. */
 export function textFormat(state: PearlState): string {
   const { w, h, clues, lines, marks } = state;
   const cw = 4;
   const ch = 2;
-  const gw = cw * (w - 1) + 2;
-  const gh = ch * (h - 1) + 1;
-  const len = gw * gh;
-  const board = new Array<string>(len).fill(" ");
+  const rows = Array.from({ length: ch * (h - 1) + 1 }, () =>
+    new Array<string>(cw * (w - 1) + 1).fill(" "),
+  );
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
       const i = r * w + c;
-      const cell = r * ch * gw + c * cw;
-      board[cell] = "+BW"[clues[i]];
+      const x = c * cw;
+      const y = r * ch;
+      rows[y][x] = "+BW"[clues[i]];
       if (c < w - 1 && (lines[i] & R || lines[i + 1] & L))
-        for (let k = 1; k < cw; k++) board[cell + k] = "-";
+        for (let k = 1; k < cw; k++) rows[y][x + k] = "-";
       if (r < h - 1 && (lines[i] & D || lines[i + w] & U))
-        for (let k = 1; k < ch; k++) board[cell + k * gw] = "|";
-      if (c < w - 1 && (marks[i] & R || marks[i + 1] & L))
-        board[cell + (cw >> 1)] = "x";
-      if (r < h - 1 && (marks[i] & D || marks[i + w] & U))
-        board[cell + (ch >> 1) * gw] = "x";
+        for (let k = 1; k < ch; k++) rows[y + k][x] = "|";
+      if (c < w - 1 && (marks[i] & R || marks[i + 1] & L)) rows[y][x + (cw >> 1)] = "x";
+      if (r < h - 1 && (marks[i] & D || marks[i + w] & U)) rows[y + (ch >> 1)][x] = "x";
     }
   }
-  // Insert row terminators (newlines), then join.
-  let out = "";
-  for (let r = 0; r < h; r++) {
-    const rows = r === h - 1 ? 1 : ch;
-    for (let sub = 0; sub < rows; sub++) {
-      const base = r * ch * gw + sub * gw;
-      out += board.slice(base, base + gw - 1).join("");
-      out += "\n";
-    }
-  }
-  return out;
+  return rows.map((row) => `${row.join("")}\n`).join("");
 }

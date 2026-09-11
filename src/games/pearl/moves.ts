@@ -1,11 +1,11 @@
 /**
  * Pearl move application, drag interpretation and completion checking —
- * faithful ports of `execute_move`, `interpret_ui_drag` / `update_ui_drag`
- * and `check_completion` / `dsf_update_completion` (pearl.c).
+ * ports of `execute_move`, `interpret_ui_drag` / `update_ui_drag` and
+ * `check_completion` / `dsf_update_completion` (pearl.c).
  *
- * Split out of `index.ts` so `render.ts` (which reflects the in-progress
- * drag) and `index.ts` can both import the drag helpers without a cycle
- * (docs/games/rendering.md § "The tile cache and the diff key").
+ * Split out of `index.ts` so `render.ts`, which previews the in-progress drag,
+ * can share the drag helpers without an import cycle (docs/games/rendering.md
+ * § "A simulated-release preview lives in `moves.ts`").
  */
 import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import { Dsf } from "../../engine/dsf.ts";
@@ -19,7 +19,6 @@ import {
   bRU,
   bUD,
   CORNER,
-  cloneState,
   D,
   DIFF_COUNT,
   DX,
@@ -86,12 +85,12 @@ export function updateUiDrag(
   gy: number,
 ): void {
   const w = state.w;
-  if (!inGrid(state, gx, gy)) return; // outside grid
+  if (!inGrid(state, gx, gy)) return;
   if (ui.ndragcoords < 0) return; // drag not in progress
 
   const pos = gy * w + gx;
   const lastpos = ui.dragcoords[ui.ndragcoords > 0 ? ui.ndragcoords - 1 : 0];
-  if (pos === lastpos) return; // same square as last visited
+  if (pos === lastpos) return;
 
   if (ui.ndragcoords === 0) ui.ndragcoords = 1; // drag confirmed
 
@@ -304,47 +303,46 @@ export function checkCompletion(state: PearlState): CompletionResult {
 
 // --- move application ------------------------------------------------------
 /** Apply a move purely, recompute completion/errors. Throws on an illegal
- * move (upstream `execute_move` returning NULL). Faithful to `execute_move`. */
+ * move (upstream `execute_move` returning NULL). */
 export function executeMove(state: PearlState, move: PearlMove): PearlState {
   // A move is an op list, not a union, so there is no discriminant to narrow to
   // `never`: check the one field the dispatch reads (see `rejectMove`).
   if (!Array.isArray(move.ops)) rejectMove(move, "pearl: executeMove");
 
-  const w = state.w;
-  const h = state.h;
-  const ret = cloneState(state);
+  const { w, h } = state;
+  const lines = state.lines.slice();
+  const marks = state.marks.slice();
+  let cheated = state.cheated;
 
   for (const op of move.ops) {
     if (op.kind === "solve") {
-      (ret as { cheated: boolean }).cheated = true;
+      cheated = true;
       continue;
     }
     if (op.kind === "hint") {
-      pearlSolve(w, h, ret.clues, ret.lines, DIFF_COUNT, true);
-      for (let n = 0; n < w * h; n++) ret.marks[n] &= ~ret.lines[n];
+      pearlSolve(w, h, state.clues, lines, DIFF_COUNT, true);
+      for (let n = 0; n < w * h; n++) marks[n] &= ~lines[n];
       continue;
     }
     const { l, x, y } = op;
     if (!inGrid(state, x, y)) throw new Error("pearl: move off grid");
     if (l < 0 || l > 15) throw new Error("pearl: bad line value");
     const idx = y * w + x;
-    if (op.kind === "line") ret.lines[idx] |= l;
-    else if (op.kind === "noline") ret.lines[idx] &= ~l;
+    if (op.kind === "line") lines[idx] |= l;
+    else if (op.kind === "noline") lines[idx] &= ~l;
     else if (op.kind === "replace") {
-      ret.lines[idx] = l;
-      ret.marks[idx] &= ~l; // erase marks too
-    } else if (op.kind === "flip") ret.lines[idx] ^= l;
-    else if (op.kind === "mark") ret.marks[idx] ^= l;
+      lines[idx] = l;
+      marks[idx] &= ~l; // erase marks too
+    } else if (op.kind === "flip") lines[idx] ^= l;
+    else if (op.kind === "mark") marks[idx] ^= l;
     else assertNever(op, "pearl: executeMove");
 
     // Reject laying a line over a mark (interpret_move should prevent it).
-    if (ret.lines[idx] & l && ret.marks[idx] & l)
-      throw new Error("pearl: line over mark");
+    if (lines[idx] & l && marks[idx] & l) throw new Error("pearl: line over mark");
   }
 
-  const check = checkCompletion(ret);
+  const next = { ...state, lines, marks, cheated };
+  const check = checkCompletion(next);
   if (!check.valid) throw new Error("pearl: invalid move");
-  (ret as { completed: boolean }).completed = check.completed;
-  (ret as { errors: Uint8Array }).errors = check.errors;
-  return ret;
+  return { ...next, completed: check.completed, errors: check.errors };
 }

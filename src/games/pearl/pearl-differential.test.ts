@@ -11,8 +11,8 @@
  * The desc byte-match is the strongest bar here because it depends on the
  * grid geometry, every RNG draw in loopgen, the bias score, and every solver
  * verdict during minimization — a single wrong bit anywhere diverges it.
- * (Design D9 notes the one astronomically-rare loopgen tie-break that could
- * in theory not byte-match; the fixtures were chosen to byte-match.)
+ * (One astronomically rare loopgen tie-break could in theory not byte-match;
+ * the fixtures were chosen to byte-match.)
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
@@ -43,8 +43,7 @@ const paramsOf = (f: Fixture): PearlParams => ({
 /** `pearl-4` (10x10, Easy) alone costs **27 s** — 7% of the whole suite, and more
  * than the 12x8 fixture beside it. Easy is asserted on every commit by the 6x6,
  * 7x7 and 8x8 fixtures (and the 6x6 `nosolve` variant), so what the 10x10 adds is
- * board size over the same generator/solver path: `npm run test:slow`
- * (`right-size-the-test-gate`). */
+ * board size over the same generator/solver path: `npm run test:slow`. */
 const isSlow = (f: Fixture) => f.seed === "pearl-4";
 
 describe("pearl generator differential (byte-match vs C)", () => {

@@ -1,5 +1,5 @@
 /**
- * Pearl rendering — faithful port of `game_redraw` / `draw_square` /
+ * Pearl rendering — port of `game_redraw` / `draw_square` /
  * `draw_lines_specific` / `game_colours` / `game_compute_size` (pearl.c),
  * using the `NARROW_BORDERS` geometry the web build compiles (border =
  * BORDER_WIDTH + 1, not a half/eighth-tile gutter).
@@ -9,9 +9,7 @@
  * (center dots + inter-cell grid lines). A per-cell packed `Int32Array`
  * cache mirrors upstream's `lflags`; the `findMistakes` wrong-edge overlay
  * rides its own bit field in that word so it is part of the diff key
- * (docs/games/rendering.md § "The tile cache and the diff key"). The palette is index-for-index with the C color enum
- * (Pearl's one dark-mode `paletteOverrides` entry in augmentation.ts targets
- * index 0, the board).
+ * (docs/games/rendering.md § "The tile cache and the diff key").
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -98,7 +96,6 @@ const DS_FLASH = 1 << 21;
 const DS_CURSOR = 1 << 22;
 
 export interface PearlDrawState {
-  halfsz: number;
   started: boolean;
   tileSize: number;
   w: number;
@@ -108,7 +105,6 @@ export interface PearlDrawState {
 
 export function newDrawState(state: PearlState): PearlDrawState {
   return {
-    halfsz: 0,
     started: false,
     tileSize: PREFERRED_TILE_SIZE,
     w: state.w,

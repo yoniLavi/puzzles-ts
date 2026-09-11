@@ -1,7 +1,7 @@
 /**
- * Pearl generator — faithful port of `pearl_loopgen` + `new_clues` +
- * `new_game_desc` (pearl.c). Byte-match critical: the RNG draw order is
- * reproduced exactly so `newDesc(p, randomNew(seed))` equals the C output.
+ * Pearl generator — port of `pearl_loopgen` + `new_clues` + `new_game_desc`
+ * (pearl.c). Byte-match critical: the RNG draw order is reproduced exactly so
+ * `newDesc(p, randomNew(seed))` equals the C output.
  *
  * The generator: build a random loop over the shared `generateLoop` (biased
  * toward black-pearl corners), derive the maximal clue set, gate on the
@@ -40,12 +40,11 @@ import {
   U,
 } from "./state.ts";
 
-/** Build the black-clue bias function for `generateLoop`. Faithful to
- * `pearl_loopgen_bias`, but computed by full rescan each call rather than
- * incrementally: the bias's only observable effect is its return value (a
- * count of black-clue corner sites in the WHITE and BLACK boundaries, a pure
- * function of the board), so a rescan yields the identical score — and thus
- * the identical candidate choice — while consuming no RNG. */
+/** Build the black-clue bias for `generateLoop` (upstream `pearl_loopgen_bias`),
+ * rescanning the board on each call rather than updating incrementally. The
+ * score (the count of black-clue corner sites on the WHITE and BLACK
+ * boundaries) is a pure function of the board and draws no RNG, so a rescan
+ * picks the identical candidate. */
 function makeBias(g: Grid): LoopgenBias {
   const nEdges = g.numEdges;
   const nDots = g.numDots;
@@ -100,8 +99,8 @@ function makeBias(g: Grid): LoopgenBias {
 }
 
 /** Generate a random loop into `lines` (length w*h) via the biased loop
- * generator, converting the face coloring to per-cell R/U/L/D line bits.
- * Faithful to `pearl_loopgen`. */
+ * generator, converting the face coloring to per-cell R/U/L/D line bits
+ * (upstream `pearl_loopgen`). */
 export function pearlLoopgen(
   w: number,
   h: number,
@@ -145,9 +144,8 @@ export function pearlLoopgen(
  * Build a puzzle: a random loop, its maximal clue set, solver-gated to a
  * unique solution at `difficulty` (and — for Tricky — not solvable one tier
  * easier), then greedily minimized. Writes `clues` and the solution
- * `gridOut` (both length w*h). Faithful to `new_clues`, including the
- * upstream `corners`-array duplication quirk (design D4) and the
- * 5×5-Tricky→Easy downgrade.
+ * `gridOut` (both length w*h). Follows `new_clues`, including the upstream
+ * `corners`-array duplication quirk and the 5×5-Tricky→Easy downgrade.
  */
 function newClues(
   params: PearlParams,
@@ -199,58 +197,30 @@ function newClues(
       }
 
     if (!params.nosolve) {
-      // See if we can solve the puzzle just like this.
-      let ret = pearlSolve(w, h, clues, gridOut, diff, false);
-      if (ret !== 1) continue; // go round and try again
+      // See if we can solve the puzzle just like this, and that it isn't too
+      // easy; otherwise go round and try again.
+      if (pearlSolve(w, h, clues, gridOut, diff, false) !== 1) continue;
+      if (diff > DIFF_EASY && pearlSolve(w, h, clues, gridOut, diff - 1, false) === 1)
+        continue;
 
-      // Check it isn't too easy.
-      if (diff > DIFF_EASY) {
-        ret = pearlSolve(w, h, clues, gridOut, diff - 1, false);
-        if (ret === 1) continue; // too easy: try again
-      }
-
-      // Shuffle the grid points and gradually remove clues to find a minimal
-      // set that still leaves the puzzle soluble. We preferentially remove
-      // whichever clue type is currently most numerous.
-      //
-      // Upstream `corners`-array quirk reproduced verbatim (design D4): the
-      // `corners` array is filled from STRAIGHT positions (not CORNER), and
-      // removal always indexes the `straights` array — so corner clues are
-      // never removed and each straight is processed twice, while the second
-      // shuffle still consumes RNG sized by the straight count. Porting the
-      // "intended" logic would change the RNG stream and diverge the desc.
+      // Shuffle the clues and remove them one at a time, keeping each removal
+      // that leaves the puzzle soluble. Upstream meant to remove whichever clue
+      // type is more numerous, but fills its `corners` array from STRAIGHT
+      // positions too: corner clues are never removed and every straight is
+      // tried twice. Reproduced, the second shuffle's RNG draws included,
+      // because the frozen differential checks the desc byte for byte.
       const straights: number[] = [];
       for (let i = 0; i < w * h; i++) if (clues[i] === STRAIGHT) straights.push(i);
-      const cornersDummy: number[] = [];
-      for (let i = 0; i < w * h; i++) if (clues[i] === STRAIGHT) cornersDummy.push(i);
-      const nstraights = straights.length;
-      const ncorners = cornersDummy.length;
-      let nstraightpos = straights.length;
-      let ncornerpos = cornersDummy.length;
-
       shuffle(straights, rng);
-      shuffle(cornersDummy, rng); // consumes RNG; result never read
+      shuffle(straights.slice(), rng); // upstream's `corners` shuffle; only its draws matter
 
-      while (nstraightpos > 0 || ncornerpos > 0) {
-        let cluepos: number;
-        // nstraights == ncorners always (both count straights), so the
-        // "overrepresented" branch always drains nstraightpos first; then
-        // ncornerpos drains, re-reading the straights array.
-        if (nstraightpos > 0 && ncornerpos > 0) {
-          if (nstraights >= ncorners) cluepos = straights[--nstraightpos];
-          else cluepos = straights[--ncornerpos];
-        } else {
-          if (nstraightpos > 0) cluepos = straights[--nstraightpos];
-          else cluepos = straights[--ncornerpos];
+      for (let pass = 0; pass < 2; pass++)
+        for (let k = straights.length - 1; k >= 0; k--) {
+          const i = straights[k];
+          const clue = clues[i];
+          clues[i] = NOCLUE; // try removing this clue
+          if (pearlSolve(w, h, clues, gridOut, diff, false) !== 1) clues[i] = clue; // oops, put it back
         }
-
-        const y = (cluepos / w) | 0;
-        const x = cluepos % w;
-        const clue = clues[y * w + x];
-        clues[y * w + x] = 0; // try removing this clue
-        ret = pearlSolve(w, h, clues, gridOut, diff, false);
-        if (ret !== 1) clues[y * w + x] = clue; // oops, put it back
-      }
     }
 
     break; // got it
@@ -268,14 +238,9 @@ export function newDesc(
 
   newClues(params, rng, clues, grid);
 
-  const desc = encodeClues(clues, w * h);
-
   // aux: the full solution as a hex string (upstream `new_game_desc`).
   let aux = "";
-  for (let i = 0; i < w * h; i++) {
-    const v = grid[i];
-    aux += v < 10 ? String.fromCharCode(v + 48) : String.fromCharCode(v + 65 - 10);
-  }
+  for (const v of grid) aux += v.toString(16).toUpperCase();
 
-  return { desc, aux };
+  return { desc: encodeClues(clues, w * h), aux };
 }

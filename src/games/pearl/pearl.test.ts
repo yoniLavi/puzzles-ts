@@ -15,6 +15,7 @@ import {
   DIFF_EASY,
   DIFF_TRICKY,
   decodeParams,
+  encodeClues,
   encodeParams,
   F,
   L,
@@ -82,9 +83,7 @@ describe("pearl desc codec", () => {
       const { desc } = newDesc(EASY_6, randomNew(seed));
       expect(validateDesc(EASY_6, desc)).toBeNull();
       const state = newState(EASY_6, desc);
-      // Re-encode via the game's newDesc path is non-deterministic; instead
-      // check newState parsed exactly w*h clues.
-      expect(state.clues.length).toBe(EASY_6.w * EASY_6.h);
+      expect(encodeClues(state.clues, EASY_6.w * EASY_6.h)).toBe(desc);
     }
   });
 
@@ -249,7 +248,7 @@ describe("pearl findMistakes", () => {
   it("returns nothing on a non-uniquely-solvable (nosolve) board", () => {
     const p = { w: 6, h: 6, difficulty: DIFF_EASY, nosolve: true };
     // Generate until we get one that isn't uniquely solvable (most nosolve
-    // boards are ambiguous); fall back to asserting the hook is safe.
+    // boards are ambiguous).
     for (const seed of ["ns0", "ns1", "ns2", "ns3", "ns4"]) {
       const state = generate(p, seed);
       const out = new Uint8Array(p.w * p.h);
@@ -265,6 +264,7 @@ describe("pearl findMistakes", () => {
         return;
       }
     }
+    throw new Error("no seed produced a non-uniquely-solvable board");
   });
 });
 

@@ -7,8 +7,7 @@
  * Left-drag traces a loop path along grid edges (committed as line flips);
  * a left-click near an edge toggles that segment; a right-click / right-drag
  * marks "no-line" crosses; a keyboard cursor draws lines (Ctrl) or marks
- * (Shift). `H` autosolves in place. This is the first consumer of the shared
- * `engine/grid.ts` + `engine/loopgen.ts` leaves (square tiling only).
+ * (Shift). `H` autosolves in place.
  */
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
@@ -37,7 +36,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, Point, Size } from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import { executeMove, interpretUiDrag, updateUiDrag } from "./moves.ts";
 import {
@@ -221,7 +220,6 @@ function interpretMove(
       }
       release = true;
     } else {
-      // CURSOR_SELECT2
       if (ui.ndragcoords >= 0) {
         ui.ndragcoords = -1;
         return UI_UPDATE;
@@ -280,23 +278,13 @@ function interpretMove(
   return null;
 }
 
-function flashLength(
-  oldState: PearlState,
-  newState: PearlState,
-  _dir: number,
-  _ui: PearlUi,
-): number {
-  return winFlash(oldState, newState, FLASH_TIME);
-}
-
 function solve(
   orig: PearlState,
   curr: PearlState,
   aux?: string,
 ): SolveResult<PearlMove> {
   const w = curr.w;
-  const h = curr.h;
-  const sz = w * h;
+  const sz = w * curr.h;
   const solvedLines = orig.lines.slice();
 
   if (aux) {
@@ -306,13 +294,10 @@ function solve(
       else if (ch >= 65 && ch <= 70) solvedLines[i] = ch - 65 + 10;
       else return { ok: false, error: "invalid char in aux" };
     }
-  } else {
-    let ret = pearlSolve(w, h, curr.clues, solvedLines, DIFF_COUNT, false);
-    if (ret < 1) {
-      solvedLines.set(orig.lines);
-      ret = pearlSolve(orig.w, orig.h, orig.clues, solvedLines, DIFF_COUNT, false);
-    }
-    if (ret < 1) return { ok: false, error: "Unable to find a solution" };
+  } else if (pearlSolve(w, curr.h, curr.clues, solvedLines, DIFF_COUNT, false) < 1) {
+    // Upstream retries from the original state, but the two share their clues,
+    // so the retry could only repeat this verdict.
+    return { ok: false, error: "Unable to find a solution" };
   }
 
   const ops: PearlOp[] = [{ kind: "solve" }];
@@ -352,8 +337,7 @@ const prefs: GamePref<PearlUi>[] = [
   },
 ];
 
-/** Pearl's difficulty contract (`engine/difficulty.ts`). `pearlSolve` documents
- * its return as 0 inconsistent, 1 unique, 2 ambiguous. */
+/** `pearlSolve` returns 0 inconsistent, 1 unique, 2 ambiguous. */
 const difficulty: DifficultyContract<PearlParams> = {
   tierOf: (p) => p.difficulty,
   withTier: (p, tier) => ({ ...p, difficulty: tier }),
@@ -412,7 +396,7 @@ export const pearlGame: Game<
     "allow-unsoluble": p.nosolve ? 1 : 0,
   }),
 
-  newDesc: (p, rng) => newDesc(p, rng),
+  newDesc,
   validateDesc,
   newState,
   newUi,
@@ -429,16 +413,16 @@ export const pearlGame: Game<
 
   prefs,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: PearlParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize: (ds, ts) => {
     ds.tileSize = ts;
   },
   newDrawState,
   redraw,
 
-  flashLength,
+  flashLength: (oldState, newState) => winFlash(oldState, newState, FLASH_TIME),
 };
 
 registerGame(pearlGame);

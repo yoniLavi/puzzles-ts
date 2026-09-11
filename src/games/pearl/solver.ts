@@ -1,14 +1,16 @@
 /**
- * Pearl solver — a faithful port of `pearl_solve` (pearl.c). Pure iterative
- * constraint propagation over a `(2w+1)×(2h+1)` workspace (no guessing, no
- * recursion): edge↔square elimination, the black-pearl (CORNER) and
- * white-pearl (STRAIGHT) clue deductions, and shortcut-loop detection over a
- * union-find. The Tricky tier additionally runs the premature-short-loop
- * rules (gated on `difficulty`), so **both** tiers are guess-free.
+ * Pearl solver — port of `pearl_solve` (pearl.c). Pure iterative constraint
+ * propagation (no guessing, no recursion): edge↔square elimination, the
+ * black-pearl (CORNER) and white-pearl (STRAIGHT) clue deductions, and
+ * shortcut-loop detection over a union-find. The Tricky tier adds the
+ * premature-short-loop rules, so both tiers are guess-free.
  *
- * Returns the three-valued verdict: 0 = inconsistent, 1 = unique solution,
- * 2 = ambiguous. Used by the generator (uniqueness gating), `solve`, the
- * `H` autosolve hint, and `findMistakes`.
+ * The workspace is `(2w+1)×(2h+1)`: squares sit at odd (x, y) and hold a
+ * bitmask of their possible states (`1 << <directions>`); the edges between
+ * them are 1 connected, 2 disconnected, 3 unknown.
+ *
+ * Used by the generator (uniqueness gating), `solve`, the `H` autosolve hint,
+ * and `findMistakes`.
  */
 import { Dsf } from "../../engine/dsf.ts";
 import {
@@ -20,15 +22,17 @@ import {
   bRD,
   bRU,
   bUD,
+  CORNER,
   CW,
+  DIFF_COUNT,
   DIFF_EASY,
   DX,
   DY,
   F,
+  STRAIGHT,
 } from "./state.ts";
 
 /**
- * @param w grid width, @param h grid height
  * @param clues clue grid (NOCLUE/CORNER/STRAIGHT), length w*h
  * @param result out array (length w*h): written when solved (or `partial`)
  * @param difficulty DIFF_EASY or DIFF_TRICKY (or DIFF_COUNT to run all rungs)
@@ -52,16 +56,16 @@ export function pearlSolve(
   // Square states.
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
+      const sq = (2 * y + 1) * W + 2 * x + 1;
       switch (clues[y * w + x]) {
-        case 1: // CORNER
-          ws[(2 * y + 1) * W + (2 * x + 1)] = bLU | bLD | bRU | bRD;
+        case CORNER:
+          ws[sq] = bLU | bLD | bRU | bRD;
           break;
-        case 2: // STRAIGHT
-          ws[(2 * y + 1) * W + (2 * x + 1)] = bLR | bUD;
+        case STRAIGHT:
+          ws[sq] = bLR | bUD;
           break;
         default:
-          ws[(2 * y + 1) * W + (2 * x + 1)] =
-            bLR | bUD | bLU | bLD | bRU | bRD | bBLANK;
+          ws[sq] = bLR | bUD | bLU | bLD | bRU | bRD | bBLANK;
           break;
       }
     }
@@ -83,20 +87,21 @@ export function pearlSolve(
     // Discard any square state inconsistent with known edges around it.
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
+        const sq = (2 * y + 1) * W + 2 * x + 1;
         for (let b = 0; b < 0xd; b++)
-          if (ws[(2 * y + 1) * W + (2 * x + 1)] & (1 << b)) {
+          if (ws[sq] & (1 << b)) {
             for (let d = 1; d <= 8; d += d) {
               const ex = 2 * x + 1 + DX(d);
               const ey = 2 * y + 1 + DY(d);
               if (ws[ey * W + ex] === (b & d ? 2 : 1)) {
-                ws[(2 * y + 1) * W + (2 * x + 1)] &= ~(1 << b);
+                ws[sq] &= ~(1 << b);
                 doneSomething = true;
                 break;
               }
             }
           }
         // Consistency: each square must have at least one state left.
-        if (!ws[(2 * y + 1) * W + (2 * x + 1)]) {
+        if (!ws[sq]) {
           ret = 0;
           break loop;
         }
@@ -105,10 +110,11 @@ export function pearlSolve(
     // Nail down any unknown edge whose neighboring square makes it known.
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
+        const sq = (2 * y + 1) * W + 2 * x + 1;
         let edgeor = 0;
         let edgeand = 15;
         for (let b = 0; b < 0xd; b++)
-          if (ws[(2 * y + 1) * W + (2 * x + 1)] & (1 << b)) {
+          if (ws[sq] & (1 << b)) {
             edgeor |= b;
             edgeand &= b;
           }
@@ -136,8 +142,7 @@ export function pearlSolve(
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
         const clue = clues[y * w + x];
-        if (clue === 1) {
-          // CORNER (black pearl)
+        if (clue === CORNER) {
           for (let d = 1; d <= 8; d += d) {
             const ex = 2 * x + 1 + DX(d);
             const ey = 2 * y + 1 + DY(d);
@@ -160,8 +165,8 @@ export function pearlSolve(
               }
             }
           }
-        } else if (clue === 2) {
-          // STRAIGHT (white pearl)
+        } else if (clue === STRAIGHT) {
+          const sq = (2 * y + 1) * W + 2 * x + 1;
           // If a straight is between two squares neither of which can be a
           // corner connected to it, it cannot point that way.
           for (let d = 1; d <= 2; d += d) {
@@ -170,12 +175,12 @@ export function pearlSolve(
             const gx = 2 * x + 1 - 2 * DX(d);
             const gy = 2 * y + 1 - 2 * DY(d);
             const type = d | F(d);
-            if (!(ws[(2 * y + 1) * W + (2 * x + 1)] & (1 << type))) continue;
+            if (!(ws[sq] & (1 << type))) continue;
             if (
               !(ws[fy * W + fx] & ((1 << (F(d) | ACW(d))) | (1 << (F(d) | CW(d))))) &&
               !(ws[gy * W + gx] & ((1 << (d | ACW(d))) | (1 << (d | CW(d)))))
             ) {
-              ws[(2 * y + 1) * W + (2 * x + 1)] &= ~(1 << type);
+              ws[sq] &= ~(1 << type);
               doneSomething = true;
             }
           }
@@ -187,7 +192,7 @@ export function pearlSolve(
             const gx = 2 * x + 1 - 2 * DX(d);
             const gy = 2 * y + 1 - 2 * DY(d);
             const type = d | F(d);
-            if (ws[(2 * y + 1) * W + (2 * x + 1)] !== 1 << type) continue;
+            if (ws[sq] !== 1 << type) continue;
             if (
               !(ws[fy * W + fx] & ~(bLR | bUD)) &&
               ws[gy * W + gx] & ~(bLU | bLD | bRU | bRD)
@@ -204,7 +209,7 @@ export function pearlSolve(
     // Detect shortcut loops.
     {
       dsf.reinit();
-      for (let x = 0; x < w * h; x++) dsfsize[x] = 1;
+      dsfsize.fill(1);
 
       let nonblanks = 0;
       let loopclass = -1;
@@ -246,8 +251,9 @@ export function pearlSolve(
         for (let y = 0; y < h; y++)
           for (let x = 0; x < w; x++)
             if (dsf.canonify(y * w + x) !== loopclass) {
-              if (ws[(y * 2 + 1) * W + (x * 2 + 1)] & bBLANK) {
-                ws[(y * 2 + 1) * W + (x * 2 + 1)] = bBLANK;
+              const sq = (2 * y + 1) * W + 2 * x + 1;
+              if (ws[sq] & bBLANK) {
+                ws[sq] = bBLANK;
               } else {
                 // Non-blank square outside the loop: goofed.
                 ret = 0;
@@ -326,8 +332,9 @@ export function pearlSolve(
       for (let x = 0; x < w; x++) {
         // When the square is nailed to one state, write it; otherwise (only
         // possible under `partial`) leave the caller's prior value in place.
+        const sq = (2 * y + 1) * W + 2 * x + 1;
         for (let b = 0; b < 0xd; b++)
-          if (ws[(2 * y + 1) * W + (2 * x + 1)] === 1 << b) {
+          if (ws[sq] === 1 << b) {
             result[y * w + x] = b;
             break;
           }
@@ -336,17 +343,14 @@ export function pearlSolve(
     // Fix up reciprocity: never leave a square linked to a neighbor that
     // does not link back (can happen when we give up on an impossible board).
     for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++) {
+      for (let x = 0; x < w; x++)
         for (let d = 1; d <= 8; d += d) {
           const nx = x + DX(d);
           const ny = y + DY(d);
-          let rlink: number;
-          if (0 <= nx && nx < w && 0 <= ny && ny < h)
-            rlink = result[ny * w + nx] & F(d);
-          else rlink = 0;
-          if (!rlink) result[y * w + x] &= ~d;
+          const linksBack =
+            nx >= 0 && nx < w && ny >= 0 && ny < h && result[ny * w + nx] & F(d);
+          if (!linksBack) result[y * w + x] &= ~d;
         }
-      }
   }
 
   return ret;
@@ -356,8 +360,7 @@ export function pearlSolve(
  * -1 if none. */
 export function gradePearl(w: number, h: number, clues: Uint8Array): number {
   const scratch = new Uint8Array(w * h);
-  for (let diff = DIFF_EASY; diff < 2; diff++) {
+  for (let diff = DIFF_EASY; diff < DIFF_COUNT; diff++)
     if (pearlSolve(w, h, clues, scratch, diff, false) === 1) return diff;
-  }
   return -1;
 }
