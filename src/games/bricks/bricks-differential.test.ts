@@ -1,16 +1,13 @@
 /**
- * Gated C-vs-TS differential for Bricks (design D8 of add-bricks-ts-port):
- * for each frozen fixture recorded from `puzzles/unreleased/bricks.c` via
- * `puzzles/auxiliary/bricks-trace.c`, the TS `newBricksDesc` over the
- * bit-identical RNG must reproduce the C desc byte-for-byte.
+ * Gated C-vs-TS differential for Bricks: for each frozen fixture recorded from
+ * `puzzles/unreleased/bricks.c` via `puzzles/auxiliary/bricks-trace.c`, the TS
+ * `newBricksDesc` over the bit-identical RNG must reproduce the C desc
+ * byte-for-byte.
  *
- * **`upstreamLooseGate` is set here and nowhere else**, and it is what keeps the
- * four Tricky fixtures meaningful. The shipped generator gates on the tier
- * actually below the one requested, where upstream always probed at Easy (see
- * `BricksGenerateOptions.upstreamLooseGate`); it also no longer *offers* Tricky,
- * because no board requires it — every one of these four Tricky fixtures is
- * solvable at Normal. The flag runs upstream's original gate so the fixtures
- * still match the C byte-for-byte, which is the shape `spokes` established.
+ * **`upstreamLooseGate` is set here and nowhere else**: it runs upstream's
+ * original difficulty gate (`BricksGenerateOptions.upstreamLooseGate`), so the
+ * four Tricky fixtures still match the C byte-for-byte although the shipped
+ * generator refuses Tricky. This is the shape `spokes` established.
  *
  * Because generation gates every clue removal on `solveGame`, one byte-match
  * validates the generator (the conditional fill draws, the removal shuffle),

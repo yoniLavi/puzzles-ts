@@ -2,8 +2,8 @@
  * Bricks (Tawamurenga) state, params, hex geometry, and the desc codec —
  * port of the corresponding parts of `puzzles/unreleased/bricks.c`.
  *
- * The play area is a **hexagon stored as a padded parallelogram** (design
- * D2): `params.w`/`h` are the user-friendly size, but the backing `grid` is
+ * The play area is a **hexagon stored as a padded parallelogram**:
+ * `params.w`/`h` are the user-friendly size, but the backing `grid` is
  * `w = params.w + ⌈h/2⌉ − 1` wide, with the two triangular corners masked to
  * `F_BOUND` so exactly `params.w × params.h` cells remain playable. The six
  * hex neighbors are the fixed {@link BRICKS_STEPS} table. Everything else in
@@ -13,9 +13,8 @@
  * low three bits are a clue number (0..7, `NUM_MASK`), `F_BOUND` marks
  * padding, and `COL_MASK` holds the play color (`F_SHADE`/`F_UNSHADE`/
  * `F_EMPTY`). A cell is *either* a number *or* a color — never both — so a
- * cell with no `COL_MASK` bits and value ≤ 7 is a clue. The transient error /
- * cursor flags upstream ORs into the same word are kept out of persisted
- * state here (recomputed on demand — see solver.ts / render.ts).
+ * cell with no `COL_MASK` bits and value ≤ 7 is a clue. The transient error
+ * and cursor flags upstream ORs into the same word never reach state here.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
@@ -35,8 +34,7 @@ export const F_UNSHADE = 0x020;
 export const F_EMPTY = 0x030;
 export const COL_MASK = 0x030;
 
-// Transient error/cursor flags (upstream ORs these into the grid; here they
-// live only in a scratch array from the validator, never in state).
+// Transient error/cursor flags: validator scratch arrays and the render cache.
 export const FE_ERROR = 0x040;
 export const FE_TOPLEFT = 0x080;
 export const FE_TOPRIGHT = 0x100;
@@ -45,8 +43,7 @@ export const FE_LINE_RIGHT = 0x400;
 export const FE_CURSOR = 0x800;
 
 /** The six hexagonal neighbors of a cell, as (dx, dy) steps (upstream
- * `bricks_steps`). Load-bearing: it gates the neighbor-count validity and
- * the generated clue values, so it is logic, not display. */
+ * `bricks_steps`). The clue counts are defined over them. */
 export const BRICKS_STEPS: ReadonlyArray<readonly [number, number]> = [
   [0, -1],
   [1, -1],
@@ -80,7 +77,7 @@ export interface BricksState {
   /** Backing array width, including the `F_BOUND` padding (`bricks_grid_size`). */
   w: number;
   h: number;
-  /** User-friendly (playable) width — upstream `pw`, needed by textFormat. */
+  /** User-friendly (playable) width, `params.w` (upstream `pw`). */
   pw: number;
   /** Packed cell field, row-major over the padded array. */
   grid: Uint16Array;
@@ -130,11 +127,11 @@ export function bitsColor(bits: number): CellColor {
   return c === F_SHADE ? "shade" : c === F_UNSHADE ? "unshade" : "empty";
 }
 
-// --- hex geometry (design D2, upstream bricks_grid_size / apply_bounds) ------
+// --- hex geometry (upstream bricks_grid_size / apply_bounds) ----------------
 
 /** The padded backing-array size for a hexagon of `params.w × params.h`. */
 export function gridSize(p: BricksParams): { w: number; h: number } {
-  return { w: p.w + (((p.h + 1) / 2) | 0) - 1, h: p.h };
+  return { w: p.w + Math.ceil(p.h / 2) - 1, h: p.h };
 }
 
 /** Fill `grid` with `F_EMPTY`, then mask the two triangular corners to
@@ -158,9 +155,9 @@ export function applyBounds(w: number, h: number, grid: Uint16Array): void {
 /**
  * The hardest difficulty Bricks can actually generate.
  *
- * The tiers are lookahead depth: Easy assumes nothing, Normal assumes a cell
- * and looks for an Easy-level contradiction, Tricky lets that sub-solve recurse
- * in turn. **Depth 2 never pays.** Sampling 77 boards *chosen because Normal
+ * Upstream's tiers are lookahead depth: Easy assumes nothing, Normal assumes a
+ * cell and looks for an Easy-level contradiction, Tricky lets that sub-solve
+ * recurse in turn. **Depth 2 never pays.** Sampling 77 boards *chosen because Normal
  * cannot solve them* — the only region where Tricky could distinguish itself —
  * Tricky solved none, and 480 boards from a real stripping walk gave depth-1
  * and depth-2 identical verdicts throughout; 999 of 999 boards generated at
@@ -183,10 +180,8 @@ const PRESETS: BricksParams[] = [
 ];
 
 /**
- * The tiers a player can pick, and the **only** list of them
- * (`audit-guessing-tier-names` D11). Both the difficulty contract and the
- * custom-params dialog read this rather than repeating it — Unequal shipped a
- * menu and a dialog that disagreed for exactly that reason.
+ * The tiers a player can pick, and the **only** list of them: the presets, the
+ * difficulty contract and the custom-params dialog all read this one.
  *
  * Two names for three `DIFF_*` levels, deliberately:
  *
@@ -194,13 +189,10 @@ const PRESETS: BricksParams[] = [
  *   commits a cell by solving the rest of the board from a hypothesis — a
  *   search, not a technique a player can follow, and only a tier named
  *   `Unreasonable` may ship one.
- * - Upstream's `Tricky` has **no name at all**, because it has no boards. It is
- *   the same rung one level deeper, and `MAX_GENERABLE_DIFF` records the
- *   measurement that depth 2 never decides anything depth 1 has not. It was
- *   already refused at generation by `grade-difficulty-tiers-honestly`; what
- *   this drops is a dropdown entry that could only ever error. `DIFF_CHARS`
- *   still spells it, so a game ID or saved game carrying `dt` still loads and
- *   is still refused *with its reason* by {@link validateParams}.
+ * - Upstream's `Tricky` has **no name at all**, because it has no boards (see
+ *   `MAX_GENERABLE_DIFF`). `DIFF_CHARS` still spells it, so a game ID or saved
+ *   game carrying `dt` still loads, and generation refuses it *with its reason*
+ *   in {@link validateParams}.
  */
 export const DIFF_NAMES = tierNames(2, { search: true });
 
@@ -244,30 +236,15 @@ export const { encodeParams, decodeParams } = paramsCodec(defaultParams, [
   }),
 ]);
 
-/** atoi at `s[pos]`: parse a leading run of digits, 0 when there are none. */
-function eatNum(s: string, pos: number): { value: number; next: number } {
-  let next = pos;
-  while (next < s.length && s[next] >= "0" && s[next] <= "9") next++;
-  return { value: next > pos ? Number.parseInt(s.slice(pos, next), 10) : 0, next };
-}
-
 export function validateParams(p: BricksParams, full: boolean): string | null {
   if (p.w < 2) return "Width must be at least 2";
   if (p.h < 2) return "Height must be at least 2";
   if (p.diff >= DIFFCOUNT) return "Unknown difficulty rating";
-  // Upstream's third tier has no boards. Its rung is lookahead depth 2, which
-  // never decides anything depth 1 has not already decided — see
-  // `MAX_GENERABLE_DIFF` in `generator.ts` for the measurement. Upstream shipped
-  // it anyway and admitted in its own documentation that Tricky "may generate a
-  // puzzle at Normal difficulty instead"; it always does, so offering it is a
-  // difficulty setting that silently gives you a different one
-  // (`grade-difficulty-tiers-honestly`).
-  //
-  // Since `audit-guessing-tier-names` D11 it has no name either — `DIFF_NAMES`
-  // stops at two — so this is the last place that still knows it exists, and it
-  // has to keep working: `DIFF_CHARS` still spells `t`, so an old game ID or
-  // saved game reaches here. Refused only for generation; loading such a game
-  // works, because `full` is false there.
+  // Upstream's third tier has no boards (see `MAX_GENERABLE_DIFF`): its own
+  // documentation admits Tricky "may generate a puzzle at Normal difficulty
+  // instead", and it always does. `DIFF_NAMES` does not name it, but
+  // `DIFF_CHARS` still spells `t`, so an old game ID or saved game reaches
+  // here. Refused only for generation; loading works, as `full` is false there.
   if (full && p.diff > MAX_GENERABLE_DIFF) {
     return `Tricky has no puzzles distinct from ${DIFF_NAMES[MAX_GENERABLE_DIFF]}; use ${DIFF_NAMES.join(" or ")}`;
   }
@@ -279,19 +256,23 @@ export function validateParams(p: BricksParams, full: boolean): string | null {
 const isDigit = (c: string | undefined): boolean =>
   c !== undefined && c >= "0" && c <= "9";
 
+/** The run of digits at `s[pos]`, which callers have checked is a digit. */
+function eatNum(s: string, pos: number): { value: number; next: number } {
+  let next = pos;
+  while (isDigit(s[next])) next++;
+  return { value: Number(s.slice(pos, next)), next };
+}
+
 /**
  * Validate the run-length desc (upstream `validate_desc`): a digit run is a
  * clue on the current cell (rejected if > 7), a lowercase letter advances the
  * playable-cell count by `(c - 'a') + 1`, anything else is inert. The decoded
  * count must equal exactly `params.w × params.h`.
  *
- * **Upstream counts `A`–`Z` as a second run alphabet here and its `new_game`
- * ignores them, so the two scans disagree.** A desc using one validates and
- * then builds a board with every later clue shifted — reachable by hand-typing
- * a game ID, invisible to everything else. The branch is dropped rather than
- * mirrored into {@link newState}, because nothing emits an uppercase letter:
- * removing it costs no generated desc and adds no dialect the encoder cannot
- * write.
+ * Upstream also counts `A`–`Z` as runs here while its `new_game` ignores them,
+ * so a hand-typed desc using one would build a board with every later clue
+ * shifted. The branch is dropped rather than mirrored into {@link newState},
+ * because the encoder never writes an uppercase letter.
  */
 export function validateDesc(p: BricksParams, desc: string): string | null {
   const s = p.w * p.h;
@@ -340,7 +321,7 @@ export function newState(p: BricksParams, desc: string): BricksState {
       const n = eatNum(desc, dp);
       grid[i] = n.value;
       dp = n.next;
-      j++; // defer the i-advance to the next iteration (matches C)
+      j++; // step past the clue on the next iteration
       continue;
     }
     if (c >= "a" && c <= "z") j += c.charCodeAt(0) - 97 + 1;
@@ -413,13 +394,13 @@ export function textFormat(state: BricksState): string {
     let p = w * 2 * y;
     if (y & 1) p++;
     for (let x = 0; x < sw; x++) {
-      const n = state.grid[y * sw + x] & ~0x7c0; // strip ERROR_MASK
+      const n = state.grid[y * sw + x];
       if (n === F_BOUND) continue;
       if (n === F_SHADE) buf[p] = "#";
       else if (n === F_UNSHADE) buf[p] = "-";
       else if (n === F_EMPTY) buf[p] = ".";
       else if (n === 7) buf[p] = "?";
-      else if (n >= 0 && n <= 6) buf[p] = String(n);
+      else buf[p] = String(n);
       p += 2;
     }
   }

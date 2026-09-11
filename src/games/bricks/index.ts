@@ -50,9 +50,8 @@ import {
   newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Color, ConfigValues, Point, Size } from "../../engine/types.ts";
+import type { ConfigValues, Point } from "../../engine/types.ts";
 import { newBricksDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -152,18 +151,12 @@ function interpretMove(
   else if (button === CURSOR_DOWN) dy = 1;
   else if (button === CURSOR_LEFT) dx = -1;
   else if (button === CURSOR_RIGHT) dx = 1;
-  else if (button === NK(55)) {
-    dx = -1;
-    dy = -1;
-  } else if (button === NK(49)) {
+  else if (button === NK(49)) {
     dx = -1;
     dy = 1;
   } else if (button === NK(57)) {
     dx = 1;
     dy = -1;
-  } else if (button === NK(51)) {
-    dx = 1;
-    dy = 1;
   }
 
   if (dx || dy) {
@@ -231,9 +224,7 @@ function interpretMove(
     else if (button === RIGHT_BUTTON)
       ui.dragtype = old === F_UNSHADE ? F_SHADE : old === F_SHADE ? F_EMPTY : F_UNSHADE;
     else ui.dragtype = F_EMPTY;
-
-    ui.drag = [];
-    if (ui.dragtype || old) ui.drag.push(i);
+    ui.drag = [i];
     return UI_UPDATE;
   }
 
@@ -247,11 +238,9 @@ function interpretMove(
 
   if (isMouseRelease(button) && ui.drag.length > 0) {
     const to = bitsColor(ui.dragtype);
-    const cells: { index: number; to: typeof to }[] = [];
-    for (const j of ui.drag) {
-      if (!(grid[j] & COL_MASK)) continue;
-      cells.push({ index: j, to });
-    }
+    const cells = ui.drag
+      .filter((i) => (grid[i] & COL_MASK) !== 0)
+      .map((index) => ({ index, to }));
     ui.drag = [];
     if (cells.length > 0) return { kind: "paint", cells };
     return UI_UPDATE;
@@ -272,7 +261,7 @@ function interpretMove(
     const old = grid[i] & COL_MASK;
     if (!old) return null; // a clue or bound cell — nothing to set
 
-    let to: "shade" | "unshade" | "empty" = "empty";
+    let to: CellColor = "empty";
     if (digit === 0 || digit === 2) to = "unshade";
     else if (digit === 1) to = "shade";
     else if (button === CURSOR_SELECT)
@@ -280,13 +269,7 @@ function interpretMove(
     else if (button === CURSOR_SELECT2)
       to = old === F_EMPTY ? "unshade" : old === F_UNSHADE ? "shade" : "empty";
 
-    if (
-      (old === F_SHADE && to === "shade") ||
-      (old === F_UNSHADE && to === "unshade") ||
-      (old === F_EMPTY && to === "empty")
-    ) {
-      return null; // don't put no-ops on the undo chain
-    }
+    if (old === colorBits(to)) return null; // keep no-ops off the undo chain
     return { kind: "paint", cells: [{ index: i, to }] };
   }
 
@@ -319,8 +302,7 @@ function solve(orig: BricksState): SolveResult<BricksMove> {
   solveGame(grid, w, h, DIFF_TRICKY, true, true);
   if (bricksValidate(grid, w, h, false) === "invalid")
     return { ok: false, error: "Puzzle is invalid." };
-  const colors2 = Array.from({ length: w * h }, (_, i) => bitsColor(grid[i]));
-  return { ok: true, move: { kind: "solve", grid: colors2 } };
+  return { ok: true, move: { kind: "solve", grid: Array.from(grid, bitsColor) } };
 }
 
 // --- hint (a second projection of the contradiction solver) -----------------
@@ -352,10 +334,8 @@ function evidenceOf(reason: BricksReason): number[] {
   }
 }
 
-/** Narrate *why* the move is forced. **`evidence` is the cell set the frame
- * actually rings** (the reason's cells minus the target), not the raw reason,
- * so the sentence is written against what the player can see. The words, and
- * the deixis ties they carry, are [`hint-text.ts`](./hint-text.ts)'s. */
+/** Narrate *why* the move is forced, against the `evidence` the frame rings
+ * rather than the raw reason. The words are [`hint-text.ts`](./hint-text.ts)'s. */
 function narrate(
   reason: BricksReason,
   forced: CellColor,
@@ -380,27 +360,19 @@ function narrate(
 }
 
 function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
-  // **Deliberately not `commonHintRefusal`** (`adopt-the-shared-refusal-opening`,
-  // which took the pair into the helper for fifteen games). Bricks owes a
-  // *second* wrong-board refusal the pair cannot express: its `findMistakes` is
-  // a rule validator, so a mark that is wrong but breaks no local rule is
-  // invisible to it, and the re-solve below answers that case with
-  // `CONTRADICTION_UNLOCALIZED` instead — a message that asks the player to undo
-  // rather than promising a highlight that will never appear. The helper takes no
-  // parameter for the second message on purpose; a knob for two games would make
-  // a convention into a configuration language.
+  // Deliberately not `commonHintRefusal`: Bricks owes a second wrong-board
+  // refusal the shared pair cannot express. Its `findMistakes` is a rule
+  // validator, blind to a mark that is wrong but breaks no rule, so the re-solve
+  // below answers that case with `CONTRADICTION_UNLOCALIZED`, which asks the
+  // player to undo rather than promising a highlight that will never appear.
+  // The helper takes no parameter for the second message on purpose: a knob for
+  // two games would turn a convention into a configuration language.
   if (state.completed) return { ok: false, error: ALREADY_SOLVED };
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error: FIX_MISTAKES_FIRST,
-    };
-  }
+  if (findMistakes(state).length > 0) return { ok: false, error: FIX_MISTAKES_FIRST };
   const { w, h, grid } = state;
 
-  // Re-solve the clues and check the player's marks agree with the unique
-  // solution — Bricks' rule-validator findMistakes can't see a wrong-but-legal
-  // mark, so guard here rather than deduce onward from a doomed position.
+  // Check the marks against the unique solution rather than deduce onward from
+  // a doomed position.
   const sol = grid.slice();
   if (solveGame(sol, w, h, DIFF_TRICKY, true, true) !== "complete") {
     return { ok: false, error: PUZZLE_NOT_REASONABLE };
@@ -408,20 +380,15 @@ function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
   for (let i = 0; i < w * h; i++) {
     const pc = grid[i] & COL_MASK;
     if ((pc === F_SHADE || pc === F_UNSHADE) && pc !== (sol[i] & COL_MASK)) {
-      return {
-        ok: false,
-        error: CONTRADICTION_UNLOCALIZED,
-      };
+      return { ok: false, error: CONTRADICTION_UNLOCALIZED };
     }
   }
 
   const plan = deduceBricksPlan(grid, w, h);
-  if (plan.length === 0) {
-    return { ok: false, error: DEDUCTION_EXHAUSTED };
-  }
+  if (plan.length === 0) return { ok: false, error: DEDUCTION_EXHAUSTED };
   const steps: HintStep<BricksMove, BricksHint>[] = plan.map((m) => {
-    // One value, read by both the sentence and the frame — the narration must
-    // tie "this cell" to whatever the player can actually see ringed.
+    // One value, read by both the sentence and the frame, so the narration's
+    // "this cell" ties to what the player can see ringed.
     const evidence = evidenceOf(m.reason).filter((c) => c !== m.index);
     return {
       move: { kind: "paint", cells: [{ index: m.index, to: m.to }] },
@@ -438,45 +405,28 @@ function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
 function hintKeepTrack(
   m: BricksMove,
   step: HintStep<BricksMove, BricksHint>,
-  _state: BricksState,
 ): HintTrackVerdict {
-  if (m.kind !== "paint") return "off";
   const hl = step.highlights;
-  if (!hl) return "off";
-  for (const c of m.cells) {
-    if (c.index === hl.target) return c.to === hl.forced ? "completed" : "off";
-  }
-  return "off";
+  if (m.kind !== "paint" || !hl) return "off";
+  const cell = m.cells.find((c) => c.index === hl.target);
+  return cell?.to === hl.forced ? "completed" : "off";
 }
 
-function flashLength(
-  from: BricksState,
-  to: BricksState,
-  _dir: number,
-  _ui: BricksUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
-}
-
-/** Bricks' difficulty contract (`engine/difficulty.ts`). `solveGame` returns a
- * `BricksStatus` — `"complete"` exactly when the deduction alone solves the
- * board — and the `clear` argument blanks the grid first, so the verdict is
- * about the puzzle rather than about any marks already on it.
+/** Bricks' difficulty contract. `solveGame` returns `"complete"` exactly when
+ * the deduction alone solves the board, and `clear` blanks the grid first, so
+ * the verdict is about the puzzle rather than any marks already on it.
  *
- * **Two tiers, three `DIFF_*` levels** (`audit-guessing-tier-names` D11, and the
- * case `difficulty.ts`'s own doc comment already anticipated: a `DIFF_*`
- * constant is not reliably a tier). The tier list is *the tiers a player can
- * pick* — read off `paramConfig`, which spreads `DIFF_NAMES` — so upstream's
- * ungenerable third one is not among them; `solveAtCap` takes a raw cap and
- * answers for it regardless, which is what a loaded `dt` game needs.
+ * Two tiers for three `DIFF_*` levels: the tier list is the tiers a player can
+ * pick (`paramConfig`, from `DIFF_NAMES`), so upstream's ungenerable third is
+ * not among them. `solveAtCap` takes a raw cap and answers for it regardless,
+ * which a loaded `dt` game needs.
  */
 const difficulty: DifficultyContract<BricksParams> = {
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {
     const s = newState(p, desc);
-    const grid = s.grid.slice();
-    const ret = solveGame(grid, s.w, s.h, cap, true, true);
+    const ret = solveGame(s.grid, s.w, s.h, cap, true, true);
     return ret === "complete"
       ? "solved"
       : ret === "invalid"
@@ -512,7 +462,7 @@ export const bricksGame: Game<
   }),
   paramConfig,
 
-  newDesc: (p: BricksParams, rng: RandomState) => newBricksDesc(p, rng),
+  newDesc: newBricksDesc,
   validateDesc,
   newState,
   newUi,
@@ -528,15 +478,15 @@ export const bricksGame: Game<
   findMistakes,
   textFormat,
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: BricksParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(bricksGame);

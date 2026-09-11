@@ -20,34 +20,19 @@
  * The solver drives these to a fixpoint by single-cell contradiction
  * (`solverTry`, the Easy tier) and, above it, recursive lookahead
  * (`solverRecurse`). Every placement is *proved* by contradiction, so nothing
- * here guesses — but the two rungs ask very different things of a player, and
- * `audit-guessing-tier-names` (design D9 + D11) split them:
+ * here guesses, but the two rungs ask very different things of a player:
  *
  * - `solverTry` places one color, calls `bricksValidate` **once**, and rolls
  *   back. One glance; a *Check*, legal at any tier.
  * - `solverRecurse` places one color and then **solves the rest of the board**
- *   from it at `maxdiff - 1`. That is a *Search*, and a search may only ship
- *   under a tier named `Unreasonable` — which is why upstream's `Normal` is
- *   called that here, and why {@link nextForcedMove} has no arm for it
- *   (`nextForcedMoveRecurse` was deleted with the narration).
+ *   from it at `maxdiff - 1`. That is a *Search*, which may only ship under a
+ *   tier named `Unreasonable` — why upstream's `Normal` is called that here,
+ *   and why {@link nextForcedMove} has no arm for it.
  *
  * Generation gates uniqueness on this solver, so its exact deductive power is
- * byte-match surface: keep every quirk verbatim.
- *
- * **Divergence (`grade-difficulty-tiers-honestly`, replacing port design D3):**
- * upstream's min-difficulty gate probes at *Easy* whatever tier was requested,
- * so it can only ever reject an Easy board. The port used to preserve that as an
- * intended quirk, on upstream's own admission that "Tricky may yield a
- * Normal-difficulty board". Measurement retired the quirk: *may* is always —
- * 999 of 999 boards generated at Tricky solve at Normal, as do all four frozen
- * C Tricky fixtures, and across 480 boards from a real stripping walk the
- * depth-1 and depth-2 solvers never once disagreed. So the generator now gates
- * on the tier genuinely below the one requested, and Tricky is not offered at
- * all (`MAX_GENERABLE_DIFF` in `state.ts` carries the full measurement).
- *
- * `DIFF_TRICKY` survives *here*, in the solver, as "try as hard as you can" for
- * hints, `solve` and mistake-checking, where the extra depth costs nothing and
- * asks no question about which puzzles exist.
+ * byte-match surface: keep every quirk verbatim. `DIFF_TRICKY` has no boards
+ * (`MAX_GENERABLE_DIFF`) but stays here as "try as hard as you can" for hints
+ * and Solve, where the extra depth costs nothing.
  */
 import { deduceHintPlan } from "../../engine/hint-plan.ts";
 import {
@@ -57,6 +42,7 @@ import {
   type CellColor,
   COL_MASK,
   colorBits,
+  DIFF_NORMAL,
   F_BOUND,
   F_EMPTY,
   F_SHADE,
@@ -198,13 +184,12 @@ export function bricksValidate(
   w: number,
   h: number,
   strict: boolean,
-  errors?: Uint16Array | null,
+  errors: Uint16Array | null = null,
 ): BricksStatus {
-  if (errors) errors.fill(0);
-  let ret: BricksStatus = "complete";
-  ret = worse(validateThrees(w, h, grid, errors ?? null), ret);
-  ret = worse(validateGravity(w, h, grid, errors ?? null), ret);
-  ret = worse(validateCounts(w, h, grid, errors ?? null), ret);
+  errors?.fill(0);
+  let ret = validateThrees(w, h, grid, errors);
+  ret = worse(validateGravity(w, h, grid, errors), ret);
+  ret = worse(validateCounts(w, h, grid, errors), ret);
 
   if (strict) {
     const s = w * h;
@@ -292,16 +277,11 @@ export function solveGame(
 
   let ret = bricksValidate(grid, w, h, strict);
   while (ret === "unfinished") {
-    if (solverTry(grid, w, h)) {
-      ret = bricksValidate(grid, w, h, strict);
-      continue;
-    }
-    if (maxdiff < 1 /* DIFF_NORMAL */) break;
-    if (solverRecurse(grid, w, h, maxdiff)) {
-      ret = bricksValidate(grid, w, h, strict);
-      continue;
-    }
-    break;
+    const progressed =
+      solverTry(grid, w, h) > 0 ||
+      (maxdiff >= DIFF_NORMAL && solverRecurse(grid, w, h, maxdiff) > 0);
+    if (!progressed) break;
+    ret = bricksValidate(grid, w, h, strict);
   }
   return ret;
 }
@@ -309,11 +289,10 @@ export function solveGame(
 // --- play-facing helpers ----------------------------------------------------
 
 /**
- * The cells currently violating a rule, with their localized flags (design
- * D7). Bricks' violations are intrinsic to the current grid — the rule
- * validator localizes every one — so findMistakes runs the same validity
- * pass rather than re-solving. Check & Save hard-blocks on a non-empty
- * result and the render overlay reuses the flags.
+ * The cells currently violating a rule, with their localized flags. Bricks'
+ * violations are intrinsic to the current grid, so this runs the validity pass
+ * rather than re-solving. Check & Save hard-blocks on a non-empty result and
+ * the render overlay reuses the flags.
  */
 export function findMistakes(state: BricksState): BricksMistake[] {
   const { grid, w, h } = state;
@@ -329,11 +308,9 @@ export function findMistakes(state: BricksState): BricksMistake[] {
 // --- hint deduction (a recording projection of the same solver) -------------
 
 /**
- * Why the opposite color is impossible at a forced cell. The first five are
- * single-cell (Easy-tier) contradictions read straight off the rejected
- * trial's `FE_*` flags; `chain` is the recursive-lookahead tier (assuming a
- * color leads, through forced consequences, to a contradiction). All cell
- * fields are padded-grid indices.
+ * Why the opposite color is impossible at a forced cell: a single-cell
+ * (Easy-tier) contradiction read off the rejected trial's `FE_*` flags, with
+ * `localBreak` the unclassified fallback. All cell fields are padded indices.
  */
 export type BricksReason =
   | { kind: "three"; cells: number[] } // shading the target makes 3 shaded in a row
@@ -364,7 +341,7 @@ function shadeRun(grid: Uint16Array, w: number, target: number): number[] {
   const x0 = target % w;
   let lo = x0;
   let hi = x0;
-  while (lo - 1 >= 0 && (grid[y * w + lo - 1] & COL_MASK) === F_SHADE) lo--;
+  while (lo > 0 && (grid[y * w + lo - 1] & COL_MASK) === F_SHADE) lo--;
   while (hi + 1 < w && (grid[y * w + hi + 1] & COL_MASK) === F_SHADE) hi++;
   const cells: number[] = [];
   for (let x = lo; x <= hi; x++) cells.push(y * w + x);
@@ -462,17 +439,15 @@ export function nextForcedMove(
 }
 
 /** Runaway/UX cap on plan length — the player rarely follows more than a few
- * before diverging, and a recompute yields the next batch (design D1). */
+ * before diverging, and a recompute yields the next batch. */
 export const HINT_PLAN_MAX = 40;
 
 /**
  * The ordered plan of forced moves from `grid0` (the player's board): one cell
- * per step, Easy-tier preferred, the recursive rung only at a stall, each with
- * its reason. Deterministic, so it is recompute-stable. Caller guarantees the
- * board is consistent with the unique solution, so every move is correct.
+ * per step, each with its reason. Deterministic, so it is recompute-stable.
+ * Caller guarantees the board is consistent with the unique solution, so every
+ * move is correct.
  */
-// No `maxdiff` parameter any more: it existed only to gate the recursive rung,
-// which the hint no longer runs, and neither caller ever passed one.
 export function deduceBricksPlan(
   grid0: Uint16Array,
   w: number,
@@ -482,17 +457,9 @@ export function deduceBricksPlan(
     board: grid0.slice(),
     status: (grid) => bricksValidate(grid, w, h, true),
     incomplete: "unfinished",
-    // **Single-cell refutations only** (`audit-guessing-tier-names`, design
-    // D4/D8). `nextForcedMoveRecurse` assumes a color and *solves the rest of
-    // the board* from it — a multi-step search with backtracking, which the
-    // collection classes as non-deductive and never lets a hint present as a
-    // technique. Where it would have fired the plan ends and `hint` refuses.
-    //
-    // `solveGame` keeps the rung, so no board changed and the byte-match
-    // differential is untouched. Bricks' *tier* naming is the part still open:
-    // the trial gates its `Normal` tier, which by the rule should not be able to
-    // require it — see the change's task 2c.3, which needs a design pass
-    // because `Tricky` sits declared-but-ungenerable above it.
+    // Single-cell refutations only. The recursive rung assumes a color and
+    // *solves the rest of the board* from it, a search a hint never presents as
+    // a technique, so where only it would fire the plan ends and `hint` refuses.
     next: (grid) => nextForcedMove(grid, w, h),
     apply: (grid, move) => {
       grid[move.index] = colorBits(move.to);

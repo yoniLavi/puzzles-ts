@@ -4,19 +4,15 @@
  * `puzzles/unreleased/bricks.c`.
  *
  * The hexagon is drawn by shearing the padded parallelogram: each row is
- * offset rightward by `tilesize / 2` (`tx += (i/w) * ts/2`), so every
- * geometric difference from a plain grid comes out of that one offset plus
- * the `F_BOUND` mask (which cells are skipped). Bricks is compiled with
- * `NARROW_BORDERS` (webapp.cmake), so `BORDER = 0` and `computeSize` adds one
- * pixel for the right/bottom edges.
+ * offset rightward by half a tile per row, so every geometric difference from
+ * a plain grid comes out of that one offset plus the `F_BOUND` mask. Bricks
+ * uses upstream's `NARROW_BORDERS` layout: no border, and `computeSize` adds
+ * one pixel for the right/bottom edges.
  *
  * Rule-violation marks (three-in-a-row bars, gravity diamonds, over-count red
- * clues) are display of the same validity pass `findMistakes` exposes (design
- * D7). Upstream shows them **live only while a drag is in flight**; a
- * committed board carries none until Check & Save asks. So this renderer draws
- * error marks from either the in-flight drag preview *or* the `mistakes`
- * overlay the midend passes after a Check & Save — never on a plain committed
- * frame, matching upstream.
+ * clues) display the validity pass `findMistakes` exposes. As upstream, they
+ * show live only while a drag is in flight; a committed board carries none
+ * until Check & Save passes the `mistakes` overlay.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -44,7 +40,6 @@ import {
   F_BOUND,
   F_EMPTY,
   F_SHADE,
-  F_UNSHADE,
   FE_CURSOR,
   FE_ERROR,
   FE_LINE_LEFT,
@@ -93,17 +88,14 @@ const evenTs = (ts: number): number => ts & ~1;
 
 export function computeSize(p: BricksParams, ts0: number): Size {
   const ts = evenTs(ts0);
-  // *x = w*ts + ts/2 + 1 ; *y = h*ts + 1 (2*BORDER = 0, +1 for the edges).
   return { w: p.w * ts + (ts >> 1) + 1, h: p.h * ts + 1 };
 }
 
-/** The per-frame origin (upstream `game_set_offsets`): shift left so the
- * sheared rows center in the canvas. Shared with `interpretMove` so pointer
- * mapping and drawing agree. */
+/** The per-frame origin (upstream `game_set_offsets`): shift left past the
+ * ⌈h/2⌉ − 1 padding columns (`gridSize`) so the sheared rows center in the
+ * canvas. Shared with `interpretMove` so pointer mapping and drawing agree. */
 export function offsets(h: number, ts: number): { ox: number; oy: number } {
-  let ox = -(((h / 2) | 0) - 1) * ts;
-  if (h & 1) ox -= ts;
-  return { ox, oy: 0 };
+  return { ox: (1 - Math.ceil(h / 2)) * ts, oy: 0 };
 }
 
 // --- draw state -------------------------------------------------------------
@@ -190,20 +182,14 @@ function drawTile(
   ty: number,
   n: number,
 ): void {
-  // The forced cell keeps its own color and is **ringed** below. In a game
-  // whose move is "shade this cell or rule it out", a solid fill says with the
-  // board what the narration is still proposing — and the player still has to
-  // apply it.
-  const col =
-    n & F_BOUND
-      ? COL_MIDLIGHT
-      : (n & COL_MASK) === F_SHADE
-        ? COL_SHADE
-        : (n & COL_MASK) === F_UNSHADE || !(n & COL_MASK)
-          ? COL_HIGHLIGHT
-          : COL_MIDLIGHT;
-
-  dr.drawRect({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 }, col);
+  // The forced cell keeps its own color and is **ringed** below: in a game
+  // whose move is "shade this cell or rule it out", a solid fill would say with
+  // the board what the narration is still proposing. (`redraw` never passes a
+  // bound cell.)
+  const color = n & COL_MASK;
+  const fill =
+    color === F_SHADE ? COL_SHADE : color === F_EMPTY ? COL_MIDLIGHT : COL_HIGHLIGHT;
+  dr.drawRect({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 }, fill);
 
   // Square border.
   dr.drawPolygon(
@@ -230,7 +216,7 @@ function drawTile(
   const cy = ty + (ts >> 1);
 
   // Clue number, or (on a colored/error cell) the gravity diamond.
-  if (!(n & (COL_MASK | F_BOUND))) {
+  if (!color) {
     const num = n & NUM_MASK;
     dr.drawText(
       { x: cx, y: cy },
@@ -255,14 +241,9 @@ function drawTile(
   // Evidence ring: an inset COL_HINT_CELL outline that leaves the cell's own
   // content (shade / clue) visible beneath it.
   if (n & HINT_EVID) {
-    const t = Math.max(2, (ts / 12) | 0);
     const m = (ts / 12) | 0;
-    const in0 = m;
-    const inSz = ts - 2 * m;
-    dr.drawRect({ x: tx + in0, y: ty + in0, w: inSz, h: t }, COL_HINT_CELL);
-    dr.drawRect({ x: tx + in0, y: ty + in0, w: t, h: inSz }, COL_HINT_CELL);
-    dr.drawRect({ x: tx + in0, y: ty + ts - m - t, w: inSz, h: t }, COL_HINT_CELL);
-    dr.drawRect({ x: tx + ts - m - t, y: ty + in0, w: t, h: inSz }, COL_HINT_CELL);
+    const t = Math.max(2, m);
+    drawThickRectOutline(dr, tx + m, ty + m, ts - 2 * m, ts - 2 * m, t, COL_HINT_CELL);
   }
 
   // The acted-on cell's ring, on the square's own border — where the evidence
@@ -302,7 +283,6 @@ export function redraw(
   const s = w * h;
   const { ox, oy } = offsets(h, ts);
 
-  // Index the displayed hint step's target + evidence cells.
   const hl = hint?.highlights;
   const hintTarget = hl?.target ?? -1;
   const hintEvid = hl ? new Set(hl.evidence) : null;

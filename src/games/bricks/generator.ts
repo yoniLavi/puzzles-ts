@@ -4,14 +4,11 @@
  * `puzzles/unreleased/bricks.c`.
  *
  * This is the byte-match surface (bricks-differential.test.ts). The RNG draw
- * order is upstream's exactly: per outer attempt, `bricks_fill_grid` draws one
- * `randomUpto(rs, 3)` **only when** the run-limit and gravity constraints did
- * not already force an unshade (the `||` short-circuits the draw — load-
- * bearing), then `bricks_remove_numbers` draws one `shuffle` of the padded
- * cell indices. The solver is deterministic and consumes no RNG, so the desc
- * is a pure function of the seed. Because every removal is gated on the solver
- * deducing the board back to completion, one byte-match validates the
- * generator, the solver's exact deductive power, and the codec together.
+ * order is upstream's exactly: per outer attempt, `fillGrid`'s conditional
+ * draws, then one `shuffle` of the padded cell indices. The solver consumes no
+ * RNG, so the desc is a pure function of the seed, and because every removal is
+ * gated on the solver, one byte-match validates the generator, the solver's
+ * exact deductive power, and the codec together.
  */
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
@@ -122,23 +119,15 @@ function removeNumbers(
 
 export interface BricksGenerateOptions {
   /**
-   * Reproduce upstream's min-difficulty gate verbatim.
+   * Reproduce upstream's min-difficulty gate verbatim: reject a candidate only
+   * when the *Easy* solver completes it, whatever tier was requested. That is
+   * right for `DIFF_NORMAL` and vacuous for `DIFF_TRICKY`, so
+   * {@link newBricksDesc} gates on the tier actually below the one requested
+   * and refuses Tricky outright (`MAX_GENERABLE_DIFF`).
    *
-   * Upstream rejects a candidate only when the *Easy* solver completes it,
-   * whatever tier was requested — so the gate is right for Normal (Easy is the
-   * tier below it) and vacuous for Tricky, which its own documentation conceded:
-   * "Selecting Tricky difficulty may generate a puzzle at Normal difficulty
-   * instead." Measurement says *may* is always: 999 of 999 boards generated at
-   * Tricky are solvable at Normal, as are all four frozen C Tricky fixtures.
-   * {@link newBricksDesc} therefore gates on the tier actually below the one
-   * requested, and Tricky is no longer offered at all — see `validateParams`.
-   *
-   * Because generation is solver-gated at every clue removal, that would change
-   * every Tricky description, costing the byte-match differential that validates
-   * the generator, the solver's exact deductive power and the codec together.
-   * This flag keeps that oracle: `bricks-differential.test.ts` sets it, so the
-   * Tricky fixtures still match the C byte-for-byte. Nothing else should ever
-   * set it — and with it unset, Tricky cannot be generated at all (below).
+   * Every clue removal is solver-gated, so that changes every Tricky desc. This
+   * flag keeps the oracle: `bricks-differential.test.ts` sets it so the Tricky
+   * fixtures still match the C byte-for-byte. Nothing else should set it.
    */
   readonly upstreamLooseGate?: boolean;
 }

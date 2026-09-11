@@ -11,7 +11,7 @@ import { LEFT_BUTTON, LEFT_DRAG, LEFT_RELEASE } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
-import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
+import type { ChangeNotification, GameStatus, Point } from "../../engine/types.ts";
 import cReference from "./__fixtures__/bricks-c-reference.json" with { type: "json" };
 import { newBricksDesc } from "./generator.ts";
 import { bricksGame } from "./index.ts";
@@ -54,11 +54,7 @@ const FIX_ID = `${encodeParams(FIX_PARAMS, true)}:${FIX.desc}`;
 const TS = 48; // PREFERRED_TILE_SIZE, already even
 
 /** Pixel center of padded-grid cell (col, row) at the default tile size. */
-function center(
-  state: BricksState,
-  col: number,
-  row: number,
-): { x: number; y: number } {
+function center(state: BricksState, col: number, row: number): Point {
   const { ox, oy } = offsets(state.h, TS);
   const tx = col * TS + ox + row * (TS >> 1);
   const ty = row * TS + oy;
@@ -314,9 +310,8 @@ describe("bricks generator", () => {
     }
   });
 
-  // The tier gate (grade-difficulty-tiers-honestly). Upstream probed at Easy
-  // whatever tier was asked for, so Normal was gated correctly by accident and
-  // Tricky not at all.
+  // The tier gate. Upstream probed at Easy whatever tier was asked for, so
+  // Normal was gated correctly by accident and Tricky not at all.
   describe("difficulty tiers bind", () => {
     for (const [w, h] of [
       [7, 6],
@@ -357,12 +352,10 @@ describe("bricks generator", () => {
       ]);
     });
 
-    // `audit-guessing-tier-names` D11 dropped upstream's third tier from
-    // `DIFF_NAMES`, so `difficulty-contract.test.ts` — which iterates the
-    // *declared* tiers — no longer covers it. This is where that guarantee
-    // lives now, and it is the whole of what a dropped name must not break: the
-    // difficulty character still round-trips, so no game ID or saved game
-    // changes meaning.
+    // `DIFF_NAMES` does not name upstream's third tier, so
+    // `difficulty-contract.test.ts`, which iterates the declared tiers, does
+    // not cover it. This does: the difficulty character still round-trips, so
+    // no game ID or saved game changes meaning.
     it("still round-trips the unnamed third tier through a game ID", () => {
       const p = decodeParams("10x8dt");
       expect(p.diff).toBe(DIFF_TRICKY);

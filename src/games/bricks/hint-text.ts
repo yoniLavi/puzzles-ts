@@ -10,8 +10,8 @@
  * minus the target), so a sentence is written against what the player can see.
  * Every branch that has a second mark ties "this cell" to it, because with a
  * solid target *and* a ring on screen a bare deictic points at neither
- * (`disambiguate-hint-deixis`; the tie is geometric, never a color name —
- * `docs/games/hints.md` § "Two marks on the board"). The relations asserted
+ * (the tie is geometric, never a color name — `docs/games/hints.md` § "Two
+ * marks on the board"). The relations asserted
  * below are the ones the solver guarantees, checked against a sweep of ~55k
  * deductions over ~4,800 partial positions of the fixture boards: `shadeRun`
  * never leaves the target's row and is contiguous through it (so the target
@@ -28,8 +28,8 @@ export const say = {
     "Shading this cell, next to the ringed shaded bricks, would make three in a row, so it must stay clear.",
 
   // A ringed cell below is an unshaded brick *or a clue* — `validateGravity`
-  // masks a clue down to no color, so a clue supports nothing (seen live:
-  // the opener's ring is a `4`). "Isn't a shaded brick" therefore says it
+  // masks a clue down to no color, so a clue supports nothing. "Isn't a
+  // shaded brick" therefore says it
   // better than "is not shaded", which reads as a mark the player could go
   // and place. An *empty* cell below does not trigger the rule at all, so
   // this branch never claims anything about one. The brick-wall corners can
@@ -42,9 +42,8 @@ export const say = {
         ? "The ringed cell below this one is all it could rest on, and it isn't a shaded brick, so this cell must stay clear."
         : "The ringed cells below this one are all it could rest on, and neither is a shaded brick, so this cell must stay clear.",
 
-  // docs/games/hints.md § "Sanity-read at the degenerate extremes": "more
-  // than its 0 shaded neighbors" came out of the running app on the opener
-  // board and is nonsense — a 0 allows none at all.
+  // "More than its 0 shaded neighbors" is nonsense: a 0 allows none at all
+  // (docs/games/hints.md § "Sanity-read at the degenerate extremes").
   /** Shading this cell over-fills the ringed clue `n`. */
   overcount: (n: number): string =>
     n === 0
@@ -60,10 +59,7 @@ export const say = {
 
   // The direct rung's *unclassified* case: one color placed, one validator
   // call, the board breaks — but at a cell none of the four named arms
-  // above matched. It used to be narrated as "following the forced
-  // consequences", which described the recursive rung that no longer feeds
-  // this reason and was never true of this one: nothing is followed, the
-  // break is right there and is ringed (`audit-guessing-tier-names`).
+  // above matched. Nothing is followed: the break is right there, ringed.
   //
   // This is the one arm with **no** guaranteed relation — `errorCells`
   // reports wherever the validator flagged the break, which need not be

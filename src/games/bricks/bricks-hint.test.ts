@@ -1,9 +1,9 @@
 /**
- * Bricks explained-hint tests (add-bricks-hint). The Easy-tier reason
- * classification is pinned on crafted minimal grids (one rule each), the
- * recursive tier on a stalled fixture, and the whole `hint()` — refusals, plan
- * stability, narration, `hintKeepTrack`, and the render overlay — on a real
- * board.
+ * Bricks explained-hint tests. The Easy-tier reason classification is pinned
+ * on crafted minimal grids (one rule each), the plan's stop where only the
+ * recursive rung progresses on a Tricky fixture, and the whole `hint()` —
+ * refusals, plan stability, narration, `hintKeepTrack`, and the render
+ * overlay — on a real board.
  */
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
@@ -126,13 +126,9 @@ describe("bricks hint — Easy-tier reason classification", () => {
 
 describe("bricks hint — where the recursive tier used to be", () => {
   it("stops at the single-cell stall instead of narrating the lookahead", () => {
-    // Replaces "finds a chain contradiction where no single-cell one exists".
-    // `audit-guessing-tier-names` took the recursive rung out of the hint (it
-    // assumes a color and *solves the rest of the board* from it — a
-    // multi-step search, never a technique a hint may teach) and deleted its
-    // recording twin. `solveGame` keeps the rung, so this asserts exactly the
-    // gap that now exists: where the board stalls for the direct rung, the
-    // plan ends and the deeper solver still finishes it.
+    // The hint never runs the recursive rung (a search, never a technique a
+    // hint may teach), but `solveGame` does: where the board stalls for the
+    // direct rung, the plan ends and the deeper solver still finishes it.
     const tricky = fixtures.find((f) => f.diff === 2) as Fixture;
     const st = newState({ w: tricky.w, h: tricky.h, diff: tricky.diff }, tricky.desc);
     const g = st.grid.slice();
@@ -140,7 +136,7 @@ describe("bricks hint — where the recursive tier used to be", () => {
     const stalled =
       nextForcedMove(g, st.w, st.h) === null &&
       bricksValidate(g, st.w, st.h, true) === "unfinished";
-    if (!stalled) return; // this fixture happened to be Easy-solvable; skip
+    expect(stalled).toBe(true);
     // The hint has nothing more to say here…
     expect(deduceBricksPlan(g, st.w, st.h)).toHaveLength(0);
     // …while the solver, which may search, still finishes the board.
@@ -240,7 +236,7 @@ describe("bricks hint — a second mark on the board is named", () => {
     }
     // Vacuity guards: a sweep that examined nothing, or that reached only the
     // one reason the openers show, would pass the assertion above while
-    // measuring nothing (`audit-guessing-tier-names` §3.2).
+    // measuring nothing.
     expect(checked).toBeGreaterThan(100);
     expect(withMark).toBeGreaterThan(100);
     expect([...kinds].sort()).toEqual([
@@ -343,8 +339,7 @@ describe("bricks hint — rendering (tier 2.5)", () => {
     // rule it out", so a fill would say with the board what the narration is
     // still proposing.
     expectRing(ops, COL_HINT);
-    // Some first-step deductions have evidence off-board (edge walls); the
-    // 7x6 easy opener's first step should carry at least one evidence cell.
+    // Evidence off-board (an edge wall) rings nothing; any other is drawn.
     const hasEvidence = ops.some((o) => o.op === "rect" && o.color === COL_HINT_CELL);
     expect(
       hasEvidence || (result.hint ? hl(result.hint).evidence.length : 0) === 0,
