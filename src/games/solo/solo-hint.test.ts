@@ -216,8 +216,11 @@ describe("solo hint", () => {
     if (!on?.ok || !off?.ok) return;
     const dupCount = (r: typeof on) =>
       r.steps.filter((s) => dupRe.test(s.explanation)).length;
-    expect(dupCount(off)).toBeGreaterThanOrEqual(dupCount(on));
-    expect(off.steps.length).toBeGreaterThanOrEqual(on.steps.length);
+    // On, each placement's own `autoElim` does the cleanup, so the plan never
+    // teaches it; off, the plan does.
+    expect(dupCount(on)).toBe(0);
+    expect(dupCount(off)).toBeGreaterThan(0);
+    expect(off.steps.length).toBeGreaterThan(on.steps.length);
   });
 
   it("narrates a hidden single by its region, never as a naked single", () => {
@@ -247,6 +250,7 @@ describe("solo hint", () => {
   });
 
   it("a naked-single narration only ever appears on a genuine one-candidate cell", () => {
+    let checked = 0;
     for (const seed of ["nk0", "nk1", "nk2", "nk3"]) {
       const { st, aux } = gen(ADV, seed);
       let state: SoloState = st;
@@ -266,10 +270,12 @@ describe("solo hint", () => {
             (n) => pen & (1 << n),
           ).length;
           expect(ncand, `naked-single narration on a ${ncand}-candidate cell`).toBe(1);
+          checked++;
         }
         state = soloGame.executeMove(state, step.move);
       }
     }
+    expect(checked).toBeGreaterThan(0);
   });
 
   it("teaches an X-diagonal deduction on an X board", () => {

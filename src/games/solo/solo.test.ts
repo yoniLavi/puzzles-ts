@@ -90,15 +90,11 @@ describe("solo solve", () => {
     expect(checkValid(s.cr, s.blocks, s.killerData, s.xtype, s.grid)).toBe(true);
   });
 
-  // **The case above cannot fail on the bug this one exists for.** It deals from
-  // a `params:desc` id, where the midend holds no `aux`, so `solve` takes the
-  // re-derive-from-givens path. `aux` exists only on a board the midend
-  // *generated* — the New game button, and any `params#seed` id — and that path
-  // decoded `encodeSolveMove`'s comma-separated payload one character per cell,
-  // turning every separator into `,` − `0` = −4. Half of every generated board,
-  // the fixed clues included, and the move sets `completed` regardless, so the
-  // app reported a solved puzzle over a corrupt grid. Every Solo test dealt from
-  // a desc id, which is why sixteen presets shipped it.
+  // **The case above cannot reach the aux path.** It deals from a `params:desc`
+  // id, where the midend holds no `aux`, so `solve` re-derives from the givens.
+  // `aux` exists only on a board the midend *generated* (New game, or any
+  // `params#seed` id), and a misread payload still sets `completed`, so only a
+  // generated board shows whether the solved grid is actually valid.
   it("solve fills a valid grid on a *generated* board, where aux is present", () => {
     for (const preset of leafPresets(soloGame.presets())) {
       const me = new Midend(soloGame);

@@ -14,10 +14,9 @@
  * The block partition(s) and given cells are immutable (shared by reference);
  * the working `grid` and `pencil` bitmaps are cloned per move.
  *
- * Faithful transcription of `solo.c`'s codecs — verified by the byte-match
- * differential, NOT by re-deriving semantics (the block-structure run-length
- * encoding has subtle 'z' handling that must match `solo.c` exactly; do not copy
- * Keen's TS port, whose convention differs).
+ * The codecs transcribe `solo.c`'s and are held to it by the byte-match
+ * differential: the block-structure run-length encoding's 'z' handling must
+ * match `solo.c` exactly, so do not copy Keen's, whose convention differs.
  */
 
 import { tierNames } from "../../engine/difficulty.ts";
@@ -26,13 +25,12 @@ import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 
 // --- difficulty (standard axis) --------------------------------------------
-// solo_diffchars "tbiaeu"; the public encoding writes `d<char>` (dt = default,
-// omitted). DIFF_AMBIGUOUS/IMPOSSIBLE are solver return sentinels, not params.
+// DIFF_AMBIGUOUS and DIFF_IMPOSSIBLE are solver verdicts, not params.
 
-export const DIFF_BLOCK = 0; // "Trivial"
-export const DIFF_SIMPLE = 1; // "Basic"
-export const DIFF_INTERSECT = 2; // "Intermediate"
-export const DIFF_SET = 3; // "Advanced"
+export const DIFF_BLOCK = 0; // "Easy"
+export const DIFF_SIMPLE = 1; // "Normal"
+export const DIFF_INTERSECT = 2; // "Tricky"
+export const DIFF_SET = 3; // "Hard"
 export const DIFF_EXTREME = 4; // "Extreme"
 export const DIFF_RECURSIVE = 5; // "Unreasonable"
 export const DIFF_AMBIGUOUS = 6;
@@ -41,23 +39,17 @@ export const DIFFCOUNT = 6; // number of selectable difficulties
 
 export const DIFF_NAMES = tierNames(DIFFCOUNT, { search: true });
 
-export function diffName(level: number): string {
-  return DIFF_NAMES[level] ?? "Basic";
-}
+/** `solo_diffchars`: the public encoding writes a tier as `d<char>`. */
+const DIFF_CHARS = "tbiaeu";
 
 // --- killer difficulty (independent axis) ----------------------------------
-// kdiff is not part of the public param encoding (fixed per preset/config).
+// kdiff is fixed per preset, so it has neither a param encoding nor display
+// names.
 
 export const DIFF_KSINGLE = 0;
 export const DIFF_KMINMAX = 1;
 export const DIFF_KSUMS = 2;
 export const DIFF_KINTERSECT = 3;
-export const DIFFCOUNT_KILLER = 4;
-
-// No `kdiffName`: the killer axis is fixed per preset and never shown, so the
-// name table it used to carry had no consumer anywhere in the tree — found and
-// removed by `adopt-conventional-tier-names` while surveying tier names. The
-// `DIFF_K*` constants above are live; only the display names were dead.
 
 // --- symmetry --------------------------------------------------------------
 
@@ -169,54 +161,26 @@ export function defaultParams(): SoloParams {
   };
 }
 
+/** `encode_params`' symmetry suffixes; the default, 2-way rotation, has none. */
+const SYMM_CODES: Record<number, string> = {
+  [SYMM_NONE]: "a",
+  [SYMM_ROT4]: "r4",
+  [SYMM_REF2]: "m2",
+  [SYMM_REF2D]: "md2",
+  [SYMM_REF4]: "m4",
+  [SYMM_REF4D]: "md4",
+  [SYMM_REF8]: "m8",
+};
+
 /** Faithful to `encode_params`. */
 export function encodeParams(p: SoloParams, full: boolean): string {
   let str = p.r > 1 ? `${p.c}x${p.r}` : `${p.c}j`;
   if (p.xtype) str += "x";
   if (p.killer) str += "k";
   if (full) {
-    switch (p.symm) {
-      case SYMM_REF8:
-        str += "m8";
-        break;
-      case SYMM_REF4:
-        str += "m4";
-        break;
-      case SYMM_REF4D:
-        str += "md4";
-        break;
-      case SYMM_REF2:
-        str += "m2";
-        break;
-      case SYMM_REF2D:
-        str += "md2";
-        break;
-      case SYMM_ROT4:
-        str += "r4";
-        break;
-      // SYMM_ROT2 is the default and omitted.
-      case SYMM_NONE:
-        str += "a";
-        break;
-    }
-    switch (p.diff) {
-      // DIFF_BLOCK ("dt") is the default and omitted.
-      case DIFF_SIMPLE:
-        str += "db";
-        break;
-      case DIFF_INTERSECT:
-        str += "di";
-        break;
-      case DIFF_SET:
-        str += "da";
-        break;
-      case DIFF_EXTREME:
-        str += "de";
-        break;
-      case DIFF_RECURSIVE:
-        str += "du";
-        break;
-    }
+    str += SYMM_CODES[p.symm] ?? "";
+    // The default tier, `dt`, is omitted.
+    if (p.diff !== DIFF_BLOCK && DIFF_CHARS[p.diff]) str += `d${DIFF_CHARS[p.diff]}`;
   }
   return str;
 }
@@ -236,8 +200,6 @@ export function decodeParams(s: string): SoloParams {
 
   let seenR = false;
   ret.c = ret.r = Number.parseInt(s, 10) || 0;
-  ret.xtype = false;
-  ret.killer = false;
   skipDigits();
   if (s[i] === "x") {
     i++;
@@ -272,31 +234,10 @@ export function decodeParams(s: string): SoloParams {
       if (sc === "a") ret.symm = SYMM_NONE;
     } else if (ch === "d") {
       i++;
-      switch (s[i]) {
-        case "t":
-          i++;
-          ret.diff = DIFF_BLOCK;
-          break;
-        case "b":
-          i++;
-          ret.diff = DIFF_SIMPLE;
-          break;
-        case "i":
-          i++;
-          ret.diff = DIFF_INTERSECT;
-          break;
-        case "a":
-          i++;
-          ret.diff = DIFF_SET;
-          break;
-        case "e":
-          i++;
-          ret.diff = DIFF_EXTREME;
-          break;
-        case "u":
-          i++;
-          ret.diff = DIFF_RECURSIVE;
-          break;
+      const diff = DIFF_CHARS.indexOf(s[i]);
+      if (diff >= 0) {
+        i++;
+        ret.diff = diff;
       }
     } else {
       i++; // eat unknown character
@@ -384,12 +325,9 @@ export function encodeGrid(grid: ArrayLike<number>, area: number): string {
       run++;
     } else {
       if (run) {
-        while (run > 0) {
-          let c = "a".charCodeAt(0) - 1 + run;
-          if (run > 26) c = "z".charCodeAt(0);
-          p += String.fromCharCode(c);
-          run -= c - ("a".charCodeAt(0) - 1);
-        }
+        // A run of blanks is a letter, `a` = 1 to `z` = 26, as many as it takes.
+        for (; run > 26; run -= 26) p += "z";
+        p += String.fromCharCode(96 + run);
       } else if (p.length > 0 && n > 0) {
         p += "_";
       }
@@ -408,7 +346,6 @@ export function specToGrid(
   desc: string,
   start: number,
   grid: Int8Array | Int32Array,
-  _area: number,
 ): number {
   let i = start;
   let idx = 0;
@@ -465,43 +402,40 @@ export function validateGridDesc(
 
 // --- block-structure codec -------------------------------------------------
 
+/** The two cells either side of block-structure edge `i`: first the edges
+ * between horizontal neighbors, row by row, then those between vertical
+ * neighbors, column by column. */
+function edgeCells(i: number, cr: number): [number, number] {
+  if (i < cr * (cr - 1)) {
+    const p0 = ((i / (cr - 1)) | 0) * cr + (i % (cr - 1));
+    return [p0, p0 + 1];
+  }
+  const p0 = (i % (cr - 1)) * cr + ((i / (cr - 1)) | 0) - cr;
+  return [p0, p0 + cr];
+}
+
 /** Faithful to `encode_block_structure_desc`. */
 export function encodeBlockStructureDesc(cr: number, blocks: BlockStructure): string {
   let p = "";
   let currrun = 0;
   const A = "a".charCodeAt(0);
   const total = 2 * cr * (cr - 1);
+  const isEdge = (i: number): boolean => {
+    const [p0, p1] = edgeCells(i, cr);
+    return blocks.whichblock[p0] !== blocks.whichblock[p1];
+  };
+  // `i === total` is a virtual edge that ends the final run.
   for (let i = 0; i <= total; i++) {
-    let edge: boolean;
-    if (i === total) {
-      edge = true; // terminating virtual edge
-    } else {
-      let p0: number;
-      let p1: number;
-      if (i < cr * (cr - 1)) {
-        const y = (i / (cr - 1)) | 0;
-        const x = i % (cr - 1);
-        p0 = y * cr + x;
-        p1 = y * cr + x + 1;
-      } else {
-        const x = ((i / (cr - 1)) | 0) - cr;
-        const y = i % (cr - 1);
-        p0 = y * cr + x;
-        p1 = (y + 1) * cr + x;
-      }
-      edge = blocks.whichblock[p0] !== blocks.whichblock[p1];
-    }
-    if (edge) {
-      while (currrun > 25) {
-        p += "z";
-        currrun -= 25;
-      }
-      if (currrun) p += String.fromCharCode(A - 1 + currrun);
-      else p += "_";
-      currrun = 0;
-    } else {
+    if (i < total && !isEdge(i)) {
       currrun++;
+      continue;
     }
+    while (currrun > 25) {
+      p += "z";
+      currrun -= 25;
+    }
+    p += currrun ? String.fromCharCode(A - 1 + currrun) : "_";
+    currrun = 0;
   }
   return p;
 }
@@ -511,13 +445,11 @@ export function encodeBlockStructureDesc(cr: number, blocks: BlockStructure): st
  * an error, and the index past the spec. Faithful to `spec_to_dsf`.
  *
  * Quirk, transcribed verbatim: encode emits `'z'` for a run of **25** non-edges
- * (`encode_block_structure_desc`'s `while (currrun > 25)`), but decode reads
- * `'z'` as `c = 26` with `adv = (c != 26)` (no following edge) — so the codec is
- * NOT a perfect inverse for a non-edge run ≥ 26. `solo.c` never produces such a
- * run (sub-blocks and killer cages are compact 2-D regions, so runs stay small),
- * so this never bites in practice; we keep the asymmetry so the desc matches the
- * C reference byte-for-byte. Do NOT "fix" decode to 25 — that would diverge from
- * C-generated descs.
+ * (`while (currrun > 25)`), but decode reads `'z'` as 26 non-edges with no
+ * following edge, so the codec is not an inverse for a non-edge run ≥ 26.
+ * `solo.c` never produces one (sub-blocks and cages are compact, so runs stay
+ * short). The asymmetry stays so descs match the C reference byte-for-byte: do
+ * not "fix" decode to 25.
  */
 export function specToDsf(
   desc: string,
@@ -538,7 +470,7 @@ export function specToDsf(
     else return { dsf: null, error: "Invalid character in game description", next: i };
     i++;
 
-    const adv = c !== 26; // 'z' is a special case (25 non-edges, no following edge)
+    const adv = c !== 26; // 'z' has no following edge: the quirk above
     while (c-- > 0) {
       if (pos >= limit)
         return {
@@ -546,19 +478,7 @@ export function specToDsf(
           error: "Too much data in block structure specification",
           next: i,
         };
-      let p0: number;
-      let p1: number;
-      if (pos < cr * (cr - 1)) {
-        const y = (pos / (cr - 1)) | 0;
-        const x = pos % (cr - 1);
-        p0 = y * cr + x;
-        p1 = y * cr + x + 1;
-      } else {
-        const x = ((pos / (cr - 1)) | 0) - cr;
-        const y = pos % (cr - 1);
-        p0 = y * cr + x;
-        p1 = (y + 1) * cr + x;
-      }
+      const [p0, p1] = edgeCells(pos, cr);
       dsf.merge(p0, p1);
       pos++;
     }
@@ -656,19 +576,7 @@ export interface SoloState {
 }
 
 export function cloneState(s: SoloState): SoloState {
-  return {
-    params: s.params,
-    cr: s.cr,
-    xtype: s.xtype,
-    killer: s.killer,
-    blocks: s.blocks, // immutable, shared
-    killerData: s.killerData, // immutable, shared
-    grid: s.grid.slice(),
-    pencil: s.pencil.slice(),
-    immutable: s.immutable, // immutable, shared
-    completed: s.completed,
-    cheated: s.cheated,
-  };
+  return { ...s, grid: s.grid.slice(), pencil: s.pencil.slice() };
 }
 
 // --- desc codec (assembly) -------------------------------------------------
@@ -711,7 +619,7 @@ export function newState(p: SoloParams, desc: string): SoloState {
   const area = cr * cr;
 
   const grid = new Int8Array(area);
-  let i = specToGrid(desc, 0, grid, area);
+  let i = specToGrid(desc, 0, grid);
   const immutable = new Uint8Array(area);
   for (let k = 0; k < area; k++) if (grid[k] !== 0) immutable[k] = 1;
 
@@ -735,7 +643,7 @@ export function newState(p: SoloParams, desc: string): SoloState {
     i = next;
     i++; // skip comma
     const kgrid = new Int32Array(area);
-    i = specToGrid(desc, i, kgrid, area);
+    i = specToGrid(desc, i, kgrid);
     killerData = { kblocks, kgrid };
   }
 
@@ -768,38 +676,23 @@ export function checkValid(
   grid: ArrayLike<number>,
 ): boolean {
   const used = new Uint8Array(cr);
-  const allUsed = (): boolean => {
-    for (let n = 0; n < cr; n++) if (!used[n]) return false;
-    return true;
+  const holdsEveryDigit = (cells: ArrayLike<number>): boolean => {
+    used.fill(0);
+    for (let k = 0; k < cells.length; k++) {
+      const v = grid[cells[k]];
+      if (v > 0 && v <= cr) used[v - 1] = 1;
+    }
+    return !used.includes(0);
   };
+  const line = (cell: (k: number) => number): number[] =>
+    Array.from({ length: cr }, (_, k) => cell(k));
 
-  // Rows.
-  for (let y = 0; y < cr; y++) {
-    used.fill(0);
-    for (let x = 0; x < cr; x++) {
-      const v = grid[y * cr + x];
-      if (v > 0 && v <= cr) used[v - 1] = 1;
-    }
-    if (!allUsed()) return false;
+  for (let i = 0; i < cr; i++) {
+    if (!holdsEveryDigit(line((k) => i * cr + k))) return false; // row i
+    if (!holdsEveryDigit(line((k) => k * cr + i))) return false; // column i
   }
-  // Columns.
-  for (let x = 0; x < cr; x++) {
-    used.fill(0);
-    for (let y = 0; y < cr; y++) {
-      const v = grid[y * cr + x];
-      if (v > 0 && v <= cr) used[v - 1] = 1;
-    }
-    if (!allUsed()) return false;
-  }
-  // Blocks.
-  for (let b = 0; b < blocks.nrBlocks; b++) {
-    used.fill(0);
-    for (const cell of blocks.blocks[b]) {
-      const v = grid[cell];
-      if (v > 0 && v <= cr) used[v - 1] = 1;
-    }
-    if (!allUsed()) return false;
-  }
+  for (let b = 0; b < blocks.nrBlocks; b++)
+    if (!holdsEveryDigit(blocks.blocks[b])) return false;
   // Killer cages: at most one of everything, plus correct sum when clued.
   if (killerData) {
     for (let b = 0; b < killerData.kblocks.nrBlocks; b++) {
@@ -814,22 +707,11 @@ export function checkValid(
       if (checkKillerCageSum(killerData, grid, b) !== 1) return false;
     }
   }
-  // Diagonals.
-  if (xtype) {
-    used.fill(0);
-    for (let i = 0; i < cr; i++) {
-      const v = grid[diag0(i, cr)];
-      if (v > 0 && v <= cr) used[v - 1] = 1;
-    }
-    if (!allUsed()) return false;
-    used.fill(0);
-    for (let i = 0; i < cr; i++) {
-      const v = grid[diag1(i, cr)];
-      if (v > 0 && v <= cr) used[v - 1] = 1;
-    }
-    if (!allUsed()) return false;
-  }
-  return true;
+  return (
+    !xtype ||
+    (holdsEveryDigit(line((k) => diag0(k, cr))) &&
+      holdsEveryDigit(line((k) => diag1(k, cr))))
+  );
 }
 
 export function status(s: SoloState): "solved" | "ongoing" {
@@ -864,11 +746,11 @@ export interface SoloUi {
   cursor: GridCursor;
   pencilMode: boolean;
   cursorFromKeyboard: boolean;
-  /** Pref (default off, upstream `PREF_PENCIL_KEEP_HIGHLIGHT`). */
+  /** Pref (default on; upstream's `PREF_PENCIL_KEEP_HIGHLIGHT` defaults off). */
   pencilKeepHighlight: boolean;
   /** Pref (default on): right-click toggles a sticky pencil mode. */
   pencilSticky: boolean;
-  /** Pref (default on): a placement strikes that digit from its row/col/block. */
+  /** Pref (default off): a placement strikes that digit from its row/col/block. */
   autoPencil: boolean;
 }
 
@@ -879,9 +761,8 @@ export function newUi(_state: SoloState): SoloUi {
     cursorFromKeyboard: false,
     pencilKeepHighlight: true,
     pencilSticky: true,
-    // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its
-    // row/column/block notes. Notes clear only via the mark-all button or a hint;
-    // opt back in through the "auto-pencil" pref.
+    // Off by owner decision: notes clear only via the mark-all button or a hint
+    // unless the player opts in through the "auto-pencil" pref.
     autoPencil: false,
   };
 }

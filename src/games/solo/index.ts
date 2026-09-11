@@ -60,17 +60,9 @@ import {
   moveCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { ConfigValues, KeyLabel, Point, Size } from "../../engine/types.ts";
 import { newSoloDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -127,21 +119,12 @@ import {
   validateParams,
 } from "./state.ts";
 
-interface Preset {
-  title: string;
-  params: SoloParams;
-}
-
-/** Faithful to `game_presets` (the non-SLOW_SYSTEM entries are always shown). */
-function soloPresets(): Preset[] {
-  // The title is **derived from the params**, not written beside them. It used
-  // to be a sixteenth-and-seventeenth copy of the tier names, and it went stale
-  // the moment `adopt-conventional-tier-names` moved them — the menu said
-  // "3x3 Intermediate" while the Custom dialog offered "Tricky", which is
-  // exactly the menu/dialog disagreement the tier-list rule exists to stop.
-  // The shape is upstream's: size (or jigsaw), then the tier, then the X-type
-  // marker; a Killer preset is named for its mode, which is what distinguishes
-  // it from the plain preset at the same tier.
+/** Upstream's `game_presets`, with its non-`SLOW_SYSTEM` entries always shown. */
+function presets(): PresetMenu<SoloParams> {
+  // The title is derived from the params, so the menu names a tier exactly as
+  // the Custom dialog does. The shape is upstream's: size (or jigsaw), then the
+  // tier, then the X marker; a Killer preset is named for its mode, which is
+  // what distinguishes it from the plain preset at the same tier.
   const P = (
     c: number,
     r: number,
@@ -150,7 +133,7 @@ function soloPresets(): Preset[] {
     kdiff: number,
     xtype: boolean,
     killer: boolean,
-  ): Preset => {
+  ): PresetMenu<SoloParams> => {
     const size = r === 1 ? `${c} Jigsaw` : `${c}x${r}`;
     const title = killer
       ? `${size} Killer`
@@ -158,7 +141,7 @@ function soloPresets(): Preset[] {
     return { title, params: { c, r, symm, diff, kdiff, xtype, killer } };
   };
   const K = DIFF_KMINMAX;
-  return [
+  const submenu = [
     P(2, 2, SYMM_ROT2, DIFF_BLOCK, K, false, false),
     P(2, 3, SYMM_ROT2, DIFF_SIMPLE, K, false, false),
     P(3, 3, SYMM_ROT2, DIFF_BLOCK, K, false, false),
@@ -176,13 +159,7 @@ function soloPresets(): Preset[] {
     P(3, 4, SYMM_ROT2, DIFF_SIMPLE, K, false, false),
     P(4, 4, SYMM_ROT2, DIFF_SIMPLE, K, false, false),
   ];
-}
-
-function presets(): PresetMenu<SoloParams> {
-  return {
-    title: "Solo",
-    submenu: soloPresets().map((p) => ({ title: p.title, params: p.params })),
-  };
+  return { title: "Solo", submenu };
 }
 
 function inGrid(cr: number, x: number, y: number): boolean {
@@ -275,38 +252,9 @@ function interpretMove(
  * block (or diagonal when xtype) with `(x, y)` — auto-pencil cleanup on a real
  * placement. */
 function autoEliminate(state: SoloState, x: number, y: number, n: number): void {
-  const cr = state.cr;
-  const bit = ~(1 << n);
-  const wb = state.blocks.whichblock;
-  const home = wb[y * cr + x];
-  for (let k = 0; k < cr; k++) {
-    if (k !== x) state.pencil[y * cr + k] &= bit; // row
-    if (k !== y) state.pencil[k * cr + x] &= bit; // column
-  }
-  // Block (the block can extend beyond the row/column already cleared).
-  for (let i = 0; i < cr * cr; i++) {
-    if (i !== y * cr + x && wb[i] === home) state.pencil[i] &= bit;
-  }
-  if (state.xtype) {
-    const cell = y * cr + x;
-    if (onDiag0Cell(cell, cr))
-      for (let k = 0; k < cr; k++) {
-        const d = k * (cr + 1);
-        if (d !== cell) state.pencil[d] &= bit;
-      }
-    if (onDiag1Cell(cell, cr))
-      for (let k = 0; k < cr; k++) {
-        const d = (k + 1) * (cr - 1);
-        if (d !== cell) state.pencil[d] &= bit;
-      }
-  }
-}
-
-function onDiag0Cell(xy: number, cr: number): boolean {
-  return xy % (cr + 1) === 0;
-}
-function onDiag1Cell(xy: number, cr: number): boolean {
-  return xy % (cr - 1) === 0 && xy > 0 && xy < cr * cr - 1;
+  const cell = y * state.cr + x;
+  for (const { cells } of regionsOf(state, x, y))
+    for (const c of cells) if (c !== cell) state.pencil[c] &= ~(1 << n);
 }
 
 function executeMove(state: SoloState, move: SoloMove): SoloState {
@@ -362,32 +310,22 @@ function isComplete(state: SoloState): boolean {
 function solve(orig: SoloState, _curr: SoloState, aux?: string): SolveResult<SoloMove> {
   const cr = orig.cr;
   if (aux) {
-    // aux is `encodeSolveMove`'s "S<n>,<n>,…" — comma-separated, because a cell
-    // reaches 16 at 4x4 and no single character can carry that. It is NOT
-    // upstream's one-character-per-cell form, and reading it that way decoded
-    // every separator as `,` − `0` = −4: half of every generated board, the
-    // fixed clues included. It survived because `aux` exists only on a board the
-    // midend *generated* — the New game button and any `params#seed` id — while
-    // every test dealt from a `params:desc` id, where `aux` is absent and the
-    // re-derivation below runs instead.
-    const parts = aux.slice(1).split(",");
-    if (parts.length === cr * cr) {
-      const grid = parts.map(Number);
-      if (grid.every((v) => Number.isInteger(v) && v >= 1 && v <= cr)) {
-        return { ok: true, move: { type: "solve", grid } };
-      }
-    }
-    // A malformed aux is not worth failing on: the givens re-derivation below
-    // reaches the same answer from the puzzle itself.
+    // aux is `encodeSolveMove`'s "S<n>,<n>,…", comma-separated because a cell
+    // reaches 16 at 4x4; it is not upstream's one-character-per-cell form. A
+    // malformed aux falls through to re-deriving the answer from the givens.
+    const grid = aux.slice(1).split(",").map(Number);
+    if (
+      grid.length === cr * cr &&
+      grid.every((v) => Number.isInteger(v) && v >= 1 && v <= cr)
+    )
+      return { ok: true, move: { type: "solve", grid } };
   }
-  // Re-derive from the givens only.
-  const fromGivens = givensOnly(orig);
-  const { diff, grid } = solveSolo(fromGivens, DIFF_RECURSIVE, DIFF_KINTERSECT);
+  const { diff, grid } = solveSolo(givensOnly(orig), DIFF_RECURSIVE, DIFF_KINTERSECT);
   if (diff === DIFF_IMPOSSIBLE)
     return { ok: false, error: "No solution exists for this puzzle" };
   if (diff === DIFF_AMBIGUOUS)
     return { ok: false, error: "Multiple solutions exist for this puzzle" };
-  return { ok: true, move: { type: "solve", grid: Array.from(grid, (v) => v) } };
+  return { ok: true, move: { type: "solve", grid: Array.from(grid) } };
 }
 
 /** A copy of `state` with every non-given cell cleared (so the solver works
@@ -426,42 +364,37 @@ function findMistakes(state: SoloState): readonly SoloMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-/** A region's cells (reading order) — for evidence shading. */
-function regionCells(region: SoloRegion, state: SoloState): { x: number; y: number }[] {
+/** The cells of `region`, as indices in order along it. */
+function cellsOf(region: SoloRegion, state: SoloState): number[] {
   const cr = state.cr;
-  const out: { x: number; y: number }[] = [];
+  const line = (cell: (k: number) => number): number[] =>
+    Array.from({ length: cr }, (_, k) => cell(k));
   switch (region.kind) {
     case "row":
-      for (let k = 0; k < cr; k++) out.push({ x: k, y: region.index });
-      break;
+      return line((k) => region.index * cr + k);
     case "col":
-      for (let k = 0; k < cr; k++) out.push({ x: region.index, y: k });
-      break;
+      return line((k) => k * cr + region.index);
     case "block":
-      for (const c of state.blocks.blocks[region.index])
-        out.push({ x: c % cr, y: (c / cr) | 0 });
-      break;
+      return state.blocks.blocks[region.index];
     case "diag0":
-      for (let k = 0; k < cr; k++) {
-        const c = diag0(k, cr);
-        out.push({ x: c % cr, y: (c / cr) | 0 });
-      }
-      break;
+      return line((k) => diag0(k, cr));
     case "diag1":
-      for (let k = 0; k < cr; k++) {
-        const c = diag1(k, cr);
-        out.push({ x: c % cr, y: (c / cr) | 0 });
-      }
-      break;
+      return line((k) => diag1(k, cr));
   }
-  return out;
+}
+
+/** A region's cells as points — for evidence shading. */
+function regionCells(region: SoloRegion, state: SoloState): Point[] {
+  const cr = state.cr;
+  return cellsOf(region, state).map((c) => ({ x: c % cr, y: (c / cr) | 0 }));
 }
 
 /** The uniqueness regions of cell `(x, y)`, in narration-preference order (row,
- * column, sub-block, then the X diagonals it lies on). Each carries its `SoloRegion`
- * tag for naming. The single source of truth for "this cell's uniqueness regions",
- * shared by the placement classifier ({@link soloPlacementReason}), the
- * basic-region strike and the placement dup-cull, so they can never disagree. */
+ * column, sub-block, then the X diagonals it lies on), each with its
+ * `SoloRegion` tag for naming. The single source of truth for "this cell's
+ * uniqueness regions", shared by auto-pencil, the placement classifier
+ * ({@link soloPlacementReason}), the basic-region strike and the placement
+ * dup-cull, so they can never disagree. */
 function regionsOf(
   state: SoloState,
   x: number,
@@ -469,28 +402,21 @@ function regionsOf(
 ): { cells: number[]; region: SoloRegion }[] {
   const cr = state.cr;
   const cell = y * cr + x;
-  const line = (build: (k: number) => number): number[] =>
-    Array.from({ length: cr }, (_, k) => build(k));
-  const regions: { cells: number[]; region: SoloRegion }[] = [
-    { cells: line((k) => y * cr + k), region: { kind: "row", index: y } },
-    { cells: line((k) => k * cr + x), region: { kind: "col", index: x } },
+  const regions: SoloRegion[] = [
+    { kind: "row", index: y },
+    { kind: "col", index: x },
+    { kind: "block", index: state.blocks.whichblock[cell] },
   ];
-  const b = state.blocks.whichblock[cell];
-  regions.push({ cells: state.blocks.blocks[b], region: { kind: "block", index: b } });
-  if (state.xtype) {
-    if (onDiag0(cell, cr))
-      regions.push({ cells: line((k) => diag0(k, cr)), region: { kind: "diag0" } });
-    if (onDiag1(cell, cr))
-      regions.push({ cells: line((k) => diag1(k, cr)), region: { kind: "diag1" } });
-  }
-  return regions;
+  if (state.xtype && onDiag0(cell, cr)) regions.push({ kind: "diag0" });
+  if (state.xtype && onDiag1(cell, cr)) regions.push({ kind: "diag1" });
+  return regions.map((region) => ({ cells: cellsOf(region, state), region }));
 }
 
 /** Re-derive *why* a generic-`single` placement is forced, from the working board
- * (§9.3a — the recorded `place` carries a bare `single`, conflating naked and
- * positional/hidden singles): a naked single (the cell's notes collapsed to one),
- * a hidden single in a row/column/sub-block/diagonal, or a forced single (the
- * notes lag a deeper deduction). */
+ * (the recorded `place` carries a bare `single`, conflating naked and hidden
+ * singles): a naked single (the cell's notes collapsed to one), a hidden single
+ * in a row/column/sub-block/diagonal, or a forced single (the notes lag a deeper
+ * deduction). */
 function soloPlacementReason(
   wGrid: Int8Array,
   wPen: Int32Array,
@@ -559,10 +485,7 @@ function reasonArea(reason: SoloReason, state: SoloState): OrderedCell[] {
 
 /** A placement's evidence cells: a hidden single shades the whole region it
  * reasons over; a killer placement shades its cage; a naked single needs none. */
-function placementArea(
-  reason: SoloReason,
-  state: SoloState,
-): { x: number; y: number }[] {
+function placementArea(reason: SoloReason, state: SoloState): Point[] {
   if (reason.kind === "hiddenSingle") return regionCells(reason.region, state);
   if (reason.kind === "cageSingle" || reason.kind === "cageIntersect")
     return reason.cells;
@@ -708,9 +631,7 @@ function buildSteps(
   const cap = cr * cr * cr * 4 + 4;
   for (let guard = 0; guard < cap; guard++) {
     budget.tick();
-    let filled = true;
-    for (let i = 0; i < cr * cr; i++) if (!wGrid[i]) filled = false;
-    if (filled) break;
+    if (!wGrid.includes(0)) break;
 
     // 1. A naked single — the next move a human makes.
     const ns = nakedSingle(wGrid, wPen, cr);
@@ -811,15 +732,6 @@ function refreshHintStep(
   return refreshCandidateHintStep(step, state.grid, state.pencil, state.cr);
 }
 
-function flashLength(
-  from: SoloState,
-  to: SoloState,
-  _dir: number,
-  _ui: SoloUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
-}
-
 /** Solo's difficulty contract (`engine/difficulty.ts`). `solveSolo` reports the
  * difficulty reached or `DIFF_IMPOSSIBLE` / `DIFF_AMBIGUOUS`. Its `DIFF_*`
  * family has eight members and only six are tiers — `DIFF_AMBIGUOUS` and
@@ -856,13 +768,12 @@ export const soloGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  // Keys match the custom `solo` describeConfig in augmentation.ts.
-  // Mirrors upstream `solo` custom_params: read columns and rows, then
-  // fold jigsaw (`c *= r; r = 1`) — so the `jigsaw` item MUST come after
-  // the column/row items, since the midend applies `set`s in array order
-  // and jigsaw's setter reads the just-updated `c`/`r`. A stored jigsaw
-  // board is `r === 1, c === order` (upstream shows rows as 1, jigsaw
-  // checked); unchecking jigsaw leaves c/r as-is, exactly as upstream.
+  // Keys match the custom `solo` describeConfig in augmentation.ts. Upstream's
+  // `custom_params` reads columns and rows, then folds jigsaw (`c *= r; r = 1`),
+  // so the `jigsaw` item MUST come after the column/row items: the midend
+  // applies `set`s in array order and jigsaw's setter reads the new `c`/`r`. A
+  // jigsaw board is stored `r === 1, c === order`; unchecking jigsaw leaves c/r
+  // as they are, as upstream does.
   paramConfig: [
     {
       kw: "columns-of-sub-blocks",
@@ -952,14 +863,14 @@ export const soloGame: Game<
     symmetry: p.symm,
   }),
 
-  newDesc: (p, rng: RandomState) => newSoloDesc(p, rng),
+  newDesc: newSoloDesc,
   validateDesc,
   newState,
   newUi,
 
   interpretMove,
   executeMove,
-  status: (s): GameStatus => soloStatus(s),
+  status: soloStatus,
 
   solve,
   difficulty,
@@ -977,7 +888,7 @@ export const soloGame: Game<
     pencilKeepHighlightPref<SoloUi>(),
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: SoloParams, ts: number): Size => computeSize(p.c * p.r, ts),
   setTileSize,
@@ -985,7 +896,7 @@ export const soloGame: Game<
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(soloGame);

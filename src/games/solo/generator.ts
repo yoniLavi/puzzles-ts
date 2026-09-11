@@ -21,10 +21,10 @@
  *     the cage structure + cage-sum grid.
  *
  * RNG-faithful over the bit-identical `random.ts`, so the emitted desc matches
- * the C reference byte-for-byte for the same seed (no `qsort`/order-dependent
- * step exists in any variant's path — see design D5). The solver is the grading
- * oracle, so its verdict must match C exactly on every intermediate board; that
- * faithfulness lives in `solver.ts`.
+ * the C reference byte-for-byte for the same seed (no variant's path has a
+ * `qsort` or other order-dependent step). The solver is the grading oracle, so
+ * its verdict must match C's on every intermediate board; that faithfulness
+ * lives in `solver.ts`.
  */
 
 import { divvyRectangle } from "../../engine/divvy.ts";
@@ -185,10 +185,7 @@ function gridgen(
   // Fill the top row with a random permutation (free relabeling, no bias).
   const top = Array.from({ length: cr }, (_, i) => i + 1);
   shuffle(top, rng);
-  for (let x = 0; x < cr; x++) {
-    grid[x] = top[x];
-    gridgenPlace(u, x, 0, top[x]);
-  }
+  for (let x = 0; x < cr; x++) gridgenPlace(u, x, 0, top[x]);
 
   // Initialize the remaining spaces (rows 1..cr-1) with random tie-breakers.
   for (let y = 1; y < cr; y++)
@@ -378,10 +375,8 @@ function dupBlocks(b: BlockStructure): BlockStructure {
 // --- solve-move (aux) encoding ---------------------------------------------
 
 /** `encode_solve_move`: the full solution as the midend's Solve payload. */
-function encodeSolveMove(cr: number, grid: ArrayLike<number>): string {
-  const parts: string[] = [];
-  for (let i = 0; i < cr * cr; i++) parts.push(String(grid[i]));
-  return `S${parts.join(",")}`;
+function encodeSolveMove(grid: Int8Array): string {
+  return `S${grid.join(",")}`;
 }
 
 // --- new_game_desc ----------------------------------------------------------
@@ -404,7 +399,7 @@ export function newSoloDesc(
   const kgrid = p.killer ? new Int32Array(area) : null;
   const coords: number[] = [];
 
-  let blocks: BlockStructure = rectangularBlocks(2, 2); // placeholder, replaced below
+  let blocks: BlockStructure;
   let kblocks: BlockStructure | null = null;
   let aux = "";
 
@@ -412,19 +407,16 @@ export function newSoloDesc(
   while (true) {
     attempt();
 
-    // Block structure.
-    if (r === 1) {
-      const dsf = divvyRectangle(cr, cr, cr, rng);
-      blocks = blocksFromDsf(dsf, cr);
-    } else {
-      blocks = rectangularBlocks(c, r);
-    }
+    blocks =
+      r === 1
+        ? blocksFromDsf(divvyRectangle(cr, cr, cr, rng), cr)
+        : rectangularBlocks(c, r);
 
     if (p.killer) kblocks = genKillerCages(cr, rng, p.kdiff > DIFF_KSINGLE);
 
     if (!gridgen(cr, blocks, kblocks, p.xtype, grid, rng, area * area)) continue;
 
-    aux = encodeSolveMove(cr, grid);
+    aux = encodeSolveMove(grid);
 
     if (p.killer && kblocks && kgrid) {
       // Killer: grow cages from the all-size-≤2 layout, grading after each
@@ -484,14 +476,14 @@ export function newSoloDesc(
       grid2.set(grid);
       const nc = symmetries(cr, loc.x, loc.y, coords, p.symm);
       for (let j = 0; j < nc; j++) grid2[coords[2 * j + 1] * cr + coords[2 * j]] = 0;
-      runSolver(cr, blocks, kblocks, p.xtype, grid2, kgrid, dlev);
-      if (dlev.diff <= maxdiff && (!p.killer || dlev.kdiff <= maxkdiff))
+      runSolver(cr, blocks, null, p.xtype, grid2, null, dlev);
+      if (dlev.diff <= maxdiff)
         for (let j = 0; j < nc; j++) grid[coords[2 * j + 1] * cr + coords[2 * j]] = 0;
     }
 
     grid2.set(grid);
-    runSolver(cr, blocks, kblocks, p.xtype, grid2, kgrid, dlev);
-    if (dlev.diff === maxdiff && (!p.killer || dlev.kdiff === maxkdiff)) break; // found one
+    runSolver(cr, blocks, null, p.xtype, grid2, null, dlev);
+    if (dlev.diff === maxdiff) break; // found one
   }
 
   // Encode the puzzle description.

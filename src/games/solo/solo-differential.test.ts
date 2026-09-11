@@ -1,18 +1,17 @@
 /**
- * Gated C-vs-TS differential for solo (`add-solo-ts-port`).
+ * Gated C-vs-TS differential for solo.
  *
  * Solo's generator is RNG-driven over the bit-identical `random.ts` with no
- * `qsort`/order-dependent step in any of the four variants' paths (design D5),
- * so a faithful port reproduces the C desc **byte-for-byte** for the same seed —
- * the strongest bar (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"). On top of that we decode each C-published
- * board and assert the TS solver reaches the *same* (diff, kdiff) the C solver
- * recorded — the solver-gated minimizer depends on that exact agreement
- * (docs/games/solver-and-generator.md § "Solver-gated generation"), so it is the real proof the solver is faithful.
+ * `qsort` or other order-dependent step in any of the four variants' paths, so
+ * a faithful port reproduces the C desc **byte-for-byte** for the same seed
+ * (docs/games/testing.md § "Byte-match: fidelity where there is a right
+ * answer"). On top of that, each C-published board must grade to the *same*
+ * (diff, kdiff) the C solver recorded: the solver-gated minimizer depends on
+ * that exact agreement (docs/games/solver-and-generator.md § "Solver-gated
+ * generation"), so it is the real proof the solver is faithful.
  *
- * The fixture is **frozen and cannot be regenerated**. It was captured by
- * `puzzles/auxiliary/solo-trace.c` against upstream's C, under an
- * Emscripten/CMake build that `retire-c-engine` deleted along with the
- * sources and the harness — see `engine/testing/differential.ts`.
+ * The fixture is **frozen and cannot be regenerated**: the C build and trace
+ * harness that captured it are gone (see `engine/testing/differential.ts`).
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";

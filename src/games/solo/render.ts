@@ -61,7 +61,6 @@ export const PREFERRED_TILE_SIZE = 48;
 export const FLASH_TIME = 0.4;
 
 // --- palette (index-for-index with the upstream COL_* enum) ----------------
-// Must stay aligned: augmentation.ts darkens index 2 (COL_GRID) under dark mode.
 
 export const COL_BACKGROUND = 0;
 export const COL_XDIAGONALS = 1;
@@ -72,8 +71,8 @@ export const COL_HIGHLIGHT = 5;
 export const COL_ERROR = 6;
 export const COL_PENCIL = 7;
 export const COL_KILLER = 8;
-// Fork additions, appended past the upstream enum (NCOLORS = 9). Solo's only
-// dark-mode override touches index 2, so a plain append is safe.
+// Fork additions, appended past the upstream enum (NCOLORS = 9). Nothing in
+// augmentation.ts addresses Solo's colors by index, so a plain append is safe.
 export const COL_PENCIL_BODY = 9; // the yellow body of the pencil-mode indicator
 export const COL_HINT = 10; // the acted-on cell's ring (drawn in redraw's last block)
 /** The driving region's outline (same block), **and** a forcing chain's ordinal —
@@ -130,9 +129,8 @@ const HL_KSUM = 32;
 
 export const border = (ts: number): number => (ts / 2) | 0;
 export const gridExtra = (ts: number): number => Math.max((ts / 32) | 0, 1);
-export const coord = (v: number, ts: number): number => v * ts + border(ts);
 
-/** Inverse of `coord` — faithful to `interpret_move`'s `(x+TILE-BORDER)/TILE-1`. */
+/** Pixel to cell, faithful to `interpret_move`'s `(x+TILE-BORDER)/TILE-1`. */
 export function fromCoord(v: number, ts: number): number {
   return fromCoordE(v, ts, border(ts));
 }
@@ -154,10 +152,10 @@ export interface SoloDrawState {
   /** `cr²` last-drawn pencil bitmaps (-1 = never drawn). */
   pencil: Int32Array;
   /** `cr²` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
-   * evidence cell, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Owns
-   * the repack/stale/commit dance that keeps the overlay in the cache diff key
-   * (docs/games/rendering.md § "The tile cache and the diff key" — Solo keeps parallel cache arrays since digit+pencil
-   * already exceed 32 bits, so the hint is a sidecar, not a tile bit). */
+   * evidence cell, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). A
+   * sidecar rather than a tile bit, because digit and pencil already fill the
+   * two cache words (docs/games/rendering.md § "The tile cache and the diff
+   * key"). */
   hint: OverlaySidecar;
   /** `cr²` mistake-overlay sidecar (fork addition) — same dance, so Check & Save
    * repaints a cell whose tile is otherwise unchanged. */
@@ -254,13 +252,12 @@ function drawNumber(
 
   const tx = b + x * ts + 1 + ge;
   const ty = b + y * ts + 1 + ge;
+  const inner = ts - 1 - 2 * ge; // the tile's side inside its gutter
 
   let cx = tx;
   let cy = ty;
-  const tw = ts - 1 - 2 * ge;
-  const th = ts - 1 - 2 * ge;
-  let cw = tw;
-  let ch = th;
+  let cw = inner;
+  let ch = inner;
 
   // Widen the background toward same-block neighbors so the sub-block merges.
   if (x > 0 && wb[cell] === wb[cell - 1]) {
@@ -305,125 +302,56 @@ function drawNumber(
   if (x > 0 && y > 0 && wb[cell] !== wb[(y - 1) * cr + x - 1])
     dr.drawRect({ x: tx - ge, y: ty - ge, w: ge, h: ge }, COL_GRID);
   if (x + 1 < cr && y > 0 && wb[cell] !== wb[(y - 1) * cr + x + 1])
-    dr.drawRect({ x: tx + ts - 1 - 2 * ge, y: ty - ge, w: ge, h: ge }, COL_GRID);
+    dr.drawRect({ x: tx + inner, y: ty - ge, w: ge, h: ge }, COL_GRID);
   if (x > 0 && y + 1 < cr && wb[cell] !== wb[(y + 1) * cr + x - 1])
-    dr.drawRect({ x: tx - ge, y: ty + ts - 1 - 2 * ge, w: ge, h: ge }, COL_GRID);
+    dr.drawRect({ x: tx - ge, y: ty + inner, w: ge, h: ge }, COL_GRID);
   if (x + 1 < cr && y + 1 < cr && wb[cell] !== wb[(y + 1) * cr + x + 1])
-    dr.drawRect(
-      { x: tx + ts - 1 - 2 * ge, y: ty + ts - 1 - 2 * ge, w: ge, h: ge },
-      COL_GRID,
-    );
+    dr.drawRect({ x: tx + inner, y: ty + inner, w: ge, h: ge }, COL_GRID);
 
   // Killer cage borders + corners.
   const killer = state.killerData;
   if (killer) {
     const kwb = killer.kblocks.whichblock;
     const t = ge * 3;
+    const line = (x0: number, y0: number, x1: number, y1: number): void =>
+      dr.drawLine({ x: x0, y: y0 }, { x: x1, y: y1 }, colKiller, 1);
     // In jigsaw mode, offset from the cell *center* lines so adjacent cage
     // outlines line up; otherwise from the cell edge.
     const jigsaw = state.params.r === 1;
     const kcx = jigsaw ? tx : cx;
     const kcy = jigsaw ? ty : cy;
-    const kcw = jigsaw ? tw : cw;
-    const kch = jigsaw ? th : ch;
-    let kl = kcx - 1;
-    let kt = kcy - 1;
-    let kr = kcx + kcw;
-    let kb = kcy + kch;
-    let hasLeft = false;
-    let hasRight = false;
-    let hasTop = false;
-    let hasBottom = false;
-    if (x === 0 || kwb[cell] !== kwb[cell - 1]) {
-      hasLeft = true;
-      kl += t;
+    const kcw = jigsaw ? inner : cw;
+    const kch = jigsaw ? inner : ch;
+    const hasLeft = x === 0 || kwb[cell] !== kwb[cell - 1];
+    const hasRight = x + 1 >= cr || kwb[cell] !== kwb[cell + 1];
+    const hasTop = y === 0 || kwb[cell] !== kwb[cell - cr];
+    const hasBottom = y + 1 >= cr || kwb[cell] !== kwb[cell + cr];
+    const kl = kcx - 1 + (hasLeft ? t : 0);
+    const kt = kcy - 1 + (hasTop ? t : 0);
+    const kr = kcx + kcw - (hasRight ? t : 0);
+    const kb = kcy + kch - (hasBottom ? t : 0);
+    if (hasTop) line(kl, kt, kr, kt);
+    if (hasBottom) line(kl, kb, kr, kb);
+    if (hasLeft) line(kl, kt, kl, kb);
+    if (hasRight) line(kr, kt, kr, kb);
+    // Corners, only where there wasn't a full edge.
+    const cornerDiffers = (dx: number, dy: number): boolean =>
+      kwb[cell] !== kwb[(y + dy) * cr + x + dx];
+    if (x > 0 && y > 0 && !hasLeft && !hasTop && cornerDiffers(-1, -1)) {
+      line(kl, kt + t, kl + t, kt + t);
+      line(kl + t, kt, kl + t, kt + t);
     }
-    if (x + 1 >= cr || kwb[cell] !== kwb[cell + 1]) {
-      hasRight = true;
-      kr -= t;
+    if (x + 1 < cr && y > 0 && !hasRight && !hasTop && cornerDiffers(1, -1)) {
+      line(kcx + kcw - t, kt + t, kcx + kcw, kt + t);
+      line(kcx + kcw - t, kt, kcx + kcw - t, kt + t);
     }
-    if (y === 0 || kwb[cell] !== kwb[cell - cr]) {
-      hasTop = true;
-      kt += t;
+    if (x > 0 && y + 1 < cr && !hasLeft && !hasBottom && cornerDiffers(-1, 1)) {
+      line(kl, kcy + kch - t, kl + t, kcy + kch - t);
+      line(kl + t, kcy + kch - t, kl + t, kcy + kch);
     }
-    if (y + 1 >= cr || kwb[cell] !== kwb[cell + cr]) {
-      hasBottom = true;
-      kb -= t;
-    }
-    if (hasTop) dr.drawLine({ x: kl, y: kt }, { x: kr, y: kt }, colKiller, 1);
-    if (hasBottom) dr.drawLine({ x: kl, y: kb }, { x: kr, y: kb }, colKiller, 1);
-    if (hasLeft) dr.drawLine({ x: kl, y: kt }, { x: kl, y: kb }, colKiller, 1);
-    if (hasRight) dr.drawLine({ x: kr, y: kt }, { x: kr, y: kb }, colKiller, 1);
-    // Corners — only where there wasn't a full edge.
-    if (
-      x > 0 &&
-      y > 0 &&
-      !hasLeft &&
-      !hasTop &&
-      kwb[cell] !== kwb[(y - 1) * cr + x - 1]
-    ) {
-      dr.drawLine({ x: kl, y: kt + t }, { x: kl + t, y: kt + t }, colKiller, 1);
-      dr.drawLine({ x: kl + t, y: kt }, { x: kl + t, y: kt + t }, colKiller, 1);
-    }
-    if (
-      x + 1 < cr &&
-      y > 0 &&
-      !hasRight &&
-      !hasTop &&
-      kwb[cell] !== kwb[(y - 1) * cr + x + 1]
-    ) {
-      dr.drawLine(
-        { x: kcx + kcw - t, y: kt + t },
-        { x: kcx + kcw, y: kt + t },
-        colKiller,
-        1,
-      );
-      dr.drawLine(
-        { x: kcx + kcw - t, y: kt },
-        { x: kcx + kcw - t, y: kt + t },
-        colKiller,
-        1,
-      );
-    }
-    if (
-      x > 0 &&
-      y + 1 < cr &&
-      !hasLeft &&
-      !hasBottom &&
-      kwb[cell] !== kwb[(y + 1) * cr + x - 1]
-    ) {
-      dr.drawLine(
-        { x: kl, y: kcy + kch - t },
-        { x: kl + t, y: kcy + kch - t },
-        colKiller,
-        1,
-      );
-      dr.drawLine(
-        { x: kl + t, y: kcy + kch - t },
-        { x: kl + t, y: kcy + kch },
-        colKiller,
-        1,
-      );
-    }
-    if (
-      x + 1 < cr &&
-      y + 1 < cr &&
-      !hasRight &&
-      !hasBottom &&
-      kwb[cell] !== kwb[(y + 1) * cr + x + 1]
-    ) {
-      dr.drawLine(
-        { x: kcx + kcw - t, y: kcy + kch - t },
-        { x: kcx + kcw - t, y: kcy + kch },
-        colKiller,
-        1,
-      );
-      dr.drawLine(
-        { x: kcx + kcw - t, y: kcy + kch - t },
-        { x: kcx + kcw, y: kcy + kch - t },
-        colKiller,
-        1,
-      );
+    if (x + 1 < cr && y + 1 < cr && !hasRight && !hasBottom && cornerDiffers(1, 1)) {
+      line(kcx + kcw - t, kcy + kch - t, kcx + kcw - t, kcy + kch);
+      line(kcx + kcw - t, kcy + kch - t, kcx + kcw, kcy + kch - t);
     }
   }
 

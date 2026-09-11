@@ -148,7 +148,7 @@ describe("solo grid codec", () => {
     grid[79] = 3;
     const enc = encodeGrid(grid, area);
     const out = new Int8Array(area);
-    const next = specToGrid(enc, 0, out, area);
+    const next = specToGrid(enc, 0, out);
     expect(next).toBe(enc.length);
     expect(Array.from(out)).toEqual(Array.from(grid));
   });

@@ -1,8 +1,7 @@
 /**
- * Behavioral tests for the Solo solver (tier 1). These validate the core
- * deduction engine on hand-built standard-variant boards; the jigsaw / X /
- * killer paths and exact C-difficulty agreement are covered by the generator
- * tests + the byte-match differential once those land.
+ * Behavioral tests for the Solo solver (tier 1), on hand-built boards. Exact
+ * C-difficulty agreement across the jigsaw, X and killer paths is the byte-match
+ * differential's job.
  */
 import { describe, expect, it } from "vitest";
 import { runSolver, solveSolo } from "./solver.ts";
@@ -48,7 +47,7 @@ describe("solo solver — standard 3×3", () => {
     expect([...grid]).toEqual(SOLUTION);
   });
 
-  it("grades the puzzle at Trivial (yields to blockwise scanning alone)", () => {
+  it("grades the puzzle at Easy (yields to blockwise scanning alone)", () => {
     const s = stateFromGivens(PUZZLE);
     // This classic example is solvable by repeated blockwise positional
     // elimination (the "scanning" technique), which the driver exhausts before
@@ -79,7 +78,7 @@ describe("solo solver — variant paths (codec → solve round-trips)", () => {
   // jigsaw code paths (cages / jigsaw-blocks shaped as the 3×3 rectangles, so
   // the known SOLUTION stays valid). They confirm the variant deductions run
   // end-to-end and stay consistent; exact C-difficulty agreement across
-  // genuinely irregular boards is the differential's job (design D5).
+  // genuinely irregular boards is the differential's job.
 
   it("solves a killer board (cages = blocks, sums = 45) to the solution", () => {
     const gridDesc = encodeGrid(PUZZLE, 81);
