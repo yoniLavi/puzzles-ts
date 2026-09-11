@@ -17,6 +17,7 @@ import {
   firstUnreflectedPlaceIndex,
   keepCandidateHintTrack,
   lazyPopulate,
+  type Mark,
   nakedSingle,
   nextPlace,
   refreshCandidateHintStep,
@@ -26,9 +27,7 @@ import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
-  type HintResult,
   type HintStep,
-  type HintTrackVerdict,
   type PresetMenu,
   type SolveResult,
   UI_UPDATE,
@@ -69,17 +68,9 @@ import {
   moveCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
-import type {
-  Color,
-  ConfigValues,
-  GameStatus,
-  KeyLabel,
-  Point,
-  Size,
-} from "../../engine/types.ts";
+import type { Point } from "../../engine/types.ts";
 import { newTowersDesc } from "./generator.ts";
 import { say } from "./hint-text.ts";
 import {
@@ -369,10 +360,6 @@ function changedState(
   }
 }
 
-function gridFromSoln(soln: Uint8Array): number[] {
-  return Array.from(soln, (v) => v);
-}
-
 function solve(
   orig: TowersState,
   _curr: TowersState,
@@ -380,8 +367,7 @@ function solve(
 ): SolveResult<TowersMove> {
   const w = orig.w;
   if (aux) {
-    const grid: number[] = [];
-    for (let i = 0; i < w * w; i++) grid[i] = Number(aux[i + 1]);
+    const grid = Array.from({ length: w * w }, (_, i) => Number(aux[i + 1]));
     return { ok: true, move: { type: "solve", grid } };
   }
   const soln = Uint8Array.from(orig.immutable);
@@ -390,7 +376,7 @@ function solve(
     return { ok: false, error: "No solution exists for this puzzle" };
   if (ret === DIFF_AMBIGUOUS)
     return { ok: false, error: "Multiple solutions exist for this puzzle" };
-  return { ok: true, move: { type: "solve", grid: gridFromSoln(soln) } };
+  return { ok: true, move: { type: "solve", grid: Array.from(soln) } };
 }
 
 function findMistakes(state: TowersState): readonly TowersMistake[] {
@@ -502,11 +488,7 @@ function nextClueStrike(
   wGrid: Uint8Array,
   wPen: Int32Array,
   w: number,
-): {
-  marks: { x: number; y: number; n: number }[];
-  reason: HintReason;
-  group: number;
-} | null {
+): { marks: Mark[]; reason: HintReason; group: number } | null {
   const lim = firstUnreflectedPlaceIndex(ops, wGrid, w);
   const liveAt = (op: HintOp) =>
     op.kind === "elim" &&
@@ -598,11 +580,11 @@ function nextExtremeClueLine(
   clues: Int32Array,
   wGrid: Uint8Array,
   w: number,
-): { reason: HintReason; cells: { x: number; y: number; n: number }[] } | null {
+): { reason: HintReason; cells: Mark[] } | null {
   for (let c = 0; c < 4 * w; c++) {
     if (clues[c] !== w) continue;
     const line = lineCells(c, w);
-    const cells: { x: number; y: number; n: number }[] = [];
+    const cells: Mark[] = [];
     for (let i = 0; i < w; i++) {
       if (wGrid[line[i].y * w + line[i].x] === 0)
         cells.push({ x: line[i].x, y: line[i].y, n: i + 1 });
@@ -662,28 +644,18 @@ function buildSteps(
   // unrelated hint. `-1` = no strike pending (a placement resets it, since a new
   // `ops` recording restarts group numbering).
   let lastStrikeGroup = -1;
+  const place = (m: Mark, reason: HintReason, continues = false) =>
+    emitPlacement(steps, wGrid, wPen, w, m.x, m.y, m.n, reason, autoClean, continues);
   for (let guard = 0; guard < cap; guard++) {
     budget.tick();
-    let filled = true;
-    for (let i = 0; i < w * w; i++) if (!wGrid[i]) filled = false;
-    if (filled) break;
+    if (!wGrid.includes(0)) break;
 
     // 1. A naked single — the next move a human makes. (On an unpopulated board
     //    there are no notes, so none fire here and we fall through to the
     //    note-free extreme-clue lines.)
     const ns = nakedSingle(wGrid, wPen, w);
     if (ns) {
-      emitPlacement(
-        steps,
-        wGrid,
-        wPen,
-        w,
-        ns.x,
-        ns.y,
-        ns.n,
-        { kind: "single" },
-        autoClean,
-      );
+      place(ns, { kind: "single" });
       ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
       lastStrikeGroup = -1;
       continue;
@@ -695,20 +667,7 @@ function buildSteps(
     //    tower next to the clue.
     const forced = nextExtremeClueLine(state.clues, wGrid, w);
     if (forced) {
-      forced.cells.forEach((c, j) => {
-        emitPlacement(
-          steps,
-          wGrid,
-          wPen,
-          w,
-          c.x,
-          c.y,
-          c.n,
-          forced.reason,
-          autoClean,
-          j > 0,
-        );
-      });
+      for (const [j, c] of forced.cells.entries()) place(c, forced.reason, j > 0);
       ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
       lastStrikeGroup = -1;
       continue;
@@ -768,23 +727,13 @@ function buildSteps(
     // re-derive a generic `single`'s *why* (naked vs hidden single) from the
     // working board; the recorded reason conflates the two and would mis-narrate
     // a hidden single. Clue-driven placement reasons are kept as-is.
-    const place = nextPlace(ops, wGrid, w);
-    if (place) {
+    const next = nextPlace(ops, wGrid, w);
+    if (next) {
       const reason =
-        place.reason.kind === "single"
-          ? singlePlacementReason(wGrid, wPen, place.x, place.y, place.n, w)
-          : place.reason;
-      emitPlacement(
-        steps,
-        wGrid,
-        wPen,
-        w,
-        place.x,
-        place.y,
-        place.n,
-        reason,
-        autoClean,
-      );
+        next.reason.kind === "single"
+          ? singlePlacementReason(wGrid, wPen, next.x, next.y, next.n, w)
+          : next.reason;
+      place(next, reason);
       ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
       lastStrikeGroup = -1;
       continue;
@@ -794,44 +743,6 @@ function buildSteps(
   }
 
   return steps;
-}
-
-function hint(
-  state: TowersState,
-  _aux?: string,
-  ui?: TowersUi,
-): HintResult<TowersMove, TowersHint> {
-  return candidateHint(state, ui, findMistakes, buildSteps);
-}
-
-/** Classify a player move against the displayed hint step. A `pencilAll`
- * matches a populate step; a real placement matches a `set` step; a pencil
- * toggle that *clears* one of a strike step's marks shrinks it (`onTrack`) or
- * finishes it (`completed`). Anything else drops the plan. */
-function hintKeepTrack(
-  m: TowersMove,
-  step: HintStep<TowersMove, TowersHint>,
-  state: TowersState,
-): HintTrackVerdict {
-  return keepCandidateHintTrack(m, step, state.pencil, state.w);
-}
-
-/** Re-validate a stored hint step against the current board before it is
- * (re-)displayed (shared "never show a stale step" guarantee). */
-function refreshHintStep(
-  step: HintStep<TowersMove, TowersHint>,
-  state: TowersState,
-): HintStep<TowersMove, TowersHint> | null {
-  return refreshCandidateHintStep(step, state.grid, state.pencil, state.w);
-}
-
-function flashLength(
-  from: TowersState,
-  to: TowersState,
-  _dir: number,
-  _ui: TowersUi,
-): number {
-  return winFlash(from, to, FLASH_TIME);
 }
 
 /** Towers' difficulty contract (`engine/difficulty.ts`). `solveTowers` follows
@@ -868,15 +779,14 @@ export const towersGame: Game<
   decodeParams,
   validateParams,
   paramConfig,
-  // Keys/shape match the `towers` config template in augmentation.ts
-  // ("{grid-size}x{grid-size} {difficulty:Easy|Hard|Extreme|Unreasonable}"):
-  // `grid-size` is the value, `difficulty` the zero-based label index.
-  describeParams: (p): ConfigValues => ({
+  // Keys match the `towers` config template in augmentation.ts: `grid-size` is
+  // the value, `difficulty` the zero-based label index.
+  describeParams: (p) => ({
     "grid-size": String(p.w),
     difficulty: diffToLevel(p.diff),
   }),
 
-  newDesc: (p, rng: RandomState) => newTowersDesc(p, rng),
+  newDesc: newTowersDesc,
   validateDesc,
   newState,
   newUi,
@@ -884,15 +794,17 @@ export const towersGame: Game<
 
   interpretMove,
   executeMove,
-  status: (s): GameStatus => status(s),
+  status,
 
   solve,
   difficulty,
-  hint,
-  hintKeepTrack,
-  refreshHintStep,
+  hint: (state, _aux, ui) => candidateHint(state, ui, findMistakes, buildSteps),
+  hintKeepTrack: (m, step: HintStep<TowersMove, TowersHint>, state) =>
+    keepCandidateHintTrack(m, step, state.pencil, state.w),
+  refreshHintStep: (step: HintStep<TowersMove, TowersHint>, state) =>
+    refreshCandidateHintStep(step, state.grid, state.pencil, state.w),
   findMistakes,
-  requestKeys: (p): KeyLabel[] => digitKeys(p.w),
+  requestKeys: (p) => digitKeys(p.w),
   textFormat,
 
   prefs: [
@@ -913,15 +825,15 @@ export const towersGame: Game<
     },
   ],
 
-  colors: (defaultBackground: Color): Color[] => colors(defaultBackground),
+  colors,
   preferredTileSize: PREFERRED_TILE_SIZE,
-  computeSize: (p: TowersParams, ts: number): Size => computeSize(p, ts),
+  computeSize,
   setTileSize,
   newDrawState,
   redraw,
 
   animLength: () => 0,
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(towersGame);

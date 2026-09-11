@@ -4,6 +4,8 @@ import { parseConfigInt } from "../../engine/params.ts";
 import { choice, paramsCodec, size } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
+import type { Point } from "../../engine/types.ts";
+
 /**
  * Types and pure state helpers for Towers (Skyscrapers) — the state/codec
  * parts of `towers.c`.
@@ -18,43 +20,23 @@ import { newCursor } from "../../engine/pointer.ts";
 
 // --- difficulty ------------------------------------------------------------
 
-export type Difficulty = "easy" | "hard" | "extreme" | "unreasonable";
+/** The tiers in level order, so a tier's index is its level. */
+const DIFFS = ["easy", "hard", "extreme", "unreasonable"] as const;
+export type Difficulty = (typeof DIFFS)[number];
 
 export const DIFF_EASY = 0;
 export const DIFF_HARD = 1;
 export const DIFF_EXTREME = 2;
 export const DIFF_UNREASONABLE = 3;
-export const DIFF_COUNT = 4;
 
 const DIFF_CHARS = "ehxu"; // towers_diffchars, indexed by level
 export const DIFF_NAMES = tierNames(4, { search: true });
 
 export function diffToLevel(d: Difficulty): number {
-  switch (d) {
-    case "hard":
-      return DIFF_HARD;
-    case "extreme":
-      return DIFF_EXTREME;
-    case "unreasonable":
-      return DIFF_UNREASONABLE;
-    default:
-      return DIFF_EASY;
-  }
+  return Math.max(DIFF_EASY, DIFFS.indexOf(d));
 }
 export function diffFromLevel(level: number): Difficulty {
-  switch (level) {
-    case DIFF_HARD:
-      return "hard";
-    case DIFF_EXTREME:
-      return "extreme";
-    case DIFF_UNREASONABLE:
-      return "unreasonable";
-    default:
-      return "easy";
-  }
-}
-export function diffChar(d: Difficulty): string {
-  return DIFF_CHARS[diffToLevel(d)];
+  return DIFFS[level] ?? "easy";
 }
 export function diffName(d: Difficulty): string {
   return DIFF_NAMES[diffToLevel(d)];
@@ -112,11 +94,10 @@ export function validateParams(p: TowersParams, _full: boolean): string | null {
 /**
  * The `w` grid cells along edge-clue `index`'s line, nearest the clue first.
  * `index` runs top row (`0..w-1`), bottom row (`w..2w-1`), left column
- * (`2w..3w-1`), right column (`3w..4w-1`). This is the one piece of shared
- * geometry the solver, generator, error-check and renderer all turn on.
+ * (`2w..3w-1`), right column (`3w..4w-1`).
  */
-export function lineCells(index: number, w: number): { x: number; y: number }[] {
-  const out: { x: number; y: number }[] = [];
+export function lineCells(index: number, w: number): Point[] {
+  const out: Point[] = [];
   if (index < w) {
     const x = index;
     for (let j = 0; j < w; j++) out.push({ x, y: j });
@@ -134,7 +115,7 @@ export function lineCells(index: number, w: number): { x: number; y: number }[] 
 }
 
 /** Border coordinate (x or y may be `-1` or `w`) of edge-clue `index`. */
-export function cluePos(index: number, w: number): { x: number; y: number } {
+export function cluePos(index: number, w: number): Point {
   if (index < w) return { x: index, y: -1 };
   if (index < 2 * w) return { x: index - w, y: w };
   if (index < 3 * w) return { x: -1, y: index - 2 * w };
@@ -212,7 +193,8 @@ export type TowersMove =
     }
   /** Toggle the struck-through state of edge-clue `index`. */
   | { type: "clueDone"; index: number }
-  /** Fill in every pencil mark everywhere (the `M` key / fill-all button). */
+  /** Fill every candidate into each empty, note-less cell (the `M` key /
+   * fill-all button). */
   | { type: "pencilAll" }
   /** Strike (clear) the listed pencil candidates atomically — a hint's
    * single-firing elimination. Clearing an absent candidate is a no-op, so this
@@ -235,10 +217,10 @@ export interface TowersUi {
    * once on, left-clicks keep entering pencil marks until right-clicked again
    * (mobile-style), instead of every left-click reverting to real entry. */
   pencilSticky: boolean;
-  /** Preference (default on): when you place a tower, immediately strike that
-   * height from the pencil marks of every other cell in its row and column.
-   * When on, hints also skip teaching those trivial eliminations (they happen
-   * automatically) and lean on the placement instead. */
+  /** Preference (default off, so notes clear only via mark-all or a hint):
+   * when you place a tower, immediately strike that height from the pencil
+   * marks of every other cell in its row and column. When on, hints also skip
+   * teaching those trivial eliminations and lean on the placement instead. */
   autoPencil: boolean;
 }
 
@@ -250,9 +232,6 @@ export function newUi(_state: TowersState): TowersUi {
     threeD: true,
     pencilKeepHighlight: true,
     pencilSticky: true,
-    // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its
-    // row/column notes. Notes clear only via the mark-all button or a hint; opt
-    // back in through the "auto-pencil" pref.
     autoPencil: false,
   };
 }

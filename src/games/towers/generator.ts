@@ -44,8 +44,7 @@ export function newTowersDesc(
     attempt();
 
     // Construct a Latin square as the solution.
-    const latin = latinGenerate(w, rng);
-    for (let i = 0; i < a; i++) grid[i] = latin[i];
+    grid.set(latinGenerate(w, rng));
 
     // Read off the clues from the full grid.
     for (let i = 0; i < 4 * w; i++) {
@@ -101,13 +100,10 @@ export function newTowersDesc(
 
     // Must be solvable at exactly this difficulty, not below.
     soln2.set(grid);
-    const ret = solveTowers(w, clues, soln2, diff);
-    if (ret !== diff) continue;
-
-    break;
+    if (solveTowers(w, clues, soln2, diff) === diff) break;
   }
 
-  return { desc: encodeDesc(w, clues, grid), aux: encodeAux(soln) };
+  return { desc: encodeDesc(w, clues, grid), aux: `S${soln.join("")}` };
 }
 
 function encodeDesc(w: number, clues: Int32Array, grid: Uint8Array): string {
@@ -118,15 +114,7 @@ function encodeDesc(w: number, clues: Int32Array, grid: Uint8Array): string {
     if (clues[i]) p += String(clues[i]);
   }
 
-  // Any givens at all?
-  let any = false;
-  for (let i = 0; i < a; i++) {
-    if (grid[i]) {
-      any = true;
-      break;
-    }
-  }
-  if (any) {
+  if (grid.some((v) => v !== 0)) {
     p += ",";
     let run = 0;
     for (let i = 0; i <= a; i++) {
@@ -151,10 +139,4 @@ function encodeDesc(w: number, clues: Int32Array, grid: Uint8Array): string {
   }
 
   return p;
-}
-
-function encodeAux(soln: Uint8Array): string {
-  let s = "S";
-  for (let i = 0; i < soln.length; i++) s += String(soln[i]);
-  return s;
 }

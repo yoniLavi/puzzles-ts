@@ -12,6 +12,7 @@
  * (the upstream four-corner cache key).
  */
 
+import type { CandidateHighlights } from "../../engine/candidate-hint.ts";
 import {
   clueDoneColor,
   ERROR,
@@ -31,7 +32,6 @@ import {
   HINT_AREA,
   HINT_TARGET,
   hintMarkBit,
-  type OrderedCell,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
@@ -134,13 +134,11 @@ export interface TowersDrawState {
   errtmp: Uint8Array;
   /** `(w+2)²` hint-overlay sidecar (fork addition): bit 0 = target cell,
    * bit 1 = evidence area, bits 2.. = struck-candidate mask
-   * (`hintMarkBit(height)`). Owns the repack/stale/commit dance that keeps
-   * a hint change repainting affected cells even when their tile value is
-   * otherwise unchanged (docs/games/rendering.md § "The tile cache and the diff key"). */
+   * (`hintMarkBit(height)`). */
   hint: OverlaySidecar;
   /** `(w+2)²` mistake-overlay sidecar (fork addition). Neither overlay changes
-   * a cell's tile value, so both must be in the diff key — this one is where
-   * that was learned: a Check & Save on an already-drawn cell repainted nothing. */
+   * a cell's tile value, so both are in the diff key (docs/games/rendering.md
+   * § "The tile cache and the diff key"). */
   wrong: OverlaySidecar;
   /** The hint target's ring and the evidence area's outline (fork additions),
    * drawn once per frame after the tile loop. See {@link markBand}. */
@@ -213,11 +211,8 @@ function drawTile(
   let tx = coord(x, ts);
   let ty = coord(y, ts);
   const digit = tile & DF_DIGIT_MASK;
-  // Hint overlay: both cell-level marks are read in `redraw`, which rings the
-  // target and outlines the evidence area on the cell's own border, so a hint
-  // never paints over the digits it is talking about. What is left here is
-  // `struck`, the set of candidate heights this firing rules out, crossed
-  // through among the pencil marks.
+  // `redraw` draws the hint's target ring and evidence outline once per frame;
+  // a tile draws only `struck`, the candidate heights this firing rules out.
   const struck = hint >> 2;
   const bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
 
@@ -345,12 +340,9 @@ function drawTile(
           const dy = Math.floor(j / pw);
           const cx = pl + Math.floor((fontsize * (2 * dx + 1)) / 2);
           const cy = pt2 + Math.floor((fontsize * (2 * dy + 1)) / 2);
-          const isStruck = (struck & (1 << i)) !== 0;
-          // The struck candidate keeps its normal pencil color (high contrast,
-          // reads as a real note); the strikethrough line — drawn in the same
-          // COL_PENCIL color as the digit — is the cue that the hint is ruling
-          // it out. Coloring either against the lighter hint background washed
-          // them out.
+          // A struck candidate keeps its pencil color, so it still reads as the
+          // player's note; the same-color strikethrough is what says the hint
+          // rules it out (a hint color washed out against the background).
           dr.drawText(
             { x: cx, y: cy },
             {
@@ -362,8 +354,7 @@ function drawTile(
             COL_PENCIL,
             String(i),
           );
-          // Cross the ruled-out candidate through so the elimination is legible.
-          if (isStruck) {
+          if (struck & (1 << i)) {
             const r = Math.max(2, Math.floor(fontsize / 3));
             dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_PENCIL, 2);
           }
@@ -406,28 +397,19 @@ function drawTile(
   }
 
   // A forcing chain's place in the order it fires, so the narration can cite
-  // the cells by number rather than asking the player to reconstruct the chain
-  // (`walk-tactic-hint-chains`). `tx`/`ty` are the *drawn* origin, already
-  // offset for a 3D tower's top face, so the ordinal follows the tile it
-  // belongs to rather than floating over the one behind it.
+  // the cells by number. `tx`/`ty` are the *drawn* origin, already offset for a
+  // 3D tower's top face, so the ordinal follows the tile it belongs to rather
+  // than floating over the one behind it.
   if (hintOrder > 0)
     drawHintOrdinal(dr, { x: tx, y: ty }, ts, hintOrder, COL_HINT_CELL);
 }
 
 // --- hint overlay ----------------------------------------------------------
 
-/** Highlight payload a Towers hint step carries (built in `index.ts`). Defined
- * here so `redraw` can consume it without a circular import. See
- * docs/games/hints.md § "The element-type color legend" for the element-type legend. */
-export interface TowersHint {
-  /** The driving clue's line of sight, shaded `COL_HINT_CELL`. A forcing
-   * chain's cells additionally carry their place in it, drawn as an ordinal. */
-  area: OrderedCell[];
-  /** The cell(s) the deduction acts on, marked `COL_HINT`. */
-  targets: { x: number; y: number }[];
-  /** The candidate digit(s) ruled out, shown struck in `COL_HINT`. */
-  marks: { x: number; y: number; n: number }[];
-}
+/** Highlight payload a Towers hint step carries (built in `index.ts`): the
+ * evidence outlined `COL_HINT_CELL`, the targets ringed `COL_HINT`, and the
+ * struck candidates crossed through. */
+export type TowersHint = CandidateHighlights;
 
 // --- redraw ----------------------------------------------------------------
 
@@ -491,14 +473,29 @@ export function redraw(
   // Pencil-mode indicator in the top-right clue-ring corner (W-pos (w+1, 0)).
   // Towers protrude up-left, so nothing ever overlaps this corner; it is also
   // no cell's up-left neighbor, so the diff cache repaints it cleanly on
-  // toggle. Driven straight off the persistent `pencilMode` mode flag.
+  // toggle.
   if (ui.pencilMode) ds.tiles[w + 1] |= DF_PENCIL_MODE;
 
   // Diff and repaint, drawing each changed cell's tower-overlapping neighbors.
+  const paint = (x: number, y: number, tile: number) => {
+    const j = index(x, y);
+    drawTile(
+      dr,
+      ts,
+      w,
+      threeD,
+      x,
+      y,
+      tile,
+      ds.wrong.at(j),
+      ds.hint.packed[j],
+      ds.hint.order[j],
+    );
+  };
   for (let y = 0; y < W; y++) {
     for (let x = 0; x < W; x++) {
       const i = y * W + x;
-      const tr = ds.tiles[y * W + x];
+      const tr = ds.tiles[i];
       const tl = x === 0 ? 0 : ds.tiles[y * W + (x - 1)];
       const br = y === w + 1 ? 0 : ds.tiles[(y + 1) * W + x];
       const bl = x === 0 || y === w + 1 ? 0 : ds.tiles[(y + 1) * W + (x - 1)];
@@ -512,57 +509,10 @@ export function redraw(
         ds.wrong.stale(i)
       ) {
         dr.clip({ x: coord(x - 1, ts), y: coord(y - 1, ts), w: ts, h: ts });
-        drawTile(
-          dr,
-          ts,
-          w,
-          threeD,
-          x - 1,
-          y - 1,
-          tr,
-          ds.wrong.at(i),
-          ds.hint.packed[i],
-          ds.hint.order[i],
-        );
-        if (x > 0)
-          drawTile(
-            dr,
-            ts,
-            w,
-            threeD,
-            x - 2,
-            y - 1,
-            tl,
-            ds.wrong.at(y * W + (x - 1)),
-            ds.hint.packed[y * W + (x - 1)],
-            ds.hint.order[y * W + (x - 1)],
-          );
-        if (y <= w)
-          drawTile(
-            dr,
-            ts,
-            w,
-            threeD,
-            x - 1,
-            y,
-            br,
-            ds.wrong.at((y + 1) * W + x),
-            ds.hint.packed[(y + 1) * W + x],
-            ds.hint.order[(y + 1) * W + x],
-          );
-        if (x > 0 && y <= w)
-          drawTile(
-            dr,
-            ts,
-            w,
-            threeD,
-            x - 2,
-            y,
-            bl,
-            ds.wrong.at((y + 1) * W + (x - 1)),
-            ds.hint.packed[(y + 1) * W + (x - 1)],
-            ds.hint.order[(y + 1) * W + (x - 1)],
-          );
+        paint(x - 1, y - 1, tr);
+        if (x > 0) paint(x - 2, y - 1, tl);
+        if (y <= w) paint(x - 1, y, br);
+        if (x > 0 && y <= w) paint(x - 2, y, bl);
         dr.unclip();
         dr.drawUpdate({ x: coord(x - 1, ts), y: coord(y - 1, ts), w: ts, h: ts });
 

@@ -155,23 +155,18 @@ describe("towers hint", () => {
   });
 
   it("clue-strike marks never bleed outside the narrated clue's line (regression)", () => {
-    // One recorded firing must cover a single clue. An earlier bug let one
-    // solver pass lump several clues' lower-bound eliminations under one
-    // `group`, so a hint step narrated one clue's line of sight while a struck
-    // mark sat on a *different* clue's line ("the 5 from the next column got
-    // pulled in"). A standalone clue-strike step shades its clue's line as the
-    // evidence `area`; every struck mark must lie within it.
+    // One recorded firing must cover a single clue, or a hint step narrates one
+    // clue's line of sight while a struck mark sits on a *different* clue's
+    // line. A clue-strike step outlines its clue's line as the evidence
+    // `area`; every struck mark must lie within it.
     //
     // **`area` has two meanings, and the guard has to tell them apart.** For a
     // clue technique it is a *containing region* — the line the strike happens
-    // inside. For a forcing chain (`walk-tactic-hint-chains`) it is an ordered
-    // *chain*, and the cell being struck is deliberately **not** on it: the
-    // chain drives some other cell to the value, and the conclusion loses it by
-    // lining up with that cell. The guard used to separate the two by
-    // `area.length === 0`, which was a proxy — it worked only because the
-    // forcing arm shaded nothing at all, and it silently stopped meaning
-    // anything the moment that changed. Selecting on the ordinal tests the
-    // distinction directly: a numbered area *is* the chain.
+    // inside. For a forcing chain it is an ordered *chain*, and the cell being
+    // struck is deliberately **not** on it: the chain drives some other cell to
+    // the value, and the conclusion loses it by lining up with that cell.
+    // Selecting on the ordinal tests the distinction directly: a numbered area
+    // *is* the chain (an empty area is no proxy for it).
     const diffs: Difficulty[] = ["easy", "hard", "extreme"];
     let checked = 0;
     let chainsChecked = 0;
@@ -202,10 +197,9 @@ describe("towers hint", () => {
       }
     }
     expect(checked).toBeGreaterThan(0);
-    // No floor on `chainsChecked` — a forcing chain is tier-gated and this
-    // sweep may legitimately not reach one. Reported rather than required, so
-    // the count above is never mistaken for chain coverage.
-    expect(chainsChecked).toBeGreaterThanOrEqual(0);
+    // These fixed seeds reach forcing chains too (seven chain marks), so the
+    // chain half of the invariant is asserted rather than merely reported.
+    expect(chainsChecked).toBeGreaterThan(0);
   });
 
   it("skips populate once notes are present", () => {
@@ -516,11 +510,9 @@ describe("towers hint render", () => {
     );
     // ...and the strike cell is **ringed** COL_HINT rather than filled with it.
     // A fill would hide the struck digit, making the candidate look
-    // already-removed (regression: fix-stale-hint-step — owner-reported "the
-    // hint deletes my note"; the note is intact and the frame must show it).
-    // The ring is what the cell gets instead, and it is the same mark a
-    // placement target gets, so a strike is never identified *only* by a
-    // strikethrough the player has to spot first.
+    // already-removed. The ring is the same mark a placement target gets, so a
+    // strike is never identified *only* by a strikethrough the player has to
+    // spot first.
     expectRing(recording.ops, COL_HINT, (hint?.highlights as AnyStep)?.targets.length);
     // Clues are still drawn (text).
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);

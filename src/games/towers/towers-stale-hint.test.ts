@@ -1,14 +1,12 @@
 /**
  * Regression: a displayed Towers hint step must never reference already-resolved
- * state (openspec change `fix-stale-hint-step`).
+ * state.
  *
- * The defect: a hint plan is computed once with the auto-pencil preference baked
- * in. With auto-pencil OFF the plan teaches explicit `pencilStrike` legs; if the
- * player then turns auto-pencil ON, a placement silently strikes the placed
- * height from its row/column, so a later *kept* stored strike step names notes
- * that are already gone — and the midend re-displayed the stored step without
- * re-validating it. Reproduced on the owner's board with auto-pencil toggled
- * mid-solve; fixed by the engine-level `refreshHintStep` re-validation.
+ * A hint plan is computed once with the auto-pencil preference baked in. With
+ * auto-pencil OFF the plan teaches explicit `pencilStrike` legs; if the player
+ * then turns auto-pencil ON, a placement silently strikes the placed height from
+ * its row/column, so a later *kept* strike step names notes that are already
+ * gone. The engine's `refreshHintStep` re-validation is what prevents it.
  *
  * This drives a REAL `Midend` through keyboard input (the production
  * `processInput` path, with `hintKeepTrack` and the re-show/auto-play hint
