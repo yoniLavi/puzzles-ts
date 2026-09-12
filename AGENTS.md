@@ -9,14 +9,14 @@ PWA port of [Simon Tatham's Portable Puzzle Collection][sgt-puzzles]. **It is a
 TypeScript project, end to end — no C, no build system, nothing compiled and
 nothing generated, anywhere in the tree.**
 
-- **All 57 games + the engine** in `/src/engine/` (the midend, the `Game`
+- **All the games + the engine** in `/src/engine/` (the midend, the `Game`
   interface, the registry, the drawing/color contracts, and the `random/` and
   `combi/` leaf libraries) and `/src/games/<puzzleId>/` (one directory per
   game). Plain TypeScript, no build step of their own.
 - **TypeScript web app** in `/src` using Lit web components and Vite. Targets Baseline 2023 (see `src/preflight.ts`).
 - **Help** is this project's own markdown under `help/` — one directory, one
   format, one page per game in `help/games/`. The MIT notices are `licenses/`,
-  and the two unbuilt `unfinished/` C files live with the changes that read them.
+  and the unbuilt `unfinished/` C files live with the changes that read them.
 - **The product is Hintful Puzzles; the repository is `puzzles-ts`.** The name,
   the tagline and the support links have one source, `src/project-identity.ts`,
   read by the About dialog, the PWA manifest, the page templates and the home
@@ -60,7 +60,7 @@ and no change id attached.
 - [`docs/games/hints.md`](docs/games/hints.md) — the full hint-authoring discipline (the Palisade bar, narration rules, plan mechanics, hint rendering, candidate-elimination and heuristic families, cross-game guards).
 - [`docs/games/testing.md`](docs/games/testing.md) — test tiers, render scenarios, the frozen differentials, determinism rules, enrollment duties, metrics.
 - [`docs/games/engine-catalog.md`](docs/games/engine-catalog.md) — the shared-helper reference: what exists, when to reach for it, byte-match sensitivities.
-- [`docs/test-strength.md`](docs/test-strength.md) — **assessing** tests rather than writing them: the five-minute mutation probe, `npm run probe` (the committed corpus of it), coverage vs strength vs *feedback*, the boundary with the differentials, when full mutation testing is worth its cost, and the instrument traps that make an assessment lie. Not game-specific — it applies to the engine and the app shell too, which is why it sits outside `docs/games/`. **Read its §7 before quoting any number out of it**: eight instruments in this repo's recent history measured the wrong unit, and the most consequential pair reached a proposal and a spec before anyone checked them.
+- [`docs/test-strength.md`](docs/test-strength.md) — **assessing** tests rather than writing them: the five-minute mutation probe, `npm run probe` (the committed corpus of it), coverage vs strength vs *feedback*, the boundary with the differentials, when full mutation testing is worth its cost, and the instrument traps that make an assessment lie. Not game-specific — it applies to the engine and the app shell too, which is why it sits outside `docs/games/`. **Read its §7 before quoting any number out of it**: instruments in this repo's history have measured the wrong unit again and again, and the most consequential pair reached a proposal and a spec before anyone checked them.
 
 **Treat these as a live wiki, not frozen docs.** Every time you hit something the guide didn't tell you, get wrong because it was missing, or learn a better pattern, **update the guide in the same change** — that is part of "done," not a separate chore. Keep them link-only to the specs (state a normative rule briefly + link it; point at an exemplar file rather than pasting code that rots) so they can go stale but never silently contradict a spec. Cite guide sections by **file + heading name** (`docs/games/rendering.md § "Overlay sidecars"`), never by position — and if you rename a cited heading, repoint every citation in the same change (repo-layout spec, "Developer guides live under docs/ and link to specs"). **A `§<number>` pointing into `docs/games/` is dead on arrival**: those guides have no numbered headings at all, so such a citation can only be a survivor of `docs/porting/`'s numbering, which `rewrite-game-dev-docs` deleted. Six stood in `src/` until 2026-09-12. The two places a numbered section still resolves are `docs/test-strength.md` and an archived change's own document, and both must say which — a bare `§9.1` names no file, and a bare `design D5` in Loopy names one of two archived changes whose D5s say different things. The section pointers below ("TS port style", "Hint quality bar") are entry points into these guides.
 
@@ -145,8 +145,8 @@ member is excused — one entry per member, with the derivation asserting the
 ledger is exactly right. That is why `NO_KEYBOARD`, `INERT_PANEL_KEYS` and
 `NO_CONSUMER` can be **empty and still assert something**. And where production
 needs a boolean synchronously and cannot run the probe, the flag stays — held
-equal to a derivation, so it cannot lie (`canMarkAll`, `ignoresSecondaryButton`,
-`wantsStylusModifier` are the collection's only three, and each is now checked).
+equal to a derivation, so it cannot lie (`canMarkAll`, `ignoresSecondaryButton`
+and `wantsStylusModifier`, each checked against the behavior it declares).
 The followable form is [`docs/games/testing.md`](docs/games/testing.md) § "How a
 cross-game guard finds its population".
 
@@ -245,7 +245,7 @@ gives you, and *classify* what it catches instead of narrowing the scan — the
 narrowing is the error. **And when the population is small enough to read,
 read it**: fourteen function bodies cost less than the two heuristics that
 lied about them. **The key can also be the syntax after the name**: a grep for
-`latinSolver(` returned one of six call sites, because the other five are
+`latinSolver(` returned one of six call sites, because the other five were
 written `latinSolver<Ctx>(`. **And a grep for a constant's *name* is blind to a
 copy that spells out its *value*** — sweeping `DIFF_NAMES` found all 25
 definitions and missed the two games that had typed the tier words into their
@@ -259,7 +259,7 @@ name of the thing it copies. Write the scenario against the shape.
 **Take a symbol's population by reference, not by grep**: `npm run refs --
 <file> <Name | Type.member>` builds the whole program before answering and
 prints the files, lines and games — `tierNames(<digit>` found 21 tiered games
-where references find 29. The agent's LSP tool agrees once warm. On its default
+where references found 29. The agent's LSP tool agrees once warm. On its default
 server, though, a query issued while the server loads comes back short with no
 error: 2 references against 72, and 2, 2, 2 for over three seconds. So an answer
 that has settled is not proof of a warm server; hand it a known positive first
@@ -284,15 +284,19 @@ write the names out twice", naming three games that had since stopped. The
 middle one had already misled two handoffs. So **write the query, not its
 answer** — "the games that call `latinSolver`" cannot go stale, "the eleven
 latin-family games" silently does — and where a number really is the point,
-assert it in a test so it fails when it drifts. A figure with a date and a
-change id attached is a *measurement* and stays; a bare count in the present
-tense is a claim, and it rots.
+assert it in a test so it fails when it drifts. **This file holds no census of
+the tree at all, dated or not** (owner, 2026-09-13). How many games, hintless
+games, guards, rules or components there are today is stale the next time a
+change adds one, and a date beside the figure only records when it stopped
+being checked; name the query, the file or the test that answers it instead.
+What stays is history: a figure an incident measured, told in the past tense,
+is as true next year as the day it was written.
 
 **A number a proposal argues from is a claim, and the size of a thing is not
 the size of its ceremony.** The framework vision's tile-loop design costed its
 whole case on "~80 lines of identical bookkeeping per game wrapped around ~10
-lines that are actually the game's". Measured 2026-09-09 across all 57 `redraw`
-bodies (`explore-the-tile-loop-inversion`): the medians are **20 lines of
+lines that are actually the game's". Measured 2026-09-09 across every game's `redraw`
+body (`explore-the-tile-loop-inversion`): the medians were **20 lines of
 bookkeeping around 64 of the game's own** — inverted, and out by a factor of
 four. The 88 was right; what was never checked is which side of it was which. So
 **before designing against a headline number, take it** — and take it against
@@ -372,9 +376,9 @@ Four things keep the rule from becoming an excuse:
 - **The gate is not what gets trimmed.** Every step of it stays (§ "Git" lists them), and NEVER bypass it (point 4 above is unconditional). What gets trimmed is *what vitest runs*, not whether it runs.
 - **Retire by measurement, never by category.** "It was a porting test" is not by itself a reason — the frozen differentials are porting artifacts *and* the strongest net under solver refactoring, because a change to a solver's verdict changes which boards exist. `engine/testing/differential.ts` states that case; answer it per fixture rather than in bulk.
 - **Say what still covers the configuration.** `testing/slow.ts`'s existing rule generalizes: deferring or deleting the *only* case covering a mode, grid type or difficulty silently removes it from every run. State the remaining coverage at the site.
-- **A slow tier nobody invokes is not coverage — so invoke it targeted.** `npm run test:slow` re-runs the *entire* gate suite as well as the deferred cases, with the widened seed budgets on top; the deferred tier itself is six tests in three files (measured 2026-09-09). The bare command is therefore the wrong instrument for almost every question. **Pass a path** — `npm run test:slow -- src/games/seismic` — and run the slow tier for the games a refactor could have moved, at the moment you move them. A single file that takes tens of minutes has not been made thorough, it has been made unrunnable, and the honest fix is a cheaper configuration or a narrower invocation, never a longer wait. Measured 2026-09-08 on an idle machine: `hint-resume.test.ts` walking every preset once is **776 s**, and it was five seeds deep when the question was asked.
-- **The expensive tests and the porting-era tests are close to disjoint** (measured 2026-09-09 over all 301 test files, `retire-tests-that-do-not-earn-their-runtime`). The frozen differentials are **10.1%** of suite time; half of it is three games whose hints plan by *searching*, amplified by cross-game guards that recompute a full hint after every move. So retire by measurement, and **attribute cost per game, not per directory** — a cross-game guard's per-game case belongs to the game it names, which is the difference between Sixteen reading as 17% and as 30%. **Ask which resource is scarce before you pick the instrument.** Three instruments were wrong in one session, each one level deeper: summed wall duration (5× off), then per-file CPU (1.7–1.8× off), then "quiet box" taken to mean low *load*. The box has **16 GB of RAM and sits ~24 GB into swap**, so the constraint is memory, not cores — and under paging `sys` time *is* page-fault time, which is how `user + sys` re-imports the contention that switching off wall clock was meant to escape. So record **free memory and swap** beside the load average, treat any figure taken under paging as an upper bound, and remember that **ratios taken under comparable conditions survive where absolute seconds do not**. `docs/test-strength.md` §7 checks an instrument's *unit*; the unit was right every time here.
-- **Time a cost on an idle machine, and say which machine you timed.** The first figure recorded here was "50 minutes", taken while the box sat at load average **533** — the same gate that measured 216 s under that load measures 78 s idle. A contended timing is not a cost measurement, it is a measurement of the contention, and this is `AGENTS.md` § "Method" ("check the instrument before the finding") aimed at a stopwatch. The retirement decision it supported survived re-measurement; the number did not.
+- **A slow tier nobody invokes is not coverage — so invoke it targeted.** `npm run test:slow` re-runs the *entire* gate suite as well as the deferred cases, with the widened seed budgets on top, so the bare command is the wrong instrument for almost every question. **Pass a path** — `npm run test:slow -- src/games/seismic` — and run the slow tier for the games a refactor could have moved, at the moment you move them. A single file that takes tens of minutes has not been made thorough, it has been made unrunnable, and the honest fix is a cheaper configuration or a narrower invocation, never a longer wait. Measured 2026-09-08 on an idle machine: `hint-resume.test.ts` walking every preset once was **776 s**, and it was five seeds deep when the question was asked.
+- **The expensive tests and the porting-era tests are close to disjoint** (`retire-tests-that-do-not-earn-their-runtime`, 2026-09-09). The frozen differentials measured **10.1%** of suite time, while half of the suite's time was three games whose hints plan by *searching*, amplified by cross-game guards that recompute a full hint after every move. So retire by measurement, and **attribute cost per game, not per directory** — a cross-game guard's per-game case belongs to the game it names, which was the difference between Sixteen reading as 17% and as 30%. **Ask which resource is scarce before you pick the instrument.** Three instruments were wrong in one session, each one level deeper: summed wall duration (5× off), then per-file CPU (1.7–1.8× off), then "quiet box" taken to mean low *load*. The development machine has **16 GB of RAM and runs deep into swap**, so the constraint is memory, not cores — and under paging `sys` time *is* page-fault time, which is how `user + sys` re-imports the contention that switching off wall clock was meant to escape. So record **free memory and swap** beside the load average, treat any figure taken under paging as an upper bound, and remember that **ratios taken under comparable conditions survive where absolute seconds do not**. `docs/test-strength.md` §7 checks an instrument's *unit*; the unit was right every time here.
+- **Time a cost on an idle machine, and say which machine you timed.** The first figure recorded here was "50 minutes", taken while the box sat at load average **533** — the same gate that measured 216 s under that load measured 78 s idle. A contended timing is not a cost measurement, it is a measurement of the contention, and this is `AGENTS.md` § "Method" ("check the instrument before the finding") aimed at a stopwatch. The retirement decision it supported survived re-measurement; the number did not.
 
 **Browser checks: Chrome only, via the `playwright-cli` skill** (owner directive, 2026-07-28). For this phase of the project, verifying in Chromium is sufficient evidence — do **not** treat "WebKit/Firefox untested" as an open gap, and do not spend a session downloading extra browser engines to close it. Cross-engine coverage is not where this phase's risk lives (the work is a C→TS port of game logic and rendering, checked far more cheaply at tiers 1–2.5), and a second engine costs ~10 min and hundreds of MB for evidence that isn't wanted yet. Drive the browser through the **`playwright-cli` skill** rather than a standalone `playwright` install — the standalone package drifts out of version sync with the cached browser builds, which is exactly how one such download got triggered. Revisit only if the fork starts targeting Safari/Firefox as a shipping constraint.
 
@@ -394,9 +398,9 @@ Explained hints are a core deliberate-divergence product value of this fork, not
 
 **A non-deductive game is not exempt from the bar** — it is exempt only from *deduction*. Untangle has genuinely nothing to say and ships an empty explanation; **Inertia** (the non-deductive exemplar, `add-inertia-hint`, owner-endorsed 2026-07-13) shows the other pole: find the one thing the game can *prove* (there, "this gem can never be reached again") and lead with it, hold a stable subgoal and mark it when the game has no name for it, and narrate each move by the consequence it actually has.
 
-**A new game implementation ships with a hint** (owner, 2026-09-04). That is the forward-looking bar, and it is not retroactive: **every game `HINT_GAMES` leaves out is hintless today and is deliberately being left that way for now** (25 of 57 on 2026-09-12), because implementing those hints is how the framework work gets assessed — a target contract is tested by writing real hints against it, not by re-reading the games that already have one. So a hintless game is not a defect to be swept up, and the corpus is characterized rather than closed — `characterize-the-hint-assessment-corpus`'s `audit.md` classified the 27 hintless on 2026-09-09 into seven shapes (Tracks and Bridges, its first two picks, have hints since), says per game what a hint there would press on, and recommends the order to take them in. **Pick from it rather than alphabetically**: the point of characterizing was to be able to choose the game that presses hardest on whatever is being tested, and the cheapest hint in the corpus is the worst assessment. Enrollment in the six cross-game hint guards is derived from the `hint()` declaration itself (`src/engine/testing/hint-games.ts`), so a game acquires every guard the moment it acquires a hint, and none before.
+**A new game implementation ships with a hint** (owner, 2026-09-04). That is the forward-looking bar, and it is not retroactive: **a game `HINT_GAMES` leaves out is deliberately being left hintless for now**, because implementing those hints is how the framework work gets assessed — a target contract is tested by writing real hints against it, not by re-reading the games that already have one. So a hintless game is not a defect to be swept up, and the corpus is characterized rather than closed — `characterize-the-hint-assessment-corpus`'s `audit.md` classified the hintless games of its day into seven shapes, said per game what a hint there would press on, and recommended the order to take them in. **Pick from it rather than alphabetically**: the point of characterizing was to be able to choose the game that presses hardest on whatever is being tested, and the cheapest hint in the corpus is the worst assessment. Enrollment in the cross-game hint guards is derived from the `hint()` declaration itself (`src/engine/testing/hint-games.ts`), so a game acquires every guard the moment it acquires a hint, and none before.
 
-Aspirational next step (owner-flagged 2026-06-15, not yet committed): lift Fifteen/Sixteen hints from "Slide tile 10 into the space" to a Palisade-grade *why* — does the move place a tile in its final home, or is it a helper/setup move toward sorting another tile? Inertia's stable-subgoal narration is the shape this wants.
+Aspirational next step (owner-flagged 2026-06-15): lift Fifteen/Sixteen hints from "Slide tile 10 into the space" to a Palisade-grade *why* — does the move place a tile in its final home, or is it a helper/setup move toward sorting another tile? Inertia's stable-subgoal narration is the shape this wants.
 
 ## TS port style: idiomatic throughout
 
@@ -478,7 +482,7 @@ So the question to ask of any inherited invariant is not "is it true?" but **"wh
   GitHub integration, which cannot wait on a check and would publish exactly
   the commits CI exists to catch.
   - **`_headers` is a real deploy artifact**, read verbatim by Cloudflare and
-    carrying the CSP and the whole cache policy. It is **ten rules and must
+    carrying the CSP and the whole cache policy. Its rule count **must
     stay constant in the size of the catalog** — Cloudflare parses at most 100,
     on every plan and on Workers too, and drops the rest silently, so a rule
     per puzzle would make a parser limit a limit on the number of games. The
@@ -496,7 +500,7 @@ So the question to ask of any inherited invariant is not "is it true?" but **"wh
     offline check must enable it first or it measures nothing and reports
     health.
 - `npm run test` / `npm run test:run` — vitest.
-- `npm run probe` — the **local-feedback probe**: plants ~70 hand-chosen real
+- `npm run probe` — the **local-feedback probe**: plants hand-chosen real
   defects in engine modules and runs only each module's own tests against them,
   answering *"would the file I am editing tell me I broke it?"*. A diagnostic,
   never a gate and never ratcheted (`npm run metrics` / `npm run mutation` have
@@ -524,7 +528,7 @@ Nothing under `src/assets/` is generated — it holds only committed files. `src
 DO NOT:
 - Edit the notices in `licenses/` without cause — they are someone else's words, reproduced verbatim to honor MIT.
 - Ship a help page that documents a platform this app is not. That is what got the halibut manual deleted: it told players of this PWA that the collection "deliberately do[es] not ever save information on to the computer", alongside Windows printing and two sections of Unix command-line options.
-- Name a new help source directory after a URL subdirectory the build emits pages into. A real directory shadowing a generated page namespace fails `vite build` outright with `EISDIR`. Every source today renders to the top level (`/help/<name>`), which is why `help/games/` is free to be named for what it holds.
+- Name a new help source directory after a URL subdirectory the build emits pages into. A real directory shadowing a generated page namespace fails `vite build` outright with `EISDIR`. Every source renders to the top level (`/help/<name>`), which is why `help/games/` is free to be named for what it holds.
 - Break Baseline 2023 browser compatibility.
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` — preflight runs on older browsers to gate the rest of the app.
 - Add dependencies without considering bundle size and offline (PWA) support.
@@ -549,7 +553,7 @@ and neither is a place to put our work:
 - **`../puzzles/`** — upstream's C, if a question genuinely needs to read it.
 - **`../puzzles-web/`** — the pre-fork baseline, useful as a diff reference.
 
-The two experimental C sources kept as *reading* references live with the changes
+The experimental C sources kept as *reading* references live with the changes
 that read them (`openspec/changes/add-{path,numgame}-ts-port/reference/`), each
 with a README stating that it does not compile and is not an oracle. **Don't
 recreate a directory named for a source tree that no longer exists** — the name
@@ -563,10 +567,10 @@ Source tree under `src/`:
 - `src/screens/` — top-level screen components.
 - `src/dialogs/` — modal/popover Lit components.
 - `src/components/` — reusable leaf Lit components.
-- `src/engine/` — the midend, the `Game` interface, the registry, the drawing/color/palette contracts, and the in-process test harness (`engine/testing/`). Mostly a **flat namespace of independent helpers**, deliberately: a grouping that has to be argued for is re-litigated at every addition. Two families are grouped, because their members have no readership apart from each other — `engine/grid/` (the grid builders, geometry, descriptions, trimming and the aperiodic `tilings/`; `grid/index.ts` is the barrel its doc comment tells callers to import from) and `engine/color/` (`colors.ts` the twelve-color palette, `palette.ts` the meanings, `palette-games.ts` the board-relative per-game colors, plus `color-token.ts` and `color-mkhighlight.ts`).
-- `src/games/<puzzleId>/` — one directory per game (all 57).
-- `src/engine/random/`, `src/engine/combi/` — the two leaf libraries with their own frozen C corpora. `random` is the bit-identical RNG port (`index.ts`, `sha1.ts`, fixtures), kept so shared game IDs reproduce across builds; `combi` is an 81-line combination enumerator with one consumer. Both were top-level `src/native/<module>/` folders until `retire-native-directory`, because the retired bottom-up doctrine gave every ported seam its own folder plus a `bridge.ts` slot for its wasm bridge. They are engine libraries; that category is gone.
-- `src/puzzle/` — **two roles, two places** (`group-crowded-source-directories`): the directory root is the main-thread puzzle runtime (`puzzle.ts`, the Comlink `worker.ts` + `worker-adapter.ts`, `drawing.ts`, `engine-surface.ts`, `contexts.ts`, the committed `catalog-data.ts`), and `src/puzzle/components/` holds the nine puzzle-specific Lit components. Their **filenames** dropped the `puzzle-` prefix that only ever repeated the directory name (`components/view.ts`, `components/keys.ts`); their **custom element names did not** — `<puzzle-view>` and friends are the app's DOM vocabulary, used from `templates/*.html.hbs` and every component's templates.
+- `src/engine/` — the midend, the `Game` interface, the registry, the drawing/color/palette contracts, and the in-process test harness (`engine/testing/`). Mostly a **flat namespace of independent helpers**, deliberately: a grouping that has to be argued for is re-litigated at every addition. Two families are grouped, because their members have no readership apart from each other — `engine/grid/` (the grid builders, geometry, descriptions, trimming and the aperiodic `tilings/`; `grid/index.ts` is the barrel its doc comment tells callers to import from) and `engine/color/` (`colors.ts` the palette, `palette.ts` the meanings, `palette-games.ts` the board-relative per-game colors, plus `color-token.ts` and `color-mkhighlight.ts`).
+- `src/games/<puzzleId>/` — one directory per game.
+- `src/engine/random/`, `src/engine/combi/` — the leaf libraries with their own frozen C corpora. `random` is the bit-identical RNG port (`index.ts`, `sha1.ts`, fixtures), kept so shared game IDs reproduce across builds; `combi` is a small combination enumerator. Both were top-level `src/native/<module>/` folders until `retire-native-directory`, because the retired bottom-up doctrine gave every ported seam its own folder plus a `bridge.ts` slot for its wasm bridge. They are engine libraries; that category is gone.
+- `src/puzzle/` — **two roles, two places** (`group-crowded-source-directories`): the directory root is the main-thread puzzle runtime (`puzzle.ts`, the Comlink `worker.ts` + `worker-adapter.ts`, `drawing.ts`, `engine-surface.ts`, `contexts.ts`, the committed `catalog-data.ts`), and `src/puzzle/components/` holds the puzzle-specific Lit components. Their **filenames** dropped the `puzzle-` prefix that only ever repeated the directory name (`components/view.ts`, `components/keys.ts`); their **custom element names did not** — `<puzzle-view>` and friends are the app's DOM vocabulary, used from `templates/*.html.hbs` and every component's templates.
 - `src/assets/` (all committed — `icons/` plus a handful of SVGs and `privacy.html`; `manual/` went with `retire-the-upstream-help-tree` and nothing here is generated), `src/css/` (styles), `src/store/` (Dexie schema), `src/utils/` (general-purpose helpers).
 - HTML page entries, main bootstrap (`main.ts`), preflight gate (`preflight.ts`), service worker (`sw.ts`), and cross-cutting modules (`routing.ts`, `color-scheme.ts`, `color-scheme-init.ts`, `icons.ts`) live at `src/` root.
 
@@ -671,9 +675,9 @@ Two smaller notes: `openspec validate` reads a requirement's **first line** as i
 
 ## Documentation
 
-The in-app help system is assembled from two sources, **both under `help/`**, both this project's own markdown:
+The in-app help system is assembled from sources **all under `help/`**, all of them this project's own markdown:
 - `help/*.md` — site-level pages (this fork's features, differences, install, the puzzle index).
-- `help/games/<puzzleId>.md` — one page per game, all 57, rendered to `/help/<puzzleId>.html`.
+- `help/games/<puzzleId>.md` — one page per game, rendered to `/help/<puzzleId>.html`.
 
 **Never split help by authorship.** A page the app serves is a build input this
 project owns, whoever originally wrote the words, and a page describing a game
@@ -686,18 +690,18 @@ all.
 adopted from upstream were its *short* overview fragments, and a fragment
 describes the game's headline rule only — upstream put the rest in the halibut
 manual, which documented a different program and is gone. So Unequal's page
-explained `<` signs and never mentioned Adjacent, a mode sitting in three of its
-twelve presets. An omission inherited from a fragment is ours to fix; "keeps
+explained `<` signs and never mentioned Adjacent, a mode sitting in several of its
+presets. An omission inherited from a fragment is ours to fix; "keeps
 upstream's wording" protects the words that are there, not the ones that never
 were.
 
 **Do not try to guard this by sweeping preset-title vocabulary against the
-page.** It was measured: filtering out sizes and tier names still flags 18 games
+page.** It was measured: filtering out sizes and tier names still flagged 18 games
 — Loopy's fifteen grid names, Cube's solids, Pegs' board shapes, "free ends",
 "multiplication only" — for the one real gap, and nothing mechanically separates
-a rule mode from a board shape without a manifest. Cube's page passes on the
+a rule mode from a board shape without a manifest. Cube's page passed on the
 merits while failing the sweep, because it says "other regular solids" rather
-than "Octahedron". Read the presets menus instead; 57 of them is a readable
+than "Octahedron". Read the presets menus instead; they are a readable
 population, and reading them is what found the one.
 
 Update `/help` when adding features that diverge from upstream.
@@ -709,7 +713,7 @@ Update `/help` when adding features that diverge from upstream.
 
   In order, blocking on any failure — `npm run gate` runs the lot, `npm run typecheck` runs just the two `tsgo` passes:
 
-  1. **`tsgo -b --noEmit`** — the browser project. `tsgo` (`@typescript/native-preview`), **not** `tsc`: it checks this tree in ~2.5 s against ~13 s. The same binary can serve an editor's language server (`tsgo --lsp`), but the agent's LSP tool runs whatever its plugin names — `typescript-language-server` on `typescript` 5.9 by default — so the diagnostics it pushes after an edit are 5.9's, not the gate's, unless the session loads `.claude/plugins/tsgo-lsp` (its README says how). `typescript` 5.x is still installed for the ten packages needing its programmatic API.
+  1. **`tsgo -b --noEmit`** — the browser project. `tsgo` (`@typescript/native-preview`), **not** `tsc`: it checks this tree in ~2.5 s against ~13 s. The same binary can serve an editor's language server (`tsgo --lsp`), but the agent's LSP tool runs whatever its plugin names — `typescript-language-server` on `typescript` 5.9 by default — so the diagnostics it pushes after an edit are 5.9's, not the gate's, unless the session loads `.claude/plugins/tsgo-lsp` (its README says how). `typescript` 5.x is still installed for the packages needing its programmatic API.
   2. **`tsgo --noEmit -p tsconfig.node.json`** — the build-side project (`vite.config.ts`, `vitest.config.ts`, `vite-plugins/`, `scripts/checks/`). Separate because it runs in Node while `tsconfig.json` is deliberately browser-shaped. Not optional: the file that renders every help page went unchecked while it sat outside `include`.
   3. **biome** — the read-only form of `biome check` (lint rules, formatting, **and** import order — so a lint-clean-but-unformatted file can't land and re-open the drift that once made `npm run check` reformat ~150 untouched files). It is **scoped by role**: the per-commit hook checks only the *staged* files (`biome check --staged`, via `GATE_BIOME_STAGED=1`), while CI and a manual `npm run gate` check the *whole tree* (`biome ci .`) as the backstop for `--no-verify` bypasses and biome-upgrade restyles. `npm run check` remains the fixer.
   4. **`scripts/feedback-probe.mjs --verify`** (0.02 s) — the probe anchor. Fails when a refactor moves a line the local-feedback corpus quotes as an anchor; otherwise the harness measures a smaller corpus and *reports success*. Only that the corpus **applies** is gated; its rate never is.

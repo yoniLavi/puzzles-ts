@@ -1,0 +1,13 @@
+{
+  "name": "puzzles-ts",
+  "owner": {
+    "name": "Yoni Lavi"
+  },
+  "plugins": [
+    {
+      "name": "tsgo-lsp",
+      "source": "./tsgo-lsp",
+      "description": "TypeScript language server from this repository's own tsgo, the compiler the gate checks with"
+    }
+  ]
+}

@@ -1,31 +1,33 @@
 # tsgo-lsp
 
 Points Claude Code's LSP tool at this repository's own `tsgo --lsp`, instead of
-`typescript-language-server` on `typescript` 5.9. Two things follow:
+`typescript-language-server` on `typescript` 5.9. The diagnostics the tool
+pushes after an edit then come from the compiler the gate runs (`AGENTS.md`
+§ "Git"), and a reference query does not come back short while the server
+loads.
 
-- The diagnostics the tool pushes after an edit come from the compiler the gate
-  runs (`AGENTS.md` § "Git").
-- A reference query does not come back short while the server loads.
+It is **not enabled by default**, because the LSP tool is configured per user
+(`ENABLE_LSP_TOOL=1`) and swapping its server is each developer's choice.
+`.claude/plugins/.claude-plugin/marketplace.json` makes it installable.
 
-It is **not enabled by default**. The LSP tool is configured per user
-(`ENABLE_LSP_TOOL=1`), so swapping its server is each developer's choice.
+**For every session in this checkout**, after `npm install`:
 
-To use it for a session, run `npm install`, then:
+    claude plugin marketplace add ./.claude/plugins --scope local
+    claude plugin install tsgo-lsp@puzzles-ts --scope local
+    claude plugin disable typescript-lsp@claude-plugins-official --scope local
+
+`--scope local` writes to `.claude/settings.local.json`, which is not
+committed. Disabling the default plugin matters: what Claude Code does with two
+servers registered for `.ts` is not documented, and it was not tried.
+
+**For one session only**:
 
     claude --plugin-dir .claude/plugins/tsgo-lsp \
       --settings '{"enabledPlugins":{"typescript-lsp@claude-plugins-official":false}}'
 
-The `--settings` part turns the default TypeScript plugin off for that session.
-What Claude Code does with two servers registered for `.ts` is not documented,
-and it was not tried.
+To go back, run `claude plugin enable typescript-lsp@claude-plugins-official
+--scope local` and `claude plugin disable tsgo-lsp@puzzles-ts --scope local`.
 
-Trialled 2026-09-12 (`weigh-a-semantic-code-server`'s `findings.md`):
-
-- On five queries, it gave the same reference and implementation answers as the
-  default server.
-- It answered in full on the first, cold query.
-- It worked in a fresh session loaded this way.
-
-Installing it permanently, through a local marketplace, was not trialled. The
-installed `tsgo` is a dev preview, so if an operation fails, drop the flags and
-the default plugin is back.
+The installed `tsgo` is a dev preview. If an operation fails, go back to the
+default plugin. `weigh-a-semantic-code-server`'s `findings.md` has the trial
+this rests on.
