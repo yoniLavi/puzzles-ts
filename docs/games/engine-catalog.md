@@ -702,20 +702,31 @@ than latched; almost every game latches it, so for them this is exactly the
 older, stricter behavior. Palisade and Separate recompute — the rule came from
 Palisade, which had it right first.
 
-### `pencil-indicator.ts` — the pencil-mode glyph
+### `pencil-indicator.ts` — the pencil-mode indicator
 
 The shared "pencil mode is on" indicator drawn identically across the
-collection; each game only picks where it sits. **Placement has three known
-answers, in preference order:**
+collection; each game only picks where it sits and which three palette indices
+it uses (`PencilIndicatorStyle`).
+
+`repaintPencilIndicator(dr, ds, on, firstFrame, ox, oy, size, style)` is the
+whole of placement answer 2 below — the box, the glyph, the invalidation **and**
+the repaint decision — so a game writes one call rather than a private painter
+plus a hand-rolled cache. The `firstFrame` flag is a parameter because which
+flag a game has (`firstFrame`, `!ds.started`) is its own bookkeeping.
+`drawPencilGlyph` remains exported for answer 1, where the tile cache does the
+deciding. **Placement has three known answers, in preference order:**
 
 1. **A high tile-flag bit on a cache-safe cell** — one the game's own draw
    never overpaints (no piece/animation overlap) *and* that is no cell's
    neighbor in the diff cache, so the per-tile cache repaints it on toggle
    for free (Towers uses the top-right clue-ring corner — its 3D towers only
    ever protrude up-left).
-2. **An explicit end-of-redraw repaint** when no cache-safe cell exists: fill
-   the indicator's region and draw the glyph at the end of every `redraw`,
-   tracking last-drawn on/off on the drawstate.
+2. **An explicit end-of-redraw repaint** when no cache-safe cell exists: call
+   `repaintPencilIndicator` at the end of `redraw` with the game's box, its
+   style and its own first-frame flag. Carry `pencilModeShown: boolean` on the
+   draw state and let the helper own it — the sidecar it implies is a second
+   cache, so see [rendering](./rendering.md) § "A cue with a tile available
+   belongs in the tile key, not in a second cache" before choosing this over 1.
 3. **Grow the canvas rather than overlap the board** when there is no border
    and no spare cell at all: Mathrax adds a `tilesize/2` strip *below* the
    board — keep the grid's own geometry untouched when you do, so `fromCoord`

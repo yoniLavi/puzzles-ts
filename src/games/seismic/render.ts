@@ -37,7 +37,11 @@ import {
 import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import {
+  type PencilIndicatorBox,
+  type PencilIndicatorStyle,
+  repaintPencilIndicator,
+} from "../../engine/pencil-indicator.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import {
   FM_ERRORMASK,
@@ -131,7 +135,7 @@ export interface SeismicDrawState {
   /** The Check-&-Save mistake overlay. */
   wrong: OverlaySidecar;
   /** Whether the pencil-mode indicator was on last frame. */
-  pencilModeShown: boolean;
+  pencilModeShown: boolean | null;
 }
 
 export function newDrawState(state: SeismicState): SeismicDrawState {
@@ -141,7 +145,7 @@ export function newDrawState(state: SeismicState): SeismicDrawState {
     tilesize: 0,
     tiles: new Int32Array(cells).fill(-1),
     wrong: new OverlaySidecar(cells),
-    pencilModeShown: false,
+    pencilModeShown: null,
   };
 }
 
@@ -299,20 +303,18 @@ function drawTile(
 
 // --- pencil-mode indicator (fork addition) ---------------------------------
 
-function drawPencilIndicator(
-  dr: GameDrawing,
-  p: SeismicParams,
-  ts: number,
-  on: boolean,
-): void {
+const PENCIL_STYLE: PencilIndicatorStyle = {
+  background: COL_BACKGROUND,
+  body: COL_PENCIL_BODY,
+  ink: COL_BORDER,
+};
+
+/** Under the board's bottom-right corner, clear of every cell and clue. */
+const PENCIL_BOX = (p: SeismicParams, ts: number): PencilIndicatorBox => {
   const size = indicatorSize(ts);
   const board = boardSize(p, ts);
-  const ox = board.w - size;
-  const oy = board.h;
-  dr.drawRect({ x: ox, y: oy, w: size, h: size }, COL_BACKGROUND);
-  if (on) drawPencilGlyph(dr, ox, oy, size, COL_PENCIL_BODY, COL_BORDER);
-  dr.drawUpdate({ x: ox, y: oy, w: size, h: size });
-}
+  return { x: board.w - size, y: board.h, size };
+};
 
 // --- redraw ----------------------------------------------------------------
 
@@ -390,8 +392,6 @@ export function redraw(
     }
   }
 
-  if (firstFrame || ds.pencilModeShown !== ui.pencilMode) {
-    drawPencilIndicator(dr, state.params, ts, ui.pencilMode);
-    ds.pencilModeShown = ui.pencilMode;
-  }
+  const box = PENCIL_BOX(state.params, ts);
+  repaintPencilIndicator(dr, ds, ui.pencilMode, box, PENCIL_STYLE);
 }

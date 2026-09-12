@@ -85,6 +85,31 @@ drawing. Three pack entry points, by the shape of what you have:
 | A `findMistakes` cell list | `packCells(mistakes, indexFn)` | `towers/render.ts` `ds.wrong` |
 | An overlay with its own topology | `clear()` + `add(i, bits)` | [`galaxies/render.ts`](../../src/games/galaxies/render.ts) `ds.wrongEdges` — one wrong wall is a *shared* edge, so it lights a different bit in each of the two tiles it separates |
 
+### A cue with a tile available belongs in the tile key, not in a second cache
+
+**Prefer a bit in the per-tile key over a sidecar scalar on the draw state.** A
+sidecar is a *second cache*, and a second cache is a second key to forget an
+input from — which is the failure below, and it is silent.
+
+The pencil-mode indicator is the collection's worked example of both answers.
+Towers packs it into its tile cache (`DF_PENCIL_MODE` on tile `w + 1`) and
+therefore **cannot** have the bug: the tile's key already covers everything the
+tile shows. Nine other games keep a `ds.pencilModeShown` scalar beside the tile
+cache, and Crossing — the same file, a neighboring surface — is where the bug
+actually happened.
+
+A sidecar is still right when the cue has no tile to live in (a panel below the
+board, a margin outside the grid). Reach for it second, and then name **every**
+input the painter reads in its key.
+
+**The nine sidecars also showed what a second cache costs in tests.** Each one
+was covered only through a render snapshot, and `RecordingDrawing` keeps
+`drawUpdate` out of `ops` deliberately — so deleting the invalidation from all
+nine at once failed *zero* tests. Exemplar of the fix:
+[`engine/pencil-indicator.ts`](../../src/engine/pencil-indicator.ts)
+(`repaintPencilIndicator`), whose own test asserts the `updates` channel that no
+snapshot can see.
+
 ### Moving a cue out of the key's channel is how the key loses it
 
 **A cache key names inputs, so changing how a cue is *rendered* can silently

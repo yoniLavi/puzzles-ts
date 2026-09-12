@@ -65,7 +65,11 @@ import {
   hintMarkBit,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import {
+  type PencilIndicatorBox,
+  type PencilIndicatorStyle,
+  repaintPencilIndicator,
+} from "../../engine/pencil-indicator.ts";
 import type { Color, DrawTextOptions, Point, Size } from "../../engine/types.ts";
 import type { CrossingMistake } from "./solver.ts";
 import {
@@ -287,7 +291,7 @@ export interface CrossingDrawState {
    * drawn after the cell loop. See {@link markBand}. */
   marks: HintMarks;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
-  pencilModeShown: boolean;
+  pencilModeShown: boolean | null;
 }
 
 export function newDrawState(state: CrossingState): CrossingDrawState {
@@ -300,7 +304,7 @@ export function newDrawState(state: CrossingState): CrossingDrawState {
     hint: new OverlaySidecar(w * h),
     marks: new HintMarks(),
     numberState: new Int8Array(numbers.length).fill(-1),
-    pencilModeShown: false,
+    pencilModeShown: null,
   };
 }
 
@@ -799,15 +803,18 @@ function drawNumbers(
 
 // --- pencil-mode indicator -------------------------------------------------
 
-/** The shared CapsLock-style pencil-mode glyph, drawn in the empty half-tile
- * margin above and left of the grid — the same indicator Towers/Unequal/ABCD
- * use. */
-function drawPencilIndicator(dr: GameDrawing, ts: number, on: boolean): void {
-  const size = Math.floor(ts / 2);
-  dr.drawRect({ x: 0, y: 0, w: size, h: size }, COL_OUTERBG);
-  if (on) drawPencilGlyph(dr, 0, 0, size, COL_PENCIL_BODY, COL_GRID);
-  dr.drawUpdate({ x: 0, y: 0, w: size, h: size });
-}
+const PENCIL_STYLE: PencilIndicatorStyle = {
+  background: COL_OUTERBG,
+  body: COL_PENCIL_BODY,
+  ink: COL_GRID,
+};
+/** The empty half-tile margin above and left of the grid; half a tile, so it
+ * clears the grid outline sitting in that margin. */
+const PENCIL_BOX = (ts: number): PencilIndicatorBox => ({
+  x: 0,
+  y: 0,
+  size: Math.floor(ts / 2),
+});
 
 // --- redraw ----------------------------------------------------------------
 
@@ -827,13 +834,14 @@ export function redraw(
   const puzzle = state.puzzle;
   const { w, h, walls, numbers, runs } = puzzle;
 
-  if (!ds.started) {
+  // Read before the block below clears it: the pencil indicator repaints at the
+  // end of this frame and needs to know it is the first one.
+  const firstFrame = !ds.started;
+  if (firstFrame) {
     const size = computeSize(puzzle, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_OUTERBG);
     dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
     ds.started = true;
-    drawPencilIndicator(dr, ts, ui.pencilMode);
-    ds.pencilModeShown = ui.pencilMode;
   }
 
   const flash = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) % 3 : -1;
@@ -1069,8 +1077,5 @@ export function redraw(
     for (let l = 0; l < numbers.length; l++) ds.numberState[l] = panelState(l);
   }
 
-  if (ds.pencilModeShown !== ui.pencilMode) {
-    drawPencilIndicator(dr, ts, ui.pencilMode);
-    ds.pencilModeShown = ui.pencilMode;
-  }
+  repaintPencilIndicator(dr, ds, ui.pencilMode, PENCIL_BOX(ts), PENCIL_STYLE);
 }

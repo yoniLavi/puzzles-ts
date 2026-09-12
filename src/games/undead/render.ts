@@ -38,7 +38,11 @@ import {
   HINT_TARGET,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import {
+  type PencilIndicatorBox,
+  type PencilIndicatorStyle,
+  repaintPencilIndicator,
+} from "../../engine/pencil-indicator.ts";
 import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 import type { Color, Point, Rect, Size } from "../../engine/types.ts";
 import {
@@ -163,7 +167,7 @@ export interface UndeadDrawState {
   /** The hint target's ring and the evidence area's outline (fork additions),
    * drawn after the cell loop. See {@link markBand}. */
   marks: HintMarks;
-  pencilModeShown: boolean;
+  pencilModeShown: boolean | null;
 }
 
 export function newDrawState(state: UndeadState): UndeadDrawState {
@@ -192,7 +196,7 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
     hint: new OverlaySidecar(common.wh),
     wrong: new OverlaySidecar(common.wh),
     marks: new HintMarks(),
-    pencilModeShown: false,
+    pencilModeShown: null,
   };
 }
 
@@ -708,18 +712,20 @@ function rectOutline(
   );
 }
 
-function drawPencilIndicator(dr: GameDrawing, ds: UndeadDrawState, on: boolean): void {
+const PENCIL_STYLE: PencilIndicatorStyle = {
+  background: COL_BACKGROUND,
+  body: COL_PENCIL_BODY,
+  ink: COL_GRID,
+};
+
+/** The empty top-right corner cell of the clue ring (grid cell (w+1, 0)), a
+ * full tile like Towers' clue-corner indicator: Undead's ts/4 border is too
+ * thin for the shared glyph to read at the other pencil-mark games' size. */
+const PENCIL_BOX = (ds: UndeadDrawState): PencilIndicatorBox => {
   const ts = ds.tilesize;
   const b = border(ts);
-  // The empty top-right corner cell of the clue ring (grid cell (w+1, 0)), a
-  // full tile like Towers' clue-corner indicator: Undead's ts/4 border is too
-  // thin for the shared glyph to read at the other pencil-mark games' size.
-  const ox = b + (ds.w + 1) * ts;
-  const oy = b + ts;
-  dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, COL_BACKGROUND);
-  if (on) drawPencilGlyph(dr, ox, oy, ts, COL_PENCIL_BODY, COL_GRID);
-  dr.drawUpdate({ x: ox, y: oy, w: ts, h: ts });
-}
+  return { x: b + (ds.w + 1) * ts, y: b + ts, size: ts };
+};
 
 // --- redraw ----------------------------------------------------------------
 
@@ -915,10 +921,7 @@ export function redraw(
   });
 
   // Pencil-mode indicator (fork addition).
-  if (!ds.started || ds.pencilModeShown !== ui.pencilMode) {
-    drawPencilIndicator(dr, ds, ui.pencilMode);
-    ds.pencilModeShown = ui.pencilMode;
-  }
+  repaintPencilIndicator(dr, ds, ui.pencilMode, PENCIL_BOX(ds), PENCIL_STYLE);
 
   ds.cursor.x = ui.cursor.x;
   ds.cursor.y = ui.cursor.y;

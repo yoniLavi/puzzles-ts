@@ -47,7 +47,11 @@ import {
   type OrderedCell,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import {
+  type PencilIndicatorBox,
+  type PencilIndicatorStyle,
+  repaintPencilIndicator,
+} from "../../engine/pencil-indicator.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import {
   checkKillerCageSum,
@@ -162,7 +166,7 @@ export interface SoloDrawState {
    * repaints a cell whose tile is otherwise unchanged. */
   wrong: OverlaySidecar;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
-  pencilModeShown: boolean;
+  pencilModeShown: boolean | null;
   /** The hint target's ring and the evidence region's outline (fork additions),
    * both drawn in the **gutter**, which no tile repaints — so their removal is
    * driven from here rather than from the tile cache. See {@link markBand}. */
@@ -180,7 +184,7 @@ export function newDrawState(state: SoloState): SoloDrawState {
     pencil: new Int32Array(a).fill(-1),
     hint: new OverlaySidecar(a),
     wrong: new OverlaySidecar(a),
-    pencilModeShown: false,
+    pencilModeShown: null,
     marks: new HintMarks(),
   };
 }
@@ -510,18 +514,16 @@ function drawPencilMarks(
 
 /** The shared diagonal pencil glyph, drawn in the empty top-right border corner
  * (outside the grid, never overlapping a cell) — the corner Keen/Unequal use. */
-function drawPencilIndicator(
-  dr: GameDrawing,
-  cr: number,
-  ts: number,
-  on: boolean,
-): void {
+const PENCIL_STYLE: PencilIndicatorStyle = {
+  background: COL_BACKGROUND,
+  body: COL_PENCIL_BODY,
+  ink: COL_GRID,
+};
+/** The top-right border corner, outside every cell and clue. */
+const PENCIL_BOX = (cr: number, ts: number): PencilIndicatorBox => {
   const b = border(ts);
-  const ox = computeSize(cr, ts).w - b;
-  dr.drawRect({ x: ox, y: 0, w: b, h: b }, COL_BACKGROUND);
-  if (on) drawPencilGlyph(dr, ox, 0, b, COL_PENCIL_BODY, COL_GRID);
-  dr.drawUpdate({ x: ox, y: 0, w: b, h: b });
-}
+  return { x: computeSize(cr, ts).w - b, y: 0, size: b };
+};
 
 // --- redraw ----------------------------------------------------------------
 
@@ -542,7 +544,6 @@ export function redraw(
   const ge = gridExtra(ts);
   const b = border(ts);
   const size = computeSize(cr, ts);
-  const firstFrame = !ds.started;
 
   if (!ds.started) {
     // Engine paints no pixels of its own — fill the whole canvas, then the grid
@@ -675,8 +676,5 @@ export function redraw(
   });
 
   // Pencil-mode indicator (fork addition).
-  if (firstFrame || ds.pencilModeShown !== ui.pencilMode) {
-    drawPencilIndicator(dr, cr, ts, ui.pencilMode);
-    ds.pencilModeShown = ui.pencilMode;
-  }
+  repaintPencilIndicator(dr, ds, ui.pencilMode, PENCIL_BOX(cr, ts), PENCIL_STYLE);
 }

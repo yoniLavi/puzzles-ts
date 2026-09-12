@@ -39,7 +39,11 @@ import {
   hintMarkBit,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import {
+  type PencilIndicatorBox,
+  type PencilIndicatorStyle,
+  repaintPencilIndicator,
+} from "../../engine/pencil-indicator.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import type { SaladHint } from "./hint.ts";
 import type { SaladMistake } from "./solver.ts";
@@ -204,7 +208,7 @@ export interface SaladDrawState {
   colcount: Int32Array;
   /** Whether the pencil-mode indicator was drawn last frame (it lives in the
    * clue margin, outside the per-tile cache). */
-  pencilModeShown: boolean;
+  pencilModeShown: boolean | null;
 }
 
 export function newDrawState(s: SaladState): SaladDrawState {
@@ -223,7 +227,7 @@ export function newDrawState(s: SaladState): SaladDrawState {
     marks: new HintMarks(),
     rowcount: new Int32Array(o2),
     colcount: new Int32Array(o2),
-    pencilModeShown: false,
+    pencilModeShown: null,
   };
 }
 
@@ -485,6 +489,15 @@ function drawMistakeBox(dr: GameDrawing, tx: number, ty: number, ts: number): vo
   }
 }
 
+const PENCIL_STYLE: PencilIndicatorStyle = {
+  background: COL_BACKGROUND,
+  body: COL_PENCIL_BODY,
+  ink: COL_BORDER,
+};
+/** The top-left margin tile: a corner, so it never holds a border clue in
+ * either mode and nothing else ever paints there. */
+const PENCIL_BOX = (ts: number): PencilIndicatorBox => ({ x: 0, y: 0, size: ts });
+
 // --- redraw ----------------------------------------------------------------
 
 export function redraw(
@@ -723,16 +736,8 @@ export function redraw(
     }
   }
 
-  // Fork addition: the CapsLock-style pencil-mode indicator. The top-left
-  // margin tile is a corner, so it never holds a border clue in either mode and
-  // nothing else ever paints there — but it is outside the per-tile cache, so
-  // the on/off state is tracked here and the tile repainted on a change.
-  if (!ds.started || ds.pencilModeShown !== ui.pencilMode) {
-    ds.pencilModeShown = ui.pencilMode;
-    dr.drawRect({ x: 0, y: 0, w: ts, h: ts }, COL_BACKGROUND);
-    if (ui.pencilMode) drawPencilGlyph(dr, 0, 0, ts, COL_PENCIL_BODY, COL_BORDER);
-    dr.drawUpdate({ x: 0, y: 0, w: ts, h: ts });
-  }
+  // Fork addition: the CapsLock-style pencil-mode indicator.
+  repaintPencilIndicator(dr, ds, ui.pencilMode, PENCIL_BOX(ts), PENCIL_STYLE);
 
   ds.started = true;
 }

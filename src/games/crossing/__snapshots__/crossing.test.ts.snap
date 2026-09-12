@@ -12,15 +12,6 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "y": 0,
   },
   {
-    "color": 0,
-    "h": 20,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 20,
-    "x": 0,
-    "y": 0,
-  },
-  {
     "color": 2,
     "h": 40,
     "op": "rect",
@@ -1864,6 +1855,15 @@ exports[`crossing rendering > draws the opening frame 1`] = `
     "x": 160,
     "y": 276,
   },
+  {
+    "color": 0,
+    "h": 20,
+    "op": "rect",
+    "rgb": "rgb(211, 211, 211)",
+    "w": 20,
+    "x": 0,
+    "y": 0,
+  },
 ]
 `;
 
@@ -1875,15 +1875,6 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
     "w": 240,
-    "x": 0,
-    "y": 0,
-  },
-  {
-    "color": 0,
-    "h": 20,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 20,
     "x": 0,
     "y": 0,
   },
@@ -3968,6 +3959,15 @@ exports[`crossing rendering > frames a full-but-unlisted run in red 1`] = `
     "text": "53971",
     "x": 160,
     "y": 276,
+  },
+  {
+    "color": 0,
+    "h": 20,
+    "op": "rect",
+    "rgb": "rgb(211, 211, 211)",
+    "w": 20,
+    "x": 0,
+    "y": 0,
   },
 ]
 `;

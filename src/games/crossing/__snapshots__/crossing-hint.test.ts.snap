@@ -12,15 +12,6 @@ exports[`crossing hint — the frame > matches its recorded frame 1`] = `
     "y": 0,
   },
   {
-    "color": 0,
-    "h": 20,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 20,
-    "x": 0,
-    "y": 0,
-  },
-  {
     "color": 2,
     "h": 40,
     "op": "rect",
@@ -2045,6 +2036,15 @@ exports[`crossing hint — the frame > matches its recorded frame 1`] = `
     "text": "97615",
     "x": 160,
     "y": 304,
+  },
+  {
+    "color": 0,
+    "h": 20,
+    "op": "rect",
+    "rgb": "rgb(211, 211, 211)",
+    "w": 20,
+    "x": 0,
+    "y": 0,
   },
 ]
 `;

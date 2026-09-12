@@ -35,7 +35,11 @@ import {
   type OrderedCell,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import {
+  type PencilIndicatorBox,
+  type PencilIndicatorStyle,
+  repaintPencilIndicator,
+} from "../../engine/pencil-indicator.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import {
   C_ADD,
@@ -156,7 +160,7 @@ export interface KeenDrawState {
    * repaints a cell whose tile value is otherwise unchanged. */
   wrong: OverlaySidecar;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
-  pencilModeShown: boolean;
+  pencilModeShown: boolean | null;
   /** The hint target's ring and the evidence region's outline (fork additions),
    * both drawn in the **gutter**, which no tile repaints — so their removal is
    * driven from here rather than from the tile cache. See {@link markBand}. */
@@ -173,7 +177,7 @@ export function newDrawState(state: KeenState): KeenDrawState {
     errors: new Int32Array(a),
     hint: new OverlaySidecar(a),
     wrong: new OverlaySidecar(a),
-    pencilModeShown: false,
+    pencilModeShown: null,
     marks: new HintMarks(),
   };
 }
@@ -406,18 +410,16 @@ function markBand(ds: KeenDrawState, x: number, y: number): MarkBand {
 
 /** The shared diagonal pencil glyph, drawn in the empty top-right border corner
  * (outside the grid, never overlapping a cell) — the same corner Unequal uses. */
-function drawPencilIndicator(
-  dr: GameDrawing,
-  w: number,
-  ts: number,
-  on: boolean,
-): void {
+const PENCIL_STYLE: PencilIndicatorStyle = {
+  background: COL_BACKGROUND,
+  body: COL_PENCIL_BODY,
+  ink: COL_GRID,
+};
+/** The top-right border corner, outside every cell and clue. */
+const PENCIL_BOX = (w: number, ts: number): PencilIndicatorBox => {
   const b = border(ts);
-  const ox = computeSize({ w }, ts).w - b;
-  dr.drawRect({ x: ox, y: 0, w: b, h: b }, COL_BACKGROUND);
-  if (on) drawPencilGlyph(dr, ox, 0, b, COL_PENCIL_BODY, COL_GRID);
-  dr.drawUpdate({ x: ox, y: 0, w: b, h: b });
-}
+  return { x: computeSize({ w }, ts).w - b, y: 0, size: b };
+};
 
 // --- redraw ----------------------------------------------------------------
 
@@ -437,7 +439,6 @@ export function redraw(
   const w = state.params.w;
   const ge = gridExtra(ts);
   const size = computeSize({ w }, ts);
-  const firstFrame = !ds.started;
 
   if (!ds.started) {
     // Engine paints no pixels of its own — fill the whole canvas, then the grid
@@ -505,8 +506,5 @@ export function redraw(
   });
 
   // Pencil-mode indicator (fork addition).
-  if (firstFrame || ds.pencilModeShown !== ui.pencilMode) {
-    drawPencilIndicator(dr, w, ts, ui.pencilMode);
-    ds.pencilModeShown = ui.pencilMode;
-  }
+  repaintPencilIndicator(dr, ds, ui.pencilMode, PENCIL_BOX(w, ts), PENCIL_STYLE);
 }

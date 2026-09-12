@@ -31,7 +31,11 @@ import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { fromCoord as geometryFromCoord } from "../../engine/geometry.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import {
+  type PencilIndicatorBox,
+  type PencilIndicatorStyle,
+  repaintPencilIndicator,
+} from "../../engine/pencil-indicator.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import {
   type AbcdState,
@@ -118,7 +122,7 @@ export interface AbcdDrawState {
   /** Mistake-overlay sidecar (fork addition) — keeps Check & Save in the diff key. */
   wrong: OverlaySidecar;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
-  pencilModeShown: boolean;
+  pencilModeShown: boolean | null;
 }
 
 export function newDrawState(state: AbcdState): AbcdDrawState {
@@ -129,7 +133,7 @@ export function newDrawState(state: AbcdState): AbcdDrawState {
     tiles: new Int32Array(w * h).fill(-1),
     clueErr: new Int8Array((w + h) * n).fill(-1),
     wrong: new OverlaySidecar(w * h),
-    pencilModeShown: false,
+    pencilModeShown: null,
   };
 }
 
@@ -397,13 +401,13 @@ function drawTile(
 
 // --- pencil-mode indicator -------------------------------------------------
 
-/** The shared CapsLock-style pencil-mode glyph, in the empty top-left gutter
- * corner, clear of every cell and clue. */
-function drawPencilIndicator(dr: GameDrawing, ts: number, on: boolean): void {
-  dr.drawRect({ x: 0, y: 0, w: ts, h: ts }, COL_OUTERBG);
-  if (on) drawPencilGlyph(dr, 0, 0, ts, COL_PENCIL_BODY, COL_GRID);
-  dr.drawUpdate({ x: 0, y: 0, w: ts, h: ts });
-}
+const PENCIL_STYLE: PencilIndicatorStyle = {
+  background: COL_OUTERBG,
+  body: COL_PENCIL_BODY,
+  ink: COL_GRID,
+};
+/** The empty top-left gutter corner, clear of every cell and clue. */
+const PENCIL_BOX = (ts: number): PencilIndicatorBox => ({ x: 0, y: 0, size: ts });
 
 // --- redraw ----------------------------------------------------------------
 
@@ -421,7 +425,6 @@ export function redraw(
 ): void {
   const ts = ds.tilesize;
   const { w, h, n } = state.params;
-  const firstFrame = !ds.started;
 
   if (!ds.started) {
     const size = computeSize(state.params, ts);
@@ -490,8 +493,5 @@ export function redraw(
   }
 
   // Pencil-mode indicator (fork addition): the sticky-pencil "mode on" glyph.
-  if (firstFrame || ds.pencilModeShown !== ui.pencilMode) {
-    drawPencilIndicator(dr, ts, ui.pencilMode);
-    ds.pencilModeShown = ui.pencilMode;
-  }
+  repaintPencilIndicator(dr, ds, ui.pencilMode, PENCIL_BOX(ts), PENCIL_STYLE);
 }

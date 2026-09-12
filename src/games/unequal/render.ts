@@ -37,7 +37,11 @@ import {
   type OrderedCell,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import {
+  type PencilIndicatorBox,
+  type PencilIndicatorStyle,
+  repaintPencilIndicator,
+} from "../../engine/pencil-indicator.ts";
 import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
 import type { UnequalMove } from "./state.ts";
@@ -176,7 +180,7 @@ export interface UnequalDrawState {
   pencilMode: boolean;
   hflash: boolean;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
-  pencilModeShown: boolean;
+  pencilModeShown: boolean | null;
   /** The hint target's ring and the evidence region's outline (fork additions),
    * both drawn in the **gap** between cells, which no cell repaints. See
    * {@link markBand}. */
@@ -198,7 +202,7 @@ export function newDrawState(state: UnequalState): UnequalDrawState {
     cursor: newCursor(),
     pencilMode: false,
     hflash: false,
-    pencilModeShown: false,
+    pencilModeShown: null,
     marks: new HintMarks(),
   };
 }
@@ -531,18 +535,16 @@ function drawHints(
 /** The pencil-mode indicator: the shared diagonal pencil glyph, drawn in the
  * empty top-right border corner (outside the grid, never overlapping a cell or a
  * gap clue) — the same corner Towers uses, via the same {@link drawPencilGlyph}. */
-function drawPencilIndicator(
-  dr: GameDrawing,
-  order: number,
-  ts: number,
-  on: boolean,
-): void {
+const PENCIL_STYLE: PencilIndicatorStyle = {
+  background: COL_BACKGROUND,
+  body: COL_PENCIL_BODY,
+  ink: COL_GRID,
+};
+/** The top-right border corner, outside every cell and clue. */
+const PENCIL_BOX = (order: number, ts: number): PencilIndicatorBox => {
   const b = border(ts);
-  const ox = drawSize(order, ts) - b;
-  dr.drawRect({ x: ox, y: 0, w: b, h: b }, COL_BACKGROUND);
-  if (on) drawPencilGlyph(dr, ox, 0, b, COL_PENCIL_BODY, COL_GRID);
-  dr.drawUpdate({ x: ox, y: 0, w: b, h: b });
-}
+  return { x: drawSize(order, ts) - b, y: 0, size: b };
+};
 
 // --- redraw ----------------------------------------------------------------
 
@@ -654,10 +656,7 @@ export function redraw(
   });
 
   // Pencil-mode indicator (fork addition).
-  if (!ds.started || ds.pencilModeShown !== ui.pencilMode) {
-    drawPencilIndicator(dr, o, ts, ui.pencilMode);
-    ds.pencilModeShown = ui.pencilMode;
-  }
+  repaintPencilIndicator(dr, ds, ui.pencilMode, PENCIL_BOX(o, ts), PENCIL_STYLE);
 
   ds.cursor.x = ui.cursor.x;
   ds.cursor.y = ui.cursor.y;
