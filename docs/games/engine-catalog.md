@@ -553,6 +553,15 @@ reaches the last cell; Slant and Mosaic keep it, because their `validateDesc`
 rejects a desc that does not fill the grid *exactly*. Encode a Slant desc
 without it and the game refuses to load its own board.
 
+**Do not try to extract the alphabet on its own.** It is the obvious sequel to
+`decimal.ts` and it fails the same test that module passed. Measured 2026-09-12
+(`record-the-letter-run-no-go`): 26 games outside this module spell a letter run
+by hand across ~69 sites, and they disagree about what a letter is worth — `a`
+is 0 in Clusters, 1 in Sticks, Range and Ascent, 2 in Tents, with three chunk
+boundaries and two meanings for `z`. Those descs are frozen bytes, so the shared
+form would take `base`, `chunk` and `zMeaning` as parameters. A digit is one
+fact; a run letter is each game's own.
+
 **Games with a richer desc do not use this**: Towers, Keen, Solo, Undead,
 Unequal, Mathrax, Salad, Boats, Tents, Tracks and Pattern parse multi-digit
 numbers, `_` separators, or two comma-separated sections whose boundary the

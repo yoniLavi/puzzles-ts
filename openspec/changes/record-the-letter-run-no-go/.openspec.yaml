@@ -1,0 +1,6 @@
+# No spec delta: this change records a measured no-go in the two documents a
+# future reader of the grep will meet. It asserts no new normative rule —
+# `run-length.ts`'s existing requirement is unchanged.
+schema: spec-driven
+created: 2026-09-12
+skip_specs: true
