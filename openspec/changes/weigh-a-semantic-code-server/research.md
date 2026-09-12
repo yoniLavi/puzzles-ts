@@ -160,6 +160,53 @@ The rest is reachable by nothing a language server offers.
    "Impact", which assumed a global prefix. Whether `latinSolver<$T>($$$A)`
    matches is unverified. It is still a new dependency, so it needs the owner.
 
+## The case against each step
+
+Weighed 2026-09-12, after the owner accepted not trialling Serena.
+
+1. **Writing the instrument down.**
+   - `AGENTS.md` is 718 lines and loads into every session, so another paragraph
+     is a standing tax. Fold the rule into § "A scan that keys on a name" rather
+     than adding a section.
+   - The rule must not name the LSP tool as *the* command. The tool is enabled
+     only in the owner's `~/.claude/settings.json`, and a subagent in this same
+     session had no LSP tool at all. That is an argument for landing step 2
+     first and naming its command.
+2. **`npm run refs`.**
+   - It is one more consumer of TypeScript 5.9's compiler API, which TypeScript 7
+     does not offer until 7.1. The marginal risk is small, because
+     `unused-exports.mjs`, `vacuous-assertions.mjs` and `enrollment.ts` already
+     depend on it and would migrate together.
+   - It is blind to a population taken from source text. `enrollment.ts` reads
+     game source through three `?raw` globs, and a text read is no reference.
+     The script's output must say it answers "who references this symbol",
+     never "who uses this mechanic".
+   - It rebuilds a whole program per run, which is seconds at `tsc`'s speed
+     (the gate's figure is ~13 s for a check). That is fine ad hoc, and too slow
+     to call in a loop.
+3. **The LSP tool on `tsgo --lsp`.**
+   - It is user-scope config; a replacement for the `typescript-lsp` plugin
+     would apply to every project on the machine, including ones without
+     `tsgo`. A local plugin enabled per project avoids that, at the cost of a
+     committed `.claude/` entry.
+   - The installed build is a July dev preview. If its references or
+     implementations are incomplete, replacing the 5.9 server loses them, so
+     check its answers against the warm 5.9 ones first.
+   - Its memory footprint on this swapping machine is unmeasured.
+   - The binary must resolve to this repo's `node_modules/.bin/tsgo`, or the
+     diagnostics stop agreeing with the gate, which was the point.
+4. **`ast-grep` as a devDependency.**
+   - The syntax row it would serve is already answered by step 2 and by a
+     regex allowing type arguments.
+   - Its unique reach is renamed copies by shape, and the record's copies vary
+     (`eatNum`, `readInt`, some forty inline loops), so a pattern catches only
+     the copies someone thought to describe. The TypeScript AST that
+     `vacuous-assertions.mjs` already walks can express the same shapes without
+     a dependency.
+   - This repo has already carried a tool installed for a job and wired to
+     nothing: `knip`, until `5f5b0d10`.
+   - **Defer it until task 1's replay shows a row only it catches.**
+
 ## What would change this
 
 - Serena ships a supported `tsgo` backend and fixes #1937. The reference graph

@@ -1,8 +1,8 @@
 # Weigh a semantic code server
 
-**Readiness: desk research done 2026-09-12 (`research.md`); no trial run. It
-recommends not trialling Serena now and taking the cheaper steps it lists first —
-the owner's decision.** Several "not found" items below are answered there, and it
+**Readiness: desk research done 2026-09-12 (`research.md`); no trial run. The
+owner accepted its recommendation the same day: no Serena trial now; take the
+cheaper steps it lists, weighed against the case against each.** Several "not found" items below are answered there, and it
 supersedes them.
 
 Owner question, 2026-09-12:
