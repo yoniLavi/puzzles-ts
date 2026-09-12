@@ -52,4 +52,5 @@
       postmortems) stay.
       The only survivors are the floor's history comment and `AGENTS.md`'s dated
       "read … through openspec 1.13.0", both records of a reading.
-- [ ] 3.4 Full gate, then archive.
+- [x] 3.4 Full gate, then archive.
+      Gate green on `422ac898`: 320 test files, 9224 tests passed.
