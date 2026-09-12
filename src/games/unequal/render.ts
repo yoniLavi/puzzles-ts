@@ -25,6 +25,7 @@ import {
   pencilColor,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
@@ -461,12 +462,7 @@ function drawCell(
       flags & DF_IMMUTABLE ? COL_TEXT : flags & F_ERROR ? COL_ERROR : COL_GUESS;
     dr.drawText(
       { x: ox + Math.floor(ts / 2), y: oy + Math.floor(ts / 2) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor((3 * ts) / 4),
-      },
+      glyphFont(Math.floor((3 * ts) / 4)),
       color,
       n2c(num, o),
     );
@@ -522,17 +518,7 @@ function drawHints(
       const hy = Math.floor(j / hw);
       const cx = ox + Math.floor(((4 * hx + 3) * ts) / (4 * hw + 2));
       const cy = oy + Math.floor(((4 * hy + 3) * ts) / (4 * hh + 2));
-      dr.drawText(
-        { x: cx, y: cy },
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: fontsz,
-        },
-        COL_PENCIL,
-        n2c(i + 1, o),
-      );
+      dr.drawText({ x: cx, y: cy }, glyphFont(fontsz), COL_PENCIL, n2c(i + 1, o));
       if (struck & (1 << (i + 1))) {
         const r = Math.max(2, Math.floor(fontsz / 3));
         dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_PENCIL, 2);

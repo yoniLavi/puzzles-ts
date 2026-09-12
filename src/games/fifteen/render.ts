@@ -11,6 +11,7 @@ import { HINT_ACTION, INK } from "../../engine/color/palette.ts";
 import {
   drawRaisedBevel,
   drawRecessedBorder,
+  glyphFont,
   raisedBevelWidth,
 } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
@@ -114,7 +115,7 @@ function drawTile(
     dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColor);
     dr.drawText(
       { x: x + Math.floor(ts / 2), y: y + Math.floor(ts / 2) },
-      { align: "center", baseline: "mathematical", fontType: "variable", size: ts / 3 },
+      glyphFont(ts / 3),
       COL_TEXT,
       String(tile),
     );

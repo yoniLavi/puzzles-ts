@@ -25,7 +25,7 @@ import {
   INK,
   PAPER,
 } from "../../engine/color/palette.ts";
-import { drawThickRectOutline } from "../../engine/draw.ts";
+import { drawThickRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
@@ -186,12 +186,7 @@ function drawTile(
   if (clue !== -1) {
     dr.drawText(
       { x: Math.floor((x + 0.5) * ts) + b, y: Math.floor((y + 0.5) * ts) + b },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor(ts * 0.7),
-      },
+      glyphFont(Math.floor(ts * 0.7)),
       error ? COL_ERROR : tile & F_BLOCK ? COL_NUMBER : COL_GRID,
       String(clue),
     );

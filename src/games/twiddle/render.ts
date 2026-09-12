@@ -10,7 +10,7 @@ import {
   twiddleGentleHighlight,
   twiddleGentleLowlight,
 } from "../../engine/color/palette-games.ts";
-import { drawRecessedBorder } from "../../engine/draw.ts";
+import { drawRecessedBorder, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import type { Color, Point, Rect, Size } from "../../engine/types.ts";
@@ -248,12 +248,7 @@ function drawTile(
     );
   }
 
-  dr.drawText(
-    center,
-    { align: "center", baseline: "mathematical", fontType: "variable", size: ts / 3 },
-    COL_TEXT,
-    String(num),
-  );
+  dr.drawText(center, glyphFont(ts / 3), COL_TEXT, String(num));
 
   if (rot) dr.unclip();
   dr.drawUpdate({ x: px, y: py, w: ts, h: ts });

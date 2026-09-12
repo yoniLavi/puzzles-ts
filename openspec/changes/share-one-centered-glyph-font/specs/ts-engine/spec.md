@@ -6,10 +6,11 @@ draw a glyph centered in a tile, and games SHALL call it rather than writing the
 option object themselves.
 
 Centering a digit in a tile is not a decision a game makes. Measured 2026-09-12,
-60 copies of the same four-field object stood in 43 game files, and one game had
-already pulled it into a local helper. A game that genuinely needs different text
-options writes them, as games drawing fixed-width or left-aligned text already
-do; the helper covers the one shape they all share.
+56 copies of the same four-field object stood in 40 game files, and three games
+had already pulled it into a local helper under three different names. A game
+that genuinely needs different text options writes them, as the eight sites
+drawing fixed-width, left- or right-aligned text already do; the helper covers
+the one shape the rest share.
 
 #### Scenario: a game draws a digit in a tile
 

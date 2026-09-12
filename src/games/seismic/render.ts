@@ -34,6 +34,7 @@ import {
   pencilColor,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
@@ -205,7 +206,7 @@ function drawPencilMarks(
         x: cx + ((((4 * hx + 3) * ts) / (4 * hw + 2)) | 0),
         y: cy + ((((4 * hy + 3) * ts) / (4 * hh + 2)) | 0),
       },
-      { align: "center", baseline: "mathematical", fontType: "variable", size: fontsz },
+      glyphFont(fontsz),
       COL_NUM_PENCIL,
       String(n + 1),
     );
@@ -272,12 +273,7 @@ function drawTile(
           : COL_NUM_GUESS;
     dr.drawText(
       { x: tx + ((ts / 2) | 0), y: ty + ((ts / 2) | 0) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: (ts / 2) | 0,
-      },
+      glyphFont((ts / 2) | 0),
       ink,
       String(grid[i]),
     );

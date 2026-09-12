@@ -27,6 +27,7 @@ import {
   playerEntryColor,
 } from "../../engine/color/palette.ts";
 import { abcdBorderLetter } from "../../engine/color/palette-games.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { fromCoord as geometryFromCoord } from "../../engine/geometry.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
@@ -211,12 +212,7 @@ function drawTileText(
   text: string,
 ): void {
   const half = (ts / 2) | 0;
-  dr.drawText(
-    { x: x + half, y: y + half },
-    { align: "center", baseline: "mathematical", fontType: "variable", size: half },
-    color,
-    text,
-  );
+  dr.drawText({ x: x + half, y: y + half }, glyphFont(half), color, text);
 }
 
 /** The `A…` letters along the bottom and right edges of the top-left gutter,
@@ -264,7 +260,7 @@ function drawPencilMarks(
         x: (ox + ((4 * hx + 3) * ts) / (4 * hw + 2)) | 0,
         y: (oy + ((4 * hy + 3) * ts) / (4 * hh + 2)) | 0,
       },
-      { align: "center", baseline: "mathematical", fontType: "variable", size: fontsz },
+      glyphFont(fontsz),
       COL_PENCIL,
       String.fromCharCode(65 + i),
     );
@@ -316,12 +312,7 @@ function drawTile(
   if (letter !== EMPTY) {
     dr.drawText(
       { x: tx + ((ts / 2) | 0), y: ty + ((ts / 2) | 0) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: (ts / 2) | 0,
-      },
+      glyphFont((ts / 2) | 0),
       fs & DF_ERR ? COL_ERROR : COL_GUESS,
       String.fromCharCode(65 + letter),
     );

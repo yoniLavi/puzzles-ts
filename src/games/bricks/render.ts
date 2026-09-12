@@ -24,7 +24,7 @@ import {
   HINT_EVIDENCE,
   INK,
 } from "../../engine/color/palette.ts";
-import { drawRectCorners, drawThickRectOutline } from "../../engine/draw.ts";
+import { drawRectCorners, drawThickRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Color, Size } from "../../engine/types.ts";
@@ -220,12 +220,7 @@ function drawTile(
     const num = n & NUM_MASK;
     dr.drawText(
       { x: cx, y: cy },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: ts >> 1,
-      },
+      glyphFont(ts >> 1),
       n & FE_ERROR ? COL_ERROR : COL_BORDER,
       num === 7 ? "?" : String(num),
     );

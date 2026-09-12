@@ -19,6 +19,7 @@ import {
   highlightWash,
   INK,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color } from "../../engine/types.ts";
 import {
@@ -369,12 +370,7 @@ function drawIsland(
     const textcolor = fg === COL_SELECTED ? COL_FOREGROUND : fg;
     dr.drawText(
       { x: ox + half, y: oy + half },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: islandNumsize(clue, ts),
-      },
+      glyphFont(islandNumsize(clue, ts)),
       textcolor,
       String(clue),
     );

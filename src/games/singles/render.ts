@@ -22,7 +22,7 @@ import {
   HINT_WHITEREF,
   INK,
 } from "../../engine/color/palette.ts";
-import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
+import { drawRectCorners, drawRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
@@ -222,12 +222,7 @@ function tileRedraw(
   if (dnum) {
     const buf = String(num);
     const tsz = buf.length === 1 ? textsz(ts) : Math.floor((cr * 2 - 1) / buf.length);
-    dr.drawText(
-      { x: cx, y: cy },
-      { align: "center", baseline: "mathematical", fontType: "variable", size: tsz },
-      tcol,
-      buf,
-    );
+    dr.drawText({ x: cx, y: cy }, glyphFont(tsz), tcol, buf);
   }
 
   if (f & DS_CURSOR)

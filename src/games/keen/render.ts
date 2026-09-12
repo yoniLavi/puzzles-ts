@@ -23,6 +23,7 @@ import {
   pencilColor,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
@@ -276,12 +277,7 @@ function drawTile(
   if (tile & DF_DIGIT_MASK) {
     dr.drawText(
       { x: tx + ((ts / 2) | 0), y: ty + ((ts / 2) | 0) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: (ts / 2) | 0,
-      },
+      glyphFont((ts / 2) | 0),
       tile & DF_ERR_LATIN ? COL_ERROR : COL_USER,
       String(tile & DF_DIGIT_MASK),
     );
@@ -318,17 +314,7 @@ function drawTile(
           const dy = (j / pw) | 0;
           const cx = pl + (((fontsize * (2 * dx + 1)) / 2) | 0);
           const cy = pt + (((fontsize * (2 * dy + 1)) / 2) | 0);
-          dr.drawText(
-            { x: cx, y: cy },
-            {
-              align: "center",
-              baseline: "mathematical",
-              fontType: "variable",
-              size: fontsize,
-            },
-            COL_PENCIL,
-            String(i),
-          );
+          dr.drawText({ x: cx, y: cy }, glyphFont(fontsize), COL_PENCIL, String(i));
           // A hint-ruled-out candidate keeps its normal pencil color with a
           // same-color strikethrough — the "ruled out" cue (docs/games/hints.md § "The element-type color legend").
           if (struck & (1 << i)) {

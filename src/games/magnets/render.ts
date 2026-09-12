@@ -23,7 +23,7 @@ import {
   highlightWash,
   INK,
 } from "../../engine/color/palette.ts";
-import { drawThickRectOutline } from "../../engine/draw.ts";
+import { drawThickRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import {
@@ -158,17 +158,7 @@ function drawSym(
       dr.drawRect({ x: ccx - soff, y: ccy - roff, w: ssz, h: rsz }, col);
     }
   } else if (col === COL_NOT) {
-    dr.drawText(
-      { x: ccx, y: ccy },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor((7 * ts) / 10),
-      },
-      col,
-      "?",
-    );
+    dr.drawText({ x: ccx, y: ccy }, glyphFont(Math.floor((7 * ts) / 10)), col, "?");
   } else {
     dr.drawLine(
       { x: ccx - roff, y: ccy - roff },
@@ -333,7 +323,7 @@ function drawNum(
   dr.drawRect({ x: cx, y: cy, w: ts, h: ts }, COL_BACKGROUND);
   dr.drawText(
     { x: cx + Math.floor(ts / 2), y: cy + Math.floor(ts / 2) },
-    { align: "center", baseline: "mathematical", fontType: "variable", size: tsz },
+    glyphFont(tsz),
     col,
     text,
   );

@@ -7,6 +7,7 @@
 import { BLACK, PINK_WASH, TEAL_WASH, TEN, WHITE } from "../../engine/color/colors.ts";
 import { INK } from "../../engine/color/palette.ts";
 import { guessBoard, guessEmptySlot } from "../../engine/color/palette-games.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Point, Rect, Size } from "../../engine/types.ts";
 import {
@@ -266,12 +267,7 @@ function drawPeg(
   if (labeled && col) {
     dr.drawText(
       pt(cx + ds.pegrad, cy + ds.pegrad),
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: ds.pegrad,
-      },
+      glyphFont(ds.pegrad),
       COL_FRAME,
       String(col % 10),
     );

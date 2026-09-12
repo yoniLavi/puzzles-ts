@@ -35,6 +35,7 @@ import {
   playerEntryColor,
 } from "../../engine/color/palette.ts";
 import { soloKiller, soloXDiagonals } from "../../engine/color/palette-games.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
@@ -375,12 +376,7 @@ function drawNumber(
   if (d) {
     dr.drawText(
       { x: tx + ((ts / 2) | 0), y: ty + ((ts / 2) | 0) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: (ts / 2) | 0,
-      },
+      glyphFont((ts / 2) | 0),
       state.immutable[cell] ? COL_CLUE : hl & HL_ERROR ? COL_ERROR : COL_USER,
       digitChar(d),
     );
@@ -499,17 +495,7 @@ function drawPencilMarks(
     const dy = (j / pw) | 0;
     const gx = pl + (((fontsize * (2 * dx + 1)) / 2) | 0);
     const gy = pt + (((fontsize * (2 * dy + 1)) / 2) | 0);
-    dr.drawText(
-      { x: gx, y: gy },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: fontsize,
-      },
-      COL_PENCIL,
-      digitChar(i + 1),
-    );
+    dr.drawText({ x: gx, y: gy }, glyphFont(fontsize), COL_PENCIL, digitChar(i + 1));
     // A hint-ruled-out candidate keeps its normal pencil color with a
     // same-color strikethrough — the "ruled out" cue (docs/games/hints.md § "The element-type color legend").
     if (struck & (1 << (i + 1))) {

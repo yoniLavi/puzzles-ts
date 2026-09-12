@@ -6,9 +6,16 @@ Every game that draws a digit or a letter into a tile writes the same object:
 
     { align: "center", baseline: "mathematical", fontType: "variable", size }
 
-Measured 2026-09-12 across `src/games`: **60 occurrences in 43 files**, and 63
-lines carrying the `mathematical` baseline. Exactly one game, Salad, has pulled
-it into a local helper, which is the shape this change generalizes:
+Measured 2026-09-12 across `src/games`, by parsing rather than grepping:
+**56 occurrences in 40 files**. The figure this proposal was scaffolded with, 60
+in 43, came from a grep of the `baseline:` line — which counts the eight
+literals that keep a different alignment or a fixed font, and misses the three
+that write `size` as an ES6 shorthand. The parse is what the change acted on.
+
+**Three** games have already pulled it into a local helper, under three
+different names — Salad's `glyphFont`, Group's `textOpts` and Ascent's
+`textStyle`. Three names for one non-decision is the shape this change
+generalizes:
 
     function glyphFont(size: number): DrawTextOptions {
       return { align: "center", baseline: "mathematical", fontType: "variable", size };
@@ -25,8 +32,10 @@ answer to "how is a glyph centered in a tile". They all want the same one, and
 - `src/engine/draw.ts` gains a `glyphFont(size)` helper returning the centered
   variable-font options, named in `docs/games/engine-catalog.md` as the gate's
   catalog check requires.
-- The 60 call sites adopt it.
-- Salad's local copy is deleted in favor of the shared one.
+- The 56 call sites adopt it.
+- The three local copies are deleted in favor of the shared one, and their call
+  sites renamed, which is why 65 `glyphFont(` calls stand in `src/games` where
+  56 literals stood: Salad's four calls were already written against its own.
 
 ## Why it is safe to do in bulk
 

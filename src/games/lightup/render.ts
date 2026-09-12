@@ -22,7 +22,7 @@ import {
   HINT_EVIDENCE_WASH,
   HINT_WHITEREF,
 } from "../../engine/color/palette.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
+import { drawRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
@@ -205,12 +205,7 @@ function tileRedraw(
       // the diff key (upstream's observation).
       dr.drawText(
         { x: dx + Math.floor(ts / 2), y: dy + Math.floor(ts / 2) },
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: Math.floor((ts * 3) / 5),
-        },
+        glyphFont(Math.floor((ts * 3) / 5)),
         ccol,
         String(state.lights[idx(x, y, state.w)]),
       );

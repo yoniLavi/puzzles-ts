@@ -7,6 +7,7 @@
 
 import { BLACK, TEAL_BOLD, TEAL_WASH, WHITE } from "../../engine/color/colors.ts";
 import { CURSOR, clueDoneColor, ERROR } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import {
@@ -156,12 +157,7 @@ function drawCell(
     if (clueVal >= 0) {
       dr.drawText(
         { x: startX + Math.floor(ts / 2) - 1, y: startY + Math.floor(ts / 2) - 1 },
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: Math.floor((ts * 3) / 5),
-        },
+        glyphFont(Math.floor((ts * 3) / 5)),
         textColor,
         String(clueVal),
       );

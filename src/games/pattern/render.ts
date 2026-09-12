@@ -18,7 +18,7 @@ import {
   INK,
   UNDECIDED,
 } from "../../engine/color/palette.ts";
-import { drawThickRectOutline } from "../../engine/draw.ts";
+import { drawThickRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
@@ -268,12 +268,7 @@ function drawNumbers(
         yy -= Math.floor(((rowlen - j - 1) * ts * (tlborder(h) - 1)) / nfit);
         dr.drawText(
           { x: rx + half, y: yy + half },
-          {
-            align: "center",
-            baseline: "mathematical",
-            fontType: "variable",
-            size: fontsize,
-          },
+          glyphFont(fontsize),
           color,
           String(rowdata[j]),
         );

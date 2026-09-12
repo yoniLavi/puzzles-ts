@@ -24,6 +24,7 @@ import {
   highlightWash,
   INK,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Rect, Size } from "../../engine/types.ts";
 import { gridDrawRect, hrange, vrange } from "./moves.ts";
@@ -128,12 +129,7 @@ function drawTile(
   if (num) {
     dr.drawText(
       { x: cx + Math.floor(tile / 2), y: cy + Math.floor(tile / 2) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor(tile / 2),
-      },
+      glyphFont(Math.floor(tile / 2)),
       COL_TEXT,
       String(num),
     );

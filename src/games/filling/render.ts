@@ -20,6 +20,7 @@ import {
   INK,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import type { Color, Point, Size } from "../../engine/types.ts";
@@ -186,12 +187,7 @@ function drawSquare(
   if (n) {
     dr.drawText(
       { x: px + Math.floor(ts / 2), y: py + Math.floor(ts / 2) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor(ts / 2),
-      },
+      glyphFont(Math.floor(ts / 2)),
       flags & USER_COL ? COL_USER : COL_GRID,
       String(n),
     );

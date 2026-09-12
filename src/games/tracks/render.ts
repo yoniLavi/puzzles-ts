@@ -24,6 +24,7 @@ import {
   PAPER,
 } from "../../engine/color/palette.ts";
 import { tracksGrid } from "../../engine/color/palette-games.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL, outlineSides } from "../../engine/hint-mark.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
@@ -657,12 +658,7 @@ function drawClue(
       bg,
     );
   }
-  dr.drawText(
-    { x: cx, y: cy },
-    { align: "center", baseline: "mathematical", fontType: "variable", size: tsz },
-    col,
-    String(clue),
-  );
+  dr.drawText({ x: cx, y: cy }, glyphFont(tsz), col, String(clue));
 }
 
 function drawLoopEnds(
@@ -672,13 +668,7 @@ function drawLoopEnds(
   c: number,
 ): void {
   const tsz = Math.floor(m.tile / 2);
-  const label = (p: Point, text: string) =>
-    dr.drawText(
-      p,
-      { align: "center", baseline: "mathematical", fontType: "variable", size: tsz },
-      c,
-      text,
-    );
+  const label = (p: Point, text: string) => dr.drawText(p, glyphFont(tsz), c, text);
   label({ x: centeredCoord(-1, m), y: centeredCoord(state.numbers.rowS, m) }, "A");
   label({ x: centeredCoord(state.numbers.colS, m), y: centeredCoord(state.h, m) }, "B");
 }

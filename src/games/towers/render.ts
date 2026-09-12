@@ -24,6 +24,7 @@ import {
   pencilColor,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
@@ -291,12 +292,7 @@ function drawTile(
 
     dr.drawText(
       { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: tile & DF_PLAYAREA ? Math.floor(ts / 2) : Math.floor((ts * 2) / 5),
-      },
+      glyphFont(tile & DF_PLAYAREA ? Math.floor(ts / 2) : Math.floor((ts * 2) / 5)),
       color,
       String(digit),
     );
@@ -343,17 +339,7 @@ function drawTile(
           // A struck candidate keeps its pencil color, so it still reads as the
           // player's note; the same-color strikethrough is what says the hint
           // rules it out (a hint color washed out against the background).
-          dr.drawText(
-            { x: cx, y: cy },
-            {
-              align: "center",
-              baseline: "mathematical",
-              fontType: "variable",
-              size: fontsize,
-            },
-            COL_PENCIL,
-            String(i),
-          );
+          dr.drawText({ x: cx, y: cy }, glyphFont(fontsize), COL_PENCIL, String(i));
           if (struck & (1 << i)) {
             const r = Math.max(2, Math.floor(fontsize / 3));
             dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_PENCIL, 2);

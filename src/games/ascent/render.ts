@@ -10,9 +10,9 @@
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { BLUE, YELLOW_WASH } from "../../engine/color/colors.ts";
 import { CURSOR, ERROR, INK, playerEntryColor } from "../../engine/color/palette.ts";
-import { drawRectCorners } from "../../engine/draw.ts";
+import { drawRectCorners, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Color, DrawTextOptions, Point } from "../../engine/types.ts";
+import type { Color, Point } from "../../engine/types.ts";
 import {
   type AscentMistake,
   type AscentState,
@@ -271,13 +271,6 @@ function thickLine(
     Math.max(1, Math.round(thickness)),
   );
 }
-
-const textStyle = (size: number): DrawTextOptions => ({
-  align: "center",
-  baseline: "mathematical",
-  fontType: "variable",
-  size,
-});
 
 /** The corners of a `size`-square with top-left `(x, y)`, clockwise. */
 function squareCorners(x: number, y: number, size: number): Point[] {
@@ -685,7 +678,7 @@ export function redrawAscent(
     if (sn >= 0) {
       dr.drawText(
         center,
-        textStyle(Math.trunc(tilesize / 2)),
+        glyphFont(Math.trunc(tilesize / 2)),
         state.immutable[i]
           ? COL_IMMUTABLE
           : state.grid[i] === NUMBER_EMPTY && ui.typingCell !== i
@@ -711,7 +704,7 @@ export function redrawAscent(
       drawArrow(dr, i, w, h, tx1, ty1, COL_ARROW, COL_BORDER, tilesize);
       dr.drawText(
         center,
-        textStyle(Math.trunc(tilesize / 2)),
+        glyphFont(Math.trunc(tilesize / 2)),
         error ? COL_ERROR : i2 >= 0 ? COL_LOWLIGHT : COL_BORDER,
         String(fromNumberEdge(sn) + 1),
       );
@@ -719,14 +712,14 @@ export function redrawAscent(
       if (ui.prevhints[i] >= 0)
         dr.drawText(
           { x: tx1 - Math.trunc(tilesize / 4), y: ty1 - Math.trunc(tilesize / 4) },
-          textStyle(Math.trunc(tilesize / 3)),
+          glyphFont(Math.trunc(tilesize / 3)),
           COL_BORDER,
           String(ui.prevhints[i] + 1),
         );
       if (ui.nexthints[i] >= 0)
         dr.drawText(
           { x: tx1 + Math.trunc(tilesize / 4), y: ty1 + Math.trunc(tilesize / 4) },
-          textStyle(Math.trunc(tilesize / 3)),
+          glyphFont(Math.trunc(tilesize / 3)),
           COL_BORDER,
           String(ui.nexthints[i] + 1),
         );

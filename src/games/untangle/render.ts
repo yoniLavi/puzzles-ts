@@ -8,7 +8,7 @@
  * against spinning during the completion flash). No per-tile cache.
  */
 
-import { drawRectOutline } from "../../engine/draw.ts";
+import { drawRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { UntangleHint } from "./hint.ts";
 import {
@@ -156,12 +156,7 @@ export function redrawUntangle(
         dr.drawCircle({ x: ds.x[i], y: ds.y[i] }, DRAG_THRESHOLD, bg, bg);
         dr.drawText(
           { x: ds.x[i], y: ds.y[i] },
-          {
-            align: "center",
-            baseline: "mathematical",
-            fontType: "variable",
-            size: Math.trunc((DRAG_THRESHOLD * 3) / 2),
-          },
+          glyphFont(Math.trunc((DRAG_THRESHOLD * 3) / 2)),
           c,
           String(i),
         );

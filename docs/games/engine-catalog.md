@@ -654,12 +654,20 @@ companion `raisedBevelWidth` (the raised *tile* — its opposite number),
 "this is wrong" frame, four filled bands), `drawRectCorners` (the four corner
 brackets marking a keyboard cursor — promoted from **seven** byte-identical
 copies; if you are typing eight `drawLine` calls around a center point, it
-exists).
+exists), `glyphFont(size)` (the text options for a glyph centered in a tile —
+the only argument is the size).
 
-**Three of the five were promoted from private copies at seven, eight and six
+**`glyphFont` is the one to reach for when drawing a digit or a letter.**
+Measured 2026-09-12: 56 copies of `{ align: "center", baseline: "mathematical",
+fontType: "variable", size }` stood in 40 game files, and three games had already
+extracted it locally under three different names. It takes only the size and
+grows no other parameter: a game drawing fixed-width or non-centered text writes
+its own options, which eight sites do.
+
+**Most of this module was promoted from private copies held by six to forty
 games**, which is the pattern to notice rather than the individual helpers: if
-you are writing vertex arithmetic for a shape that any other game also draws,
-look here first. The reverse direction is guarded —
+you are writing vertex arithmetic for a shape that any other game also draws, or
+an options object for text every other game also draws, look here first. The reverse direction is guarded —
 `raised-bevel.test.ts` fails if a game re-derives the two triangles.
 
 **Sizing belongs here too, not only shape.** `raisedBevelWidth(ts)` exists

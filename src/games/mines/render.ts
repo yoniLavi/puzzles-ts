@@ -15,6 +15,7 @@
 import {
   drawRaisedBevel,
   drawRecessedBorder,
+  glyphFont,
   raisedBevelWidth,
 } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
@@ -171,12 +172,7 @@ function drawTile(
       // A question mark (this frontend never sets one, but be faithful).
       dr.drawText(
         { x: x + Math.floor(ts / 2), y: y + Math.floor(ts / 2) },
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: Math.floor((ts * 6) / 8),
-        },
+        glyphFont(Math.floor((ts * 6) / 8)),
         COL_QUERY,
         "?",
       );
@@ -204,12 +200,7 @@ function drawTile(
     if (v > 0 && v <= 8) {
       dr.drawText(
         { x: x + Math.floor(ts / 2), y: y + Math.floor(ts / 2) },
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: Math.floor((ts * 7) / 8),
-        },
+        glyphFont(Math.floor((ts * 7) / 8)),
         COL_1 - 1 + v,
         String(v),
       );

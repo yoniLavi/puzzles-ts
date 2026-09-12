@@ -7,6 +7,7 @@
 
 import { FOUR_FILLS } from "../../engine/color/colors.ts";
 import { ERROR, ERROR_TEXT, INK } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
@@ -323,12 +324,7 @@ function drawSquare(
             x: Math.floor((coord(x, ts) * 2 + ts * xo) / 2),
             y: Math.floor((coord(y, ts) * 2 + ts * yo) / 2),
           },
-          {
-            align: "center",
-            baseline: "mathematical",
-            fontType: "variable",
-            size: Math.floor((3 * ts) / 5),
-          },
+          glyphFont(Math.floor((3 * ts) / 5)),
           COL_GRID,
           String(j),
         );

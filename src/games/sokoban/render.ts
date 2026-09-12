@@ -13,7 +13,7 @@ import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { BROWN, GREEN } from "../../engine/color/colors.ts";
 import { FLASH, GRID_MID, INK, PAPER, wallColor } from "../../engine/color/palette.ts";
 import { sokobanPit } from "../../engine/color/palette-games.ts";
-import { drawRaisedBevel, raisedBevelWidth } from "../../engine/draw.ts";
+import { drawRaisedBevel, glyphFont, raisedBevelWidth } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import {
@@ -156,12 +156,7 @@ function drawTile(
       if (label) {
         dr.drawText(
           center,
-          {
-            align: "center",
-            baseline: "mathematical",
-            fontType: "variable",
-            size: Math.floor(ts / 2),
-          },
+          glyphFont(Math.floor(ts / 2)),
           COL_TEXT,
           String.fromCharCode(label),
         );

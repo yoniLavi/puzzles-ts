@@ -20,6 +20,7 @@ import {
   playerEntryColor,
 } from "../../engine/color/palette.ts";
 import { groupDiagonal } from "../../engine/color/palette-games.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import { winFlash } from "../../engine/flash.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
@@ -31,7 +32,7 @@ import {
   type OrderedCell,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import type { Color, DrawTextOptions, Point, Size } from "../../engine/types.ts";
+import type { Color, Point, Size } from "../../engine/types.ts";
 import type { GroupMove } from "./state.ts";
 import {
   checkErrors,
@@ -223,10 +224,6 @@ function markBand(ds: GroupDrawState, x: number, y: number): MarkBand {
 
 // --- per-tile drawing (draw_tile) ------------------------------------------
 
-function textOpts(size: number): DrawTextOptions {
-  return { align: "center", baseline: "mathematical", fontType: "variable", size };
-}
-
 function drawTile(
   dr: GameDrawing,
   ds: GroupDrawState,
@@ -298,7 +295,7 @@ function drawTile(
     const digit = tile & DF_DIGIT_MASK;
     dr.drawText(
       { x: tx + Math.trunc(ts / 2), y: ty + Math.trunc(ts / 2) },
-      textOpts(Math.trunc(ts / 2)),
+      glyphFont(Math.trunc(ts / 2)),
       error & EF_LATIN ? COL_ERROR : tile & DF_IMMUTABLE ? COL_GRID : COL_USER,
       toChar(digit, id),
     );
@@ -310,7 +307,7 @@ function drawTile(
       const cv = (error >> EF_LEFT_SHIFT) & EF_DIGIT_MASK;
       dr.drawText(
         { x: tx + Math.trunc(ts / 2), y: ty + Math.trunc(ts / 6) },
-        textOpts(Math.trunc(ts / 6)),
+        glyphFont(Math.trunc(ts / 6)),
         COL_ERROR,
         `(${toChar(av, id)}${toChar(bv, id)})${toChar(cv, id)}`,
       );
@@ -321,7 +318,7 @@ function drawTile(
       const cv = (error >> EF_RIGHT_SHIFT) & EF_DIGIT_MASK;
       dr.drawText(
         { x: tx + Math.trunc(ts / 2), y: ty + ts - Math.trunc(ts / 6) },
-        textOpts(Math.trunc(ts / 6)),
+        glyphFont(Math.trunc(ts / 6)),
         COL_ERROR,
         `${toChar(av, id)}(${toChar(bv, id)}${toChar(cv, id)})`,
       );
@@ -368,7 +365,7 @@ function drawTile(
           const dy = Math.trunc(j / pw);
           const px = pl + Math.trunc((fontsize * (2 * dx + 1)) / 2);
           const py = pt + Math.trunc((fontsize * (2 * dy + 1)) / 2);
-          dr.drawText({ x: px, y: py }, textOpts(fontsize), COL_PENCIL, toChar(i, id));
+          dr.drawText({ x: px, y: py }, glyphFont(fontsize), COL_PENCIL, toChar(i, id));
           // A hint-struck candidate keeps its pencil color, with a same-color
           // strikethrough as the "ruled out" cue.
           if (struck & (1 << i)) {

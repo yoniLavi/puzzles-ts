@@ -51,6 +51,7 @@ import {
   lineMaybeColor,
   lineNoColor,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Color, Size } from "../../engine/types.ts";
@@ -234,12 +235,7 @@ export function redraw(
           if (clue !== EMPTY) {
             dr.drawText(
               { x: o.x + center(ts), y: o.y + center(ts) },
-              {
-                align: "center",
-                baseline: "mathematical",
-                fontType: "variable",
-                size: Math.floor(ts / 2),
-              },
+              glyphFont(Math.floor(ts / 2)),
               flags & F_CLUE_ERROR ? COL_ERROR : COL_GRID,
               String(clue),
             );

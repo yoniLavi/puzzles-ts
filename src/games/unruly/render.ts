@@ -23,7 +23,7 @@ import {
   UNDECIDED,
 } from "../../engine/color/palette.ts";
 import { UNRULY_BLACK, UNRULY_WHITE } from "../../engine/color/palette-games.ts";
-import { drawThickRectOutline } from "../../engine/draw.ts";
+import { drawThickRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Color, Size } from "../../engine/types.ts";
@@ -244,12 +244,7 @@ function drawTile(
   if (tile & FE_COUNT) {
     dr.drawText(
       { x: px + Math.floor(ts / 2), y: py + Math.floor(ts / 2) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor(ts / 2),
-      },
+      glyphFont(Math.floor(ts / 2)),
       COL_ERROR,
       "!",
     );

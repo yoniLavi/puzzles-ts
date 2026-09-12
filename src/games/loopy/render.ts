@@ -32,6 +32,7 @@ import {
   lineMaybeColor,
   lineNoColor,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Grid, GridType } from "../../engine/grid/index.ts";
 import { gridComputeSize, gridFindIncenter } from "../../engine/grid/index.ts";
@@ -284,12 +285,7 @@ export function redraw(
     const [x, y] = toScreen(g, ts, f.ix, f.iy);
     dr.drawText(
       { x, y },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor(ts / 2),
-      },
+      glyphFont(Math.floor(ts / 2)),
       ds.clueError[i]
         ? COL_MISTAKE
         : ds.clueSatisfied[i]

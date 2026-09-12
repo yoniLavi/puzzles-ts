@@ -1,5 +1,21 @@
 /** Shared `GameDrawing` primitives. */
 import type { GameDrawing } from "./game.ts";
+import type { DrawTextOptions } from "./types.ts";
+
+/**
+ * The text options for a glyph centered in a tile — the digit in a Sudoku
+ * cell, the letter in an ABCD cell, the number on a Fifteen tile.
+ *
+ * **Takes only the size, and grows no other parameter.** How a glyph is
+ * centered in a tile is not something a puzzle decides, so a call site that
+ * named the alignment would have to be read to find out it asked for the same
+ * thing as every other. A game drawing fixed-width or non-centered text writes
+ * the options it needs instead — eight sites do, and they are the ones where
+ * the choice is real.
+ */
+export function glyphFont(size: number): DrawTextOptions {
+  return { align: "center", baseline: "mathematical", fontType: "variable", size };
+}
 
 /** Outer pixel bounds of a beveled frame; edges are inclusive pixels. */
 export interface BevelBounds {

@@ -19,7 +19,7 @@ import {
   lineNoColor,
   PAPER,
 } from "../../engine/color/palette.ts";
-import { drawRectCorners } from "../../engine/draw.ts";
+import { drawRectCorners, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import type { Color, Size } from "../../engine/types.ts";
@@ -301,12 +301,7 @@ function drawTile(
 
   dr.drawText(
     { x: cx + Math.floor(ts / 2), y: cy + Math.floor(ts / 2) },
-    {
-      align: "center",
-      baseline: "mathematical",
-      fontType: "variable",
-      size: Math.floor(ts / 2),
-    },
+    glyphFont(Math.floor(ts / 2)),
     nc,
     String(state.numbers[y * w + x]),
   );

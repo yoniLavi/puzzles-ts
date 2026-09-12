@@ -21,6 +21,7 @@ import {
   INK,
 } from "../../engine/color/palette.ts";
 import { slantGrounded } from "../../engine/color/palette-games.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Color, Size } from "../../engine/types.ts";
@@ -161,12 +162,7 @@ function drawClue(
   );
   dr.drawText(
     { x: coord(x, ts), y: coord(y, ts) },
-    {
-      align: "center",
-      baseline: "mathematical",
-      fontType: "variable",
-      size: clueTextSize(ts),
-    },
+    glyphFont(clueTextSize(ts)),
     tcol,
     String.fromCharCode(48 + v),
   );

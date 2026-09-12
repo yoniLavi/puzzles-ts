@@ -38,6 +38,7 @@ import {
   lineMaybeColor,
   lineNoColor,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Size } from "../../engine/types.ts";
 import type {
@@ -181,12 +182,7 @@ export function redraw(
         drawBorderTile(dr, ts, r, c, flags, PALETTE, (_body, o) => {
           dr.drawText(
             { x: o.x + center(ts), y: o.y + center(ts) },
-            {
-              align: "center",
-              baseline: "mathematical",
-              fontType: "variable",
-              size: Math.floor(ts / 2),
-            },
+            glyphFont(Math.floor(ts / 2)),
             flags & F_CLUE_ERROR ? COL_ERROR : COL_GRID,
             String.fromCharCode(A + letters[i]),
           );

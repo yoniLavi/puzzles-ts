@@ -30,6 +30,7 @@ import {
   pencilColor,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
@@ -195,17 +196,7 @@ function drawClue(
     error ? COL_ERRORBG : COL_HIGHLIGHT,
     error ? COL_ERROR : COL_BORDER,
   );
-  dr.drawText(
-    { x, y },
-    {
-      align: "center",
-      baseline: "mathematical",
-      fontType: "variable",
-      size: (ts / 3) | 0,
-    },
-    COL_BORDER,
-    clueLabel(clue),
-  );
+  dr.drawText({ x, y }, glyphFont((ts / 3) | 0), COL_BORDER, clueLabel(clue));
 }
 
 // --- tile drawing ----------------------------------------------------------
@@ -262,12 +253,7 @@ function drawTile(
   if (state.grid[i]) {
     dr.drawText(
       { x: tx + ((ts / 2) | 0), y: ty + ((ts / 2) | 0) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: (ts / 2) | 0,
-      },
+      glyphFont((ts / 2) | 0),
       fs & F_IMMUTABLE ? COL_BORDER : fs & FE_COUNT ? COL_ERROR : COL_GUESS,
       String(state.grid[i]),
     );
@@ -336,12 +322,7 @@ function drawPencilMarks(
         x: tx + ((((4 * hx + 3) * ts) / (4 * hw + 2)) | 0),
         y: ty + ((((4 * hy + 3) * ts) / (4 * hh + 2)) | 0),
       },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: fontsz,
-      },
+      glyphFont(fontsz),
       COL_PENCIL,
       String(n),
     );

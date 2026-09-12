@@ -23,7 +23,7 @@ import {
   HINT_EVIDENCE,
   INK,
 } from "../../engine/color/palette.ts";
-import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
+import { drawRectCorners, drawRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Color, Size } from "../../engine/types.ts";
@@ -214,12 +214,7 @@ function drawCell(
   } else if (value > 0) {
     dr.drawText(
       { x: tx, y: ty },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor((ts * 3) / 5),
-      },
+      glyphFont(Math.floor((ts * 3) / 5)),
       error ? COL_ERROR : clueRef ? COL_HINT : glyph,
       String(value),
     );

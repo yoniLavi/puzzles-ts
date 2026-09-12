@@ -30,6 +30,7 @@ import {
   undeadVampire,
   undeadZombie,
 } from "../../engine/color/palette-games.ts";
+import { glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import {
@@ -521,12 +522,7 @@ function drawBigMonster(
             : " ";
     dr.drawText(
       { x: dx, y: dy },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: f(ts / 2),
-      },
+      glyphFont(f(ts / 2)),
       hflash ? COL_FLASH : COL_TEXT,
       buf,
     );
@@ -570,17 +566,7 @@ function drawPencils(
       drawMonster(dr, cx, cy, f(ts / 2), false, m);
     } else {
       const buf = m === MON_GHOST ? "G" : m === MON_VAMPIRE ? "V" : "Z";
-      dr.drawText(
-        { x: cx, y: cy },
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: f(ts / 4),
-        },
-        COL_TEXT,
-        buf,
-      );
+      dr.drawText({ x: cx, y: cy }, glyphFont(f(ts / 4)), COL_TEXT, buf);
     }
     // A struck candidate keeps its normal glyph (legible on a non-COL_HINT
     // background) and gains a COL_HINT strikethrough as the "ruled out" cue.
@@ -652,12 +638,7 @@ function drawMonsterCount(
   } else {
     dr.drawText(
       { x: dx + f(msize / 2), y: dy + f(dh / 2) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: idiv(ts, 2),
-      },
+      glyphFont(idiv(ts, 2)),
       hflash ? COL_FLASH : COL_TEXT,
       bufm,
     );
@@ -700,12 +681,7 @@ function drawClue(
   dr.drawRect(box, COL_BACKGROUND);
   dr.drawText(
     { x: dx + f(ts / 2), y: dy + f(ts / 2) },
-    {
-      align: "center",
-      baseline: "mathematical",
-      fontType: "variable",
-      size: idiv(ts, 2),
-    },
+    glyphFont(idiv(ts, 2)),
     color,
     String(clue),
   );

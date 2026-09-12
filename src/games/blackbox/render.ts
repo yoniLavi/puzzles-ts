@@ -8,7 +8,7 @@ import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
 import { GREEN, RED } from "../../engine/color/colors.ts";
 import { ERROR, GRID_MID, INK } from "../../engine/color/palette.ts";
 import { blackboxCover, blackboxLock } from "../../engine/color/palette-games.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
+import { drawRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Color, Point, Rect, Size } from "../../engine/types.ts";
 import {
@@ -291,12 +291,7 @@ function drawLaserTile(
 
       dr.drawText(
         pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)),
-        {
-          align: "center",
-          baseline: "mathematical",
-          fontType: "variable",
-          size: Math.floor(ts / 2),
-        },
+        glyphFont(Math.floor(ts / 2)),
         tcol,
         str,
       );

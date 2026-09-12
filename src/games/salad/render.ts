@@ -28,7 +28,7 @@ import {
   pencilColor,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
+import { drawRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
@@ -40,7 +40,7 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
-import type { Color, DrawTextOptions, Size } from "../../engine/types.ts";
+import type { Color, Size } from "../../engine/types.ts";
 import type { SaladHint } from "./hint.ts";
 import type { SaladMistake } from "./solver.ts";
 import {
@@ -320,11 +320,6 @@ function setDrawFlags(
 }
 
 // --- tile painting ---------------------------------------------------------
-
-/** The one text style every glyph on the board is drawn in. */
-function glyphFont(size: number): DrawTextOptions {
-  return { align: "center", baseline: "mathematical", fontType: "variable", size };
-}
 
 function drawBall(
   dr: GameDrawing,

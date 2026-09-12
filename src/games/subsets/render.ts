@@ -32,7 +32,7 @@ import {
   INK,
   playerEntryColor,
 } from "../../engine/color/palette.ts";
-import { drawRectCorners, drawThickRectOutline } from "../../engine/draw.ts";
+import { drawRectCorners, drawThickRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import {
@@ -309,12 +309,7 @@ export function redraw(
           if (state.known[i] & bit) {
             dr.drawText(
               { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
-              {
-                align: "center",
-                baseline: "mathematical",
-                fontType: "variable",
-                size: fontsize,
-              },
+              glyphFont(fontsize),
               state.immutable[i] & bit ? COL_FIXED : COL_GUESS,
               String.fromCharCode(CODE_A + cn),
             );

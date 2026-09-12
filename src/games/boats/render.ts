@@ -44,7 +44,7 @@ import {
   INK,
   PAPER,
 } from "../../engine/color/palette.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
+import { drawRectOutline, glyphFont } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
@@ -476,12 +476,7 @@ function drawWaves(
   for (const frac of [0.42, 0.58])
     dr.drawText(
       { x: tx + ts / 2, y: ty + ts * frac },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: (ts / 2) | 0,
-      },
+      glyphFont((ts / 2) | 0),
       color,
       "~",
     );
@@ -665,12 +660,7 @@ export function redraw(
       if (isShip(ship) && cellFlags[i] & FE_FLEET)
         dr.drawText(
           { x: tx + ts / 2, y: ty + ts / 2 },
-          {
-            align: "center",
-            baseline: "mathematical",
-            fontType: "variable",
-            size: (ts / 2) | 0,
-          },
+          glyphFont((ts / 2) | 0),
           COL_COUNT_ERROR,
           "?",
         );
