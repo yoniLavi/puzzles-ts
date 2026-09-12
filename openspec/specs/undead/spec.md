@@ -3,10 +3,11 @@
 ## Purpose
 Undead, the puzzle of filling a mirrored grid with ghosts, vampires and zombies
 to given totals so that each edge count matches the monsters visible along its
-sightline, ghosts showing only in mirrors and vampires only directly. This
-capability specifies its port to the TS engine, with sightline tracing through
-the mirrors, pencil and clue moves, live legality errors, mistake-checking,
-on-screen key labels, and an explained deduction hint.
+sightline, a ghost counting only after a reflection and a vampire only before
+one. This capability specifies its port to the TS engine, with sightline tracing
+through the mirrors, pencil and clue moves, live legality errors,
+mistake-checking, on-screen key labels, and an explained deduction hint that
+stops, rather than searches, where deduction runs out.
 ## Requirements
 ### Requirement: Undead game implements the Game interface
 

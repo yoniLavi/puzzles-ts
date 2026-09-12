@@ -2,10 +2,11 @@
 
 ## Purpose
 Bridges (Hashiwokakero), the puzzle of linking every island into one network
-with single or double bridges that never cross, each island carrying as many
-bridges as its number. This capability specifies its port to the TS engine, with
-live errors, auto-marking of satisfied islands, and a hint that explains the
-next deduction and marks it in the game's own vocabulary.
+with bridges that never cross, at most a set number (usually two) between any
+pair, each island carrying as many bridges as its number. This capability
+specifies its port to the TS engine, with live errors, an optional graying of
+satisfied islands that locks nothing, and a hint that explains the next
+deduction and marks it in the game's own vocabulary.
 
 ## Requirements
 

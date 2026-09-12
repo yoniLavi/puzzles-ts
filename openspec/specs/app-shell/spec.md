@@ -2,10 +2,12 @@
 
 ## Purpose
 The app's chrome around the puzzles — the puzzle screen's commands, keyboard and
-focus handling, and the home screen's navigation — as a design of this project's
-own. It exists so that every command has one home, the board keeps the keyboard,
-the layout holds at a phone width, and nothing in the chrome presses a player
-toward a hint.
+focus handling, the press-and-release stream it delivers to a game, the board
+and params it restores and reports, and the home screen's navigation — as a
+design of this project's own. It exists so that every command has one home, the
+board keeps the keyboard, the layout holds at a phone width, a setting is
+offered only while something reads it, and nothing in the chrome presses a
+player toward a hint.
 
 ## Requirements
 

@@ -3,10 +3,10 @@
 ## Purpose
 How this repository is organized and kept honest: where code, help, docs and
 tooling live, the in-process test tiers and the determinism they rely on, the
-developer guides under `docs/`, and the mechanical checks that hold module
-layering, test strength, bulk edits, comments and the openspec workflow to what
-they claim. It is the contract for working in the tree rather than for anything
-a player sees.
+developer guides under `docs/`, and the checks and audits that hold module
+layering, test strength, bulk edits, comments, spelling, change-id citations and
+the openspec workflow to what they claim. It is mainly the contract for working
+in the tree; what the served help must cover is its one player-facing part.
 
 ## Requirements
 

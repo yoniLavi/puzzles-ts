@@ -2,9 +2,9 @@
 
 ## Purpose
 The seeded random-number generator that game generation draws on, reproducing
-upstream's `random.c` bit for bit so that a game ID or shared seed deals the
-same board in every build, and the committed C-recorded corpus that holds it to
-that.
+upstream's `random.c` bit for bit so that a seeded game ID feeds the generator
+the same random stream in every build, and the committed C-recorded corpus that
+holds it to that.
 ## Requirements
 ### Requirement: TypeScript random module reproduces C output byte-for-byte
 

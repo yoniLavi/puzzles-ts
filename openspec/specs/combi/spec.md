@@ -2,7 +2,7 @@
 
 ## Purpose
 The combination enumerator in `src/engine/combi/`, which yields every r-element
-subset of n items exactly once and in lexicographic order for engine code that
+subset of n items exactly once and in lexicographic order, for a solver that
 searches over subsets. Its correctness is stated as closed-form properties of
 the mathematics rather than as a replayed recording.
 ## Requirements

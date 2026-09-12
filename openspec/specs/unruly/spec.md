@@ -1,11 +1,12 @@
 # unruly Specification
 
 ## Purpose
-Unruly (Takuzu), the puzzle of coloring every square black or white so that no
-three in a line match and each row and column is half of each. This capability
-specifies its port to the TS engine, with difficulty-gated deductive generation,
-live error highlighting, mistake-checking, and an explained deduction hint with
-a placement animation and its own color legend.
+Unruly (Binairo), the puzzle of coloring every square black or white so that no
+three consecutive squares in a line match and each row and column is half of
+each, optionally with no two rows or columns alike. This capability specifies
+its port to the TS engine, with difficulty-gated deductive generation, live
+error highlighting, a growing-fill placement animation, mistake-checking, and an
+explained deduction hint with its own color legend.
 ## Requirements
 ### Requirement: Unruly game implements the Game interface
 

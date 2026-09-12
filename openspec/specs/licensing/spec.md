@@ -2,8 +2,9 @@
 
 ## Purpose
 How this project meets the MIT obligations of the code it builds on and credits
-the people behind it: the layered `LICENSE.md`, `CREDITS.md`, and an About
-dialog that names every bundled third-party package with its real notice.
+the people behind it: the layered `LICENSE.md`, `CREDITS.md`, the byte-identical
+upstream notices in `licenses/`, and an About dialog that shows those notices
+and names every bundled third-party package with its license.
 
 ## Requirements
 

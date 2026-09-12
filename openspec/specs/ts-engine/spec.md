@@ -1,14 +1,13 @@
 # ts-engine Specification
 
 ## Purpose
-The native-TypeScript puzzle engine: the single idiomatic `Game`
-interface every port implements, the `Midend` that orchestrates a game
-behind the existing Comlink surface, the runtime per-game registry
-that is the hybrid TS-vs-C/WASM decision point, the clean TS-native
-save format, and the behavioral (corpus-free) test discipline for the
-engine. This is the keystone the `ts-migration` doctrine mandates
-before any game port; it realizes that doctrine's "midend precedes
-game ports" and "per-game hybrid" requirements.
+The native-TypeScript puzzle engine every game runs on: the idiomatic `Game`
+interface each game implements, the `Midend` that drives one behind the worker's
+Comlink surface, the registry, save format and preferences, and the shared layer
+a game joins by having a mechanic — the hint system, mistake-checking, the
+drawing and color contract, difficulty tiers, input and keyboard handling, and
+the helpers games would otherwise each copy. Its cross-game guards are what keep
+a convention one convention across the collection.
 
 ## Requirements
 

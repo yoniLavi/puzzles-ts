@@ -1,10 +1,10 @@
 # sokoban Specification
 
 ## Purpose
-Sokoban, the puzzle of pushing every barrel onto a target without pushing one
-into a wall or another barrel. This capability specifies its port to the TS
-engine: movement and pushing, completion, deterministic generation, and
-rendering.
+Sokoban, the puzzle of pushing, never pulling, every barrel onto a target, where
+no barrel can be pushed into a wall or another barrel. This capability specifies
+its port to the TS engine: movement and pushing, completion, reproducible
+generation that is solvable by construction, and rendering.
 ## Requirements
 ### Requirement: Sokoban game implements the Game interface
 

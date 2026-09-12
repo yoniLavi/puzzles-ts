@@ -1,12 +1,12 @@
 # salad Specification
 
 ## Purpose
-Salad, the Latin-square puzzle in which some squares stay empty, clued by the
-letter seen first from each edge in ABC End View mode or by balls and crosses in
-Number Ball mode. This capability specifies its port to the TS engine as a
-consumer of the shared Latin-square solver that reasons about the empty square
-directly, with honestly graded tiers and a hint explained entirely as
-pencil-note deductions.
+Salad, the Latin-square puzzle in which some squares stay empty, clued mainly by
+the letter seen first from each edge in ABC End View mode, or by balls and
+crosses in Number Ball mode. This capability specifies its port to the TS engine
+as a consumer of the shared Latin-square solver that reasons about the empty
+square directly, with honestly graded tiers and a hint explained as pencil-note
+deductions.
 
 ## Requirements
 

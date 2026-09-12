@@ -1,10 +1,11 @@
 # fifteen Specification
 
 ## Purpose
-Fifteen, the sliding-tile puzzle of putting numbered tiles in order with the
-hole in the last corner. This capability specifies its port to the TS engine:
-pure slide and solve moves, the tiles and slide animation, and a hint that plays
-out a full greedy solution.
+Fifteen, the sliding-tile puzzle of putting numbered tiles in order from the top
+left, with the hole in the bottom-right corner. This capability specifies its
+port to the TS engine: pure slide and solve moves, the tiles and slide
+animation, and a hint that plays out a full greedy solution, saying of each
+slide whether it puts a tile home or sets one up.
 
 ## Requirements
 

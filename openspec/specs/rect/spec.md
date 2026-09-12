@@ -3,8 +3,9 @@
 ## Purpose
 Rectangles (Shikaku), the puzzle of dividing a grid into rectangles that each
 contain exactly one number, equal to its area. This capability specifies its
-port to the TS engine: its encoding, the solver and the generator gated on it,
-completion and mistake reporting, and its input and rendering.
+port to the TS engine: its encoding, the solver and the generator gated on it
+unless uniqueness is turned off, completion and mistake reporting, and its input
+and rendering.
 ## Requirements
 ### Requirement: Rectangles game implements the Game interface
 

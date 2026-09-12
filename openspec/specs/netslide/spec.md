@@ -1,10 +1,12 @@
 # netslide Specification
 
 ## Purpose
-Netslide, the puzzle of sliding whole rows and columns until the wires on the
-tiles join one connected network with no loops. This capability specifies its
-port to the TS engine, with a solver that works from any position without the
-generator's answer, and a hint that explains and draws each slide it proposes.
+Netslide, the puzzle of sliding rows and columns, all but the source's own row
+and column, until the wires on the tiles join one connected network with no
+loops. This capability specifies its port to the TS engine: it has no solver, so
+Solve and the hint recover the finished grid from the board itself and work from
+any position without the generator's answer, and the hint explains and draws
+each slide it proposes.
 ## Requirements
 ### Requirement: Netslide game implements the Game interface
 

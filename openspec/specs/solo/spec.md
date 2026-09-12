@@ -2,10 +2,10 @@
 
 ## Purpose
 Solo, the Sudoku family: fill a grid so that each number appears once in every
-row, column and block, with jigsaw blocks, killer cages and X diagonals among
-its variants. This capability specifies its port to the TS engine around its own
-graded solver, with pencil marks and their preferences, mistake-checking,
-on-screen key labels, and an explained deduction hint.
+row, column and block, in variants that add jigsaw blocks, killer cages or X
+diagonals, alone or combined. This capability specifies its port to the TS
+engine around its own graded solver, with pencil marks and their preferences,
+mistake-checking, on-screen key labels, and an explained deduction hint.
 ## Requirements
 ### Requirement: Solo game implements the Game interface
 

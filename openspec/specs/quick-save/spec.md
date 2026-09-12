@@ -1,10 +1,11 @@
 # quick-save Specification
 
 ## Purpose
-The one-slot quick save every puzzle offers, reached through a Check & Save that
-checkpoints only a board with no mistakes, with its keyboard shortcut and
-non-blocking confirmations. It exists so a player can mark a known-good position
-and come back to it without managing save files.
+The one-slot quick save every puzzle offers, behind a Check & Save that, in a
+game with mistake-checking, leaves the checkpoint untouched while the board has
+mistakes, with its keyboard shortcut and non-blocking confirmations. It exists
+so a player can mark a position, checked wherever the game can check it, and
+come back to it without managing save files.
 ## Requirements
 ### Requirement: A single quick-save slot per puzzle
 

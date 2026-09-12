@@ -4,8 +4,8 @@
 Mines (Minesweeper), the puzzle of uncovering every square that is not a mine,
 guided by the neighbor counts the uncovered squares reveal. This capability
 specifies its port to the TS engine around the guarantees that keep it fair: the
-first click is never a mine, every board is solvable without guessing, a death
-can be undone, and chording never reveals more than it must.
+first click is never a mine, every preset board is solvable without guessing, a
+death can be undone, and chording never reveals more than it must.
 ## Requirements
 ### Requirement: Mines game implements the Game interface
 

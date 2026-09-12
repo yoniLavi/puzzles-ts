@@ -1,12 +1,13 @@
 # ts-migration Specification
 
 ## Purpose
-The authoritative doctrine for replacing the C/WASM puzzle engine with
-native TypeScript: top-down and product-value-first ordering, C as a
-readable reference and dev-time differential check (not a byte-oracle),
-the per-game hybrid with per-game C deletion, a clean TS save format,
-and the explicit stance that deliberate divergence from upstream is the
-goal. `AGENTS.md` is the readable summary; this spec is the contract.
+The doctrine the port from C/WASM to native TypeScript followed, and the rules
+it left standing now that the C engine is retired: C as a readable reference
+rather than a byte-oracle, a clean save format with stable future game IDs,
+narratable-deduction generation, acceptance by exercising a game rather than by
+a green suite, byte-stable params encodings, and the difficulty-tier and
+shared-helper rules that keep generated boards honest. `AGENTS.md` is the
+readable summary; this spec is the contract.
 
 ## Requirements
 

@@ -3,9 +3,10 @@
 ## Purpose
 Towers (Skyscrapers), the Latin-square puzzle whose edge clues count the towers
 visible from that side. This capability specifies its port to the TS engine,
-with 3D and 2D styles, a sticky pencil mode, automatic pencil eliminations on
-placement, clue striking, on-screen key labels, and a hint explained through
-pencil notes.
+with 3D and 2D styles, a sticky pencil mode, an optional auto-pencil that
+strikes a placed height from its row and column, clue striking, mistake-checking
+that also catches a pencil note excluding the true height, on-screen key labels,
+and a hint explained through pencil notes.
 ## Requirements
 ### Requirement: Towers game implements the Game interface
 
