@@ -23,7 +23,10 @@
 
 - [ ] 2.1 Replay every symbol and syntax row with Claude Code's LSP tool:
       `findReferences`, `workspaceSymbol`, `goToImplementation`. Record the
-      found / true count per row.
+      found / true count per row. **Warm the server first and control every
+      query with a known positive**: on 2026-09-12 a cold `findReferences` on
+      `tierNames` returned 2 references with no error, and the same query warm
+      returned 72 (`research.md`).
 - [ ] 2.2 Explain why the `typescript-lsp` plugin reported
       `src/engine/difficulty.ts:217,220` errors that `tsgo` does not. On
       2026-09-12 the plugin ran TypeScript 5.9.3 (the global install and the
@@ -37,6 +40,11 @@
 
 ## 3. The candidates
 
+- [x] 3.0 Desk research on Serena, the LSP tool, `tsgo --lsp`, `ast-grep` and
+      the other code-intelligence servers, with nothing installed: `research.md`.
+      It recommends not trialling Serena now, so 3.2 and 3.4 wait on the owner.
+      It adds two candidates the scaffold lacked: pointing the LSP tool at
+      `tsgo --lsp --stdio`, and a committed compiler-API `npm run refs` script.
 - [ ] 3.1 **Ask the owner before installing anything.** A trial install of
       Serena (`uv tool install`) or of `ast-grep` writes outside this
       repository.

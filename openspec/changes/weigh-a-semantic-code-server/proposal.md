@@ -1,6 +1,9 @@
 # Weigh a semantic code server
 
-**Readiness: scaffolded 2026-09-12, not started.**
+**Readiness: desk research done 2026-09-12 (`research.md`); no trial run. It
+recommends not trialling Serena now and taking the cheaper steps it lists first —
+the owner's decision.** Several "not found" items below are answered there, and it
+supersedes them.
 
 Owner question, 2026-09-12:
 
@@ -135,5 +138,8 @@ corrected either way.
 
 - A research change. It adds no dependency, no MCP config and no gate step
   unless the owner accepts a recommendation to.
-- A trial install of Serena, or of `ast-grep`, writes outside this repository
-  (uv's tool directory, a global npm prefix). It needs the owner's say-so first.
+- A trial install of Serena writes outside this repository (uv's tool
+  directory, `~/.serena/`). `ast-grep` need not: `@ast-grep/cli` installs as a
+  devDependency into `node_modules`, but it is still a new dependency. Pointing
+  the LSP tool at `tsgo` changes user-scope Claude Code config. Each needs the
+  owner's say-so first.
