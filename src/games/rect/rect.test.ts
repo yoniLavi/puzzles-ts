@@ -221,6 +221,85 @@ describe("rect input → moves", () => {
     expect(move === null || (move as { type?: string }).type === undefined).toBe(true);
   });
 
+  // The two drag tests above both drive press → drag → release, and both are
+  // blind to a transposed drag anchor — for different reasons. The edge click
+  // never reads the anchor at all (it derives the edge from the release's own
+  // coordinates), and the rectangle drags (2,2) → (4,4), which is symmetric, so
+  // swapping x for y at the press produces the same box. Measured: swapping the
+  // two coordinates the press writes passed all 32 rect tests.
+  //
+  // Exercising a code path is not the same as discriminating within it; a
+  // symmetric fixture hides a transposition however thoroughly it is driven.
+  it("anchors an asymmetric drag the right way round", () => {
+    const st = newState(P(), "zw");
+    const ui = rectGame.newUi(st);
+    const ds = sizedDrawState(rectGame, st);
+    // 3 wide by 1 tall — a box that is not its own transpose.
+    rectGame.interpretMove(st, ui, ds, { x: px(1), y: px(2) }, LEFT_BUTTON);
+    rectGame.interpretMove(st, ui, ds, { x: px(4), y: px(3) }, LEFT_DRAG);
+    const move = rectGame.interpretMove(
+      st,
+      ui,
+      ds,
+      { x: px(4), y: px(3) },
+      LEFT_RELEASE,
+    );
+    expect(move).toEqual({ type: "rect", erasing: false, x: 1, y: 2, w: 3, h: 1 });
+  });
+
+  it("rounds the far edge outward, so a drag into a cell includes it", () => {
+    // The half-grid pair halves into cells with the near edge rounding down and
+    // the far edge rounding up. Both effects are invisible when the drag starts
+    // and ends on vertices (even half-grid coords), which is what the test above
+    // does — so this one releases over a cell *center* (an odd coordinate),
+    // where dropping the outward rounding would lose the last column.
+    const st = newState(P(), "zw");
+    const ui = rectGame.newUi(st);
+    const ds = sizedDrawState(rectGame, st);
+    rectGame.interpretMove(st, ui, ds, { x: px(1), y: px(2) }, LEFT_BUTTON);
+    rectGame.interpretMove(st, ui, ds, { x: px(3.5), y: px(3.5) }, LEFT_DRAG);
+    const move = rectGame.interpretMove(
+      st,
+      ui,
+      ds,
+      { x: px(3.5), y: px(3.5) },
+      LEFT_RELEASE,
+    );
+    // Anchor vertex (1,2) → half-grid (2,4); release at cell center (3,3) →
+    // half-grid (7,7). So cells x 1..4 and y 2..4: a 3x2 box.
+    expect(move).toEqual({ type: "rect", erasing: false, x: 1, y: 2, w: 3, h: 2 });
+  });
+
+  it("a click that never moves emits an edge, not a rectangle", () => {
+    // `dragged` stays false until the pointer leaves the press point, which is
+    // what keeps a bare click on an edge from committing a 1x1 box.
+    const st = newState(P(), "zw");
+    const ui = rectGame.newUi(st);
+    const ds = sizedDrawState(rectGame, st);
+    const point = { x: px(2.5), y: px(3.0) };
+    rectGame.interpretMove(st, ui, ds, point, LEFT_BUTTON);
+    expect(ui.dragged).toBe(false);
+    expect(rectGame.interpretMove(st, ui, ds, point, LEFT_RELEASE)).toEqual({
+      type: "edge",
+      edge: "h",
+      x: 2,
+      y: 3,
+    });
+  });
+
+  it("a drag that moves off the press point sets dragged, and the release clears it", () => {
+    const st = newState(P(), "zw");
+    const ui = rectGame.newUi(st);
+    const ds = sizedDrawState(rectGame, st);
+    rectGame.interpretMove(st, ui, ds, { x: px(1), y: px(2) }, LEFT_BUTTON);
+    expect(ui.dragged).toBe(false);
+    rectGame.interpretMove(st, ui, ds, { x: px(4), y: px(3) }, LEFT_DRAG);
+    expect(ui.dragged).toBe(true);
+    rectGame.interpretMove(st, ui, ds, { x: px(4), y: px(3) }, LEFT_RELEASE);
+    // The release resets the drag, so the next press starts from nothing.
+    expect(ui.dragged).toBe(false);
+  });
+
   it("first arrow press only reveals the cursor", () => {
     const st = newState(P(), "zw");
     const ui = rectGame.newUi(st);

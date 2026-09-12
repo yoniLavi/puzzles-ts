@@ -823,10 +823,10 @@ export function redrawBridges(
 
   let dragSrc: { x: number; y: number } | null = null;
   let dragDst: { x: number; y: number } | null = null;
-  if (ui.dragxSrc !== -1 && ui.dragySrc !== -1) {
-    dragSrc = { x: ui.dragxSrc, y: ui.dragySrc };
-    if (ui.dragxDst !== -1 && ui.dragyDst !== -1) {
-      dragDst = { x: ui.dragxDst, y: ui.dragyDst };
+  if (ui.drag.sx !== -1 && ui.drag.sy !== -1) {
+    dragSrc = { x: ui.drag.sx, y: ui.drag.sy };
+    if (ui.drag.ex !== -1 && ui.drag.ey !== -1) {
+      dragDst = { x: ui.drag.ex, y: ui.drag.ey };
     }
   }
 

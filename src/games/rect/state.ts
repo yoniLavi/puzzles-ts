@@ -14,7 +14,7 @@
 
 import type { PresetMenu } from "../../engine/game.ts";
 import { atof, formatG, parseLeadingInt } from "../../engine/params.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
+import type { GridCursor, GridDrag } from "../../engine/pointer.ts";
 
 export interface RectParams {
   w: number;
@@ -55,13 +55,14 @@ export interface RectState {
 
 /** Persisted cursor/drag UI (not history). Mirrors upstream `game_ui`. */
 export interface RectUi {
-  /** -1,-1 means no drag in progress. Half-grid coords (0..2w, 0..2h). */
-  dragStartX: number;
-  dragStartY: number;
-  dragEndX: number;
-  dragEndY: number;
+  /** The drag's anchor and current position, in **half-grid** coordinates
+   * (0..2w, 0..2h) — Rect's own space, because its rectangles are edge-aligned.
+   * `GridDrag` has no opinion about the unit. */
+  drag: GridDrag;
   /** Set once a drag has moved off its start point (so a returning drag is
-   * still a drag, not a click). */
+   * still a drag, not a click). Distinct from `drag.live`: a press is live
+   * immediately, but has not yet *dragged*, which is what keeps a bare click on
+   * an edge from committing a 1×1 rectangle. */
   dragged: boolean;
   /** True while erasing interior edges (right-drag). */
   erasing: boolean;

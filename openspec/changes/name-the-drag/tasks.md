@@ -106,11 +106,88 @@ the other order only because the plants stood in for it.
       **The release path was the blind spot in both.** Of the seven plants,
       exactly the three on the release survived the first pass — including the
       behavior change in Boats. Worth checking first in the last two games.
-- [ ] 2.3 **Rect** — no coverage, and its pair is **half-grid**, so it is the
-      one that proves the type assumes no coordinate space. Test first.
-- [ ] 2.4 **Bridges** last and most carefully: no coverage, two sources of
-      liveness (a boolean *and* a `-1` sentinel), and the most logic behind the
-      drag. Test first, and expect the test to be the larger half of the work.
+- [x] 2.3 **Rect** — done, and it did prove the type assumes no coordinate
+      space: Rect's pair stays half-grid throughout and `GridDrag` never learns
+      of it. Four tests written first (against the unconverted code), all still
+      passing after; five plants in the converted code all caught.
+
+      **Why its existing drag tests were blind, which is a new shape.** Rect
+      *does* drive press → drag → release through `interpretMove` — and still
+      missed a transposed anchor, for two unrelated reasons. The edge-click test
+      never reads the anchor (the edge comes from the release's own
+      coordinates), and the rectangle test drags (2,2) → (4,4), which is its own
+      transpose. **Exercising a code path is not discriminating within it: a
+      symmetric fixture hides a transposition however thoroughly it is driven.**
+      The same trap caught the far-edge rounding — an asymmetric drag between
+      two *vertices* still can't see it, because `floor((x+1)/2)` and
+      `floor(x/2)` agree on even coordinates; it needs a release over a cell
+      center.
+
+      **And the restructure found dead work.** Every reader of the derived cell
+      rectangle is gated on `dragged`, which only a move sets — and every move
+      recomputes the box. So computing it at the press wrote a value nothing
+      could read. The old code did it too, as a side effect of sharing one block
+      between the press and move paths; removing the `-1` sentinel is what made
+      it visible.
+
+      **Read ahead of converting, because `-1` is load-bearing here in a way it
+      is not elsewhere.** Rect's press sets the anchor but leaves the far end at
+      `-1` rather than at the press point, and two separate branches depend on
+      that:
+
+      - `if (dragStartX >= 0 && (xc !== dragEndX || yc !== dragEndY))` is true
+        *at the press*, because `dragEndX` is `-1` and `xc` is not — which is
+        how the derived cell rectangle `x1..y2` gets computed for a bare click.
+      - `if (dragEndX !== -1) dragged = true` makes `dragged` true only from the
+        second pass, so a click leaves it false and commits no rectangle.
+
+      `startDrag` puts both ends at the press point, so a naive swap breaks
+      both. The faithful restructure is to compute `x1..y2` in the press branch
+      as well, and drive `dragged` off `moveDrag`'s return value — press:
+      `startDrag`, `dragged = false`, compute; drag: `if (moveDrag(...))
+      { dragged = true; compute }`. Trace it: today's press pass computes the
+      rectangle with `dragged` false, and the first move to a different cell
+      sets `dragged` — identical under the restructure, with the sentinel gone.
+
+      Rect also keeps `x1,y1,x2,y2`, the **derived** cell rectangle (the
+      half-grid pair floor-divided by two), and `cursorDragging` for its
+      keyboard drag. Neither belongs in `GridDrag`: one is a projection the game
+      computes, the other a mode.
+- [ ] 2.4 **Bridges** last and most carefully: no coverage (0 of 72), two
+      sources of liveness, and the most logic behind the drag. Test first, and
+      expect the test to be the larger half of the work.
+
+      **Read before converting — the far end is derived, not the pointer.**
+      Bridges' `dragxDst/yDst` is not "where the pointer is"; it is the *target
+      island*, produced by a directional search from the source (`updateDragDst`
+      picks an axis from the pointer offset, then resolves the island that way
+      and computes `nlines`). Bridges never stores a raw pointer position at all.
+
+      That is a difference of degree rather than kind, and the population
+      supports it: **none** of the five converted games stores the raw pointer
+      in `ex/ey` either. Tents and Boats snap it to an axis, Tracks clamps it to
+      the grid, and only Rect keeps it (already rounded to half-grid). So `ex/ey`
+      has always meant *the far end of the drag as the game understands it*, and
+      Bridges' island fits that reading. Worth stating explicitly in the commit,
+      because it is the one place where a reader might expect otherwise.
+
+      **The two-stage shape is Tracks' and Rect's again**: the press sets the
+      source with `dragging` false, and only a move off the source sets it. So
+      `drag.live` is "a press landed on an island" and `dragging` is the
+      narrower "has left it" — which makes it the fourth field whose name says
+      liveness and means something else. Rename it for what it is, as Tracks'
+      `painting`.
+
+      `todraw`, `nlines` and `dragIsNoline` are payload the press and the search
+      pick; they stay with the game, like Boats' `dragFrom`/`dragTo`.
+
+      **Done.** Converted as analyzed; `dragging` is now `aiming`. Five tests
+      written first (against the unconverted code), all still passing after, and
+      five plants all caught. Two of the five survived a first pass because the
+      tests asserted only the *emitted move* — and a drag that resolves to no
+      island emits nothing either, so "no L op" could not tell a canceled press
+      from a failed resolution. Asserting **what is armed** rather than what
+      comes out is what discriminates.
 
 ## 3. The engine cancels it
 

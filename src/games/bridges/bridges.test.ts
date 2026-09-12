@@ -147,6 +147,91 @@ describe("bridges input model (drag → move)", () => {
     const s3 = bridgesGame.executeMove(s, mmove);
     expect(s3.gridAt(0, 0) & G_MARK).toBeTruthy();
   });
+
+  // Both tests above press on island (0, 0), which is its own transpose — so
+  // neither can see the drag source being stored x-for-y. Measured: swapping
+  // the two coordinates the press writes passed all 72 bridges tests. The
+  // board below puts its islands on the middle row instead, where (0, 1) and
+  // (1, 0) are different cells and only one of them is an island.
+  const middleRow = () => newStateFromDesc(p3, "c1a1c"); // islands (0,1), (2,1)
+
+  it("stores the drag source the right way round on an asymmetric board", () => {
+    const s = middleRow();
+    const ui = bridgesGame.newUi(s);
+    const ds = newDrawState(s);
+    setTileSize(ds, ts);
+
+    expect(
+      bridgesGame.interpretMove(s, ui, ds, { x: center(0), y: center(1) }, LEFT_BUTTON),
+    ).toBe(UI_UPDATE);
+    bridgesGame.interpretMove(s, ui, ds, { x: center(2), y: center(1) }, LEFT_DRAG);
+    const move = bridgesGame.interpretMove(
+      s,
+      ui,
+      ds,
+      { x: center(2), y: center(1) },
+      LEFT_RELEASE,
+    ) as BridgesMove;
+    expect(move.ops).toEqual([{ op: "L", x1: 0, y1: 1, x2: 2, y2: 1, n: 1 }]);
+  });
+
+  it("a press on an empty square cancels rather than arming a drag", () => {
+    // (1, 0) is empty on this board: a press there must leave nothing armed, or
+    // the following drag would run from a square holding no island.
+    const s = middleRow();
+    const ui = bridgesGame.newUi(s);
+    const ds = newDrawState(s);
+    setTileSize(ds, ts);
+
+    bridgesGame.interpretMove(s, ui, ds, { x: center(1), y: center(0) }, LEFT_BUTTON);
+    // Nothing armed is the assertion: a later drag resolving to no island would
+    // also emit no move, so checking only the move cannot tell the two apart.
+    expect(ui.drag.live).toBe(false);
+    expect(ui.drag.sx).toBe(-1);
+
+    bridgesGame.interpretMove(s, ui, ds, { x: center(2), y: center(1) }, LEFT_DRAG);
+    expect(ui.aiming).toBe(false);
+    const move = bridgesGame.interpretMove(
+      s,
+      ui,
+      ds,
+      { x: center(2), y: center(1) },
+      LEFT_RELEASE,
+    );
+    expect(move).not.toMatchObject({ ops: [{ op: "L" }] });
+  });
+
+  it("a press alone points at no island yet", () => {
+    // The press anchors the source but must leave the far end unresolved:
+    // `render` draws a drag line whenever there is a destination, so a far end
+    // left sitting on the source would draw one from the island to itself.
+    const s = middleRow();
+    const ui = bridgesGame.newUi(s);
+    const ds = newDrawState(s);
+    setTileSize(ds, ts);
+
+    bridgesGame.interpretMove(s, ui, ds, { x: center(0), y: center(1) }, LEFT_BUTTON);
+    expect([ui.drag.sx, ui.drag.sy]).toEqual([0, 1]);
+    expect([ui.drag.ex, ui.drag.ey]).toEqual([-1, -1]);
+  });
+
+  it("leaves nothing armed after a release", () => {
+    // The engine cancels a live drag when the board changes under it, so a
+    // drag still marked live after its own release would be canceled for no
+    // reason — and, before that, a stray drag event could resume it.
+    const s = middleRow();
+    const ui = bridgesGame.newUi(s);
+    const ds = newDrawState(s);
+    setTileSize(ds, ts);
+
+    bridgesGame.interpretMove(s, ui, ds, { x: center(0), y: center(1) }, LEFT_BUTTON);
+    bridgesGame.interpretMove(s, ui, ds, { x: center(2), y: center(1) }, LEFT_DRAG);
+    bridgesGame.interpretMove(s, ui, ds, { x: center(2), y: center(1) }, LEFT_RELEASE);
+    expect(ui.aiming).toBe(false);
+    expect(ui.drag.live).toBe(false);
+    expect(ui.drag.sx).toBe(-1);
+    expect(ui.drag.sy).toBe(-1);
+  });
 });
 
 describe("bridges solve + findMistakes", () => {

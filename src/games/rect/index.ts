@@ -16,16 +16,20 @@ import { atof, dimensionParamConfig, formatG } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  endDrag,
   isCancelKey,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
   moveCursor,
+  moveDrag,
   newCursor,
+  newDrag,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
+  startDrag,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -94,10 +98,7 @@ function coordRound(x: number, y: number): [number, number] {
 
 function newUi(_state: RectState): RectUi {
   return {
-    dragStartX: -1,
-    dragStartY: -1,
-    dragEndX: -1,
-    dragEndY: -1,
+    drag: newDrag(),
     dragged: false,
     erasing: false,
     x1: -1,
@@ -110,15 +111,29 @@ function newUi(_state: RectState): RectUi {
 }
 
 function resetUi(ui: RectUi): void {
-  ui.dragStartX = -1;
-  ui.dragStartY = -1;
-  ui.dragEndX = -1;
-  ui.dragEndY = -1;
+  endDrag(ui.drag);
   ui.x1 = -1;
   ui.y1 = -1;
   ui.x2 = -1;
   ui.y2 = -1;
   ui.dragged = false;
+}
+
+/** Recompute the cell rectangle the current drag spans, or clear it when the
+ * pointer is off the board. The half-grid pair halves into cell coordinates:
+ * the near edge rounds down, the far edge rounds up. */
+function updateDragBox(ui: RectUi, w: number, h: number, xc: number, yc: number): void {
+  if (xc < 0 || xc > 2 * w || yc < 0 || yc > 2 * h) {
+    ui.x1 = ui.y1 = ui.x2 = ui.y2 = -1;
+    return;
+  }
+  const { sx, sy, ex, ey } = ui.drag;
+  const [x1, x2] = sx <= ex ? [sx, ex] : [ex, sx];
+  const [y1, y2] = sy <= ey ? [sy, ey] : [ey, sy];
+  ui.x1 = Math.floor(x1 / 2);
+  ui.x2 = Math.floor((x2 + 1) / 2);
+  ui.y1 = Math.floor(y1 / 2);
+  ui.y2 = Math.floor((y2 + 1) / 2);
 }
 
 function interpretMove(
@@ -141,7 +156,7 @@ function interpretMove(
   let erasing = false;
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    if (ui.dragStartX >= 0 && ui.cursorDragging) resetUi(ui);
+    if (ui.drag.live && ui.cursorDragging) resetUi(ui);
     startdrag = true;
     ui.cursor.visible = false;
     ui.cursorDragging = false;
@@ -161,7 +176,7 @@ function interpretMove(
     [xc, yc] = coordRound(ui.cursor.x + 0.5, ui.cursor.y + 0.5);
   } else if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
     // Ignore a keyboard drag start while a mouse drag is in progress.
-    if (ui.dragStartX >= 0 && !ui.cursorDragging) return null;
+    if (ui.drag.live && !ui.cursorDragging) return null;
     if (!ui.cursor.visible) {
       ui.cursor.visible = true;
       return UI_UPDATE;
@@ -189,41 +204,29 @@ function interpretMove(
     return null;
   }
 
+  // The press anchors both ends and leaves `dragged` false, which is what keeps
+  // a bare click an edge toggle rather than a 1×1 rectangle. An event that
+  // actually moves the near end promotes it — `moveDrag` reports exactly that,
+  // which is why no "has the far end been set yet" sentinel is needed.
+  //
+  // The box is computed only on a move: every reader of it is gated on
+  // `dragged`, so computing it at the press would be writing a value nothing
+  // can read. (The version this replaced did compute it there, as a side effect
+  // of sharing one block with the move path.)
   if (startdrag && xc >= 0 && xc <= 2 * w && yc >= 0 && yc <= 2 * h) {
-    ui.dragStartX = xc;
-    ui.dragStartY = yc;
-    ui.dragEndX = -1;
-    ui.dragEndY = -1;
+    startDrag(ui.drag, xc, yc);
     ui.dragged = false;
     ui.erasing = erasing;
     active = true;
-  }
-
-  if (ui.dragStartX >= 0 && (xc !== ui.dragEndX || yc !== ui.dragEndY)) {
-    if (ui.dragEndX !== -1 && ui.dragEndY !== -1) ui.dragged = true;
-    ui.dragEndX = xc;
-    ui.dragEndY = yc;
+  } else if (moveDrag(ui.drag, xc, yc)) {
+    ui.dragged = true;
+    updateDragBox(ui, w, h, xc, yc);
     active = true;
-
-    if (xc >= 0 && xc <= 2 * w && yc >= 0 && yc <= 2 * h) {
-      let x1 = ui.dragStartX;
-      let x2 = ui.dragEndX;
-      if (x2 < x1) [x1, x2] = [x2, x1];
-      let y1 = ui.dragStartY;
-      let y2 = ui.dragEndY;
-      if (y2 < y1) [y1, y2] = [y2, y1];
-      ui.x1 = Math.floor(x1 / 2); // rounds down
-      ui.x2 = Math.floor((x2 + 1) / 2); // rounds up
-      ui.y1 = Math.floor(y1 / 2);
-      ui.y2 = Math.floor((y2 + 1) / 2);
-    } else {
-      ui.x1 = ui.y1 = ui.x2 = ui.y2 = -1;
-    }
   }
 
   let ret: RectMove | null = null;
 
-  if (enddrag && ui.dragStartX >= 0) {
+  if (enddrag && ui.drag.live) {
     if (xc >= 0 && xc <= 2 * w && yc >= 0 && yc <= 2 * h && erasing === ui.erasing) {
       if (ui.dragged) {
         // Only emit if the rectangle would actually change something.

@@ -30,6 +30,7 @@ import {
   CURSOR_SELECT2,
   CURSOR_UP,
   digitOf,
+  endDrag,
   gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
@@ -38,9 +39,11 @@ import {
   MOD_CTRL,
   MOD_SHFT,
   newCursor,
+  newDrag,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
+  startDrag,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -89,12 +92,9 @@ import {
 function newUi(state: BridgesState): BridgesUi {
   const first = state.islands[0];
   return {
-    dragxSrc: -1,
-    dragySrc: -1,
-    dragxDst: -1,
-    dragyDst: -1,
+    drag: newDrag(),
+    aiming: false,
     todraw: 0,
-    dragging: false,
     dragIsNoline: false,
     nlines: 0,
     cursor: newCursor(first?.x ?? 0, first?.y ?? 0),
@@ -130,11 +130,12 @@ const prefs: GamePref<BridgesUi>[] = [
 // --- Drag model (bridges.c ui_cancel_drag / update_drag_dst / finish_drag) ---
 
 function uiCancelDrag(ui: BridgesUi): UiUpdate {
-  ui.dragxSrc = -1;
-  ui.dragySrc = -1;
-  ui.dragxDst = -1;
-  ui.dragyDst = -1;
-  ui.dragging = false;
+  endDrag(ui.drag);
+  ui.drag.sx = -1;
+  ui.drag.sy = -1;
+  ui.drag.ex = -1;
+  ui.drag.ey = -1;
+  ui.aiming = false;
   return UI_UPDATE;
 }
 
@@ -149,19 +150,19 @@ function updateDragDst(
   nx: number,
   ny: number,
 ): UiUpdate | null {
-  if (ui.dragxSrc === -1 || ui.dragySrc === -1) return null;
-  ui.dragxDst = -1;
-  ui.dragyDst = -1;
+  if (ui.drag.sx === -1 || ui.drag.sy === -1) return null;
+  ui.drag.ex = -1;
+  ui.drag.ey = -1;
 
   const half = Math.trunc(ts / 2);
-  const ox = toCoord(ui.dragxSrc, ts, b) + half;
-  const oy = toCoord(ui.dragySrc, ts, b) + half;
+  const ox = toCoord(ui.drag.sx, ts, b) + half;
+  const oy = toCoord(ui.drag.sy, ts, b) + half;
   let dx = 0;
   let dy = 0;
   if (Math.abs(nx - ox) < Math.abs(ny - oy)) dy = ny < oy ? -1 : 1;
   else dx = nx < ox ? -1 : 1;
-  const nextX = ui.dragxSrc + dx;
-  const nextY = ui.dragySrc + dy;
+  const nextX = ui.drag.sx + dx;
+  const nextY = ui.drag.sy + dy;
   if (!s.inGrid(nextX, nextY)) return UI_UPDATE;
   const gtype = dx ? G_LINEH : G_LINEV;
   const ntype = dx ? G_NOLINEH : G_NOLINEV;
@@ -181,7 +182,7 @@ function updateDragDst(
     ui.nlines = s.lines[nc] + 1;
   }
 
-  const is = s.islandAt(ui.dragxSrc, ui.dragySrc);
+  const is = s.islandAt(ui.drag.sx, ui.drag.sy);
   if (!is) return UI_UPDATE;
   const pt = is.points.find((p) => p.dx === dx && p.dy === dy);
   if (!pt || pt.off === 0) return UI_UPDATE;
@@ -192,24 +193,18 @@ function updateDragDst(
     if (s.possibles(dx, nextX, nextY) === 0) return UI_UPDATE; // not possible
     if (s.grid[nc] & ntype) return UI_UPDATE; // no bridge over a no-line
   }
-  ui.dragxDst = is.x + pt.off * dx;
-  ui.dragyDst = is.y + pt.off * dy;
+  ui.drag.ex = is.x + pt.off * dx;
+  ui.drag.ey = is.y + pt.off * dy;
   return UI_UPDATE;
 }
 
 function finishDrag(ui: BridgesUi): BridgesMove | UiUpdate | null {
-  if (ui.dragxSrc === -1 || ui.dragySrc === -1) return null;
-  if (ui.dragxDst === -1 || ui.dragyDst === -1) return uiCancelDrag(ui);
+  const { sx, sy, ex, ey } = ui.drag;
+  if (sx === -1 || sy === -1) return null;
+  if (ex === -1 || ey === -1) return uiCancelDrag(ui);
   const op: BridgesOp = ui.dragIsNoline
-    ? { op: "N", x1: ui.dragxSrc, y1: ui.dragySrc, x2: ui.dragxDst, y2: ui.dragyDst }
-    : {
-        op: "L",
-        x1: ui.dragxSrc,
-        y1: ui.dragySrc,
-        x2: ui.dragxDst,
-        y2: ui.dragyDst,
-        n: ui.nlines,
-      };
+    ? { op: "N", x1: sx, y1: sy, x2: ex, y2: ey }
+    : { op: "L", x1: sx, y1: sy, x2: ex, y2: ey, n: ui.nlines };
   uiCancelDrag(ui);
   return { ops: [op] };
 }
@@ -233,8 +228,9 @@ function interpretMove(
     if (!s.inGrid(gx, gy)) return null;
     ui.cursor.visible = false;
     if (s.gridAt(gx, gy) & G_ISLAND) {
-      ui.dragxSrc = gx;
-      ui.dragySrc = gy;
+      startDrag(ui.drag, gx, gy);
+      ui.drag.ex = -1;
+      ui.drag.ey = -1;
       return UI_UPDATE;
     }
     return uiCancelDrag(ui);
@@ -242,26 +238,22 @@ function interpretMove(
 
   if (btn === LEFT_DRAG || btn === RIGHT_DRAG) {
     if (
-      s.inGrid(ui.dragxSrc, ui.dragySrc) &&
-      (gx !== ui.dragxSrc || gy !== ui.dragySrc) &&
-      !(s.gridAt(ui.dragxSrc, ui.dragySrc) & G_MARK)
+      s.inGrid(ui.drag.sx, ui.drag.sy) &&
+      (gx !== ui.drag.sx || gy !== ui.drag.sy) &&
+      !(s.gridAt(ui.drag.sx, ui.drag.sy) & G_MARK)
     ) {
-      ui.dragging = true;
+      ui.aiming = true;
       ui.dragIsNoline = btn === RIGHT_DRAG;
       return updateDragDst(s, ui, ts, b, p.x, p.y);
     }
-    ui.dragxDst = -1;
-    ui.dragyDst = -1;
+    ui.drag.ex = -1;
+    ui.drag.ey = -1;
     return UI_UPDATE;
   }
 
   if (btn === LEFT_RELEASE || btn === RIGHT_RELEASE) {
-    if (ui.dragging) return finishDrag(ui);
-    if (
-      !s.inGrid(ui.dragxSrc, ui.dragySrc) ||
-      gx !== ui.dragxSrc ||
-      gy !== ui.dragySrc
-    ) {
+    if (ui.aiming) return finishDrag(ui);
+    if (!s.inGrid(ui.drag.sx, ui.drag.sy) || gx !== ui.drag.sx || gy !== ui.drag.sy) {
       return uiCancelDrag(ui);
     }
     uiCancelDrag(ui);
@@ -272,12 +264,11 @@ function interpretMove(
   if (isCursorMove(btn)) {
     ui.cursor.visible = true;
     if (control || shift) {
-      ui.dragxSrc = ui.cursor.x;
-      ui.dragySrc = ui.cursor.y;
-      ui.dragging = true;
+      startDrag(ui.drag, ui.cursor.x, ui.cursor.y);
+      ui.aiming = true;
       ui.dragIsNoline = !control;
     }
-    if (ui.dragging) {
+    if (ui.aiming) {
       const moved = gridCursorMove(btn, ui.cursor.x, ui.cursor.y, s.w, s.h, false);
       if (!moved) return null;
       const half = Math.trunc(ts / 2);
@@ -326,18 +317,17 @@ function interpretMove(
       ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    if (ui.dragging || btn === CURSOR_SELECT2) {
-      // ui_cancel_drag clears dragxDst, so C always toggles the island mark.
+    if (ui.aiming || btn === CURSOR_SELECT2) {
+      // ui_cancel_drag clears the far end, so C always toggles the island mark.
       uiCancelDrag(ui);
       return { ops: [{ op: "M", x: ui.cursor.x, y: ui.cursor.y }] };
     }
     const v = s.gridAt(ui.cursor.x, ui.cursor.y);
     if (v & G_ISLAND) {
-      ui.dragging = true;
-      ui.dragxSrc = ui.cursor.x;
-      ui.dragySrc = ui.cursor.y;
-      ui.dragxDst = -1;
-      ui.dragyDst = -1;
+      ui.aiming = true;
+      startDrag(ui.drag, ui.cursor.x, ui.cursor.y);
+      ui.drag.ex = -1;
+      ui.drag.ey = -1;
       // Only a plain CURSOR_SELECT gets here, so this is a bridge drag.
       ui.dragIsNoline = false;
       return UI_UPDATE;

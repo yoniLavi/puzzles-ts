@@ -5,7 +5,7 @@
  * dsfs) is not part of the state; the solver builds its own dsf on demand.
  */
 import { tierNames } from "../../engine/difficulty.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
+import type { GridCursor, GridDrag } from "../../engine/pointer.ts";
 import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 
 // --- Grid flag bits (bridges.c lines 127-142) ---
@@ -166,12 +166,23 @@ export interface BridgesMove {
 }
 
 export interface BridgesUi {
-  dragxSrc: number;
-  dragySrc: number;
-  dragxDst: number;
-  dragyDst: number;
+  /**
+   * The drag's source island (`sx`, `sy`) and the island it currently points at
+   * (`ex`, `ey`), or `-1` there when the direction resolves to none.
+   *
+   * **The far end is derived, not the pointer.** `updateDragDst` picks an axis
+   * from the pointer's offset and resolves the island along it; Bridges never
+   * stores a raw pointer position. That is the same reading the rest of the
+   * collection uses — Tents and Boats snap the far end to an axis and Tracks
+   * clamps it to the grid, so `ex`/`ey` has always meant *the far end as the
+   * game understands it*.
+   */
+  drag: GridDrag;
+  /** Whether the pointer has **left the source island**, making this a bridge
+   * drag rather than a click that toggles the island's mark. Not liveness: a
+   * press on an island is live immediately, and only moving off it aims. */
+  aiming: boolean;
   todraw: number;
-  dragging: boolean;
   dragIsNoline: boolean;
   nlines: number;
   cursor: GridCursor;
