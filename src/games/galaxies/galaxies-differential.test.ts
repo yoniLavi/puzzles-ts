@@ -10,8 +10,8 @@
  *      different difficulty.
  *
  * Generator divergence between the TS port and the C engine is *not*
- * tested here — by design (see `ts-migration` and the change's
- * design.md, D7). The TS generator may produce different boards for
+ * tested here — by design (see `ts-migration` and `add-galaxies-ts-port`
+ * D7). The TS generator may produce different boards for
  * the same seed; that's surfaced (advisorially) by
  * `scripts/diff-galaxies.test.ts`.
  *

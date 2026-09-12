@@ -553,6 +553,11 @@ class SolverUsage {
   }
 
   /** `solver_forcing`: forcing-chain deduction via per-candidate BFS. +1 / 0. */
+  // A forcing chain is a BFS whose frontier is (cell, candidate) pairs, and the
+  // nesting is the chain itself: row, column and block propagation each extend
+  // it a different way, and the two ends have to be compared in one scope for
+  // the contradiction to be readable.
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: see above
   private forcing(): number {
     const cr = this.cr;
     const bfsqueue = this.sBfsqueue;
@@ -909,7 +914,8 @@ class SolverUsage {
 
     // Givens are seeded; from here every deduction is teachable, so enable the
     // recorder (kept off through the given placement above so cube-seeding dups
-    // aren't mistaken for deductions — §9.1 soundness boundary).
+    // aren't mistaken for deductions — `docs/games/hints.md` § "The recorder
+    // and the soundness boundary").
     this.recorder = this.pendingRecorder;
 
     mainloop: while (true) {

@@ -1,22 +1,25 @@
 /**
  * Cross-game guarantees on hint narration *form* (never content).
  *
- * `docs/games/hints.md § "Writing the narration" is a list of narration rules that were, until
- * this file, enforced per-game or by review alone — and narration
- * quality is the broadest hint-defect class in the history (8 games; see
- * `unify-hint-framework` §0.2). Three of its rules are pure form, so
+ * `docs/games/hints.md` § "Writing the narration" is a list of narration rules
+ * that were, until this file, enforced per-game or by review alone — and
+ * narration quality is the broadest hint-defect class in the history (8 games;
+ * see `unify-hint-framework` §0.2). Three of its rules are pure form, so
  * they are guarded here for every hinting game at once:
  *
- *  - **Every step shows something** (§5.2): board marks, words, or both.
+ *  - **Every step shows something** (§ "Show the evidence as an area"): board
+ *    marks, words, or both.
  *    A step with neither is invisible — a "hint" the player cannot see.
- *  - **Deductive conclusions use the necessity voice** (§2.1): a
+ *  - **Deductive conclusions use the necessity voice**
+ *    (§ "Necessity for deductions, imperative for moves"): a
  *    deduction is narrated as what *must* / *can't* be, never a bare
  *    state of being. Movement games narrate imperatively instead and are
  *    exempt, as are the candidate games' mechanical populate/cleanup
  *    openers (procedure, not deduction) and each game's declared idioms
  *    (owner-endorsed phrasings whose necessity is carried by the words
  *    themselves — e.g. Filling's "fits exactly into").
- *  - **Narration stays readable at a glance** (§2.5): a limit every step is
+ *  - **Narration stays readable at a glance** (§ "Keep the narration terse"):
+ *    a limit every step is
  *    held to, with a ledger for the few sentences that genuinely need more
  *    room, and a hard ceiling even they cannot pass. Checked across every
  *    tier and every preset, and into the middle of the game, in its own
@@ -354,16 +357,16 @@ describe("hint narration form, cross-game", () => {
         res.steps.forEach((step, i) => {
           const at = `${name}/${seed} step ${i}: "${step.explanation}"`;
 
-          // §5.2 — a step the player cannot see is not a hint.
+          // A step the player cannot see is not a hint.
           expect(
             step.explanation.length > 0 || !declaresNoMarks(step.highlights),
             `${at} — shows nothing: no words, no board marks`,
           ).toBe(true);
 
-          // §2.5 — length is checked in "hint narration stays readable at a
-          // glance" below, across every tier and into the middle game.
+          // Length is checked in "hint narration stays readable at a glance"
+          // below, across every tier and into the middle game.
 
-          // §2.1 — a deduction concludes in the necessity voice.
+          // A deduction concludes in the necessity voice.
           if (DEDUCTIVE.has(name) && !MECHANICAL.test(step.explanation)) {
             expect(
               NECESSITY.test(step.explanation) || (IDIOMS[name]?.(step) ?? false),

@@ -516,6 +516,11 @@ function buildMistakeMask(
   return mask;
 }
 
+// The redraw doctrine is what makes this branchy: one cache key per island and
+// per bridge span, compared against the last frame before anything is painted.
+// The branches ARE the diff, and hoisting them into helpers hides which cell a
+// given comparison guards.
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: see above
 export function redrawBridges(
   dr: GameDrawing,
   ds: BridgesDrawState,

@@ -22,7 +22,8 @@
     "prepare": "husky",
     "metrics": "sh scripts/metrics.sh",
     "mutation": "rm -rf .stryker-tmp && stryker run scripts/stryker.config.mjs",
-    "probe": "node scripts/feedback-probe.mjs"
+    "probe": "node scripts/feedback-probe.mjs",
+    "dead-exports": "node scripts/checks/unused-exports.mjs"
   },
   "dependencies": {
     "@awesome.me/webawesome": "^3.5.0",
@@ -58,7 +59,6 @@
     "happy-dom": "^20.10.2",
     "husky": "^9.1.7",
     "jscpd": "^5.0.14",
-    "knip": "^6.31.0",
     "madge": "^8.0.0",
     "markdown-it": "^14.3.0",
     "markdown-it-anchor": "^9.2.0",

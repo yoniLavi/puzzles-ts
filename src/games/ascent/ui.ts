@@ -619,6 +619,10 @@ function mouseClick(
 }
 
 /** Translate a pointer/key event to a move (upstream `interpret_move`). */
+// The branching is the input model: six button codes arbitrated against a drag
+// arm, a keyboard cursor and a pencil mode, each arm ending in a different
+// move. Splitting it moves the arbitration into names without removing a branch.
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: see above
 export function interpretAscentMove(
   state: AscentState,
   ui: AscentUi,

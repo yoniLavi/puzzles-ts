@@ -240,6 +240,11 @@ function drawSquare(
 
 // --- redraw --------------------------------------------------------------
 
+// Same shape as Bridges': a per-tile cache key folding the digit, the region
+// borders, the cursor, the hint and the mistake overlay, each compared before
+// the tile is repainted. The branch count is the number of things a tile can
+// show.
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: see above
 export function redrawFilling(
   dr: GameDrawing,
   ds: FillingDrawState,

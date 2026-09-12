@@ -116,6 +116,10 @@ const lineBits = (line: SticksLine): number =>
 const bitsLine = (bits: number): SticksLine =>
   bits & F_HOR ? "hor" : bits & F_VER ? "ver" : "none";
 
+// Sticks carries the accreting-drag paint model, so a press, every intermediate
+// drag position and the release are three different things this has to say about
+// one gesture — on top of the keyboard cursor and the two line orientations.
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: see above
 function interpretMove(
   state: SticksState,
   ui: SticksUi,

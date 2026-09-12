@@ -586,8 +586,10 @@ be largely equivalent.
 ## 7. The rule that caught the most: check the instrument against something external
 
 **An instrument's unit of measurement is part of its correctness**, and you
-cannot verify it by re-reading your own reasoning. Eight instances across two
-changes, every one caught only by checking against something *outside* the tool:
+cannot verify it by re-reading your own reasoning. Every row below was caught
+only by checking against something *outside* the tool — and the last three are
+the variant to watch hardest, where the unit was right and the instrument was
+**capped or blind**, so it reported health over a scan of nothing:
 
 | instrument | wrong because | caught by |
 | --- | --- | --- |
@@ -599,6 +601,9 @@ changes, every one caught only by checking against something *outside* the tool:
 | distilled report | flattened `location.start.line` | output below the fold I hadn't checked |
 | **"killed by its own test file"** | Stryker **bails on first failure**, so it names the first covering test, not the capable ones | every killed mutant having exactly *one* `killedBy` — then deleting a `case` arm and watching `grid.test.ts` fail alone |
 | **"the module's own test file"** | one file named after the module is not its tests | eight engine files import `midend.ts`; naming one reports a filing convention as a feedback hole |
+| **knip's "0 unused exports"** | its resolver does not follow this tree's `.ts` import specifiers, so its graph stops at each entry file | `--trace-export initSentry`, a symbol imported on line 1 of `main.ts`, answering "No export found" — the honest count is 373 |
+| **the complexity distribution** | read through biome's default `--max-diagnostics=20`, so *every* threshold from 15 to 100 reported exactly "20" | the flatness itself: a distribution that does not move is the cap, not the tree |
+| **"86.5% of specifiers resolved"** | counted bare package imports as failures to resolve | listing them: 11 of 4183 actually failed, all `?raw`/`?inline` assets |
 
 Three habits fall out. **Give a table a total and assert the columns sum to it** —
 then a status cannot vanish by omission. **Validate a parser against the real

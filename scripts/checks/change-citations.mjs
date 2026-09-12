@@ -82,8 +82,22 @@ import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 /** The scan's key. Deliberately wider than "change id"; see decision 1. */
 const CITATION = /`([a-z0-9]+(?:-[a-z0-9]+){2,})`/g;
 
-/** Files this guard reads: the two roots that talk *about* changes. */
-const SCANNED = /^(docs\/.*\.md|AGENTS\.md)$/;
+/**
+ * Files this guard reads. `src/**\/*.ts` was added on the same measurement the
+ * live requirement demanded before widening, taken 2026-09-12 and coming back
+ * the other way: **63 distinct kebab tokens across 57 source files, 53 of them
+ * resolving and 9 not** — a ratio in `docs/`'s league (6 unresolved of 85) and
+ * nothing like `openspec/specs/`'s (15 of 31, not one a change id). Source
+ * comments *do* cite changes here, mostly in test-file headers explaining which
+ * change wrote the file, and a tidy pass deleted hundreds more by hand.
+ *
+ * A source file has something a markdown file does not — code — so a backtick in
+ * `src/` is a template literal far more often than a citation. The scan reads
+ * the whole file anyway rather than only comments, because the tokens found
+ * inside code are test titles and error strings naming changes, which resolve at
+ * the same rate (21 of 24) and are exactly as worth keeping true.
+ */
+const SCANNED = /^(docs\/.*\.md|AGENTS\.md|src\/.*\.ts)$/;
 
 /**
  * Tokens that match the key and are not a live change id, each with the reason
@@ -106,10 +120,24 @@ const NOT_A_LIVE_CHANGE = {
   "prefers-color-scheme": "a CSS media feature",
   "pre-ts-pivot": "a git tag bracketing the C in history",
   "puzzle-key-unhandled": "a DOM event `view-interactive.ts` raises",
+  // The seven `src/` brought with it, all named-as-things rather than used as
+  // examples, so the backtick is right and the ledger is the answer.
+  "8-3-3": "a Palisade params string, in a comment about the clue bound",
+  "check-and-save": "a UI command id, one of the app's `data-command` values",
+  "check-bridge-parity": "a Tracks solver rung",
+  "check-loose-ends": "a Tracks solver rung",
+  "puzzle-type-menu": "a custom element the puzzle rail nests",
+  "single-number-simple": "an Ascent ladder rung",
+  "type-of-solid": "a Cube params key, matching the `cube` augmentation template",
 };
 
-/** Below these, the input is broken rather than the tree clean. */
-const FLOORS = { files: 10, tokens: 40, archive: 200, postmortems: 1 };
+/**
+ * Below these, the input is broken rather than the tree clean. The file floor is
+ * well under the ~67 scanned (10 markdown, 57 source) so it is not a ratchet,
+ * but far enough above zero that a `SCANNED` that stopped matching a whole root
+ * fails here rather than reporting health over a third of the tree.
+ */
+const FLOORS = { files: 40, tokens: 100, archive: 200, postmortems: 1 };
 
 const fail = (msg) => {
   console.error(`change-citations: ${msg}`);

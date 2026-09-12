@@ -67,7 +67,7 @@ const minesish: Game<MinesishParams, MinesishState, MinesishMove, null, null> = 
     // *here*: a save restored from the private desc has the layout but not the
     // click, and the replayed click must put it back. (Upstream needs a
     // `set_public_desc` game hook precisely because its `execute_move` records
-    // this only while generating — see design.md D3.)
+    // this only while generating — `add-desc-supersede-hook` D3.)
     clickedAt: s.clickedAt ?? m.click,
     opened: [...s.opened, m.click],
   }),

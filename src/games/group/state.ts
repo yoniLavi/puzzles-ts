@@ -263,7 +263,7 @@ export function newUi(_state: GroupState): GroupUi {
   };
 }
 
-// --- desc codec (decimal clues + a-z blank runs, design D10) ----------------
+// --- desc codec (decimal clues + a-z blank runs; `add-group-ts-port` D10) ---
 
 /** Encode a full grid to the run-length desc (`encode_grid`): decimal element
  * numbers, `a`–`z` for runs of 1–26 blanks, `_` to separate a number from

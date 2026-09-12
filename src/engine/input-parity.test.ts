@@ -291,7 +291,8 @@ describe("a gesture from a finger does what the same gesture from a mouse does",
 
 describe("a long press cannot silently swallow a gesture", () => {
   /**
-   * The §3.8c trap, stated so it cannot be innocent. `Game.ignoresSecondaryButton`
+   * The trap `docs/games/input.md` § "A touch hold arrives as the right button"
+   * describes, stated so it cannot be innocent. `Game.ignoresSecondaryButton`
    * declares that the secondary button means nothing in this game, and the flag
    * turns off `detectSecondaryButton` entirely — so a wrong answer in either
    * direction costs a real gesture, and the two are asserted **equal** rather
@@ -470,7 +471,8 @@ describe("every on-screen key a game offers reaches that game", () => {
 describe("the keyboard can commit a move, not merely move a cursor", () => {
   /**
    * A cursor that goes everywhere and does nothing is not a keyboard. This
-   * asks the whole question D1 asks — is the input *reachable* — by finding one
+   * asks the whole question `audit-input-mode-parity` D1 asks — is the input
+   * *reachable* — by finding one
    * keyboard sequence per game that actually changes the board.
    *
    * Two-step interactions are the reason the probe is not a single keypress:

@@ -7,50 +7,53 @@ comments, dead exports and dead citations by hand, one agent per directory.
 Nothing stops it accumulating again, and three mechanisms that would are already
 in the tree, each catching nothing:
 
-**1. The citation guard scans the wrong population.** `change-citations.mjs`
-carries `const SCANNED = /^(docs\/.*\.md|AGENTS\.md)$/`, so a change id written
-in a source comment is invisible to it. The pass deleted hundreds of those by
-hand. Measured today, **23** unresolvable design tags and numeric section
-references survive in `src/`, five of them inside Mines test titles, where
-renaming orphans a snapshot key.
+1. **The citation guard scans the wrong population.** `change-citations.mjs`
+   carries `const SCANNED = /^(docs\/.*\.md|AGENTS\.md)$/`, so a change id
+   written in a source comment is invisible to it.
+2. **knip is installed and wired to nothing.** It is a devDependency and no
+   script runs it.
+3. **The complexity rule is configured never to fire.**
+   `noExcessiveCognitiveComplexity` is set to `maxAllowedComplexity: 150`, where
+   biome's default is 15, and nothing in the tree reaches 150.
 
-The live requirement sets the bar for widening a scan: the specs were excluded
-"on a measurement, not on a principle", and "a scan SHALL be widened only where
-the same measurement comes back the other way". So this change **takes that
-measurement for `src/` first** and widens only if it comes back the other way.
+## What the measurements changed
 
-**2. knip is installed and wired to nothing.** It is a devDependency at
-`^6.31.0` and no script runs it. Run by hand today it reports **zero** unused
-exports, which is the good state the pass just produced by hand: four dead
-accessors in Guess, a dead re-export in Cube, four in Crossing, Fifteen's
-`parityS`, Mosaic's two constants, and more. Wiring it in costs nothing now and
-keeps that at zero.
+Every one of the three was scaffolded with a number, and **two of the three
+numbers were wrong in the same way** — the instrument was capped or blind, and
+reported health over a scan of nothing. That is the defect this change is about,
+arriving in the change's own evidence.
 
-**3. The complexity rule is configured never to fire.**
-`noExcessiveCognitiveComplexity` is set to `maxAllowedComplexity: 150`, where
-biome's default is 15. The distribution over the whole tree:
+**The citation measurement held.** `src/**/*.ts` carries 63 kebab tokens across
+57 files, 53 resolving — `docs/`'s ratio, not the specs'. The scan is widened,
+the ledger gains seven entries of product vocabulary, and the guard is proved red
+on a planted dead citation in a `.ts` comment.
 
-| threshold | diagnostics | distinct sites | non-test sites |
-| --- | --- | --- | --- |
-| 25 | 467 | many | many |
-| 50 | 152 | 20 | 14 |
-| 100 | 26 | 12 | 12 |
+**knip does not work in this repository, and its zero was the proof.** At the
+pinned 6.31.0, with a config naming the real entry points, it reports zero unused
+exports and cannot trace a symbol imported on the first line of `src/main.ts`.
+This tree writes every import with a `.ts` specifier; knip's resolver does not
+follow those, so its graph stops at each entry file. Written properly, the check
+reports **373**. The dependency is removed and the check ships as
+`npm run dead-exports`; 373 is a wall, so `retire-the-dead-exports` clears the
+backlog before it becomes a gate step.
 
-At 50 with tests excluded it names **14** sites, and every one is in
-`engine/grid/` or `divvy.ts`. That is a usable signal pointing at one subsystem,
-not a nag spread over 57 games.
-
-## What changes
-
-- `change-citations.mjs` gains `src/**/*.ts` if the measurement supports it, with
-  the same ledger and vacuity floors it already carries.
-- A gate step runs knip, scoped to unused exports and types.
-- `noExcessiveCognitiveComplexity` moves to a threshold taken from the
-  distribution above, with test files excluded, and the sites it then names are
-  either simplified or recorded as accepted.
+**The complexity table was read through biome's 20-diagnostic cap.** Its "152
+diagnostics, 20 sites, 14 non-test" at threshold 50 is the cap showing through —
+every threshold from 15 to 100 reported exactly 20. Uncapped: 876 at 15, 154 at
+50, 26 at 100, 6 at 130, 0 at 150. The claim that the sites are "every one in
+`engine/grid/` or `divvy.ts`" is also the cap: they are spread over seventeen
+files, and they are the `interpretMove`, `redraw` and solver loop of a dozen game
+ports — inherent shape, not debt. The ceiling goes to 130, where six sites stand
+and each is accepted at its site with its reason.
 
 ## What this is not
 
-Not a license to delete the 14 complex functions. Grid geometry is branchy
-because the geometry is. The rule's value is that a *new* function of that size
-has to be argued for, not that the existing ones are defects.
+Not a license to delete the complex functions. Grid geometry and a deduction
+ladder are branchy because they are. The rule's value is that a *new* function
+of that size has to be argued for.
+
+And not a claim that the three numbers it started from were carelessly taken.
+Two of them were taken with a tool that answers a slightly different question
+than the one asked, silently — which is why `AGENTS.md` § "Method" says to check
+the instrument against something outside the tool, and why each of the three
+above is now recorded with how it was measured.

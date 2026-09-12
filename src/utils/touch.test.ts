@@ -5,8 +5,9 @@
  * It is where the *decisions* are made that every per-game input guard then
  * copes with. `input-parity.test.ts` proves a game survives being handed a
  * `RIGHT_BUTTON` it did not expect; nothing proved this makes the right call in
- * the first place, and those are two different guarantees (`audit-input-mode-
- * parity` design D3). The numbers it arbitrates are load-bearing: 350 ms of
+ * the first place, and those are two different guarantees
+ * (`audit-input-mode-parity` D3). The numbers it arbitrates are load-bearing:
+ * 350 ms of
  * hold, an 8 px radius, and a second finger that *resets* the timer — so a
  * gesture can be delayed up to twice the hold time.
  *

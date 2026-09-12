@@ -73,6 +73,11 @@ function placeColor(
   return true;
 }
 
+// One deduction engine, one loop: the difficulty tiers are caps on how far down
+// this ladder the solver may go, so every rung has to be reachable from the same
+// fixpoint and see the same state. Splitting the rungs into functions would need
+// the state threaded through each, and the tier cap would stop being one number.
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: see above
 function solve(sc: Scratch, coloring: Int32Array, difficulty: number): number {
   const { graph, n, ngraph } = sc;
   if (sc.depth === 0) {

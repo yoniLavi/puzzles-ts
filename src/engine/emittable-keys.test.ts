@@ -419,7 +419,7 @@ describe("no game privately restates what engine/pointer.ts owns", () => {
 });
 
 /** `'0'`..`'9'` as a game would spell them: decimal or hex. */
-const DIGIT_CODE = String.raw`(?:0x3[0-9]|4[89]|5[0-7])`;
+const DIGIT_CODE = "(?:0x3[0-9]|4[89]|5[0-7])";
 
 /**
  * Every name a game gives the button `interpretMove` receives, read from the

@@ -2,6 +2,10 @@
  * Behavioral tests for the Mines port. Tiers per the docs/games/testing.md § "The test tiers":
  * tier-1 logic (params/desc/solver/generator/game), tier-1 midend integration
  * (supersede, save/load, timer), tier-2.5 render scenarios + snapshots.
+ *
+ * A `D<n>` in a test title below names a numbered decision in
+ * `add-mines-ts-port`'s design.md — said once here so the titles stay readable
+ * and the change id is a citation the gate can resolve.
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";

@@ -1,6 +1,7 @@
 /**
  * Gated byte-match differential: mines TS generator vs the frozen C reference
- * (design D6). Because `random.ts` is bit-identical to `random.c`, a faithful
+ * (`add-mines-ts-port` D6). Because `random.ts` is bit-identical to `random.c`,
+ * a faithful
  * generator reproduces each public desc `x,y,m<hex>` exactly for a given seed.
  * A mismatch means one of the D6 traps was missed (the two burned draws, the
  * double-increment livelock guard, the never-updated `prevret`, or the set /

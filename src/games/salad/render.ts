@@ -450,7 +450,8 @@ function drawPencilMarks(
 }
 
 /** The entry a hint step is asking for, previewed in `COL_HINT` in the shape the
- * move itself would draw (§5.1a): a symbol as its glyph, an empty-square marker
+ * move itself would draw (`docs/games/hints.md` § "Echo the move's shape in the
+ * hint color"): a symbol as its glyph, an empty-square marker
  * as a cross, a holds-a-symbol marker as a ball outline. */
 function drawGhost(
   dr: GameDrawing,

@@ -17,6 +17,11 @@
  * 3. **A frame.** A coverage proof says an edge is reachable and nothing about
  *    whether a player can see the cursor on a Penrose patch; that is a
  *    rendering question, so the cursor is captured on an aperiodic tiling.
+ *
+ * The `D5` in a title below names a numbered decision in
+ * `add-loopy-keyboard-control`'s design.md — and NOT `add-loopy-ts-port`'s,
+ * whose D5 is the move model. A bare design tag names one of two documents, so
+ * it is said once here rather than left to the reader to guess wrong.
  */
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
