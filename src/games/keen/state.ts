@@ -12,6 +12,7 @@
  * starts blank.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -93,10 +94,9 @@ export function encodeParams(p: KeenParams, full: boolean): string {
 
 export function decodeParams(s: string): KeenParams {
   const p = defaultParams();
-  let i = 0;
-  let digits = "";
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
-  if (digits) p.w = Number.parseInt(digits, 10);
+  const size = parseLeadingInt(s, 0);
+  let i = size.next;
+  if (i > 0) p.w = size.value;
   if (s[i] === "d") {
     const level = DIFF_CHARS.indexOf(s[++i] ?? "");
     if (level >= 0) {
@@ -213,11 +213,11 @@ function parseBlockStructure(
     } else if (desc[i] === "_" || (desc[i] >= "a" && desc[i] <= "z")) {
       c = desc[i] === "_" ? 0 : desc.charCodeAt(i) - 97 + 1;
       i++;
-      if (i < desc.length && desc[i] >= "0" && desc[i] <= "9") {
-        let num = "";
-        while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
+      if (i < desc.length && isDigit(desc[i])) {
+        const count = parseLeadingInt(desc, i);
+        i = count.next;
         repc = c;
-        repn = Number.parseInt(num, 10) - 1;
+        repn = count.value - 1;
       }
     } else {
       return { error: "Invalid character in game description", next: i };
@@ -308,8 +308,7 @@ export function validateDesc(p: KeenParams, desc: string): string | null {
     if (op === undefined) return "Unrecognized clue type";
     if ((op === C_SUB || op === C_DIV) && dsf.size(cell) !== 2)
       return "Subtraction and division blocks must have area 2";
-    i++;
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;
+    i = parseLeadingInt(desc, i + 1).next;
   }
   if (i < desc.length) return "Too many clues for block structure";
   return null;
@@ -329,10 +328,9 @@ export function newState(p: KeenParams, desc: string): KeenState {
     if (minimal[cell] !== cell) continue;
     const op = OP_OF_LETTER[desc[i]];
     if (op === undefined) throw new Error("keen: bad description in newState");
-    i++;
-    let num = "";
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-    clues[cell] = op | Number.parseInt(num, 10);
+    const value = parseLeadingInt(desc, i + 1);
+    i = value.next;
+    clues[cell] = op | value.value;
   }
 
   return {

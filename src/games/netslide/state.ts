@@ -8,7 +8,8 @@
  * connected to, and therefore powered by, the center.
  */
 
-import { atof, formatG, parseLeadingInt } from "../../engine/params.ts";
+import { parseLeadingInt } from "../../engine/decimal.ts";
+import { atof, formatG } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,

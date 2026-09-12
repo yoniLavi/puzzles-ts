@@ -8,6 +8,7 @@
  * state immutably: `executeMove` clones, then mutates the copy.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 
@@ -515,13 +516,16 @@ export function unpickDesc(
   const s = blankState(params);
   let num = 0;
   let i = 0;
-  for (const c of desc) {
+  let at = 0;
+  while (at < desc.length) {
     if (i >= s.n) return { error: "Game description longer than expected" };
-    if (c >= "0" && c <= "9") {
-      num = num * 10 + (c.charCodeAt(0) - 48);
-      if (num > s.n) return { error: "Number too large" };
+    if (isDigit(desc[at])) {
+      const r = parseLeadingInt(desc, at);
+      if (r.value > s.n) return { error: "Number too large" };
+      num = r.value;
+      at = r.next;
     } else {
-      const d = c.charCodeAt(0) - 97; // 'a'
+      const d = desc.charCodeAt(at) - 97; // 'a'
       if (d < 0 || d >= DIR_MAX) {
         return { error: "Game description contains unexpected characters" };
       }
@@ -530,6 +534,7 @@ export function unpickDesc(
       num = 0;
       s.dirs[i] = d;
       i++;
+      at++;
     }
   }
   if (i < s.n) return { error: "Game description shorter than expected" };

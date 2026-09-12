@@ -393,7 +393,7 @@ export function textFormat(state: AbcdState): string | undefined {
   const buf = new Array<string>(rw * rh).fill(" ");
   for (let i = 0; i < rh; i++) buf[rw * (i + 1) - 1] = "\n";
 
-  const digit = (num: number): string => String.fromCharCode(48 + num);
+  const digit = (num: number): string => String(num);
 
   // Letters in the top-left corner.
   for (let i = 0; i < n; i++) {

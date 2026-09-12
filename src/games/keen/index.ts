@@ -22,6 +22,7 @@ import {
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
+import { digitValue } from "../../engine/decimal.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
@@ -286,7 +287,7 @@ function solve(orig: KeenState, _curr: KeenState, aux?: string): SolveResult<Kee
   const w = orig.params.w;
   if (aux) {
     const grid: number[] = [];
-    for (let i = 0; i < w * w; i++) grid[i] = aux.charCodeAt(i + 1) - 48;
+    for (let i = 0; i < w * w; i++) grid[i] = digitValue(aux[i + 1]);
     return { ok: true, move: { type: "solve", grid } };
   }
   const soln = new Uint8Array(w * w);

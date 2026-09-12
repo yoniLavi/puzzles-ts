@@ -20,9 +20,9 @@
  */
 
 import type { NoteEncoding } from "../../engine/candidate-hint.ts";
+import { digitValue, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { type RowColRegion, rowColRegions } from "../../engine/latin-hint.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 
@@ -332,10 +332,10 @@ export function newUi(_state: SaladState): SaladUi {
 /**
  * Upstream `salad_serialize`: a run of `k` blank entries becomes one lowercase
  * letter (`'a' - 1 + k`, flushed at 26 per run), a cross `X`, a circle `O`, and
- * a symbol `v` the character `v + base`. `base` is `'A' - 1` for border clues
- * (and for a letters-mode grid) and `'0'` for a Number Ball grid.
+ * a symbol `v` whatever `symbol(v)` writes: {@link letterChar} for border clues
+ * (and for a letters-mode grid), a digit for a Number Ball grid.
  */
-export function serialize(input: Uint8Array, base: number): string {
+export function serialize(input: Uint8Array, symbol: (v: number) => string): string {
   let out = "";
   let run = 0;
   const flush = (): void => {
@@ -351,10 +351,22 @@ export function serialize(input: Uint8Array, base: number): string {
     flush();
     if (v === CROSS) out += "X";
     else if (v === CIRCLE) out += "O";
-    else out += String.fromCharCode(v + base);
+    else out += symbol(v);
   }
   flush();
   return out;
+}
+
+/** `A`, `B`, … for symbol `v`: the border clues' alphabet in both modes, and
+ * the grid's in ABC End View. `64` is `'A' - 1`. */
+export function letterChar(v: number): string {
+  return String.fromCharCode(64 + v);
+}
+
+/** Symbol `n` as the board shows it: `A`, `B`, … in ABC End View; `1`, `2`, …
+ * in Number Ball. */
+export function symbolChar(mode: number, n: number): string {
+  return mode === GAMEMODE_LETTERS ? letterChar(n) : String(n);
 }
 
 interface Decoded {
@@ -365,8 +377,10 @@ interface Decoded {
 }
 
 /** The symbol a desc character names: `'1'..'9'` or `'A'..'I'` as `1..9`, else 0. */
-function descSymbol(c: number): number {
-  if (c >= 49 && c <= 57) return c - 48;
+function descSymbol(ch: string): number {
+  const digit = digitValue(ch);
+  if (digit >= 1) return digit;
+  const c = ch.charCodeAt(0);
   if (c >= 65 && c <= 73) return c - 64;
   return 0;
 }
@@ -396,13 +410,14 @@ function loadGame(
 
   if (p.mode === GAMEMODE_LETTERS) {
     while (i < desc.length && desc[i] !== ",") {
-      const c = desc.charCodeAt(i++);
+      const ch = desc[i++];
+      const c = ch.charCodeAt(0);
       if (pos >= ox4) return { ok: false, error: "Border description is too long." };
       if (c >= 97 && c <= 122) {
         pos += c - 96;
         continue;
       }
-      const d = descSymbol(c);
+      const d = descSymbol(ch);
       if (!d)
         return { ok: false, error: "Border description contains invalid characters." };
       if (d > nums) return { ok: false, error: "Border clue is out of range." };
@@ -415,7 +430,8 @@ function loadGame(
 
   pos = 0;
   while (i < desc.length) {
-    const c = desc.charCodeAt(i++);
+    const ch = desc[i++];
+    const c = ch.charCodeAt(0);
     if (pos >= o2) return { ok: false, error: "Grid description is too long." };
     if (c >= 97 && c <= 122) {
       pos += c - 96;
@@ -423,7 +439,7 @@ function loadGame(
       gridclues[pos] = c;
       holes[pos++] = c;
     } else {
-      const d = descSymbol(c);
+      const d = descSymbol(ch);
       if (!d)
         return { ok: false, error: "Grid description contains invalid characters." };
       if (d > nums) return { ok: false, error: "Grid clue is out of range." };
@@ -609,7 +625,6 @@ export function textFormat(s: SaladState): string {
   }
 
   // Grid contents.
-  const base = s.mode === GAMEMODE_LETTERS ? 64 : 48;
   for (let i = 0; i < o; i++) {
     for (let j = 0; j < o; j++) {
       const d = s.grid[i * o + j];
@@ -617,19 +632,19 @@ export function textFormat(s: SaladState): string {
       let c: string;
       if (hole === CROSS) c = "x";
       else if (!d) c = hole === CIRCLE ? "O" : ".";
-      else c = String.fromCharCode(base + d);
+      else c = symbolChar(s.mode, d);
       put(i + 2, 2 * j + 4, c);
     }
   }
 
   // Border clues (always letters, as upstream prints them).
-  const letter = (v: number): string => String.fromCharCode(64 + v);
   for (let i = 0; i < o; i++) {
-    if (s.borderclues[i]) put(0, i * 2 + 4, letter(s.borderclues[i]));
-    if (s.borderclues[i + o]) put(i + 2, 0, letter(s.borderclues[i + o]));
+    if (s.borderclues[i]) put(0, i * 2 + 4, letterChar(s.borderclues[i]));
+    if (s.borderclues[i + o]) put(i + 2, 0, letterChar(s.borderclues[i + o]));
     if (s.borderclues[i + o * 2])
-      put(o + 3, i * 2 + 4, letter(s.borderclues[i + o * 2]));
-    if (s.borderclues[i + o * 3]) put(i + 2, lr - 2, letter(s.borderclues[i + o * 3]));
+      put(o + 3, i * 2 + 4, letterChar(s.borderclues[i + o * 2]));
+    if (s.borderclues[i + o * 3])
+      put(i + 2, lr - 2, letterChar(s.borderclues[i + o * 3]));
   }
 
   return `${rows.map((r) => r.join("")).join("\n")}\n`;

@@ -298,8 +298,7 @@ function executeMove(state: CrossingState, move: CrossingMove): CrossingState {
     const num = state.puzzle.numbers[move.number];
     if (!run || num === undefined || num.length !== run.cells.length)
       throw new Error("crossing: cannot place that number in that run");
-    for (let k = 0; k < run.cells.length; k++)
-      next.grid[run.cells[k]] = num.charCodeAt(k) - 48;
+    for (let k = 0; k < run.cells.length; k++) next.grid[run.cells[k]] = num[k];
     if (validateBoard(next.puzzle, next.grid).status === "valid") next.completed = true;
     return next;
   }
@@ -483,7 +482,7 @@ function hintKeepTrack(
     const run = state.puzzle.runs[sm.run];
     const num = state.puzzle.numbers[sm.number];
     const k = run.cells.indexOf(m.y * state.puzzle.w + m.x);
-    if (k < 0 || m.digit !== num.charCodeAt(k) - 48) return "off";
+    if (k < 0 || m.digit !== num[k]) return "off";
     const empty = run.cells.filter((i) => state.grid[i] === 0).length;
     return empty <= 1 ? "completed" : "onTrack";
   }

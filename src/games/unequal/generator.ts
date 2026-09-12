@@ -25,12 +25,12 @@ import {
   ADJTHAN,
   DIFF_RECURSIVE,
   diffToLevel,
+  displayChar,
   F_ADJ_DOWN,
   F_ADJ_LEFT,
   F_ADJ_RIGHT,
   F_ADJ_UP,
   type Mode,
-  n2c,
   type UnequalParams,
 } from "./state.ts";
 
@@ -285,6 +285,6 @@ function encodeDesc(g: GenState): string {
 
 function encodeAux(sq: Int32Array, o: number): string {
   let s = "S";
-  for (let i = 0; i < o * o; i++) s += n2c(sq[i], o);
+  for (let i = 0; i < o * o; i++) s += displayChar(sq[i], o);
   return s;
 }

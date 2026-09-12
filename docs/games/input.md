@@ -156,9 +156,11 @@ the call, in the game's own words. A command bound to a digit is the same call
 is a numpad digit that means something else — Ascent, Bricks, Cube and Twiddle
 use the keypad as a direction pad, and each consumes `MOD_NUM_KEYPAD | '7'`
 first. Guarded by the code-keyed scan in
-[`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts): a `48`, a
-`0x39`, a `button - 48`, a numeric `case`, or a local `const KEY_0 = 48` against
-the button all fail it.
+[`decimal.test.ts`](../../src/engine/decimal.test.ts), which reads any operand
+anywhere in a game source, not only against the button: a `48`, a `0x39`, a
+`- 48`, a numeric `case` or a `c >= "0"` all fail it, whatever the value is
+called — the desc side shares the fact, and once no desc site spelled a digit
+code either, the scan could stop caring about the name.
 
 Two things generalize past keys here, and both cost this project real defects:
 

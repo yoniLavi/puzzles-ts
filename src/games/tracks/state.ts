@@ -16,6 +16,8 @@
  * onto the adjacent cell, so the two never disagree.
  */
 
+import { parseLeadingInt } from "../../engine/decimal.ts";
+import { c2nUpper, n2cUpper, UPPER_ALPHABET_SIZE } from "../../engine/desc-alphabet.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
@@ -326,10 +328,6 @@ export function validateParams(p: TracksParams, _full: boolean): string | null {
 // char per clue square (its two E_TRACK direction flags). Then a
 // `,`-separated `S?<n>` list of the w column clues and h row clues.
 
-/** Upstream's hex digit: `0`–`9`, then `A` onward. */
-const hexChar = (n: number): string =>
-  n < 10 ? String.fromCharCode(48 + n) : String.fromCharCode(65 + n - 10);
-
 export function validateDesc(p: TracksParams, desc: string): string | null {
   const { w, h } = p;
   let i = 0;
@@ -338,10 +336,10 @@ export function validateDesc(p: TracksParams, desc: string): string | null {
   let outCount = 0;
   while (pos < desc.length) {
     const ch = desc[pos];
+    // A clue square is a nibble of direction flags: `0`–`9`, then `A`–`F`.
     let f = 0;
-    if (ch >= "0" && ch <= "9") f = ch.charCodeAt(0) - 48;
-    else if (ch >= "A" && ch <= "F") f = ch.charCodeAt(0) - 65 + 10;
-    else if (ch >= "a" && ch <= "z") i += ch.charCodeAt(0) - 97;
+    if (ch >= "a" && ch <= "z") i += ch.charCodeAt(0) - 97;
+    else if (c2nUpper(ch) >= 0 && c2nUpper(ch) <= 15) f = c2nUpper(ch);
     else return "Game description contained unexpected characters";
 
     if (f !== 0 && NBITS[f] !== 2) return "Clue did not provide 2 direction flags";
@@ -359,7 +357,7 @@ export function validateDesc(p: TracksParams, desc: string): string | null {
       else inCount++;
       pos++;
     }
-    while (pos < desc.length && desc[pos] >= "0" && desc[pos] <= "9") pos++;
+    pos = parseLeadingInt(desc, pos).next;
   }
   if (inCount !== 1 || outCount !== 1)
     return "Puzzle must have one entrance and one exit";
@@ -377,9 +375,8 @@ export function decodeDesc(p: TracksParams, desc: string): Board {
   while (pos < desc.length) {
     const ch = desc[pos];
     let f = 0;
-    if (ch >= "0" && ch <= "9") f = ch.charCodeAt(0) - 48;
-    else if (ch >= "A" && ch <= "F") f = ch.charCodeAt(0) - 65 + 10;
-    else if (ch >= "a" && ch <= "z") i += ch.charCodeAt(0) - 97;
+    if (ch >= "a" && ch <= "z") i += ch.charCodeAt(0) - 97;
+    else if (c2nUpper(ch) >= 0 && c2nUpper(ch) <= 15) f = c2nUpper(ch);
 
     if (f !== 0) {
       b.sflags[i] |= S_TRACK | S_CLUE;
@@ -397,12 +394,9 @@ export function decodeDesc(p: TracksParams, desc: string): Board {
       else b.rowS = n - w;
       pos++;
     }
-    let numStr = "";
-    while (pos < desc.length && desc[pos] >= "0" && desc[pos] <= "9") {
-      numStr += desc[pos];
-      pos++;
-    }
-    b.numbers[n] = Number.parseInt(numStr || "0", 10);
+    const count = parseLeadingInt(desc, pos);
+    pos = count.next;
+    b.numbers[n] = count.value;
   }
   return b;
 }
@@ -413,7 +407,7 @@ export function encodeDesc(b: Board): string {
   let desc = "";
   for (let i = 0; i < w * h; i++) {
     if (b.sflags[i] & S_CLUE) {
-      desc += hexChar(sEDirs(b, i % w, Math.floor(i / w), E_TRACK));
+      desc += n2cUpper(sEDirs(b, i % w, Math.floor(i / w), E_TRACK));
       continue;
     }
     // Extend the current run letter, or start a new run at `a`.
@@ -605,7 +599,12 @@ export function textFormat(s: TracksState): string {
   const b = stateToBoard(s);
   const { w, h } = b;
   let out = "  ";
-  for (let x = 0; x < w; x++) out += `${hexChar(b.numbers[x])} `;
+  // A count is bounded only by the grid, and past `Z` the alphabet has no
+  // character for it, so the number is written out (upstream wrote the
+  // punctuation after `Z`).
+  const countChar = (n: number): string =>
+    n < UPPER_ALPHABET_SIZE ? n2cUpper(n) : String(n);
+  for (let x = 0; x < w; x++) out += `${countChar(b.numbers[x])} `;
   out += `\n +${"-".repeat(w * 2 - 1)}+\n`;
   for (let y = 0; y < h; y++) {
     out += y === b.rowS ? "A-" : " |";
@@ -620,7 +619,7 @@ export function textFormat(s: TracksState): string {
       else out += " ";
       out += x < w - 1 ? (f & R ? "-" : " ") : "|";
     }
-    out += `${hexChar(b.numbers[w + y])}\n`;
+    out += `${countChar(b.numbers[w + y])}\n`;
     if (y === h - 1) continue;
     out += " |";
     for (let x = 0; x < w; x++) {

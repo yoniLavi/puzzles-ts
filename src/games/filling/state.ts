@@ -9,6 +9,7 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
+import { digitValue } from "../../engine/decimal.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -104,8 +105,8 @@ export function validateDesc(p: FillingParams, desc: string): string | null {
     if ("blanks" in tok) {
       area += tok.blanks;
     } else {
-      const code = tok.value.charCodeAt(0);
-      if (code < 48 || code > 48 + m) {
+      const v = digitValue(tok.value);
+      if (v < 0 || v > m) {
         return `Invalid character '${tok.value}' in game description`;
       }
       area += 1;
@@ -124,7 +125,7 @@ export function newState(p: FillingParams, desc: string): FillingState {
   for (const tok of scanRunLength(desc)) {
     // A blank run just advances, leaving the empties as 0.
     if ("blanks" in tok) i += tok.blanks;
-    else clues[i++] = tok.value.charCodeAt(0) - 48;
+    else clues[i++] = digitValue(tok.value);
   }
   return {
     w: p.w,
@@ -187,8 +188,8 @@ export function executeMove(state: FillingState, move: FillingMove): FillingStat
     if (move.board.length !== sz) throw new Error("Bad solve board");
     const board = new Uint8Array(sz);
     for (let i = 0; i < sz; i++) {
-      const v = move.board.charCodeAt(i) - 48;
-      if (v < 0 || v > 9) throw new Error("Bad solve board");
+      const v = digitValue(move.board[i]);
+      if (v < 0) throw new Error("Bad solve board");
       board[i] = v;
     }
     return { ...state, board, completed: true, cheated: true };

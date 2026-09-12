@@ -12,6 +12,7 @@
  * they have used (the `spent` flags, mutable).
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { digitOf, type GridCursor, newCursor } from "../../engine/pointer.ts";
 
@@ -127,10 +128,9 @@ export function encodeParams(p: UnequalParams, full: boolean): string {
 
 export function decodeParams(s: string): UnequalParams {
   const p = defaultParams();
-  let i = 0;
-  let digits = "";
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
-  if (digits) p.order = Number.parseInt(digits, 10);
+  const order = parseLeadingInt(s, 0);
+  if (order.next > 0) p.order = order.value;
+  let i = order.next;
 
   if (s[i] === "a") {
     i++;
@@ -152,15 +152,19 @@ export function validateParams(p: UnequalParams, _full: boolean): string | null 
   return null;
 }
 
-// --- number <-> character (n2c / c2n) --------------------------------------
+// --- number <-> character (upstream's n2c / c2n) ---------------------------
+//
+// A display-and-input codec, not a desc alphabet: it takes the puzzle's order,
+// shifts its digits above order 9, maps 0 to a space and reads keypresses. The
+// names `n2c`/`c2n` are `engine/desc-alphabet.ts`'s and are reserved for it.
 
 /** Render number `n` (1..order) as its display character. `0` → space. */
-export function n2c(n: number, order: number): string {
+export function displayChar(n: number, order: number): string {
   if (n === 0) return " ";
   if (order < 10) {
-    if (n < 10) return String.fromCharCode(48 + n);
+    if (n < 10) return String(n);
   } else {
-    if (n < 11) return String.fromCharCode(48 + n - 1);
+    if (n < 11) return String(n - 1);
     const m = n - 11;
     if (m <= 26) return String.fromCharCode(65 + m);
   }
@@ -169,7 +173,7 @@ export function n2c(n: number, order: number): string {
 
 /** Parse a key/character to a number, or `-1` if not a digit. `' '`/backspace →
  * 0. Mirrors upstream `c2n` (includes keypresses for `interpretMove`). */
-export function c2n(c: number, order: number): number {
+export function charValue(c: number, order: number): number {
   if (c < 0 || c > 0xff) return -1;
   if (c === 32 || c === 8) return 0; // space / backspace
   // Above order 9 the digits shift up by one: `'0'` is 1 and `'9'` is 10.
@@ -291,11 +295,11 @@ function parseDesc(
       p++;
     }
     if (i >= a) throw new Error("Too much data to fill grid");
-    if (p >= desc.length || desc[p] < "0" || desc[p] > "9")
+    if (p >= desc.length || !isDigit(desc[p]))
       throw new Error("Expecting number in game description");
-    let num = "";
-    while (p < desc.length && desc[p] >= "0" && desc[p] <= "9") num += desc[p++];
-    const n = Number.parseInt(num, 10);
+    const num = parseLeadingInt(desc, p);
+    p = num.next;
+    const n = num.value;
     if (n < 0 || n > order) throw new Error("Out-of-range number in game description");
     nums[i] = n;
 
@@ -436,7 +440,7 @@ export function textFormat(s: UnequalState): string {
   for (let y = 0; y < o; y++) {
     for (let x = 0; x < o; x++) {
       const n = grid[y * o + x];
-      out += n > 0 ? n2c(n, o) : ".";
+      out += n > 0 ? displayChar(n, o) : ".";
       if (x < o - 1) {
         if (s.mode === "adjacent") {
           out += flags[y * o + x] & F_ADJ_RIGHT ? "|" : " ";

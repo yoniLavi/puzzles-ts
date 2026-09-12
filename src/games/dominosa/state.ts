@@ -12,9 +12,9 @@
  * are cloned per move.
  */
 
+import { digitValue, isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 
 // --- combinatorial helpers (upstream TRI / DCOUNT / DINDEX macros) ----------
@@ -158,19 +158,15 @@ function parseNumbers(
     }
     let j: number;
     const c = desc[p];
-    if (c >= "0" && c <= "9") {
-      j = desc.charCodeAt(p) - 48;
+    if (isDigit(c)) {
+      j = digitValue(c);
       p++;
     } else if (c === "[") {
       p++;
-      let k = 0;
-      let saw = false;
-      while (p < desc.length && desc[p] >= "0" && desc[p] <= "9") {
-        k = k * 10 + (desc.charCodeAt(p) - 48);
-        saw = true;
-        p++;
-      }
-      j = saw ? k : -1;
+      // `[]` with no digits inside is a number out of range, not zero.
+      const k = parseLeadingInt(desc, p);
+      j = k.next > p ? k.value : -1;
+      p = k.next;
       if (desc[p] !== "]") fail("Missing ']' in game description");
       else p++;
     } else {

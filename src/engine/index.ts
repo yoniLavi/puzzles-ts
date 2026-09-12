@@ -7,6 +7,7 @@
  */
 
 export { mkhighlight, mkhighlightBackground } from "./color/color-mkhighlight.ts";
+export { parseLeadingInt } from "./decimal.ts";
 export { type BevelBounds, drawRecessedBorder, drawRectOutline } from "./draw.ts";
 export { Dsf } from "./dsf.ts";
 export type {
@@ -30,7 +31,7 @@ export {
   type NotifyChange,
   type NotifyTimerState,
 } from "./midend.ts";
-export { dimensionParamConfig, parseConfigInt, parseLeadingInt } from "./params.ts";
+export { dimensionParamConfig, parseConfigInt } from "./params.ts";
 export {
   CURSOR_DOWN,
   CURSOR_LEFT,

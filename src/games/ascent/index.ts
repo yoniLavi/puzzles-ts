@@ -11,7 +11,7 @@ import type {
   PresetMenu,
   SolveResult,
 } from "../../engine/game.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
+import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { ConfigValues } from "../../engine/types.ts";
 import { newAscentDesc } from "./generator.ts";
@@ -150,22 +150,13 @@ function encodeParams(p: AscentParams, full: boolean): string {
   return out;
 }
 
-const isDigitCh = (c: string) => c >= "0" && c <= "9";
-
 function decodeParams(s: string): AscentParams {
   const p = defaultParams();
-  let i = 0;
+  const dims = parseDimensions(s);
+  p.w = dims.w;
+  p.h = dims.h;
+  let i = dims.next;
 
-  let numStr = "";
-  while (i < s.length && isDigitCh(s[i])) numStr += s[i++];
-  p.w = p.h = Number.parseInt(numStr || "0", 10);
-
-  if (s[i] === "x") {
-    i++;
-    numStr = "";
-    while (i < s.length && isDigitCh(s[i])) numStr += s[i++];
-    p.h = Number.parseInt(numStr || "0", 10);
-  }
   if (s[i] === "m") {
     i++;
     p.mode = MODECOUNT + 1; /* invalid until matched */

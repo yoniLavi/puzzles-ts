@@ -17,9 +17,9 @@
  * min-dsf variant to "restore fidelity".
  */
 
+import { digitValue, isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 
@@ -413,7 +413,7 @@ function readDesc(
   for (let i = 0; i < ws; i++) {
     if (erun === 0 && wrun === 0) {
       const c = desc[at];
-      if (c !== undefined && c >= "0" && c <= "9") {
+      if (c !== undefined && isDigit(c)) {
         const r = parseLeadingInt(desc, at);
         wrun = r.value;
         at = r.next;
@@ -464,8 +464,8 @@ function readDesc(
       c = "";
       erun--;
     }
-    if (c >= "1" && c <= "9") {
-      board.grid[i] = c.charCodeAt(0) - 0x30;
+    if (digitValue(c) >= 1) {
+      board.grid[i] = digitValue(c);
       board.flags[i] = FM_FIXED;
     }
   }

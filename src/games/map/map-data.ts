@@ -8,6 +8,7 @@
  * regions. `map[edge*wh + y*w+x]` with `edge ∈ {TE,BE,LE,RE}`.
  */
 
+import { digitValue } from "../../engine/decimal.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
@@ -133,9 +134,14 @@ export function validateDesc(params: MapParams, desc: string): string | null {
 
   let area = 0;
   for (const tok of scanRunLength(desc.slice(p))) {
-    if ("blanks" in tok) area += tok.blanks;
-    else if (tok.value >= "0" && tok.value <= "3") area++;
-    else return "Unexpected character in clue list";
+    if ("blanks" in tok) {
+      area += tok.blanks;
+      continue;
+    }
+    // A clue is one of the four map colors.
+    const color = digitValue(tok.value);
+    if (color < 0 || color > 3) return "Unexpected character in clue list";
+    area++;
   }
   if (area < n) return "Too little data in clue list";
   if (area > n) return "Too much data in clue list";
@@ -169,7 +175,7 @@ export function newMapData(
       pos += tok.blanks;
       continue;
     }
-    coloring[pos] = tok.value.charCodeAt(0) - 48;
+    coloring[pos] = digitValue(tok.value);
     immutable[pos] = 1;
     pos++;
   }

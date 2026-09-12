@@ -23,6 +23,7 @@
  *   the `readonly` type is the whole guarantee).
  */
 
+import { digitValue, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 
@@ -131,9 +132,9 @@ export function decodeParams(s: string): SpokesParams {
   const p = defaultParams();
   let i = 0;
   const digits = (): number => {
-    const start = i;
-    while (i < s.length && s[i] >= "0" && s[i] <= "9") i++;
-    return Number.parseInt(s.slice(start, i) || "0", 10);
+    const r = parseLeadingInt(s, i);
+    i = r.next;
+    return r.value;
   };
   p.w = digits();
   if (s[i] === "x") {
@@ -392,8 +393,9 @@ export function newState(p: SpokesParams, desc: string): SpokesState {
   const b = blankBoard(w, h);
 
   for (let i = 0; i < w * h; i++) {
-    const c = desc.charCodeAt(i);
-    b.numbers[i] = c >= 48 && c <= 56 ? c - 48 : -1;
+    // A hub joins at most eight spokes; anything else (`X`, or nothing) is -1.
+    const n = i < desc.length ? digitValue(desc[i]) : -1;
+    b.numbers[i] = n <= 8 ? n : -1;
   }
 
   for (let y = 0; y < h; y++) {

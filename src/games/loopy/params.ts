@@ -9,10 +9,11 @@
  * names, the encode char and the min-size error messages are *derived* from it.
  */
 
+import { parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { type GridType, gridValidateParams } from "../../engine/grid/index.ts";
-import { dimensionParamConfig, parseLeadingInt } from "../../engine/params.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 
 /**
  * Loopy's grid types, in **Loopy's own ordering** — which is deliberately not

@@ -118,7 +118,7 @@ export interface MagnetsMistake {
 /** A row or column count as its description character, or `"."` for *no clue*.
  * The sentinel is Magnets' own, so it stays here rather than in the shared
  * alphabet underneath. */
-export function n2c(num: number): string {
+export function clueChar(num: number): string {
   return num === -1 ? "." : descChar(num);
 }
 
@@ -349,13 +349,13 @@ export function encodeDesc(
   colcount: Int32Array,
 ): string {
   let out = "";
-  for (let x = 0; x < w; x++) out += n2c(colcount[x * 3 + POSITIVE]);
+  for (let x = 0; x < w; x++) out += clueChar(colcount[x * 3 + POSITIVE]);
   out += ",";
-  for (let y = 0; y < h; y++) out += n2c(rowcount[y * 3 + POSITIVE]);
+  for (let y = 0; y < h; y++) out += clueChar(rowcount[y * 3 + POSITIVE]);
   out += ",";
-  for (let x = 0; x < w; x++) out += n2c(colcount[x * 3 + NEGATIVE]);
+  for (let x = 0; x < w; x++) out += clueChar(colcount[x * 3 + NEGATIVE]);
   out += ",";
-  for (let y = 0; y < h; y++) out += n2c(rowcount[y * 3 + NEGATIVE]);
+  for (let y = 0; y < h; y++) out += clueChar(rowcount[y * 3 + NEGATIVE]);
   out += ",";
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -569,14 +569,14 @@ export function textFormat(state: MagnetsState): string {
 
   // Top row: '+' then column '+' totals.
   let top = "+";
-  for (let x = 0; x < w; x++) top += ` ${n2c(colcount[x * 3 + POSITIVE])}`;
+  for (let x = 0; x < w; x++) top += ` ${clueChar(colcount[x * 3 + POSITIVE])}`;
   lines.push(top);
 
   const hborder = ` +${"-".repeat(w * 2 - 1)}+`;
   lines.push(hborder);
 
   for (let y = 0; y < h; y++) {
-    let row = `${n2c(rowcount[y * 3 + POSITIVE])}|`;
+    let row = `${clueChar(rowcount[y * 3 + POSITIVE])}|`;
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       row +=
@@ -591,7 +591,7 @@ export function textFormat(state: MagnetsState): string {
                 : " ";
       if (x < w - 1) row += dominoes[i] === i + 1 ? " " : "|";
     }
-    row += `|${n2c(rowcount[y * 3 + NEGATIVE])}`;
+    row += `|${clueChar(rowcount[y * 3 + NEGATIVE])}`;
     lines.push(row);
 
     if (y < h - 1) {
@@ -609,7 +609,7 @@ export function textFormat(state: MagnetsState): string {
   lines.push(hborder);
 
   let bottom = " ";
-  for (let x = 0; x < w; x++) bottom += ` ${n2c(colcount[x * 3 + NEGATIVE])}`;
+  for (let x = 0; x < w; x++) bottom += ` ${clueChar(colcount[x * 3 + NEGATIVE])}`;
   bottom += " -";
   lines.push(bottom);
 

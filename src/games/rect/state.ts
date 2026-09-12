@@ -12,8 +12,9 @@
  * transient drag preview, but those never live in state.
  */
 
+import { digitValue, isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import type { PresetMenu } from "../../engine/game.ts";
-import { atof, formatG, parseLeadingInt } from "../../engine/params.ts";
+import { atof, formatG } from "../../engine/params.ts";
 import type { GridCursor, GridDrag } from "../../engine/pointer.ts";
 
 export interface RectParams {
@@ -131,7 +132,7 @@ export function decodeParams(s: string): RectParams {
   if (s[i] === "e") {
     i++;
     const start = i;
-    while (i < s.length && (s[i] === "." || (s[i] >= "0" && s[i] <= "9"))) i++;
+    while (i < s.length && (s[i] === "." || isDigit(s[i]))) i++;
     // Stored as a C `float`, so round to single precision.
     p.expandfactor = Math.fround(atof(s.slice(start, i)));
   }
@@ -189,9 +190,9 @@ export function validateDesc(p: RectParams, desc: string): string | null {
     const c = desc[i++];
     if (c >= "a" && c <= "z") {
       squares += c.charCodeAt(0) - CODE_A + 1;
-    } else if (c > "0" && c <= "9") {
+    } else if (digitValue(c) >= 1) {
       squares++;
-      while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;
+      i = parseLeadingInt(desc, i).next;
     } else if (c !== "_") {
       return "Invalid character in game description";
     }
@@ -210,10 +211,10 @@ export function decodeNumbers(desc: string, area: number): Int32Array {
     const c = desc[i++];
     if (c >= "a" && c <= "z") {
       idx += c.charCodeAt(0) - CODE_A + 1; // the grid starts zeroed
-    } else if (c > "0" && c <= "9") {
-      const start = i - 1;
-      while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;
-      grid[idx++] = Number.parseInt(desc.slice(start, i), 10);
+    } else if (digitValue(c) >= 1) {
+      const n = parseLeadingInt(desc, i - 1);
+      grid[idx++] = n.value;
+      i = n.next;
     }
   }
   return grid;

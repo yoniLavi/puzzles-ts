@@ -15,7 +15,7 @@
  * guarantee.
  */
 
-import { parseLeadingInt } from "../../engine/params.ts";
+import { digitValue, isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 import type { Point } from "../../engine/types.ts";
 
@@ -167,10 +167,10 @@ export interface CrossingPuzzle {
   readonly h: number;
   /** `w·h` flags, 1 = wall (an unplayable black cell). */
   readonly walls: Uint8Array;
-  /** The clue numbers as digit strings, sorted by (length, then
-   * lexicographically) — upstream `cmp_numbers`. The order is byte-match
-   * surface: it is the order the desc emits and the solver walks. */
-  readonly numbers: readonly string[];
+  /** The clue numbers, sorted by (length, then digit by digit) — upstream
+   * `cmp_numbers`. The order is byte-match surface: it is the order the desc
+   * emits and the solver walks. */
+  readonly numbers: readonly CrossingNumber[];
   /** Runs derived from `walls` once (upstream recomputes them per solver, per
    * ui and per validate call). */
   readonly runs: readonly CrossingRun[];
@@ -184,18 +184,27 @@ export interface CrossingPuzzle {
 /** Which way the cursor advances after a digit is entered. */
 export type CrossingDirection = "across" | "down";
 
-/** Upstream `cmp_numbers`: shorter first, then lexicographic (which, for equal
- * lengths of digits, is numeric order). */
-export function compareNumbers(a: string, b: string): number {
+/**
+ * A clue number as its digits, most significant first. Digits, not a string:
+ * the desc is the only place a number is text, and every consumer — the
+ * solver's candidate bits, a placement, the ghost preview — wants the digit at
+ * a position, so the codec turns the text into digits once on the way in.
+ */
+export type CrossingNumber = readonly number[];
+
+/** Upstream `cmp_numbers`: shorter first, then digit by digit (which, for equal
+ * lengths, is numeric order). */
+export function compareNumbers(a: CrossingNumber, b: CrossingNumber): number {
   if (a.length !== b.length) return a.length - b.length;
-  return a < b ? -1 : a > b ? 1 : 0;
+  for (let k = 0; k < a.length; k++) if (a[k] !== b[k]) return a[k] - b[k];
+  return 0;
 }
 
 export function makePuzzle(
   w: number,
   h: number,
   walls: Uint8Array,
-  numbers: readonly string[],
+  numbers: readonly CrossingNumber[],
 ): CrossingPuzzle {
   const runs = collectRuns(w, h, walls);
   const acrossRun = new Int32Array(w * h).fill(-1);
@@ -275,9 +284,6 @@ export type DescVerdict =
   | "duplicate"
   | "number";
 
-const isDigit = (c: string | undefined): boolean =>
-  c !== undefined && c >= "0" && c <= "9";
-
 /**
  * Decode `<walls>,<num>,<num>,…`.
  *
@@ -294,7 +300,7 @@ const isDigit = (c: string | undefined): boolean =>
 export function readDesc(
   p: CrossingParams,
   desc: string,
-): { walls: Uint8Array; numbers: string[]; verdict: DescVerdict } {
+): { walls: Uint8Array; numbers: CrossingNumber[]; verdict: DescVerdict } {
   const { w, h } = p;
   const walls = new Uint8Array(w * h);
   let verdict: DescVerdict = "valid";
@@ -307,7 +313,7 @@ export function readDesc(
   for (let i = 0; i < w * h; i++) {
     if (wallRun === 0 && openRun === 0) {
       const c = desc[at];
-      if (isDigit(c)) {
+      if (at < desc.length && isDigit(c)) {
         const parsed = parseLeadingInt(desc, at);
         openRun = parsed.value;
         at = parsed.next;
@@ -331,20 +337,20 @@ export function readDesc(
   if (desc[at] !== ",") return { walls, numbers: [], verdict: "too-long" };
   at++;
 
-  const numbers: string[] = [];
+  const numbers: CrossingNumber[] = [];
   let end = at;
   while (at < desc.length) {
-    while (isDigit(desc[end])) end++;
+    end = parseLeadingInt(desc, end).next;
     end++; // step over the ',' (or, on the last number, the terminator)
     const len = end - (at + 1);
     if (len > MAX_NUMBER_LENGTH) verdict = "number";
-    if (len >= 2) numbers.push(desc.slice(at, at + len));
+    if (len >= 2) numbers.push(Array.from(desc.slice(at, at + len), digitValue));
     at = end;
   }
 
   numbers.sort(compareNumbers);
   for (let i = 0; i < numbers.length - 1; i++) {
-    if (numbers[i] === numbers[i + 1]) verdict = "duplicate";
+    if (compareNumbers(numbers[i], numbers[i + 1]) === 0) verdict = "duplicate";
   }
 
   return { walls, numbers, verdict };
@@ -371,7 +377,7 @@ export function encodeDesc(
   w: number,
   h: number,
   walls: Uint8Array,
-  numbers: readonly string[],
+  numbers: readonly CrossingNumber[],
 ): string {
   let out = "";
   let wallRun = 0;
@@ -393,7 +399,9 @@ export function encodeDesc(
   // Upstream writes the ',' then every number with a trailing comma, then backs
   // up one character — so a (constructively unreachable) empty list yields no
   // separator at all.
-  return numbers.length > 0 ? `${out},${numbers.join(",")}` : out;
+  return numbers.length > 0
+    ? `${out},${numbers.map((n) => n.join("")).join(",")}`
+    : out;
 }
 
 // --- state -----------------------------------------------------------------
@@ -491,7 +499,7 @@ export function validateBoard(
       for (let k = 0; k < cells.length; k++) {
         const digit = grid[cells[k]];
         if (digit === 0) full = false;
-        if (digit !== num.charCodeAt(k) - 48) match = false;
+        if (digit !== num[k]) match = false;
       }
 
       if (match) {
@@ -542,7 +550,7 @@ export function numberFitsRun(
   if (num.length !== run.cells.length) return false;
   for (let k = 0; k < run.cells.length; k++) {
     const digit = grid[run.cells[k]];
-    if (digit !== 0 && digit !== num.charCodeAt(k) - 48) return false;
+    if (digit !== 0 && digit !== num[k]) return false;
   }
   return true;
 }
@@ -561,7 +569,7 @@ export function placedRuns(puzzle: CrossingPuzzle, grid: Uint8Array): Int32Array
       if (num.length !== cells.length) continue;
       let match = true;
       for (let k = 0; k < cells.length; k++) {
-        if (grid[cells[k]] !== num.charCodeAt(k) - 48) {
+        if (grid[cells[k]] !== num[k]) {
           match = false;
           break;
         }

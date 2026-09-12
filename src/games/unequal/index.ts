@@ -98,7 +98,7 @@ import {
 import {
   ADJTHAN,
   adjToSpent,
-  c2n,
+  charValue,
   checkComplete,
   cloneState,
   DIFF_EXTREME,
@@ -250,7 +250,7 @@ function interpretMove(
       rowColRegions(x, y, o),
     );
 
-  const n = c2n(button, o);
+  const n = charValue(button, o);
   if (ui.cursor.visible && n >= 0 && n <= o) {
     const i = ui.cursor.y * o + ui.cursor.x;
     if (state.immutable[i]) return null; // can't edit a given
@@ -356,7 +356,7 @@ function solve(
   const o = orig.order;
   if (aux) {
     const grid: number[] = [];
-    for (let i = 0; i < o * o; i++) grid[i] = c2n(aux.charCodeAt(i + 1), o);
+    for (let i = 0; i < o * o; i++) grid[i] = charValue(aux.charCodeAt(i + 1), o);
     return { ok: true, move: { type: "solve", grid } };
   }
   const soln = Uint8Array.from(orig.immutable);

@@ -5,6 +5,7 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
+import { digitValue, parseLeadingInt } from "../../engine/decimal.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -120,11 +121,8 @@ export function decodeParams(s: string): MosaicParams {
   const dims = parseDimensions(s);
   ret.width = dims.w;
   ret.height = dims.h;
-  let i = dims.next;
-  if (s[i] === "h") {
-    i++;
-    ret.aggressive = (Number.parseInt(s.slice(i), 10) || 0) !== 0;
-  }
+  const i = dims.next;
+  if (s[i] === "h") ret.aggressive = parseLeadingInt(s, i + 1).value !== 0;
   return ret;
 }
 
@@ -151,7 +149,7 @@ export function validateDesc(p: MosaicParams, desc: string): string | null {
   let length = 0;
   for (const tok of scanRunLength(desc)) {
     if ("blanks" in tok) length += tok.blanks;
-    else if (tok.value >= "0" && tok.value <= "9") length++;
+    else if (digitValue(tok.value) >= 0) length++;
     else return "Invalid character in game description";
   }
   if (length !== p.width * p.height) return "Desc size mismatch";
@@ -167,8 +165,9 @@ export function newState(p: MosaicParams, desc: string): MosaicState {
     if ("blanks" in tok) {
       loc += tok.blanks; // hidden cells; already -1
     } else {
-      if (tok.value >= "0" && tok.value <= "9") {
-        clues[loc] = Number(tok.value);
+      const clue = digitValue(tok.value);
+      if (clue >= 0) {
+        clues[loc] = clue;
         notCompletedClues++;
       }
       loc++; // one cell per character; `validateDesc` rejects a non-digit

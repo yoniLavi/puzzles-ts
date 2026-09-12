@@ -236,6 +236,6 @@ function encodeDesc(
 
 function encodeAux(soln: Uint8Array): string {
   let s = "S";
-  for (let i = 0; i < soln.length; i++) s += String.fromCharCode(48 + soln[i]);
+  for (let i = 0; i < soln.length; i++) s += String(soln[i]);
   return s;
 }

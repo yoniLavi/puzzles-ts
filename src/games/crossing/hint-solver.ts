@@ -117,7 +117,7 @@ function fitsUnder(
   const cells = puzzle.runs[r].cells;
   const num = puzzle.numbers[l];
   for (let k = 0; k < cells.length; k++) {
-    if (!(cand[cells[k]] & digitBit(num.charCodeAt(k) - 48))) return false;
+    if (!(cand[cells[k]] & digitBit(num[k]))) return false;
   }
   return true;
 }
@@ -151,7 +151,7 @@ function narrowPass(
       if (!fitsUnder(puzzle, cand, r, l)) continue;
       fits.push(l);
       for (let k = 0; k < cells.length; k++) {
-        a[k] |= digitBit(numbers[l].charCodeAt(k) - 48);
+        a[k] |= digitBit(numbers[l][k]);
       }
     }
 
@@ -195,7 +195,7 @@ function analyze(puzzle: CrossingPuzzle, grid: Uint8Array): Analysis {
       if (!numberAvailableTo(puzzle, grid, placed, r, l)) continue;
       fits.push(l);
       for (let k = 0; k < cells.length; k++) {
-        a[k] |= digitBit(puzzle.numbers[l].charCodeAt(k) - 48);
+        a[k] |= digitBit(puzzle.numbers[l][k]);
       }
     }
     shallowFitting.push(fits);
@@ -444,7 +444,7 @@ export function applyCrossingFiring(
     case "onlyNumber": {
       const cells = puzzle.runs[firing.run].cells;
       const num = puzzle.numbers[firing.number];
-      for (let k = 0; k < cells.length; k++) grid[cells[k]] = num.charCodeAt(k) - 48;
+      for (let k = 0; k < cells.length; k++) grid[cells[k]] = num[k];
       break;
     }
     case "sharedDigit":
@@ -504,7 +504,7 @@ export function narrateCrossing(
         firing,
         run.horizontal,
         run.cells.length,
-        puzzle.numbers[firing.number],
+        puzzle.numbers[firing.number].join(""),
       );
     }
     case "sharedDigit":

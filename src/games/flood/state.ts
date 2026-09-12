@@ -1,3 +1,5 @@
+import { parseLeadingInt } from "../../engine/decimal.ts";
+import { c2nUpper } from "../../engine/desc-alphabet.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
@@ -72,13 +74,13 @@ export function decodeParams(s: string): FloodParams {
   let i = dims.next;
   while (i < s.length) {
     if (s[i] === "c") {
-      i++;
-      ret.colors = Number.parseInt(s.slice(i), 10) || 0;
-      while (i < s.length && isDigit(s[i])) i++;
+      const r = parseLeadingInt(s, i + 1);
+      ret.colors = r.value;
+      i = r.next;
     } else if (s[i] === "m") {
-      i++;
-      ret.leniency = Number.parseInt(s.slice(i), 10) || 0;
-      while (i < s.length && isDigit(s[i])) i++;
+      const r = parseLeadingInt(s, i + 1);
+      ret.leniency = r.value;
+      i = r.next;
     } else {
       i++;
     }
@@ -119,22 +121,6 @@ export function presets() {
   };
 }
 
-// --- color-character codec -------------------------------------------
-
-function isDigit(ch: string): boolean {
-  return ch >= "0" && ch <= "9";
-}
-
-/** Decode a grid-description character to a color, or `-1` if invalid.
- * Upstream's `validate_desc` reads `A`-`Z` as 10-35, so a letter is out of
- * range rather than a bad character. */
-function decodeColorChar(ch: string): number {
-  const code = ch.charCodeAt(0);
-  if (code >= 48 && code <= 57) return code - 48;
-  if (code >= 65 && code <= 90) return 10 + (code - 65);
-  return -1;
-}
-
 // --- desc -------------------------------------------------------------
 
 export function validateDesc(p: FloodParams, desc: string): string | null {
@@ -142,7 +128,9 @@ export function validateDesc(p: FloodParams, desc: string): string | null {
   for (let i = 0; i < wh; i++) {
     const ch = desc[i];
     if (ch === undefined) return "Not enough data in grid description";
-    const c = decodeColorChar(ch);
+    // Upstream's `validate_desc` reads `A`-`Z` as 10-35, so a letter is out
+    // of range rather than a bad character.
+    const c = c2nUpper(ch);
     if (c < 0) return "Bad character in grid description";
     if (c >= MAXCOLORS) return "Color out of range in grid description";
   }
@@ -157,7 +145,7 @@ export function newState(p: FloodParams, desc: string): FloodState {
   const grid = new Uint8Array(wh);
   let colors = 0;
   for (let i = 0; i < wh; i++) {
-    const c = decodeColorChar(desc[i]);
+    const c = c2nUpper(desc[i]);
     grid[i] = c;
     if (c >= colors) colors = c + 1;
   }

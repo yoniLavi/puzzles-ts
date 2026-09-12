@@ -1,3 +1,4 @@
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
@@ -61,10 +62,6 @@ export function defaultParams(): SamegameParams {
   return { w: 5, h: 5, ncols: 3, scoresub: 2, soluble: true };
 }
 
-function isDigit(ch: string | undefined): boolean {
-  return ch !== undefined && ch >= "0" && ch <= "9";
-}
-
 export function encodeParams(p: SamegameParams, full: boolean): string {
   return `${p.w}x${p.h}c${p.ncols}s${p.scoresub}${full && !p.soluble ? "r" : ""}`;
 }
@@ -75,14 +72,14 @@ export function decodeParams(s: string): SamegameParams {
   const ret = { ...defaultParams(), w, h };
   let i = next;
   if (s[i] === "c") {
-    i++;
-    ret.ncols = Number.parseInt(s.slice(i), 10) || 0;
-    while (isDigit(s[i])) i++;
+    const r = parseLeadingInt(s, i + 1);
+    ret.ncols = r.value;
+    i = r.next;
   }
   if (s[i] === "s") {
-    i++;
-    ret.scoresub = Number.parseInt(s.slice(i), 10) || 0;
-    while (isDigit(s[i])) i++;
+    const r = parseLeadingInt(s, i + 1);
+    ret.scoresub = r.value;
+    i = r.next;
   }
   // `r` selects the not-guaranteed-soluble generator; absent ⇒ soluble.
   ret.soluble = s[i] !== "r";
@@ -393,12 +390,11 @@ export function validateDesc(p: SamegameParams, desc: string): string | null {
   const area = p.w * p.h;
   let i = 0;
   for (let cell = 0; cell < area; cell++) {
-    if (!isDigit(desc[i])) return "Not enough numbers in string";
-    const start = i;
-    while (isDigit(desc[i])) i++;
+    if (i >= desc.length || !isDigit(desc[i])) return "Not enough numbers in string";
+    const { value: num, next } = parseLeadingInt(desc, i);
+    i = next;
     if (cell < area - 1 && desc[i] !== ",") return "Expected comma after number";
     if (cell === area - 1 && i < desc.length) return "Excess junk at end of string";
-    const num = Number.parseInt(desc.slice(start, i), 10);
     if (num < 0 || num > p.ncols) return "Color out of range";
     if (desc[i] === ",") i++;
   }
@@ -410,9 +406,9 @@ export function newState(p: SamegameParams, desc: string): SamegameState {
   const tiles = new Array<number>(area).fill(0);
   let i = 0;
   for (let cell = 0; cell < area; cell++) {
-    const start = i;
-    while (isDigit(desc[i])) i++;
-    tiles[cell] = Number.parseInt(desc.slice(start, i), 10) || 0;
+    const { value, next } = parseLeadingInt(desc, i);
+    tiles[cell] = value;
+    i = next;
     if (desc[i] === ",") i++;
   }
   return {

@@ -11,9 +11,9 @@
  * mutable per-region `coloring` and `pencil` arrays.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 import type { MapData } from "./map-data.ts";
@@ -98,7 +98,7 @@ export function decodeParams(s: string): MapParams {
     p.n = nParse.value;
     i = nParse.next;
     // Tolerate (and skip) a trailing `.<digits>` fraction, as upstream does.
-    while (i < s.length && (s[i] === "." || (s[i] >= "0" && s[i] <= "9"))) i++;
+    while (i < s.length && (s[i] === "." || isDigit(s[i]))) i++;
   } else if (p.h > 0 && p.w > 0) {
     p.n = Math.floor((p.w * p.h) / 8);
   }

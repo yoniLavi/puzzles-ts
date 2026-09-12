@@ -10,6 +10,7 @@
  * `AscentMove` union.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import {
   CURSOR_DOWN,
@@ -882,8 +883,6 @@ export function encodeAscentUi(ui: AscentUi): string {
   )}`;
 }
 
-const isDigitCh = (c: string) => c >= "0" && c <= "9";
-
 function decodeUiItem(
   arr: Int32Array,
   s: number,
@@ -894,10 +893,10 @@ function decodeUiItem(
   let i = 0;
   while (p < enc.length && enc[p] !== stop && i < s) {
     const c = enc[p];
-    if (isDigitCh(c)) {
-      let numStr = "";
-      while (p < enc.length && isDigitCh(enc[p])) numStr += enc[p++];
-      arr[i] = Number.parseInt(numStr, 10);
+    if (isDigit(c)) {
+      const parsed = parseLeadingInt(enc, p);
+      p = parsed.next;
+      arr[i] = parsed.value;
       if (arr[i] >= s) arr[i] = -2;
       ++i;
     } else if (c === "-") {

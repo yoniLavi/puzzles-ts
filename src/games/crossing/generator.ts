@@ -29,6 +29,7 @@ import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { solveCrossing } from "./solver.ts";
 import {
+  type CrossingNumber,
   type CrossingParams,
   type CrossingPuzzle,
   collectRuns,
@@ -157,18 +158,16 @@ function genNumbers(
   h: number,
   walls: Uint8Array,
   grid: Uint8Array,
-): string[] | null {
-  const numbers: string[] = [];
+): CrossingNumber[] | null {
+  const numbers: CrossingNumber[] = [];
   for (const run of collectRuns(w, h, walls)) {
     if (run.cells.length > MAX_NUMBER_LENGTH) return null;
-    let num = "";
-    for (const i of run.cells) num += String(grid[i]);
-    numbers.push(num);
+    numbers.push(Array.from(run.cells, (i) => grid[i]));
   }
 
   numbers.sort(compareNumbers);
   for (let i = 0; i < numbers.length - 1; i++) {
-    if (numbers[i] === numbers[i + 1]) return null;
+    if (compareNumbers(numbers[i], numbers[i + 1]) === 0) return null;
   }
   return numbers;
 }

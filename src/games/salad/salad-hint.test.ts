@@ -17,7 +17,6 @@ import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { narrate, type SaladHint } from "./hint.ts";
-import { symbolChar } from "./hint-text.ts";
 import { saladGame } from "./index.ts";
 import { recordSaladDeductions, saladSolution } from "./solver.ts";
 import {
@@ -31,6 +30,7 @@ import {
   type SaladParams,
   type SaladState,
   scratchBoard,
+  symbolChar,
 } from "./state.ts";
 
 const LETTERS: SaladParams = {

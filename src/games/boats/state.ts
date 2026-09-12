@@ -16,8 +16,8 @@
  * separate {@link BoatsBoard} scratch, never on a `BoatsState`.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor, GridDrag } from "../../engine/pointer.ts";
 import { newCursor, newDrag } from "../../engine/pointer.ts";
 
@@ -110,10 +110,6 @@ export function decodeFleet(input: string, fleet: number): number[] {
 /** Upstream `boats_encode_fleet`: `"3,2,1"`. */
 export function encodeFleet(fleetData: readonly number[], fleet: number): string {
   return fleetData.slice(0, fleet).join(",");
-}
-
-function isDigit(c: string | undefined): boolean {
-  return c !== undefined && c >= "0" && c <= "9";
 }
 
 /** The twelve upstream presets (`boats.c:177`), default fleet throughout. */

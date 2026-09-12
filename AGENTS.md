@@ -252,6 +252,10 @@ definitions and missed the two games that had typed the tier words into their
 preset titles, which is how a menu came to say "3x3 Intermediate" while the
 dialog beside it said "Tricky", with the whole suite green. When you change what
 a constant means, search for what it *said*, not only for what it is called.
+**A spec scenario can key on a name too**: "no game file contains a duplicate
+`parseLeadingInt` declaration" held for months over four copies called `eatNum`
+and `readInt` and some forty inline loops, because a copy is never called by the
+name of the thing it copies. Write the scenario against the shape.
 
 **A count written in prose is a census nobody re-runs.** Three in one sitting:
 `difficulty.ts` said twenty-eight tiered games where there were twenty-nine;

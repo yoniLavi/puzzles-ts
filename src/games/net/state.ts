@@ -1,6 +1,7 @@
 /** Types, bit vocabulary, params and pure state helpers for Net. */
 
-import { atof, formatG, parseLeadingInt } from "../../engine/params.ts";
+import { parseLeadingInt } from "../../engine/decimal.ts";
+import { atof, formatG } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomNew } from "../../engine/random/index.ts";

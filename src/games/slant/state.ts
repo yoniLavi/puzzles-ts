@@ -11,6 +11,7 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
+import { digitValue } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
@@ -142,9 +143,14 @@ export function validateDesc(p: SlantParams, desc: string): string | null {
   const area = (p.w + 1) * (p.h + 1);
   let squares = 0;
   for (const tok of scanRunLength(desc)) {
-    if ("blanks" in tok) squares += tok.blanks;
-    else if (tok.value >= "0" && tok.value <= "4") squares++;
-    else return "Invalid character in game description";
+    if ("blanks" in tok) {
+      squares += tok.blanks;
+      continue;
+    }
+    // A clue is how many of the four cells around a vertex hold a line.
+    const clue = digitValue(tok.value);
+    if (clue < 0 || clue > 4) return "Invalid character in game description";
+    squares++;
   }
   if (squares < area) return "Not enough data to fill grid";
   if (squares > area) return "Too much data to fit in grid";
@@ -157,7 +163,7 @@ export function decodeClues(p: SlantParams, desc: string): Int8Array {
   let pos = 0;
   for (const tok of scanRunLength(desc)) {
     if ("blanks" in tok) pos += tok.blanks;
-    else clues[pos++] = tok.value.charCodeAt(0) - 48;
+    else clues[pos++] = digitValue(tok.value);
   }
   return clues;
 }
@@ -168,7 +174,7 @@ export function decodeClues(p: SlantParams, desc: string): Int8Array {
 export function encodeClues(clues: Int8Array): string {
   return encodeRunLength(
     clues.length,
-    (i) => (clues[i] === -1 ? null : String.fromCharCode(48 + clues[i])),
+    (i) => (clues[i] === -1 ? null : String(clues[i])),
     { keepTrailingBlanks: true },
   );
 }
@@ -346,7 +352,7 @@ export function textFormat(state: SlantState): string {
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const c = clues[y * W + x];
-      out += c >= 0 ? String.fromCharCode(48 + c) : "+";
+      out += c >= 0 ? String(c) : "+";
       if (x < w) out += "-";
     }
     out += "\n";

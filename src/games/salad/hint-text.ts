@@ -10,12 +10,7 @@
  */
 
 import { cleanObviousText, joinWith, type LatinVocab } from "../../engine/hint-text.ts";
-import { GAMEMODE_LETTERS } from "./state.ts";
-
-/** `A`, `B`, … in ABC End View; `1`, `2`, … in Number Ball. */
-export function symbolChar(mode: number, n: number): string {
-  return String.fromCharCode((mode === GAMEMODE_LETTERS ? 64 : 48) + n);
-}
+import { GAMEMODE_LETTERS, symbolChar } from "./state.ts";
 
 /** Salad's value vocabulary for the shared generic-Latin narration arms — the
  * one place its two modes differ in words rather than logic. */

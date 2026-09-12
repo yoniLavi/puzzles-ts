@@ -56,6 +56,7 @@ import {
   type SaladState,
   type SaladUi,
   scanDir,
+  symbolChar,
 } from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 40;
@@ -413,7 +414,7 @@ function drawPencilMarks(
   s: SaladState,
   x: number,
   y: number,
-  base: number,
+  mode: number,
   ts: number,
   tx: number,
   ty: number,
@@ -440,7 +441,7 @@ function drawPencilMarks(
     if (!(marks & (1 << i))) continue;
     const hx = j % hw;
     const hy = Math.floor(j / hw);
-    const ch = i === mmx - 1 ? "X" : String.fromCharCode(base + i + 1);
+    const ch = i === mmx - 1 ? "X" : symbolChar(mode, i + 1);
     const cx = tx + Math.floor(((4 * hx + 3) * ts) / (4 * hw + 2));
     const cy = ty + Math.floor(((4 * hy + 3) * ts) / (4 * hh + 2));
     dr.drawText({ x: cx, y: cy }, glyphFont(fontsz), COL_PENCIL, ch);
@@ -460,7 +461,7 @@ function drawPencilMarks(
 function drawGhost(
   dr: GameDrawing,
   ts: number,
-  base: number,
+  mode: number,
   tx: number,
   ty: number,
   code: number,
@@ -476,7 +477,7 @@ function drawGhost(
     dr.drawCircle({ x: cx, y: cy }, ts * 0.38, -1, COL_HINT);
     return;
   }
-  const ch = String.fromCharCode(base + code);
+  const ch = symbolChar(mode, code);
   dr.drawText({ x: cx, y: cy }, glyphFont(Math.floor(ts / 2)), COL_HINT, ch);
 }
 
@@ -514,7 +515,6 @@ export function redraw(
 ): void {
   const ts = ds.tilesize;
   const o = s.order;
-  const base = s.mode === GAMEMODE_LETTERS ? 64 : 48;
   const thick = ts <= 21 ? 1 : 2.5;
 
   let flash = -1;
@@ -628,14 +628,14 @@ export function redraw(
             s,
             x,
             y,
-            base,
+            s.mode,
             Math.floor(ts * 0.8),
             Math.floor((x + 1.1) * ts),
             Math.floor((y + 1.1) * ts),
             struck,
           );
         } else {
-          drawPencilMarks(dr, s, x, y, base, ts, tx, ty, struck);
+          drawPencilMarks(dr, s, x, y, s.mode, ts, tx, ty, struck);
         }
       } else if (s.grid[i] !== 0) {
         const color =
@@ -648,12 +648,12 @@ export function redraw(
           { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) },
           glyphFont(Math.floor(ts / 2)),
           color,
-          String.fromCharCode(base + s.grid[i]),
+          symbolChar(s.mode, s.grid[i]),
         );
       }
 
       // The entry the hint asks for, and the ring saying "act here".
-      if (ghost !== 0) drawGhost(dr, ts, base, tx, ty, ghost);
+      if (ghost !== 0) drawGhost(dr, ts, s.mode, tx, ty, ghost);
 
       // A forcing chain's place in the order it fires, so the narration can
       // cite the squares by number rather than asking the player to

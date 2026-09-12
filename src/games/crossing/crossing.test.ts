@@ -202,7 +202,9 @@ describe("crossing desc codec", () => {
   it("stores the numbers sorted by (length, lexicographic)", () => {
     const { numbers } = readDesc(P5, FIX.desc);
     const sorted = [...numbers].sort((a, b) =>
-      a.length !== b.length ? a.length - b.length : a < b ? -1 : a > b ? 1 : 0,
+      a.length !== b.length
+        ? a.length - b.length
+        : Number(a.join("")) - Number(b.join("")),
     );
     expect(numbers).toEqual(sorted);
   });
@@ -227,7 +229,7 @@ describe("crossing desc codec", () => {
 
   it("is as lenient as upstream: single digits are dropped, short descs pass", () => {
     // Upstream's own TODO list names the checks it omits.
-    expect(readDesc(P5, "a2a3a2a2a2a6a1,7,12").numbers).toEqual(["12"]);
+    expect(readDesc(P5, "a2a3a2a2a2a6a1,7,12").numbers).toEqual([[1, 2]]);
     expect(validateDesc(P5, "25,12")).toBeNull();
   });
 });
@@ -696,7 +698,7 @@ describe("crossing number-list placement", () => {
     }
     // Typing a digit rules out every clue that disagrees with it.
     const two = puzzle.numbers.findIndex((n) => n.length === 2);
-    const first = Number(puzzle.numbers[two][0]);
+    const first = puzzle.numbers[two][0];
     const typed = crossingGame.executeMove(state, {
       kind: "set",
       x: run.cells[0] % 5,
@@ -706,7 +708,7 @@ describe("crossing number-list placement", () => {
     for (let l = 0; l < puzzle.numbers.length; l++) {
       const n = puzzle.numbers[l];
       expect(numberFitsRun(puzzle, typed.grid, run, l)).toBe(
-        n.length === 2 && Number(n[0]) === first,
+        n.length === 2 && n[0] === first,
       );
     }
   });
@@ -725,9 +727,9 @@ describe("crossing number-list placement", () => {
     expect(move).toEqual({ kind: "place", run, number });
 
     const after = crossingGame.executeMove(state, move as CrossingMove);
-    const text = state.puzzle.numbers[number];
+    const num = state.puzzle.numbers[number];
     for (let k = 0; k < cells.length; k++) {
-      expect(after.grid[cells[k]]).toBe(Number(text[k]));
+      expect(after.grid[cells[k]]).toBe(num[k]);
     }
   });
 
@@ -836,7 +838,10 @@ describe("crossing number-list placement", () => {
       // box if the outline is ever drawn as something other than four lines.
       dr.ops.filter((o) => "color" in o && o.color === COL_HELD).length;
     const panelRepainted = (dr: RecordingDrawing): boolean =>
-      dr.ops.some((o) => o.op === "text" && state.puzzle.numbers.includes(o.text));
+      dr.ops.some(
+        (o) =>
+          o.op === "text" && state.puzzle.numbers.some((n) => n.join("") === o.text),
+      );
 
     const l = 0;
     expect(heldOps(paint(newUi()))).toBe(0);
@@ -863,7 +868,7 @@ describe("crossing number-list placement", () => {
     for (const r of candidateRuns(state, l)) {
       if (r === keep) continue;
       const cell = state.puzzle.runs[r].cells[0];
-      const wrong = ((text.charCodeAt(0) - 48) % 9) + 1;
+      const wrong = (text[0] % 9) + 1;
       narrowed = crossingGame.executeMove(narrowed, {
         kind: "set",
         x: cell % 5,
@@ -874,7 +879,7 @@ describe("crossing number-list placement", () => {
     const left = candidateRuns(narrowed, l);
     expect(left).toEqual([keep]);
     const ghosted = ghostDigits(paintWith(narrowed, { ...newUi(), heldNumber: l }));
-    expect(ghosted.join("")).toBe(text);
+    expect(ghosted.join("")).toBe(text.join(""));
   });
 
   it("shows where a clue already on the board is", () => {
@@ -895,7 +900,10 @@ describe("crossing number-list placement", () => {
       const dr = paintWith(state, ui);
       const m = new Map<string, number>();
       for (const o of dr.ops) {
-        if (o.op === "text" && state.puzzle.numbers.includes(o.text)) {
+        if (
+          o.op === "text" &&
+          state.puzzle.numbers.some((n) => n.join("") === o.text)
+        ) {
           m.set(o.text, o.color);
         }
       }
@@ -1226,7 +1234,7 @@ describe("crossing rendering", () => {
     // Every wall and every clue number is on screen from the first frame.
     const texts = r.recording.ops.filter((o) => o.op === "text");
     for (const num of newState(P5, FIX.desc).puzzle.numbers) {
-      expect(texts.some((o) => o.op === "text" && o.text === num)).toBe(true);
+      expect(texts.some((o) => o.op === "text" && o.text === num.join(""))).toBe(true);
     }
     expect(r.recording.ops).toMatchSnapshot();
   });

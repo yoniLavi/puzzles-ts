@@ -10,6 +10,7 @@
  * Sokoban's reason to exist.
  */
 
+import { parseLeadingInt } from "../../engine/decimal.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { dims, paramsCodec } from "../../engine/params-codec.ts";
@@ -128,9 +129,10 @@ export type SokobanMove = { type: "move"; dx: number; dy: number };
 function* runs(desc: string): Generator<{ ch: number; n: number }> {
   for (let i = 0; i < desc.length; ) {
     const ch = desc.charCodeAt(i++);
-    const start = i;
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;
-    yield { ch, n: i > start ? Number.parseInt(desc.slice(start, i), 10) : 1 };
+    const { value, next } = parseLeadingInt(desc, i);
+    const n = next > i ? value : 1;
+    i = next;
+    yield { ch, n };
   }
 }
 

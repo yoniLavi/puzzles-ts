@@ -19,6 +19,7 @@
  * match `solo.c` exactly, so do not copy Keen's, whose convention differs.
  */
 
+import { digitValue, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -190,17 +191,13 @@ export function decodeParams(s: string): SoloParams {
   const ret = defaultParams();
   let i = 0;
   const readInt = (): number => {
-    let num = "";
-    while (i < s.length && s[i] >= "0" && s[i] <= "9") num += s[i++];
-    return num ? Number.parseInt(num, 10) : 0;
-  };
-  const skipDigits = () => {
-    while (i < s.length && s[i] >= "0" && s[i] <= "9") i++;
+    const r = parseLeadingInt(s, i);
+    i = r.next;
+    return r.value;
   };
 
   let seenR = false;
-  ret.c = ret.r = Number.parseInt(s, 10) || 0;
-  skipDigits();
+  ret.c = ret.r = readInt();
   if (s[i] === "x") {
     i++;
     ret.r = readInt();
@@ -357,10 +354,10 @@ export function specToGrid(
       while (run-- > 0) grid[idx++] = 0;
     } else if (ch === "_") {
       i++;
-    } else if (ch > "0" && ch <= "9") {
-      let num = "";
-      while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-      grid[idx++] = Number.parseInt(num, 10);
+    } else if (digitValue(ch) >= 1) {
+      const n = parseLeadingInt(desc, i);
+      grid[idx++] = n.value;
+      i = n.next;
     } else {
       break;
     }
@@ -384,10 +381,10 @@ function validateGridDesc(
       i++;
     } else if (ch === "_") {
       i++;
-    } else if (ch > "0" && ch <= "9") {
-      let num = "";
-      while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-      const val = Number.parseInt(num, 10);
+    } else if (digitValue(ch) >= 1) {
+      const n = parseLeadingInt(desc, i);
+      const val = n.value;
+      i = n.next;
       if (val < 1 || val > range)
         return { error: "Out-of-range number in game description", next: i };
       squares++;

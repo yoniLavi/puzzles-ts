@@ -164,7 +164,7 @@ function drawClue(
     { x: coord(x, ts), y: coord(y, ts) },
     glyphFont(clueTextSize(ts)),
     tcol,
-    String.fromCharCode(48 + v),
+    String(v),
   );
 }
 

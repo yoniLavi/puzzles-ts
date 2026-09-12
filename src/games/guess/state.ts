@@ -6,6 +6,7 @@
  * submitted guesses (with feedback), the hidden solution, and the play cursor.
  */
 
+import { parseLeadingInt } from "../../engine/decimal.ts";
 import { bin2hex, hex2bin, obfuscateBitmap } from "../../engine/obfuscate.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
@@ -140,9 +141,9 @@ export function decodeParams(s: string): GuessParams {
   const p = defaultParams();
   let i = 0;
   const readInt = (): number => {
-    const n = Number.parseInt(s.slice(i), 10) || 0;
-    while (i < s.length && s[i] >= "0" && s[i] <= "9") i++;
-    return n;
+    const r = parseLeadingInt(s, i);
+    i = r.next;
+    return r.value;
   };
   while (i < s.length) {
     const ch = s[i++];

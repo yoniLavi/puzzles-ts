@@ -90,6 +90,7 @@ import {
   saladNotes,
   saladRegions,
   scratchBoard,
+  symbolChar,
   symbolRange,
   textFormat,
   validateDesc,
@@ -418,10 +419,10 @@ export const saladGame: Game<
   findMistakes,
   requestKeys: (p): KeyLabel[] => {
     // Upstream `game_request_keys`: the symbol keys, then X, O and clear.
-    const base = p.mode === GAMEMODE_LETTERS ? 65 : 49;
     const keys: KeyLabel[] = [];
     for (let i = 0; i < p.nums; i++) {
-      keys.push({ button: base + i, label: String.fromCharCode(base + i) });
+      const label = symbolChar(p.mode, i + 1);
+      keys.push({ button: label.charCodeAt(0), label });
     }
     keys.push({ button: 88, label: "X" });
     keys.push({ button: 79, label: "O" });

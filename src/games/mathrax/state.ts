@@ -18,6 +18,7 @@
  * save replays moves), so the divergence is free.
  */
 
+import { digitValue, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 
@@ -138,10 +139,9 @@ export function encodeParams(p: MathraxParams, full: boolean): string {
 export function decodeParams(s: string): MathraxParams {
   const p = defaultParams();
   p.options = 0;
-  let i = 0;
-  let digits = "";
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
-  p.o = Number(digits); // "" reads as 0, like `atoi`
+  const o = parseLeadingInt(s, 0);
+  p.o = o.value;
+  let i = o.next;
   if (s[i] === "d") {
     i++;
     // An unrecognized (or missing) letter leaves the difficulty invalid, which
@@ -299,8 +299,10 @@ export function loadGame(
     let d = 0;
     if (pos >= s) return { ok: false, error: "Grid description is too long." };
 
+    const digit = digitValue(c);
     if (c >= "a" && c <= "z") pos += c.charCodeAt(0) - 97 + 1;
-    else if (c >= "1" && c <= "9") d = c.charCodeAt(0) - 48;
+    // `0` is not a clue here: the grid holds `1..order`.
+    else if (digit >= 1) d = digit;
     else return { ok: false, error: "Grid description contains invalid characters." };
 
     if (d > 0 && d <= o) {
@@ -325,9 +327,9 @@ export function loadGame(
       if (c >= "A" && c <= "Z") {
         const type = CLUE_LETTERS.indexOf(c);
         if (type < 0) return { ok: false, error: "Invalid clue in description." };
-        let num = "";
-        while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-        const value = Number(num); // "" reads as 0, like `atoi`
+        const r = parseLeadingInt(desc, i);
+        i = r.next;
+        const value = r.value;
         if (value > 99)
           return { ok: false, error: "Number is too high in clue description." };
         clues[pos++] = type | setClueNum(value);

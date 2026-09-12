@@ -69,14 +69,14 @@ function solverMarks(
 
       let fits = true;
       for (let k = 0; k < cells.length; k++) {
-        if (!(cand[cells[k]] & bit(num.charCodeAt(k) - 48))) {
+        if (!(cand[cells[k]] & bit(num[k]))) {
           fits = false;
           break;
         }
       }
       if (!fits) continue;
 
-      for (let k = 0; k < cells.length; k++) acc[k] |= bit(num.charCodeAt(k) - 48);
+      for (let k = 0; k < cells.length; k++) acc[k] |= bit(num[k]);
     }
 
     for (let k = 0; k < cells.length; k++) {

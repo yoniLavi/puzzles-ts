@@ -105,7 +105,7 @@ describe("crossing hint — soundness", () => {
           const cells = state.puzzle.runs[f.run].cells;
           const num = state.puzzle.numbers[f.number];
           for (let k = 0; k < cells.length; k++) {
-            expect(num.charCodeAt(k) - 48).toBe(answer.grid[cells[k]]);
+            expect(num[k]).toBe(answer.grid[cells[k]]);
             checked++;
           }
         } else if (f.technique === "sharedDigit" || f.technique === "crossRuns") {
@@ -376,7 +376,7 @@ describe("crossing hint — following the plan", () => {
         kind: "set",
         x: cells[k] % state.puzzle.w,
         y: Math.floor(cells[k] / state.puzzle.w),
-        digit: num.charCodeAt(k) - 48,
+        digit: num[k],
       };
       verdicts.push(crossingGame.hintKeepTrack?.(m, step, cur) ?? "?");
       cur = crossingGame.executeMove(cur, m);
@@ -391,7 +391,7 @@ describe("crossing hint — following the plan", () => {
     if (step.move.kind !== "place") throw new Error("expected a whole-run step");
     const cells = state.puzzle.runs[step.move.run].cells;
     const num = state.puzzle.numbers[step.move.number];
-    const wrong = num.charCodeAt(0) - 48 === 9 ? 8 : 9;
+    const wrong = num[0] === 9 ? 8 : 9;
     const verdict = crossingGame.hintKeepTrack?.(
       {
         kind: "set",
@@ -417,7 +417,7 @@ describe("crossing hint — following the plan", () => {
       kind: "set",
       x: cells[0] % state.puzzle.w,
       y: Math.floor(cells[0] / state.puzzle.w),
-      digit: num.charCodeAt(0) - 48,
+      digit: num[0],
     });
     const shrunk = crossingGame.refreshHintStep?.(step, partial) as Step | null;
     expect(shrunk?.highlights?.targets.length).toBe(cells.length - 1);
@@ -666,7 +666,7 @@ describe("crossing clue placement — which run a clue goes in", () => {
     state = crossingGame.executeMove(state, { kind: "set", x: 0, y: 1, digit: 4 });
     state = crossingGame.executeMove(state, { kind: "set", x: 2, y: 1, digit: 1 });
 
-    const l = state.puzzle.numbers.indexOf("421");
+    const l = state.puzzle.numbers.findIndex((n) => n.join("") === "421");
     expect(l).toBeGreaterThanOrEqual(0);
     const placed = placedRuns(state.puzzle, state.grid);
     const across = state.puzzle.acrossRun[1 * CROSS.w + 1];
@@ -688,7 +688,7 @@ describe("crossing clue placement — which run a clue goes in", () => {
 
   it("still lets the fill direction decide when neither run is more constrained", () => {
     const state = newState(CROSS, CROSS_DESC);
-    const l = state.puzzle.numbers.indexOf("421");
+    const l = state.puzzle.numbers.findIndex((n) => n.join("") === "421");
     const placed = placedRuns(state.puzzle, state.grid);
     const across = state.puzzle.acrossRun[1 * CROSS.w + 1];
     const down = state.puzzle.downRun[1 * CROSS.w + 1];

@@ -36,6 +36,7 @@ import {
   encodeParams,
   GAMEMODE_LETTERS,
   GAMEMODE_NUMBERS,
+  letterChar,
   newState,
   newUi,
   PRESETS,
@@ -45,6 +46,7 @@ import {
   type SaladState,
   scratchBoard,
   serialize,
+  symbolChar,
   textFormat,
   validateDesc,
   validateParams,
@@ -157,11 +159,13 @@ describe("salad description codec", () => {
 
   it("serialize is the decoder's inverse", () => {
     const n = newState(NUMBERS.p, NUMBERS.desc);
-    expect(serialize(n.gridclues, 48)).toBe(NUMBERS.desc);
-    const l = newState(LETTERS.p, LETTERS.desc);
-    expect(`${serialize(l.borderclues, 64)},${serialize(l.gridclues, 64)}`).toBe(
-      LETTERS.desc,
+    expect(serialize(n.gridclues, (v) => symbolChar(GAMEMODE_NUMBERS, v))).toBe(
+      NUMBERS.desc,
     );
+    const l = newState(LETTERS.p, LETTERS.desc);
+    expect(
+      `${serialize(l.borderclues, letterChar)},${serialize(l.gridclues, letterChar)}`,
+    ).toBe(LETTERS.desc);
   });
 
   it("reports each upstream rejection message", () => {

@@ -1,3 +1,4 @@
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { ParamConfigItem } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -457,9 +458,9 @@ export function newState(params: UndeadParams, desc: string): UndeadState {
 
   let pos = 0;
   const readInt = (): number => {
-    let s = "";
-    while (pos < desc.length && desc[pos] >= "0" && desc[pos] <= "9") s += desc[pos++];
-    return s ? Number.parseInt(s, 10) : 0;
+    const r = parseLeadingInt(desc, pos);
+    pos = r.next;
+    return r.value;
   };
   const expectComma = (): void => {
     if (desc[pos] !== ",") throw new Error("Faulty game description");
@@ -536,11 +537,10 @@ export function validateDesc(p: UndeadParams, desc: string): string | null {
   // Three leading counts.
   let monsterCount = 0;
   for (let i = 0; i < 3; i++) {
-    if (pos >= desc.length || desc[pos] < "0" || desc[pos] > "9")
-      return "Faulty game description";
-    let s = "";
-    while (pos < desc.length && desc[pos] >= "0" && desc[pos] <= "9") s += desc[pos++];
-    monsterCount += Number.parseInt(s, 10);
+    if (pos >= desc.length || !isDigit(desc[pos])) return "Faulty game description";
+    const { value, next } = parseLeadingInt(desc, pos);
+    monsterCount += value;
+    pos = next;
     if (desc[pos] !== ",") return "Invalid character in number list";
     pos++;
   }
@@ -572,8 +572,7 @@ export function validateDesc(p: UndeadParams, desc: string): string | null {
   for (let i = 0; i < 2 * (w + h); i++) {
     if (pos >= desc.length) return "Not enough numbers given after grid specification";
     if (desc[pos] !== ",") return "Invalid character in number list";
-    pos++;
-    while (pos < desc.length && desc[pos] >= "0" && desc[pos] <= "9") pos++;
+    pos = parseLeadingInt(desc, pos + 1).next;
   }
   if (pos < desc.length) return "Unexpected additional data at end of game description";
   return null;

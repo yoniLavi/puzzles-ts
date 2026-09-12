@@ -27,10 +27,11 @@
  * carrying them.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
-import { dimensionParamConfig, parseLeadingInt } from "../../engine/params.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -316,7 +317,7 @@ export function readDesc(
   for (let i = 0; i < ws; i++) {
     if (erun === 0 && wrun === 0) {
       const ch = desc[pos] ?? "";
-      if (ch >= "0" && ch <= "9") {
+      if (isDigit(ch)) {
         const r = parseLeadingInt(desc, pos);
         wrun = r.value;
         pos = r.next;

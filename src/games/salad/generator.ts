@@ -35,11 +35,13 @@ import {
   DIFF_EASY,
   DIFF_HOLESONLY,
   GAMEMODE_NUMBERS,
+  letterChar,
   type SaladBoard,
   type SaladParams,
   scanDir,
   scratchBoard,
   serialize,
+  symbolChar,
 } from "./state.ts";
 
 /**
@@ -55,11 +57,6 @@ import {
  * reaching it means a tier has become unreachable rather than merely thin.
  */
 const MAX_ATTEMPTS = 50_000;
-
-/** `'A' - 1` — the serialize base for border clues and a letters-mode grid. */
-const BASE_LETTER = 64;
-/** `'0'` — the serialize base for a Number Ball grid. */
-const BASE_DIGIT = 48;
 
 function blankBoard(p: SaladParams): SaladBoard {
   const o2 = p.order * p.order;
@@ -164,7 +161,7 @@ function newNumbersDesc(p: SaladParams, rs: RandomState, loose: boolean): string
     if (solvesAt(base, DIFF_HOLESONLY)) continue;
     // Tier gate (the divergence): it must *need* the difficulty requested.
     if (tooEasy(base, diff, loose)) continue;
-    return serialize(gridclues, BASE_DIGIT);
+    return serialize(gridclues, (v) => symbolChar(GAMEMODE_NUMBERS, v));
   }
 }
 
@@ -205,7 +202,7 @@ function newLettersDesc(p: SaladParams, rs: RandomState, loose: boolean): string
     // Tier gate (the divergence): it must *need* the difficulty requested.
     if (tooEasy(base, diff, loose)) continue;
 
-    return `${serialize(borderclues, BASE_LETTER)},${serialize(gridclues, BASE_LETTER)}`;
+    return `${serialize(borderclues, letterChar)},${serialize(gridclues, letterChar)}`;
   }
 }
 

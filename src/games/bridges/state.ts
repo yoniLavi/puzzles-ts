@@ -4,6 +4,8 @@
  * orthogonal neighbors (`points`). Upstream's refcounted `solver_state` (two
  * dsfs) is not part of the state; the solver builds its own dsf on demand.
  */
+import { parseLeadingInt } from "../../engine/decimal.ts";
+import { c2nUpper, n2cUpper } from "../../engine/desc-alphabet.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor, GridDrag } from "../../engine/pointer.ts";
 import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
@@ -86,36 +88,31 @@ export function defaultParams(): BridgesParams {
 
 // --- Params codec (bridges.c decode_params/encode_params/validate_params) ---
 
-/** Reads a leading non-negative integer (0 if none). Returns [value, nextIndex]. */
-function eatNum(s: string, i: number): [number, number] {
-  let n = 0;
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") {
-    n = n * 10 + (s.charCodeAt(i) - 48);
-    i++;
-  }
-  return [n, i];
-}
-
 export function decodeParams(s: string): BridgesParams {
   const p = defaultParams();
   let i = 0;
-  [p.w, i] = eatNum(s, 0);
+  const num = (): number => {
+    const r = parseLeadingInt(s, i);
+    i = r.next;
+    return r.value;
+  };
+  p.w = num();
   p.h = p.w;
   if (s[i] === "x") {
     i++;
-    [p.h, i] = eatNum(s, i);
+    p.h = num();
   }
   if (s[i] === "i") {
     i++;
-    [p.islands, i] = eatNum(s, i);
+    p.islands = num();
   }
   if (s[i] === "e") {
     i++;
-    [p.expansion, i] = eatNum(s, i);
+    p.expansion = num();
   }
   if (s[i] === "m") {
     i++;
-    [p.maxb, i] = eatNum(s, i);
+    p.maxb = num();
   }
   if (s[i] === "L") {
     i++;
@@ -123,7 +120,7 @@ export function decodeParams(s: string): BridgesParams {
   }
   if (s[i] === "d") {
     i++;
-    [p.difficulty, i] = eatNum(s, i);
+    p.difficulty = num();
   }
   return p;
 }
@@ -613,9 +610,7 @@ export function encodeGame(state: BridgesState): string {
     (i) => {
       const is = state.islandAt(i % w, Math.floor(i / w));
       if (!is) return null;
-      return is.count < 10
-        ? String.fromCharCode(48 + is.count)
-        : String.fromCharCode(65 + (is.count - 10));
+      return n2cUpper(is.count);
     },
     { keepTrailingBlanks: true },
   );
@@ -642,8 +637,9 @@ export function validateDesc(params: BridgesParams, desc: string): string | null
       i += tok.blanks;
       continue;
     }
-    const c = tok.value;
-    if (!((c >= "1" && c <= "9") || (c >= "A" && c <= "G"))) {
+    // An island holds 1..16 bridges: `1`–`9`, then `A`–`G`.
+    const count = c2nUpper(tok.value);
+    if (count < 1 || count > 16) {
       return "Game description contains unexpected character";
     }
     nislands++;
@@ -672,12 +668,9 @@ export function newStateFromDesc(params: BridgesParams, desc: string): BridgesSt
       i += tok.blanks;
       continue;
     }
-    const c = tok.value;
-    const x = i % w;
-    const y = Math.floor(i / w);
-    if (c >= "1" && c <= "9") state.islandAdd(x, y, c.charCodeAt(0) - 48);
-    else if (c >= "A" && c <= "G") state.islandAdd(x, y, c.charCodeAt(0) - 65 + 10);
+    const count = c2nUpper(tok.value);
     // Anything else was rejected by validateDesc.
+    if (count >= 1 && count <= 16) state.islandAdd(i % w, Math.floor(i / w), count);
     i++;
   }
   state.mapFindOrthogonal();
@@ -693,7 +686,7 @@ export function textFormat(state: BridgesState): string {
       const grid = state.gridAt(x, y);
       const nl = state.lines[state.idx(x, y)];
       const is = state.islandAt(x, y);
-      if (is) ret += String.fromCharCode(48 + is.count);
+      if (is) ret += n2cUpper(is.count);
       else if (grid & G_LINEV) ret += nl > 1 ? '"' : nl === 1 ? "|" : "!";
       else if (grid & G_LINEH) ret += nl > 1 ? "=" : nl === 1 ? "-" : "~";
       else ret += ".";

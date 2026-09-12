@@ -11,6 +11,7 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { dims, paramsCodec } from "../../engine/params-codec.ts";
@@ -144,8 +145,6 @@ export function validateParams(p: PatternParams, _full: boolean): string | null 
 // (run-length alphabet): only upstream's picture generator produces one, never
 // this one, but it is parsed so such IDs round-trip.
 
-const isDigit = (ch: string): boolean => ch >= "0" && ch <= "9";
-
 export function validateDesc(p: PatternParams, desc: string): string | null {
   const nlines = p.w + p.h;
   let pos = 0; // index into desc
@@ -155,9 +154,8 @@ export function validateDesc(p: PatternParams, desc: string): string | null {
       // A run of `.`-separated integers, terminated by `/`, `,` or EOF.
       let sep: string;
       do {
-        const start = pos;
-        while (pos < desc.length && isDigit(desc[pos])) pos++;
-        const n = Number.parseInt(desc.slice(start, pos), 10);
+        const { value: n, next } = parseLeadingInt(desc, pos);
+        pos = next;
         if (n <= 0) return "all clues must be positive";
         if (n > 0x7fffffff - 1) return "at least one clue is grossly excessive";
         rowspace -= n + 1;
@@ -218,9 +216,9 @@ export function newState(p: PatternParams, desc: string): PatternState {
     if (pos < desc.length && isDigit(desc[pos])) {
       let sep: string;
       do {
-        const start = pos;
-        while (pos < desc.length && isDigit(desc[pos])) pos++;
-        line.push(Number.parseInt(desc.slice(start, pos), 10));
+        const { value, next } = parseLeadingInt(desc, pos);
+        pos = next;
+        line.push(value);
         sep = desc[pos] ?? "\0";
         pos++;
       } while (sep === ".");

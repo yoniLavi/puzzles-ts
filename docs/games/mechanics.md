@@ -316,6 +316,38 @@ grid, and Crossing has no value character at all — its decimal numbers are a
 second kind of run. Both were misfiled as adopters by a scan keyed on the
 character arithmetic the two families share.
 
+### Digits and numbers in a desc are one fact, and it is not yours
+
+Whatever the grammar, the digits in it are read and written one way, from
+[`engine/decimal.ts`](../../src/engine/decimal.ts): `isDigit(c)`,
+`digitValue(c)` (`0`–`9` or `-1`) and `parseLeadingInt(s, pos)` for a run of
+them (`{ value, next }`, with `next === pos` meaning "no number here"). A
+single digit is *written* as `String(n)`. A value above nine takes one of the
+two alphabets in [`engine/desc-alphabet.ts`](../../src/engine/desc-alphabet.ts)
+— `n2c`/`c2n` (62 values) where every character is a value, and
+`n2cUpper`/`c2nUpper` (`0`–`9`, `A`–`Z`) where the desc is run-length and has
+spent the lowercase on blanks. Hex that is hex (a nibble bitmap) is
+`Number.parseInt(c, 16)`.
+
+**Convert at the codec, and keep numbers as numbers past it.** A desc, a params
+string and a Solve aux are text by contract; a rendered glyph is text. Nothing
+between those two edges should hold a digit as a character. Crossing kept its
+clue numbers as digit strings and paid for it with eleven `charCodeAt(k) - 48`
+sites across its solver, hint solver and renderer; its `readDesc` now turns
+each into a digit array once, and the string is rebuilt only where the desc,
+the number panel or a hint sentence needs one.
+
+What is yours is the **bound** and what an out-of-range value means, written
+beside the call — `const v = digitValue(tok.value); if (v < 0 || v > 4) return
+"Invalid …"` — because Slant's clues stop at `4`, Bricks' at `7` and Bridges'
+at `G`, and those are facts about the puzzle. Never write `c >= "0" && c <=
+"9"`, `c.charCodeAt(0) - 48`, `String.fromCharCode(48 + n)` or a private
+`isDigit`: [`decimal.test.ts`](../../src/engine/decimal.test.ts) scans every
+game source for the shapes and fails the build, and `emittable-keys.test.ts`
+fails a declaration of any name the fact modules export. Twelve files had
+their own `isDigit` and some forty loops read a number by hand before this
+was one place; every one of those was a copy waiting to drift.
+
 ## Moves
 
 ### interpretMove and UI_UPDATE

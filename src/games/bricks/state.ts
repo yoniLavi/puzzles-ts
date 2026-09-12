@@ -17,6 +17,7 @@
  * and cursor flags upstream ORs into the same word never reach state here.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -253,16 +254,6 @@ export function validateParams(p: BricksParams, full: boolean): string | null {
 
 // --- desc codec (byte-match surface, upstream validate_desc / new_game) ------
 
-const isDigit = (c: string | undefined): boolean =>
-  c !== undefined && c >= "0" && c <= "9";
-
-/** The run of digits at `s[pos]`, which callers have checked is a digit. */
-function eatNum(s: string, pos: number): { value: number; next: number } {
-  let next = pos;
-  while (isDigit(s[next])) next++;
-  return { value: Number(s.slice(pos, next)), next };
-}
-
 /**
  * Validate the run-length desc (upstream `validate_desc`): a digit run is a
  * clue on the current cell (rejected if > 7), a lowercase letter advances the
@@ -281,7 +272,7 @@ export function validateDesc(p: BricksParams, desc: string): string | null {
   while (i < desc.length) {
     const c = desc[i];
     if (isDigit(c)) {
-      const n = eatNum(desc, i);
+      const n = parseLeadingInt(desc, i);
       if (n.value > 7) return "Number is out of range";
       i = n.next;
       pos++;
@@ -318,7 +309,7 @@ export function newState(p: BricksParams, desc: string): BricksState {
     }
     const c = desc[dp];
     if (isDigit(c)) {
-      const n = eatNum(desc, dp);
+      const n = parseLeadingInt(desc, dp);
       grid[i] = n.value;
       dp = n.next;
       j++; // step past the clue on the next iteration

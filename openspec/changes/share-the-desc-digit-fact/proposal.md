@@ -1,10 +1,13 @@
 # share-the-desc-digit-fact
 
-**Readiness: scaffolded, not started.** Split out of `share-the-digit-key-fact`
-(task 1.5, 2026-09-10), which shared the *input* half of the digit question and
-measured this half beside it. Re-measure before adopting: the figures below are
-a grep taken on 2026-09-10, and the sibling change's own grep had missed five
-games until the sites were read.
+**Implemented 2026-09-12** — see `design.md` for what the re-measure found
+(the population was nearly twice the table's, in four shapes the grep could not
+see, and the scanner the proposal wanted to add already existed under
+`params.ts`) and `tasks.md` for the result. Split out of
+`share-the-digit-key-fact` (task 1.5, 2026-09-10), which shared the *input*
+half of the digit question and measured this half beside it. The table below is
+the proposal's original grep, kept as the record of what a literal-keyed scan
+missed.
 
 ## Why
 

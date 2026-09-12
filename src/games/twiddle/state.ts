@@ -1,4 +1,5 @@
-import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
+import { parseLeadingInt } from "../../engine/decimal.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 

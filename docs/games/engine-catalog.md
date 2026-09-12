@@ -37,8 +37,10 @@ copy at once?"* — [`note-taking-cell.ts`](../../src/engine/note-taking-cell.ts
 header applies it, after [`border-grid.ts`](../../src/engine/border-grid.ts). A
 fact splits cleanly from the answers beside it: which button codes are digit
 keys is one fact (`digitOf` in [`pointer.ts`](../../src/engine/pointer.ts)),
-while the bound a game puts on them and whether `0` clears or means ten are the
-game's own and stay beside each call (`share-the-digit-key-fact`). "It would
+and which characters are digits in a game ID is its twin
+([`decimal.ts`](../../src/engine/decimal.ts)), while the bound a game puts on
+them and whether `0` clears or means ten are the game's own and stay beside
+each call (`share-the-digit-key-fact`, `share-the-desc-digit-fact`). "It would
 touch a lot of files" measures how much an extraction is worth; it is never an
 argument against one.
 
@@ -530,9 +532,10 @@ export list — which is how nine games' private `moveCursor` (four of them
 byte-identical) were found the day the shared one landed — and
 `cursor-vocabulary.test.ts` fails the build for a cursor held under any other
 field, finding it structurally rather than by name. The digit range is guarded
-by its **codes**, not by a name: a `48`, `0x39` or `button - 48` against the
-button, a numeric `case` in a `switch` on it, or a local `const KEY_0 = 48`
-compared against it, all fail the same test. A non-trivial *traversal*
+by its **codes**, not by a name, and since the desc side joined
+([`decimal.ts`](../../src/engine/decimal.ts)) the scan in `decimal.test.ts`
+reads any operand anywhere in a game source: a `48`, `0x39` or `- 48`, a
+numeric `case`, a `c >= "0"`, whatever the value is called. A non-trivial *traversal*
 (half-grid, lock modes, corner-skipping) still keeps its own logic, and so does
 whatever a game does *while* the cursor moves; only the noun is shared.
 Discipline: [`input.md`](./input.md).
@@ -603,10 +606,43 @@ a desc their own `validateDesc` then rejected. Singles capped its dimensions at
 `DESC_ALPHABET_SIZE`, and `desc-alphabet.test.ts` finds the largest board each
 game admits and checks the largest number that board can need round-trips.
 
-**Unequal's `n2c`/`c2n` are not this.** Same names, different function: they take
-the puzzle's `order`, shift above order 9, map 0 to a space, and read
-space/backspace keypresses for `interpretMove`. Reading the bodies is what kept
-it out; a scan on the name would have folded it in.
+**A run-length desc has a second alphabet, `n2cUpper`/`c2nUpper`.** Such a desc
+has spent `a`–`z` on blank runs, so a value above nine has nowhere to go but
+the capitals: `0`–`9` then `A`–`Z`, thirty-six values. Loopy, Bridges, Tracks,
+Flood and Pearl were five copies. Which alphabet a desc uses is decided by
+whether its grammar has run letters, and the pair sits here rather than in
+`run-length.ts` because the contrast is the documentation. The bound stays
+with the game either way: Bridges rejects above `G`, Tracks above `F`.
+
+The four names are reserved — `emittable-keys.test.ts` fails a game declaring
+any of them — so a game's own codec is named for what it does: Unequal's
+display-and-input pair is `displayChar`/`charValue` (it takes the puzzle's
+`order`, shifts above order 9 and maps 0 to a space), Magnets' sentinel-aware
+wrapper is `clueChar`.
+
+### `decimal.ts` — decimal digits in a game ID
+
+`isDigit(c)`, `digitValue(c)` (`0`–`9` or `-1`) and `parseLeadingInt(s, pos)`
+(the maximal digit run at `pos` as `{ value, next }`, `atoi` semantics: `0`
+with no advance on a non-digit, which is how a caller tells "no number here"
+from "zero"). Both halves of a game ID spend digits — `10x7n12` and a desc's
+clue list — so this sits *below* `params.ts` and `desc-alphabet.ts` rather than
+in either; it is the desc-side twin of `pointer.ts`'s `digitOf`.
+
+**What stays with the game**: the bound (Slant's clues stop at `4`, Bricks' at
+`7`) and what an out-of-range value means, written beside the call —
+`const v = digitValue(tok.value); if (v < 0 || v > 4) …`. A single digit is
+*written* as `String(n)`; anything wider is one of the alphabets above. Hex
+that is hex (Mines' bitmap, Cube's and Flip's grids) is `Number.parseInt(c, 16)`
+and not this.
+
+Before this existed, twelve files declared their own `isDigit` and some forty
+loops read a digit run by hand in four spellings, while `parseLeadingInt` sat
+exported from `params.ts` with sixteen importers and a spec scenario keyed on
+its *name* — which is why none of the copies called `eatNum` or `readInt`
+failed it. `decimal.test.ts` now keys on the **shape**: a digit code as an
+operand, a relational comparison against a one-digit string, a private copy of
+any export here. Read its header for the one shape it still cannot see.
 
 ### `params-codec.ts` — the declared params codec
 
@@ -622,9 +658,10 @@ taking one still owes the inverse property, which
 
 ### `params.ts` — param-string decoding + config helpers
 
-`parseLeadingInt` (the `atoi` + pointer-advance idiom, returning value and
-next index), `parseDimensions` (leading `WxH`-or-square, restoring the square
-fallback that `indexOf("x")` mis-sliced on a bare `"4"`), `atof` and `formatG`
+`parseDimensions` (leading `WxH`-or-square, restoring the square fallback
+that `indexOf("x")` mis-sliced on a bare `"4"`; built on `decimal.ts`'s
+`parseLeadingInt`, which lived here until the desc codecs turned out to be
+half its callers), `atof` and `formatG`
 (C's `%g` — a full-precision float param reads back as a *different* number
 and the game ID stops naming its board), and the declarative
 `dimensionParamConfig`/`parseConfigInt` helpers behind `Game.paramConfig`.

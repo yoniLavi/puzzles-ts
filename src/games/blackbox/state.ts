@@ -11,8 +11,8 @@
  * slip.
  */
 
+import { parseLeadingInt } from "../../engine/decimal.ts";
 import { bin2hex, hex2bin, obfuscateBitmap } from "../../engine/obfuscate.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomNew, randomUpto } from "../../engine/random/index.ts";
 import type { GameStatus, Point } from "../../engine/types.ts";

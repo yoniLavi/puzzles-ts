@@ -20,11 +20,21 @@
  * before delegating, exactly as `run-length.ts` leaves each game its own value
  * characters.
  *
- * **Not to be confused with Unequal's `n2c`/`c2n`**, which share these names
- * and nothing else: that pair takes the puzzle's `order`, shifts its alphabet
- * above order 9, maps 0 to a space and reads space/backspace keypresses. It is
- * a display-and-input codec that inherited upstream's naming.
+ * **A run-length desc has a second alphabet, and it is here too.** Such a desc
+ * has spent `a`–`z` on blank runs (`run-length.ts`), so a value above nine has
+ * nowhere to go but the capitals: `0`–`9` then `A`–`Z`, thirty-six values,
+ * {@link n2cUpper}/{@link c2nUpper}. Loopy's `CLUE2CHAR`, Bridges' `A`–`G`,
+ * Tracks' nibble, Flood's `A`–`Z`-as-out-of-range and Pearl's aux were five
+ * copies of it. Which of the two alphabets a desc uses is decided by whether
+ * its grammar has run letters, which is why the pair sits beside the other one
+ * rather than in `run-length.ts`: the contrast is the documentation.
+ *
+ * The four names are reserved: `decimal.test.ts` fails a game that declares
+ * any of them, so a game's own codec (Unequal's `displayChar`/`charValue`,
+ * Magnets' sentinel-aware `clueChar`) is named for what it does instead.
  */
+
+import { digitValue } from "./decimal.ts";
 
 /** How many values the alphabet covers: `0`–`9`, `a`–`z`, `A`–`Z`. */
 export const DESC_ALPHABET_SIZE = 62;
@@ -55,4 +65,29 @@ export function c2n(c: string): number {
   if (code >= 97 && code <= 122) return code - 97 + 10;
   if (code >= 65 && code <= 90) return code - 65 + 36;
   return -1;
+}
+
+/** How many values the run-length alphabet covers: `0`–`9`, `A`–`Z`. */
+export const UPPER_ALPHABET_SIZE = 36;
+
+/**
+ * The character standing for `num` in a run-length desc, which must be
+ * `0 <= num < {@link UPPER_ALPHABET_SIZE}`: `0`–`9`, then `A`–`Z` for 10–35.
+ * Throws out of range for the same reason {@link n2c} does.
+ */
+export function n2cUpper(num: number): string {
+  if (num < 0 || num >= UPPER_ALPHABET_SIZE || !Number.isInteger(num)) {
+    throw new RangeError(`run-length alphabet: ${num} is not a value it can write`);
+  }
+  return num < 10 ? String(num) : String.fromCharCode(65 + num - 10);
+}
+
+/** The value `c` stands for in a run-length desc, or `-1` if it is not a
+ * character of that alphabet — a lowercase letter included, since there it is
+ * a blank run and never a value. */
+export function c2nUpper(c: string): number {
+  const digit = digitValue(c);
+  if (digit >= 0) return digit;
+  const code = c.charCodeAt(0);
+  return code >= 65 && code <= 90 ? code - 65 + 10 : -1;
 }

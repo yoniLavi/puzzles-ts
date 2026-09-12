@@ -9,6 +9,7 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
+import { digitValue } from "../../engine/decimal.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { dims, num, paramsCodec } from "../../engine/params-codec.ts";
@@ -203,8 +204,9 @@ export function validateDesc(p: PalisadeParams, desc: string): string | null {
   for (const tok of scanRunLength(desc)) {
     if ("blanks" in tok) {
       squares += tok.blanks;
-    } else if (tok.value >= "0" && tok.value <= "9") {
-      if (tok.value > "4") return `Invalid (too large) number: '${tok.value}'`;
+    } else if (digitValue(tok.value) >= 0) {
+      if (digitValue(tok.value) > 4)
+        return `Invalid (too large) number: '${tok.value}'`;
       squares++;
     } else {
       return `Invalid character in data: '${tok.value}'`;
@@ -220,9 +222,13 @@ export function newState(p: PalisadeParams, desc: string): PalisadeState {
   const clues = new Int8Array(wh).fill(EMPTY);
   let i = 0;
   for (const tok of scanRunLength(desc)) {
-    if ("blanks" in tok) i += tok.blanks;
-    else if (tok.value >= "0" && tok.value <= "9")
-      clues[i++] = tok.value.charCodeAt(0) - 48;
+    if ("blanks" in tok) {
+      i += tok.blanks;
+      continue;
+    }
+    // Anything that is not a digit was rejected by validateDesc.
+    const clue = digitValue(tok.value);
+    if (clue >= 0) clues[i++] = clue;
   }
   return {
     w,

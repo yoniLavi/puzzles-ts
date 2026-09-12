@@ -11,8 +11,9 @@
  * and the cursor is drawn from the `Ui`.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import type { PresetMenu } from "../../engine/game.ts";
-import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { SYMM_MAX, SYMM_ROT2, SYMM_ROT4 } from "../../engine/symmetric-blacks.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -152,9 +153,6 @@ export function validateParams(p: SticksParams, full: boolean): string | null {
 
 const CODE_a = "a".charCodeAt(0);
 
-const isDigit = (c: string | undefined): boolean =>
-  c !== undefined && c >= "0" && c <= "9";
-
 /**
  * Validate the run-length desc, faithful to upstream `validate_desc`'s
  * position count: lowercase letters advance by `(c - 'a') + 1` (`z` = 26),
@@ -171,9 +169,9 @@ export function validateDesc(p: SticksParams, desc: string): string | null {
     if (c >= "a" && c <= "z") {
       pos += c.charCodeAt(0) - CODE_a + 1;
     } else if (c === "B") {
-      if (!isDigit(desc[i + 1])) pos++;
+      if (!(i + 1 < desc.length && isDigit(desc[i + 1]))) pos++;
     } else if (isDigit(c)) {
-      while (i < desc.length && isDigit(desc[i])) i++;
+      i = parseLeadingInt(desc, i).next;
       pos++;
       continue;
     } else if (c !== "_") {
@@ -199,13 +197,12 @@ export function newState(p: SticksParams, desc: string): SticksState {
       pos += c.charCodeAt(0) - CODE_a + 1;
     } else if (c === "B") {
       grid[pos] = F_BLOCK;
-      if (!isDigit(desc[i + 1])) pos++;
+      if (!(i + 1 < desc.length && isDigit(desc[i + 1]))) pos++;
     } else if (isDigit(c)) {
-      let j = i;
-      while (j < desc.length && isDigit(desc[j])) j++;
-      numbers[pos] = Number.parseInt(desc.slice(i, j), 10);
+      const n = parseLeadingInt(desc, i);
+      numbers[pos] = n.value;
       pos++;
-      i = j;
+      i = n.next;
       continue;
     }
     // '_' (and anything else validateDesc would have rejected) is inert.

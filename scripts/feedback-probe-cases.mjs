@@ -595,6 +595,24 @@ export const MODULES = [
   // claim about them in a minute.
 
   {
+    module: "src/engine/decimal.ts",
+    cases: [
+      {
+        within: "parseLeadingInt",
+        why: "`next` stops at the run's start, so every trailing suffix is re-parsed",
+        find: '  return {\n    value: Number.parseInt(s.slice(start, i) || "0", 10),\n    next: i,\n  };',
+        replace:
+          '  return {\n    value: Number.parseInt(s.slice(start, i) || "0", 10),\n    next: start,\n  };',
+      },
+      {
+        within: "digitValue",
+        why: "a character past `9` reads as a digit, so `:` becomes a clue of ten",
+        find: "  return v >= 0 && v <= 9 ? v : -1;",
+        replace: "  return v >= 0 ? v : -1;",
+      },
+    ],
+  },
+  {
     module: "src/engine/params.ts",
     cases: [
       {
@@ -608,13 +626,6 @@ export const MODULES = [
         why: "the dimension parser consumes the `x` separator as part of the height",
         find: "    const hParse = parseLeadingInt(s, wParse.next + 1);",
         replace: "    const hParse = parseLeadingInt(s, wParse.next);",
-      },
-      {
-        within: "parseLeadingInt",
-        why: "`next` stops at the dimensions' start, so every trailing suffix is re-parsed",
-        find: '  return {\n    value: Number.parseInt(s.slice(start, i) || "0", 10),\n    next: i,\n  };',
-        replace:
-          '  return {\n    value: Number.parseInt(s.slice(start, i) || "0", 10),\n    next: start,\n  };',
       },
       {
         within: "atof",

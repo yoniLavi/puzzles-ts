@@ -1,3 +1,4 @@
+import { digitValue, isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { ParamConfigItem } from "../../engine/game.ts";
 import { parseConfigInt } from "../../engine/params.ts";
@@ -248,10 +249,9 @@ export function validateDesc(p: TowersParams, desc: string): string | null {
       if (desc[i] !== "/") return "Expected slashes between clues";
       i++;
     }
-    if (desc[i] >= "0" && desc[i] <= "9") {
-      let num = "";
-      while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-      const clue = Number.parseInt(num, 10);
+    if (i < desc.length && isDigit(desc[i])) {
+      const { value: clue, next } = parseLeadingInt(desc, i);
+      i = next;
       if (clue <= 0 || clue > w) return "Clue number out of range";
     }
   }
@@ -266,10 +266,9 @@ export function validateDesc(p: TowersParams, desc: string): string | null {
         squares += ch.charCodeAt(0) - 97 + 1;
       } else if (ch === "_") {
         // separator, no cell
-      } else if (ch > "0" && ch <= "9") {
-        let num = ch;
-        while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-        const val = Number.parseInt(num, 10);
+      } else if (digitValue(ch) >= 1) {
+        const { value: val, next } = parseLeadingInt(desc, i - 1);
+        i = next;
         if (val < 1 || val > w) return "Out-of-range number in grid description";
         squares++;
       } else {
@@ -294,10 +293,10 @@ export function newState(p: TowersParams, desc: string): TowersState {
   let i = 0;
   for (let c = 0; c < 4 * w; c++) {
     if (c > 0) i++; // skip '/'
-    if (desc[i] >= "0" && desc[i] <= "9") {
-      let num = "";
-      while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-      clues[c] = Number.parseInt(num, 10);
+    if (i < desc.length && isDigit(desc[i])) {
+      const { value, next } = parseLeadingInt(desc, i);
+      clues[c] = value;
+      i = next;
     }
   }
 
@@ -310,10 +309,9 @@ export function newState(p: TowersParams, desc: string): TowersState {
         pos += ch.charCodeAt(0) - 97 + 1;
       } else if (ch === "_") {
         // separator
-      } else if (ch > "0" && ch <= "9") {
-        let num = ch;
-        while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
-        const val = Number.parseInt(num, 10);
+      } else if (digitValue(ch) >= 1) {
+        const { value: val, next } = parseLeadingInt(desc, i - 1);
+        i = next;
         grid[pos] = val;
         immutable[pos] = val;
         pos++;

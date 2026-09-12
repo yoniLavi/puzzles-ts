@@ -14,6 +14,7 @@
  * Unknown (in `mask` only) or Cleared (in neither).
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -153,31 +154,21 @@ export function encodeParams(p: SubsetsParams, full: boolean): string {
   return full ? `${base}d${DIFF_CHARS[p.diff] ?? "?"}` : base;
 }
 
-const isDigit = (c: string | undefined): boolean =>
-  c !== undefined && c >= "0" && c <= "9";
-
-/** atoi at `s[pos]`: parse a leading run of digits, 0 when there are none. */
-function eatNum(s: string, pos: number): { value: number; next: number } {
-  let next = pos;
-  while (isDigit(s[next])) next++;
-  return { value: next > pos ? Number.parseInt(s.slice(pos, next), 10) : 0, next };
-}
-
 export function decodeParams(s: string): SubsetsParams {
   // Lenient, matching upstream decode_params (which mutates a copy of the
   // current params; a fresh decode starts from the default).
   const p = defaultParams();
-  let r = eatNum(s, 0);
+  let r = parseLeadingInt(s, 0);
   p.w = r.value;
   p.h = p.w;
   let pos = r.next;
   if (s[pos] === "x") {
-    r = eatNum(s, pos + 1);
+    r = parseLeadingInt(s, pos + 1);
     p.h = r.value;
     pos = r.next;
   }
   if (s[pos] === "n") {
-    r = eatNum(s, pos + 1);
+    r = parseLeadingInt(s, pos + 1);
     p.n = r.value;
     pos = r.next;
   }
@@ -246,14 +237,12 @@ function attemptLoadGame(state: SubsetsState, desc: string): string | null {
     if (i >= w * h) return "Too much data to fill grid";
 
     if (isDigit(desc[p])) {
-      let q = p;
-      while (isDigit(desc[q])) q++;
-      const num = Number.parseInt(desc.slice(p, q), 10);
+      const { value: num, next } = parseLeadingInt(desc, p);
       if (num > ALL_BITS(n)) return "Out-of-range number in game description";
       state.known[i] = num;
       state.mask[i] = num;
       state.immutable[i] = ALL_BITS(n);
-      p = q;
+      p = next;
     } else if (desc[p] === "_") {
       p++;
     } else {

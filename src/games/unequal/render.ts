@@ -47,6 +47,7 @@ import type { Color, Point, Size } from "../../engine/types.ts";
 import type { UnequalMove } from "./state.ts";
 import {
   checkComplete,
+  displayChar,
   F_ADJ_DOWN,
   F_ADJ_LEFT,
   F_ADJ_RIGHT,
@@ -60,7 +61,6 @@ import {
   F_SPENT_LEFT,
   F_SPENT_RIGHT,
   F_SPENT_UP,
-  n2c,
   type UnequalState,
   type UnequalUi,
 } from "./state.ts";
@@ -468,7 +468,7 @@ function drawCell(
       { x: ox + Math.floor(ts / 2), y: oy + Math.floor(ts / 2) },
       glyphFont(Math.floor((3 * ts) / 4)),
       color,
-      n2c(num, o),
+      displayChar(num, o),
     );
   } else {
     drawHints(dr, ts, o, ox, oy, pencil, struck);
@@ -522,7 +522,12 @@ function drawHints(
       const hy = Math.floor(j / hw);
       const cx = ox + Math.floor(((4 * hx + 3) * ts) / (4 * hw + 2));
       const cy = oy + Math.floor(((4 * hy + 3) * ts) / (4 * hh + 2));
-      dr.drawText({ x: cx, y: cy }, glyphFont(fontsz), COL_PENCIL, n2c(i + 1, o));
+      dr.drawText(
+        { x: cx, y: cy },
+        glyphFont(fontsz),
+        COL_PENCIL,
+        displayChar(i + 1, o),
+      );
       if (struck & (1 << (i + 1))) {
         const r = Math.max(2, Math.floor(fontsz / 3));
         dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_PENCIL, 2);

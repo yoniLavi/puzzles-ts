@@ -10,6 +10,7 @@
  * (Shift). `H` autosolves in place.
  */
 
+import { c2nUpper } from "../../engine/desc-alphabet.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import type { Game, GamePref, SolveResult, UiUpdate } from "../../engine/game.ts";
@@ -289,10 +290,10 @@ function solve(
 
   if (aux) {
     for (let i = 0; i < sz; i++) {
-      const ch = aux.charCodeAt(i);
-      if (ch >= 48 && ch <= 57) solvedLines[i] = ch - 48;
-      else if (ch >= 65 && ch <= 70) solvedLines[i] = ch - 65 + 10;
-      else return { ok: false, error: "invalid char in aux" };
+      // A nibble of direction bits: `0`–`9`, then `A`–`F`.
+      const v = i < aux.length ? c2nUpper(aux[i]) : -1;
+      if (v < 0 || v > 15) return { ok: false, error: "invalid char in aux" };
+      solvedLines[i] = v;
     }
   } else if (pearlSolve(w, curr.h, curr.clues, solvedLines, DIFF_COUNT, false) < 1) {
     // Upstream retries from the original state, but the two share their clues,

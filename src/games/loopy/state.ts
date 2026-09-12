@@ -5,6 +5,7 @@
  * construction, so GC replaces upstream's refcount) plus three parallel arrays
  * over it: a clue per face, a line state per edge, and an error flag per edge.
  */
+import { c2nUpper, n2cUpper } from "../../engine/desc-alphabet.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { Grid, GridType } from "../../engine/grid/index.ts";
 import {
@@ -87,24 +88,16 @@ function splitDesc(desc: string): { gridDesc: string | null; clueDesc: string } 
   return { gridDesc: desc.slice(0, sep), clueDesc: desc.slice(sep + 1) };
 }
 
-/** A clue digit as its description character: `0`–`9` then `A`–`Z` for 10–35.
- * Mirrors `CLUE2CHAR`. */
-function clueChar(clue: number): string {
-  return clue < 10
-    ? String.fromCharCode(48 + clue)
-    : String.fromCharCode(65 + clue - 10);
-}
-
 /**
  * Encode a state's clues as a description. Runs of clueless faces become a
- * single letter `a`–`z` (1–26 empties); clued faces become their digit.
- * Mirrors `state_to_text`.
+ * single letter `a`–`z` (1–26 empties); clued faces become their digit
+ * (`0`–`9`, then `A`–`Z` for 10–35). Mirrors `state_to_text`.
  *
  * `keepTrailingBlanks` because a description must cover every face exactly —
  * {@link validateDesc} rejects one that is short as well as one that is long.
  */
 export function encodeClues(clues: Int8Array, numFaces: number): string {
-  return encodeRunLength(numFaces, (i) => (clues[i] < 0 ? null : clueChar(clues[i])), {
+  return encodeRunLength(numFaces, (i) => (clues[i] < 0 ? null : n2cUpper(clues[i])), {
     keepTrailingBlanks: true,
   });
 }
@@ -121,11 +114,8 @@ export function decodeClues(clueDesc: string, numFaces: number): Int8Array {
       i += tok.blanks;
       continue;
     }
-    const c = tok.value.charCodeAt(0);
-    const digit = c - 48;
-    const letter = c - 65 + 10;
-    if (digit >= 0 && digit < 10) clues[i] = digit;
-    else if (letter >= 10 && letter < 36) clues[i] = letter;
+    const clue = c2nUpper(tok.value);
+    if (clue >= 0) clues[i] = clue;
     i++;
   }
   return clues;
@@ -184,10 +174,7 @@ export function validateDesc(p: LoopyParams, desc: string): string | null {
   for (const tok of scanRunLength(clueDesc)) {
     if ("blanks" in tok) {
       count += tok.blanks;
-    } else if (
-      (tok.value >= "0" && tok.value <= "9") ||
-      (tok.value >= "A" && tok.value <= "Z")
-    ) {
+    } else if (c2nUpper(tok.value) >= 0) {
       count++;
     } else {
       return "Unknown character in description";
@@ -425,7 +412,7 @@ export function textFormat(state: LoopyState): string | undefined {
   for (let i = 0; i < g.numFaces; i++) {
     const [a, b] = corners(i);
     const at = (cy(a.y) + cy(b.y)) * W + cx(a.x) + cx(b.x);
-    canvas[at] = state.clues[i] < 0 ? " " : clueChar(state.clues[i]);
+    canvas[at] = state.clues[i] < 0 ? " " : n2cUpper(state.clues[i]);
   }
 
   return canvas.join("");

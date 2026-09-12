@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   DIFF_EASY,
-  n2c as magnetsN2c,
+  clueChar as magnetsClueChar,
   validateParams as magnetsValidateParams,
 } from "../games/magnets/state.ts";
 import { validateParams as singlesValidateParams } from "../games/singles/state.ts";
-import { c2n, DESC_ALPHABET_SIZE, n2c } from "./desc-alphabet.ts";
+import {
+  c2n,
+  c2nUpper,
+  DESC_ALPHABET_SIZE,
+  n2c,
+  n2cUpper,
+  UPPER_ALPHABET_SIZE,
+} from "./desc-alphabet.ts";
 
 describe("the desc digit alphabet", () => {
   it("round-trips every value it covers", () => {
@@ -69,10 +76,41 @@ describe("the desc digit alphabet", () => {
   });
 
   it("leaves Magnets' no-clue sentinel with Magnets", () => {
-    expect(magnetsN2c(-1)).toBe(".");
-    expect(magnetsN2c(0)).toBe("0");
-    expect(magnetsN2c(61)).toBe("Z");
+    expect(magnetsClueChar(-1)).toBe(".");
+    expect(magnetsClueChar(0)).toBe("0");
+    expect(magnetsClueChar(61)).toBe("Z");
     // The sentinel is not in the shared alphabet, in either direction.
     expect(c2n(".")).toBe(-1);
+  });
+});
+
+describe("the run-length value alphabet", () => {
+  it("round-trips every value it covers, and only those", () => {
+    const seen = new Set<string>();
+    for (let n = 0; n < UPPER_ALPHABET_SIZE; n++) {
+      const ch = n2cUpper(n);
+      expect(ch, `n2cUpper(${n})`).toHaveLength(1);
+      expect(c2nUpper(ch), `c2nUpper(n2cUpper(${n}))`).toBe(n);
+      seen.add(ch);
+    }
+    expect([...seen].join("")).toBe("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    expect(() => n2cUpper(UPPER_ALPHABET_SIZE)).toThrow(RangeError);
+    expect(() => n2cUpper(-1)).toThrow(RangeError);
+  });
+
+  it("gives a lowercase letter no value, because there it is a blank run", () => {
+    // The whole reason the second alphabet exists: `run-length.ts` has spent
+    // `a`–`z`, so a value above nine must be a capital and a lowercase letter
+    // reaching this codec is a bug in the caller, not a value.
+    let accepted = 0;
+    for (let code = 0; code < 128; code++) {
+      const ch = String.fromCharCode(code);
+      if (c2nUpper(ch) === -1) continue;
+      accepted++;
+      expect(ch, ch).not.toMatch(/[a-z]/);
+    }
+    expect(accepted).toBe(UPPER_ALPHABET_SIZE);
+    // And the two alphabets agree on the digits, where they overlap.
+    for (let n = 0; n <= 9; n++) expect(n2cUpper(n)).toBe(n2c(n));
   });
 });

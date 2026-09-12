@@ -28,9 +28,10 @@
  * `solver.ts` feasible, and what the generator's block-merge phase rewrites.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { PresetMenu } from "../../engine/game.ts";
-import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -300,9 +301,6 @@ export type SlideMove =
 
 // --- desc codec -------------------------------------------------------
 
-const isDigitAt = (s: string, i: number): boolean =>
-  i < s.length && s[i] >= "0" && s[i] <= "9";
-
 /** The board byte each run-length letter stands for; the desc accepts either
  * case. */
 const CELL_OF_LETTER: Partial<Record<string, number>> = {
@@ -372,11 +370,10 @@ function scanTargetCoords(s: string): number[] {
     } else if (s[j] === "+") {
       j++;
     }
-    const start = j;
-    while (isDigitAt(s, j)) j++;
-    if (j === start) break;
-    values.push(sign * Number.parseInt(s.slice(start, j), 10));
-    i = j;
+    const { value, next } = parseLeadingInt(s, j);
+    if (next === j) break;
+    values.push(sign * value);
+    i = next;
   }
   return values;
 }
@@ -401,7 +398,8 @@ export function validateDesc(p: SlideParams, desc: string): string | null {
 
     if (desc[k] === "d" || desc[k] === "D") {
       k++;
-      if (!isDigitAt(desc, k)) return "Expected a number after 'd' in game description";
+      if (k >= desc.length || !isDigit(desc[k]))
+        return "Expected a number after 'd' in game description";
       const { value: dist, next } = parseLeadingInt(desc, k);
       k = next;
 
@@ -418,7 +416,7 @@ export function validateDesc(p: SlideParams, desc: string): string | null {
       if (cell === undefined) return "Invalid character in game description";
 
       let count = 1;
-      if (isDigitAt(desc, k)) {
+      if (k < desc.length && isDigit(desc[k])) {
         const parsed = parseLeadingInt(desc, k);
         count = parsed.value;
         k = parsed.next;
@@ -479,7 +477,7 @@ export function newState(p: SlideParams, desc: string): SlideState {
       k++;
 
       let count = 1;
-      if (isDigitAt(desc, k)) {
+      if (k < desc.length && isDigit(desc[k])) {
         const parsed = parseLeadingInt(desc, k);
         count = parsed.value;
         k = parsed.next;

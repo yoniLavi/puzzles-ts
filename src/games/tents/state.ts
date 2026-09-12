@@ -11,6 +11,7 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
+import { parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { matching } from "../../engine/latin.ts";
@@ -204,8 +205,7 @@ export function validateDesc(p: TentsParams, desc: string): string | null {
   for (let k = 0; k < w + h; k++) {
     if (i >= desc.length) return "Not enough numbers given after grid specification";
     if (desc[i] !== ",") return "Invalid character in number list";
-    i++;
-    while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;
+    i = parseLeadingInt(desc, i + 1).next;
   }
   if (i < desc.length) return "Unexpected additional data at end of game description";
   return null;

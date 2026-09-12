@@ -20,6 +20,7 @@
  * solution `aux` string, never in the desc.
  */
 
+import { digitValue, parseLeadingInt } from "../../engine/decimal.ts";
 import { tierNames } from "../../engine/difficulty.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { newCursor } from "../../engine/pointer.ts";
@@ -109,12 +110,11 @@ export function encodeParams(p: GroupParams, full: boolean): string {
 }
 
 export function decodeParams(s: string): GroupParams {
-  let i = 0;
-  let digits = "";
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") digits += s[i++];
+  const w = parseLeadingInt(s, 0);
+  let i = w.next;
   // decode_params resets diff/id to their defaults up front, then scans flags.
   const p: GroupParams = {
-    w: digits ? Number.parseInt(digits, 10) : 0,
+    w: w.value,
     diff: DIFF_NORMAL,
     id: true,
   };
@@ -308,11 +308,11 @@ function specToGrid(desc: string, grid: Uint8Array, area: number): void {
       while (run-- > 0) grid[i++] = 0;
     } else if (ch === "_") {
       p++;
-    } else if (ch > "0" && ch <= "9") {
-      let num = "";
-      while (p < desc.length && desc[p] >= "0" && desc[p] <= "9") num += desc[p++];
+    } else if (digitValue(ch) >= 1) {
+      const num = parseLeadingInt(desc, p);
+      p = num.next;
       if (i >= area) throw new Error("Too much data to fit in grid");
-      grid[i++] = Number.parseInt(num, 10);
+      grid[i++] = num.value;
     } else {
       throw new Error("Invalid character in game description");
     }
@@ -331,10 +331,10 @@ function validateGridDesc(desc: string, range: number, area: number): string | n
       p++;
     } else if (ch === "_") {
       p++;
-    } else if (ch > "0" && ch <= "9") {
-      let num = "";
-      while (p < desc.length && desc[p] >= "0" && desc[p] <= "9") num += desc[p++];
-      const val = Number.parseInt(num, 10);
+    } else if (digitValue(ch) >= 1) {
+      const num = parseLeadingInt(desc, p);
+      p = num.next;
+      const val = num.value;
       if (val < 1 || val > range) return "Out-of-range number in game description";
       squares++;
     } else {

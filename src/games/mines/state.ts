@@ -12,6 +12,7 @@
  * single mutation site.
  */
 
+import { isDigit, parseLeadingInt } from "../../engine/decimal.ts";
 import { obfuscateBitmap } from "../../engine/obfuscate.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomStateDecode } from "../../engine/random/index.ts";
@@ -117,37 +118,39 @@ export function defaultParams(): MinesParams {
   return { w: 9, h: 9, n: 10, unique: true, firstClickX: -1, firstClickY: -1 };
 }
 
-const isDigit = (c: string | undefined) => c !== undefined && c >= "0" && c <= "9";
-
-/** The decimal number starting at `s[start]` (0 if there is none), and the
- * index just past it. */
-function readInt(s: string, start: number): [number, number] {
-  let v = 0;
-  let i = start;
-  while (isDigit(s[i])) v = v * 10 + (s.charCodeAt(i++) - 48);
-  return [v, i];
-}
-
 /** Upstream's `decode_params` (mines.c:168): `WxH`, optional `nN` mine count
  * (defaulting to area/10), then `a`/`X`/`Y` flags. */
 export function decodeParams(s: string): MinesParams {
   const p = defaultParams();
-  let i: number;
-  [p.w, i] = readInt(s, 0);
-  if (s[i] === "x") [p.h, i] = readInt(s, i + 1);
-  else p.h = p.w;
+  const w = parseLeadingInt(s, 0);
+  p.w = w.value;
+  let i = w.next;
+  if (s[i] === "x") {
+    const h = parseLeadingInt(s, i + 1);
+    p.h = h.value;
+    i = h.next;
+  } else p.h = p.w;
   if (s[i] === "n") {
-    [p.n, i] = readInt(s, i + 1);
+    const n = parseLeadingInt(s, i + 1);
+    p.n = n.value;
+    i = n.next;
     // upstream also skips '.' inside the mine count (a percentage form)
-    while (s[i] === "." || isDigit(s[i])) i++;
+    while (i < s.length && (s[i] === "." || isDigit(s[i]))) i++;
   } else if (p.h > 0 && p.w > 0) {
     p.n = Math.floor((p.w * p.h) / 10);
   }
   while (i < s.length) {
     const c = s[i++];
     if (c === "a") p.unique = false;
-    else if (c === "X") [p.firstClickX, i] = readInt(s, i);
-    else if (c === "Y") [p.firstClickY, i] = readInt(s, i);
+    else if (c === "X") {
+      const x = parseLeadingInt(s, i);
+      p.firstClickX = x.value;
+      i = x.next;
+    } else if (c === "Y") {
+      const y = parseLeadingInt(s, i);
+      p.firstClickY = y.value;
+      i = y.next;
+    }
     // anything else is gunk, skipped
   }
   return p;
@@ -206,12 +209,8 @@ function decodeLayoutBitmap(hex: string, wh: number, masked: boolean): Int8Array
   const bmp = new Uint8Array((wh + 7) >> 3);
   const nnib = (wh + 3) >> 2;
   for (let i = 0; i < nnib; i++) {
-    const c = hex.charCodeAt(i);
-    let v: number;
-    if (c >= 48 && c <= 57) v = c - 48;
-    else if (c >= 97 && c <= 102) v = c - 97 + 10;
-    else if (c >= 65 && c <= 70) v = c - 65 + 10;
-    else v = 0;
+    // Either case is accepted, and anything that is not hex reads as 0.
+    const v = Number.parseInt(hex[i], 16) || 0;
     bmp[i >> 1] |= v << (4 * (1 - (i & 1)));
   }
   if (masked) obfuscateBitmap(bmp, wh, true);
@@ -226,10 +225,11 @@ export function validateDesc(p: MinesParams, desc: string): string | null {
   const wh = p.w * p.h;
   let i = 0;
   if (desc[0] === "r") {
-    if (!isDigit(desc[1])) return "No initial mine count in game description";
-    let n: number;
-    [n, i] = readInt(desc, 1);
-    if (n > wh - 9) return "Too many mines for grid size";
+    if (desc.length < 2 || !isDigit(desc[1]))
+      return "No initial mine count in game description";
+    const n = parseLeadingInt(desc, 1);
+    i = n.next;
+    if (n.value > wh - 9) return "Too many mines for grid size";
     if (desc[i] !== ",") return "No ',' after initial x-coordinate in game description";
     if (desc[i + 1] !== "u" && desc[i + 1] !== "a")
       return "No uniqueness specifier in game description";
@@ -239,15 +239,16 @@ export function validateDesc(p: MinesParams, desc: string): string | null {
     return null;
   }
   // Public/private desc: optional `x,y,` prefix, optional `m`/`u`, then hex.
-  if (isDigit(desc[0])) {
-    let x: number;
-    let y: number;
-    [x, i] = readInt(desc, 0);
-    if (x >= p.w) return "Initial x-coordinate was out of range";
+  if (desc.length > 0 && isDigit(desc[0])) {
+    const x = parseLeadingInt(desc, 0);
+    i = x.next;
+    if (x.value >= p.w) return "Initial x-coordinate was out of range";
     if (desc[i] !== ",") return "No ',' after initial x-coordinate in game description";
-    if (!isDigit(desc[i + 1])) return "No initial y-coordinate in game description";
-    [y, i] = readInt(desc, i + 1);
-    if (y >= p.h) return "Initial y-coordinate was out of range";
+    if (i + 1 >= desc.length || !isDigit(desc[i + 1]))
+      return "No initial y-coordinate in game description";
+    const y = parseLeadingInt(desc, i + 1);
+    i = y.next;
+    if (y.value >= p.h) return "Initial y-coordinate was out of range";
     if (desc[i] !== ",") return "No ',' after initial y-coordinate in game description";
     i++;
   }
@@ -277,7 +278,9 @@ export function decodeDesc(p: MinesParams, desc: string): DecodedDesc {
 
   let i: number;
   if (desc[0] === "r") {
-    [layout.n, i] = readInt(desc, 1);
+    const n = parseLeadingInt(desc, 1);
+    layout.n = n.value;
+    i = n.next;
     if (desc[i]) i++; // eat comma
     layout.unique = desc[i] !== "a";
     i++;
@@ -289,14 +292,14 @@ export function decodeDesc(p: MinesParams, desc: string): DecodedDesc {
   // Public/private desc: optional x,y prefix, optional m/u, then hex.
   i = 0;
   let openXY: Point | null = null;
-  if (isDigit(desc[0])) {
-    let x: number;
-    let y: number;
-    [x, i] = readInt(desc, 0);
+  if (desc.length > 0 && isDigit(desc[0])) {
+    const x = parseLeadingInt(desc, 0);
+    i = x.next;
     if (desc[i]) i++;
-    [y, i] = readInt(desc, i);
+    const y = parseLeadingInt(desc, i);
+    i = y.next;
     if (desc[i]) i++;
-    openXY = { x, y };
+    openXY = { x: x.value, y: y.value };
   }
   const masked = desc[i] === "m";
   if (masked || desc[i] === "u") i++;

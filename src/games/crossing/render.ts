@@ -74,6 +74,7 @@ import type { Color, DrawTextOptions, Point, Size } from "../../engine/types.ts"
 import type { CrossingMistake } from "./solver.ts";
 import {
   type CrossingMove,
+  type CrossingNumber,
   type CrossingPuzzle,
   type CrossingState,
   type CrossingUi,
@@ -646,7 +647,7 @@ export function layoutNumbers(
   ts: number,
   w: number,
   h: number,
-  numbers: readonly string[],
+  numbers: readonly CrossingNumber[],
 ): { fontsz: number; slots: NumberSlot[] } {
   const count = numbers.length;
   if (count === 0) return { fontsz: 0, slots: [] };
@@ -717,7 +718,7 @@ export function numberAtPoint(
   ts: number,
   w: number,
   h: number,
-  numbers: readonly string[],
+  numbers: readonly CrossingNumber[],
   px: number,
   py: number,
 ): number {
@@ -738,7 +739,7 @@ function drawNumbers(
   ts: number,
   w: number,
   h: number,
-  numbers: readonly string[],
+  numbers: readonly CrossingNumber[],
   colorOf: (i: number) => number,
   struckOf: (i: number) => boolean,
   heldOf: (i: number) => boolean,
@@ -776,7 +777,7 @@ function drawNumbers(
         hinted === 2 ? COL_HINT : COL_HINT_CELL,
       );
     }
-    dr.drawText({ x: slots[i].x, y: slots[i].y }, opts, color, numbers[i]);
+    dr.drawText({ x: slots[i].x, y: slots[i].y }, opts, color, numbers[i].join(""));
     if (struckOf(i)) {
       const y = Math.round(slots[i].y - fontsz * 0.3);
       dr.drawLine(
@@ -930,9 +931,9 @@ export function redraw(
     // real prediction rather than a list of options.
     if (where.length === 1 && alreadyOnBoard < 0) {
       const cells = runs[where[0]].cells;
-      const text = numbers[held];
+      const num = numbers[held];
       for (let k = 0; k < cells.length; k++) {
-        if (!state.grid[cells[k]]) ghost[cells[k]] = text.charCodeAt(k) - 48;
+        if (!state.grid[cells[k]]) ghost[cells[k]] = num[k];
       }
     }
   }
