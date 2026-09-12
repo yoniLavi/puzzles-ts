@@ -137,7 +137,7 @@ export function computeSize(p: DominosaParams, ts: number): Size {
 
 export interface DominosaDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   /** Last-drawn packed word per square; −1 forces a redraw. */
@@ -150,7 +150,7 @@ export interface DominosaDrawState {
 export function newDrawState(state: DominosaState): DominosaDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w: state.w,
     h: state.h,
     visible: new Int32Array(state.w * state.h).fill(-1),
@@ -167,7 +167,7 @@ export function newDrawState(state: DominosaState): DominosaDrawState {
  * only place a mark can go.
  */
 function markBand(ds: DominosaDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   return {
     box: { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
     outer: 0,
@@ -324,7 +324,7 @@ export function redraw(
   hint?: HintStep<DominosaMove, DominosaHint>,
   mistakes?: readonly DominosaMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, grid, numbers } = state;
   const wh = w * h;
   const n = state.params.n;

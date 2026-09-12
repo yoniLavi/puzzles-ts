@@ -30,7 +30,7 @@ function makeState(w: number, h: number, grid: number[]): RangeState {
   return { w, h, grid: Int8Array.from(grid), cheated: false, completed: false };
 }
 
-const ds = { tilesize: TS } as never;
+const ds = { tileSize: TS } as never;
 
 describe("params", () => {
   it("round-trips presets and the bare-width form", () => {

@@ -774,7 +774,7 @@ deciding. **Placement has three known answers, in preference order:**
    cache, so see [rendering](./rendering.md) § "A cue with a tile available
    belongs in the tile key, not in a second cache" before choosing this over 1.
 3. **Grow the canvas rather than overlap the board** when there is no border
-   and no spare cell at all: Mathrax adds a `tilesize/2` strip *below* the
+   and no spare cell at all: Mathrax adds a `tileSize/2` strip *below* the
    board — keep the grid's own geometry untouched when you do, so `fromCoord`
    and the width stay exactly as before and only the height changes.
 

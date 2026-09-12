@@ -131,7 +131,7 @@ export function fromCoord(v: number, ts: number): number {
 
 export interface MathraxDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** `o²` packed last-drawn tile values (−1 = never drawn): the digit in bits
    * 0–3, the pencil-mark bitmap (which itself starts at bit 1) in bits 4–13,
    * and the cell + draw flags in bits 14–24. */
@@ -146,7 +146,7 @@ export function newDrawState(state: MathraxState): MathraxDrawState {
   const o = state.params.o;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     tiles: new Int32Array(o * o).fill(-1),
     wrong: new OverlaySidecar(o * o),
     pencilModeShown: null,
@@ -154,7 +154,7 @@ export function newDrawState(state: MathraxState): MathraxDrawState {
 }
 
 export function setTileSize(ds: MathraxDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- clue drawing ----------------------------------------------------------
@@ -214,7 +214,7 @@ function drawTile(
   fs: number,
   wrong: boolean,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const o = state.params.o;
   const co = o - 1;
   const i = y * o + x;
@@ -362,7 +362,7 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly Point[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const o = state.params.o;
   const size = computeSize({ o }, ts);
   const firstFrame = !ds.started;

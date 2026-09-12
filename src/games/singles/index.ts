@@ -157,7 +157,7 @@ function interpretMove(
     button === MIDDLE_BUTTON ||
     button === RIGHT_BUTTON
   ) {
-    const ts = ds.tilesize;
+    const ts = ds.tileSize;
     const b = border(ts);
     const fromCoord = (v: number): number => fromCoordE(v, ts, b);
     x = fromCoord(p.x);

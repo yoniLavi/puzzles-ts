@@ -42,7 +42,7 @@ function freshUi(): MosaicUi {
 
 function freshDs(state: MosaicState): MosaicDrawState {
   const ds = newDrawState(state);
-  ds.tilesize = TS;
+  ds.tileSize = TS;
   return ds;
 }
 

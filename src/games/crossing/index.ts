@@ -132,7 +132,7 @@ function interpretMove(
   rawButton: number,
 ): CrossingMove | null | UiUpdate {
   const { w, h, walls } = state.puzzle;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const button = stripModifiers(rawButton);
 
   const gx = fromCoord(point.x, ts);

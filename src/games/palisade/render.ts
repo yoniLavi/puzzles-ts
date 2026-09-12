@@ -148,7 +148,7 @@ export function redraw(
   hint?: HintStep<PalisadeMove, PalisadeHint>,
   mistakes?: readonly PalisadeMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, k, clues, borders } = state;
   const wh = w * h;
   const flash = Math.floor((flashTime * 5) / FLASH_TIME) % 2;

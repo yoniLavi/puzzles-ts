@@ -108,7 +108,7 @@ function interpretMove(
   button: number,
 ): DominosaMove | null | UiUpdate {
   const { w, h } = state;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   const coord = (v: number) => v * ts + b;
   const fromCoord = (px: number) => fromCoordE(px, ts, b);
@@ -673,7 +673,7 @@ export const dominosaGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

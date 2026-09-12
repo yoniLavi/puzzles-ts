@@ -104,7 +104,7 @@ export function computeSize(p: TentsParams, ts: number): Size {
 
 export interface TentsDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Last-drawn packed word per tile; -1 forces a draw. */
   drawn: Int32Array;
   /** Last-drawn error flag per edge number; -1 forces a draw. */
@@ -114,7 +114,7 @@ export interface TentsDrawState {
 export function newDrawState(state: TentsState): TentsDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     drawn: new Int32Array(state.w * state.h).fill(-1),
     numbersDrawn: new Int32Array(state.w + state.h).fill(-1),
   };
@@ -370,7 +370,7 @@ export function redraw(
   _hint?: HintStep<TentsMove>,
   mistakes?: readonly TentsMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, grid, numbers } = state;
 
   if (!ds.started) {

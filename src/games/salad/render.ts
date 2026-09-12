@@ -186,7 +186,7 @@ export function fromCoord(v: number, ts: number): number {
 
 export interface SaladDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   order: number;
   /** `order²` display flags for this frame (upstream `ds->gridfs`). */
   gridfs: Int32Array;
@@ -217,7 +217,7 @@ export function newDrawState(s: SaladState): SaladDrawState {
   const o2 = o * o;
   return {
     started: false,
-    tilesize: PREFERRED_TILE_SIZE,
+    tileSize: PREFERRED_TILE_SIZE,
     order: o,
     gridfs: new Int32Array(o2),
     drawn: new Int32Array(o2).fill(-1),
@@ -243,7 +243,7 @@ export function newDrawState(s: SaladState): SaladDrawState {
  * `drawBall`/`drawGhost` insets rather than to its edge.
  */
 function markBand(ds: SaladDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   return {
     box: { x: (x + 1) * ts, y: (y + 1) * ts, w: ts, h: ts },
     outer: 0,
@@ -252,7 +252,7 @@ function markBand(ds: SaladDrawState, x: number, y: number): MarkBand {
 }
 
 export function setTileSize(ds: SaladDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- live rule errors ------------------------------------------------------
@@ -513,7 +513,7 @@ export function redraw(
   hint?: HintStep<SaladMove, SaladHint>,
   mistakes?: readonly SaladMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const o = s.order;
   const thick = ts <= 21 ? 1 : 2.5;
 

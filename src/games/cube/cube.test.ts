@@ -327,8 +327,8 @@ describe("cube input", () => {
     const { state, ui, ds } = interiorCube();
     // Square 5 center in pixels: x*gs+ox, y*gs+oy.
     const sq = state.grid[5];
-    const cx = Math.trunc(sq.x * ds.gridscale) + ds.ox;
-    const cy = Math.trunc(sq.y * ds.gridscale) + ds.oy;
+    const cx = Math.trunc(sq.x * ds.gridScale) + ds.ox;
+    const cy = Math.trunc(sq.y * ds.gridScale) + ds.oy;
     const click = (dx: number, dy: number) =>
       interpretMove(state, ui, ds, { x: cx + dx, y: cy + dy }, LEFT_BUTTON);
     expect(click(40, 0)).toEqual({ dir: "R" });
@@ -340,8 +340,8 @@ describe("cube input", () => {
   it("ignores a dead-center click and unhandled buttons", () => {
     const { state, ui, ds } = interiorCube();
     const sq = state.grid[5];
-    const cx = Math.trunc(sq.x * ds.gridscale) + ds.ox;
-    const cy = Math.trunc(sq.y * ds.gridscale) + ds.oy;
+    const cx = Math.trunc(sq.x * ds.gridScale) + ds.ox;
+    const cy = Math.trunc(sq.y * ds.gridScale) + ds.oy;
     expect(interpretMove(state, ui, ds, { x: cx, y: cy }, LEFT_BUTTON)).toBeNull();
     expect(interpretMove(state, ui, ds, { x: 0, y: 0 }, 0x9999)).toBeNull();
   });

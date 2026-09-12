@@ -109,7 +109,7 @@ function interpretMove(
 ): UnrulyMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w2, h2 } = state;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
 
   let hx = ui.cursor.x;
@@ -397,7 +397,7 @@ export const unrulyGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

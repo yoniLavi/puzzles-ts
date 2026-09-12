@@ -78,7 +78,7 @@ export interface TwiddleDrawState {
   /** Per-cell cache of the packed `number*4 + orient`; `-1` forces a
    * redraw (unknown, or inside the animating block). */
   cache: Int32Array;
-  tilesize: number;
+  tileSize: number;
   /** Cached cursor top-left in rotation-origin space; `< 0` when hidden. */
   curX: number;
   curY: number;
@@ -89,7 +89,7 @@ export function newDrawState(state: TwiddleState): TwiddleDrawState {
     started: false,
     bgcolor: COL_BACKGROUND,
     cache: new Int32Array(state.w * state.h).fill(-1),
-    tilesize: 0,
+    tileSize: 0,
     curX: -state.n,
     curY: -state.n,
   };
@@ -266,7 +266,7 @@ export function redraw(
   animTime: number,
   flashTime: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, n } = state;
   const hw = highlightWidth(ts);
 

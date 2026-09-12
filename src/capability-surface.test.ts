@@ -124,8 +124,8 @@ describe("capability surface", () => {
     // What licenses the snapshot to read the *unsized* draw state. It must,
     // because `setTileSize` assigns into it and so puts back any field it
     // writes: sizing first was this change's first cut, and deleting
-    // `tilesize` from Flood's `newDrawState` passed, because Flood's
-    // `setTileSize` is `ds.tilesize = ts`. The cost of reading unsized is the
+    // `tileSize` from Flood's `newDrawState` passed, because Flood's
+    // `setTileSize` is `ds.tileSize = ts`. The cost of reading unsized is the
     // opposite blindness — a field a game assigns *only* under a tile size
     // would go unrecorded — so that is asserted away here rather than paid
     // for by sizing.

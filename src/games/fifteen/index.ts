@@ -135,8 +135,8 @@ function interpretMove(
   }
   if (raw !== LEFT_BUTTON) return null;
 
-  const x = fromCoord(p.x, ds.tilesize);
-  const y = fromCoord(p.y, ds.tilesize);
+  const x = fromCoord(p.x, ds.tileSize);
+  const y = fromCoord(p.y, ds.tileSize);
   if (x < 0 || x >= w || y < 0 || y >= h) return null;
   // A legal target shares exactly one coordinate with the gap.
   return (x === gx) !== (y === gy) ? { type: "move", x, y } : null;
@@ -291,7 +291,7 @@ export const fifteenGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

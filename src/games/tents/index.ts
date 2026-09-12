@@ -102,7 +102,7 @@ function interpretMove(
   const shift = rawButton & MOD_SHFT;
   const control = rawButton & MOD_CTRL;
   const button = stripModifiers(rawButton);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const fromCoord = (v: number) => fromCoordE(v, ts, TLBORDER);
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
@@ -314,7 +314,7 @@ export const tentsGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

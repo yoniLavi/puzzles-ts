@@ -235,7 +235,7 @@ export function computeSize(p: BoatsParams, ts: number): Size {
 
 export interface BoatsDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   fleet: number;
@@ -256,7 +256,7 @@ export function newDrawState(state: BoatsState): BoatsDrawState {
   const { w, h, fleet } = state.params;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w,
     h,
     fleet,
@@ -268,7 +268,7 @@ export function newDrawState(state: BoatsState): BoatsDrawState {
 }
 
 export function setTileSize(ds: BoatsDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- primitives ------------------------------------------------------------
@@ -373,7 +373,7 @@ function drawFleet(
   fleetCount: Int32Array,
   full: boolean,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { h, fleet, fleetData } = p;
   const fxCoord = (fx: number): number => BORDER + (fx - FLEET_X) * ts;
   const fyCoord = (fy: number): number => BORDER + gutter(ts) + (h + 1 + fy) * ts;
@@ -494,7 +494,7 @@ export function redraw(
   hint?: HintStep<BoatsMove, BoatsHint>,
   mistakes?: readonly BoatsMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const p = state.params;
   const { w, h } = p;
   const full = !ds.started;

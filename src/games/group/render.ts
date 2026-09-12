@@ -147,7 +147,7 @@ export function computeSize(w: number, ts: number): Size {
 export interface GroupDrawState {
   w: number;
   id: boolean;
-  tilesize: number;
+  tileSize: number;
   started: boolean;
   /** Per-display-cell composed tile word cache (`-1` = never drawn). */
   tiles: Int32Array;
@@ -180,7 +180,7 @@ export function newDrawState(state: GroupState): GroupDrawState {
   return {
     w,
     id: state.id,
-    tilesize: 0,
+    tileSize: 0,
     started: false,
     tiles: new Int32Array(a).fill(-1),
     legend: new Int32Array(w).fill(-1),
@@ -195,7 +195,7 @@ export function newDrawState(state: GroupState): GroupDrawState {
 }
 
 export function setTileSize(ds: GroupDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 /**
@@ -214,7 +214,7 @@ export function setTileSize(ds: GroupDrawState, ts: number): void {
  * and this is the other half of that.
  */
 function markBand(ds: GroupDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   return {
     box: { x: coord(x, ts) + 1, y: coord(y, ts) + 1, w: ts - 1, h: ts - 1 },
     outer: 1,
@@ -237,7 +237,7 @@ function drawTile(
   hintOrder: number,
 ): void {
   const w = ds.w;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const id = ds.id;
   let tile = tileIn;
 
@@ -411,7 +411,7 @@ export function redraw(
   mistakes?: readonly Point[],
 ): void {
   const w = state.w;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
 
   if (!ds.started) {
     // The engine emits no pixels of its own — fill the whole canvas, then the

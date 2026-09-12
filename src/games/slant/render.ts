@@ -122,7 +122,7 @@ export function computeSize(p: SlantParams, ts: number): Size {
 
 export interface SlantDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Last-drawn packed word per tile of the (w+2)×(h+2) ring-extended grid;
    * −1 forces a draw. */
   grid: Int32Array;
@@ -134,7 +134,7 @@ export function newDrawState(state: SlantState): SlantDrawState {
   const n = (state.w + 2) * (state.h + 2);
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     grid: new Int32Array(n).fill(-1),
     todraw: new Int32Array(n).fill(-1),
   };
@@ -383,7 +383,7 @@ export function redraw(
   hint?: HintStep<SlantMove, SlantHint>,
   mistakes?: readonly SlantMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, clues, soln } = state;
   const W = w + 1;
   const H = h + 1;

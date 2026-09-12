@@ -135,7 +135,7 @@ function interpretMove(
 ): SaladMove | null | UiUpdate {
   const o = state.order;
   const nums = state.nums;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const button = stripModifiers(rawButton);
   const gx = fromCoord(p.x, ts);
   const gy = fromCoord(p.y, ts);

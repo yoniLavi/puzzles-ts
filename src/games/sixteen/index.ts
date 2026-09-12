@@ -232,7 +232,7 @@ function interpretMove(
     }
 
     if (rawButton === LEFT_RELEASE) {
-      const ts = ds.tilesize;
+      const ts = ds.tileSize;
       const axis = ui.dragAxis;
       const index = ui.dragIndex;
       const startX = ui.dragStartX ?? p.x;
@@ -278,7 +278,7 @@ function interpretMove(
   let cx = -1,
     cy = -1;
   if (rawButton === LEFT_BUTTON || rawButton === RIGHT_BUTTON) {
-    const ts = ds.tilesize;
+    const ts = ds.tileSize;
     cx = fromCoord(p.x, ts);
     cy = fromCoord(p.y, ts);
     ui.cursor.visible = false;
@@ -786,7 +786,7 @@ export const sixteenGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

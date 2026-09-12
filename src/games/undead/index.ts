@@ -166,7 +166,7 @@ function interpretMove(
   const common = state.common;
   const { w, h, xinfo } = common;
   const stride = w + 2;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = Math.floor(ts / 4);
   const button = stripModifiers(rawButton);
   // `1`, `2`, `3` place the three monsters in menu order; `0` clears.

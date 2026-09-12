@@ -3,7 +3,7 @@
  * `unreleased/crossing.c`.
  *
  * The board sits inside a **half-tile margin** on every side (so the pointer
- * conversion subtracts `tilesize/2`, unlike the zero-border `NARROW_BORDERS`
+ * conversion subtracts `tileSize/2`, unlike the zero-border `NARROW_BORDERS`
  * geometry most ports use), with a three-tile **number-list panel** below it.
  * Every cell is a beveled tile: walls are drawn indented in gray, an entered
  * digit outdented on a neutral tile, and an empty cell shows the inner
@@ -276,7 +276,7 @@ export interface CrossingHint {
 
 export interface CrossingDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** `w·h` last-drawn packed tile values (-1 = never drawn). */
   tiles: Int32Array;
   /** Mistake-overlay sidecar (fork addition) — keeps Check & Save in the diff key. */
@@ -299,7 +299,7 @@ export function newDrawState(state: CrossingState): CrossingDrawState {
   const { w, h, numbers } = state.puzzle;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     tiles: new Int32Array(w * h).fill(-1),
     wrong: new OverlaySidecar(w * h),
     hint: new OverlaySidecar(w * h),
@@ -310,7 +310,7 @@ export function newDrawState(state: CrossingState): CrossingDrawState {
 }
 
 export function setTileSize(ds: CrossingDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 /**
@@ -324,7 +324,7 @@ export function setTileSize(ds: CrossingDrawState, ts: number): void {
  * faces, so the outermost pixels are already frame rather than content.
  */
 function markBand(ds: CrossingDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   return {
     box: { x: tileOrigin(x, ts), y: tileOrigin(y, ts), w: ts + 1, h: ts + 1 },
     outer: 0,
@@ -516,7 +516,7 @@ function drawCell(
   wrong: boolean,
   hintBits: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, walls } = puzzle;
   const i = y * w + x;
   const tx = tileOrigin(x, ts);
@@ -831,7 +831,7 @@ export function redraw(
   hint?: HintStep<CrossingMove, CrossingHint>,
   mistakes?: readonly CrossingMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const puzzle = state.puzzle;
   const { w, h, walls, numbers, runs } = puzzle;
 

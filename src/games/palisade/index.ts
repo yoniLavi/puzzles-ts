@@ -88,7 +88,7 @@ function interpretMove(
     ui,
     p,
     stripModifiers(rawButton),
-    ds.tilesize,
+    ds.tileSize,
   );
   if (r === null) return null;
   return r === "ui" ? UI_UPDATE : { type: "edges", edits: r };
@@ -299,7 +299,7 @@ export const palisadeGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

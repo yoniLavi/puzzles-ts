@@ -15,19 +15,19 @@ import type { Grid } from "./grid-core.ts";
 import {
   FLORET_PX,
   FLORET_PY,
-  FLORET_TILESIZE,
+  FLORET_TILE_SIZE,
   GREATHEX_A,
   GREATHEX_B,
-  GREATHEX_TILESIZE,
+  GREATHEX_TILE_SIZE,
   KAGOME_A,
   KAGOME_B,
-  KAGOME_TILESIZE,
+  KAGOME_TILE_SIZE,
   KITE_A,
   KITE_B,
-  KITE_TILESIZE,
+  KITE_TILE_SIZE,
   OCTAGONAL_A,
   OCTAGONAL_B,
-  OCTAGONAL_TILESIZE,
+  OCTAGONAL_TILE_SIZE,
   TilingBuilder,
 } from "./grid-tilings.ts";
 
@@ -40,7 +40,7 @@ import {
 export function gridNewGreathexagonal(width: number, height: number): Grid {
   const a = GREATHEX_A;
   const b = GREATHEX_B;
-  const g = new TilingBuilder(GREATHEX_TILESIZE);
+  const g = new TilingBuilder(GREATHEX_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -111,7 +111,7 @@ export function gridNewGreathexagonal(width: number, height: number): Grid {
 export function gridNewKagome(width: number, height: number): Grid {
   const a = KAGOME_A;
   const b = KAGOME_B;
-  const g = new TilingBuilder(KAGOME_TILESIZE);
+  const g = new TilingBuilder(KAGOME_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -165,7 +165,7 @@ export function gridNewKagome(width: number, height: number): Grid {
 export function gridNewOctagonal(width: number, height: number): Grid {
   const a = OCTAGONAL_A;
   const b = OCTAGONAL_B;
-  const g = new TilingBuilder(OCTAGONAL_TILESIZE);
+  const g = new TilingBuilder(OCTAGONAL_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -202,7 +202,7 @@ export function gridNewOctagonal(width: number, height: number): Grid {
 export function gridNewKites(width: number, height: number): Grid {
   const a = KITE_A;
   const b = KITE_B;
-  const g = new TilingBuilder(KITE_TILESIZE);
+  const g = new TilingBuilder(KITE_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -281,7 +281,7 @@ export function gridNewFloret(width: number, height: number): Grid {
   const yStep = 4 * py - 5 * qy; // negative
   const yStagger = Math.trunc(yStep / 2);
 
-  const g = new TilingBuilder(FLORET_TILESIZE);
+  const g = new TilingBuilder(FLORET_TILE_SIZE);
 
   /* generate pentagonal faces */
   for (let y = 0; y < height; y++) {

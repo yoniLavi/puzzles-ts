@@ -110,7 +110,7 @@ export function computeSize(p: PatternParams, ts: number): Size {
 
 export interface PatternDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   /** Per-cell packed display key; -1 forces a redraw. */
@@ -123,7 +123,7 @@ export function newDrawState(state: PatternState): PatternDrawState {
   const { w, h } = state.common;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w,
     h,
     visible: new Int32Array(w * h).fill(-1),
@@ -150,7 +150,7 @@ function gridSquare(
   mistake: boolean,
   hintBits: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = ds;
   const tx = toCoord(ts, w, x);
   const ty = toCoord(ts, h, y);
@@ -233,7 +233,7 @@ function drawNumbers(
   i: number,
   color: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, clues, fontLarge } = state.common;
   const rowdata = clues[i];
   const rowlen = rowdata.length;
@@ -307,7 +307,7 @@ export function redraw(
   hint?: HintStep<PatternMove, PatternHint>,
   mistakes?: readonly PatternMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = state.common;
   const { grid } = state;
   const mistakeSet =

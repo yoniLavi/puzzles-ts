@@ -122,7 +122,7 @@ function interpretMove(
   let c = ui.cursor.x;
 
   if (isMouseDown(button)) {
-    const ts = ds.tilesize;
+    const ts = ds.tileSize;
     r = fromCoord(p.y, ts, border(ts));
     c = fromCoord(p.x, ts, border(ts));
     if (outOfBounds(r, c, w, h)) return null;

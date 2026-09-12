@@ -6,7 +6,7 @@
  * pixels of its own, so Sokoban fills its own background on the first draw.
  *
  * There is no border (upstream's is a tile wide): the board is
- * `w * tilesize + 1` wide, the 1 for the closing grid line.
+ * `w * tileSize + 1` wide, the 1 for the closing grid line.
  */
 
 import { mkhighlight } from "../../engine/color/color-mkhighlight.ts";
@@ -87,7 +87,7 @@ export function computeSize(p: { w: number; h: number }, ts: number): Size {
 
 export interface SokobanDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Per-cell cache of the last-drawn packed tile value (char | FLASH_BIT). */
   grid: Int32Array;
 }
@@ -95,13 +95,13 @@ export interface SokobanDrawState {
 export function newDrawState(state: SokobanState): SokobanDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     grid: new Int32Array(state.w * state.h).fill(CACHE_INVALID),
   };
 }
 
 export function setTileSize(ds: SokobanDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- tile drawing -----------------------------------------------------
@@ -113,7 +113,7 @@ function drawTile(
   y: number,
   packed: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const tx = x * ts;
   const ty = y * ts;
   const v = packed & 0xff;
@@ -180,7 +180,7 @@ export function redraw(
   _animTime: number,
   flashTime: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = state;
 
   if (!ds.started) {

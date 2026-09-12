@@ -126,7 +126,7 @@ const DS_HINT_STRAND = 0x400;
 
 export interface SinglesDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   cache: Int32Array;
@@ -135,7 +135,7 @@ export interface SinglesDrawState {
 export function newDrawState(state: SinglesState): SinglesDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w: state.w,
     h: state.h,
     cache: new Int32Array(state.n).fill(-1),
@@ -143,7 +143,7 @@ export function newDrawState(state: SinglesState): SinglesDrawState {
 }
 
 export function setTileSize(ds: SinglesDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- tile drawing ----------------------------------------------------------
@@ -252,7 +252,7 @@ export function redraw(
   hint?: HintStep<SinglesMove, SinglesHint>,
   mistakes?: readonly Point[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = state;
 
   // Index the displayed hint step's target/evidence cells.

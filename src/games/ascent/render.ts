@@ -388,10 +388,10 @@ export function redrawAscent(
 ): void {
   const w = state.w;
   const h = state.h;
-  const tilesize = ds.tileSize;
+  const tileSize = ds.tileSize;
   const positions = ui.positions;
   const movement = movementForMode(state.mode);
-  const margin = tilesize * ERROR_MARGIN;
+  const margin = tileSize * ERROR_MARGIN;
 
   const flash = flashTime > 0 ? Math.trunc(flashTime / FLASH_FRAME) : -2;
 
@@ -501,16 +501,16 @@ export function redrawAscent(
 
   /* Draw cells (hexagons for the hexagonal modes, squares otherwise). */
   const hex = isHexagonal(state.mode);
-  const r = hexR(tilesize);
+  const r = hexR(tileSize);
   for (let i = 0; i < w * h; i++) {
-    const { cx, cy } = cellCenter(i, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
+    const { cx, cy } = cellCenter(i, w, state.mode, tileSize, ds.offsetX, ds.offsetY);
     const tx1 = Math.round(cx);
     const ty1 = Math.round(cy);
     const center = { x: tx1, y: ty1 };
     /* Top-left of a tile-sized box centered on the cell — used for the
      * square outline (non-hex) and for centered decorations. */
-    const tx = Math.round(cx - tilesize / 2);
-    const ty = Math.round(cy - tilesize / 2);
+    const tx = Math.round(cx - tileSize / 2);
+    const ty = Math.round(cy - tileSize / 2);
     let sn = state.grid[i];
 
     if (sn === NUMBER_BOUND) continue;
@@ -542,20 +542,20 @@ export function redrawAscent(
       /* Clip to the hexagon's bounding box (for drawUpdate); fill only the
        * hexagon itself so interlocking neighbors aren't erased. */
       const clip = {
-        x: tx1 - Math.ceil(tilesize / 2) - 1,
+        x: tx1 - Math.ceil(tileSize / 2) - 1,
         y: ty1 - Math.ceil(r) - 1,
-        w: tilesize + 2,
+        w: tileSize + 2,
         h: Math.ceil(2 * r) + 2,
       };
       dr.clip(clip);
       dr.drawUpdate(clip);
-      const verts = hexVertices(cx, cy, tilesize);
+      const verts = hexVertices(cx, cy, tileSize);
       dr.drawPolygon(verts, fillColor, fillColor);
     } else {
-      dr.clip({ x: tx, y: ty, w: tilesize + 1, h: tilesize + 1 });
-      dr.drawUpdate({ x: tx, y: ty, w: tilesize + 1, h: tilesize + 1 });
+      dr.clip({ x: tx, y: ty, w: tileSize + 1, h: tileSize + 1 });
+      dr.drawUpdate({ x: tx, y: ty, w: tileSize + 1, h: tileSize + 1 });
       dr.drawRect(
-        { x: tx + 1, y: ty + 1, w: tilesize - 1, h: tilesize - 1 },
+        { x: tx + 1, y: ty + 1, w: tileSize - 1, h: tileSize - 1 },
         fillColor,
       );
     }
@@ -568,17 +568,17 @@ export function redrawAscent(
         for (let dy = -1; dy <= 1; dy += 2) {
           const i2 = i + w * dy;
           if (i2 < 0 || i2 >= w * h) continue;
-          const tx2 = (i2 % w) * tilesize + ds.offsetX + Math.trunc(tilesize / 2);
+          const tx2 = (i2 % w) * tileSize + ds.offsetX + Math.trunc(tileSize / 2);
           const ty2 =
-            Math.trunc(i2 / w) * tilesize + ds.offsetY + Math.trunc(tilesize / 2);
+            Math.trunc(i2 / w) * tileSize + ds.offsetY + Math.trunc(tileSize / 2);
           for (let dir = 0; dir < movement.dircount; dir++) {
             if (!movement.dirs[dir].dy || !movement.dirs[dir].dx) continue;
             if (ds.path[i2] & (1 << dir))
               thickLine(
                 dr,
                 ds.thickness,
-                tx2 + movement.dirs[dir].dx * tilesize,
-                ty2 + movement.dirs[dir].dy * tilesize,
+                tx2 + movement.dirs[dir].dx * tileSize,
+                ty2 + movement.dirs[dir].dy * tileSize,
                 tx2,
                 ty2,
                 ds.path[i2] & FLAG_USER ? COL_LINE : COL_HIGHLIGHT,
@@ -593,10 +593,10 @@ export function redrawAscent(
         (state.immutable[i] || positions[sn] !== CELL_MULTIPLE)
       ) {
         if (fn & NUMBER_FLAG_MOVE) {
-          dr.drawCircle(center, tilesize * 0.4, COL_LOWLIGHT, COL_LOWLIGHT);
-          dr.drawCircle(center, tilesize * 0.3, COL_HIGHLIGHT, COL_HIGHLIGHT);
+          dr.drawCircle(center, tileSize * 0.4, COL_LOWLIGHT, COL_LOWLIGHT);
+          dr.drawCircle(center, tileSize * 0.3, COL_HIGHLIGHT, COL_HIGHLIGHT);
         } else {
-          dr.drawCircle(center, Math.trunc(tilesize / 3), COL_HIGHLIGHT, COL_HIGHLIGHT);
+          dr.drawCircle(center, Math.trunc(tileSize / 3), COL_HIGHLIGHT, COL_HIGHLIGHT);
         }
       } else if (ds.path[i] & ~FLAG_COMPLETE) {
         dr.drawCircle(center, Math.trunc(ds.thickness / 2), linecolor, linecolor);
@@ -609,7 +609,7 @@ export function redrawAscent(
       for (let dir = 0; dir < movement.dircount; dir++) {
         if (!(ds.path[i] & (1 << dir))) continue;
         const i2 = i + w * movement.dirs[dir].dy + movement.dirs[dir].dx;
-        const nc = cellCenter(i2, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
+        const nc = cellCenter(i2, w, state.mode, tileSize, ds.offsetX, ds.offsetY);
         const ex = hex ? (cx + nc.cx) / 2 : nc.cx;
         const ey = hex ? (cy + nc.cy) / 2 : nc.cy;
         thickLine(dr, ds.thickness, tx1, ty1, ex, ey, linecolor);
@@ -621,7 +621,7 @@ export function redrawAscent(
       for (let dir = 0; dir < movement.dircount; dir++) {
         if (!(ds.path[i] & (1 << dir))) continue;
         const i2 = i + w * movement.dirs[dir].dy + movement.dirs[dir].dx;
-        const nc = cellCenter(i2, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
+        const nc = cellCenter(i2, w, state.mode, tileSize, ds.offsetX, ds.offsetY);
         const ex = hex ? (cx + nc.cx) / 2 : nc.cx;
         const ey = hex ? (cy + nc.cy) / 2 : nc.cy;
         thickLine(dr, ds.thickness, tx1, ty1, ex, ey, COL_HIGHLIGHT);
@@ -631,45 +631,45 @@ export function redrawAscent(
     /* Cell border. */
     if (!isNumberEdge(sn)) {
       const outline = hex
-        ? hexVertices(cx, cy, tilesize)
-        : squareCorners(tx, ty, tilesize);
+        ? hexVertices(cx, cy, tileSize)
+        : squareCorners(tx, ty, tileSize);
       dr.drawPolygon(outline, -1, COL_BORDER);
     }
 
     /* Light circle on possible endpoints. */
     if (state.grid[i] === NUMBER_EMPTY && (sn === 0 || sn === state.last)) {
-      dr.drawCircle(center, Math.trunc(tilesize / 3), color, COL_LOWLIGHT);
+      dr.drawCircle(center, Math.trunc(tileSize / 3), color, COL_LOWLIGHT);
     }
 
     /* Background circle over lines so numbers stay readable. */
     if (sn > 0 && sn < state.last && state.path && state.path[i] & ~FLAG_COMPLETE) {
-      dr.drawCircle(center, Math.trunc(tilesize / 3), color, color);
+      dr.drawCircle(center, Math.trunc(tileSize / 3), color, color);
       if (fn > 0 && fn & NUMBER_FLAG_MOVE)
-        dr.drawCircle(center, tilesize * 0.22, COL_LOWLIGHT, COL_LOWLIGHT);
+        dr.drawCircle(center, tileSize * 0.22, COL_LOWLIGHT, COL_LOWLIGHT);
     } else if (sn > 0 && sn < state.last && fn & NUMBER_FLAG_MOVE) {
-      dr.drawCircle(center, tilesize * 0.28, COL_LOWLIGHT, COL_LOWLIGHT);
+      dr.drawCircle(center, tileSize * 0.28, COL_LOWLIGHT, COL_LOWLIGHT);
     } else if (sn === NUMBER_MOVE) {
-      dr.drawCircle(center, tilesize * 0.22, COL_LOWLIGHT, COL_LOWLIGHT);
+      dr.drawCircle(center, tileSize * 0.22, COL_LOWLIGHT, COL_LOWLIGHT);
     }
 
     if (sn === NUMBER_CLEAR) {
-      const shape = Math.trunc(tilesize / 4);
+      const shape = Math.trunc(tileSize / 4);
       thickLine(
         dr,
-        tilesize / 7,
+        tileSize / 7,
         tx + shape,
         ty + shape,
-        tx + tilesize - shape,
-        ty + tilesize - shape,
+        tx + tileSize - shape,
+        ty + tileSize - shape,
         COL_LOWLIGHT,
       );
       thickLine(
         dr,
-        tilesize / 7,
-        tx + tilesize - shape,
+        tileSize / 7,
+        tx + tileSize - shape,
         ty + shape,
         tx + shape,
-        ty + tilesize - shape,
+        ty + tileSize - shape,
         COL_LOWLIGHT,
       );
     }
@@ -678,7 +678,7 @@ export function redrawAscent(
     if (sn >= 0) {
       dr.drawText(
         center,
-        glyphFont(Math.trunc(tilesize / 2)),
+        glyphFont(Math.trunc(tileSize / 2)),
         state.immutable[i]
           ? COL_IMMUTABLE
           : state.grid[i] === NUMBER_EMPTY && ui.typingCell !== i
@@ -694,32 +694,32 @@ export function redrawAscent(
           2,
           tx + margin,
           ty + margin,
-          tx + tilesize - margin,
-          ty + tilesize - margin,
+          tx + tileSize - margin,
+          ty + tileSize - margin,
           COL_ERROR,
         );
     } else if (isNumberEdge(sn)) {
       const i2 = positions[fromNumberEdge(sn)];
       const error = i2 >= 0 && !isEdgeValid(i, i2, w, h);
-      drawArrow(dr, i, w, h, tx1, ty1, COL_ARROW, COL_BORDER, tilesize);
+      drawArrow(dr, i, w, h, tx1, ty1, COL_ARROW, COL_BORDER, tileSize);
       dr.drawText(
         center,
-        glyphFont(Math.trunc(tilesize / 2)),
+        glyphFont(Math.trunc(tileSize / 2)),
         error ? COL_ERROR : i2 >= 0 ? COL_LOWLIGHT : COL_BORDER,
         String(fromNumberEdge(sn) + 1),
       );
     } else if (sn !== NUMBER_CLEAR) {
       if (ui.prevhints[i] >= 0)
         dr.drawText(
-          { x: tx1 - Math.trunc(tilesize / 4), y: ty1 - Math.trunc(tilesize / 4) },
-          glyphFont(Math.trunc(tilesize / 3)),
+          { x: tx1 - Math.trunc(tileSize / 4), y: ty1 - Math.trunc(tileSize / 4) },
+          glyphFont(Math.trunc(tileSize / 3)),
           COL_BORDER,
           String(ui.prevhints[i] + 1),
         );
       if (ui.nexthints[i] >= 0)
         dr.drawText(
-          { x: tx1 + Math.trunc(tilesize / 4), y: ty1 + Math.trunc(tilesize / 4) },
-          glyphFont(Math.trunc(tilesize / 3)),
+          { x: tx1 + Math.trunc(tileSize / 4), y: ty1 + Math.trunc(tileSize / 4) },
+          glyphFont(Math.trunc(tileSize / 3)),
           COL_BORDER,
           String(ui.nexthints[i] + 1),
         );
@@ -727,13 +727,13 @@ export function redrawAscent(
 
     /* findMistakes overlay: an inset red outline. */
     if (mistakeSet[i]) {
-      const m = Math.trunc(tilesize * 0.12);
+      const m = Math.trunc(tileSize * 0.12);
       dr.drawPolygon(
         [
           { x: tx + m, y: ty + m },
-          { x: tx + tilesize - m, y: ty + m },
-          { x: tx + tilesize - m, y: ty + tilesize - m },
-          { x: tx + m, y: ty + tilesize - m },
+          { x: tx + tileSize - m, y: ty + m },
+          { x: tx + tileSize - m, y: ty + tileSize - m },
+          { x: tx + m, y: ty + tileSize - m },
         ],
         -1,
         COL_ERROR,
@@ -742,7 +742,7 @@ export function redrawAscent(
 
     /* Keyboard cursor, folded into this cell's repaint (no blitter). */
     if (cursorCell === i) {
-      const blr = Math.trunc(tilesize * 0.4);
+      const blr = Math.trunc(tileSize * 0.4);
       drawRectCorners(dr, tx1, ty1, blr - 1, COL_CURSOR);
     }
 

@@ -11,7 +11,7 @@ import type { RandomState } from "../../random/index.ts";
 import { type Grid, makeConsistent } from "../grid-core.ts";
 import {
   SPECTRE_SQUARELEN,
-  SPECTRE_TILESIZE,
+  SPECTRE_TILE_SIZE,
   SPECTRE_UNIT,
   TilingBuilder,
 } from "../grid-tilings.ts";
@@ -119,7 +119,7 @@ export function gridNewSpectres(width: number, height: number, desc: string): Gr
   const width2 = width * SPECTRE_SQUARELEN;
   const height2 = height * SPECTRE_SQUARELEN;
 
-  const builder = new TilingBuilder(SPECTRE_TILESIZE);
+  const builder = new TilingBuilder(SPECTRE_TILE_SIZE);
 
   spectreTilingGenerate(params, width2, height2, (coords) => {
     const corners: [number, number][] = [];

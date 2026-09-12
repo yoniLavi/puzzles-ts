@@ -639,7 +639,7 @@ export function interpretAscentMove(
 ): AscentMove | null | UiUpdate {
   const w = state.w;
   const h = state.h;
-  const tilesize = ds ? ds.tileSize : 1;
+  const tileSize = ds ? ds.tileSize : 1;
   let ret: AscentMove | null = null;
   let finishTyping = false;
 
@@ -650,15 +650,15 @@ export function interpretAscentMove(
   if (isNumberEdge(ui.select) && (button === LEFT_DRAG || button === LEFT_RELEASE)) {
     const ex = ui.held % w;
     const ey = Math.trunc(ui.held / w);
-    let tx = ex * tilesize;
-    let ty = ey * tilesize;
+    let tx = ex * tileSize;
+    let ty = ey * tileSize;
     if (ex > 0 && ex < w - 1) ox = tx;
     else if (ey > 0 && ey < h - 1) oy = ty;
     else {
-      if (ex > 0) tx += tilesize - 1;
-      if (ey > 0) ty += tilesize - 1;
+      if (ex > 0) tx += tileSize - 1;
+      if (ey > 0) ty += tileSize - 1;
       let distance = Math.trunc((Math.abs(ox - tx) + Math.abs(oy - ty) + 1) / 2);
-      if (distance >= (Math.min(w, h) - 1) * tilesize) distance = 0;
+      if (distance >= (Math.min(w, h) - 1) * tileSize) distance = 0;
       ox = ex === 0 ? distance : tx - distance;
       oy = ey === 0 ? distance : ty - distance;
     }
@@ -670,16 +670,16 @@ export function interpretAscentMove(
     /* Real hexagons (design F7): pick the cell whose center is nearest the
      * pointer. `(col,row)` are axial coords, so this is a small neighborhood
      * search around the fractional estimate. */
-    const R = tilesize / Math.sqrt(3);
-    const vp = (tilesize * Math.sqrt(3)) / 2;
+    const R = tileSize / Math.sqrt(3);
+    const vp = (tileSize * Math.sqrt(3)) / 2;
     const rowEst = Math.round((oy - R) / vp);
     let bestD = Number.POSITIVE_INFINITY;
     gx = -1;
     gy = -1;
     for (let row = rowEst - 1; row <= rowEst + 1; row++) {
-      const colEst = Math.round((ox - tilesize / 2 - (row * tilesize) / 2) / tilesize);
+      const colEst = Math.round((ox - tileSize / 2 - (row * tileSize) / 2) / tileSize);
       for (let col = colEst - 1; col <= colEst + 1; col++) {
-        const cx = col * tilesize + (row * tilesize) / 2 + tilesize / 2;
+        const cx = col * tileSize + (row * tileSize) / 2 + tileSize / 2;
         const cy = R + row * vp;
         const d = (ox - cx) ** 2 + (oy - cy) ** 2;
         if (d < bestD) {
@@ -690,8 +690,8 @@ export function interpretAscentMove(
       }
     }
   } else {
-    gy = oy < 0 ? -1 : Math.trunc(oy / tilesize);
-    gx = ox < 0 ? -1 : Math.trunc(ox / tilesize);
+    gy = oy < 0 ? -1 : Math.trunc(oy / tileSize);
+    gx = ox < 0 ? -1 : Math.trunc(ox / tileSize);
   }
 
   if (isMouseDown(button)) {
@@ -820,13 +820,13 @@ export function interpretAscentMove(
   if (pointer && gx >= 0 && gx < w && gy >= 0 && gy < h) {
     if (isMouseDrag(button) && ui.held >= 0 && !isNumberEdge(ui.select)) {
       const hx = isHexagonal(state.mode)
-        ? gx * tilesize + (gy * tilesize) / 2 + tilesize / 2
-        : gx * tilesize + Math.trunc(tilesize / 2);
+        ? gx * tileSize + (gy * tileSize) / 2 + tileSize / 2
+        : gx * tileSize + Math.trunc(tileSize / 2);
       const hy = isHexagonal(state.mode)
-        ? tilesize / Math.sqrt(3) + gy * ((tilesize * Math.sqrt(3)) / 2)
-        : gy * tilesize + Math.trunc(tilesize / 2);
+        ? tileSize / Math.sqrt(3) + gy * ((tileSize * Math.sqrt(3)) / 2)
+        : gy * tileSize + Math.trunc(tileSize / 2);
       /* Octagon-shaped hitbox so a near-miss doesn't force a straight line. */
-      if (Math.abs(ox - hx) + Math.abs(oy - hy) > DRAG_RADIUS * tilesize) return null;
+      if (Math.abs(ox - hx) + Math.abs(oy - hy) > DRAG_RADIUS * tileSize) return null;
     }
     ret = mouseClick(state, ui, gx, gy, button, false);
     finishTyping = true;

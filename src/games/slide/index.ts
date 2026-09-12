@@ -162,7 +162,7 @@ function interpretMove(
 ): SlideMove | null | UiUpdate {
   const button = asPrimary(stripModifiers(rawButton));
   const { w, h } = state;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
 
   if (button === LEFT_BUTTON) {
     // A pointer press always takes over: the cursor goes away, and pressing

@@ -117,7 +117,7 @@ const DF_HINT_CLUE = 16384; // driving clue — digit recolored
 
 export interface LightupDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   crad: number;
   cache: Int32Array;
 }
@@ -125,14 +125,14 @@ export interface LightupDrawState {
 export function newDrawState(state: LightupState): LightupDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     crad: 0,
     cache: new Int32Array(state.w * state.h).fill(-1),
   };
 }
 
 export function setTileSize(ds: LightupDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
   ds.crad = Math.floor((3 * (ts - 1)) / 8);
 }
 
@@ -178,7 +178,7 @@ function tileRedraw(
   x: number,
   y: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const dsFlags = ds.cache[idx(x, y, state.w)];
   const dx = coord(x, ts);
   const dy = coord(y, ts);
@@ -285,7 +285,7 @@ export function redraw(
   hint?: HintStep<LightupMove, LightupHint>,
   mistakes?: readonly LightupMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = state;
 
   // Per-cell hint-role bits for the displayed step (fork addition).

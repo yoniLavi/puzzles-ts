@@ -79,7 +79,7 @@ export const lineThick = (ts: number): number => Math.floor((ts + 47) / 48);
 
 export interface NetDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   /** Last-drawn cache word per `(w+2)×(h+2)` cell (the outer ring holds barrier
@@ -93,7 +93,7 @@ export function newDrawState(s: NetState): NetDrawState {
   const cells = (s.w + 2) * (s.h + 2);
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w: s.w,
     h: s.h,
     visible: new Int32Array(cells).fill(-1),
@@ -102,7 +102,7 @@ export function newDrawState(s: NetState): NetDrawState {
 }
 
 export function setTileSize(ds: NetDrawState, tileSize: number): void {
-  ds.tilesize = tileSize;
+  ds.tileSize = tileSize;
 }
 
 /** The board and its closing grid line, with no margin (upstream's
@@ -181,7 +181,7 @@ function drawTile(
   tile: number,
   angle: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const lt = lineThick(ts);
   const borderBr = Math.floor(lt / 2);
   const borderTl = lt - borderBr;
@@ -391,7 +391,7 @@ export function redraw(
 
   if (!ds.started) {
     ds.started = true;
-    const size = computeSize(state, ds.tilesize);
+    const size = computeSize(state, ds.tileSize);
     dr.drawRect({ x: 0, y: 0, ...size }, COL_BACKGROUND);
     dr.drawUpdate({ x: 0, y: 0, ...size });
   }

@@ -375,7 +375,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * A draw state for `s`, with the current tile size already applied. The two
    * steps are paired here, not at each caller, because the pairing is what
    * makes `Game.interpretMove`'s promise true: `ds` is non-null *and* sized, so
-   * a game reads `ds.tilesize` rather than guessing at the preferred size.
+   * a game reads `ds.tileSize` rather than guessing at the preferred size.
    */
   /**
    * The state was replaced — reconcile the `Ui` with it.

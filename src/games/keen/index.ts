@@ -157,7 +157,7 @@ function interpretMove(
   rawButton: number,
 ): KeenMove | null | UiUpdate {
   const w = state.params.w;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const button = stripModifiers(rawButton);
 
   const tx = fromCoord(p.x, ts);

@@ -135,13 +135,13 @@ function noOpEntry(
 function interpretMove(
   state: AbcdState,
   ui: AbcdUi,
-  ds: { tilesize: number },
+  ds: { tileSize: number },
   point: Point,
   rawButton: number,
 ): AbcdMove | null | UiUpdate {
   const p = state.params;
   const { w, n } = p;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const button = stripModifiers(rawButton);
 
   const gx = fromCoord(point.x, ts, n);

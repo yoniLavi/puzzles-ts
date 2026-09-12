@@ -127,7 +127,7 @@ function interpretMove(
 
   if (button === RIGHT_BUTTON || button === LEFT_BUTTON) {
     ui.cursor.visible = false;
-    const ts = ds.tilesize;
+    const ts = ds.tileSize;
     const bd = Math.floor(ts / 2);
     tx = fromCoord(p.x, ts, bd);
     ty = fromCoord(p.y, ts, bd);

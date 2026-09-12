@@ -88,7 +88,7 @@ function interpretMove(
   // Every modifier but the numpad bit (so not `stripModifiers`): the keypad
   // rotations below need it.
   const button = rawButton & (~MOD_MASK | MOD_NUM_KEYPAD);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
 
   // The cursor moves over the rotation-origin space, clamped.
   if (isCursorMove(button)) {
@@ -286,7 +286,7 @@ export const twiddleGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

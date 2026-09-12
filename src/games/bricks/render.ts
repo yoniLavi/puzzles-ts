@@ -102,7 +102,7 @@ export function offsets(h: number, ts: number): { ox: number; oy: number } {
 
 export interface BricksDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Last drawn packed cell value per padded index (`-1` = never drawn). */
   cache: Int32Array;
 }
@@ -110,13 +110,13 @@ export interface BricksDrawState {
 export function newDrawState(state: BricksState): BricksDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     cache: new Int32Array(state.w * state.h).fill(-1),
   };
 }
 
 export function setTileSize(ds: BricksDrawState, ts: number): void {
-  ds.tilesize = evenTs(ts);
+  ds.tileSize = evenTs(ts);
 }
 
 // --- error-mark helpers (upstream bricks_draw_err_*) ------------------------
@@ -273,7 +273,7 @@ export function redraw(
   hint?: HintStep<BricksMove, BricksHint>,
   mistakes?: readonly BricksMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, grid } = state;
   const s = w * h;
   const { ox, oy } = offsets(h, ts);

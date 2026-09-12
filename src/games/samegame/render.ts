@@ -63,7 +63,7 @@ export function computeSize(p: { w: number; h: number }, ts: number): Size {
 export interface SamegameDrawState {
   started: boolean;
   /** Full tile size (`TILE_SIZE`). */
-  tilesize: number;
+  tileSize: number;
   tileinner: number;
   tilegap: number;
   /** Last-drawn background color index (flash drives this globally). */
@@ -76,7 +76,7 @@ export interface SamegameDrawState {
 export function newDrawState(state: SamegameState): SamegameDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     tileinner: 0,
     tilegap: 0,
     bgcolor: -1,
@@ -85,7 +85,7 @@ export function newDrawState(state: SamegameState): SamegameDrawState {
 }
 
 export function setTileSize(ds: SamegameDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
   ds.tilegap = gap(ts);
   ds.tileinner = ts - ds.tilegap;
 }
@@ -108,7 +108,7 @@ function tileRedraw(
   tile: number,
   bgcolor: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const inner = ds.tileinner;
   const tgap = ds.tilegap;
   const col = tile & TILE_COLMASK;
@@ -201,7 +201,7 @@ export function redraw(
   _animTime: number,
   flashTime: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = state;
 
   if (!ds.started) {

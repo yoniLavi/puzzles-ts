@@ -65,7 +65,7 @@ const CORNER = 8;
 
 /** Below this tile size the corner pass is skipped, exactly as upstream — the
  * box would be a large fraction of a cell and would eat the spoke dots. */
-const MIN_CORNER_TILESIZE = 24;
+const MIN_CORNER_TILE_SIZE = 24;
 
 /** Width of the `COL_HINT_CELL` evidence ring outside the hub rim. */
 const HINT_RING_WIDTH = 5;
@@ -147,7 +147,7 @@ export function toCoord(v: number, ts: number): number {
 
 export interface SpokesDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   /** Recount scratch, so the renderer can color hubs by line/mark counts and
@@ -194,7 +194,7 @@ export function newDrawState(state: SpokesState): SpokesDrawState {
   const n = state.w * state.h;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w: state.w,
     h: state.h,
     scratch: new SpokesScratch(n),
@@ -213,13 +213,13 @@ export function newDrawState(state: SpokesState): SpokesDrawState {
 }
 
 export function setTileSize(ds: SpokesDrawState, ts: number): void {
-  if (ds.tilesize !== ts) {
+  if (ds.tileSize !== ts) {
     // The blitter is sized from the tile size, so a resize retires it; the
     // next frame allocates a fresh one (only `redraw` has the `GameDrawing`).
     ds.cursorBlitter = null;
     ds.cursorSaved = false;
   }
-  ds.tilesize = ts;
+  ds.tileSize = ts;
   ds.cursorRadius = (ts * 0.2) | 0;
   ds.cursorSize = ds.cursorRadius * 2 + 1;
 }
@@ -279,7 +279,7 @@ export function redraw(
   hint?: HintStep<SpokesMove, SpokesHint>,
   mistakes?: readonly SpokesMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = state;
 
   // Lift the cursor before anything else redraws under it.
@@ -493,7 +493,7 @@ export function redraw(
     }
   }
 
-  if (ts >= MIN_CORNER_TILESIZE) drawCorners(dr, ds, state, thick);
+  if (ts >= MIN_CORNER_TILE_SIZE) drawCorners(dr, ds, state, thick);
 
   if (cshow) {
     ds.cursorX = cx * ts + ((ts / 2) | 0) + ((cdx * (ts * 0.4) * Math.SQRT1_2) | 0);
@@ -523,7 +523,7 @@ function drawCorners(
   state: SpokesState,
   thick: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = state;
 
   for (let y = 0; y < h - 1; y++) {

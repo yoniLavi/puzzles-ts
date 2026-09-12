@@ -90,7 +90,7 @@ function interpretMove(
 ): MagnetsMove | null | UiUpdate {
   const { w, h, grid, flags, common } = state;
   const button = stripModifiers(rawButton);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const fromCoord = (v: number) => fromCoordE(v, ts, origin(ts));
 
   let gx = fromCoord(p.x);
@@ -248,7 +248,7 @@ export const magnetsGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw: (dr, ds, _prev, s, _dir, ui, _animTime, flashTime, _hint, mistakes) =>

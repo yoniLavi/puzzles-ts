@@ -101,7 +101,7 @@ export interface BorderGridColors {
 
 export interface BorderGridDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   /** `w·h` cache of last-drawn packed tile flags; `-1` forces a draw. */
@@ -109,7 +109,7 @@ export interface BorderGridDrawState {
 }
 
 export function newBorderGridDrawState(w: number, h: number): BorderGridDrawState {
-  return { started: false, tilesize: 0, w, h, cache: new Int32Array(w * h).fill(-1) };
+  return { started: false, tileSize: 0, w, h, cache: new Int32Array(w * h).fill(-1) };
 }
 
 // --- the flags a frame computes ----------------------------------------------

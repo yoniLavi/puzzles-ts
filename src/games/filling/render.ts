@@ -105,7 +105,7 @@ export function computeSize(w: number, h: number, ts: number): Size {
 
 export interface FillingDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   /** Last-drawn packed word per cell; -1 forces a draw. */
@@ -118,7 +118,7 @@ export interface FillingDrawState {
 export function newDrawState(state: FillingState): FillingDrawState {
   return {
     started: false,
-    tilesize: PREFERRED_TILE_SIZE,
+    tileSize: PREFERRED_TILE_SIZE,
     w: state.w,
     h: state.h,
     cache: new Int32Array(state.w * state.h).fill(-1),
@@ -141,7 +141,7 @@ export function newDrawState(state: FillingState): FillingDrawState {
  * `BORDER_WIDTH` half, and only the marked cell's half is painted over.
  */
 function markBand(ds: FillingDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   return {
     box: { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
     outer: 0,
@@ -257,7 +257,7 @@ export function redrawFilling(
   hint?: HintStep<FillingMove, FillingHint>,
   mistakes?: readonly Point[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, board, clues } = state;
   const sz = w * h;
   const bw = borderWidth(ts);

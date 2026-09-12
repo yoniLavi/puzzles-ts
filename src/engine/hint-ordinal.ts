@@ -29,7 +29,7 @@ import type { Point } from "./types.ts";
 
 /**
  * Draw chain position `k` (1-based) in the **bottom-right** corner of the tile
- * whose top-left pixel is `at`, sized off `tilesize`.
+ * whose top-left pixel is `at`, sized off `tileSize`.
  *
  * A corner rather than the center: a chain cell carries content of its own — the
  * color it would be forced to, its two surviving pencil marks — and the ordinal
@@ -52,18 +52,18 @@ import type { Point } from "./types.ts";
 export function drawHintOrdinal(
   dr: GameDrawing,
   at: Point,
-  tilesize: number,
+  tileSize: number,
   k: number,
   color: number,
-  inset = Math.max(1, Math.floor(tilesize / 12)),
+  inset = Math.max(1, Math.floor(tileSize / 12)),
 ): void {
-  const size = Math.max(7, Math.floor(tilesize / 3));
+  const size = Math.max(7, Math.floor(tileSize / 3));
   dr.drawText(
     // `mathematical` centers the glyph vertically on `y`, so the bottom inset
     // has to carry half the size or the digit is clipped by the tile edge.
     {
-      x: at.x + tilesize - inset,
-      y: at.y + tilesize - inset - Math.floor(size / 2),
+      x: at.x + tileSize - inset,
+      y: at.y + tileSize - inset - Math.floor(size / 2),
     },
     { align: "right", baseline: "mathematical", fontType: "variable", size },
     color,

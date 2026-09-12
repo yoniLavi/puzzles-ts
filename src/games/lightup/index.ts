@@ -126,8 +126,8 @@ function interpretMove(
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     if (ui.cursor.visible) nullret = UI_UPDATE;
     ui.cursor.visible = false;
-    x = fromCoord(p.x, ds.tilesize);
-    y = fromCoord(p.y, ds.tilesize);
+    x = fromCoord(p.x, ds.tileSize);
+    y = fromCoord(p.y, ds.tileSize);
     action = button === LEFT_BUTTON ? "light" : "impossible";
   } else if (
     button === CURSOR_SELECT ||

@@ -90,7 +90,7 @@ describe("geometry", () => {
   it("uses the NARROW_BORDERS arm, compensating for the outer outline", () => {
     // BORDER = GRIDEXTRA*2 = 2, and computeSize subtracts GRIDEXTRA*2 back off
     // because that outline is drawn inside the border area — not the desktop
-    // `tilesize / 2` (docs/games/rendering.md § "The tile cache and the diff key").
+    // `tileSize / 2` (docs/games/rendering.md § "The tile cache and the diff key").
     expect(BORDER).toBe(2);
     expect(computeSize({ w: 6, h: 6, diff: 0 }, 40)).toEqual({ w: 242, h: 242 });
   });

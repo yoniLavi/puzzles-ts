@@ -252,7 +252,7 @@ const hasAll = (val: number, mask: number): boolean => (val & mask) === mask;
 
 export interface SlideDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Last-drawn packed value per cell; `-1` forces a repaint. Every overlay
    * (drag, solve highlight, shadow, flash) is part of this one word, so they
    * all sit in the diff key by construction (docs/games/rendering.md § "The tile cache and the diff key"). */
@@ -262,13 +262,13 @@ export interface SlideDrawState {
 export function newDrawState(state: SlideState): SlideDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     grid: new Int32Array(state.w * state.h).fill(-1),
   };
 }
 
 export function setTileSize(ds: SlideDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- the fiddly bit: one section of one tile ---------------------------
@@ -587,7 +587,7 @@ function drawTile(
   gy: number,
   val: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const tx = gridCoord(gx, ts, BORDER);
   const ty = gridCoord(gy, ts, BORDER);
 
@@ -712,7 +712,7 @@ export function redraw(
 ): void {
   const { w, h } = state;
   const wh = w * h;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
 
   if (!ds.started) {
     // The engine paints no pixels of its own

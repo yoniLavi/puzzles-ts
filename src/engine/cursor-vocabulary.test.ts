@@ -117,7 +117,7 @@ describe("one keyboard-cursor vocabulary", () => {
       const state = game.newState(params, desc);
       const ds = game.newDrawState?.(state) as Record<string, number> | undefined;
       // Both spellings are in use across the collection's draw states.
-      if (ds && "tilesize" in ds) ds["tilesize"] = game.preferredTileSize ?? 32;
+      if (ds && "tileSize" in ds) ds["tileSize"] = game.preferredTileSize ?? 32;
       if (ds && "tileSize" in ds) ds["tileSize"] = game.preferredTileSize ?? 32;
 
       const before = { ...c };

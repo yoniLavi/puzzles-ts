@@ -127,7 +127,7 @@ export function fromCoord(v: number, ts: number): number {
 
 export interface SeismicDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Per-tile last-drawn contents (−1 = never drawn): the digit in bits 0–3, the
    * pencil bitmask in bits 4–12, the cell flags in 13–15, the chosen background
    * color in 16–17 and the pencil-cursor marker in bit 18. */
@@ -142,7 +142,7 @@ export function newDrawState(state: SeismicState): SeismicDrawState {
   const cells = state.w * state.h;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     tiles: new Int32Array(cells).fill(-1),
     wrong: new OverlaySidecar(cells),
     pencilModeShown: null,
@@ -150,7 +150,7 @@ export function newDrawState(state: SeismicState): SeismicDrawState {
 }
 
 export function setTileSize(ds: SeismicDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- tile drawing ----------------------------------------------------------
@@ -228,7 +228,7 @@ function drawTile(
   pencilCursor: boolean,
   wrong: boolean,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, dsf, grid, pencil, flags } = state;
   const i = y * w + x;
   const tx = BORDER + x * ts;
@@ -330,7 +330,7 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = state;
   const size = computeSize(state.params, ts);
   const firstFrame = !ds.started;

@@ -347,7 +347,7 @@ export interface Game<
    * `ds` is the live draw state, **never null and always sized**: the midend
    * creates it and applies `setTileSize` in the same breath (see
    * `Midend.freshDrawState`) and refuses input before there is a board. So
-   * read `ds.tilesize` directly: a `ds?.tilesize ?? PREFERRED_TILE_SIZE`
+   * read `ds.tileSize` directly: a `ds?.tileSize ?? PREFERRED_TILE_SIZE`
    * fallback is not merely inert, it is a *wrong answer* waiting to happen,
    * mapping the pointer at the preferred tile size rather than the one on
    * screen. */

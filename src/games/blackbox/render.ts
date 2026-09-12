@@ -55,7 +55,7 @@ const CUR_ANIM = 0.2;
 // --- draw state -------------------------------------------------------
 
 export interface BlackboxDrawState {
-  tilesize: number;
+  tileSize: number;
   ballRadius: number;
   ringRadius: number;
   w: number;
@@ -68,7 +68,7 @@ export interface BlackboxDrawState {
 
 export function newDrawState(s: BlackboxState): BlackboxDrawState {
   return {
-    tilesize: 0,
+    tileSize: 0,
     ballRadius: 0,
     ringRadius: 0,
     w: s.w,
@@ -80,24 +80,24 @@ export function newDrawState(s: BlackboxState): BlackboxDrawState {
   };
 }
 
-export function setTileSize(ds: BlackboxDrawState, tilesize: number): void {
-  ds.tilesize = tilesize;
-  ds.ballRadius = Math.floor((tilesize - 1) / 2);
-  ds.ringRadius = Math.floor((3 * tilesize) / 8);
+export function setTileSize(ds: BlackboxDrawState, tileSize: number): void {
+  ds.tileSize = tileSize;
+  ds.ballRadius = Math.floor((tileSize - 1) / 2);
+  ds.ringRadius = Math.floor((3 * tileSize) / 8);
 }
 
 /** The board's pixel origin. Exported so `fromDraw` reads the same number the
  * painter does — one function, both callers
  * ([`docs/games/mechanics.md`](../../../docs/games/mechanics.md)). */
-export function borderFor(tilesize: number): number {
-  return Math.floor(tilesize / 2);
+export function borderFor(tileSize: number): number {
+  return Math.floor(tileSize / 2);
 }
 
-export function computeSize(p: BlackboxParams, tilesize: number): Size {
-  const border = borderFor(tilesize);
+export function computeSize(p: BlackboxParams, tileSize: number): Size {
+  const border = borderFor(tileSize);
   return {
-    w: (p.w + 2) * tilesize + 2 * border,
-    h: (p.h + 2) * tilesize + 2 * border,
+    w: (p.w + 2) * tileSize + 2 * border,
+    h: (p.h + 2) * tileSize + 2 * border,
   };
 }
 
@@ -128,7 +128,7 @@ const rect = (x: number, y: number, w: number, h: number): Rect => ({ x, y, w, h
 const pt = (x: number, y: number): Point => ({ x, y });
 
 function todraw(ds: BlackboxDrawState, x: number): number {
-  return ds.tilesize * x + Math.floor(ds.tilesize / 2);
+  return ds.tileSize * x + Math.floor(ds.tileSize / 2);
 }
 
 function drawSquareCursor(
@@ -137,7 +137,7 @@ function drawSquareCursor(
   dx: number,
   dy: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const coff = Math.floor(ts / 8);
   drawRectOutline(dr, dx + coff, dy + coff, ts - coff * 2, ts - coff * 2, COL_CURSOR);
 }
@@ -154,7 +154,7 @@ function drawArenaTile(
   force: boolean,
   isflash: boolean,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const gx = ax + 1;
   const gy = ay + 1;
   let gsTile = gs.grid[gridIdx(gs.w, gx, gy)];
@@ -238,7 +238,7 @@ function drawLaserTile(
   lno: number,
   force: boolean,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const rc = range2grid(gs.w, gs.h, lno);
   if (!rc) return;
   const { x: gx, y: gy } = rc;
@@ -315,7 +315,7 @@ export function redraw(
   animTime: number,
   flashTime: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   let isflash = false;
   let force = false;
 

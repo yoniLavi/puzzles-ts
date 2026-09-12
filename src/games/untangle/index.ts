@@ -56,7 +56,7 @@ import {
   findCrossings,
   makeCircle,
   PLAY_MARGIN,
-  PREFERRED_TILESIZE,
+  PREFERRED_TILE_SIZE,
   parseAux,
   placeMove,
   type UntangleDrawState,
@@ -141,7 +141,7 @@ export const untangleGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: false,
-  preferredTileSize: PREFERRED_TILESIZE,
+  preferredTileSize: PREFERRED_TILE_SIZE,
 
   // --- params --------------------------------------------------------
   defaultParams: () => ({ n: 10 }),
@@ -493,7 +493,7 @@ export const untangleGame: Game<
   },
   newDrawState: (s): UntangleDrawState => ({
     started: false,
-    tileSize: PREFERRED_TILESIZE,
+    tileSize: PREFERRED_TILE_SIZE,
     bg: -1,
     dragPoint: -1,
     cursorPoint: -1,

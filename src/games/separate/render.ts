@@ -117,7 +117,7 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly SeparateMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, k, letters, borders } = state;
   const wh = w * h;
   const flash = Math.floor((flashTime * 5) / FLASH_TIME) % 2;

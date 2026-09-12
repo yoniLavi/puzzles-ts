@@ -10,8 +10,8 @@
  * colors on alternate beats.
  *
  * The geometry is upstream's `NARROW_BORDERS` build, the one its web frontend
- * used: `BORDER = tilesize / 10` — a thin grid margin, not the desktop
- * `tilesize / 2` — and `computeSize` subtracts 1 to meet the outer grid line.
+ * used: `BORDER = tileSize / 10` — a thin grid margin, not the desktop
+ * `tileSize / 2` — and `computeSize` subtracts 1 to meet the outer grid line.
  */
 
 import { BLUE, ORANGE, PINK_WASH, PURPLE } from "../../engine/color/colors.ts";
@@ -129,7 +129,7 @@ const HB_CHAIN_1 = 1 << 3; // what-if cell forced blue in the hypothetical
 
 export interface ClustersDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   cache: Int32Array;
@@ -142,7 +142,7 @@ export interface ClustersDrawState {
 export function newDrawState(state: ClustersState): ClustersDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w: state.w,
     h: state.h,
     cache: new Int32Array(state.w * state.h).fill(-1),
@@ -152,7 +152,7 @@ export function newDrawState(state: ClustersState): ClustersDrawState {
 }
 
 export function setTileSize(ds: ClustersDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 /**
@@ -166,7 +166,7 @@ export function setTileSize(ds: ClustersDrawState, ts: number): void {
  * content is a centered dot or a `TILESIZE/3` what-if mark.
  */
 function markBand(ds: ClustersDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   return {
     box: { x: x * ts + b, y: y * ts + b, w: ts - 1, h: ts - 1 },
@@ -284,7 +284,7 @@ export function redraw(
   flashTime: number,
   hint?: HintStep<ClustersMove>,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, grid } = state;
   const b = border(ts);
 

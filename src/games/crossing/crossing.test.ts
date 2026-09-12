@@ -110,7 +110,7 @@ function press(
   return crossingGame.interpretMove(
     state,
     ui,
-    { tilesize: TS } as never,
+    { tileSize: TS } as never,
     { x, y },
     button,
   );

@@ -151,7 +151,7 @@ function interpretMove(
 ): RomeMove | null | UiUpdate {
   const { w, h, grid } = state;
   const button = stripModifiers(rawButton);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
 
   // The highlighted square, captured up front exactly as upstream does: a
   // cursor move below updates `ui`, but every move emitted this call is about

@@ -114,7 +114,7 @@ const K_PENCIL = 9; // bits 9+: the n-bit pencil-mark mask
 
 export interface AbcdDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** `w·h` last-drawn packed tile values (-1 = never drawn). */
   tiles: Int32Array;
   /** `(w+h)·n` last-drawn clue-error flags (-1 = never drawn). */
@@ -129,7 +129,7 @@ export function newDrawState(state: AbcdState): AbcdDrawState {
   const { w, h, n } = state.params;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     tiles: new Int32Array(w * h).fill(-1),
     clueErr: new Int8Array((w + h) * n).fill(-1),
     wrong: new OverlaySidecar(w * h),
@@ -138,7 +138,7 @@ export function newDrawState(state: AbcdState): AbcdDrawState {
 }
 
 export function setTileSize(ds: AbcdDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- error computation (base render, not findMistakes) ---------------------
@@ -282,7 +282,7 @@ function drawTile(
   flash: number,
   wrong: boolean,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, n, diag } = state.params;
   const tx = innerCoord(x, ts, n);
   const ty = innerCoord(y, ts, n);
@@ -423,7 +423,7 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly Point[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, n } = state.params;
 
   if (!ds.started) {

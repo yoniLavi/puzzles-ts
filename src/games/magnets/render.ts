@@ -110,7 +110,7 @@ export function computeSize(p: { w: number; h: number }, ts: number): Size {
 
 export interface MagnetsDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   /** Last-drawn packed word per tile; −1 forces a draw. */
@@ -124,7 +124,7 @@ export interface MagnetsDrawState {
 export function newDrawState(state: MagnetsState): MagnetsDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w: state.w,
     h: state.h,
     what: new Int32Array(state.wh).fill(-1),
@@ -194,7 +194,7 @@ function drawTileCol(
   fg: number,
   perc: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const cx = coord(x, ts);
   const cy = coord(y, ts);
   const gutter =
@@ -241,7 +241,7 @@ function drawTile(
   y: number,
   packed: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const cx = coord(x, ts);
   const cy = coord(y, ts);
   let which = packed & DS_WHICH_MASK;
@@ -303,7 +303,7 @@ function drawNum(
   num: number,
 ): void {
   if (num < 0) return;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const text = String(num);
   const tsz =
     text.length === 1
@@ -363,7 +363,7 @@ export function redraw(
   flashTime: number,
   mistakes?: readonly MagnetsMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, grid, flags, common } = state;
   const { dominoes, colcount, rowcount } = common;
 

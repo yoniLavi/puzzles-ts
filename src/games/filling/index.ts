@@ -95,7 +95,7 @@ function interpretMove(
 ): FillingMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w, h, clues, board } = state;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const tx = Math.floor((p.x - Math.floor(ts / 2)) / ts);
   const ty = Math.floor((p.y - Math.floor(ts / 2)) / ts);
 
@@ -311,7 +311,7 @@ export const fillingGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize: (p: FillingParams, ts: number): Size => computeSize(p.w, p.h, ts),
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw: redrawFilling,

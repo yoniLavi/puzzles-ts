@@ -133,7 +133,7 @@ export function computeSize(p: Pick<SubsetsParams, "w" | "h">, ts: number): Size
 
 export interface SubsetsDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Packed known/mask/flash/cursor-slot per cell (-1 = never drawn). */
   cellCache: Int32Array;
   /** Error-flag bits currently drawn per cell (upstream `oldflags`). */
@@ -156,7 +156,7 @@ export function newDrawState(state: SubsetsState): SubsetsDrawState {
   const s = state.w * state.h;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     cellCache: new Int32Array(s).fill(-1),
     oldFlags: new Uint8Array(s),
     oldCounts: new Int32Array(s),
@@ -168,7 +168,7 @@ export function newDrawState(state: SubsetsState): SubsetsDrawState {
 }
 
 export function setTileSize(ds: SubsetsDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- redraw -----------------------------------------------------------------
@@ -186,7 +186,7 @@ export function redraw(
   hint?: HintStep<SubsetsMove, SubsetsHintHighlights>,
   mistakes?: readonly SubsetsMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, n } = state;
   const cw = CELL_WIDTH;
   const ch = CELL_HEIGHT;

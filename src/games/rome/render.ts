@@ -7,7 +7,7 @@
  * Nothing here draws a grid line. The first frame floods the whole canvas with
  * `COL_BORDER`, and every square then paints its own background rect *inset*
  * by `GRIDEXTRA` on each side that borders a different outlined region (and by
- * one pixel everywhere else, since `cw = tilesize - 1`). What is left showing
+ * one pixel everywhere else, since `cw = tileSize - 1`). What is left showing
  * through is the grid: a hairline between squares of one region, a double-width
  * line along a region boundary. So the region outlines cost no drawing code at
  * all — they fall out of four comparisons of the region forest.
@@ -15,7 +15,7 @@
  * ## Borders
  *
  * `BORDER` is upstream's `NARROW_BORDERS` arm, `GRIDEXTRA * 2` — **not** the
- * desktop `tilesize / 2` — and `computeSize` subtracts `GRIDEXTRA * 2` back off
+ * desktop `tileSize / 2` — and `computeSize` subtracts `GRIDEXTRA * 2` back off
  * because the outer grid outline is drawn inside the border area.
  *
  * ## Colors
@@ -130,7 +130,7 @@ const HB_MISTAKE = 1;
 
 export interface RomeDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Packed `(effective cell, effective marks, flash phase)` per square. */
   cache: Int32Array;
   mistakes: OverlaySidecar;
@@ -140,14 +140,14 @@ export function newDrawState(state: RomeState): RomeDrawState {
   const s = state.w * state.h;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     cache: new Int32Array(s).fill(-1),
     mistakes: new OverlaySidecar(s),
   };
 }
 
 export function setTileSize(ds: RomeDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
   ds.started = false;
 }
 
@@ -232,7 +232,7 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly RomeMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, grid, pencil, regions } = state;
 
   // The win animation hides the *displayed* cursor while leaving `ui.cursor`

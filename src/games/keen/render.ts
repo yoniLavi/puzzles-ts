@@ -145,7 +145,7 @@ export function computeSize(p: { w: number }, ts: number): Size {
 
 export interface KeenDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   /** `w²` last-drawn tile values (-1 = never drawn). */
   tiles: Int32Array;
@@ -171,7 +171,7 @@ export function newDrawState(state: KeenState): KeenDrawState {
   const a = state.params.w * state.params.w;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w: state.params.w,
     tiles: new Int32Array(a).fill(-1),
     errors: new Int32Array(a),
@@ -183,7 +183,7 @@ export function newDrawState(state: KeenState): KeenDrawState {
 }
 
 export function setTileSize(ds: KeenDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- tile drawing ----------------------------------------------------------
@@ -196,7 +196,7 @@ function drawTile(
   y: number,
   tile: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const w = state.params.w;
   const ge = gridExtra(ts);
   const { dsf, minimal, clues } = state.clues;
@@ -391,7 +391,7 @@ function drawTile(
  * touching neither tile. It reads as a highlight by *color*, not by weight.
  */
 function markBand(ds: KeenDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const ge = gridExtra(ts);
   const inner = ts - 1 - 2 * ge;
   return {
@@ -435,7 +435,7 @@ export function redraw(
   hint?: HintStep<KeenMove, KeenHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const w = state.params.w;
   const ge = gridExtra(ts);
   const size = computeSize({ w }, ts);

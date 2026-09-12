@@ -85,7 +85,7 @@ function interpretMove(
   // After completion, only cursor browsing is accepted (upstream freeze).
   if (state.notCompletedClues === 0 && !d) return null;
 
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const m = Math.floor(ts / 2);
   const offsetX = p.x - m;
   const offsetY = p.y - m;
@@ -255,7 +255,7 @@ export const mosaicGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

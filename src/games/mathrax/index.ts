@@ -138,7 +138,7 @@ function interpretMove(
   rawButton: number,
 ): MathraxMove | null | UiUpdate {
   const o = state.params.o;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const button = stripModifiers(rawButton);
 
   const gx = fromCoord(p.x, ts);

@@ -127,7 +127,7 @@ export interface NetslideDrawState {
   started: boolean;
   w: number;
   h: number;
-  tilesize: number;
+  tileSize: number;
   /** Last-drawn value per tile (wires | ACTIVE | FLASHING | the HINT_* bits), or
    * −1 for "dirty, repaint unconditionally" (upstream's `0xFF` sentinel). */
   visible: Int32Array;
@@ -145,7 +145,7 @@ export function newDrawState(s: NetslideState): NetslideDrawState {
     started: false,
     w: s.w,
     h: s.h,
-    tilesize: 0,
+    tileSize: 0,
     visible: new Int32Array(s.w * s.h).fill(-1),
     curX: -1,
     curY: -1,
@@ -155,7 +155,7 @@ export function newDrawState(s: NetslideState): NetslideDrawState {
 }
 
 export function setTileSize(ds: NetslideDrawState, tileSize: number): void {
-  ds.tilesize = tileSize;
+  ds.tileSize = tileSize;
 }
 
 /* ----------------------------------------------------------------------
@@ -206,7 +206,7 @@ function drawTile(
   xshift: number,
   yshift: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   // `(int)` in C truncates toward zero, and the shifts go negative.
   const bx = b + ts * x + Math.trunc(xshift * ts);
@@ -331,7 +331,7 @@ function drawHintTargets(
   ds: NetslideDrawState,
   marks: NetslideHint,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   const at = (cell: number, dashed: boolean) => {
     const x = cell % ds.w;
@@ -382,7 +382,7 @@ function drawBarrierCorner(
   cornerFlag: number,
   phase: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   const bx = b + ts * x;
   const by = b + ts * y;
@@ -432,7 +432,7 @@ function drawBarrier(
   dir: number,
   phase: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   const bx = b + ts * x;
   const by = b + ts * y;
@@ -458,7 +458,7 @@ function drawTileBarriers(
   x: number,
   y: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   const barrier = s.barriers[y * s.w + x];
 
@@ -493,7 +493,7 @@ function drawArrow(
   xdy: number,
   fill: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   const ox = gx * ts + b;
   const oy = gy * ts + b;
@@ -538,7 +538,7 @@ function drawArrowAt(
     drawArrow(dr, ds, cx + 1, ds.h, -1, 0, fill); // bottom
   else throw new Error(`(${cx}, ${cy}) is not a border-arrow position`);
 
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   dr.drawUpdate({ x: cx * ts + b, y: cy * ts + b, w: ts, h: ts });
 }
@@ -573,7 +573,7 @@ export function redraw(
   flashTime: number,
   hint?: HintStep<NetslideMove, NetslideHint>,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
 
   let state = current;

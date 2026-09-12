@@ -335,7 +335,7 @@ function press(
   return boatsGame.interpretMove(
     state,
     ui,
-    { tilesize: ts } as never,
+    { tileSize: ts } as never,
     { x: x * ts + ts / 2, y: y * ts + ts / 2 },
     button,
   );
@@ -416,7 +416,7 @@ describe("boats input", () => {
     boatsGame.interpretMove(
       state,
       ui,
-      { tilesize: PREFERRED_TILE_SIZE } as never,
+      { tileSize: PREFERRED_TILE_SIZE } as never,
       { x: -40, y: -40 },
       LEFT_DRAG,
     );
@@ -424,7 +424,7 @@ describe("boats input", () => {
     const move = boatsGame.interpretMove(
       state,
       ui,
-      { tilesize: PREFERRED_TILE_SIZE } as never,
+      { tileSize: PREFERRED_TILE_SIZE } as never,
       { x: -40, y: -40 },
       LEFT_RELEASE,
     );
@@ -449,7 +449,7 @@ describe("boats input", () => {
     boatsGame.interpretMove(
       state,
       ui,
-      { tilesize: ts } as never,
+      { tileSize: ts } as never,
       { x: 6 * ts + 2, y: 2 * ts + 2 },
       RIGHT_BUTTON,
     );

@@ -12,7 +12,7 @@
 import type { RandomState } from "../../random/index.ts";
 import { type Grid, makeConsistent } from "../grid-core.ts";
 import {
-  HATS_TILESIZE,
+  HATS_TILE_SIZE,
   HATS_XUNIT,
   HATS_YUNIT,
   TilingBuilder,
@@ -111,7 +111,7 @@ export function gridNewHats(width: number, height: number, desc: string): Grid {
     throw new Error(`hat: ${parsed.error} (should have been validated already)`);
   }
 
-  const b = new TilingBuilder(HATS_TILESIZE);
+  const b = new TilingBuilder(HATS_TILE_SIZE);
   hatTilingGenerate(parsed.params, width, height, (nvertices, coords) => {
     const corners: [number, number][] = [];
     for (let i = 0; i < nvertices; i++) {

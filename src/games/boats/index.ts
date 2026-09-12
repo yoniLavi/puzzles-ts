@@ -133,7 +133,7 @@ function interpretMove(
   rawButton: number,
 ): BoatsMove | null | UiUpdate {
   const { w, h } = state.params;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const button = stripModifiers(rawButton);
 
   let gx = fromCoord(point.x, ts);

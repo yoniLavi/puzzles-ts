@@ -99,46 +99,46 @@ export interface GridSize {
 // Tiling constants (upstream's #defines, kept under the same names).
 // ---------------------------------------------------------------------------
 
-const SQUARE_TILESIZE = 20;
+const SQUARE_TILE_SIZE = 20;
 
-export const HONEY_TILESIZE = 45;
+export const HONEY_TILE_SIZE = 45;
 /** Vector for side of hexagon — ratio is close to sqrt(3). */
 export const HONEY_A = 15;
 export const HONEY_B = 26;
 
-export const TRIANGLE_TILESIZE = 18;
+export const TRIANGLE_TILE_SIZE = 18;
 export const TRIANGLE_VEC_X = 15;
 export const TRIANGLE_VEC_Y = 26;
 
-export const SNUBSQUARE_TILESIZE = 18;
+export const SNUBSQUARE_TILE_SIZE = 18;
 export const SNUBSQUARE_A = 15;
 export const SNUBSQUARE_B = 26;
 
-export const CAIRO_TILESIZE = 40;
+export const CAIRO_TILE_SIZE = 40;
 export const CAIRO_A = 14;
 export const CAIRO_B = 31;
 
-export const GREATHEX_TILESIZE = 18;
+export const GREATHEX_TILE_SIZE = 18;
 export const GREATHEX_A = 15;
 export const GREATHEX_B = 26;
 
-export const KAGOME_TILESIZE = 18;
+export const KAGOME_TILE_SIZE = 18;
 export const KAGOME_A = 15;
 export const KAGOME_B = 26;
 
-export const OCTAGONAL_TILESIZE = 40;
+export const OCTAGONAL_TILE_SIZE = 40;
 export const OCTAGONAL_A = 29;
 export const OCTAGONAL_B = 41;
 
-export const KITE_TILESIZE = 40;
+export const KITE_TILE_SIZE = 40;
 export const KITE_A = 15;
 export const KITE_B = 26;
 
-export const FLORET_TILESIZE = 150;
+export const FLORET_TILE_SIZE = 150;
 export const FLORET_PX = 75;
 export const FLORET_PY = -26;
 
-export const DODEC_TILESIZE = 26;
+export const DODEC_TILE_SIZE = 26;
 export const DODEC_A = 15;
 export const DODEC_B = 26;
 
@@ -147,15 +147,15 @@ export const DODEC_B = 26;
 // needs no patch built — and because the size arms must stay adjacent to the
 // periodic ones they dispatch alongside.
 
-export const PENROSE_TILESIZE = 100;
+export const PENROSE_TILE_SIZE = 100;
 
-export const HATS_TILESIZE = 32;
+export const HATS_TILE_SIZE = 32;
 const HATS_XSQUARELEN = 4;
 const HATS_YSQUARELEN = 6;
 export const HATS_XUNIT = 14;
 export const HATS_YUNIT = 8;
 
-export const SPECTRE_TILESIZE = 32;
+export const SPECTRE_TILE_SIZE = 32;
 export const SPECTRE_SQUARELEN = 7;
 export const SPECTRE_UNIT = 8;
 
@@ -172,25 +172,25 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
   switch (type) {
     case "square":
       return {
-        tileSize: SQUARE_TILESIZE,
-        xExtent: width * SQUARE_TILESIZE,
-        yExtent: height * SQUARE_TILESIZE,
+        tileSize: SQUARE_TILE_SIZE,
+        xExtent: width * SQUARE_TILE_SIZE,
+        yExtent: height * SQUARE_TILE_SIZE,
       };
     case "honeycomb":
       return {
-        tileSize: HONEY_TILESIZE,
+        tileSize: HONEY_TILE_SIZE,
         xExtent: 3 * HONEY_A * (width - 1) + 4 * HONEY_A,
         yExtent: 2 * HONEY_B * (height - 1) + 3 * HONEY_B,
       };
     case "triangular":
       return {
-        tileSize: TRIANGLE_TILESIZE,
+        tileSize: TRIANGLE_TILE_SIZE,
         xExtent: (width + 1) * 2 * TRIANGLE_VEC_X,
         yExtent: height * TRIANGLE_VEC_Y,
       };
     case "snubsquare":
       return {
-        tileSize: SNUBSQUARE_TILESIZE,
+        tileSize: SNUBSQUARE_TILE_SIZE,
         xExtent:
           (SNUBSQUARE_A + SNUBSQUARE_B) * (width - 1) + SNUBSQUARE_A + SNUBSQUARE_B,
         yExtent:
@@ -199,13 +199,13 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
     case "cairo":
       // CAIRO_A is unused in determining grid size.
       return {
-        tileSize: CAIRO_TILESIZE,
+        tileSize: CAIRO_TILE_SIZE,
         xExtent: 2 * CAIRO_B * (width - 1) + 2 * CAIRO_B,
         yExtent: 2 * CAIRO_B * (height - 1) + 2 * CAIRO_B,
       };
     case "greathexagonal":
       return {
-        tileSize: GREATHEX_TILESIZE,
+        tileSize: GREATHEX_TILE_SIZE,
         xExtent: (3 * GREATHEX_A + GREATHEX_B) * (width - 1) + 4 * GREATHEX_A,
         yExtent:
           (2 * GREATHEX_A + 2 * GREATHEX_B) * (height - 1) +
@@ -214,19 +214,19 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
       };
     case "kagome":
       return {
-        tileSize: KAGOME_TILESIZE,
+        tileSize: KAGOME_TILE_SIZE,
         xExtent: 4 * KAGOME_A * (width - 1) + 6 * KAGOME_A,
         yExtent: 2 * KAGOME_B * (height - 1) + 2 * KAGOME_B,
       };
     case "octagonal":
       return {
-        tileSize: OCTAGONAL_TILESIZE,
+        tileSize: OCTAGONAL_TILE_SIZE,
         xExtent: (2 * OCTAGONAL_A + OCTAGONAL_B) * width,
         yExtent: (2 * OCTAGONAL_A + OCTAGONAL_B) * height,
       };
     case "kites":
       return {
-        tileSize: KITE_TILESIZE,
+        tileSize: KITE_TILE_SIZE,
         xExtent: 4 * KITE_B * width + 2 * KITE_B,
         yExtent: 6 * KITE_A * (height - 1) + 8 * KITE_A,
       };
@@ -241,14 +241,14 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
       let yExtent = (5 * qy - 4 * py) * (height - 1) + 4 * ry + 2 * qy;
       if (height === 1) yExtent += Math.trunc((5 * qy - 4 * py) / 2);
       return {
-        tileSize: FLORET_TILESIZE,
+        tileSize: FLORET_TILE_SIZE,
         xExtent: Math.trunc((6 * px + 3 * qx) / 2) * (width - 1) + 4 * px + 2 * qx,
         yExtent,
       };
     }
     case "dodecagonal":
       return {
-        tileSize: DODEC_TILESIZE,
+        tileSize: DODEC_TILE_SIZE,
         xExtent:
           (4 * DODEC_A + 2 * DODEC_B) * (width - 1) + 3 * (2 * DODEC_A + DODEC_B),
         yExtent:
@@ -256,7 +256,7 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
       };
     case "greatdodecagonal":
       return {
-        tileSize: DODEC_TILESIZE,
+        tileSize: DODEC_TILE_SIZE,
         xExtent:
           (6 * DODEC_A + 2 * DODEC_B) * (width - 1) +
           2 * (2 * DODEC_A + DODEC_B) +
@@ -267,7 +267,7 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
       };
     case "greatgreatdodecagonal":
       return {
-        tileSize: DODEC_TILESIZE,
+        tileSize: DODEC_TILE_SIZE,
         xExtent:
           (4 * DODEC_A + 4 * DODEC_B) * (width - 1) +
           2 * (2 * DODEC_A + DODEC_B) +
@@ -278,7 +278,7 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
       };
     case "compassdodecagonal":
       return {
-        tileSize: DODEC_TILESIZE,
+        tileSize: DODEC_TILE_SIZE,
         xExtent: (4 * DODEC_A + 2 * DODEC_B) * width,
         yExtent: (4 * DODEC_A + 2 * DODEC_B) * height,
       };
@@ -288,9 +288,9 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
     case "penrose_p2_kite":
     case "penrose_p3_thick":
       return {
-        tileSize: PENROSE_TILESIZE,
-        xExtent: PENROSE_TILESIZE * width,
-        yExtent: PENROSE_TILESIZE * height,
+        tileSize: PENROSE_TILE_SIZE,
+        xExtent: PENROSE_TILE_SIZE * width,
+        yExtent: PENROSE_TILE_SIZE * height,
       };
     // Hats is the one tiling whose built grid is NOT re-centered into the
     // extent reported here: Penrose and spectres both force their bounding box
@@ -299,13 +299,13 @@ export function gridSizeFor(type: GridType, width: number, height: number): Grid
     // deliberate — don't "fix" it by adding a recentering step.
     case "hats":
       return {
-        tileSize: HATS_TILESIZE,
+        tileSize: HATS_TILE_SIZE,
         xExtent: width * HATS_XUNIT * HATS_XSQUARELEN,
         yExtent: height * HATS_YUNIT * HATS_YSQUARELEN,
       };
     case "spectres":
       return {
-        tileSize: SPECTRE_TILESIZE,
+        tileSize: SPECTRE_TILE_SIZE,
         xExtent: width * SPECTRE_UNIT * SPECTRE_SQUARELEN,
         yExtent: height * SPECTRE_UNIT * SPECTRE_SQUARELEN,
       };
@@ -353,14 +353,14 @@ const OBJECT_BOUND: Record<
   penrose_p2_kite: {
     multiplier: 3 * 3 * 4,
     corners: false,
-    extentUnit: PENROSE_TILESIZE,
+    extentUnit: PENROSE_TILE_SIZE,
   },
   penrose_p3_thick: {
     multiplier: 3 * 3 * 4,
     corners: false,
-    extentUnit: PENROSE_TILESIZE,
+    extentUnit: PENROSE_TILE_SIZE,
   },
-  hats: { multiplier: 6, corners: false, extentUnit: HATS_TILESIZE },
+  hats: { multiplier: 6, corners: false, extentUnit: HATS_TILE_SIZE },
   spectres: {
     multiplier: SPECTRE_SQUARELEN * SPECTRE_SQUARELEN,
     corners: false,
@@ -492,7 +492,7 @@ export class TilingBuilder {
  * Mirrors `grid_new_square`.
  */
 export function gridNewSquare(width: number, height: number): Grid {
-  const a = SQUARE_TILESIZE;
+  const a = SQUARE_TILE_SIZE;
   const b = new TilingBuilder(a);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {

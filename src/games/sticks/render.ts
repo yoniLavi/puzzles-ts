@@ -12,8 +12,8 @@
  * part of the diff key so Check & Save repaints an otherwise-unchanged
  * frame).
  *
- * The border is upstream's `NARROW_BORDERS` one, `tilesize / 10` (its web
- * build's, not the desktop `tilesize / 2`), and `computeSize` subtracts 1 to
+ * The border is upstream's `NARROW_BORDERS` one, `tileSize / 10` (its web
+ * build's, not the desktop `tileSize / 2`), and `computeSize` subtracts 1 to
  * meet the outer grid line.
  */
 
@@ -100,7 +100,7 @@ const F_HINT_EVID = 1 << 13;
 
 export interface SticksDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   cache: Int32Array;
   mistakes: OverlaySidecar;
 }
@@ -108,14 +108,14 @@ export interface SticksDrawState {
 export function newDrawState(state: SticksState): SticksDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     cache: new Int32Array(state.w * state.h).fill(-1),
     mistakes: new OverlaySidecar(state.w * state.h),
   };
 }
 
 export function setTileSize(ds: SticksDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- cell drawing -----------------------------------------------------------
@@ -227,7 +227,7 @@ export function redraw(
   hint?: HintStep<SticksMove, SticksHint>,
   mistakes?: readonly SticksMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, grid, numbers } = state;
   const b = border(ts);
 

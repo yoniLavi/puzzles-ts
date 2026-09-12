@@ -158,7 +158,7 @@ export function computeSize(p: { order: number }, ts: number): Size {
 
 export interface UnequalDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   order: number;
   /** `order²` last-drawn numbers. */
   nums: Int8Array;
@@ -191,7 +191,7 @@ export function newDrawState(state: UnequalState): UnequalDrawState {
   const o = state.order;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     order: o,
     nums: new Int8Array(o * o).fill(-1),
     flags: new Int32Array(o * o).fill(-1),
@@ -208,7 +208,7 @@ export function newDrawState(state: UnequalState): UnequalDrawState {
 }
 
 export function setTileSize(ds: UnequalDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 /**
@@ -226,7 +226,7 @@ export function setTileSize(ds: UnequalDrawState, ts: number): void {
  * a mark that moved itself.
  */
 function markBand(ds: UnequalDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   return {
     box: { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
     outer: Math.max(2, ts >> 4),
@@ -565,7 +565,7 @@ export function redraw(
   hint?: HintStep<UnequalMove, UnequalHint>,
   mistakes?: readonly Point[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const o = state.order;
   const total = drawSize(o, ts);
 

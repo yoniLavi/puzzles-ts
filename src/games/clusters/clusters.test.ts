@@ -53,7 +53,7 @@ import {
 
 const TS = 32;
 const BORDER = Math.floor(TS / 10);
-const ds = { tilesize: TS } as never;
+const ds = { tileSize: TS } as never;
 
 function cellPoint(r: number, c: number): Point {
   return {

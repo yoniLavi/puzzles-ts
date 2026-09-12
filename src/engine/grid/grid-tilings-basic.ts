@@ -12,15 +12,15 @@ import type { Grid } from "./grid-core.ts";
 import {
   CAIRO_A,
   CAIRO_B,
-  CAIRO_TILESIZE,
+  CAIRO_TILE_SIZE,
   HONEY_A,
   HONEY_B,
-  HONEY_TILESIZE,
+  HONEY_TILE_SIZE,
   SNUBSQUARE_A,
   SNUBSQUARE_B,
-  SNUBSQUARE_TILESIZE,
+  SNUBSQUARE_TILE_SIZE,
   TilingBuilder,
-  TRIANGLE_TILESIZE,
+  TRIANGLE_TILE_SIZE,
   TRIANGLE_VEC_X,
   TRIANGLE_VEC_Y,
 } from "./grid-tilings.ts";
@@ -32,7 +32,7 @@ import {
 export function gridNewHoneycomb(width: number, height: number): Grid {
   const a = HONEY_A;
   const b = HONEY_B;
-  const g = new TilingBuilder(HONEY_TILESIZE);
+  const g = new TilingBuilder(HONEY_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -76,7 +76,7 @@ export function gridNewTriangular(
 ): Grid {
   const vecX = TRIANGLE_VEC_X;
   const vecY = TRIANGLE_VEC_Y;
-  const g = new TilingBuilder(TRIANGLE_TILESIZE);
+  const g = new TilingBuilder(TRIANGLE_TILE_SIZE);
 
   if (desc === null) {
     // ---- Legacy algorithm (ragged 'ears'; kept for old game ids) ----
@@ -156,7 +156,7 @@ export function gridNewTriangular(
 export function gridNewSnubsquare(width: number, height: number): Grid {
   const a = SNUBSQUARE_A;
   const b = SNUBSQUARE_B;
-  const g = new TilingBuilder(SNUBSQUARE_TILESIZE);
+  const g = new TilingBuilder(SNUBSQUARE_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -202,7 +202,7 @@ export function gridNewSnubsquare(width: number, height: number): Grid {
 export function gridNewCairo(width: number, height: number): Grid {
   const a = CAIRO_A;
   const b = CAIRO_B;
-  const g = new TilingBuilder(CAIRO_TILESIZE);
+  const g = new TilingBuilder(CAIRO_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {

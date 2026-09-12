@@ -125,7 +125,7 @@ function interpretMove(
   const shift = (rawButton & MOD_SHFT) !== 0;
   const control = (rawButton & MOD_CTRL) !== 0;
   const button = stripModifiers(rawButton);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
 
   let hx = ui.cursor.x;

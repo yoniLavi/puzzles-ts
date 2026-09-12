@@ -104,7 +104,7 @@ function interpretMove(
   let uiUpdated = false;
 
   if (raw === LEFT_BUTTON) {
-    const ts = ds.tilesize;
+    const ts = ds.tileSize;
     tx = fromCoord(p.x, ts, Math.floor(ts / 2));
     ty = fromCoord(p.y, ts, Math.floor(ts / 2));
     if (ui.cursor.visible) {
@@ -270,7 +270,7 @@ export const floodGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

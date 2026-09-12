@@ -162,7 +162,7 @@ function interpretMove(
   const cw = CELL_WIDTH;
   const ch = CELL_HEIGHT;
   const button = stripModifiers(rawButton);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
 
   // --- reference aid, both directions are mutually exclusive (selecting one
   // clears the other). A cell's top-left inspect icon lights its still-possible

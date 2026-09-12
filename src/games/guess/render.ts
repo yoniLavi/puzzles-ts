@@ -74,7 +74,7 @@ interface Geom {
   h: number;
 }
 
-export function computeSize(p: LayoutParams, tilesize: number): Size {
+export function computeSize(p: LayoutParams, tileSize: number): Size {
   const hintw = idiv(p.npegs + 1, 2);
   const hmul =
     BORDER * 2 +
@@ -86,11 +86,11 @@ export function computeSize(p: LayoutParams, tilesize: number): Size {
   const vmulC = BORDER * 2 + p.ncolors + PEG_GAP * (p.ncolors - 1);
   const vmulG = BORDER * 2 + (p.nguesses + 1) + PEG_GAP * (p.nguesses + 1);
   const vmul = Math.max(vmulC, vmulG);
-  return { w: Math.ceil(tilesize * hmul), h: Math.ceil(tilesize * vmul) };
+  return { w: Math.ceil(tileSize * hmul), h: Math.ceil(tileSize * vmul) };
 }
 
-function computeGeometry(p: LayoutParams, tilesize: number): Geom {
-  const pegsz = tilesize;
+function computeGeometry(p: LayoutParams, tileSize: number): Geom {
+  const pegsz = tileSize;
   const hintsz = Math.floor(pegsz * PEG_HINT);
   const gapsz = Math.floor(pegsz * PEG_GAP);
   const border = Math.floor(pegsz * BORDER);
@@ -100,7 +100,7 @@ function computeGeometry(p: LayoutParams, tilesize: number): Geom {
   const colh = (pegsz + gapsz) * p.ncolors - gapsz;
   const guessh = (pegsz + gapsz) * p.nguesses + gapsz + pegsz;
 
-  const { w, h } = computeSize(p, tilesize);
+  const { w, h } = computeSize(p, tileSize);
   const colx = border;
   const coly = idiv(h - colh, 2);
   const guessx = border + pegsz * 2;
@@ -195,9 +195,9 @@ export function newDrawState(s: GuessState): GuessDrawState {
   };
 }
 
-export function setTileSize(ds: GuessDrawState, tilesize: number): void {
-  if (ds.pegsz === tilesize) return;
-  Object.assign(ds, computeGeometry(ds, tilesize));
+export function setTileSize(ds: GuessDrawState, tileSize: number): void {
+  if (ds.pegsz === tileSize) return;
+  Object.assign(ds, computeGeometry(ds, tileSize));
   ds.started = false;
   // Drop the cached pegrows and the now-wrongly-sized drag blitter so
   // the next paint rebuilds both (we have no GameDrawing here to free).

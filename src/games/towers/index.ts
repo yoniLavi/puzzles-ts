@@ -167,7 +167,7 @@ function interpretMove(
   rawButton: number,
 ): TowersMove | null | UiUpdate {
   const w = state.w;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const shiftOrCtrl = (rawButton & (MOD_SHFT | MOD_CTRL)) !== 0;
   const button = stripModifiers(rawButton);
 

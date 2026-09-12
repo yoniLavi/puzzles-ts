@@ -116,7 +116,7 @@ type HintKind = keyof typeof HINT_FLAG;
 
 export interface RangeDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   cache: Int32Array;
@@ -125,7 +125,7 @@ export interface RangeDrawState {
 export function newDrawState(state: RangeState): RangeDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w: state.w,
     h: state.h,
     cache: new Int32Array(state.w * state.h).fill(-1),
@@ -133,7 +133,7 @@ export function newDrawState(state: RangeState): RangeDrawState {
 }
 
 export function setTileSize(ds: RangeDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- cell drawing ----------------------------------------------------------
@@ -237,7 +237,7 @@ export function redraw(
   hint?: HintStep<RangeMove, RangeHint>,
   mistakes?: readonly Cell[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, grid } = state;
 
   if (!ds.started) {

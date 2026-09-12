@@ -131,7 +131,7 @@ function interpretMove(
   const shift = (rawButton & MOD_SHFT) !== 0;
   const control = (rawButton & MOD_CTRL) !== 0;
   const button = stripModifiers(rawButton);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   // C's FROMCOORD is truncating integer division, so a pointer slightly
   // inside the border still maps to row/column 0 — keep trunc, not floor.

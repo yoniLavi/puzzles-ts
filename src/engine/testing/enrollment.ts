@@ -45,9 +45,9 @@ export interface BuiltGame {
    *
    * Not passed through `sizedDrawState`, and that is the whole point:
    * `setTileSize` *assigns* into the draw state, so sizing puts back any field
-   * it writes. Flood's is `ds.tilesize = ts`, so a `tilesize` deleted from
+   * it writes. Flood's is `ds.tileSize = ts`, so a `tileSize` deleted from
    * `newDrawState`'s literal reappears and the snapshot cannot see the loss —
-   * and `tilesize` is the field 55 of 57 games' `setTileSize` writes. Sizing
+   * and `tileSize` is the field nearly every game's `setTileSize` writes. Sizing
    * was the first cut here; it passed with the field removed.
    *
    * The hazard sizing was meant to cover — a draw state that assigns

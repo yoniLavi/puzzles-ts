@@ -128,7 +128,7 @@ function interpretMove(
   const control = (rawButton & MOD_CTRL) !== 0;
   // Strip only Shift/Ctrl — MOD_NUM_KEYPAD is load-bearing for the diagonals.
   let button = rawButton & ~(MOD_SHFT | MOD_CTRL);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
 
   // Numpad 8/2/4/6 are the orthogonal cursor moves.
   if (button === NK(56)) button = CURSOR_UP;

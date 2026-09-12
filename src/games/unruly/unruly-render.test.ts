@@ -52,7 +52,7 @@ function freshUi(): UnrulyUi {
 
 function freshDs(state: UnrulyState): UnrulyDrawState {
   const ds = newDrawState(state);
-  ds.tilesize = TS;
+  ds.tileSize = TS;
   return ds;
 }
 

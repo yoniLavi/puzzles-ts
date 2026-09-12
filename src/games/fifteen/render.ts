@@ -63,7 +63,7 @@ export interface FifteenDrawState {
   /** Per-cell cache of the last-drawn tile value; `-1` forces a redraw
    * (unknown, or animating). */
   tiles: Int32Array;
-  tilesize: number;
+  tileSize: number;
   /** Tile value currently highlighted as a hint, or null. */
   hintTile: number | null;
 }
@@ -73,7 +73,7 @@ export function newDrawState(state: FifteenState): FifteenDrawState {
     started: false,
     bgcolor: COL_BACKGROUND,
     tiles: new Int32Array(state.n).fill(-1),
-    tilesize: 0,
+    tileSize: 0,
     hintTile: null,
   };
 }
@@ -155,7 +155,7 @@ export function redraw(
   flashTime: number,
   activeHint?: HintStep<FifteenMove, FifteenHintHighlights>,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, n } = state;
   const hw = raisedBevelWidth(ts);
 

@@ -65,7 +65,7 @@ import {
 } from "./state.ts";
 
 const TS = PREFERRED_TILE_SIZE;
-const ds = { tilesize: TS } as never;
+const ds = { tileSize: TS } as never;
 
 function cellPoint(x: number, y: number): Point {
   return {

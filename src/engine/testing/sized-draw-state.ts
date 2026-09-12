@@ -6,7 +6,7 @@
  * creates it and applies `setTileSize` in one step (`Midend.freshDrawState`).
  * A test driving the game without a `Midend` has to reproduce that, and the
  * two lines are easy to write as one: passing an *unsized* drawstate leaves
- * `tilesize` at whatever `newDrawState` initialized (usually `0`), and the
+ * `tileSize` at whatever `newDrawState` initialized (usually `0`), and the
  * game then maps every pointer coordinate onto cell (0, 0) — a test that
  * fails for a reason that has nothing to do with what it is testing.
  *

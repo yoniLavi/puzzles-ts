@@ -67,7 +67,7 @@ export interface SixteenDrawState {
   h: number;
   bgcolor: number;
   tiles: Int32Array;
-  tilesize: number;
+  tileSize: number;
   curX: number;
   curY: number;
   /** The hint marks last drawn, or null, so a changed hint can erase them. */
@@ -88,7 +88,7 @@ export function newDrawState(state: SixteenState): SixteenDrawState {
     h: state.h,
     bgcolor: COL_BACKGROUND,
     tiles: new Int32Array(state.n).fill(-1),
-    tilesize: 0,
+    tileSize: 0,
     curX: -1,
     curY: -1,
     hintTile: null,
@@ -126,7 +126,7 @@ export function redraw(
   flashTime: number,
   activeHint?: HintStep<SixteenMove, SixteenHintHighlights>,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const hw = raisedBevelWidth(ts);
 
   let bgcolor = COL_BACKGROUND;

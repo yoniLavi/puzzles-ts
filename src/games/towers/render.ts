@@ -125,7 +125,7 @@ export function computeSize(p: { w: number }, ts: number): Size {
 
 export interface TowersDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   /** `(w+2)²` scratch tile values, rebuilt each redraw. */
   tiles: Int32Array;
@@ -151,7 +151,7 @@ export function newDrawState(state: TowersState): TowersDrawState {
   const W = w + 2;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w,
     tiles: new Int32Array(W * W),
     drawn: new Int32Array(W * W * 4).fill(-1),
@@ -163,7 +163,7 @@ export function newDrawState(state: TowersState): TowersDrawState {
 }
 
 export function setTileSize(ds: TowersDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 /**
@@ -187,7 +187,7 @@ export function setTileSize(ds: TowersDrawState, ts: number): void {
  * evidence names the clue it reasons from as well as the line it sees.
  */
 function markBand(ds: TowersDrawState, x: number, y: number): MarkBand {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   return {
     box: { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
     outer: 0,
@@ -411,7 +411,7 @@ export function redraw(
   hint?: HintStep<TowersMove, TowersHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const w = state.w;
   const W = w + 2;
   const threeD = ui.threeD;

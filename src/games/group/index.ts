@@ -141,7 +141,7 @@ function interpretMove(
   buttonRaw: number,
 ): GroupMove | null | UiUpdate {
   const w = state.w;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const button = stripModifiers(buttonRaw);
 
   const tx = fromCoord(point.x, ts);

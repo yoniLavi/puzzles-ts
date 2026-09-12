@@ -114,7 +114,7 @@ function interpretMove(
   rawButton: number,
 ): SeismicMove | null | UiUpdate {
   const { w, h, grid, flags, pencil, dsf } = state;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const button = stripModifiers(rawButton);
 
   const gx = fromCoord(p.x, ts);

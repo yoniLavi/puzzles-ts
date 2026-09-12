@@ -4,7 +4,7 @@
  * `grid_new_greatgreatdodecagonal`, `grid_new_compassdodecagonal`).
  * Import from `index.ts`, not from here.
  *
- * All four share `DODEC_TILESIZE`/`DODEC_A`/`DODEC_B` and open every cell with
+ * All four share `DODEC_TILE_SIZE`/`DODEC_A`/`DODEC_B` and open every cell with
  * the same twelve-corner dodecagon; they differ in the cell pitch, the
  * odd-row stagger, and the filler faces packed between the dodecagons.
  *
@@ -15,7 +15,7 @@
  */
 
 import type { Grid } from "./grid-core.ts";
-import { DODEC_A, DODEC_B, DODEC_TILESIZE, TilingBuilder } from "./grid-tilings.ts";
+import { DODEC_A, DODEC_B, DODEC_TILE_SIZE, TilingBuilder } from "./grid-tilings.ts";
 
 const a = DODEC_A;
 const b = DODEC_B;
@@ -47,7 +47,7 @@ function dodecagon(builder: TilingBuilder, px: number, py: number): void {
  * and below each. Mirrors `grid_new_dodecagonal`.
  */
 export function gridNewDodecagonal(width: number, height: number): Grid {
-  const builder = new TilingBuilder(DODEC_TILESIZE);
+  const builder = new TilingBuilder(DODEC_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -87,7 +87,7 @@ export function gridNewDodecagonal(width: number, height: number): Grid {
  * `grid_new_greatdodecagonal`.
  */
 export function gridNewGreatdodecagonal(width: number, height: number): Grid {
-  const builder = new TilingBuilder(DODEC_TILESIZE);
+  const builder = new TilingBuilder(DODEC_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -163,7 +163,7 @@ export function gridNewGreatdodecagonal(width: number, height: number): Grid {
  * Mirrors `grid_new_greatgreatdodecagonal`.
  */
 export function gridNewGreatgreatdodecagonal(width: number, height: number): Grid {
-  const builder = new TilingBuilder(DODEC_TILESIZE);
+  const builder = new TilingBuilder(DODEC_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -299,7 +299,7 @@ export function gridNewGreatgreatdodecagonal(width: number, height: number): Gri
  * Mirrors `grid_new_compassdodecagonal`.
  */
 export function gridNewCompassdodecagonal(width: number, height: number): Grid {
-  const builder = new TilingBuilder(DODEC_TILESIZE);
+  const builder = new TilingBuilder(DODEC_TILE_SIZE);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {

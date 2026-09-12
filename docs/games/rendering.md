@@ -530,8 +530,16 @@ the baseline (default 32). The midend creates the draw state and applies
 again whenever a new tile size is picked; `Midend.size` is informational and
 side-effect-free (see the doctrine above). Because those two are paired, a
 game's `redraw`/`interpretMove` is handed a draw state that is both non-null and
-sized — so no `if (!ds) return;` and no `ds?.tilesize ?? PREFERRED_TILE_SIZE`
+sized — so no `if (!ds) return;` and no `ds?.tileSize ?? PREFERRED_TILE_SIZE`
 (see [mechanics](./mechanics.md) § "interpretMove and UI_UPDATE").
+
+**The draw state's field is `tileSize`**, the word `setTileSize`,
+`preferredTileSize` and `computeSize(p, tileSize)` already use. It is not a
+decision a game makes — the collection once spelled it two ways, and no game had
+a reason to. A board that is not tiled names its own scale for what it is
+(Cube's `gridScale`, Guess's `pegsz`). Nothing enforces the name; a new spelling
+shows up as a line in the capability snapshot ([testing](./testing.md) § "The
+divergence no clone detector can see").
 
 *Compressed history:* the retired web build defined `NARROW_BORDERS`, so C
 games with an `#ifdef NARROW_BORDERS` variant (Slant's slim border; Bricks'

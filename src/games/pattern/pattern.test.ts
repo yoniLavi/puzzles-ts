@@ -288,7 +288,7 @@ describe("pattern drag-paint skips placed marks", () => {
       const st = base();
       const ui = patternGame.newUi(st);
       const ds = sizedDrawState(patternGame, st);
-      const ts = (ds as { tilesize: number }).tilesize;
+      const ts = (ds as { tileSize: number }).tileSize;
       const b =
         Math.floor((3 * ts) / 4) + Math.floor(ts / 2) + ts * (Math.floor(5 / 5) + 2);
       const at = (x: number, y: number) => ({ x: b + x * ts + 1, y: b + y * ts + 1 });

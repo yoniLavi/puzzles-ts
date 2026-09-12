@@ -105,7 +105,7 @@ function interpretMove(
   const shift = (rawButton & MOD_SHFT) !== 0;
   const stylus = (rawButton & MOD_STYLUS) !== 0;
   const button = stripModifiers(rawButton);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h } = state.common;
   const { grid } = state;
 
@@ -418,7 +418,7 @@ export const patternGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

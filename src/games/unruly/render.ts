@@ -136,7 +136,7 @@ export function computeSize(p: UnrulyParams, ts: number): Size {
 
 export interface UnrulyDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Last-drawn packed tile word per cell; -1 forces a draw. */
   cache: Int32Array;
 }
@@ -144,7 +144,7 @@ export interface UnrulyDrawState {
 export function newDrawState(state: UnrulyState): UnrulyDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     cache: new Int32Array(state.w2 * state.h2).fill(-1),
   };
 }
@@ -341,7 +341,7 @@ export function redraw(
   hint?: HintStep<UnrulyMove, UnrulyHint>,
   mistakes?: readonly UnrulyMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w2, h2, grid, immutable } = state;
   const s = w2 * h2;
   const mistakeSet =

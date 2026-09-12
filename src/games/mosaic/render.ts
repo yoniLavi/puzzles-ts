@@ -75,7 +75,7 @@ const DRAWFLAG_MISTAKE = 0x4000;
 
 export interface MosaicDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** (width+1)×(height+1) cache of last-drawn packed cell values; -1
    * forces a draw (docs/games/rendering.md § "The tile cache and the diff
    * key"). */
@@ -85,7 +85,7 @@ export interface MosaicDrawState {
 export function newDrawState(state: MosaicState): MosaicDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     cache: new Int32Array((state.width + 1) * (state.height + 1)).fill(-1),
   };
 }
@@ -182,7 +182,7 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly MosaicMistake[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { width, height, board, cells } = state;
 
   if (!ds.started) {

@@ -149,7 +149,7 @@ function interpretMove(
   rawButton: number,
 ): NetslideMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
 
   if (isCursorMove(button)) {
     const diff = c2diff(s.w, s.h, ui.cursor.x, ui.cursor.y, button);

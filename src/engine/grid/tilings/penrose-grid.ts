@@ -38,7 +38,7 @@
 import { nTimesRootK } from "../../n-times-root-k.ts";
 import type { RandomState } from "../../random/index.ts";
 import { type Grid, makeConsistent } from "../grid-core.ts";
-import { PENROSE_TILESIZE, TilingBuilder } from "../grid-tilings.ts";
+import { PENROSE_TILE_SIZE, TilingBuilder } from "../grid-tilings.ts";
 import { gridTrimVigorously } from "../grid-trim.ts";
 import {
   type Letter,
@@ -72,8 +72,8 @@ function apiSizePenrose(
   which: PenroseWhich,
 ): { w: number; h: number } {
   return {
-    w: Math.trunc((width * PENROSE_TILESIZE) / UNITS[which].y),
-    h: Math.trunc((height * PENROSE_TILESIZE) / UNITS[which].x),
+    w: Math.trunc((width * PENROSE_TILE_SIZE) / UNITS[which].y),
+    h: Math.trunc((height * PENROSE_TILE_SIZE) / UNITS[which].x),
   };
 }
 
@@ -188,7 +188,7 @@ export function gridNewPenrose(
   }
 
   const { x: xunit, y: yunit } = UNITS[which];
-  const builder = new TilingBuilder(PENROSE_TILESIZE);
+  const builder = new TilingBuilder(PENROSE_TILE_SIZE);
 
   const size = apiSizePenrose(width, height, which);
   penroseTilingGenerate(parsed.params, size.h, size.w, (vertices) => {
@@ -223,8 +223,8 @@ export function gridNewPenrose(
   // `gridComputeSize`. `Math.trunc`, not `Math.floor`: the numerator goes
   // negative whenever the patch came out wider than the promise, and there the
   // two differ by one — enough to shift the whole grid a pixel.
-  const w = width * PENROSE_TILESIZE;
-  const h = height * PENROSE_TILESIZE;
+  const w = width * PENROSE_TILE_SIZE;
+  const h = height * PENROSE_TILE_SIZE;
   g.lowestX -= Math.trunc((w - (g.highestX - g.lowestX)) / 2);
   g.lowestY -= Math.trunc((h - (g.highestY - g.lowestY)) / 2);
   g.highestX = g.lowestX + w;

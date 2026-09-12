@@ -137,7 +137,7 @@ function interpretMove(
   rawButton: number,
 ): SpokesMove | null | UiUpdate {
   const { w, h } = state;
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const button = stripModifiers(rawButton);
 
   let from = -1;

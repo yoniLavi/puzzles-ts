@@ -134,7 +134,7 @@ export function computeSize(p: { w: number; h: number }, ts: number): Size {
 
 export interface UndeadDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   w: number;
   h: number;
   /** `numTotal` last-drawn monster bitmasks. */
@@ -174,7 +174,7 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
   const common = state.common;
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     w: common.w,
     h: common.h,
     monsters: new Int8Array(common.numTotal).fill(7),
@@ -201,13 +201,13 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
 }
 
 export function setTileSize(ds: UndeadDrawState, ts: number): void {
-  ds.tilesize = ts;
+  ds.tileSize = ts;
 }
 
 // --- count-row layout (calculate_count_layout) -----------------------------
 
 function calculateCountLayout(ds: UndeadDrawState): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const COUNT_MSIZE = idiv(2 * ts, 3);
   const COUNT_GAP = idiv(ts, 3);
   const COUNT_FONTSIZE = idiv(ts, 2);
@@ -254,15 +254,15 @@ function calculateCountLayout(ds: UndeadDrawState): void {
 }
 
 const countX = (ds: UndeadDrawState, c: number): number =>
-  border(ds.tilesize) +
-  idiv((ds.w + 2) * ds.tilesize - ds.countW, 2) +
+  border(ds.tileSize) +
+  idiv((ds.w + 2) * ds.tileSize - ds.countW, 2) +
   (c - 1) * (ds.countGap + ds.countW);
 const countY = (ts: number): number => border(ts);
 
 /** The count block (0/1/2) under pixel `(px, py)`, or `-1`. Used by
  * `interpretMove` to place/clear a monster by clicking its count. */
 export function countBlockAt(ds: UndeadDrawState, px: number, py: number): number {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   if (ts <= 0 || ds.countW <= 0) return -1;
   if (py < countY(ts) || py >= countY(ts) + ts) return -1;
   for (let c = 0; c < 3; c++) {
@@ -418,7 +418,7 @@ function cellCenter(
   x: number,
   y: number,
 ): { dx: number; dy: number } {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   return {
     dx: border(ts) + x * ts + f(ts / 2),
     dy: border(ts) + y * ts + f(ts / 2) + ts,
@@ -427,7 +427,7 @@ function cellCenter(
 
 /** A cell's `TILESIZE − 1` square, inside the grid lines around it. */
 function cellRect(ds: UndeadDrawState, x: number, y: number): Rect {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { dx, dy } = cellCenter(ds, x, y);
   return { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 };
 }
@@ -450,7 +450,7 @@ function markBand(ds: UndeadDrawState, x: number, y: number): MarkBand {
   return {
     box: cellRect(ds, x, y),
     outer: 1,
-    inner: Math.max(2, f(ds.tilesize / 24)),
+    inner: Math.max(2, f(ds.tileSize / 24)),
   };
 }
 
@@ -461,7 +461,7 @@ function drawCellBackground(
   x: number,
   y: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { dx, dy } = cellCenter(ds, x, y);
   const hon = ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y;
   dr.drawRect(
@@ -490,7 +490,7 @@ function drawMirror(
   hflash: boolean,
   mirror: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { dx, dy } = cellCenter(ds, x, y);
   // `\` falls to the right, `/` rises.
   const d = f(ts / 4);
@@ -513,7 +513,7 @@ function drawBigMonster(
   monster: number,
   ascii: boolean,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { dx, dy } = cellCenter(ds, x, y);
   if (ascii) {
     const buf =
@@ -556,7 +556,7 @@ function drawPencils(
   ascii: boolean,
   struck: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const dx = border(ts) + x * ts + f(ts / 4);
   const dy = border(ts) + y * ts + f(ts / 4) + ts;
   // The notes present fill a 2×2 grid in reading order.
@@ -593,7 +593,7 @@ function drawPencils(
 }
 
 function drawMonsterCountBackground(dr: GameDrawing, ds: UndeadDrawState): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   dr.drawRect(
     { x: 0, y: countY(ts), w: 2 * border(ts) + (ds.w + 2) * ts, h: ts },
     COL_BACKGROUND,
@@ -608,7 +608,7 @@ function drawMonsterCount(
   c: number,
   hflash: boolean,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const dx = countX(ds, c);
   const dy = countY(ts);
   const dw = ds.countW;
@@ -678,7 +678,7 @@ function drawClue(
   color: number,
   clue: number,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const dx = border(ts) + x * ts;
   const dy = border(ts) + y * ts + ts;
   const box = { x: dx + 2, y: dy + 2, w: ts - 3, h: ts - 3 };
@@ -722,7 +722,7 @@ const PENCIL_STYLE: PencilIndicatorStyle = {
  * full tile like Towers' clue-corner indicator: Undead's ts/4 border is too
  * thin for the shared glyph to read at the other pencil-mark games' size. */
 const PENCIL_BOX = (ds: UndeadDrawState): PencilIndicatorBox => {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const b = border(ts);
   return { x: b + (ds.w + 1) * ts, y: b + ts, size: ts };
 };
@@ -741,7 +741,7 @@ export function redraw(
   hint?: HintStep<UndeadMove, UndeadHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const common = state.common;
   const w = ds.w;
   const h = ds.h;

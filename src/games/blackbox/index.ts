@@ -132,8 +132,8 @@ function interpretMove(
 
   let effective = button;
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    gx = fromDraw(p.x, ds.tilesize);
-    gy = fromDraw(p.y, ds.tilesize);
+    gx = fromDraw(p.x, ds.tileSize);
+    gy = fromDraw(p.y, ds.tileSize);
     ui.cursor.visible = false;
     wouldflash = 1;
   } else if (button === LEFT_RELEASE) {

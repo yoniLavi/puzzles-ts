@@ -109,7 +109,7 @@ function interpretMove(
   const { w, h } = state;
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    const ts = ds.tilesize;
+    const ts = ds.tileSize;
     const x = fromCoord(p.x, ts, border(ts));
     const y = fromCoord(p.y, ts, border(ts));
     if (x < 0 || y < 0 || x >= w || y >= h) return null;
@@ -440,7 +440,7 @@ export const slantGame: Game<
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
   setTileSize: (ds, ts) => {
-    ds.tilesize = ts;
+    ds.tileSize = ts;
   },
   newDrawState,
   redraw,

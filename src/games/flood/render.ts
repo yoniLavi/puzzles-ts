@@ -77,7 +77,7 @@ const COLOR_SHIFT = 11;
 
 export interface FloodDrawState {
   started: boolean;
-  tilesize: number;
+  tileSize: number;
   /** Per-cell cache of the last-drawn packed tile; `-1` forces a redraw. */
   grid: Int32Array;
 }
@@ -85,7 +85,7 @@ export interface FloodDrawState {
 export function newDrawState(state: FloodState): FloodDrawState {
   return {
     started: false,
-    tilesize: 0,
+    tileSize: 0,
     grid: new Int32Array(state.w * state.h).fill(-1),
   };
 }
@@ -189,7 +189,7 @@ export function redraw(
   flashTime: number,
   activeHint?: HintStep<FloodMove>,
 ): void {
-  const ts = ds.tilesize;
+  const ts = ds.tileSize;
   const { w, h, colors: ncolors } = state;
   const wh = w * h;
 

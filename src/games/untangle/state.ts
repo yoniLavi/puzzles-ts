@@ -11,7 +11,7 @@
  * Coordinates are **rational**: a `RationalPoint {x,y,d}` means `x/d,
  * y/d`. Fractions are load-bearing — they let the crossing test run in
  * exact integers (no float epsilon), and they let three coordinate
- * systems coexist (circle layout `d=64`, a free drag `d=tilesize`, a
+ * systems coexist (circle layout `d=64`, a free drag `d=tileSize`, a
  * snapped drag `d=(n-1)*2`). `d` is per-point: two points in one state
  * may carry different denominators, and `cross()` keeps each point's own
  * `d` in the cross-multiplication.
@@ -130,7 +130,7 @@ export interface UntangleDrawState {
 }
 
 /** Also the circle layout's denominator. */
-export const PREFERRED_TILESIZE = 64;
+export const PREFERRED_TILE_SIZE = 64;
 const POINTDENSITY = 3;
 
 /** Radius of a drawn vertex blob, px. */
@@ -250,13 +250,13 @@ export function findCrossings(
 
 /**
  * Place `n` points evenly on a circle inside the box `(0,0)..(w,w)`
- * (upstream `make_circle`). Denominator fixed at `PREFERRED_TILESIZE` to
+ * (upstream `make_circle`). Denominator fixed at `PREFERRED_TILE_SIZE` to
  * bound integer growth. The integer truncations and the `+0.5` rounding
  * mirror the C exactly (the generator's Phase B crossing test depends on
  * these positions).
  */
 export function makeCircle(n: number, w: number): RationalPoint[] {
-  const d = PREFERRED_TILESIZE;
+  const d = PREFERRED_TILE_SIZE;
   const c = Math.trunc((d * w) / 2);
   const r = Math.trunc((d * w * 3) / 7);
   return Array.from({ length: n }, (_, i) => {

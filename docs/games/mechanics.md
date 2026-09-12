@@ -365,10 +365,10 @@ be the same one `executeMove` filters with, so the two cannot drift (see
 worked example). Input-device traps — touch, stylus, keypad, drag classes —
 are [input](./input.md)'s whole subject; read it before writing this hook.
 
-**`ds` is non-null and already sized, so read `ds.tilesize` directly.** The
+**`ds` is non-null and already sized, so read `ds.tileSize` directly.** The
 midend creates the draw state and applies `setTileSize` in one step
 (`Midend.freshDrawState`) and declines input before a board exists. Do **not**
-write `ds?.tilesize ?? PREFERRED_TILE_SIZE`: that fallback cannot fire, and if
+write `ds?.tileSize ?? PREFERRED_TILE_SIZE`: that fallback cannot fire, and if
 it ever did it would map the click at the preferred tile size rather than the
 one on screen — the wrong cell, silently. Fifty-seven games had one, from back
 when `newDrawState` was optional; `audit-vestigial-contract-surface` made both

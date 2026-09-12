@@ -83,7 +83,7 @@ function interpretMove(
 
   if (button === LEFT_BUTTON) {
     // Toward the click from the player's cell, diagonally when off both axes.
-    const ts = ds.tilesize;
+    const ts = ds.tileSize;
     if (p.x < state.px * ts) dx = -1;
     else if (p.x > (state.px + 1) * ts) dx = 1;
     if (p.y < state.py * ts) dy = -1;
