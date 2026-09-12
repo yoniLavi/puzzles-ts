@@ -103,9 +103,23 @@ export class RecordingDrawing implements GameDrawing {
     return `rgb(${round(c[0] * 255)}, ${round(c[1] * 255)}, ${round(c[2] * 255)})`;
   }
 
+  /**
+   * The rects handed to `drawUpdate`, kept OUT of `ops` deliberately.
+   *
+   * A `drawUpdate` is bookkeeping — it tells the frontend which region to blit,
+   * not what was drawn — so putting it in `ops` would add a line to every
+   * snapshot in the collection for something no reviewer is reading a frame to
+   * check. But it is not nothing: a redraw that stops emitting one repaints
+   * nothing on a real canvas, and Cube's render test is the one that says so.
+   * Counted here, asserted there, invisible to snapshots.
+   */
+  readonly updates: Rect[] = [];
+
   startDraw(): void {}
   endDraw(): void {}
-  drawUpdate(_rect: Rect): void {}
+  drawUpdate(rect: Rect): void {
+    this.updates.push(roundRect(rect));
+  }
 
   clip(rect: Rect): void {
     this.ops.push({ op: "clip", ...roundRect(rect) });
@@ -182,4 +196,21 @@ export class RecordingDrawing implements GameDrawing {
   blitterFree(): void {}
   blitterSave(): void {}
   blitterLoad(): void {}
+}
+
+/**
+ * The ops of one kind, narrowed — so `rects(ops).map((o) => o.color)` typechecks
+ * where `ops.filter((o) => o.op === "rect").map(…)` does not.
+ *
+ * `Array.prototype.filter` does not narrow a discriminated union through a
+ * predicate it was not told is a type guard, and every migrating render test
+ * hits that on its first assertion. One helper rather than a cast per file: a
+ * cast would be the `as unknown as GameDrawing` this recorder exists to remove,
+ * reappearing one level down.
+ */
+export function opsOfKind<K extends DrawOp["op"]>(
+  ops: readonly DrawOp[],
+  kind: K,
+): Extract<DrawOp, { op: K }>[] {
+  return ops.filter((o): o is Extract<DrawOp, { op: K }> => o.op === kind);
 }

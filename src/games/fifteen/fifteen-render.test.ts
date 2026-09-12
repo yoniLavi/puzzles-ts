@@ -7,44 +7,16 @@ import { describe, expect, it } from "vitest";
 import { raisedBevelWidth } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { opsOfKind, RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
 import { executeMove, fifteenGame } from "./index.ts";
 import { type FifteenState, newState } from "./state.ts";
 
-interface Op {
-  op: string;
-  color?: number;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
-  text?: string;
-}
+const PALETTE = fifteenGame.colors(DEFAULT_BACKGROUND);
 
-function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
-  const ops: Op[] = [];
-  const dr = {
-    startDraw: () => ops.push({ op: "startDraw" }),
-    endDraw: () => ops.push({ op: "endDraw" }),
-    drawUpdate: (r: { x: number; y: number; w: number; h: number }) =>
-      ops.push({ op: "drawUpdate", x: r.x, y: r.y, w: r.w, h: r.h }),
-    clip: () => ops.push({ op: "clip" }),
-    unclip: () => ops.push({ op: "unclip" }),
-    drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-    drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", color: c }),
-    drawPolygon: (p: { x: number; y: number }[], f: number) =>
-      ops.push({ op: "drawPolygon", color: f, x: p[0].x, y: p[0].y }),
-    drawCircle: (_p: unknown, _r: number, f: number) =>
-      ops.push({ op: "drawCircle", color: f }),
-    drawText: (p: { x: number; y: number }, _o: unknown, c: number, text: string) =>
-      ops.push({ op: "drawText", color: c, x: p.x, y: p.y, text }),
-    blitterNew: () => ({}),
-    blitterFree: () => {},
-    blitterSave: () => {},
-    blitterLoad: () => {},
-  } as unknown as GameDrawing;
-  return { dr, ops };
+function recordingDrawing(): { dr: RecordingDrawing; ops: RecordingDrawing["ops"] } {
+  const dr = new RecordingDrawing(PALETTE);
+  return { dr, ops: dr.ops };
 }
 
 const newDrawState = fifteenGame.newDrawState as NonNullable<
@@ -80,13 +52,13 @@ describe("Fifteen rendering", () => {
     redraw(dr, ds, null, state, 0, UI, 0, 0);
 
     // A background rect at the origin covering the whole canvas.
-    expect(ops.some((o) => o.op === "drawRect" && o.x === 0 && o.y === 0)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.x === 0 && o.y === 0)).toBe(true);
     // The two recessed-border bevels are drawn (highlight=2, lowlight=3)
     // before any tiles.
-    const firstPolys = ops.filter((o) => o.op === "drawPolygon").slice(0, 2);
-    expect(firstPolys.map((o) => o.color)).toEqual([2, 3]);
+    const firstPolys = opsOfKind(ops, "polygon").slice(0, 2);
+    expect(firstPolys.map((o) => o.fill)).toEqual([2, 3]);
     // One number per non-gap cell (15 of 16).
-    const numbers = ops.filter((o) => o.op === "drawText").map((o) => o.text);
+    const numbers = ops.filter((o) => o.op === "text").map((o) => o.text);
     expect(numbers.length).toBe(15);
     expect(numbers).toContain("1");
     expect(numbers).toContain("15");
@@ -106,7 +78,7 @@ describe("Fifteen rendering", () => {
     // Tile "15" is drawn at an x between its old column (2) and home
     // column (3): its settled center is coord(3)+ts/2 = 192; mid-slide it
     // sits to the left of that.
-    const moving = ops.find((o) => o.op === "drawText" && o.text === "15");
+    const moving = opsOfKind(ops, "text").find((o) => o.text === "15");
     expect(moving).toBeDefined();
     expect(moving?.x).toBeLessThan(192);
     expect(moving?.x).toBeGreaterThan(120); // right of column 2's left edge
@@ -121,7 +93,7 @@ describe("Fifteen rendering", () => {
     // flashTime within the first frame → COL_HIGHLIGHT (2) background.
     redraw(dr, ds, null, state, 0, UI, 0, 0.05);
     // The gap cell is repainted with the flash background color.
-    expect(ops.some((o) => o.op === "drawRect" && o.color === 2)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === 2)).toBe(true);
   });
 });
 
@@ -173,9 +145,9 @@ describe("the hint mark while the hinted slide animates", () => {
       const ex = x0 + Math.floor(0.5 * (x1 - x0)) + hw;
       const ey = y0 + Math.floor(0.5 * (y1 - y0)) + hw;
 
-      const fills = ops.filter(
+      const fills = opsOfKind(ops, "rect").filter(
         (o) =>
-          o.op === "drawRect" &&
+          o.op === "rect" &&
           o.color === 4 &&
           o.w === TS - 2 * hw &&
           o.h === TS - 2 * hw,

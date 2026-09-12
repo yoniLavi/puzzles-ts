@@ -4,10 +4,12 @@
 
 `src/engine/testing/recording-drawing.ts` exists so a render test can assert
 against *every* primitive a game draws, with colors resolved through the palette
-and coordinates rounded the same way every time. Measured 2026-09-12: **37 game
-test files use it, and 18 hand-roll their own double instead**, typically as an
-object literal cast with `as unknown as GameDrawing` that implements the four or
-five methods that test happens to need.
+and coordinates rounded the same way every time. Measured 2026-09-12 by the
+cast: **14 test files hand-roll their own double instead**, as an object literal
+cast with `as unknown as GameDrawing` implementing the four or five methods that
+test happens to need. (The proposal was scaffolded with 18, keyed on a wider
+scan that also caught midend tests passing an inert stub they assert nothing
+about — those need no recorder, and the cast is the honest key.)
 
 This is not a tidiness complaint. A hand-rolled double is a silent filter: a game
 can start drawing something new, or stop drawing something, and a test that never
@@ -20,7 +22,7 @@ are in test files**, and the doubles are where most of them live.
 
 ## What changes
 
-- The 18 files adopt `RecordingDrawing`, dropping their local `Op` types, their
+- The 14 files adopt `RecordingDrawing`, dropping their local `Op` types, their
   literal doubles and the casts that made them typecheck.
 - Where a test asserted against its double's bespoke op shape, the assertion
   moves to the shared recorder's op shape.

@@ -1,11 +1,13 @@
-// Tier-2 render-ops: drive Mosaic's `redraw` against a recording
-// `GameDrawing` double — tile colors per mark state, clue text and its
+// Tier-2 render-ops: drive Mosaic's `redraw` against the engine's shared
+// `RecordingDrawing` — tile colors per mark state, clue text and its
 // state-dependent color, cursor edge recolor, margin closing lines,
 // the completion-flash inversion, the mistake outline, and the cache
 // suppressing unchanged tiles.
 import { describe, expect, it } from "vitest";
-import type { GameDrawing } from "../../engine/game.ts";
 import { newCursor } from "../../engine/pointer.ts";
+import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
+import { mosaicGame } from "./index.ts";
 import {
   COL_BLANK,
   COL_CURSOR,
@@ -20,38 +22,14 @@ import {
 } from "./render.ts";
 import { executeMove, type MosaicState, type MosaicUi, newState } from "./state.ts";
 
-interface Op {
-  op: string;
-  color?: number;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
-  text?: string;
-}
+const PALETTE = mosaicGame.colors(DEFAULT_BACKGROUND);
 
-function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
-  const ops: Op[] = [];
-  const dr = {
-    startDraw: () => {},
-    endDraw: () => {},
-    drawUpdate: () => {},
-    clip: () => {},
-    unclip: () => {},
-    drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-    drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", color: c }),
-    drawPolygon: () => {},
-    drawCircle: () => {},
-    drawText: (_p: unknown, _o: unknown, c: number, text: string) =>
-      ops.push({ op: "drawText", color: c, text }),
-    blitterNew: () => ({}),
-    blitterFree: () => {},
-    blitterSave: () => {},
-    blitterLoad: () => {},
-  } as unknown as GameDrawing;
-  return { dr, ops };
+/** A frame recorded through the shared recorder, which captures every
+ * primitive — the local double this replaced dropped `drawPolygon` and
+ * `drawCircle` on the floor and kept only a color from each `drawLine`. */
+function recordingDrawing(): { dr: RecordingDrawing; ops: RecordingDrawing["ops"] } {
+  const dr = new RecordingDrawing(PALETTE);
+  return { dr, ops: dr.ops };
 }
 
 const TS = 32;
@@ -77,18 +55,18 @@ describe("Mosaic redraw", () => {
 
     // 9 full tiles in the unmarked teal.
     const tiles = ops.filter(
-      (o) => o.op === "drawRect" && o.color === COL_UNMARKED && o.w === TS - 1,
+      (o) => o.op === "rect" && o.color === COL_UNMARKED && o.w === TS - 1,
     );
     expect(tiles.length).toBe(9);
     // Every clue drawn, dark text on unmarked.
-    const texts = ops.filter((o) => o.op === "drawText");
+    const texts = ops.filter((o) => o.op === "text");
     expect(texts.length).toBe(9);
     expect(texts.every((o) => o.color === COL_MARKED)).toBe(true);
     expect(texts.map((o) => o.text).join("")).toBe(ALL_BLACK_DESC);
     // Grid lines present.
-    expect(
-      ops.some((o) => o.op === "drawRect" && o.color === COL_GRID && o.h === 1),
-    ).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_GRID && o.h === 1)).toBe(
+      true,
+    );
   });
 
   it("draws the closing grid lines from the margin row/column", () => {
@@ -101,7 +79,7 @@ describe("Mosaic redraw", () => {
     expect(
       ops.some(
         (o) =>
-          o.op === "drawRect" &&
+          o.op === "rect" &&
           o.color === COL_GRID &&
           o.w === 1 &&
           o.x === 3 * TS + m - 1,
@@ -118,10 +96,10 @@ describe("Mosaic redraw", () => {
     redraw(dr, ds, null, state, 1, freshUi(), 0, 0);
     // The marked cell body.
     expect(
-      ops.some((o) => o.op === "drawRect" && o.color === COL_MARKED && o.w === TS - 1),
+      ops.some((o) => o.op === "rect" && o.color === COL_MARKED && o.w === TS - 1),
     ).toBe(true);
     // Every clue is contradicted → red clue text appears.
-    expect(ops.some((o) => o.op === "drawText" && o.color === COL_ERROR)).toBe(true);
+    expect(ops.some((o) => o.op === "text" && o.color === COL_ERROR)).toBe(true);
   });
 
   it("grays out a solved clue's text", () => {
@@ -134,7 +112,7 @@ describe("Mosaic redraw", () => {
     const ds = freshDs(state);
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, state, 1, freshUi(), 0, 0);
-    const texts = ops.filter((o) => o.op === "drawText");
+    const texts = ops.filter((o) => o.op === "text");
     expect(texts.length).toBe(9);
     expect(texts.every((o) => o.color === COL_TEXT_SOLVED)).toBe(true);
   });
@@ -148,7 +126,9 @@ describe("Mosaic redraw", () => {
     ui.cursor.y = 1;
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, state, 1, ui, 0, 0);
-    expect(ops.filter((o) => o.color === COL_CURSOR).length).toBeGreaterThanOrEqual(4);
+    expect(
+      ops.filter((o) => "color" in o && o.color === COL_CURSOR).length,
+    ).toBeGreaterThanOrEqual(4);
   });
 
   it("inverts marked/blank during the flash thirds", () => {
@@ -164,13 +144,15 @@ describe("Mosaic redraw", () => {
     const { dr, ops } = recordingDrawing();
     // flashTime 0.1 ≤ FLASH_TIME/3 → inverted: every marked cell draws blank.
     redraw(dr, ds, null, state, 1, freshUi(), 0, 0.1);
-    const body = (o: Op) => o.op === "drawRect" && o.w === TS - 1;
-    expect(ops.filter((o) => body(o) && o.color === COL_BLANK).length).toBe(9);
-    expect(ops.filter((o) => body(o) && o.color === COL_MARKED).length).toBe(0);
+    const bodies = (record: RecordingDrawing["ops"], color: number) =>
+      record.filter((o) => o.op === "rect" && o.w === TS - 1 && o.color === color)
+        .length;
+    expect(bodies(ops, COL_BLANK)).toBe(9);
+    expect(bodies(ops, COL_MARKED)).toBe(0);
     // Mid-flash (middle third) the board draws normally again.
     const second = recordingDrawing();
     redraw(second.dr, ds, null, state, 1, freshUi(), 0, 0.25);
-    expect(second.ops.filter((o) => body(o) && o.color === COL_MARKED).length).toBe(9);
+    expect(bodies(second.ops, COL_MARKED)).toBe(9);
   });
 
   it("outlines mistake cells in the error color", () => {
@@ -179,7 +161,7 @@ describe("Mosaic redraw", () => {
     const ds = freshDs(state);
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, state, 1, freshUi(), 0, 0, undefined, [{ x: 1, y: 0 }]);
-    const errorRects = ops.filter((o) => o.op === "drawRect" && o.color === COL_ERROR);
+    const errorRects = ops.filter((o) => o.op === "rect" && o.color === COL_ERROR);
     expect(errorRects.length).toBe(4); // four outline strips
   });
 
@@ -196,8 +178,8 @@ describe("Mosaic redraw", () => {
     const moved = executeMove(state, { type: "toggle", x: 0, y: 0, double: false });
     const third = recordingDrawing();
     redraw(third.dr, ds, null, moved, 1, freshUi(), 0, 0);
-    const bodies = third.ops.filter((o) => o.op === "drawRect" && o.w === TS - 1);
-    expect(bodies.length).toBe(1);
-    expect(bodies[0].color).toBe(COL_MARKED);
+    const redrawn = third.ops.filter((o) => o.op === "rect" && o.w === TS - 1);
+    expect(redrawn.length).toBe(1);
+    expect(redrawn[0]).toMatchObject({ op: "rect", color: COL_MARKED });
   });
 });

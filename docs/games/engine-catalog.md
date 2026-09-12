@@ -777,7 +777,13 @@ test suite's minimal game).
 ## Testing harness
 
 [`src/engine/testing/`](../../src/engine/testing/) — the in-process harness:
-`recording-drawing.ts` + `render-scenario.ts` + `svg-drawing.ts` (tier 2.5),
+`recording-drawing.ts` + `render-scenario.ts` + `svg-drawing.ts` (tier 2.5 —
+**every render test drives `RecordingDrawing`; do not hand-roll a double.** A
+local double records only the calls its author anticipated, so a game that
+starts drawing something new leaves it green. `opsOfKind(ops, "rect")` narrows
+the op union, which `Array.filter` will not do; `dr.updates` holds the
+`drawUpdate` rects, kept off `ops` so they are assertable without a line in
+every snapshot),
 `differential.ts` (`describeDescDifferential`, the byte-for-byte desc shape +
 the one statement that fixtures are frozen and unregenerable),
 `enrollment.ts` + `hint-games.ts` (**how a cross-game guard finds its

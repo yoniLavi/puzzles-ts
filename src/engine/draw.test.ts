@@ -5,51 +5,18 @@ import {
   drawRectOutline,
   drawThickRectOutline,
 } from "./draw.ts";
-import type { GameDrawing } from "./game.ts";
+import { opsOfKind, RecordingDrawing } from "./testing/recording-drawing.ts";
 
-interface RectOp {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  color: number;
-}
-
-/** A `GameDrawing` that records only `drawRect` — what the thick outline emits. */
-function recordingRects(): { dr: GameDrawing; ops: RectOp[] } {
-  const ops: RectOp[] = [];
-  const dr = {
-    drawRect: (r: { x: number; y: number; w: number; h: number }, color: number) =>
-      ops.push({ ...r, color }),
-  } as unknown as GameDrawing;
-  return { dr, ops };
-}
-
-interface PolyOp {
-  op: "polygon";
-  points: { x: number; y: number }[];
-  fill: number;
-}
-interface LineOp {
-  op: "line";
-  a: { x: number; y: number };
-  b: { x: number; y: number };
-  color: number;
-}
-type Op = PolyOp | LineOp;
-
-function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
-  const ops: Op[] = [];
-  const dr = {
-    drawPolygon: (points: { x: number; y: number }[], fill: number) =>
-      ops.push({ op: "polygon", points: points.map((p) => ({ ...p })), fill }),
-    drawLine: (
-      a: { x: number; y: number },
-      b: { x: number; y: number },
-      color: number,
-    ) => ops.push({ op: "line", a: { ...a }, b: { ...b }, color }),
-  } as unknown as GameDrawing;
-  return { dr, ops };
+/**
+ * These helpers take colors as bare palette indices and no game is involved, so
+ * the recorder gets an empty palette: its `rgb` labels read `color#<n>` and the
+ * assertions below use the index, which is what a helper's contract is stated
+ * in. The point of using it anyway is that it records EVERY primitive — the two
+ * local doubles this replaced each saw exactly one.
+ */
+function recordingDrawing(): { dr: RecordingDrawing; ops: RecordingDrawing["ops"] } {
+  const dr = new RecordingDrawing([]);
+  return { dr, ops: dr.ops };
 }
 
 describe("drawRecessedBorder", () => {
@@ -65,32 +32,31 @@ describe("drawRecessedBorder", () => {
     expect(ops).toHaveLength(2);
     expect(ops[0]).toMatchObject({ op: "polygon", fill: HI });
     expect(ops[1]).toMatchObject({ op: "polygon", fill: LO });
-    expect((ops[0] as PolyOp).points).toHaveLength(5);
-    expect((ops[1] as PolyOp).points).toHaveLength(5);
+    expect(opsOfKind(ops, "polygon")[0].points).toHaveLength(5);
+    expect(opsOfKind(ops, "polygon")[1].points).toHaveLength(5);
   });
 
   it("places the highlight wedge on the top/right corner", () => {
     const { dr, ops } = recordingDrawing();
     drawRecessedBorder(dr, bounds, inset, HI, LO);
-    expect((ops[0] as PolyOp).points).toEqual([
-      { x: 110, y: 110 },
-      { x: 110, y: 10 },
-      { x: 90, y: 30 },
-      { x: 30, y: 90 },
-      { x: 10, y: 110 },
+    expect(opsOfKind(ops, "polygon")[0].points).toEqual([
+      [110, 110],
+      [110, 10],
+      [90, 30],
+      [30, 90],
+      [10, 110],
     ]);
   });
 
   it("highlight and lowlight wedges share the two diagonal vertices", () => {
     const { dr, ops } = recordingDrawing();
     drawRecessedBorder(dr, bounds, inset, HI, LO);
-    const hi = (ops[0] as PolyOp).points;
-    const lo = (ops[1] as PolyOp).points;
+    const [hi, lo] = opsOfKind(ops, "polygon").map((o) => o.points);
     // The inner diagonal edge (the two inset vertices) is common to both.
-    expect(hi).toContainEqual({ x: 90, y: 30 });
-    expect(hi).toContainEqual({ x: 30, y: 90 });
-    expect(lo).toContainEqual({ x: 90, y: 30 });
-    expect(lo).toContainEqual({ x: 30, y: 90 });
+    expect(hi).toContainEqual([90, 30]);
+    expect(hi).toContainEqual([30, 90]);
+    expect(lo).toContainEqual([90, 30]);
+    expect(lo).toContainEqual([30, 90]);
   });
 });
 
@@ -101,13 +67,14 @@ describe("drawRectOutline", () => {
 
     expect(ops).toHaveLength(4);
     // Far corner is inclusive: (5+10-1, 7+20-1) = (14, 26).
-    const xs = ops.flatMap((o) => [(o as LineOp).a.x, (o as LineOp).b.x]);
-    const ys = ops.flatMap((o) => [(o as LineOp).a.y, (o as LineOp).b.y]);
+    const lines = opsOfKind(ops, "line");
+    const xs = lines.flatMap((o) => [o.x1, o.x2]);
+    const ys = lines.flatMap((o) => [o.y1, o.y2]);
     expect(Math.max(...xs)).toBe(14);
     expect(Math.max(...ys)).toBe(26);
     expect(Math.min(...xs)).toBe(5);
     expect(Math.min(...ys)).toBe(7);
-    for (const o of ops) expect((o as LineOp).color).toBe(3);
+    for (const o of lines) expect(o.color).toBe(3);
   });
 });
 
@@ -122,8 +89,9 @@ describe("drawThickRectOutline", () => {
    * level, not eight chances that one game's frame happens to be observed.
    */
   it("draws four bands that cover exactly the frame, and nothing inside it", () => {
-    const { dr, ops } = recordingRects();
+    const { dr, ops: all } = recordingDrawing();
     drawThickRectOutline(dr, 10, 20, 30, 40, 3, 7);
+    const ops = opsOfKind(all, "rect");
 
     expect(ops).toHaveLength(4);
     for (const o of ops) expect(o.color).toBe(7);
@@ -140,8 +108,9 @@ describe("drawThickRectOutline", () => {
   });
 
   it("stays inside the rect it was given", () => {
-    const { dr, ops } = recordingRects();
+    const { dr, ops: all } = recordingDrawing();
     drawThickRectOutline(dr, 0, 0, 8, 8, 2, 1);
+    const ops = opsOfKind(all, "rect");
     for (const o of ops) {
       expect(o.x).toBeGreaterThanOrEqual(0);
       expect(o.y).toBeGreaterThanOrEqual(0);

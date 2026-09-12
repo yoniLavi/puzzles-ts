@@ -1,48 +1,21 @@
 // Tier-2 render test (see the `repo-layout` spec): drive Cube's `redraw`
-// against a recording `GameDrawing` double and assert the structure of
+// against the engine's shared `RecordingDrawing` and assert the structure of
 // the draw calls — a background fill, one polygon per grid square (blue
 // squares in COL_BLUE), the projected solid's faces, and a final update.
 import { describe, expect, it } from "vitest";
-import type { GameDrawing } from "../../engine/game.ts";
+import { opsOfKind, RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
 import { gridArea } from "./grid.ts";
 import { cubeGame, executeMove } from "./index.ts";
 import { COL_BACKGROUND, COL_BLUE } from "./render.ts";
 import { SOLIDS, SolidType } from "./solids.ts";
 import { type CubeParams, newState } from "./state.ts";
 
-interface Op {
-  op: string;
-  color?: number;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
-}
+const PALETTE = cubeGame.colors(DEFAULT_BACKGROUND);
 
-function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
-  const ops: Op[] = [];
-  const dr = {
-    startDraw: () => ops.push({ op: "startDraw" }),
-    endDraw: () => ops.push({ op: "endDraw" }),
-    drawUpdate: (r: { x: number; y: number; w: number; h: number }) =>
-      ops.push({ op: "drawUpdate", x: r.x, y: r.y, w: r.w, h: r.h }),
-    clip: () => ops.push({ op: "clip" }),
-    unclip: () => ops.push({ op: "unclip" }),
-    drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-    drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", color: c }),
-    drawPolygon: (_p: unknown, f: number) => ops.push({ op: "drawPolygon", color: f }),
-    drawCircle: (_p: unknown, _r: number, f: number) =>
-      ops.push({ op: "drawCircle", color: f }),
-    drawText: (_p: unknown, _o: unknown, c: number) =>
-      ops.push({ op: "drawText", color: c }),
-    blitterNew: () => ({}),
-    blitterFree: () => {},
-    blitterSave: () => {},
-    blitterLoad: () => {},
-  } as unknown as GameDrawing;
-  return { dr, ops };
+function recordingDrawing(): { dr: RecordingDrawing; ops: RecordingDrawing["ops"] } {
+  const dr = new RecordingDrawing(PALETTE);
+  return { dr, ops: dr.ops };
 }
 
 const newDrawState = cubeGame.newDrawState as NonNullable<typeof cubeGame.newDrawState>;
@@ -71,24 +44,24 @@ describe("Cube rendering", () => {
 
     // A background rect at the origin.
     expect(
-      ops.some(
-        (o) =>
-          o.op === "drawRect" && o.x === 0 && o.y === 0 && o.color === COL_BACKGROUND,
+      opsOfKind(ops, "rect").some(
+        (o) => o.x === 0 && o.y === 0 && o.color === COL_BACKGROUND,
       ),
     ).toBe(true);
 
     // One polygon per grid square is drawn before the solid's faces; the
     // total polygon count exceeds the square count by the visible faces.
-    const polys = ops.filter((o) => o.op === "drawPolygon");
+    const polys = opsOfKind(ops, "polygon");
     expect(polys.length).toBeGreaterThan(state.grid.length);
 
     // The first `grid.length` polygons are the grid squares; square 0 is
     // blue, so at least one square polygon uses COL_BLUE.
     const squarePolys = polys.slice(0, state.grid.length);
-    expect(squarePolys.some((o) => o.color === COL_BLUE)).toBe(true);
+    expect(squarePolys.some((o) => o.fill === COL_BLUE)).toBe(true);
 
-    // A final drawUpdate covering the canvas.
-    expect(ops.some((o) => o.op === "drawUpdate")).toBe(true);
+    // A final drawUpdate covering the canvas. The shared recorder keeps these
+    // off `ops` (they are bookkeeping, not content) and counts them instead.
+    expect(dr.updates.length).toBeGreaterThan(0);
   });
 
   it("draws fewer faces than the solid has (back-face culling)", () => {
@@ -96,7 +69,7 @@ describe("Cube rendering", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, state, 0, {}, 0, 0);
 
-    const polys = ops.filter((o) => o.op === "drawPolygon");
+    const polys = opsOfKind(ops, "polygon");
     const facePolys = polys.length - state.grid.length;
     // A cube shows at most 3 faces at once; culling must drop the rest.
     expect(facePolys).toBeGreaterThan(0);
@@ -111,7 +84,7 @@ describe("Cube rendering", () => {
     // Mid-roll: prev = old state, animTime between 0 and ROLLTIME.
     redraw(dr, ds, state, rolled, 0, {}, 0.06, 0);
 
-    const polys = ops.filter((o) => o.op === "drawPolygon");
+    const polys = opsOfKind(ops, "polygon");
     expect(polys.length).toBeGreaterThan(state.grid.length);
   });
 });

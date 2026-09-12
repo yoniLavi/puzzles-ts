@@ -3,6 +3,8 @@ import { raisedBevelWidth } from "../../engine/draw.ts";
 import { ALREADY_SOLVED } from "../../engine/hint-refusal.ts";
 import type { GameDrawing, HintStep } from "../../engine/index.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { opsOfKind, RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
 import { itSlow } from "../../engine/testing/slow.ts";
 import { executeMove, sixteenGame } from "./index.ts";
 import type { SixteenHintHighlights } from "./render.ts";
@@ -1132,37 +1134,14 @@ describe("the hint marks while the hinted slide animates", () => {
   const HW = raisedBevelWidth(TS); // read from the helper, so it cannot go stale
   const px = (cell: number) => cell * TS + BORDER;
 
-  interface Op {
-    op: string;
-    color?: number;
-    x?: number;
-    y?: number;
-    w?: number;
-    h?: number;
-  }
-
-  function coordRecordingDrawing(): { dr: GameDrawing; ops: Op[] } {
-    const ops: Op[] = [];
-    const dr = {
-      startDraw: () => {},
-      endDraw: () => {},
-      drawUpdate: () => {},
-      clip: () => {},
-      unclip: () => {},
-      drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-        ops.push({ op: "rect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-      drawLine: () => {},
-      drawPolygon: (p: { x: number; y: number }[], f: number) =>
-        ops.push({ op: "polygon", color: f, x: p[0].x, y: p[0].y }),
-      drawCircle: () => {},
-      drawText: (p: { x: number; y: number }, _o: unknown, c: number) =>
-        ops.push({ op: "text", color: c, x: p.x, y: p.y }),
-      blitterNew: () => ({}),
-      blitterFree: () => {},
-      blitterSave: () => {},
-      blitterLoad: () => {},
-    } as unknown as GameDrawing;
-    return { dr, ops };
+  /** The shared recorder. The local double this replaced dropped every line and
+   * circle, and kept only a polygon's first vertex. */
+  function coordRecordingDrawing(): {
+    dr: RecordingDrawing;
+    ops: RecordingDrawing["ops"];
+  } {
+    const dr = new RecordingDrawing(sixteenGame.colors(DEFAULT_BACKGROUND));
+    return { dr, ops: dr.ops };
   }
 
   /** A mid-slide frame of the hinted move, on the first board whose hint step
@@ -1241,9 +1220,8 @@ describe("the hint marks while the hinted slide animates", () => {
     const ex = px(from % w) + (m.axis === "row" ? shift : 0) + HW;
     const ey = px(Math.floor(from / w)) + (m.axis === "column" ? shift : 0) + HW;
 
-    const fills = ops.filter(
-      (o) =>
-        o.op === "rect" && o.color === 4 && o.w === TS - 2 * HW && o.h === TS - 2 * HW,
+    const fills = opsOfKind(ops, "rect").filter(
+      (o) => o.color === 4 && o.w === TS - 2 * HW && o.h === TS - 2 * HW,
     );
     expect(
       fills.length,
@@ -1260,8 +1238,8 @@ describe("the hint marks while the hinted slide animates", () => {
 
     // The target is a *cell*; the line slides under it. The solid border's
     // top edge is a full-width, 3px-tall rect at the cell's own corner.
-    const top = ops.find(
-      (o) => o.op === "rect" && o.color === 4 && o.w === TS && o.h === 3,
+    const top = opsOfKind(ops, "rect").find(
+      (o) => o.color === 4 && o.w === TS && o.h === 3,
     );
     expect(top, "the target cell is not outlined at all").toBeDefined();
     expect(top).toMatchObject({

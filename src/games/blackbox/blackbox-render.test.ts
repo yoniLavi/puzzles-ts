@@ -1,13 +1,14 @@
 /**
- * Tier-2 render-ops test: drive Black Box's `redraw` against a recording
- * `GameDrawing` double and assert the draw-call structure — the
+ * Tier-2 render-ops test: drive Black Box's `redraw` against the engine's
+ * shared `RecordingDrawing` and assert the draw-call structure — the
  * first-draw background fill, a covered arena cell, a fired laser's
  * number text, the reveal button gated on `canReveal`, and the
  * wrong-guess red cross on a reveal.
  */
 
 import { describe, expect, it } from "vitest";
-import type { GameDrawing } from "../../engine/game.ts";
+import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
 import { blackboxGame } from "./index.ts";
 import {
   type BlackboxDrawState,
@@ -25,40 +26,11 @@ import {
   LASER_EMPTY,
 } from "./state.ts";
 
-interface Op {
-  op: string;
-  color?: number;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
-  text?: string;
-}
+const PALETTE = blackboxGame.colors(DEFAULT_BACKGROUND);
 
-function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
-  const ops: Op[] = [];
-  const dr = {
-    startDraw: () => ops.push({ op: "startDraw" }),
-    endDraw: () => ops.push({ op: "endDraw" }),
-    drawUpdate: () => ops.push({ op: "drawUpdate" }),
-    clip: () => ops.push({ op: "clip" }),
-    unclip: () => ops.push({ op: "unclip" }),
-    drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-    drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", color: c }),
-    drawPolygon: (p: { x: number; y: number }[], f: number) =>
-      ops.push({ op: "drawPolygon", color: f, x: p[0].x, y: p[0].y }),
-    drawCircle: (p: { x: number; y: number }, _r: number, f: number) =>
-      ops.push({ op: "drawCircle", color: f, x: p.x, y: p.y }),
-    drawText: (_p: unknown, _o: unknown, c: number, t: string) =>
-      ops.push({ op: "drawText", color: c, text: t }),
-    blitterNew: () => ({}),
-    blitterFree: () => {},
-    blitterSave: () => {},
-    blitterLoad: () => {},
-  } as unknown as GameDrawing;
-  return { dr, ops };
+function recordingDrawing(): { dr: RecordingDrawing; ops: RecordingDrawing["ops"] } {
+  const dr = new RecordingDrawing(PALETTE);
+  return { dr, ops: dr.ops };
 }
 
 const TS = 32;
@@ -110,7 +82,7 @@ describe("Black Box redraw", () => {
     expect(
       ops.some(
         (o) =>
-          o.op === "drawRect" &&
+          o.op === "rect" &&
           o.color === COL_BACKGROUND &&
           o.x === 0 &&
           o.y === 0 &&
@@ -124,7 +96,7 @@ describe("Black Box redraw", () => {
     const ds = freshDs(s);
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, s, 1, freshUi(s), 0, 0);
-    expect(ops.some((o) => o.op === "drawRect" && o.color === COL_COVER)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === COL_COVER)).toBe(true);
   });
 
   it("draws a fired laser's number text", () => {
@@ -135,7 +107,7 @@ describe("Black Box redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, s, 1, freshUi(s), 0, 0);
     // The matched entry/exit cells show the laser number "1".
-    expect(ops.some((o) => o.op === "drawText" && o.text === "1")).toBe(true);
+    expect(ops.some((o) => o.op === "text" && o.text === "1")).toBe(true);
   });
 
   it("shows the reveal button only when the ball count is in range", () => {
@@ -149,9 +121,7 @@ describe("Black Box redraw", () => {
     const ds0 = freshDs(s0);
     const r0 = recordingDrawing();
     redraw(r0.dr, ds0, null, s0, 1, freshUi(s0), 0, 0);
-    expect(r0.ops.some((o) => o.op === "drawCircle" && o.color === COL_BUTTON)).toBe(
-      false,
-    );
+    expect(r0.ops.some((o) => o.op === "circle" && o.fill === COL_BUTTON)).toBe(false);
 
     // Mark the right number of guesses → button appears.
     let s1 = s0;
@@ -160,9 +130,7 @@ describe("Black Box redraw", () => {
     const ds1 = freshDs(s1);
     const r1 = recordingDrawing();
     redraw(r1.dr, ds1, null, s1, 1, freshUi(s1), 0, 0);
-    expect(r1.ops.some((o) => o.op === "drawCircle" && o.color === COL_BUTTON)).toBe(
-      true,
-    );
+    expect(r1.ops.some((o) => o.op === "circle" && o.fill === COL_BUTTON)).toBe(true);
   });
 
   it("draws the red cross over a wrong guess on reveal", () => {
@@ -179,6 +147,6 @@ describe("Black Box redraw", () => {
     const ds = freshDs(revealed);
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, s, revealed, 1, freshUi(revealed), 0, 0);
-    expect(ops.some((o) => o.op === "drawPolygon" && o.color === COL_WRONG)).toBe(true);
+    expect(ops.some((o) => o.op === "polygon" && o.fill === COL_WRONG)).toBe(true);
   });
 });

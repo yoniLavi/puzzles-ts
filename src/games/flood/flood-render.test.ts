@@ -1,47 +1,24 @@
-// Tier-2 render test: drive Flood's `redraw` against a recording
-// `GameDrawing` double and assert the draw-call structure — play-color
+// Tier-2 render test: drive Flood's `redraw` against the engine's shared
+// `RecordingDrawing` and assert the draw-call structure — play-color
 // tiles, separator borders between differing-color cells, the cursor
 // outline, the hint SOLNNEXT circle, and victory/defeat flash overlays.
 import { describe, expect, it } from "vitest";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { HintStep } from "../../engine/game.ts";
 import { newCursor } from "../../engine/pointer.ts";
+import { opsOfKind, RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
 import { floodGame } from "./index.ts";
 import { type FloodDrawState, redraw } from "./render.ts";
 import { type FloodMove, type FloodState, newState } from "./state.ts";
 
-interface Op {
-  op: string;
-  color?: number;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
-  r?: number;
-}
+const PALETTE = floodGame.colors(DEFAULT_BACKGROUND);
 
-function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
-  const ops: Op[] = [];
-  const dr = {
-    startDraw: () => ops.push({ op: "startDraw" }),
-    endDraw: () => ops.push({ op: "endDraw" }),
-    drawUpdate: () => ops.push({ op: "drawUpdate" }),
-    clip: () => ops.push({ op: "clip" }),
-    unclip: () => ops.push({ op: "unclip" }),
-    drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-    drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", color: c }),
-    drawPolygon: (p: { x: number; y: number }[], f: number) =>
-      ops.push({ op: "drawPolygon", color: f, x: p[0].x, y: p[0].y }),
-    drawCircle: (_p: unknown, r: number, f: number) =>
-      ops.push({ op: "drawCircle", color: f, r }),
-    drawText: () => ops.push({ op: "drawText" }),
-    blitterNew: () => ({}),
-    blitterFree: () => {},
-    blitterSave: () => {},
-    blitterLoad: () => {},
-  } as unknown as GameDrawing;
-  return { dr, ops };
+/** A frame recorded through the shared recorder. The local double this
+ * replaced kept only the fill color and first vertex of a polygon, only the
+ * color of a line, and nothing at all from a `drawText`. */
+function recordingDrawing(): { dr: RecordingDrawing; ops: RecordingDrawing["ops"] } {
+  const dr = new RecordingDrawing(PALETTE);
+  return { dr, ops: dr.ops };
 }
 
 const TS = 32; // sepWidth = 1, cursorInset = 4, both > 0.
@@ -61,12 +38,10 @@ describe("Flood redraw", () => {
     redraw(dr, ds, null, state, 1, UI, 0, 0);
 
     // Two recessed-bevel polygons (highlight + lowlight).
-    expect(ops.filter((o) => o.op === "drawPolygon").length).toBe(2);
+    expect(ops.filter((o) => o.op === "polygon").length).toBe(2);
     // A full-tile rect in a play color (COL_1 = palette index 2) for the
     // corner cell (color 0).
-    expect(ops.some((o) => o.op === "drawRect" && o.color === 2 && o.w === TS)).toBe(
-      true,
-    );
+    expect(ops.some((o) => o.op === "rect" && o.color === 2 && o.w === TS)).toBe(true);
   });
 
   it("draws separator borders (COL_SEPARATOR) between differing cells", () => {
@@ -75,9 +50,7 @@ describe("Flood redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, state, 1, UI, 0, 0);
     // A thin (w = sepWidth = 1) separator-color rect appears.
-    expect(ops.some((o) => o.op === "drawRect" && o.color === 1 && o.w === 1)).toBe(
-      true,
-    );
+    expect(ops.some((o) => o.op === "rect" && o.color === 1 && o.w === 1)).toBe(true);
   });
 
   it("draws the cursor outline when the cursor is visible", () => {
@@ -86,7 +59,7 @@ describe("Flood redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, state, 1, { cursor: newCursor(0, 0, true) }, 0, 0);
     // The cursor outline is four separator-color lines.
-    expect(ops.filter((o) => o.op === "drawLine" && o.color === 1).length).toBe(4);
+    expect(ops.filter((o) => o.op === "line" && o.color === 1).length).toBe(4);
   });
 
   it("draws the hint SOLNNEXT circle on the next-fill squares", () => {
@@ -98,7 +71,9 @@ describe("Flood redraw", () => {
       explanation: "Fill with yellow",
     };
     redraw(dr, ds, null, state, 1, UI, 0, 0, hint);
-    expect(ops.some((o) => o.op === "drawCircle" && o.color === 1)).toBe(true);
+    // The shared recorder keeps a circle's fill AND outline separately, where
+    // the local double kept one number called `color` — so this now says which.
+    expect(ops.some((o) => o.op === "circle" && o.fill === 1)).toBe(true);
   });
 
   it("superimposes the victory rainbow when a completed board flashes", () => {
@@ -117,7 +92,7 @@ describe("Flood redraw", () => {
     // Manhattan distance 3 of the corner take colors 0..3.
     redraw(dr, ds, null, state, 1, UI, 0, 0.12);
     // Whole-tile rects only: a separator strip along a tile's edge is TS wide.
-    const tiles = ops.filter((o) => o.op === "drawRect" && o.w === TS && o.h === TS);
+    const tiles = opsOfKind(ops, "rect").filter((o) => o.w === TS && o.h === TS);
     expect(new Set(tiles.map((o) => o.color)).size).toBeGreaterThan(1);
   });
 
@@ -130,7 +105,7 @@ describe("Flood redraw", () => {
     // flashTime / DEFEAT_FLASH_FRAME(0.1) = 0 (≠ 1) → BADFLASH → every
     // tile painted in the separator color at full size.
     redraw(dr, ds, null, state, 1, UI, 0, 0.05);
-    const tiles = ops.filter((o) => o.op === "drawRect" && o.w === TS && o.h === TS);
+    const tiles = opsOfKind(ops, "rect").filter((o) => o.w === TS && o.h === TS);
     expect(tiles).toHaveLength(9);
     expect(tiles.every((o) => o.color === 1)).toBe(true);
   });

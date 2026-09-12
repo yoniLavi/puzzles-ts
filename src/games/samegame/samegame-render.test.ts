@@ -4,8 +4,10 @@
 // selection outer rect (COL_SEL), and the impossible-board inner recolor
 // (COL_IMPOSSIBLE).
 import { describe, expect, it } from "vitest";
-import type { GameDrawing } from "../../engine/game.ts";
 import { newCursor } from "../../engine/pointer.ts";
+import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
+import { samegameGame } from "./index.ts";
 import { newDrawState, redraw, type SamegameDrawState, setTileSize } from "./render.ts";
 import {
   newState,
@@ -14,37 +16,11 @@ import {
   type SamegameUi,
 } from "./state.ts";
 
-interface Op {
-  op: string;
-  color?: number;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
-}
+const PALETTE = samegameGame.colors(DEFAULT_BACKGROUND);
 
-function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
-  const ops: Op[] = [];
-  const dr = {
-    startDraw: () => ops.push({ op: "startDraw" }),
-    endDraw: () => ops.push({ op: "endDraw" }),
-    drawUpdate: () => ops.push({ op: "drawUpdate" }),
-    clip: () => ops.push({ op: "clip" }),
-    unclip: () => ops.push({ op: "unclip" }),
-    drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
-      ops.push({ op: "drawRect", color: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-    drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", color: c }),
-    drawPolygon: (p: { x: number; y: number }[], f: number) =>
-      ops.push({ op: "drawPolygon", color: f, x: p[0].x, y: p[0].y }),
-    drawCircle: () => ops.push({ op: "drawCircle" }),
-    drawText: () => ops.push({ op: "drawText" }),
-    blitterNew: () => ({}),
-    blitterFree: () => {},
-    blitterSave: () => {},
-    blitterLoad: () => {},
-  } as unknown as GameDrawing;
-  return { dr, ops };
+function recordingDrawing(): { dr: RecordingDrawing; ops: RecordingDrawing["ops"] } {
+  const dr = new RecordingDrawing(PALETTE);
+  return { dr, ops: dr.ops };
 }
 
 const TS = 32; // tilegap = 2, tileinner = 30, TILE_SIZE = 32.
@@ -73,7 +49,7 @@ describe("Same Game redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 1, emptyUi(state), 0, 0);
     // Two recessed-bevel polygons (highlight + lowlight).
-    expect(ops.filter((o) => o.op === "drawPolygon").length).toBe(2);
+    expect(ops.filter((o) => o.op === "polygon").length).toBe(2);
   });
 
   it("fills the gap between same-color neighbors (a seamless join)", () => {
@@ -82,14 +58,12 @@ describe("Same Game redraw", () => {
     const state = mkState("1,1");
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 1, emptyUi(state), 0, 0);
-    expect(ops.some((o) => o.op === "drawRect" && o.color === 1 && o.w === TS)).toBe(
-      true,
-    );
+    expect(ops.some((o) => o.op === "rect" && o.color === 1 && o.w === TS)).toBe(true);
     // A differing pair leaves the inner-only width (no full-width join fill).
     const state2 = mkState("1,2");
     const r2 = recordingDrawing();
     redraw(r2.dr, freshDs(state2), null, state2, 1, emptyUi(state2), 0, 0);
-    expect(r2.ops.some((o) => o.op === "drawRect" && o.color === 1 && o.w === TS)).toBe(
+    expect(r2.ops.some((o) => o.op === "rect" && o.color === 1 && o.w === TS)).toBe(
       false,
     );
   });
@@ -102,7 +76,7 @@ describe("Same Game redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 1, ui, 0, 0);
     // COL_SEL = palette index 11.
-    expect(ops.some((o) => o.op === "drawRect" && o.color === 11)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === 11)).toBe(true);
   });
 
   it("recolors tile innards to COL_IMPOSSIBLE on a stuck board", () => {
@@ -110,6 +84,6 @@ describe("Same Game redraw", () => {
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 1, emptyUi(state), 0, 0);
     // COL_IMPOSSIBLE = palette index 10 (drawn as the inner square).
-    expect(ops.some((o) => o.op === "drawRect" && o.color === 10)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.color === 10)).toBe(true);
   });
 });
