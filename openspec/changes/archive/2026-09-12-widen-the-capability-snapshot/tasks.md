@@ -135,6 +135,35 @@ that re-baselines a render snapshot is not a rename.
 
 ## 4. Close
 
-- [ ] 4.1 Run the full gate. No app check is needed if every commit moved no
-      recorded draw call — and if one did, it is not a rename and needs one.
-- [ ] 4.2 Archive the change.
+- [x] 4.1 **Four commits, each through the full gate**, green every time; the
+      last ran 9224 tests. No render snapshot moved in any of them — only
+      `capability-surface.test.ts.snap`, which is the vocabulary snapshot and is
+      the point. Each diff was verified by shape rather than by the green suite:
+      every changed source line is the substitution, a doc comment, or (in the
+      last) the new tier-2 block.
+- [x] 4.2 **Checked in Chrome anyway, and it earned the time.** This task said
+      an app check was unnecessary because no recorded draw call moved. That is
+      the right *rule* but the wrong call here: three of the five renamed fields
+      had **no test coverage at all** before this change (task 2.4), and all of
+      them drive rendering, so "no recorded draw call moved" only says the
+      frames nobody was recording did not move. A rename of an untested render
+      path is exactly where a real canvas is worth looking.
+
+      Console clean on every page. All five paths render:
+
+      - **Ascent, 5x5 Edges** — the finding the whole rename rests on, seen:
+        dragging a number in from the **left** edge paints a **vertical**
+        highlighted column, from the **top** edge a **horizontal** row. The
+        names and the tier-2 test and the canvas all agree.
+      - **Bricks** — the accreted drag paints three cells black inside the red
+        drag outline.
+      - **Map** — the floating blob follows the pointer and leaves **no trail**
+        behind it, which is the real check on the renamed draw-state pair: a
+        wrong `ds.dragX`/`dragY` would restore the background at the wrong place
+        and smear.
+      - **Guess** — the peg sprite follows the pointer, no trail.
+      - **Bridges** — both branches of `dragged` in one board: press-move-release
+        across two islands drew a bridge, press-release on a third island marked
+        it instead, "Move 2 of 2". That disambiguation is the only reason the
+        flag exists.
+- [x] 4.3 Archive the change.
