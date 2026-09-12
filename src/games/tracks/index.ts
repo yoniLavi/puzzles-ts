@@ -29,14 +29,18 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  endDrag,
   isCursorMove,
   isMouseDown,
   isMouseDrag,
   isMouseRelease,
+  moveDrag,
   newCursor,
+  newDrag,
   RIGHT_BUTTON,
   RIGHT_RELEASE,
   showCursor,
+  startDrag,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -95,13 +99,10 @@ import {
 
 function newUi(_state: TracksState): TracksUi {
   return {
-    dragging: false,
+    drag: newDrag(),
+    painting: false,
     clearing: false,
     notrack: false,
-    dragSx: -1,
-    dragSy: -1,
-    dragEx: -1,
-    dragEy: -1,
     clickx: 0,
     clicky: 0,
     cursor: newCursor(1, 1),
@@ -140,14 +141,12 @@ function edgeFlipMove(
  * way to cancel is to drag back to the start cell (or paint and undo). */
 function updateUiDrag(state: TracksState, ui: TracksUi, gx: number, gy: number): void {
   const { w, h } = state;
-  if (gy === ui.dragSy) {
-    ui.dragEx = gx < 0 ? 0 : gx >= w ? w - 1 : gx;
-    ui.dragEy = ui.dragSy;
-    ui.dragging = true;
-  } else if (gx === ui.dragSx) {
-    ui.dragEx = ui.dragSx;
-    ui.dragEy = gy < 0 ? 0 : gy >= h ? h - 1 : gy;
-    ui.dragging = true;
+  if (gy === ui.drag.sy) {
+    moveDrag(ui.drag, gx < 0 ? 0 : gx >= w ? w - 1 : gx, ui.drag.sy);
+    ui.painting = true;
+  } else if (gx === ui.drag.sx) {
+    moveDrag(ui.drag, ui.drag.sx, gy < 0 ? 0 : gy >= h ? h - 1 : gy);
+    ui.painting = true;
   }
 }
 
@@ -169,9 +168,9 @@ function interpretMove(
 
   if (isMouseDown(button)) {
     ui.cursor.visible = false;
-    ui.dragging = false;
+    ui.painting = false;
     if (!inGrid(state, gx, gy)) {
-      ui.dragSx = ui.dragSy = -1;
+      endDrag(ui.drag);
       return null;
     }
     if (button === RIGHT_BUTTON) {
@@ -183,8 +182,7 @@ function interpretMove(
     }
     ui.clickx = p.x;
     ui.clicky = p.y;
-    ui.dragSx = ui.dragEx = gx;
-    ui.dragSy = ui.dragEy = gy;
+    startDrag(ui.drag, gx, gy);
     return UI_UPDATE;
   }
 
@@ -196,13 +194,16 @@ function interpretMove(
 
   if (isMouseRelease(button)) {
     ui.cursor.visible = false;
-    if (ui.dragging && (ui.dragSx !== ui.dragEx || ui.dragSy !== ui.dragEy)) {
+    const { sx, sy, ex, ey } = ui.drag;
+    if (ui.painting && (sx !== ex || sy !== ey)) {
       const dragged = copyAndApplyDrag(board, ui);
       const move = moveDiff(board, dragged, false);
-      ui.dragging = false;
+      ui.painting = false;
+      endDrag(ui.drag);
       return move.ops.length > 0 ? move : null;
     }
-    ui.dragging = false;
+    ui.painting = false;
+    endDrag(ui.drag);
     const px = ui.clickx;
     const py = ui.clicky;
     const cx = centeredCoord(gx, m);

@@ -711,10 +711,11 @@ function dragBounds(
   ui: BoatsUi,
 ): { xmin: number; xmax: number; ymin: number; ymax: number } | null {
   if (!ui.dragOk) return null;
+  const { sx, sy, ex, ey } = ui.drag;
   return {
-    xmin: Math.min(ui.dsx, ui.dex),
-    xmax: Math.max(ui.dsx, ui.dex),
-    ymin: Math.min(ui.dsy, ui.dey),
-    ymax: Math.max(ui.dsy, ui.dey),
+    xmin: Math.min(sx, ex),
+    xmax: Math.max(sx, ex),
+    ymin: Math.min(sy, ey),
+    ymax: Math.max(sy, ey),
   };
 }

@@ -82,10 +82,11 @@ export function copyAndApplyDrag(b: Board, ui: TracksUi): Board {
   const { w } = b;
   const after: Board = { ...b, sflags: Int32Array.from(b.sflags) };
   const f = ui.notrack ? S_NOTRACK : S_TRACK;
-  const x1 = Math.min(ui.dragSx, ui.dragEx);
-  const x2 = Math.max(ui.dragSx, ui.dragEx);
-  const y1 = Math.min(ui.dragSy, ui.dragEy);
-  const y2 = Math.max(ui.dragSy, ui.dragEy);
+  const { sx, sy, ex, ey } = ui.drag;
+  const x1 = Math.min(sx, ex);
+  const x2 = Math.max(sx, ex);
+  const y1 = Math.min(sy, ey);
+  const y2 = Math.max(sy, ey);
   for (let x = x1; x <= x2; x++) {
     for (let y = y1; y <= y2; y++) {
       // Clearing flips only squares that have the flag; laying, only those without.

@@ -85,8 +85,27 @@ the other order only because the plants stood in for it.
       the drag's button code — which is what Tents calls `dragButton`. Renamed
       `dragButton`/`releaseButton` so `drag` can be the `GridDrag`, which
       unifies a second piece of vocabulary the two games had spelled apart.
-- [ ] 2.2 **Boats and Tracks** — the two that already have some coverage, so
-      these are the cheap ones. Boats shares Tents' `dragOk` shape.
+- [x] 2.2 **Boats and Tracks**. Both converted; all 7 plants in the converted
+      code are caught (they were 4 of 7 before the two tests below).
+
+      **Boats had a latent bug the type removed.** Its liveness was
+      `dragTo !== ""` and the release cleared `dragOk` but never `dragTo` — so a
+      drag event arriving after a release re-entered the branch, set `dragOk`
+      back to true, and the *next* release filled a line the player never
+      dragged. `drag.live` ends with the release, which fixes it; a test now
+      covers it, and a second covers the off-grid release, which nothing did.
+
+      **Tracks' `dragging` was not liveness either, and is renamed `painting`.**
+      It means "the drag has aligned to an axis and is laying track" — a press
+      starts a drag that is live but not yet painting. Leaving a field called
+      `dragging` beside `drag.live` is the ambiguity this change exists to
+      remove, so it is now named for what it is. That makes **three** fields
+      whose name suggested liveness and meant something narrower: Boats' and
+      Tents' `dragOk`, and this.
+
+      **The release path was the blind spot in both.** Of the seven plants,
+      exactly the three on the release survived the first pass — including the
+      behavior change in Boats. Worth checking first in the last two games.
 - [ ] 2.3 **Rect** — no coverage, and its pair is **half-grid**, so it is the
       one that proves the type assumes no coordinate space. Test first.
 - [ ] 2.4 **Bridges** last and most carefully: no coverage, two sources of

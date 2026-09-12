@@ -44,6 +44,7 @@ import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  endDrag,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -54,7 +55,9 @@ import {
   MIDDLE_BUTTON,
   MOD_CTRL,
   MOD_SHFT,
+  moveDrag,
   RIGHT_BUTTON,
+  startDrag,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -156,36 +159,40 @@ function interpretMove(
     ui.dragFrom = from;
     ui.dragTo = to;
     ui.dragOk = true;
-    ui.dsx = ui.dex = gx;
-    ui.dsy = ui.dey = gy;
+    startDrag(ui.drag, gx, gy);
     ui.cursor.visible = false;
     return UI_UPDATE;
   }
 
-  if ((isMouseDrag(button) || isMouseRelease(button)) && ui.dragTo !== "") {
+  if ((isMouseDrag(button) || isMouseRelease(button)) && ui.drag.live) {
     if (gx < 0 || gy < 0 || gx >= w || gy >= h) {
       ui.dragOk = false;
     } else {
       // A drag is limited to one row or column: whichever coordinate has moved
       // less snaps back to the drag's start.
-      if (Math.abs(gx - ui.dsx) < Math.abs(gy - ui.dsy)) gx = ui.dsx;
-      else gy = ui.dsy;
+      if (Math.abs(gx - ui.drag.sx) < Math.abs(gy - ui.drag.sy)) gx = ui.drag.sx;
+      else gy = ui.drag.sy;
 
-      ui.dex = gx;
-      ui.dey = gy;
+      moveDrag(ui.drag, gx, gy);
       ui.dragOk = true;
     }
 
-    if (isMouseRelease(button) && ui.dragOk) {
+    if (isMouseRelease(button)) {
+      const commit = ui.dragOk;
       const from = ui.dragFrom as BoatsFillFrom;
       const to = ui.dragTo as BoatsFill;
-      const x0 = Math.min(ui.dsx, ui.dex);
-      const x1 = Math.max(ui.dsx, ui.dex);
-      const y0 = Math.min(ui.dsy, ui.dey);
-      const y1 = Math.max(ui.dsy, ui.dey);
+      const { sx, sy, ex, ey } = ui.drag;
+      const x0 = Math.min(sx, ex);
+      const x1 = Math.max(sx, ex);
+      const y0 = Math.min(sy, ey);
+      const y1 = Math.max(sy, ey);
       ui.dragOk = false;
+      // Liveness ends with the release, not with the next press: before this
+      // the branch was entered on `dragTo !== ""`, which the release left set,
+      // so a stray drag event arriving after one could re-arm the fill.
+      endDrag(ui.drag);
 
-      if (fillChangesAnything(state, x0, y0, x1, y1, from, to))
+      if (commit && fillChangesAnything(state, x0, y0, x1, y1, from, to))
         return { kind: "fill", x0, y0, x1, y1, from, to };
     }
     return UI_UPDATE;

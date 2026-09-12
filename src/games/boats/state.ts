@@ -18,8 +18,8 @@
 
 import { tierNames } from "../../engine/difficulty.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
-import { newCursor } from "../../engine/pointer.ts";
+import type { GridCursor, GridDrag } from "../../engine/pointer.ts";
+import { newCursor, newDrag } from "../../engine/pointer.ts";
 
 // --- difficulty ------------------------------------------------------------
 
@@ -315,27 +315,25 @@ export type BoatsMove =
  */
 export interface BoatsUi {
   cursor: GridCursor;
-  /** `""` when no drag has started. */
+  /** The drag's anchor and current cell, in grid coordinates. */
+  drag: GridDrag;
+  /** The transformation the press picked: every square reading `dragFrom`
+   * becomes `dragTo`. Meaningless while `drag.live` is false. */
   dragFrom: BoatsFillFrom | "";
   dragTo: BoatsFill | "";
+  /** Whether the pointer is over a valid cell **right now**. Not liveness: a
+   * line drag can leave the grid and come back, and a release while this is
+   * false commits nothing. Tents is the only other game that needs it. */
   dragOk: boolean;
-  /** The drag's anchor and current cell. */
-  dsx: number;
-  dsy: number;
-  dex: number;
-  dey: number;
 }
 
 export function newUi(): BoatsUi {
   return {
     cursor: newCursor(),
+    drag: newDrag(),
     dragFrom: "",
     dragTo: "",
     dragOk: false,
-    dsx: -1,
-    dsy: -1,
-    dex: -1,
-    dey: -1,
   };
 }
 

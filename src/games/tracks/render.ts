@@ -762,7 +762,7 @@ export function redraw(
   }
 
   const board = stateToBoard(state);
-  const dragBoard = ui.dragging ? copyAndApplyDrag(board, ui) : null;
+  const dragBoard = ui.painting ? copyAndApplyDrag(board, ui) : null;
 
   ds.wrong.packCells(mistakes, (x, y) => y * w + x);
 

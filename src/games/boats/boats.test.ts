@@ -387,13 +387,58 @@ describe("boats input", () => {
     expect(state.grid[3 * 6 + 5]).toBe(EMPTY);
   });
 
+  it("ends the drag on the release, so a stray drag event cannot re-arm it", () => {
+    // Before `GridDrag`, liveness was `dragTo !== ""` and the release left
+    // `dragTo` set — so a drag event arriving after a release re-entered the
+    // branch, set `dragOk` back to true, and the *next* release filled a line
+    // the player never dragged. Nothing exercised it; this does.
+    const state = blankState();
+    const ui = newUi();
+    press(state, ui, 1, 1, LEFT_BUTTON);
+    press(state, ui, 3, 1, LEFT_DRAG);
+    press(state, ui, 3, 1, LEFT_RELEASE);
+    expect(ui.drag.live).toBe(false);
+
+    // A drag with no press behind it changes nothing, and the release after it
+    // commits nothing.
+    expect(press(state, ui, 4, 1, LEFT_DRAG)).toBe(null);
+    expect(press(state, ui, 4, 1, LEFT_RELEASE)).toBe(null);
+    expect(ui.dragOk).toBe(false);
+  });
+
+  it("commits nothing when the release lands off the grid", () => {
+    // `dragOk` is "the pointer is over a valid cell right now", so a drag that
+    // wanders off the board and is released there abandons the fill.
+    const state = blankState();
+    const ui = newUi();
+    press(state, ui, 1, 1, LEFT_BUTTON);
+    press(state, ui, 3, 1, LEFT_DRAG);
+    boatsGame.interpretMove(
+      state,
+      ui,
+      { tilesize: PREFERRED_TILE_SIZE } as never,
+      { x: -40, y: -40 },
+      LEFT_DRAG,
+    );
+    expect(ui.dragOk).toBe(false);
+    const move = boatsGame.interpretMove(
+      state,
+      ui,
+      { tilesize: PREFERRED_TILE_SIZE } as never,
+      { x: -40, y: -40 },
+      LEFT_RELEASE,
+    );
+    expect(move).toBe(UI_UPDATE);
+    expect(ui.drag.live).toBe(false);
+  });
+
   it("constrains a diagonal drag to the axis it moved furthest along", () => {
     const state = blankState();
     const ui = newUi();
     press(state, ui, 1, 1, RIGHT_BUTTON);
     // Three columns right, one row down: the row wins.
     press(state, ui, 4, 2, LEFT_DRAG);
-    expect([ui.dex, ui.dey]).toEqual([4, 1]);
+    expect([ui.drag.ex, ui.drag.ey]).toEqual([4, 1]);
   });
 
   it("widens the click target on the far edges so a whole line is easy to fill", () => {
@@ -408,7 +453,7 @@ describe("boats input", () => {
       { x: 6 * ts + 2, y: 2 * ts + 2 },
       RIGHT_BUTTON,
     );
-    expect(ui.dsx).toBe(5);
+    expect(ui.drag.sx).toBe(5);
   });
 
   it("rejects a no-op move rather than pushing a history entry", () => {
@@ -418,8 +463,7 @@ describe("boats input", () => {
     ui.dragFrom = "-";
     ui.dragTo = "-";
     ui.dragOk = true;
-    ui.dsx = ui.dex = 0;
-    ui.dsy = ui.dey = 0;
+    Object.assign(ui.drag, { live: true, sx: 0, sy: 0, ex: 0, ey: 0 });
     expect(press(state, ui, 0, 0, LEFT_RELEASE)).toBe(UI_UPDATE);
   });
 

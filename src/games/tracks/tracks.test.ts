@@ -218,8 +218,8 @@ describe("tracks input", () => {
       { x: CENTER(3), y: 5 },
       LEFT_DRAG,
     );
-    expect(ui.dragging).toBe(true);
-    expect(ui.dragEx).toBe(3); // extent preserved, not reset to the origin
+    expect(ui.painting).toBe(true);
+    expect(ui.drag.ex).toBe(3); // extent preserved, not reset to the origin
     const move = tracksGame.interpretMove(
       st,
       ui,
@@ -231,6 +231,12 @@ describe("tracks input", () => {
     for (const x of [1, 2, 3]) {
       expect(applied.sflags[3 * SMALL.p.w + x] & S_TRACK).toBeTruthy();
     }
+    // The release ends the drag as well as committing it. `painting` and
+    // `drag.live` are different questions — the first is "aligned and laying
+    // track", the second "a press is down" — and both must be down by now, or
+    // the engine's cancel-on-state-change would fire on a drag nobody is doing.
+    expect(ui.painting).toBe(false);
+    expect(ui.drag.live).toBe(false);
   });
 
   it("a right-drag over cells that already hold track is a no-op", () => {

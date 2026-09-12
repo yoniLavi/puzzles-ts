@@ -22,7 +22,7 @@ import { findLoops } from "../../engine/findloop.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { choice, dims, flag, paramsCodec } from "../../engine/params-codec.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
+import type { GridCursor, GridDrag } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- difficulty (upstream's Easy, Tricky, Hard; shown as tierNames(3)) ------
@@ -112,13 +112,17 @@ export interface TracksOp {
 export type TracksMove = { ops: TracksOp[]; solve?: boolean };
 
 export interface TracksUi {
-  dragging: boolean;
+  /** The drag's anchor and current cell, in grid coordinates. `live` is "a
+   * press is down"; {@link TracksUi.painting} is the narrower thing Tracks
+   * cares about. */
+  drag: GridDrag;
+  /** Whether the drag has **aligned to an axis and is laying track**. A press
+   * starts a drag that is live but not yet painting: only once the pointer
+   * reaches the anchor's own row or column does the paint begin. Not a second
+   * spelling of `drag.live`. */
+  painting: boolean;
   clearing: boolean;
   notrack: boolean;
-  dragSx: number;
-  dragSy: number;
-  dragEx: number;
-  dragEy: number;
   clickx: number;
   clicky: number;
   /** Keyboard cursor over the half-size grid (0..2w, 0..2h). */
