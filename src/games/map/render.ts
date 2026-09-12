@@ -149,8 +149,10 @@ export interface MapDrawState {
   bl: unknown | null;
   blTileSize: number;
   dragVisible: boolean;
-  dragx: number;
-  dragy: number;
+  /** Where the blitter last saved the background, in pixels — the sprite's
+   * top-left, not the pointer (which is `ui.dragX`/`dragY`, a half-tile away). */
+  dragX: number;
+  dragY: number;
 }
 
 export function computeSize(p: MapParams, tileSize: number): Size {
@@ -167,8 +169,8 @@ export function newDrawState(s: MapState): MapDrawState {
     bl: null,
     blTileSize: 0,
     dragVisible: false,
-    dragx: -1,
-    dragy: -1,
+    dragX: -1,
+    dragY: -1,
   };
 }
 
@@ -371,8 +373,8 @@ export function redraw(
 
   // Erase a previous floating blob.
   if (ds.dragVisible) {
-    dr.blitterLoad(ds.bl, { x: ds.dragx, y: ds.dragy });
-    dr.drawUpdate({ x: ds.dragx, y: ds.dragy, w: ts + 3, h: ts + 3 });
+    dr.blitterLoad(ds.bl, { x: ds.dragX, y: ds.dragY });
+    dr.drawUpdate({ x: ds.dragX, y: ds.dragY, w: ts + 3, h: ts + 3 });
     ds.dragVisible = false;
   }
 
@@ -487,8 +489,8 @@ export function redraw(
       cursorX = coord(ui.cursor.x, ts) + Math.floor(ts / 2) + epsilonX(ui.curLastmove);
       cursorY = coord(ui.cursor.y, ts) + Math.floor(ts / 2) + epsilonY(ui.curLastmove);
     } else {
-      cursorX = ui.dragx;
-      cursorY = ui.dragy;
+      cursorX = ui.dragX;
+      cursorY = ui.dragY;
     }
 
     // Lazily (re)allocate the blitter for the current tile size.
@@ -498,9 +500,9 @@ export function redraw(
       ds.blTileSize = ts;
     }
 
-    ds.dragx = cursorX - Math.floor(ts / 2) - 2;
-    ds.dragy = cursorY - Math.floor(ts / 2) - 2;
-    dr.blitterSave(ds.bl, { x: ds.dragx, y: ds.dragy });
+    ds.dragX = cursorX - Math.floor(ts / 2) - 2;
+    ds.dragY = cursorY - Math.floor(ts / 2) - 2;
+    dr.blitterSave(ds.bl, { x: ds.dragX, y: ds.dragY });
     dr.drawCircle(
       { x: cursorX, y: cursorY },
       iscur ? Math.floor(ts / 4) : Math.floor(ts / 2),
@@ -518,7 +520,7 @@ export function redraw(
           COL_0 + i,
           COL_0 + i,
         );
-    dr.drawUpdate({ x: ds.dragx, y: ds.dragy, w: ts + 3, h: ts + 3 });
+    dr.drawUpdate({ x: ds.dragX, y: ds.dragY, w: ts + 3, h: ts + 3 });
     ds.dragVisible = true;
   }
 }

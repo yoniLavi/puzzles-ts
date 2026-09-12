@@ -169,7 +169,7 @@ export interface GuessDrawState extends Geom {
   colorsCache: PegRow;
   /** Blitter drag sprite. */
   blitPeg: unknown | null;
-  dragCol: number;
+  dragColor: number;
   blitOx: number;
   blitOy: number;
 }
@@ -189,7 +189,7 @@ export function newDrawState(s: GuessState): GuessDrawState {
     solutionCache: invalidRow(p.npegs),
     colorsCache: invalidRow(p.ncolors),
     blitPeg: null,
-    dragCol: 0,
+    dragColor: 0,
     blitOx: 0,
     blitOy: 0,
   };
@@ -453,7 +453,7 @@ export function redraw(
   }
 
   // Restore whatever the floating drag sprite last covered.
-  if (ds.dragCol !== 0 && ds.blitPeg) {
+  if (ds.dragColor !== 0 && ds.blitPeg) {
     dr.blitterLoad(ds.blitPeg, pt(ds.blitOx, ds.blitOy));
     dr.drawUpdate(rect(ds.blitOx, ds.blitOy, ds.pegsz, ds.pegsz));
   }
@@ -532,15 +532,15 @@ export function redraw(
   ds.nextGo = s.nextGo;
 
   // Save the background under the new floating sprite and draw it.
-  if (ui.dragCol !== 0) {
+  if (ui.dragColor !== 0) {
     if (!ds.blitPeg) ds.blitPeg = dr.blitterNew({ w: ds.pegsz + 2, h: ds.pegsz + 2 });
     const ox = ui.dragX - idiv(ds.pegsz, 2);
     const oy = ui.dragY - idiv(ds.pegsz, 2);
     ds.blitOx = ox - 1;
     ds.blitOy = oy - 1;
     dr.blitterSave(ds.blitPeg, pt(ds.blitOx, ds.blitOy));
-    drawPeg(dr, ds, ox, oy, true, ui.showLabels, ui.dragCol);
+    drawPeg(dr, ds, ox, oy, true, ui.showLabels, ui.dragColor);
   }
-  ds.dragCol = ui.dragCol;
+  ds.dragColor = ui.dragColor;
   ds.started = true;
 }

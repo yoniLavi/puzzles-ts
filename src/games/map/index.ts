@@ -168,15 +168,15 @@ function interpretMove(
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     pickUp(state, ui, regionFromCoords(state.map, ts, point.x, point.y));
-    ui.dragx = point.x;
-    ui.dragy = point.y;
+    ui.dragX = point.x;
+    ui.dragY = point.y;
     ui.cursor.visible = false;
     return UI_UPDATE;
   }
 
   if ((button === LEFT_DRAG || button === RIGHT_DRAG) && ui.dragColor > -2) {
-    ui.dragx = point.x;
-    ui.dragy = point.y;
+    ui.dragX = point.x;
+    ui.dragY = point.y;
     return UI_UPDATE;
   }
 

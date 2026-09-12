@@ -70,8 +70,10 @@ export interface GuessUi {
    * submit button); `y` is the color, `0..ncolors-1`. */
   cursor: GridCursor;
   markable: boolean;
-  /** `0` = not dragging, else a color `1..ncolors`. */
-  dragCol: number;
+  /** `0` = not dragging, else a color `1..ncolors`. Spelled out because `Col`
+   * reads as *column* in a collection of grid puzzles, and Ascent holds a
+   * `dragColumn` that is one. Map spells the same concept `dragColor` too. */
+  dragColor: number;
   /** Drag position — *center* of the floating peg, in pixels. */
   dragX: number;
   dragY: number;

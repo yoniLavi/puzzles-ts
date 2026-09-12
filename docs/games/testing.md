@@ -562,6 +562,44 @@ is the `ts-engine` spec, "A shared mechanic is joined by having it".
    **Tell:** the covered set is a single `includes("…")` while the population
    above it took twenty lines to derive.
 
+### The divergence no clone detector can see
+
+**One concept spelled several ways is not duplication, so jscpd is blind to it,
+and it is the failure mode a 57-game collection produces most.**
+`re-express-the-collection` said so in its own closing note; two convergences
+then landed in exactly that blind spot. Nine games had a private
+`drawPencilIndicator` and jscpd saw nothing, because each computed its own box.
+Six games spelled a drag's anchor six ways and there was no duplication at all
+to detect.
+
+**The instrument for it is the capability snapshot**
+([`capability-surface.test.ts`](../../src/capability-surface.test.ts)), which
+records every game's field names — its `Ui` *and* its draw state — sorted, in
+one file. It asserts nothing about which names a game may use; an approved
+vocabulary would be the manifest this collection refuses. Its whole job is to
+put the collection's vocabulary somewhere a person can **read** it, and to make
+a change to that vocabulary a reviewable line in a text diff. Reading all 57
+once is how the `dragType`/`dragtype` split, the `aiming` collision and a
+`dragCol` that meant *color* next to a `dragColumn` that meant *column* were
+all found — and, in the draw-state half the first reading could see,
+`tilesize` against `tileSize` across 55 games.
+
+Two limits to know before trusting it:
+
+- **The `Ui` half sees only what `newUi` returned.** A field an interface
+  declares `optional` and only a gesture assigns is invisible: Sixteen's
+  `newUi` returns `{cursor, curMode}` and its nine drag fields — `dragX?`,
+  `dragStartX?`, … — appear nowhere in the snapshot. So a census taken off the
+  snapshot alone **under-counts**, which is the same wrong-key error as § "How
+  a cross-game guard finds its population" rule 1, one level up. Read the
+  interface when the count is the point.
+- **Read the draw state *unsized*, and never "the way production builds it".**
+  `setTileSize` assigns, so sizing puts back every field it writes; the first
+  cut sized it and a deliberately deleted `tilesize` came back before
+  `Object.keys` ran. The guard passed. What replaces sizing is an assertion
+  that sizing adds no key for any game, so the hazard sizing was covering
+  fails a test instead.
+
 ## Metrics and instruments
 
 **`npm run metrics` records duplication (jscpd), runtime import cycles (madge,

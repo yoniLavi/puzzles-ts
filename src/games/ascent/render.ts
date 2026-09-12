@@ -520,7 +520,7 @@ export function redrawAscent(
         ? COL_BORDER
         : flash >= sn && flash <= sn + FLASH_SIZE
           ? COL_LOWLIGHT
-          : ui.dragx === i % w || ui.dragy === Math.trunc(i / w)
+          : ui.dragColumn === i % w || ui.dragRow === Math.trunc(i / w)
             ? COL_HIGHLIGHT
             : ui.held === i ||
                 ui.typingCell === i ||

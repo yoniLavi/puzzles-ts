@@ -153,8 +153,8 @@ export interface MapUi {
   /** Pencil bitmask carried by a blank drag. */
   dragPencil: number;
   /** Pixel coords of the current drag position. */
-  dragx: number;
-  dragy: number;
+  dragX: number;
+  dragY: number;
 
   cursor: GridCursor;
   curLastmove: number;
@@ -171,8 +171,8 @@ export function newUi(_state: MapState): MapUi {
   return {
     dragColor: -2,
     dragPencil: 0,
-    dragx: -1,
-    dragy: -1,
+    dragX: -1,
+    dragY: -1,
     cursor: newCursor(),
     curLastmove: 0,
     curMoved: false,

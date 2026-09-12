@@ -65,7 +65,7 @@ function newUi(state: GuessState): GuessUi {
     holds: new Array(p.npegs).fill(false),
     cursor: newCursor(),
     markable: false,
-    dragCol: 0,
+    dragColor: 0,
     dragX: 0,
     dragY: 0,
     dragOpeg: -1,
@@ -210,40 +210,40 @@ function interpretMove(
   // --- mouse ---
   if (button === LEFT_BUTTON) {
     if (overCol > 0) {
-      ui.dragCol = overCol;
+      ui.dragColor = overCol;
       ui.dragOpeg = -1;
     } else if (overGuess > -1) {
       const col = ui.currPegs[overGuess];
       if (col) {
-        ui.dragCol = col;
+        ui.dragColor = col;
         ui.dragOpeg = overGuess;
       }
     } else if (overPastGuessY > -1) {
       const col = from.guesses[overPastGuessY].pegs[overPastGuessX];
       if (col) {
-        ui.dragCol = col;
+        ui.dragColor = col;
         ui.dragOpeg = -1;
       }
     }
-    if (ui.dragCol) {
+    if (ui.dragColor) {
       ui.dragX = x;
       ui.dragY = y;
       return UI_UPDATE;
     }
     return null;
   }
-  if (button === LEFT_DRAG && ui.dragCol) {
+  if (button === LEFT_DRAG && ui.dragColor) {
     ui.dragX = x;
     ui.dragY = y;
     return UI_UPDATE;
   }
-  if (button === LEFT_RELEASE && ui.dragCol) {
+  if (button === LEFT_RELEASE && ui.dragColor) {
     if (overGuess > -1) {
-      setPeg(params, ui, overGuess, ui.dragCol);
+      setPeg(params, ui, overGuess, ui.dragColor);
     } else if (ui.dragOpeg > -1) {
       setPeg(params, ui, ui.dragOpeg, 0);
     }
-    ui.dragCol = 0;
+    ui.dragColor = 0;
     ui.dragOpeg = -1;
     ui.cursor.visible = false;
     return UI_UPDATE;

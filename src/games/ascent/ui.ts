@@ -108,8 +108,13 @@ export interface AscentUi {
   typingNumber: number;
 
   doubleclickCell: number;
-  dragx: number;
-  dragy: number;
+  /** The guide line drawn while a number is dragged in from an edge: a
+   * **column** index and a **row** index, `-1` for none. Grid lines, not
+   * pixels — the renderer compares them against `i % w` and `trunc(i / w)`.
+   * Only the one perpendicular to the edge the drag came from survives, so
+   * the highlight crosses the drag's direction of travel. */
+  dragColumn: number;
+  dragRow: number;
 
   /** Preference: numpad enters numbers (false) or moves the cursor (true). */
   moveWithNumpad: boolean;
@@ -140,8 +145,8 @@ export function newAscentUi(state: AscentState): AscentUi {
     typingCell: CELL_NONE,
     typingNumber: 0,
     doubleclickCell: -1,
-    dragx: -1,
-    dragy: -1,
+    dragColumn: -1,
+    dragRow: -1,
     moveWithNumpad: false,
     autoAdvanceRuns: true,
   };
@@ -433,10 +438,11 @@ function mouseClick(
 
     /* Update drag cursor when dragging a number from the edge */
     if (isNumberEdge(ui.select) && button === LEFT_DRAG) {
-      ui.dragx = gx;
-      ui.dragy = gy;
-      if (ui.held % w > 0 && ui.held % w < w - 1) ui.dragx = -1;
-      if (Math.trunc(ui.held / w) > 0 && Math.trunc(ui.held / w) < h - 1) ui.dragy = -1;
+      ui.dragColumn = gx;
+      ui.dragRow = gy;
+      if (ui.held % w > 0 && ui.held % w < w - 1) ui.dragColumn = -1;
+      if (Math.trunc(ui.held / w) > 0 && Math.trunc(ui.held / w) < h - 1)
+        ui.dragRow = -1;
       return null;
     }
     /* Dragging over a number in sequence moves the highlight */
@@ -572,7 +578,7 @@ function mouseClick(
   if (button === LEFT_DRAG) return leftDragArm();
 
   if (button === LEFT_RELEASE) {
-    ui.dragx = ui.dragy = -1;
+    ui.dragColumn = ui.dragRow = -1;
     if (ui.doubleclickCell === i) {
       uiClear(ui);
       if (mouseCursor(ui)) hideCursor(ui.cursor);

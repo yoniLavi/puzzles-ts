@@ -607,6 +607,20 @@ and a slide-follow drag (Sixteen, Slide) each keep their own lifecycle; their
 sprites, canceling a dangling drag in `changedState`) are in
 [`rendering.md`](./rendering.md).
 
+**The sprite drag is a second consistent shape, and `GridDrag` is not it.**
+Pegs and Signpost independently arrived at the same three-part `Ui`: `sx`/`sy`
+the **grid** anchor, `dx`/`dy` the **pixel** current position, and `dragging`.
+That mix is why `name-the-drag` left them out (§4.1, "deferred, not refused"):
+`GridDrag`'s two ends live in one coordinate space, and here the far end is a
+pointer the release does not even read — the target cell is re-derived from it.
+So a `GridDrag` would carry an `ex`/`ey` that is either unused or in the wrong
+unit. **A third sprite drag should copy Pegs, not bend `GridDrag`**, and if one
+appears, the anchor-only drag that pair wants becomes worth building; doing
+either of them alone would not earn it. The pixel *destination* — where the
+blitter saved the background — is `dragX`/`dragY` on the **draw state** in all
+three sprite games (Map's floating blob included), a half-tile offset from the
+pointer.
+
 The **aim drag** picks one discrete target, not a set: `Ui` stores the
 snapped aim (an octant, a tile), each drag event recomputes it and returns
 `null` when it is unchanged (nothing to repaint), an aim where release

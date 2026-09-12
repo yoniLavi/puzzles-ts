@@ -50,27 +50,88 @@
 Each is its own commit, and each must move **no** recorded draw call — a rename
 that re-baselines a render snapshot is not a rename.
 
-- [ ] 2.1 Bricks `dragtype` → `dragType`, matching Clusters and Sticks and the
-      model `docs/games/input.md` § "The accreting-paint drag" documents.
-- [ ] 2.2 Bridges' `aiming` → a name Inertia is not already using (it has
-      `aiming` and `aimDir` for the aimed move direction). Self-inflicted by
-      `name-the-drag`; Bridges' means "the pointer has left the source island".
-- [ ] 2.3 The pixel/grid drag position, **read per game, not replaced in bulk**:
-      Ascent's `dragx`/`dragy` are a grid cell, Map's and Guess's are pixels
-      (Guess spelling it `dragX`). Give the unit the name, so the two pixel
-      games agree and Ascent's pair says cells. Renaming Guess to match Map
-      without this would leave three games sharing one name for two units.
+- [x] 2.1 Bricks `dragtype` → `dragType`, matching Clusters and Sticks and the
+      model `docs/games/input.md` § "The accreting-paint drag" documents. The
+      guide now states that all three spell it `dragType`, and Bricks'
+      declaration points at the guide section rather than listing its two
+      siblings.
+- [x] 2.2 Bridges' `aiming` → **`dragged`**, *not* the `steering`/`aimedAway`
+      the design proposed. Rect already holds this concept under that name,
+      documented in almost the same words ("set once a drag has moved off its
+      start point … distinct from `drag.live`: a press is live immediately, but
+      has not yet *dragged*") and gated on the identical predicate
+      (`gx !== drag.sx || gy !== drag.sy`). **Joining an existing spelling beats
+      minting a third**, which is this section's own point; minting would have
+      been the error the change was written to fix.
+
+      Reading the neighbors also produced a **negative** result worth as much:
+      Boats' and Tents' `dragOk` is a *different* concept ("the pointer is over
+      a valid cell right now"), already consistent across its two games, and
+      must not move. A sweep that only renames cannot tell those apart.
+
+      `docs/games/input.md` § "A button with two meanings resolves on the
+      release" now states the convention and why `aiming` is the wrong word for
+      it. Incidental: dropped a comment naming `dragxSrc`/`dragySrc`, fields
+      `name-the-drag` had already deleted.
+- [x] 2.3 The pixel/grid drag position, read per game — and the reading
+      **changed the answer twice**:
+
+      **Sixteen is an invisible third pixel game.** It holds `dragX`/`dragY`
+      (pixels) plus seven more drag fields, all declared `optional` and assigned
+      only mid-gesture, so `newUi` returns `{cursor, curMode}` and **none of
+      them appear in the snapshot**. With Pegs' and Signpost's draw states that
+      makes `dragX`/`dragY` the spelling of four games against Map's one — so
+      **Map** moves (`Ui` and draw state both), not Guess. The instrument that
+      motivated this change is half-blind on its own `Ui` side; recorded in
+      `docs/games/testing.md`.
+
+      **Guess's `dragCol` is a *color*, not a column** — Map spells the same
+      concept `dragColor`. It had to move too, because `dragCol` was the first
+      name chosen for Ascent's column and would have collided *as a homonym*:
+      `dragCol` (color), `dragColor` (color), `dragColumn` (column) is worse
+      than fixing Guess. → `dragColor`.
+
+      **Ascent's pair is a column index and a row index**, not "a grid cell":
+      the renderer compares them against `i % w` and `trunc(i / w)`, so they
+      paint a vertical and a horizontal guide line, and only the one
+      perpendicular to the grabbed edge survives. → `dragColumn`/`dragRow`,
+      spelled out because `Col` was the homonym above.
+- [x] 2.4 **A rename that asserts a semantic owes something that checks it.**
+      `dragx`/`dragy`/`dragCol` had **zero** test references in all three games,
+      so the renames were verified by `tsgo` alone — sufficient for a rename, but
+      `dragColumn`/`dragRow` are names that make a claim, and an unchecked claim
+      is the thing `AGENTS.md` warns about in comments. Ascent gained three
+      tier-2 cases (`ascent.test.ts`, "ascent edge-drag guide line"): the
+      highlight for `dragColumn` shares one x and spans several y, for `dragRow`
+      the transpose, and neither set paints anything. Proved by swapping the two
+      comparisons in `render.ts` — both fail, "expected 5 to be 1" — then
+      restored. Nothing else in the suite could see that mutation.
+- [x] 2.5 **No save format is touched**, checked rather than assumed, because a
+      `Ui` rename is in `AGENTS.md`'s ask-the-owner-first category if it is.
+      `Midend` persists a `Ui` only through `game.encodeUi`, never by
+      serializing keys; Ascent's encoder emits `P…H…N…` from
+      `positions`/`prevhints`/`nexthints` positionally and names none of the
+      renamed fields, and Guess and Map declare no `encodeUi` at all.
 
 ## 3. Record what is a finding rather than a defect
 
-- [ ] 3.1 Pegs and Signpost already agree on `sx`/`sy` (grid anchor) + `dx`/`dy`
-      (pixel current) + `dragging` — a second, consistent drag shape distinct
-      from `GridDrag`'s. Record it where the next reader of either meets it
-      (`docs/games/input.md` § "Drag models"), and cross-reference
-      `name-the-drag` § 4.1, which defers exactly this pair.
-- [ ] 3.2 Note in `docs/games/testing.md` what the widened snapshot is for: the
-      class of divergence a clone detector cannot see, with the pencil indicator
-      and the drag anchor as the two worked examples.
+- [x] 3.1 Recorded in `docs/games/input.md` § "Other drag shapes", under the
+      sentence that already names the pair: the three-part shape (`sx`/`sy`
+      grid anchor, `dx`/`dy` pixel current, `dragging`), why `GridDrag` is not
+      it (its two ends share one space; here the far end is a pointer the
+      release does not read), and the actionable conclusion — **a third sprite
+      drag copies Pegs rather than bending `GridDrag`**, and that is when the
+      anchor-only drag `name-the-drag` §4.1 deferred becomes worth building.
+      Also records that the pixel *destination* is `dragX`/`dragY` on the draw
+      state in all three sprite games, Map included, which is what task 2.3
+      made true.
+- [x] 3.2 `docs/games/testing.md` § "The divergence no clone detector can see",
+      a sibling of § "How a cross-game guard finds its population". States the
+      class (one concept, several spellings — not duplication, so jscpd is
+      blind), the two worked examples, what the snapshot deliberately does not
+      assert, and **both** of its limits: the `Ui` half cannot see an optional
+      field only a gesture assigns (Sixteen's nine), and the draw state must be
+      read unsized because `setTileSize` writes.
 
 ## 4. Close
 

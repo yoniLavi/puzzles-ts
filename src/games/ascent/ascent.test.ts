@@ -9,7 +9,10 @@ import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
 import { CURSOR_RIGHT, LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
-import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import {
+  type DrawOp,
+  RecordingDrawing,
+} from "../../engine/testing/recording-drawing.ts";
 import { newAscentDesc } from "./generator.ts";
 import { ascentGame } from "./index.ts";
 import { COL_HIGHLIGHT } from "./render.ts";
@@ -173,6 +176,56 @@ describe("ascent hexagonal hit-testing (design F7)", () => {
       checked++;
     }
     expect(checked).toBeGreaterThan(20);
+  });
+});
+
+describe("ascent edge-drag guide line", () => {
+  // What makes the names `dragColumn`/`dragRow` checkable rather than a claim.
+  // They were `dragx`/`dragy`, which said pixels and held grid lines, and
+  // nothing in the suite touched them — so the only thing standing behind the
+  // new names is this. The mutation it exists to catch is the one tsgo cannot
+  // see: swapping `i % w` for `trunc(i / w)` in the render comparison, which
+  // silently turns each guide line into the other.
+  const paint = (set: (ui: ReturnType<typeof ascentGame.newUi>) => void) => {
+    const p = mk(5, 5, 0, MODE_RECT);
+    const { desc } = newAscentDesc(p, randomNew("edge-drag-guide"));
+    const state = newAscentState(p, desc);
+    const ui = ascentGame.newUi(state);
+    set(ui);
+    const ds = ascentGame.newDrawState?.(state);
+    if (!ds) throw new Error("no drawstate");
+    ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
+    const rec = new RecordingDrawing(ascentGame.colors([0.83, 0.83, 0.83]));
+    ascentGame.redraw?.(rec, ds, null, state, 1, ui, 0, 0);
+    return rec.ops.filter(
+      (o): o is Extract<DrawOp, { op: "rect" }> =>
+        o.op === "rect" && o.color === COL_HIGHLIGHT,
+    );
+  };
+
+  it("highlights one whole column for dragColumn", () => {
+    const cells = paint((ui) => {
+      ui.dragColumn = 2;
+    });
+    // A column is cells that share an x and differ in y. Asserting both
+    // directions is the point: "all one x" alone would also pass for a single
+    // cell, which is what a swapped comparison could degenerate to.
+    expect(new Set(cells.map((c) => c.x)).size).toBe(1);
+    expect(new Set(cells.map((c) => c.y)).size).toBeGreaterThan(1);
+  });
+
+  it("highlights one whole row for dragRow", () => {
+    const cells = paint((ui) => {
+      ui.dragRow = 2;
+    });
+    expect(new Set(cells.map((c) => c.y)).size).toBe(1);
+    expect(new Set(cells.map((c) => c.x)).size).toBeGreaterThan(1);
+  });
+
+  it("draws no guide line when neither is set", () => {
+    // The baseline the two above are measured against — without it they would
+    // pass on a board that happened to highlight something else.
+    expect(paint(() => {})).toHaveLength(0);
   });
 });
 
