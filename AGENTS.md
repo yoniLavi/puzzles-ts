@@ -257,6 +257,14 @@ a constant means, search for what it *said*, not only for what it is called.
 and `readInt` and some forty inline loops, because a copy is never called by the
 name of the thing it copies. Write the scenario against the shape.
 
+**And a spec delta is a claim about code that is still moving.** A delta
+written mid-change states the signature the code had *that morning*;
+`openspec validate` checks a delta's shape and never its truth, so a stale one
+archives into the live spec as a requirement contradicting the code it
+governs. Re-read every delta against the code before archiving —
+`share-the-desc-digit-fact` published a `string | undefined` signature the
+change itself had narrowed hours earlier.
+
 **A count written in prose is a census nobody re-runs.** Three in one sitting:
 `difficulty.ts` said twenty-eight tiered games where there were twenty-nine;
 `deduction-fixpoint.ts` said "the eleven latin-family games" reach it through

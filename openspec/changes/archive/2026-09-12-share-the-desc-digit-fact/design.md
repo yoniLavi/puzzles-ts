@@ -171,6 +171,12 @@ fact, and the exports are still read from the module.
 
 ## D7. What the spec now says
 
+The delta's digit-character requirement was written before D2's narrowing and
+first stated the `string | undefined` signature; it states the shipped one.
+**A spec delta is a claim about code that is still moving**, so re-read it
+against the code before archiving, not only against `openspec validate`, which
+checks a delta's shape and never its truth.
+
 `ts-engine`: the leading-integer requirement is renamed and re-homed
 (`decimal.ts`, descs as well as params, guarded by shape); the digit-key
 requirement is modified to describe the widened guard; a new requirement
