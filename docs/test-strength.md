@@ -606,8 +606,22 @@ the variant to watch hardest, where the unit was right and the instrument was
 | **"86.5% of specifiers resolved"** | counted bare package imports as failures to resolve | listing them: 11 of 4183 actually failed, all `?raw`/`?inline` assets |
 | **an import-cost micro-benchmark** | stubbed the module namespace as plain data properties, where vite defines exports as **getters**; V8 hoists the one and not the other | it measured the imported arm as *faster*, contradicting a mechanism already confirmed by reading the transform's output |
 | **"the A/A control flatters itself"** | the control's arms were not warmed before the clock started, so the first paid JIT warm-up and the second did not | warming every arm: one instance timed twice reads 0.98–1.02, the same as two separately loaded instances |
+| **a random-input fuzz over all 57 games** | it drove every game through a real `Midend` and reported clean, but the defect it generalized (a stale armed gesture surviving an undo) needs a four-step coincidence random play does not assemble | handing it the **unfixed** game as a control — Pegs with its `changedState` stripped passed too, at 400 steps and again at 2,400 across two alphabets |
 
-Three habits fall out. **Give a table a total and assert the columns sum to it** —
+**The last row is the cheapest habit on this page: hand a sweep a known
+positive before believing it found nothing.** A clean result from a broad sweep
+is a claim about the *instrument's reach*, and a fuzz's reach is invisible —
+57 games, 27,000 real inputs and a green line say nothing about whether the one
+sequence that matters was ever assembled. The control costs one run (spread the
+game object, drop the fix, re-run) and it converted "the collection is clean"
+into "this instrument cannot answer the question", which is why the fuzz was not
+shipped. This is AGENTS.md's "prove a new guard fails before trusting it" aimed
+at a sweep rather than at a single assertion, and it applies hardest exactly
+where the sweep is broadest, because breadth is what makes a null result feel
+earned. What answered the question instead was reading the population: the 37
+games with no `changedState` are a list you can sit down with.
+
+Three further habits fall out. **Give a table a total and assert the columns sum to it** —
 then a status cannot vanish by omission. **Validate a parser against the real
 schema, not against a fixture you wrote from your own understanding of it** —
 that validates the understanding, not the parser. And **before believing a

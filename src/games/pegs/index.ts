@@ -215,6 +215,21 @@ function executeMove(s: PegsState, m: PegsMove): PegsState {
   }
   return { w, h, completed: s.completed || pegs === 1, grid };
 }
+// --- changedState ----------------------------------------------------
+
+/**
+ * Both halves of Pegs' Ui name a peg by where it sits, and a replaced state may
+ * have moved or removed it: `dragging` carries the peg picked up at
+ * `(sx, sy)`, and `curJumping` arms a jump from under the cursor, checking the
+ * direction at fire time but taking that peg on trust. An undo, a redo or a
+ * restart is under no obligation to leave either standing, so neither survives
+ * one. Upstream does the same in `game_changed_state`.
+ */
+function changedState(ui: PegsUi, _old: PegsState | null, _next: PegsState): void {
+  ui.dragging = false;
+  ui.curJumping = false;
+}
+
 // --- animation / flash -----------------------------------------------
 
 function flashLength(a: PegsState, b: PegsState): number {
@@ -260,6 +275,7 @@ export const pegsGame: Game<PegsParams, PegsState, PegsMove, PegsUi, PegsDrawSta
   newState,
   newUi,
 
+  changedState,
   interpretMove,
   executeMove,
   status,

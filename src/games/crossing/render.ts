@@ -1007,18 +1007,18 @@ export function redraw(
         l,
         ui.dir,
       );
-      if (r >= 0) return runs[r].horizontal ? 0 : 5;
-      return 4;
+      if (r >= 0) return runs[r].horizontal ? 0 : 4;
+      return 3;
     }
-    return 6;
+    return 5;
   };
-  // 0 across-fit · 1 placed (struck) · 2 duplicated · 3 held · 4 nowhere here
-  // · 5 down-fit · 6 no selection.
+  // 0 across-fit · 1 placed (struck) · 2 duplicated · 3 nowhere here
+  // · 4 down-fit · 5 no selection. Held is not among them: it is a box drawn
+  // round the clue, so it rides in `panelState` as its own bit.
   const CLASS_COLOR = [
     COL_ACROSSFIT,
     COL_LOWLIGHT,
     COL_ERROR,
-    COL_GRID,
     COL_LOWLIGHT,
     COL_DOWNFIT,
     COL_GRID,
@@ -1032,7 +1032,15 @@ export function redraw(
   // aids stay legible together.
   const hintClass = (l: number): number =>
     l === hintNumberTarget ? 2 : hintNumbers.has(l) ? 1 : 0;
-  const panelState = (l: number): number => colorClass(l) | (hintClass(l) << 4);
+  /**
+   * The panel repaints only when this changes, so it has to name **every**
+   * input `drawNumbers` reads below — the ink color, the hint box, and the held
+   * box. Held is the one that is easy to lose: it was a color class until it
+   * became a box, and the box arrives as its own predicate rather than through
+   * `colorClass`, so nothing here mentions it unless this line does.
+   */
+  const panelState = (l: number): number =>
+    colorClass(l) | (hintClass(l) << 4) | (l === ui.heldNumber ? 1 << 6 : 0);
 
   let panelStale = false;
   for (let l = 0; l < numbers.length; l++) {

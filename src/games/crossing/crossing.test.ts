@@ -817,6 +817,36 @@ describe("crossing number-list placement", () => {
     expect(dr.ops.some((o) => o.op === "line" && o.color === COL_HELD)).toBe(true);
   });
 
+  it("marks and unmarks a held clue on a draw state that has painted before", () => {
+    // Every other paint test here builds a draw state per frame, so each one
+    // meets a cold panel cache and repaints unconditionally. A real game paints
+    // the same draw state for the whole session, and the held clue has to be an
+    // input to the panel's cache key or the box is never drawn — nor erased.
+    const state = newState(P5, FIX.desc);
+    const palette = crossingGame.colors([0.827, 0.827, 0.827]);
+    const ds = newDrawState(state);
+    setTileSize(ds, TS);
+    const paint = (ui: CrossingUi): RecordingDrawing => {
+      const dr = new RecordingDrawing(palette);
+      redraw(dr, ds, null, state, 1, ui, 0, 0);
+      return dr;
+    };
+    const heldOps = (dr: RecordingDrawing): number =>
+      // Keyed on the color rather than on `op`, so the count still finds the
+      // box if the outline is ever drawn as something other than four lines.
+      dr.ops.filter((o) => "color" in o && o.color === COL_HELD).length;
+    const panelRepainted = (dr: RecordingDrawing): boolean =>
+      dr.ops.some((o) => o.op === "text" && state.puzzle.numbers.includes(o.text));
+
+    const l = 0;
+    expect(heldOps(paint(newUi()))).toBe(0);
+    expect(heldOps(paint({ ...newUi(), heldNumber: l }))).toBeGreaterThan(0);
+    // Putting it back erases the box, which needs the panel repainted at all.
+    const released = paint(newUi());
+    expect(panelRepainted(released)).toBe(true);
+    expect(heldOps(released)).toBe(0);
+  });
+
   it("previews the digits only when a single run could take the clue", () => {
     const state = newState(P5, FIX.desc);
     const l = 0;

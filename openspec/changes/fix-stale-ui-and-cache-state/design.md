@@ -20,6 +20,20 @@ Rejected: validating the armed jump at fire time instead. That leaves the Ui
 lying between the undo and the next key, and the same stale value still reaches
 `interpretMove`, which is where the throw comes from.
 
+Re-deriving at fire time *is* a legitimate answer in general — it is how Bridges
+stays safe without the hook — but only when the fire recomputes everything it
+uses, in the call that uses it. Pegs' fire recomputes the direction and not the
+source, which is precisely the half-measure that produced the throw.
+
+## Crossing: delete the label with the class
+
+`CLASS_COLOR`'s entry 3 is unreachable and still labeled `held`, left behind
+when held became a box. Keeping it would leave the key's comment claiming the
+coverage the key had just been given back by other means, so the entry and the
+label go and the remaining classes renumber. The colors emitted are unchanged
+(class numbers are private to one function and to an in-memory cache), which the
+render snapshots confirm.
+
 ## Crossing: widen the key, do not drop the cache
 
 The panel cache exists because repainting every clue on every frame is visible

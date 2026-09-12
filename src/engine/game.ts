@@ -326,7 +326,18 @@ export interface Game<
    * repaint, and never on a bare `UI_UPDATE` (the user is mid-edit
    * then). A game whose Ui tracks the current state (e.g. a
    * working-input row reconstructed from the latest move's holds)
-   * derives it here. Absent ⇒ the midend treats it as a no-op. */
+   * derives it here. Absent ⇒ the midend treats it as a no-op.
+   *
+   * **Whether a game needs this turns on what its Ui remembers, not on how
+   * long it remembers it for.** An armed gesture is safe when what it holds
+   * cannot be invalidated — it names fixed geometry (a grid cell, an island, a
+   * node), or the firing input re-derives everything against the state it is
+   * handed. It is unsafe when it names **mutable board content**: Pegs' armed
+   * keyboard jump remembered a *peg*, checked the direction at fire time and
+   * took that peg on trust, so an undo left it aimed at a hole and
+   * `executeMove` rejected the player's keypress. A drag is the same shape with
+   * a shorter window, not a different one — the rail's Undo is reachable with
+   * the pointer still down. */
   changedState?(ui: Ui, oldState: State | null, newState: State): void;
 
   /** Translate a pointer/key event to a move, `null` for "nothing

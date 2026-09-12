@@ -85,6 +85,31 @@ drawing. Three pack entry points, by the shape of what you have:
 | A `findMistakes` cell list | `packCells(mistakes, indexFn)` | `towers/render.ts` `ds.wrong` |
 | An overlay with its own topology | `clear()` + `add(i, bits)` | [`galaxies/render.ts`](../../src/games/galaxies/render.ts) `ds.wrongEdges` — one wrong wall is a *shared* edge, so it lights a different bit in each of the two tiles it separates |
 
+### Moving a cue out of the key's channel is how the key loses it
+
+**A cache key names inputs, so changing how a cue is *rendered* can silently
+drop it from the key.** Crossing's clue panel has its own cache
+(`ds.numberState`) beside the tile cache, and "held" was originally a color
+class — `colorClass` returned `3`, the key was `colorClass(l)`, and held was
+covered for free. Turning held from a color into a **box** moved it out of that
+channel: the class return was deleted and `heldOf` was passed to the painter as
+a separate predicate, so nothing in the key mentioned it. Picking a clue up then
+painted the box exactly once, on a cold draw state, and never again — nor erased
+it. Every test missed it because they all build a draw state per frame.
+
+Two things generalize. **When a cue stops being expressed as something the key
+already reads, it needs its own term in the key** — and the diff is small enough
+to look innocent, because the paint is plainly still there. And **the stale
+comment is what hid it**: `CLASS_COLOR` kept an unreachable entry labeled
+`3 held`, which reads as though held were still a class. A key's comment is a
+claim about coverage; when you take a class out, take its label out in the same
+edit. Exemplar: [`crossing/render.ts`](../../src/games/crossing/render.ts)
+(`panelState`).
+
+**The test has to reuse a draw state.** A frame-per-draw-state test meets a cold
+cache every time and cannot observe a missing key term at all — § "Prove the
+overlay repaints" below is the same discipline aimed at the tile cache.
+
 ### A packed diff key runs out of bits, and dead flags are where the next one comes from
 
 **A game that packs every overlay into one `Int32Array` word has 31 usable bits
@@ -161,6 +186,20 @@ and make the preview fall back to the plain board rather than throwing.
 **Tell:** a `redraw` that calls the game's own move helper on `ui` state and
 can't handle "no". Exemplar:
 [`slide/index.ts`](../../src/games/slide/index.ts) (`changedState`).
+
+**A keyboard arm is the same bug with a longer window.** A pointer drag ends
+on the release; a gesture armed by Enter and fired by a later arrow can sit
+armed across any number of presses, so it meets far more state changes. Pegs'
+`curJumping` remembered a *peg*, checked the direction at fire time and took
+that peg on trust — an undo left it aimed at a hole, and `executeMove` rejected
+the player's keypress with a thrown error. The population was read in full:
+Bridges, Map, Rect, Sixteen, Spokes and Tracks all arm across presses and all
+are safe, each for one of the two reasons in
+[`engine/game.ts`](../../src/engine/game.ts) (`changedState`'s doc) — what they
+remember is fixed geometry, or the fire re-derives it. **So the question is
+never "is this a drag?" but "can a state change make what I am holding
+false?"** Exemplar: [`pegs/index.ts`](../../src/games/pegs/index.ts)
+(`changedState`), with the repro in `pegs-midend.test.ts`.
 
 ### A pointer-following overlay must erase everything it painted
 

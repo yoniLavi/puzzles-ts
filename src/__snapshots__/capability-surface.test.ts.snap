@@ -766,6 +766,7 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
   {
     "id": "pegs",
     "members": [
+      "changedState",
       "describeParams",
       "deserializeMove",
       "flashLength",

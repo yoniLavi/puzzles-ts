@@ -229,6 +229,36 @@ describe("Pegs midend integration — keyboard input", () => {
     expect(h.state()?.currentMove).toBe(1);
   });
 
+  it("an undo disarms a jump armed on the peg it removes", () => {
+    // Jumping mode names a direction, not a source: it checks the cell being
+    // jumped over and the landing hole, and takes the peg under the cursor on
+    // trust. An undo that empties that cell leaves the arm pointing at a hole,
+    // and `executeMove` rejects the jump rather than the player's press.
+    //
+    // "5x1cross" is a described board, so the cross type's size bounds (which
+    // describe what the *generator* builds) do not apply. Five cells in a row
+    // is the smallest board that can reach the state: after undo the cursor
+    // sits on a hole with a peg beside it and a second hole beyond that, which
+    // is the one shape the direction checks accept.
+    const h = harness();
+    expect(h.m.newGameFromId("5x1cross:PPHPH")).toBeUndefined();
+
+    // Reveal the cursor on (0,0), arm it, and jump right into (2,0).
+    h.m.processInput(0, 0, CURSOR_SELECT);
+    h.m.processInput(0, 0, CURSOR_SELECT);
+    h.m.processInput(0, 0, CURSOR_RIGHT);
+    expect(h.state()?.currentMove).toBe(1);
+
+    // Arm the peg the jump just landed, then take it away again.
+    h.m.processInput(0, 0, CURSOR_SELECT);
+    h.m.undo();
+    expect(h.state()?.currentMove).toBe(0);
+
+    // (2,0) is empty again, so the armed jump has no peg to move.
+    expect(() => h.m.processInput(0, 0, CURSOR_RIGHT)).not.toThrow();
+    expect(h.state()?.currentMove).toBe(0);
+  });
+
   it("cursor select on a hole is a no-op", () => {
     const h = harness();
     h.m.newGameFromId(CROSS_7x7);
