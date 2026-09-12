@@ -296,6 +296,10 @@ the other order only because the plants stood in for it.
 
 ## 5. Close
 
-- [ ] 5.1 Run the full gate, then play a drag in each converted game in the
-      running app, including an undo mid-drag.
-- [ ] 5.2 Archive the change.
+- [x] 5.1 Gate clean (319 files, 9215 tests). Played in Chrome with an empty
+      console, and **the app is where the preview defect was found** — the
+      gesture that exposed it is the one that verifies the fix: right-drag a row
+      to make a move, then press, drag and undo with the button still down. The
+      board returns to move 0, no preview of the canceled drag is left on it,
+      and the release commits nothing.
+- [x] 5.2 Archive the change.
