@@ -36,7 +36,11 @@
 
 ## 4. Close
 
-- [ ] 4.1 Run the full gate, open Pegs and Crossing in the running app, and
+- [x] 4.1 Run the full gate, open Pegs and Crossing in the running app, and
       verify the armed jump survives an undo without throwing and that picking a
-      clue up and putting it back paints and erases its box.
-- [ ] 4.2 Archive the change.
+      clue up and putting it back paints and erases its box. Both confirmed in
+      Chrome with an empty console: the armed ring clears on the undo and the
+      next arrow only moves the cursor; the held box paints and erases on a
+      draw state that has already painted. The renumbered panel classes were
+      checked in the same pass — across-fit blue, down-fit amber, nowhere gray.
+- [x] 4.2 Archive the change.
