@@ -50,6 +50,26 @@ than by declaring anything — the collection's enrollment rule. Five of the gam
 that do declare `changedState` today (filling, pegs, signpost, slide, untangle)
 use it for nothing but "put the gesture down", and that half goes away.
 
+### What the change is actually buying, measured
+
+One plant per game — swap the two coordinates written at its drag anchor, run
+that game's own tests (2026-09-12):
+
+| game | tests failed | | game | tests failed |
+| --- | --- | --- | --- | --- |
+| tents | **0** of 27 | | boats | 2 of 125 |
+| pattern | **0** of 38 | | tracks | 3 of 88 |
+| rect | **0** of 32 | | | |
+| bridges | **0** of 72 | | | |
+
+**Four of the six can have their drag anchor's axes swapped without a single
+test noticing**, and the worst is Bridges: the most intricate drag in the set,
+72 passing tests, no net. That reframes the change. The shared type is worth
+having on its own terms, but the thing it is really buying is a reason to write
+six drag tests that six separate games were never going to get around to — the
+same finding `promote-the-pencil-indicator` reached from the rendering side,
+where deleting the indicator's invalidation from nine games failed zero tests.
+
 ## What changes
 
 - `engine/pointer.ts` gains `GridDrag` and its helpers, beside `GridCursor`.

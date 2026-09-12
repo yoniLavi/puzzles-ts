@@ -20,6 +20,7 @@ import { commonHintRefusal, DEDUCTION_EXHAUSTED } from "../../engine/hint-refusa
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  endDrag,
   gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
@@ -31,10 +32,13 @@ import {
   MOD_CTRL,
   MOD_SHFT,
   MOD_STYLUS,
+  moveDrag,
   newCursor,
+  newDrag,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
+  startDrag,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -82,13 +86,9 @@ import {
 
 function newUi(_state: PatternState): PatternUi {
   return {
-    dragging: false,
-    dragStartX: 0,
-    dragStartY: 0,
-    dragEndX: 0,
-    dragEndY: 0,
-    drag: 0,
-    release: 0,
+    drag: newDrag(),
+    dragButton: 0,
+    releaseButton: 0,
     state: GRID_UNKNOWN,
     cursor: newCursor(),
   };
@@ -121,45 +121,43 @@ function interpretMove(
     (button === LEFT_BUTTON || button === RIGHT_BUTTON || button === MIDDLE_BUTTON)
   ) {
     const curr = grid[y * w + x];
-    ui.dragging = true;
     if (button === LEFT_BUTTON) {
-      ui.drag = LEFT_DRAG;
-      ui.release = LEFT_RELEASE;
+      ui.dragButton = LEFT_DRAG;
+      ui.releaseButton = LEFT_RELEASE;
       ui.state = stylus ? (((curr + 2) % 3) as GridVal) : GRID_FULL; // FULL→EMPTY→UNKNOWN
     } else if (button === RIGHT_BUTTON) {
-      ui.drag = RIGHT_DRAG;
-      ui.release = RIGHT_RELEASE;
+      ui.dragButton = RIGHT_DRAG;
+      ui.releaseButton = RIGHT_RELEASE;
       ui.state = stylus ? (((curr + 1) % 3) as GridVal) : GRID_EMPTY; // EMPTY→FULL→UNKNOWN
     } else {
-      ui.drag = MIDDLE_DRAG;
-      ui.release = MIDDLE_RELEASE;
+      ui.dragButton = MIDDLE_DRAG;
+      ui.releaseButton = MIDDLE_RELEASE;
       ui.state = GRID_UNKNOWN;
     }
-    ui.dragStartX = ui.dragEndX = x;
-    ui.dragStartY = ui.dragEndY = y;
+    startDrag(ui.drag, x, y);
     ui.cursor.visible = false;
     return UI_UPDATE;
   }
 
   // --- drag: snap to a single line (except a middle/UNKNOWN area-clear) ---
-  if (ui.dragging && button === ui.drag) {
+  if (ui.drag.live && button === ui.dragButton) {
     if (ui.state !== GRID_UNKNOWN) {
-      if (Math.abs(x - ui.dragStartX) > Math.abs(y - ui.dragStartY)) y = ui.dragStartY;
-      else x = ui.dragStartX;
+      if (Math.abs(x - ui.drag.sx) > Math.abs(y - ui.drag.sy)) y = ui.drag.sy;
+      else x = ui.drag.sx;
     }
     x = Math.max(0, Math.min(w - 1, x));
     y = Math.max(0, Math.min(h - 1, y));
-    ui.dragEndX = x;
-    ui.dragEndY = y;
+    moveDrag(ui.drag, x, y);
     return UI_UPDATE;
   }
 
   // --- release: emit the rectangle fill if it changes anything ---
-  if (ui.dragging && button === ui.release) {
-    const x1 = Math.min(ui.dragStartX, ui.dragEndX);
-    const x2 = Math.max(ui.dragStartX, ui.dragEndX);
-    const y1 = Math.min(ui.dragStartY, ui.dragEndY);
-    const y2 = Math.max(ui.dragStartY, ui.dragEndY);
+  if (ui.drag.live && button === ui.releaseButton) {
+    const { sx, sy, ex, ey } = ui.drag;
+    const x1 = Math.min(sx, ex);
+    const x2 = Math.max(sx, ex);
+    const y1 = Math.min(sy, ey);
+    const y2 = Math.max(sy, ey);
     // A multi-cell paint drag (not a single click, not a clear) only fills
     // blank cells, so dragging across the board never rewrites a mark the
     // player already placed.
@@ -177,7 +175,7 @@ function interpretMove(
         }
       }
     }
-    ui.dragging = false;
+    endDrag(ui.drag);
     if (moveNeeded) {
       return {
         type: "fill",

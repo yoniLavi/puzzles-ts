@@ -348,11 +348,12 @@ export function redraw(
   let x2 = -1;
   let y1 = -1;
   let y2 = -1;
-  if (ui.dragging) {
-    x1 = Math.min(ui.dragStartX, ui.dragEndX);
-    x2 = Math.max(ui.dragStartX, ui.dragEndX);
-    y1 = Math.min(ui.dragStartY, ui.dragEndY);
-    y2 = Math.max(ui.dragStartY, ui.dragEndY);
+  if (ui.drag.live) {
+    const { sx, sy, ex, ey } = ui.drag;
+    x1 = Math.min(sx, ex);
+    x2 = Math.max(sx, ex);
+    y1 = Math.min(sy, ey);
+    y2 = Math.max(sy, ey);
   }
   // A multi-cell paint drag previews only on blank cells (matching the
   // onlyBlank fill it will emit), so it never visually clobbers a placed mark.
@@ -370,7 +371,7 @@ export function redraw(
       const i = y * w + x;
       let val: number;
       if (
-        ui.dragging &&
+        ui.drag.live &&
         x1 <= x &&
         x <= x2 &&
         y1 <= y &&

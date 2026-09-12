@@ -14,7 +14,7 @@ import { assertNever } from "../../engine/assert-never.ts";
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { dims, paramsCodec } from "../../engine/params-codec.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
+import type { GridCursor, GridDrag } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell values (upstream #defines) -------------------------------------
@@ -78,17 +78,16 @@ export type PatternMove =
   | { type: "fillCells"; value: GridVal; cells: number[] }
   | { type: "solve"; grid: string };
 
-/** Persisted UI (not history): the in-progress drag and the keyboard
- * cursor. `drag`/`release` hold the active drag's button codes; `state` is
- * the value the drag is painting. */
+/** Persisted UI (not history): the in-progress drag and the keyboard cursor. */
 export interface PatternUi {
-  dragging: boolean;
-  dragStartX: number;
-  dragStartY: number;
-  dragEndX: number;
-  dragEndY: number;
-  drag: number;
-  release: number;
+  /** The drag's anchor and current cell, in grid coordinates. */
+  drag: GridDrag;
+  /** The button codes the active drag continues and ends on. Named for what
+   * they hold, which is also what Tents calls the same thing — `drag` alone
+   * was the drag itself here and the button code there. */
+  dragButton: number;
+  releaseButton: number;
+  /** The value the drag is painting. */
   state: GridVal;
   cursor: GridCursor;
 }

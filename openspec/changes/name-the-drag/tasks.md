@@ -45,17 +45,53 @@
 
 ## 2. The rest of the six
 
-**Each conversion ships a drag test, per 1.4(a), and each is checked by planting
-in the converted path rather than by a green suite.** Before converting a game,
-plant in its *existing* drag code first and record what survives — that number is
-what the batch is actually buying.
+**Measured first, 2026-09-12** — one plant per game, swapping the two
+coordinates written at its drag anchor, run against that game's own tests:
 
-- [ ] 2.1 Boats and Pattern (Boats has the `dragOk` shape Tents just proved;
-      Pattern is a plain `dragging`).
-- [ ] 2.2 Tracks and Rect — Rect's pair is **half-grid**, so this batch is the
-      one that proves the type does not assume a coordinate space.
-- [ ] 2.3 Bridges last: it carries a boolean *and* a `-1` sentinel, so it is the
-      only one where liveness has two sources to reconcile.
+| game | tests failed | reading |
+| --- | --- | --- |
+| tents | **0** of 27 | none (the pilot; now 4 plants caught) |
+| pattern | **0** of 38 | none |
+| rect | **0** of 32 | none |
+| bridges | **0** of 72 | none |
+| boats | 2 of 125 | some |
+| tracks | 3 of 88 | some |
+
+**Four of the six have no drag coverage at all**, and the worst of them is
+Bridges — the most intricate drag in the set (a cone search, `updateDragDst`,
+an `nlines` count) and 72 tests that all pass with its anchor's axes swapped.
+
+So the rule for this change, stronger than 1.4(a): **where a game has no
+coverage, the drag test lands _before_ the conversion, against the unconverted
+code.** A test written afterward proves the new code self-consistent; one
+written first and kept passing is an actual refactoring net. Tents got away with
+the other order only because the plants stood in for it.
+
+- [x] 2.1 **Pattern** — test first, then convert, and the order paid off: the
+      four new tests passed against the unconverted code and kept passing
+      across the conversion, which is a real refactoring net rather than a
+      self-consistency check. Anchor plant 0 → 2 failures before the conversion
+      even started; four plants in the converted code all caught (axes swapped,
+      `moveDrag` never called, release not ending, axis snap inverted).
+
+      **Why its existing drag tests missed it**, worth knowing for the rest:
+      three of them call `executeMove` with a hand-built `fill`, and the one
+      that reaches `interpretMove` **bypasses the press** — it `Object.assign`s
+      the anchor onto the `Ui` and sends only the release. The press handler
+      that writes the anchor was executed by no test at all. A test that starts
+      from a hand-set `Ui` cannot see the code that builds one.
+
+      **And a second name collision.** Pattern's `drag` was a `number` holding
+      the drag's button code — which is what Tents calls `dragButton`. Renamed
+      `dragButton`/`releaseButton` so `drag` can be the `GridDrag`, which
+      unifies a second piece of vocabulary the two games had spelled apart.
+- [ ] 2.2 **Boats and Tracks** — the two that already have some coverage, so
+      these are the cheap ones. Boats shares Tents' `dragOk` shape.
+- [ ] 2.3 **Rect** — no coverage, and its pair is **half-grid**, so it is the
+      one that proves the type assumes no coordinate space. Test first.
+- [ ] 2.4 **Bridges** last and most carefully: no coverage, two sources of
+      liveness (a boolean *and* a `-1` sentinel), and the most logic behind the
+      drag. Test first, and expect the test to be the larger half of the work.
 
 ## 3. The engine cancels it
 

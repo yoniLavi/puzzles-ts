@@ -6,7 +6,12 @@
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { Midend } from "../../engine/index.ts";
-import { CURSOR_SELECT, LEFT_DRAG, LEFT_RELEASE } from "../../engine/pointer.ts";
+import {
+  CURSOR_SELECT,
+  LEFT_BUTTON,
+  LEFT_DRAG,
+  LEFT_RELEASE,
+} from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
@@ -255,15 +260,11 @@ describe("pattern drag-paint skips placed marks", () => {
     const drag = (endX: number) => {
       const ui = patternGame.newUi(st);
       Object.assign(ui, {
-        dragging: true,
-        drag: LEFT_DRAG,
-        release: LEFT_RELEASE,
+        dragButton: LEFT_DRAG,
+        releaseButton: LEFT_RELEASE,
         state: GRID_FULL,
-        dragStartX: 0,
-        dragStartY: 0,
-        dragEndX: endX,
-        dragEndY: 0,
       });
+      Object.assign(ui.drag, { live: true, sx: 0, sy: 0, ex: endX, ey: 0 });
       return patternGame.interpretMove(
         st,
         ui,
@@ -274,6 +275,70 @@ describe("pattern drag-paint skips placed marks", () => {
     };
     expect(drag(3)).toMatchObject({ type: "fill", onlyBlank: true, w: 4 });
     expect(drag(0)).toMatchObject({ type: "fill", onlyBlank: false, w: 1 });
+  });
+
+  // The tests above reach `interpretMove` only at the release, with the drag's
+  // anchor written onto the `Ui` by hand — so nothing ran the press handler
+  // that sets it. Measured: swapping the two coordinates it writes passed all
+  // 38 pattern tests. These drive press → drag → release through
+  // `interpretMove`, which is the only way the anchor is exercised at all.
+  describe("driven through interpretMove from the press", () => {
+    /** Pixel center of cell `(x, y)`, through the game's own geometry. */
+    function rig() {
+      const st = base();
+      const ui = patternGame.newUi(st);
+      const ds = sizedDrawState(patternGame, st);
+      const ts = (ds as { tilesize: number }).tilesize;
+      const b =
+        Math.floor((3 * ts) / 4) + Math.floor(ts / 2) + ts * (Math.floor(5 / 5) + 2);
+      const at = (x: number, y: number) => ({ x: b + x * ts + 1, y: b + y * ts + 1 });
+      return { st, ui, ds, at };
+    }
+
+    it("anchors the drag at the pressed cell, not at its transpose", () => {
+      const { st, ui, ds, at } = rig();
+      patternGame.interpretMove(st, ui, ds, at(3, 1), LEFT_BUTTON);
+      expect([ui.drag.sx, ui.drag.sy]).toEqual([3, 1]);
+      expect([ui.drag.ex, ui.drag.ey]).toEqual([3, 1]);
+    });
+
+    it("snaps a paint drag to the axis it moved furthest along", () => {
+      const { st, ui, ds, at } = rig();
+      patternGame.interpretMove(st, ui, ds, at(1, 1), LEFT_BUTTON);
+      // 3 across, 1 down — horizontal wins, so the row is held.
+      patternGame.interpretMove(st, ui, ds, at(4, 2), LEFT_DRAG);
+      expect([ui.drag.ex, ui.drag.ey]).toEqual([4, 1]);
+
+      // And the other way round.
+      patternGame.interpretMove(st, ui, ds, at(1, 1), LEFT_BUTTON);
+      patternGame.interpretMove(st, ui, ds, at(2, 4), LEFT_DRAG);
+      expect([ui.drag.ex, ui.drag.ey]).toEqual([1, 4]);
+    });
+
+    it("commits the swept row as one onlyBlank fill", () => {
+      const { st, ui, ds, at } = rig();
+      patternGame.interpretMove(st, ui, ds, at(1, 2), LEFT_BUTTON);
+      patternGame.interpretMove(st, ui, ds, at(3, 2), LEFT_DRAG);
+      const move = patternGame.interpretMove(st, ui, ds, at(3, 2), LEFT_RELEASE);
+      expect(move).toMatchObject({
+        type: "fill",
+        value: GRID_FULL,
+        x: 1,
+        y: 2,
+        w: 3,
+        h: 1,
+        onlyBlank: true,
+      });
+      expect(ui.drag.live).toBe(false);
+    });
+
+    it("a press outside the grid starts no drag", () => {
+      const { st, ui, ds } = rig();
+      expect(patternGame.interpretMove(st, ui, ds, { x: 1, y: 1 }, LEFT_BUTTON)).toBe(
+        null,
+      );
+      expect(ui.drag.live).toBe(false);
+    });
   });
 
   it("a clear drag (middle/UNKNOWN) still erases placed marks", () => {
