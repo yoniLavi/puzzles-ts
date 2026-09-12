@@ -86,7 +86,7 @@ export function decodeParams(s: string): CrossingParams {
  * list, which is what makes the author's "no reliable way to always fit the
  * list on screen" tractable here.
  */
-export const MAX_AREA = 225;
+const MAX_AREA = 225;
 
 /** Upstream `validate_params`, in its exact order: both dimensions ≥ 2, and at
  * least one of them ≥ 4 (a 3×3 board has no room for crossing runs) — plus the
@@ -210,7 +210,7 @@ export function makePuzzle(
 /** The run through `(x, y)` along `dir`, or `null` when there is none (a cell
  * can belong to a horizontal run, a vertical one, both, or — an isolated open
  * cell — neither). */
-export function runThrough(
+function runThrough(
   puzzle: CrossingPuzzle,
   x: number,
   y: number,

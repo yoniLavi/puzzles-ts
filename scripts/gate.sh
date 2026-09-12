@@ -152,6 +152,19 @@ node scripts/checks/change-citations.mjs
 # guard about tests that cannot fail may not be one.
 node scripts/checks/vacuous-assertions.mjs
 
+# --- 1b-v. Nothing exports something no other file imports. ~2s. ---
+#
+# An unused export is invisible to the typechecker, to biome and to every test,
+# because nothing that runs reads it. This ran as `npm run dead-exports` while
+# its backlog stood at 376; `retire-the-dead-exports` cleared it, and the ledger
+# it could have used is empty, so the check is a gate rather than a diagnostic.
+#
+# Here rather than in vitest for the reason `src/gate-scope.test.ts` gives: it
+# shells out to `git ls-files` and parses the tree with the TypeScript compiler
+# API, which is build-side work, and it is two seconds against ten minutes of
+# vitest.
+node scripts/checks/unused-exports.mjs
+
 # --- 1c. The specs and every open change parse and validate. ~1s. ---
 #
 # This is the tool's own check, deliberately, and it replaces a hand-written one.

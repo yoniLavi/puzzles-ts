@@ -278,7 +278,7 @@ export type TransitionResult =
     };
 
 /** Raised where upstream's `assert(tr.type == INTERNAL)` would fire. */
-export class PenroseTransitionError extends Error {
+class PenroseTransitionError extends Error {
   constructor(message: string) {
     super(`penrose: ${message}`);
     this.name = "PenroseTransitionError";

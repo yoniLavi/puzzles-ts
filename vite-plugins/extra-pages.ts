@@ -206,7 +206,7 @@ function extractGlobExtensions(patterns: string | readonly string[]): string[] {
   return [...exts];
 }
 
-export function cleanUrl(pathname: string): string {
+function cleanUrl(pathname: string): string {
   if (!pathname.endsWith(".html")) {
     return pathname;
   }

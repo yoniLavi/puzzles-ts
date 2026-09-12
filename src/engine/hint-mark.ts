@@ -35,10 +35,10 @@
 import type { GameDrawing } from "./game.ts";
 import type { Rect } from "./types.ts";
 
-export const MARK_TOP = 1;
-export const MARK_LEFT = 2;
-export const MARK_BOTTOM = 4;
-export const MARK_RIGHT = 8;
+const MARK_TOP = 1;
+const MARK_LEFT = 2;
+const MARK_BOTTOM = 4;
+const MARK_RIGHT = 8;
 export const MARK_ALL = MARK_TOP | MARK_LEFT | MARK_BOTTOM | MARK_RIGHT;
 
 export interface MarkCell {

@@ -86,7 +86,7 @@ export function fingerprint(m: AnyMidend): string {
  * *frame* shows. That is the honest reading of "did anything happen", and it
  * needs nothing from the game beyond the `redraw` every game already has.
  */
-export function observable(m: AnyMidend, background: Color): string {
+function observable(m: AnyMidend, background: Color): string {
   const recording = new RecordingDrawing(m.getColorPalette(background));
   m.redraw(recording);
   return `${fingerprint(m)}|${JSON.stringify(recording.ops)}`;
@@ -121,7 +121,7 @@ export function probePoints(size: Size): Point[] {
 export const UNACTIONABLE: readonly number[] = [0x0300, 0x0301, 0x0302, 0x10000];
 
 /** True for a pointer press, drag or release. */
-export function isPointerButton(button: number): boolean {
+function isPointerButton(button: number): boolean {
   return isMouseDown(button) || isMouseDrag(button) || isMouseRelease(button);
 }
 

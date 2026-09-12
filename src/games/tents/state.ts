@@ -30,17 +30,17 @@ export const MAGIC = 4;
 export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFF_COUNT = 2;
-export const DIFF_NAMES: readonly string[] = tierNames(2);
-export const DIFF_CHARS = "et"; // ENCODE chars, indexed by difficulty
+const DIFF_NAMES: readonly string[] = tierNames(2);
+const DIFF_CHARS = "et"; // ENCODE chars, indexed by difficulty
 
 // --- link directions (upstream N,U,L,R,D; N is "no link") ------------------
 // The solver walks orthogonal neighbors in this fixed order; the generator
 // and completion check reuse dx/dy so byte-order-sensitive loops match.
 export const N = 0;
-export const U = 1;
-export const L = 2;
-export const R = 3;
-export const D = 4;
+const U = 1;
+const L = 2;
+const R = 3;
+const D = 4;
 export const MAXDIR = 5;
 export const DX = (d: number): number => (d === R ? 1 : 0) - (d === L ? 1 : 0);
 export const DY = (d: number): number => (d === D ? 1 : 0) - (d === U ? 1 : 0);

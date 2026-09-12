@@ -63,15 +63,15 @@ export const DX = [0, +1, 0, -1] as const;
 export const DY = [-1, 0, +1, 0] as const;
 
 /** The tri-state a single edge can be in, as the input mechanic sees it. */
-export const MAYBE = 0;
-export const YES = 1;
-export const NO = 2;
+const MAYBE = 0;
+const YES = 1;
+const NO = 2;
 
 export function outOfBounds(x: number, y: number, w: number, h: number): boolean {
   return x < 0 || x >= w || y < 0 || y >= h;
 }
 
-export const clamp = (v: number, lo: number, hi: number): number =>
+const clamp = (v: number, lo: number, hi: number): number =>
   v < lo ? lo : v > hi ? hi : v;
 
 // --- geometry ---------------------------------------------------------------
@@ -81,7 +81,7 @@ export const clamp = (v: number, lo: number, hi: number): number =>
 export const margin = (ts: number): number => Math.floor(ts / 2);
 
 /** Pixel coordinate → grid coordinate along one axis. */
-export function fromCoord(coord: number, ts: number): number {
+function fromCoord(coord: number, ts: number): number {
   return Math.floor((coord - margin(ts)) / ts);
 }
 

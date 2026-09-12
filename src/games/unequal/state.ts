@@ -20,7 +20,7 @@ import { digitOf, type GridCursor, newCursor } from "../../engine/pointer.ts";
 export type Difficulty = "trivial" | "easy" | "tricky" | "extreme" | "recursive";
 
 export const DIFF_LATIN = 0;
-export const DIFF_EASY = 1;
+const DIFF_EASY = 1;
 export const DIFF_SET = 2;
 export const DIFF_EXTREME = 3;
 export const DIFF_RECURSIVE = 4;
@@ -40,7 +40,7 @@ export function diffToLevel(d: Difficulty): number {
 export function diffFromLevel(level: number): Difficulty {
   return DIFFS[level] ?? "easy";
 }
-export function diffChar(d: Difficulty): string {
+function diffChar(d: Difficulty): string {
   return DIFF_CHARS[diffToLevel(d)];
 }
 export function diffName(d: Difficulty): string {

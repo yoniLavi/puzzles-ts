@@ -44,7 +44,7 @@ export function showToast(options: ToastOptions): void {
 }
 
 @customElement("app-toast")
-export class AppToast extends LitElement {
+class AppToast extends LitElement {
   @property({ type: String })
   label = "";
 

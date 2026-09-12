@@ -31,7 +31,7 @@ import {
 
 // --- solver flags (upstream values) -----------------------------------------
 
-export const F_SOLVE_FORCEUNIQUE = 1;
+const F_SOLVE_FORCEUNIQUE = 1;
 export const F_SOLVE_DISCOUNTSETS = 2;
 export const F_SOLVE_ALLOWRECURSE = 4;
 

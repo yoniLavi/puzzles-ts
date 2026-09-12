@@ -24,9 +24,9 @@ import type { GameStatus, Point } from "../../engine/types.ts";
 // --- difficulty (upstream's DIFFLIST: Easy, Hard; shown as tierNames(2)) ---
 export const DIFF_EASY = 0;
 export const DIFF_HARD = 1;
-export const DIFF_COUNT = 2;
-export const DIFF_NAMES: readonly string[] = tierNames(2);
-export const DIFF_CHARS = "eh"; // ENCODE chars, indexed by difficulty
+const DIFF_COUNT = 2;
+const DIFF_NAMES: readonly string[] = tierNames(2);
+const DIFF_CHARS = "eh"; // ENCODE chars, indexed by difficulty
 
 // --- types ---------------------------------------------------------------
 

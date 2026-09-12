@@ -70,7 +70,7 @@ export interface HintOp extends DeductionRecord {
 /** Shared, mutable solver context (upstream `struct solver_ctx`). `started`
  * gates the one-off facing-clue deduction and, as upstream's, persists across
  * the fixpoint and recursion (no per-recursion copy). */
-export interface TowersCtx {
+interface TowersCtx {
   w: number;
   clues: Int32Array;
   started: boolean;
@@ -78,7 +78,7 @@ export interface TowersCtx {
 
 // --- solver_easy -----------------------------------------------------------
 
-export function solverEasy(solver: LatinSolver, ctx: TowersCtx): number {
+function solverEasy(solver: LatinSolver, ctx: TowersCtx): number {
   const w = ctx.w;
   const clues = ctx.clues;
   const posOf = new Int32Array(w + 1);
@@ -216,7 +216,7 @@ export function solverEasy(solver: LatinSolver, ctx: TowersCtx): number {
 
 // --- solver_hard -----------------------------------------------------------
 
-export function solverHard(solver: LatinSolver, ctx: TowersCtx): number {
+function solverHard(solver: LatinSolver, ctx: TowersCtx): number {
   const w = ctx.w;
   const clues = ctx.clues;
   const possible = new Int32Array(w);
@@ -313,7 +313,7 @@ export function solverHard(solver: LatinSolver, ctx: TowersCtx): number {
 
 // --- validator -------------------------------------------------------------
 
-export function towersValid(solver: LatinSolver, ctx: TowersCtx): boolean {
+function towersValid(solver: LatinSolver, ctx: TowersCtx): boolean {
   const w = ctx.w;
   const clues = ctx.clues;
   for (let c = 0; c < 4 * w; c++) {

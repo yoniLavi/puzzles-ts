@@ -165,7 +165,7 @@ function dsfUpdateCompletion(
   return true;
 }
 
-export interface CompletionResult {
+interface CompletionResult {
   /** False when the line data is structurally invalid (a bad move). */
   valid: boolean;
   completed: boolean;
@@ -174,7 +174,7 @@ export interface CompletionResult {
 
 /** Classify the loop and mark errors (upstream `check_completion` with
  * `mark = true`). Pure: builds and returns a fresh `errors` array. */
-export function checkCompletion(state: PearlState): CompletionResult {
+function checkCompletion(state: PearlState): CompletionResult {
   const { w, h, lines, clues } = state;
   const errors = new Uint8Array(w * h);
   let hadError = false;

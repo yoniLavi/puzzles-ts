@@ -34,7 +34,7 @@ export function inGrid(s: SinglesState, x: number, y: number): boolean {
 }
 
 export const OP_BLACK = 0;
-export const OP_CIRCLE = 1;
+const OP_CIRCLE = 1;
 
 /**
  * Why a cell is forced — the premise a hint narrates and highlights.
@@ -604,7 +604,7 @@ function solveSneaky(s: SinglesState, ss: SolverState): void {
 /* --- completion check --- */
 
 export const CC_MARK_ERRORS = 1;
-export const CC_MUST_FILL = 2;
+const CC_MUST_FILL = 2;
 
 function connectIfSame(s: SinglesState, dsf: Dsf, i1: number, i2: number): void {
   if ((s.flags[i1] & F_BLACK) === (s.flags[i2] & F_BLACK)) dsf.merge(i1, i2);

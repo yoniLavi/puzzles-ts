@@ -32,7 +32,7 @@ import { newCursor } from "../../engine/pointer.ts";
 export const DIFF_EASY = 0;
 /** Upstream `DIFF_HARD`, shown as **Extreme**. */
 export const DIFF_HARD = 1;
-export const DIFFCOUNT = 2;
+const DIFFCOUNT = 2;
 
 export const DIFF_NAMES: readonly string[] = tierNames(2);
 /** The difficulty letters `encodeParams` writes and `decodeParams` reads. */
@@ -564,7 +564,7 @@ export function clueSide(cd: number, o: number): (typeof CLUE_SIDES)[number] {
 
 /** Upstream `salad_checkborders`: every border clue matches the first symbol
  * actually seen along its line. */
-export function checkBorders(b: SaladBoard): boolean {
+function checkBorders(b: SaladBoard): boolean {
   const o = b.order;
   for (let i = 0; i < o; i++) {
     for (const s of borderScans(i, o)) {

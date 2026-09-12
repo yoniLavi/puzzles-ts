@@ -440,7 +440,7 @@ export function nextForcedMove(
 
 /** Runaway/UX cap on plan length — the player rarely follows more than a few
  * before diverging, and a recompute yields the next batch. */
-export const HINT_PLAN_MAX = 40;
+const HINT_PLAN_MAX = 40;
 
 /**
  * The ordered plan of forced moves from `grid0` (the player's board): one cell

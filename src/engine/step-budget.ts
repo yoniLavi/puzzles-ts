@@ -26,7 +26,7 @@ export interface StepBudget {
 /** A budget big enough that no honest deduction approaches it (a real fixpoint
  * converges in ~cells iterations), but a true infinite loop trips in well under
  * a second. */
-export const DEFAULT_HINT_STEP_LIMIT = 1_000_000;
+const DEFAULT_HINT_STEP_LIMIT = 1_000_000;
 
 export function stepBudget(
   label: string,

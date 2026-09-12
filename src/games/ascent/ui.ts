@@ -64,7 +64,7 @@ import {
 // --- ui constants --------------------------------------------------
 
 export const TARGET_SHOW = 0x1;
-export const TARGET_CONNECTED = 0x2;
+const TARGET_CONNECTED = 0x2;
 
 /** Whether the cursor is shown lives on `ui.cursor`, like every other game's.
  * Ascent also keeps *which device* revealed it, because a mouse hover and a
@@ -77,7 +77,7 @@ export const mouseCursor = (ui: AscentUi): boolean =>
   ui.cursor.visible && !ui.cursorFromKeyboard;
 
 /** Reveal the cursor as a keyboard cursor (`true`) or a mouse hover (`false`). */
-export function revealCursor(ui: AscentUi, fromKeyboard: boolean): void {
+function revealCursor(ui: AscentUi, fromKeyboard: boolean): void {
   ui.cursor.visible = true;
   ui.cursorFromKeyboard = fromKeyboard;
 }

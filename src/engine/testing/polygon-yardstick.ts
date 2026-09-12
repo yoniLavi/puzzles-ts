@@ -53,7 +53,7 @@ export function insidePolygon(poly: Ring, x: number, y: number): boolean {
  * line overstates the room available beside a reflex corner, which is exactly
  * the mis-measurement this yardstick exists to catch.
  */
-export function distanceToSegment(
+function distanceToSegment(
   x: number,
   y: number,
   ax: number,

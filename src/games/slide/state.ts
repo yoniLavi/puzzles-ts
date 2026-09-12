@@ -46,7 +46,7 @@ export const WALL = 252;
 /** Largest encodable back-link distance, and hence the theoretical maximum
  * board width (solver running time dictates a far smaller practical one). */
 export const MAXDIST = 251;
-export const MAXWID = MAXDIST;
+const MAXWID = MAXDIST;
 
 /** A back-link to the previous square of the same block, `v` squares earlier. */
 export function isDist(v: number): boolean {
@@ -81,7 +81,7 @@ const PRESETS: readonly SlideParams[] = [
 ];
 
 /** Upstream `game_fetch_preset`'s label. */
-export function presetTitle(p: SlideParams): string {
+function presetTitle(p: SlideParams): string {
   const limit = p.maxmoves >= 0 ? `, max ${p.maxmoves} moves` : ", no move limit";
   return `${p.w}x${p.h}${limit}`;
 }

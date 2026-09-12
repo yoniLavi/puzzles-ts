@@ -322,7 +322,7 @@ export function maxGeneratedRegionSize(mode: number): number {
  * short; that is legal, and it is where the small tail of the realized size
  * distribution comes from.
  */
-export function growRegions(board: SeismicBoard, rng: RandomState): void {
+function growRegions(board: SeismicBoard, rng: RandomState): void {
   const { w, h, dsf } = board;
   const s = w * h;
   dsf.reinit();
@@ -428,7 +428,7 @@ const FILL_NODE_BUDGET = 200_000;
  * Returns false if the budget runs out, which means "re-partition", not "this
  * board is impossible".
  */
-export function fillRegions(board: SeismicBoard, rng: RandomState): boolean {
+function fillRegions(board: SeismicBoard, rng: RandomState): boolean {
   const { w, h, grid, pencil, dsf } = board;
   const s = w * h;
 

@@ -71,7 +71,7 @@ export const DIFF_TRICKY = 1;
 export const DIFF_COUNT = 2;
 export const DIFF_NAMES: readonly string[] = tierNames(DIFF_COUNT);
 /** Encoding chars for the `d<char>` param suffix (upstream `pearl_diffchars`). */
-export const DIFF_CHARS = "et";
+const DIFF_CHARS = "et";
 
 // --- params ----------------------------------------------------------------
 export interface PearlParams {

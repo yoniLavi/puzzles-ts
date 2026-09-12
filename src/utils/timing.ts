@@ -17,7 +17,7 @@ export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve
  *
  * Delay is in milliseconds, and may be 0 to debounce only until the next tick.
  */
-export const debounce = <T extends (...args: unknown[]) => unknown>(
+const debounce = <T extends (...args: unknown[]) => unknown>(
   func: T,
   delayMs: number,
 ): ((this: ThisParameterType<T>, ...args: Parameters<T>) => void) => {

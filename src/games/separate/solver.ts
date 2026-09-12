@@ -31,7 +31,7 @@ import type { SeparateParams } from "./state.ts";
 
 /** Solver verdict, mirroring upstream's 0/1/2. */
 export const STUCK = 0;
-export const PROGRESS = 1;
+const PROGRESS = 1;
 export const SOLVED = 2;
 
 /** The solver's working state, reused by the generator across letter fills. */

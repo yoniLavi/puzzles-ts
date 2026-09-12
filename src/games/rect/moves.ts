@@ -27,7 +27,7 @@ export const vrange = (w: number, h: number, x: number, y: number) =>
  * present, no interior edge, and exactly one contained number equal to the
  * rectangle's area; otherwise 0.
  */
-export function getCorrect(
+function getCorrect(
   w: number,
   h: number,
   grid: Int32Array,

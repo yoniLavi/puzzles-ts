@@ -28,7 +28,7 @@ export const DIFFCOUNT = 4;
 
 export const DIFF_NAMES: readonly string[] = tierNames(DIFFCOUNT, { search: true });
 /** Upstream `map_diffchars`. */
-export const DIFF_CHARS = "enhu";
+const DIFF_CHARS = "enhu";
 
 // --- params ----------------------------------------------------------
 
@@ -142,7 +142,7 @@ export interface MapMove {
 
 // --- ui --------------------------------------------------------------
 
-export const FLASH_CYCLIC = 0;
+const FLASH_CYCLIC = 0;
 export const FLASH_EACH_TO_WHITE = 1;
 export const FLASH_ALL_TO_WHITE = 2;
 

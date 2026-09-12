@@ -11,12 +11,12 @@ import {
 
 const SETTINGS_BACKUP_SCHEMA =
   "https://twistymaze.com/puzzles/schemas/puzzle-settings-backup-v1.json";
-export interface SerializedSettings {
+interface SerializedSettings {
   $schema: string;
   data: SettingsRecord[];
 }
 
-export const isSerializedSettings = (obj: unknown): obj is SerializedSettings =>
+const isSerializedSettings = (obj: unknown): obj is SerializedSettings =>
   typeof obj === "object" &&
   obj !== null &&
   "$schema" in obj &&

@@ -21,7 +21,7 @@ export const G_NOLINEH = 0x0040;
 export const G_WARN = 0x0080;
 export const G_SWEEP = 0x1000;
 
-export const MAX_BRIDGES = 4;
+const MAX_BRIDGES = 4;
 
 export interface BridgesParams {
   w: number;

@@ -24,9 +24,9 @@ export const STATE_ERROR = 8;
 /** Mask of the two mark bits; also the modulus of the toggle cycle. */
 export const STATE_MARK_MASK = STATE_BLANK | STATE_MARKED;
 
-export const MAX_TILES = 10000;
-export const DEFAULT_SIZE = 10;
-export const DEFAULT_AGGRESSIVENESS = true;
+const MAX_TILES = 10000;
+const DEFAULT_SIZE = 10;
+const DEFAULT_AGGRESSIVENESS = true;
 
 // --- types --------------------------------------------------------------
 
@@ -218,7 +218,7 @@ export function countAround(
  * neighborhood of a just-changed cell (upstream
  * `update_board_state_around`). Mutates `cells` in place — callers pass
  * the already-cloned next state's array. */
-export function updateBoardStateAround(
+function updateBoardStateAround(
   state: { width: number; height: number; board: MosaicBoard },
   cells: Uint8Array,
   x: number,

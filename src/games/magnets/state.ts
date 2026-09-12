@@ -54,8 +54,8 @@ export const notFlag = (which: number): number =>
 export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFF_COUNT = 2;
-export const DIFF_NAMES: readonly string[] = tierNames(DIFF_COUNT);
-export const DIFF_CHARS = "et"; // ENCODE chars, indexed by difficulty
+const DIFF_NAMES: readonly string[] = tierNames(DIFF_COUNT);
+const DIFF_CHARS = "et"; // ENCODE chars, indexed by difficulty
 
 // --- roworcol ------------------------------------------------------------
 export const ROW = 0;
@@ -243,7 +243,7 @@ interface Parsed {
 
 /** Parse a desc into the frozen layout + counts and a fresh grid/flags (with
  * singletons pre-set neutral). Returns a problem string on failure. */
-export function parseDesc(p: MagnetsParams, desc: string): Parsed | { error: string } {
+function parseDesc(p: MagnetsParams, desc: string): Parsed | { error: string } {
   const { w, h } = p;
   const wh = w * h;
   const colcount = new Int32Array(w * 3);
@@ -372,7 +372,7 @@ export function encodeDesc(
   return out;
 }
 
-export function cloneState(s: MagnetsState): MagnetsState {
+function cloneState(s: MagnetsState): MagnetsState {
   return {
     ...s,
     grid: Int8Array.from(s.grid),

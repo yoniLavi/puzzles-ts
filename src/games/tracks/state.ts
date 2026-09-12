@@ -30,8 +30,8 @@ export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFF_HARD = 2;
 export const DIFF_COUNT = 3;
-export const DIFF_NAMES: readonly string[] = tierNames(DIFF_COUNT);
-export const DIFF_CHARS = "eth"; // ENCODE chars, indexed by difficulty
+const DIFF_NAMES: readonly string[] = tierNames(DIFF_COUNT);
+const DIFF_CHARS = "eth"; // ENCODE chars, indexed by difficulty
 
 // --- directions (upstream R/U/L/D bit flags) ------------------------------
 export const R = 1;
@@ -452,7 +452,7 @@ export function status(s: TracksState): GameStatus {
 
 /** Label each track tile with how far along the track it is (an 8-bit field),
  * so the completion flash can travel along the route. */
-export function setFlashData(b: Board): void {
+function setFlashData(b: Board): void {
   const { w } = b;
   let ntrack = 0;
   for (let x = 0; x < w; x++) ntrack += b.numbers[x];

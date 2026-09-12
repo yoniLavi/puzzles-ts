@@ -1,16 +1,35 @@
+## RENAMED Requirements
+
+- FROM: `### Requirement: Dead exports are measured, and the measurement is a diagnostic until the backlog is cleared`
+- TO: `### Requirement: Nothing exports a symbol no other file imports`
+
 ## MODIFIED Requirements
 
-### Requirement: Dead exports are measured, and the measurement is a diagnostic until the backlog is cleared
-The repository SHALL carry a check reporting every export under `src/` that no
-other file imports, and the check SHALL carry vacuity floors on the files it
-parsed, the exports it found and the fraction of internal import specifiers it
-resolved. **It SHALL run in the gate's fast prefix**, with a ledger naming every
-export that is kept despite having no importer, and the ledger SHALL be asserted
-exactly equal to the check's findings.
+### Requirement: Nothing exports a symbol no other file imports
+The repository SHALL carry a check reporting every export under `src/`,
+`vite-plugins/` and `scripts/` that no other file imports, and the check SHALL
+carry vacuity floors on the files it parsed, the exports it found and the
+fraction of internal import specifiers it resolved. **It SHALL run in the gate's
+fast prefix**, with a ledger naming every export that is kept despite having no
+importer, and the ledger SHALL be asserted exactly equal to the check's
+findings — so an entry that stops earning its place fails as loudly as a new
+dead export, and an empty ledger is itself a claim.
 
 An unused export is invisible to the typechecker, to biome and to every test,
 because nothing that runs reads it. A tidy pass found dead accessors, dead
 re-exports and dead constants across the games entirely by hand.
+
+**What counts as a use is a rule each time, never a list.** A named or namespace
+import, a re-export, an entry file, a glob whose modules are really imported —
+and **a name mentioned in the signature of another export that is itself
+reached**, because a caller writing the object literal an exported function
+takes is reaching that type whether or not it imports the name. That last one is
+163 of the 376 findings the backlog held, all of them types; without it the only
+options are to un-export a type an exported signature names, which makes it
+unnameable by the caller who has to satisfy it, or to write a 163-entry ledger,
+which is the skip list this check exists not to be. It is resolved to a fixpoint
+*after* the dead set is known and only from an owner something reaches, so a
+dead exported function cannot keep its own options type alive.
 
 **The check is written here rather than installed, on a measurement.** `knip` was
 a devDependency for exactly this job, wired to no script. Measured 2026-09-12 at
@@ -45,10 +64,11 @@ worked around, so the next reader does not repeat the investigation.
   counting package imports as unresolved makes the floor read a failure that is
   not one
 
-#### Scenario: an export is kept although nothing imports it
+#### Scenario: a type is named only by the signature that takes it
 
-- **WHEN** an export is reached from outside the TypeScript graph — a Lit
-  component class named by tag in a template, say
-- **THEN** it is carried in the check's ledger with that reason
-- **AND** an entry that stops being needed fails the gate as loudly as a new
-  dead export
+- **WHEN** an exported type is named by an exported function's parameter and
+  nothing imports the type
+- **THEN** it is NOT reported, because the caller reaches it through the
+  function
+- **AND** a type no reached export names IS reported, which is what the planted
+  dead `interface` proves

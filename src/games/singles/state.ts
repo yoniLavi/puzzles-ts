@@ -25,7 +25,7 @@ export const DIFF_TRICKY = 1;
 export const DIFF_ANY = 3;
 
 const DIFF_CHARS = "ek"; // singles_diffchars, indexed by level
-export const DIFF_NAMES = tierNames(2);
+const DIFF_NAMES = tierNames(2);
 
 export function diffToLevel(d: Difficulty): number {
   return d === "tricky" ? DIFF_TRICKY : DIFF_EASY;

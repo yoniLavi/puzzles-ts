@@ -39,7 +39,7 @@ export function diffToLevel(d: Difficulty): number {
 export function diffFromLevel(level: number): Difficulty {
   return DIFFS[level] ?? "normal";
 }
-export function diffChar(d: Difficulty): string {
+function diffChar(d: Difficulty): string {
   return DIFF_CHARS[diffToLevel(d)];
 }
 export function diffName(d: Difficulty): string {
@@ -193,7 +193,7 @@ export function encodeBlockStructure(w: number, dsf: Dsf): string {
  * `{ error, next }` where `next` is the index of the comma (or end) following
  * the block structure. Faithful to `parse_block_structure`.
  */
-export function parseBlockStructure(
+function parseBlockStructure(
   desc: string,
   w: number,
   dsf: Dsf,

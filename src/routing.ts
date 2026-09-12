@@ -1,8 +1,8 @@
 import { puzzleIds } from "./puzzle/catalog.ts";
 
-export const validPuzzleIds = new Set(puzzleIds);
+const validPuzzleIds = new Set(puzzleIds);
 
-export const baseUrl = new URL(import.meta.env.BASE_URL, window.location.href);
+const baseUrl = new URL(import.meta.env.BASE_URL, window.location.href);
 
 export const homePageUrl = () => new URL("", baseUrl);
 
@@ -42,7 +42,7 @@ export const isHelpUrl = (href: string | URL): boolean =>
  * If href is relative to baseUrl, returns its pathname portion after
  * baseUrl.pathname, with leading and trailing slashes removed.
  */
-export const relativePathname = (href: string | URL): string | undefined => {
+const relativePathname = (href: string | URL): string | undefined => {
   const url = href instanceof URL ? href : new URL(href, baseUrl);
   if (url.origin !== baseUrl.origin || !url.pathname.startsWith(baseUrl.pathname)) {
     return undefined;

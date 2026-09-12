@@ -46,7 +46,7 @@ import {
   type MatrixType,
 } from "./state.ts";
 
-export type { FlipMove, FlipParams, FlipState, FlipUi, MatrixType };
+export type { FlipMove, FlipParams, FlipState, FlipUi };
 
 /** Upstream's `INT_MAX`, for the overflow guards in `validateParams`. */
 const INT_MAX = 2147483647;

@@ -23,7 +23,7 @@ export const DIFF_EASY = 0;
 /** Needs the one-level hypothetical: assume a color, follow the forced
  * consequences, and find the contradiction there. */
 export const DIFF_TRICKY = 1;
-export const DIFFCOUNT = 2;
+const DIFFCOUNT = 2;
 
 export const DIFF_NAMES: readonly string[] = tierNames(2);
 

@@ -150,8 +150,8 @@ export const DODEC_B = 26;
 export const PENROSE_TILESIZE = 100;
 
 export const HATS_TILESIZE = 32;
-export const HATS_XSQUARELEN = 4;
-export const HATS_YSQUARELEN = 6;
+const HATS_XSQUARELEN = 4;
+const HATS_YSQUARELEN = 6;
 export const HATS_XUNIT = 14;
 export const HATS_YUNIT = 8;
 

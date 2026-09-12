@@ -24,7 +24,7 @@ export const isRunningAsApp = !window.matchMedia("(display-mode: browser)").matc
  * (Careful you don't confuse PWAManagerStatus with similarly named
  * ServiceWorker.state values, which have very different meanings.)
  */
-export type PWAManagerStatus =
+type PWAManagerStatus =
   | "uninitialized" // PWAManager not initialized
   | "unregistered" // offline use not enabled
   | "registering" // should quickly transition to registered or downloading

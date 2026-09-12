@@ -148,7 +148,7 @@ export function defaultParams(): BoatsParams {
   return presetParams(DEFAULT_PRESET);
 }
 
-export function cloneParams(p: BoatsParams): BoatsParams {
+function cloneParams(p: BoatsParams): BoatsParams {
   return { ...p, fleetData: [...p.fleetData] };
 }
 

@@ -202,11 +202,7 @@ export function encodeLayoutHex(mines: Int8Array, wh: number): string {
 
 /** Decode the `(wh+3)/4`-nibble hex tail of a public/private desc back into a
  * mine bitmap (upstream `new_game`, mines.c:2336). `masked` de-obfuscates. */
-export function decodeLayoutBitmap(
-  hex: string,
-  wh: number,
-  masked: boolean,
-): Int8Array {
+function decodeLayoutBitmap(hex: string, wh: number, masked: boolean): Int8Array {
   const bmp = new Uint8Array((wh + 7) >> 3);
   const nnib = (wh + 3) >> 2;
   for (let i = 0; i < nnib; i++) {

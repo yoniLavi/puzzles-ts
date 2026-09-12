@@ -114,7 +114,7 @@ export function placeNumber(
 
 /** Seed every cell's candidates to its region's full set, then apply the givens
  * already on the board. */
-export function solverInit(board: SeismicBoard): void {
+function solverInit(board: SeismicBoard): void {
   const { w, h, grid, pencil, dsf } = board;
   const s = w * h;
   for (let i = 0; i < s; i++) pencil[i] = areaBits(dsf.size(i));

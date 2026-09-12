@@ -66,13 +66,13 @@ import {
 
 /** Candidate bit for digit `n` (1–9) — Crossing's `marks` encoding, one lower
  * than the Latin games' `1 << n` (there is no "empty" digit to reserve 0 for). */
-export const digitBit = (n: number): number => 1 << (n - 1);
+const digitBit = (n: number): number => 1 << (n - 1);
 const ALL_DIGITS = 0x1ff;
 
 /** Plan-length cap — a UX bound, not a correctness one: the player rarely
  * follows more than a handful of steps before going their own way, and the next
  * request recomputes. Matches Spokes/Bricks/Boats. */
-export const HINT_PLAN_MAX = 40;
+const HINT_PLAN_MAX = 40;
 
 function digitsOf(mask: number): number[] {
   const out: number[] = [];
@@ -305,7 +305,7 @@ function posInRun(puzzle: CrossingPuzzle, r: number, i: number): number {
  * The shallow tables go first, so a plainer argument is never passed over for
  * one that needs the crossing numbers (see the module note).
  */
-export function nextCrossingFiring(board: CrossingHintBoard): CrossingFiring | null {
+function nextCrossingFiring(board: CrossingHintBoard): CrossingFiring | null {
   const a = analyze(board.puzzle, board.grid);
   return (
     placementFiring(board, a.shallowFitting, a.shallowAcc, false) ??

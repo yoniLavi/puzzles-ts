@@ -8,7 +8,7 @@ import {
 } from "lit/async-directive.js";
 import { assertHasReadableProperty } from "./types";
 
-export interface AutoBindOptions<T extends object, K extends keyof T> {
+interface AutoBindOptions<T extends object, K extends keyof T> {
   /**
    * The name of the element's change event (default "change")
    */

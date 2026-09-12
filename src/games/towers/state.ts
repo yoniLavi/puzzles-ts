@@ -30,7 +30,7 @@ export const DIFF_EXTREME = 2;
 export const DIFF_UNREASONABLE = 3;
 
 const DIFF_CHARS = "ehxu"; // towers_diffchars, indexed by level
-export const DIFF_NAMES = tierNames(4, { search: true });
+const DIFF_NAMES = tierNames(4, { search: true });
 
 export function diffToLevel(d: Difficulty): number {
   return Math.max(DIFF_EASY, DIFFS.indexOf(d));

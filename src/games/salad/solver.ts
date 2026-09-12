@@ -60,7 +60,7 @@ import {
 /** The cube's symbol for an empty square: one past the last real symbol. This
  * is also the value a solved working `grid` holds in an empty square, which is
  * why every reader of a solved grid tests `<= nums`. */
-export function holeSymbol(nums: number): number {
+function holeSymbol(nums: number): number {
   return nums + 1;
 }
 

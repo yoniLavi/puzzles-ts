@@ -36,7 +36,7 @@ const DIFF_CHARS = "ent";
 // contradiction, a solve-from-hypothesis only an Unreasonable tier may require.
 // No board needs a hypothesis nested inside that one (measured by
 // `strengthen-undead-deduction`), and Easy and Normal stop below rung 3.
-export const DIFF_NAMES = tierNames(3, { search: true });
+const DIFF_NAMES = tierNames(3, { search: true });
 const DIFFS: Difficulty[] = ["easy", "normal", "tricky"];
 
 export function diffToLevel(d: Difficulty): number {
@@ -46,22 +46,20 @@ export function diffToLevel(d: Difficulty): number {
 export function diffFromLevel(level: number): Difficulty {
   return DIFFS[level] ?? "normal";
 }
-export function diffChar(d: Difficulty): string {
-  return DIFF_CHARS[diffToLevel(d)];
-}
 export function diffName(d: Difficulty): string {
   return DIFF_NAMES[diffToLevel(d)];
 }
 
 // --- cell states (upstream CELL_* enum) ------------------------------------
-
-export const CELL_EMPTY = 0;
+//
+// Upstream's `CELL_EMPTY` (0) and `CELL_UNDEF` (6) are absent because this port
+// reads neither: an unfilled square is `MON_NONE` in the monster bitmask below,
+// and nothing here needs a sentinel past the last monster.
 export const CELL_MIRROR_L = 1; // '\'
 export const CELL_MIRROR_R = 2; // '/'
-export const CELL_GHOST = 3;
-export const CELL_VAMPIRE = 4;
-export const CELL_ZOMBIE = 5;
-export const CELL_UNDEF = 6;
+const CELL_GHOST = 3;
+const CELL_VAMPIRE = 4;
+const CELL_ZOMBIE = 5;
 
 // --- monster bitmask values ------------------------------------------------
 
@@ -77,11 +75,11 @@ export const isSingleton = (v: number): boolean =>
 
 // --- grid walk directions (upstream DIRECTION_* enum) ----------------------
 
-export const DIRECTION_NONE = 0;
-export const DIRECTION_UP = 1;
-export const DIRECTION_RIGHT = 2;
-export const DIRECTION_LEFT = 3;
-export const DIRECTION_DOWN = 4;
+const DIRECTION_NONE = 0;
+const DIRECTION_UP = 1;
+const DIRECTION_RIGHT = 2;
+const DIRECTION_LEFT = 3;
+const DIRECTION_DOWN = 4;
 
 // --- params ----------------------------------------------------------------
 
@@ -173,7 +171,7 @@ export function grid2range(x: number, y: number, w: number, h: number): number {
 
 /** Interior cell `(x, y)` (1-based) for the `num`-th monster cell in reading
  * order. */
-export function num2grid(num: number, width: number): { x: number; y: number } {
+function num2grid(num: number, width: number): { x: number; y: number } {
   return { x: 1 + (num % width), y: 1 + Math.floor(num / width) };
 }
 

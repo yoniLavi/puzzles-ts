@@ -112,7 +112,7 @@ function pathSurvivors(
  * turn, to their {@link pathSurvivors}. Mutates `guess` in place; returns
  * whether every cell is now a single monster.
  */
-export function solveIterative(common: UndeadCommon, guess: Uint8Array): boolean {
+function solveIterative(common: UndeadCommon, guess: Uint8Array): boolean {
   for (const path of common.paths) {
     const survivors = pathSurvivors(common, guess, path);
     for (let i = 0; i < path.numMonsters; i++) guess[path.mapping[i]] &= survivors[i];
@@ -125,7 +125,7 @@ export function solveIterative(common: UndeadCommon, guess: Uint8Array): boolean
  * enumerate every assignment within the current candidate sets; succeed only
  * when exactly one is fully consistent, recording it into `guess`.
  */
-export function solveBruteforce(common: UndeadCommon, guess: Uint8Array): boolean {
+function solveBruteforce(common: UndeadCommon, guess: Uint8Array): boolean {
   const numTotal = common.numTotal;
   if (numTotal === 0) return false;
   const loopPossible = new Int32Array(guess);
@@ -230,7 +230,7 @@ export function isUniquelySolvable(common: UndeadCommon): boolean {
 export const RUNG_ARC = 0;
 export const RUNG_COUNTING = 1;
 export const RUNG_FORCING = 2;
-export const RUNG_RECURSION = 3;
+const RUNG_RECURSION = 3;
 export type Rung = 0 | 1 | 2 | 3;
 
 /** The ladder's cap for each tier level, `DIFF_EASY` upward. */

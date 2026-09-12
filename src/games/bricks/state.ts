@@ -58,7 +58,7 @@ export const BRICKS_STEPS: ReadonlyArray<readonly [number, number]> = [
 export const DIFF_EASY = 0;
 export const DIFF_NORMAL = 1;
 export const DIFF_TRICKY = 2;
-export const DIFFCOUNT = 3;
+const DIFFCOUNT = 3;
 
 /** Difficulty encode chars (upstream `bricks_diffchars`), index = tier. */
 const DIFF_CHARS = "ent";
@@ -194,7 +194,7 @@ const PRESETS: BricksParams[] = [
  *   game carrying `dt` still loads, and generation refuses it *with its reason*
  *   in {@link validateParams}.
  */
-export const DIFF_NAMES = tierNames(2, { search: true });
+const DIFF_NAMES = tierNames(2, { search: true });
 
 export function defaultParams(): BricksParams {
   return { ...PRESETS[0] };

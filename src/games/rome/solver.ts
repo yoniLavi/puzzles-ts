@@ -85,7 +85,7 @@ export interface ValidateScratch {
   seterrs: Int32Array;
 }
 
-export function newValidateScratch(cells: number): ValidateScratch {
+function newValidateScratch(cells: number): ValidateScratch {
   return {
     dsf: new Dsf(cells),
     sets: new Int32Array(cells),

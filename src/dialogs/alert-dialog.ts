@@ -23,7 +23,7 @@ export async function showAlert(options: AlertOptions) {
 }
 
 @customElement("alert-dialog")
-export class AlertDialog extends LitElement {
+class AlertDialog extends LitElement {
   @property({ type: String })
   label: string = "";
 

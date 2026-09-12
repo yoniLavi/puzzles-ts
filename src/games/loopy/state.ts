@@ -81,7 +81,7 @@ const GRID_DESC_SEP = "_";
 /** Split an optional grid description off the front of a game description.
  * Mirrors `extract_grid_desc`: the separator is the **first** underscore, and
  * its absence means the tiling takes no description. */
-export function splitDesc(desc: string): { gridDesc: string | null; clueDesc: string } {
+function splitDesc(desc: string): { gridDesc: string | null; clueDesc: string } {
   const sep = desc.indexOf(GRID_DESC_SEP);
   if (sep < 0) return { gridDesc: null, clueDesc: desc };
   return { gridDesc: desc.slice(0, sep), clueDesc: desc.slice(sep + 1) };
@@ -223,7 +223,7 @@ export function newState(p: LoopyParams, desc: string): LoopyState {
 // ---------------------------------------------------------------------------
 
 /** How many lines of `lineType` currently meet this dot. */
-export function dotOrder(s: LoopyState, dot: number, lineType: number): number {
+function dotOrder(s: LoopyState, dot: number, lineType: number): number {
   let n = 0;
   const d = s.grid.dots[dot];
   for (let i = 0; i < d.order; i++) {

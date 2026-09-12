@@ -13,7 +13,7 @@ import type { GridCursor } from "../../engine/pointer.ts";
 
 // --- directions ------------------------------------------------------
 
-export const DIR_MAX = 8;
+const DIR_MAX = 8;
 // N, NE, E, SE, S, SW, W, NW
 export const DXS = [0, 1, 1, 1, 0, -1, -1, -1] as const;
 export const DYS = [-1, -1, 0, 1, 1, 1, 0, -1] as const;
@@ -191,7 +191,7 @@ export function blankInto(s: SignpostState): void {
 
 // --- geometry / pointing --------------------------------------------
 
-export const isReal = (s: SignpostState, num: number): boolean => num > 0 && num <= s.n;
+const isReal = (s: SignpostState, num: number): boolean => num > 0 && num <= s.n;
 
 export const inGrid = (s: SignpostState, x: number, y: number): boolean =>
   x >= 0 && x < s.w && y >= 0 && y < s.h;
@@ -236,7 +236,7 @@ export function isPointing(
   }
 }
 
-export function isPointingI(s: SignpostState, fromi: number, toi: number): boolean {
+function isPointingI(s: SignpostState, fromi: number, toi: number): boolean {
   const w = s.w;
   return isPointing(s, fromi % w, Math.floor(fromi / w), toi % w, Math.floor(toi / w));
 }
@@ -324,7 +324,7 @@ export function unlinkCell(s: SignpostState, si: number): void {
 
 export const colorOf = (s: SignpostState, a: number): number =>
   Math.floor(a / (s.n + 1));
-export const startOf = (s: SignpostState, c: number): number => c * (s.n + 1);
+const startOf = (s: SignpostState, c: number): number => c * (s.n + 1);
 
 interface HeadMeta {
   i: number;

@@ -15,7 +15,7 @@ const FOUR = 4;
 export const SOLVER_IMPOSSIBLE = 0;
 export const SOLVER_UNIQUE = 1;
 /** Ambiguous, or too hard for the given difficulty. */
-export const SOLVER_STUCK = 2;
+const SOLVER_STUCK = 2;
 
 interface Scratch {
   possible: Uint8Array;

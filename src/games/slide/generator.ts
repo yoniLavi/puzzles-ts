@@ -40,7 +40,7 @@ import {
   WALL,
 } from "./state.ts";
 
-export interface GeneratedBoard {
+interface GeneratedBoard {
   board: Uint8Array;
   forcefield: Uint8Array;
   tx: number;
@@ -48,7 +48,7 @@ export interface GeneratedBoard {
   minmoves: number;
 }
 
-export function generateBoard(
+function generateBoard(
   w: number,
   h: number,
   rng: RandomState,

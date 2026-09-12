@@ -59,7 +59,7 @@ export const DIFFCOUNT = 5;
  */
 export const DIFF_NAMES = [...tierNames(4, { search: true }), "Ambiguous"];
 /** Encoding chars in enum order (upstream `dominosa_diffchars`). */
-export const DIFF_CHARS = "tbhea";
+const DIFF_CHARS = "tbhea";
 
 // --- params -----------------------------------------------------------------
 

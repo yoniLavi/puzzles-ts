@@ -45,7 +45,7 @@ export function diffToLevel(d: MathraxDiff): number {
 export function diffFromLevel(level: number): MathraxDiff {
   return DIFFS[level] ?? "easy";
 }
-export function diffChar(d: MathraxDiff): string {
+function diffChar(d: MathraxDiff): string {
   return DIFF_CHARS[diffToLevel(d)];
 }
 export function diffName(d: MathraxDiff): string {
@@ -65,7 +65,7 @@ export const CLUE_MUL = 3;
 export const CLUE_DIV = 4;
 export const CLUE_EVN = 5;
 export const CLUE_ODD = 6;
-export const CLUEMASK = 7;
+const CLUEMASK = 7;
 
 export function clueType(clue: number): number {
   return clue & CLUEMASK;
@@ -88,7 +88,7 @@ export const OPTION_ODD = 32;
 export const OPTIONSMASK = 63;
 
 /** The clue-type option bits in upstream's fixed encode/decode order. */
-export const OPTION_LETTERS: ReadonlyArray<{ bit: number; letter: string }> = [
+const OPTION_LETTERS: ReadonlyArray<{ bit: number; letter: string }> = [
   { bit: OPTION_ADD, letter: "A" },
   { bit: OPTION_SUB, letter: "S" },
   { bit: OPTION_MUL, letter: "M" },

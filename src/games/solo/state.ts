@@ -35,7 +35,7 @@ export const DIFF_EXTREME = 4; // "Extreme"
 export const DIFF_RECURSIVE = 5; // "Unreasonable"
 export const DIFF_AMBIGUOUS = 6;
 export const DIFF_IMPOSSIBLE = 7;
-export const DIFFCOUNT = 6; // number of selectable difficulties
+const DIFFCOUNT = 6; // number of selectable difficulties
 
 export const DIFF_NAMES = tierNames(DIFFCOUNT, { search: true });
 
@@ -55,12 +55,12 @@ export const DIFF_KINTERSECT = 3;
 
 export const SYMM_NONE = 0;
 export const SYMM_ROT2 = 1;
-export const SYMM_ROT4 = 2;
-export const SYMM_REF2 = 3;
-export const SYMM_REF2D = 4;
-export const SYMM_REF4 = 5;
+const SYMM_ROT4 = 2;
+const SYMM_REF2 = 3;
+const SYMM_REF2D = 4;
+const SYMM_REF4 = 5;
 export const SYMM_REF4D = 6;
-export const SYMM_REF8 = 7;
+const SYMM_REF8 = 7;
 
 /**
  * The image cells of `(x, y)` under symmetry `s` (including `(x, y)` itself),
@@ -369,7 +369,7 @@ export function specToGrid(
 }
 
 /** Faithful to `validate_grid_desc`: returns `{ error, next }`. */
-export function validateGridDesc(
+function validateGridDesc(
   desc: string,
   start: number,
   range: number,
@@ -498,7 +498,7 @@ export function specToDsf(
  * dsf, then check the region count is in `[minNr, maxNr]` and each region size
  * is in `[minSize, maxSize]`. Returns `{ error, next }`.
  */
-export function validateBlockDesc(
+function validateBlockDesc(
   desc: string,
   start: number,
   cr: number,

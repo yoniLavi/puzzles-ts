@@ -101,7 +101,7 @@ function makeBias(g: Grid): LoopgenBias {
 /** Generate a random loop into `lines` (length w*h) via the biased loop
  * generator, converting the face coloring to per-cell R/U/L/D line bits
  * (upstream `pearl_loopgen`). */
-export function pearlLoopgen(
+function pearlLoopgen(
   w: number,
   h: number,
   lines: Uint8Array,

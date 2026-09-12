@@ -17,7 +17,7 @@ import type { GridCursor } from "../../engine/pointer.ts";
 import { encodeRunLength, scanRunLength } from "../../engine/run-length.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
-export const EMPTY = 0;
+const EMPTY = 0;
 
 /** Orthogonal neighbor offsets (upstream `dx`/`dy`). */
 export const DX = [-1, 1, 0, 0] as const;
@@ -175,7 +175,7 @@ export function isComplete(board: ArrayLike<number>, w: number, h: number): bool
 
 // --- moves ---------------------------------------------------------------
 
-export function cloneState(state: FillingState): FillingState {
+function cloneState(state: FillingState): FillingState {
   return { ...state, board: Uint8Array.from(state.board) };
 }
 

@@ -28,7 +28,7 @@ import { LOCKED } from "./state.ts";
 /** Proved to have no solution at all. */
 export const SOLVER_INCONSISTENT = -1;
 /** Consistent, but not narrowed to a single solution. */
-export const SOLVER_AMBIGUOUS = 0;
+const SOLVER_AMBIGUOUS = 0;
 /** Solved: every tile's orientation is determined. */
 export const SOLVER_UNIQUE = 1;
 

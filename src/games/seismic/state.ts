@@ -198,7 +198,7 @@ export const MAX_CELLS_SEISMIC = 64;
 /** @see MAX_CELLS_SEISMIC — Tectonic's limit is reachability, not the fill. */
 export const MAX_CELLS_TECTONIC = 100;
 
-export function maxCells(mode: number): number {
+function maxCells(mode: number): number {
   return mode === MODE_TECTONIC ? MAX_CELLS_TECTONIC : MAX_CELLS_SEISMIC;
 }
 
@@ -353,7 +353,7 @@ export function encodeWalls(walls: ArrayLike<number>, ws: number): string {
 
 /** Encode the clue grid: letter runs for empty cells, the digit itself for a
  * given. */
-export function encodeClues(grid: ArrayLike<number>, s: number): string {
+function encodeClues(grid: ArrayLike<number>, s: number): string {
   let out = "";
   let erun = 0;
   for (let i = 0; i < s; i++) {

@@ -46,13 +46,13 @@ export const DIR_RIGHT = 0;
 export const DIR_BOTRIGHT = 1;
 export const DIR_BOT = 2;
 export const DIR_BOTLEFT = 3;
-export const DIR_LEFT = 4;
-export const DIR_TOPLEFT = 5;
-export const DIR_TOP = 6;
-export const DIR_TOPRIGHT = 7;
+const DIR_LEFT = 4;
+const DIR_TOPLEFT = 5;
+const DIR_TOP = 6;
+const DIR_TOPRIGHT = 7;
 
 /** The opposite direction — upstream's `INV_DIR`. */
-export function invDir(d: number): number {
+function invDir(d: number): number {
   return d ^ 4;
 }
 
@@ -179,7 +179,7 @@ export function getSpoke(hub: number, d: number): number {
 }
 
 /** Write spoke `d` of cell `i` (one end only — see {@link spokesPlace}). */
-export function setSpoke(spokes: Uint16Array, i: number, d: number, v: number): void {
+function setSpoke(spokes: Uint16Array, i: number, d: number, v: number): void {
   spokes[i] = (spokes[i] & ~(3 << (d * 2))) | (v << (d * 2));
 }
 

@@ -11,7 +11,7 @@ import { stepBudget } from "../../engine/step-budget.ts";
 
 /** Upstream's `RECURSION_DEPTH`: depth-3 was empirically a clear win
  * over 2, with 4 only negligibly better than 3. */
-export const RECURSION_DEPTH = 3;
+const RECURSION_DEPTH = 3;
 
 /** Reusable scratch buffers, mirroring upstream's `solver_scratch`, so
  * generation (which runs the solver to completion, repeatedly) does no
@@ -82,7 +82,7 @@ export function completed(grid: Uint8Array): boolean {
   return true;
 }
 
-export interface SearchResult {
+interface SearchResult {
   /** The greatest "fill distance" of any cell from the corner. */
   dist: number;
   /** How many cells sit at that greatest distance. */
@@ -102,7 +102,7 @@ export interface SearchResult {
  * `queue[qcurr]` holds the current distance layer and `queue[qcurr^1]`
  * accumulates the next.
  */
-export function search(
+function search(
   w: number,
   h: number,
   grid: Uint8Array,

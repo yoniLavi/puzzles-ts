@@ -71,7 +71,7 @@ function isApplePlatform(): boolean {
 
 /** How a chord is written on a control. `⌘Z` / `⇧⌘Z` on Apple platforms,
  * `Ctrl+Z` / `Ctrl+Shift+Z` elsewhere. */
-export function chordLabel(chord: Chord): string {
+function chordLabel(chord: Chord): string {
   const key = chord.key.toUpperCase();
   if (isApplePlatform()) {
     return `${chord.shift ? "⇧" : ""}⌘${key}`;

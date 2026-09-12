@@ -299,7 +299,7 @@ function evidenceFor(cells: Point[], focus: Point): Point[] {
   return cells.filter((c) => c.x !== focus.x || c.y !== focus.y);
 }
 
-export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
+function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
   switch (firing.kind) {
     case "dotTile":
       return { ...EMPTY, targets: firing.tiles, targetDot: firing.dot };
@@ -348,7 +348,7 @@ function dedupe(cells: Point[]): Point[] {
 
 // --- the move ---------------------------------------------------------
 
-export function moveOf(firing: GalaxiesFiring): GalaxiesMove {
+function moveOf(firing: GalaxiesFiring): GalaxiesMove {
   if (firing.kind === "separate" || firing.kind === "mirrorWall") {
     return {
       ops: [{ kind: "edge", x: firing.edge.x, y: firing.edge.y }],

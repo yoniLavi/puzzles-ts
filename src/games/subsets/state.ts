@@ -28,7 +28,7 @@ export const DIFF_EASY = 0;
  * upstream wrote, commented out under `// TODO repair this`, and never
  * compiled. */
 export const DIFF_TRICKY = 1;
-export const DIFFCOUNT = 2;
+const DIFFCOUNT = 2;
 
 /** The collection's two-tier names; upstream offers no difficulty here. */
 export const DIFF_NAMES: readonly string[] = tierNames(2);
@@ -41,9 +41,9 @@ const DIFF_CHARS = "et";
 export const ALL_BITS = (n: number): number => (1 << n) - 1;
 
 export const F_ADJ_UP = 1;
-export const F_ADJ_RIGHT = 2;
+const F_ADJ_RIGHT = 2;
 export const F_ADJ_DOWN = 4;
-export const F_ADJ_LEFT = 8;
+const F_ADJ_LEFT = 8;
 
 /** One row of upstream's `adjthan[]` table: the arrow flag `f` on the cell it
  * leaves, the opposing flag `fo` on the cell it enters, the direction, and the

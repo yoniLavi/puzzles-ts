@@ -75,10 +75,10 @@ const otherColor = (c: number): number => (c === ONE ? ZERO : ONE);
 
 // --- error-overlay flags (set by validateRows, read by render.ts) -------
 export const FE_HOR_ROW_LEFT = 0x0001;
-export const FE_HOR_ROW_MID = 0x0003;
+const FE_HOR_ROW_MID = 0x0003;
 export const FE_HOR_ROW_RIGHT = 0x0002;
 export const FE_VER_ROW_TOP = 0x0004;
-export const FE_VER_ROW_MID = 0x000c;
+const FE_VER_ROW_MID = 0x000c;
 export const FE_VER_ROW_BOTTOM = 0x0008;
 export const FE_ROW_MATCH = 0x0020;
 export const FE_COL_MATCH = 0x0040;

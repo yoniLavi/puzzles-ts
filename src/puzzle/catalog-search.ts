@@ -14,7 +14,7 @@ import { puzzleDataMap } from "./catalog.ts";
 
 /** Everything a query is matched against for `puzzleId`, lowercased. Built per
  * call: the catalog is 57 entries and a keystroke is not a hot loop. */
-export function searchHaystack(puzzleId: string): string {
+function searchHaystack(puzzleId: string): string {
   const data = puzzleDataMap[puzzleId];
   if (!data) return "";
   const { name, aliases, description, objective } = data;

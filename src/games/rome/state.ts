@@ -78,8 +78,8 @@ export const DIFF_TRICKY = 2;
 export const DIFFCOUNT = 3;
 
 /** Difficulty encode chars (upstream `rome_diffchars`), index = tier. */
-export const DIFF_CHARS = "ent";
-export const DIFF_NAMES = tierNames(DIFFCOUNT);
+const DIFF_CHARS = "ent";
+const DIFF_NAMES = tierNames(DIFFCOUNT);
 
 // --- validity verdicts ------------------------------------------------------
 

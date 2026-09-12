@@ -109,7 +109,7 @@ export interface SolverRecorder {
   firing: GalaxiesFiring | null;
 }
 
-export function newRecorder(stopAtFirstFiring: boolean): SolverRecorder {
+function newRecorder(stopAtFirstFiring: boolean): SolverRecorder {
   return { stopAtFirstFiring, firing: null };
 }
 
@@ -168,7 +168,7 @@ function solverObviousDot(
   return progress;
 }
 
-export function solverObvious(s: GalaxiesState, rec?: SolverRecorder): number {
+function solverObvious(s: GalaxiesState, rec?: SolverRecorder): number {
   let progress = NOTHING;
   for (const dot of s.dots) {
     const r = solverObviousDot(s, dot.x, dot.y, rec);
@@ -829,7 +829,7 @@ export function galaxiesLadderOnly(
  * explanation the player is offered first and nothing about what is
  * deducible. The ladder therefore lives in `hint.ts`.
  */
-export interface GalaxiesRung {
+interface GalaxiesRung {
   readonly name: string;
   fire(s: GalaxiesState): GalaxiesFiring | null;
 }
@@ -874,12 +874,3 @@ export function clearForSolve(s: GalaxiesState): void {
     }
   }
 }
-
-// Re-export the deduction primitives for testing.
-export const _internals = {
-  solverObvious,
-  solverLinesOpposite,
-  solverSpacesOneposs,
-  solverExpandDots,
-  solverExtendExclaves,
-};

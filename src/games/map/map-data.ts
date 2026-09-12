@@ -67,7 +67,7 @@ interface ParsedEdges {
  * a class root — a region's number is fixed at its minimum-index cell in scan
  * order — so the shared `Dsf` is byte-match safe here (docs/games/solver-and-generator.md § "Solver-gated generation").
  */
-export function parseEdgeList(
+function parseEdgeList(
   w: number,
   h: number,
   n: number,

@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 /**
- * The dead-export diagnostic: which exports under `src/` nothing imports
- * (`build-pipeline`, "Dead exports are measured, and the measurement is a
- * diagnostic until the backlog is cleared").
+ * Which exports nothing imports — a gate step (`build-pipeline`, "Nothing
+ * exports a symbol no other file imports"), and `npm run dead-exports` to run
+ * it alone.
  *
- * **`npm run dead-exports`. It is NOT in the gate**, and the reason is the
- * measurement rather than caution: its first honest run reported **373**. A
- * check that names 373 sites is a wall, and the only way to land one in a gate
- * is a 373-entry ledger, which is the skip list this repository's guards exist
- * not to be. It stands where `npm run probe` and `npm run metrics` stand — a
- * diagnostic, never ratcheted — and `retire-the-dead-exports` is the change
- * that clears the backlog and moves this into the gate's fast prefix, which by
- * then is one line in `scripts/gate.sh`.
+ * **It was a diagnostic while its backlog stood at 376**, because a check that
+ * names 376 sites is a wall and the only way to land one in a gate is a
+ * 376-entry ledger, which is the skip list this repository's guards exist not
+ * to be. `retire-the-dead-exports` cleared it, and the shape of the clearing is
+ * worth knowing before adding to this file: **199 were read by their own file
+ * and needed the keyword gone rather than the declaration**, 163 were types an
+ * exported signature names and needed the rule below rather than either, and
+ * **five** were dead outright.
  *
- * The 373 are real, not noise: five spot-checks (Solo's own `SYMM_ROT4`
- * shadowing the engine's, Undead's `CELL_GHOST`, Tents' `DIFF_NAMES`,
- * `hint-mark.ts`'s `MARK_TOP`, `timing.ts`'s `debounce`) each had **zero**
- * references anywhere outside their declaring file.
+ * The proposal's spot-checks read two of them wrong in the same direction —
+ * `timing.ts`'s `debounce` is *called* eleven lines below itself, and every
+ * game's `DIFF_NAMES` is read by its own `presets()` — which is the whole
+ * reason "unused export" and "delete this" are different instructions.
  *
  * **Why it is written here rather than installed.** An unused export is
  * invisible to the typechecker, to biome and to every test, because nothing that
@@ -48,6 +48,21 @@
  *   game and engine source as strings. Counting them as module imports marked
  *   every file under `src/engine/` and `src/games/` wholly used, which switched
  *   the check off across most of the tree while it printed a clean pass.
+ * - **being named in the signature of another export that is itself reached** —
+ *   `DeductionFixpointOptions` is what `runDeductionFixpoint` takes, and a
+ *   caller writing that object literal is reaching the type through the
+ *   function whether or not it imports the name. Measured 2026-09-12: **163 of
+ *   the 376** findings were this, and every one of them is a type. Without the
+ *   rule the honest options are to un-export a type an exported signature
+ *   names, which makes it unnameable by the caller who has to satisfy it, or to
+ *   write a 163-entry ledger, which is the skip list this check exists not to
+ *   be. It is a rule rather than a list, so it cannot rot.
+ *
+ *   **The owner has to be reached too, or a relay counts as a consumer again.**
+ *   A dead exported function would otherwise keep its own options type alive
+ *   for ever, so this is resolved to a fixpoint *after* the dead set is known
+ *   and only live owners lend their reach — the same distinction `export * from`
+ *   and the `?raw` globs each cost a debugging round to find.
  *
  * **Vacuity floors on everything counted**, because this check's whole failure
  * mode is the one knip demonstrated: a resolver that stops early reports a clean
@@ -63,8 +78,6 @@
  * export in `engine/draw.ts` — silent under both — was caught.
  *
  * Usage: `npm run dead-exports`. `DEBUG=<file>` explains one file's verdict.
- * Exit 1 while findings remain, so wiring it into the gate is one line once
- * they do not.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -95,9 +108,14 @@ const ENTRY = [
 
 /**
  * Below these the resolver is broken rather than the tree clean. Set well under
- * what was measured on 2026-09-12 — 808 files, 1837 exports, 4172 of 4183
- * internal specifiers resolving — so they separate "working" from "enumerating
- * nothing" without being a ratchet a legitimate change has to bump.
+ * what the check's own success line reports — **818 files, 4296 exports, 4252
+ * of 4263 internal specifiers resolving**, measured 2026-09-12 by
+ * `retire-the-dead-exports` — so they separate "working" from "enumerating
+ * nothing" without being a ratchet a legitimate change has to bump. The export
+ * count corrects a figure of 1837 recorded when this file was written: that
+ * line had never printed, because the check exited on its findings every time
+ * it ran until the backlog was cleared. An independent `git grep` of export
+ * lines over the same file set gives 4318.
  *
  * The eleven that do not resolve are every non-TypeScript asset in the tree:
  * `?raw` licenses, `?inline` CSS and SVG, and two `.html` imports.
@@ -116,6 +134,11 @@ const files = execFileSync(
     "-z",
     "src/*.ts",
     "vite-plugins/*.ts",
+    // The four advisory color/deixis reports. They are `.ts` and they import
+    // from `src/`, so leaving them out made a symbol they are the only consumer
+    // of read as dead — `hint-games.ts`'s `markRoles`, which is exactly the kind
+    // of finding this check exists to be trusted about.
+    "scripts/**/*.ts",
     "vite.config.ts",
     "vitest.config.ts",
   ],
@@ -151,6 +174,15 @@ const wholeModuleUsed = new Set();
  */
 const starReexports = new Map();
 const globPatterns = [];
+/**
+ * file -> (exported name -> the names its own *signature* mentions).
+ *
+ * Resolved after the dead set is known, so only an owner something reaches
+ * lends its reach on (see the module doc).
+ *
+ * @type {Map<string, Map<string, Set<string>>>}
+ */
+const signatureNames = new Map();
 
 let specifiers = 0;
 let resolved = 0;
@@ -190,8 +222,53 @@ for (const file of files) {
   sources.set(file, ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true));
 }
 
+/**
+ * Every identifier `node` mentions, for the signature map. Deliberately the
+ * whole subtree rather than an attempt to recognize "type position": a name in
+ * a default value or a generic constraint is reached by the caller for the same
+ * reason, and a narrower walk would need a list of node kinds to keep true.
+ */
+function mentionedNames(node, into) {
+  if (node == null) return;
+  if (ts.isIdentifier(node)) into.add(node.text);
+  ts.forEachChild(node, (c) => mentionedNames(c, into));
+}
+
+/** What one exported declaration's signature mentions, by the declaration's
+ * own name. A declaration's *body* is not its signature: a function that calls
+ * a local helper does not put that helper on the module's surface. */
+function collectSignature(node, owners) {
+  const add = (name, parts) => {
+    if (!owners.has(name)) owners.set(name, new Set());
+    for (const p of parts) mentionedNames(p, owners.get(name));
+  };
+  if (ts.isFunctionDeclaration(node) && node.name) {
+    add(node.name.text, [...node.parameters.map((p) => p.type), node.type]);
+  } else if (ts.isVariableStatement(node)) {
+    for (const d of node.declarationList.declarations) {
+      if (!ts.isIdentifier(d.name)) continue;
+      const parts = [d.type];
+      if (d.initializer && ts.isArrowFunction(d.initializer))
+        parts.push(...d.initializer.parameters.map((p) => p.type), d.initializer.type);
+      add(d.name.text, parts);
+    }
+  } else if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
+    if (node.name) add(node.name.text, [node]);
+  } else if (ts.isClassDeclaration(node) && node.name) {
+    const parts = [...(node.heritageClauses ?? [])];
+    for (const m of node.members) {
+      if (ts.isPropertyDeclaration(m) || ts.isMethodDeclaration(m)) parts.push(m.type);
+      if (ts.isMethodDeclaration(m) || ts.isConstructorDeclaration(m))
+        parts.push(...m.parameters.map((p) => p.type));
+    }
+    add(node.name.text, parts);
+  }
+}
+
 for (const [file, sf] of sources) {
   const names = new Set();
+  const owners = new Map();
+  signatureNames.set(file, owners);
   const visit = (node) => {
     // export declarations of every shape
     const mods = ts.canHaveModifiers(node) ? (ts.getModifiers(node) ?? []) : [];
@@ -207,6 +284,7 @@ for (const [file, sf] of sources) {
       } else if (node.name != null && ts.isIdentifier(node.name)) {
         names.add(node.name.text);
       }
+      collectSignature(node, owners);
     }
     // `export { a, b }` and `export { a } from "./x.ts"`
     if (ts.isExportDeclaration(node)) {
@@ -358,6 +436,33 @@ if (process.env.DEBUG) {
       .map((k) => k.slice(f.length + 2))
       .join(", ")}`,
   );
+}
+
+// --- Pass 3: a live export's signature reaches the names it mentions. ---
+//
+// To a fixpoint, and only from an owner that is itself reached: a dead exported
+// function must not keep its own options type alive (see the module doc). The
+// second half of the file's own exports is what bounds this — each pass can
+// only mark names, never unmark them, so it converges in as many rounds as the
+// longest chain of types naming types.
+const reached = (file, name) =>
+  isEntry(file) || wholeModuleUsed.has(file) || used.has(`${file}::${name}`);
+for (;;) {
+  let grew = false;
+  for (const [file, owners] of signatureNames) {
+    if (isEntry(file) || wholeModuleUsed.has(file)) continue;
+    for (const [owner, mentions] of owners) {
+      if (!reached(file, owner)) continue;
+      for (const mentioned of mentions) {
+        if (mentioned === owner) continue;
+        if (!exportsOf.get(file)?.has(mentioned)) continue;
+        if (used.has(`${file}::${mentioned}`)) continue;
+        used.add(`${file}::${mentioned}`);
+        grew = true;
+      }
+    }
+  }
+  if (!grew) break;
 }
 
 const dead = [];

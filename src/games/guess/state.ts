@@ -16,7 +16,7 @@ import type { GameStatus } from "../../engine/types.ts";
 export const FEEDBACK_CORRECTPLACE = 1;
 export const FEEDBACK_CORRECTCOLOR = 2;
 
-export const MAXCOLORS = 10;
+const MAXCOLORS = 10;
 
 // --- types ------------------------------------------------------------
 

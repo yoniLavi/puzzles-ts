@@ -378,7 +378,7 @@ function nextForcedMarker(
  * fourth shape the canonical set has no room for, so they are read as `null`
  * here (⇒ off-plan) and handled by {@link hintKeepTrack} /
  * {@link refreshHintStep} before they delegate. */
-export const saladCandidateMoves: CandidateMoveAdapter<SaladMove> = {
+const saladCandidateMoves: CandidateMoveAdapter<SaladMove> = {
   read: (m) => {
     // Both fills read as the canonical populate: the plan asks for the additive
     // `pencilAll`, and a legacy move log's resetting `markAll` did at least as

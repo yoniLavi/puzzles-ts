@@ -12,7 +12,7 @@ export const FILLY = 0;
 
 /** Upper limit on colors, from the count of distinct RGB values
  * upstream defines (`MAXCOLORS`). */
-export const MAXCOLORS = 10;
+const MAXCOLORS = 10;
 
 // --- types ------------------------------------------------------------
 
@@ -128,7 +128,7 @@ function isDigit(ch: string): boolean {
 /** Decode a grid-description character to a color, or `-1` if invalid.
  * Upstream's `validate_desc` reads `A`-`Z` as 10-35, so a letter is out of
  * range rather than a bad character. */
-export function decodeColorChar(ch: string): number {
+function decodeColorChar(ch: string): number {
   const code = ch.charCodeAt(0);
   if (code >= 48 && code <= 57) return code - 48;
   if (code >= 65 && code <= 90) return 10 + (code - 65);

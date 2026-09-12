@@ -999,7 +999,7 @@ export function solveBoats(b: BoatsBoard, maxDiff: number): BoatsSolveResult {
  * `[]`, so Check & Save would store a wrong board
  * (docs/games/solver-and-generator.md § "The solvable-game contract").
  */
-export function solveAtAnyTier(b: BoatsBoard): BoatsSolveResult {
+function solveAtAnyTier(b: BoatsBoard): BoatsSolveResult {
   let sawInvalid = false;
   for (let maxDiff = DIFF_EASY; maxDiff < DIFFCOUNT; maxDiff++) {
     const attempt = cloneBoard(b);

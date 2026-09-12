@@ -251,7 +251,7 @@ export function spokesValidate(b: SpokesBoard, scratch?: SpokesScratch): SpokesS
  * `EMPTY`, so it overwrites a diagonal an `'X'` hole has hidden. Only
  * hand-authored descriptions reach that: the generator never emits `'X'`.
  */
-export function spokesSolverOnes(b: SpokesBoard): number {
+function spokesSolverOnes(b: SpokesBoard): number {
   const { w, h } = b;
   let count = 0;
   for (let i = 0; i < w * h; i++) if (b.numbers[i]) count++;
@@ -281,7 +281,7 @@ export function spokesSolverOnes(b: SpokesBoard): number {
  * earlier placements but stale counts — faithful to upstream, and harmless
  * because the loop re-runs to a fixpoint.
  */
-export function spokesSolverFull(b: SpokesBoard, s: SpokesScratch): number {
+function spokesSolverFull(b: SpokesBoard, s: SpokesScratch): number {
   const n = b.w * b.h;
   let ret = 0;
 
@@ -315,7 +315,7 @@ export function spokesSolverFull(b: SpokesBoard, s: SpokesScratch): number {
 }
 
 /** Mark the empty diagonal that would cross a drawn diagonal. */
-export function spokesSolverDiagonal(b: SpokesBoard): number {
+function spokesSolverDiagonal(b: SpokesBoard): number {
   const { w, h } = b;
   let ret = 0;
   for (let y = 0; y < h - 1; y++) {
@@ -349,7 +349,7 @@ export function spokesSolverDiagonal(b: SpokesBoard): number {
  * clobbered, exactly as upstream, and the recursion tier is always below
  * `DIFF_TRICKY`, so the recursive solve never re-enters this function.
  */
-export function spokesSolverAttempt(
+function spokesSolverAttempt(
   b: SpokesBoard,
   copy: SpokesBoard,
   s: SpokesScratch,
@@ -408,7 +408,7 @@ export interface SpokesFiring {
 /** Runaway/UX cap on plan length: the look-ahead rung is expensive and a
  * player rarely follows more than a few steps before diverging, so a
  * recompute yields the next batch. */
-export const HINT_PLAN_MAX = 40;
+const HINT_PLAN_MAX = 40;
 
 /** The EMPTY spoke directions of a hub, in `DIR_*` order. */
 function emptyDirs(hub: number): number[] {

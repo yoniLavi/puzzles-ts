@@ -59,6 +59,45 @@ Three answers, and they are different work: nobody ever (delete), only this file
 (un-export), or a consumer the archive predicts (keep, and ledger it with the
 change that predicts it).
 
+## What the 373 turned out to be
+
+Recorded after the sweep, because two of the readings above are wrong and the
+largest category is one this proposal did not name at all. Measured 2026-09-12;
+the report stood at **376** by then.
+
+**The biggest group is types, and it is 163 of the 376.** `DeductionFixpointOptions`
+is what `runDeductionFixpoint` takes: nothing imports the name, and a caller
+writing that object literal is reaching the type through the function all the
+same. Un-exporting it makes the type unnameable by the very caller who has to
+satisfy it, and a 163-entry ledger is the skip list this check exists not to be.
+So the check learned a **fourth way this tree reaches a symbol** — being named
+in the signature of another export that is itself reached — resolved to a
+fixpoint after the dead set is known, so a dead exported function cannot keep
+its own options type alive. That is a rule rather than a list, and it took the
+report from 376 to 204 without excusing anything.
+
+**"Who is meant to import this?" has a clear majority answer, and it is not the
+one the spot-checks suggested.** 199 of the remaining 204 are read by their own
+declaring file, so the fix is the keyword and nothing else. Both of the examples
+above are in that group rather than the delete group: `debounce` is *called* by
+`debounced` eleven lines below it, and every `DIFF_NAMES` is read by its own
+`state.ts` in `presets()` and `paramConfig`. So the four large name-groups are
+**not** per-game copies a convention left behind — each is a local binding of
+`tierNames(n)` that the game genuinely needs and exported out of habit.
+
+**Five were dead outright**, and one thing the report called dead was not:
+`hint-games.ts`'s `markRoles` is imported by `scripts/checks/hint-deixis.test.ts`,
+which the check was not reading. Widening its file list to `scripts/**/*.ts`
+fixed a blind spot rather than adding a ledger entry — the check has to be
+trusted about exactly this.
+
+**The ledger is empty, and `KEPT_UNUSED` still asserts something**: an entry
+that stops earning its place fails as loudly as a new dead export, so an empty
+ledger is a claim that nothing in this tree needs one. The Lit component classes
+this proposal predicted would need one do not: a class registered by
+`@customElement` in its own file and named in that file's
+`HTMLElementTagNameMap` needs no export at all.
+
 ## What to check before deleting
 
 The check counts an export as used only if another file imports it by name, the

@@ -157,7 +157,7 @@ export function paramsCorpus(game: AnyGame): ParamsCase[] {
 /** A params record as a stable string, for de-duplication and for labeling a
  * recorded case. Key-sorted so two records differing only in field order read
  * as the same params, which they are. */
-export function canonical(p: AnyParams): string {
+function canonical(p: AnyParams): string {
   return Object.keys(p)
     .sort()
     .map((k) => `${k}=${String(p[k])}`)

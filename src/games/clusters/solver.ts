@@ -134,11 +134,7 @@ function classify(
 
 /** The generator/solver validate: classifies AND mutates the `F_ERROR` bit
  * into `grid` (upstream fidelity — see the module note). */
-export function clustersValidate(
-  grid: Uint8Array,
-  w: number,
-  h: number,
-): ClustersStatus {
+function clustersValidate(grid: Uint8Array, w: number, h: number): ClustersStatus {
   return classify(grid, w, h, true);
 }
 

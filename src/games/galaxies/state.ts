@@ -147,11 +147,6 @@ export function addDot(s: GalaxiesState, x: number, y: number): void {
   s.nassoc[i] = 0;
 }
 
-export function removeDot(s: GalaxiesState, x: number, y: number): void {
-  const i = idx(s, x, y);
-  s.flags[i] &= ~F_DOT;
-}
-
 export function removeAssoc(s: GalaxiesState, tx: number, ty: number): void {
   const i = idx(s, tx, ty);
   if (s.flags[i] & F_TILE_ASSOC) {

@@ -97,7 +97,7 @@ export async function reportError(message: string, error?: unknown) {
 }
 
 @customElement("crash-dialog")
-export class CrashDialog extends LitElement {
+class CrashDialog extends LitElement {
   private suppressedErrors = new Set<string>();
 
   // Maximum number of errors to display in the dialog at once

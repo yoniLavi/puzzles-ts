@@ -77,14 +77,14 @@ interface SolverLink {
 /** Shared, immutable solver context (upstream `struct solver_ctx`). The links
  * are derived once from the fixed adjacency flags, so one ctx serves the
  * fixpoint and every recursion level (where the C's `clone_ctx` rebuilds it). */
-export interface UnequalCtx {
+interface UnequalCtx {
   o: number;
   mode: Mode;
   flags: Int32Array;
   links: SolverLink[];
 }
 
-export function newCtx(o: number, mode: Mode, flags: Int32Array): UnequalCtx {
+function newCtx(o: number, mode: Mode, flags: Int32Array): UnequalCtx {
   const links: SolverLink[] = [];
   if (mode === "unequal") {
     for (let x = 0; x < o; x++) {

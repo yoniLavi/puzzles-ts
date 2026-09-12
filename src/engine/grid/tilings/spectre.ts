@@ -63,11 +63,11 @@ export const SPECTRE_NVERTICES = 14;
  */
 export type Point = readonly [number, number, number, number];
 
-export function pointAdd(a: Point, b: Point): Point {
+function pointAdd(a: Point, b: Point): Point {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
 }
 
-export function pointSub(a: Point, b: Point): Point {
+function pointSub(a: Point, b: Point): Point {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]];
 }
 
@@ -132,12 +132,12 @@ export interface Coord {
 }
 
 /** The x coordinate of a point, exactly. */
-export function pointX(p: Point): Coord {
+function pointX(p: Point): Coord {
   return { c1: 2 * p[0] + p[2], cr3: p[1] };
 }
 
 /** The y coordinate of a point, exactly. */
-export function pointY(p: Point): Coord {
+function pointY(p: Point): Coord {
   return { c1: 2 * p[3] + p[1], cr3: p[2] };
 }
 
@@ -189,7 +189,7 @@ interface HexCoord {
 }
 
 /** Sentinel for a hexagon whose place in its parent has not been chosen yet. */
-export const UNDECIDED = -1;
+const UNDECIDED = -1;
 
 /**
  * A spectre's full address: which spectre it is within its innermost hexagon,
@@ -199,7 +199,7 @@ export const UNDECIDED = -1;
  * lower levels of the address in place, which is exactly the carry propagation
  * the substitution system performs.
  */
-export interface SpectreCoords {
+interface SpectreCoords {
   /** Index of the spectre within the innermost (order-0) hexagon. */
   index: number;
   /** Enclosing hexagons, innermost first. The last entry is always undecided. */
@@ -253,7 +253,7 @@ function choosePoss(rs: RandomState, poss: readonly Possibility[]): Possibility 
  * the higher-order levels from here, so once a choice is made it stays made and
  * the whole patch remains consistent.
  */
-export class SpectreContext {
+class SpectreContext {
   /** Vertices 0 and 1 of the starting spectre; everything else follows. */
   private readonly startVertices: [Point, Point];
 
@@ -446,7 +446,7 @@ export class SpectreContext {
 // ---------------------------------------------------------------------------
 
 /** A placed spectre: its fourteen vertices, and its combinatorial address. */
-export interface Spectre {
+interface Spectre {
   readonly vertices: Point[];
   readonly sc: SpectreCoords;
 }
@@ -459,7 +459,7 @@ export interface Spectre {
  * "step, turn, step, turn" with the turn angles from {@link SPECTRE_ANGLES} —
  * including its 0° entry, the collinear vertex splitting the double edge.
  */
-export function spectrePlace(u: Point, v: Point, indexOfU: number): Point[] {
+function spectrePlace(u: Point, v: Point, indexOfU: number): Point[] {
   const vertices = new Array<Point>(SPECTRE_NVERTICES);
   let here = u;
   let disp = pointSub(v, u);
@@ -500,7 +500,7 @@ function spectreKey(spec: Spectre): string {
  * can be rediscovered and re-tested from another neighbor. Upstream does the
  * same, and the retest is cheap.
  */
-export function spectreGenerate(
+function spectreGenerate(
   ctx: SpectreContext,
   callback: (spec: Spectre) => boolean,
 ): void {

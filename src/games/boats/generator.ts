@@ -75,7 +75,7 @@ const MAX_GENERATE_ATTEMPTS = 10_000;
  * Returns false when some boat has nowhere to go; the caller retries from an
  * empty grid.
  */
-export function generateFleet(b: BoatsBoard, rng: RandomState | null): boolean {
+function generateFleet(b: BoatsBoard, rng: RandomState | null): boolean {
   const { w, h, fleet, fleetData, grid } = b;
 
   for (let f = fleet - 1; f >= 0; f--) {

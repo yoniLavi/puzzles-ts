@@ -112,7 +112,7 @@ export function farDot(edge: GridEdge, dot: GridDot): GridDot {
  * same-sense tie-break strands 120 of the triangular grid's 397 edges; this
  * one strands none there.) `null` for a non-arrow button.
  */
-export function edgesByDirection(dot: GridDot, button: number): GridEdge[] | null {
+function edgesByDirection(dot: GridDot, button: number): GridEdge[] | null {
   const v = arrowVector(button);
   if (!v) return null;
   const clockwise = button === CURSOR_UP || button === CURSOR_RIGHT;

@@ -529,7 +529,7 @@ function reasonKey(r: SticksReason): string {
  * handed in*, so the group is simultaneous, not a chain — a chain would stay
  * separate steps.
  */
-export function nextSticksFiring(
+function nextSticksFiring(
   grid: Uint8Array,
   numbers: Int16Array,
   w: number,
@@ -555,7 +555,7 @@ export function nextSticksFiring(
 
 /** Runaway/UX cap on plan length — the player rarely follows more than a few
  * steps before diverging, and a recompute yields the next batch. */
-export const HINT_PLAN_MAX = 40;
+const HINT_PLAN_MAX = 40;
 
 /**
  * The ordered plan from the player's own board: one entry per deduction

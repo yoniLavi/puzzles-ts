@@ -35,10 +35,10 @@ export const DIFF_NORMAL = 1;
 export const DIFF_HARD = 2;
 export const DIFF_EXTREME = 3;
 export const DIFF_UNREASONABLE = 4;
-export const DIFF_COUNT = 5;
+const DIFF_COUNT = 5;
 
 /** `group_diffchars` — the per-level encode character. */
-export const DIFF_CHARS = "tnhxu";
+const DIFF_CHARS = "tnhxu";
 /** The per-level display title. */
 export const DIFF_NAMES = tierNames(5, { search: true });
 
@@ -321,11 +321,7 @@ function specToGrid(desc: string, grid: Uint8Array, area: number): void {
 
 /** Validate a grid desc without building the grid (`validate_grid_desc`):
  * distinguishes "not enough data" from "too much". `range` = `w`, `area` = `w²`. */
-export function validateGridDesc(
-  desc: string,
-  range: number,
-  area: number,
-): string | null {
+function validateGridDesc(desc: string, range: number, area: number): string | null {
   let squares = 0;
   let p = 0;
   while (p < desc.length && desc[p] !== ",") {

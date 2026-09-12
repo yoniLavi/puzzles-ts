@@ -38,9 +38,9 @@ interface RectPositions {
 }
 
 /** Solver verdicts. */
-export const SOLVE_INCONSISTENT = 0;
+const SOLVE_INCONSISTENT = 0;
 export const SOLVE_UNIQUE = 1;
-export const SOLVE_AMBIGUOUS = 2;
+const SOLVE_AMBIGUOUS = 2;
 
 function removeRectPlacement(
   w: number,

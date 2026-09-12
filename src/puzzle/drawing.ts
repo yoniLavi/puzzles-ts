@@ -1,7 +1,7 @@
 import type { GameDrawing } from "../engine/game.ts";
 import type { DrawTextOptions, FontInfo, Point, Rect, Size } from "../engine/types.ts";
 
-export const defaultFontInfo: FontInfo = {
+const defaultFontInfo: FontInfo = {
   fontFamily: "sans-serif",
   fontWeight: "normal",
   fontStyle: "normal",

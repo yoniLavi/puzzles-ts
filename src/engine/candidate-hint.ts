@@ -500,7 +500,7 @@ export interface CandidateMoveAdapter<M> {
 /** The default dialect: moves discriminated by a `type` field carrying the
  * canonical shapes verbatim, candidates at bit `n` (Towers, Unequal, Keen,
  * Solo). */
-export const typeKeyedCandidateMoves: CandidateMoveAdapter<{ type: string }> = {
+const typeKeyedCandidateMoves: CandidateMoveAdapter<{ type: string }> = {
   read: (m) => {
     const cm = m as unknown as CandidateMove;
     return cm.type === "set" || cm.type === "pencilAll" || cm.type === "pencilStrike"
