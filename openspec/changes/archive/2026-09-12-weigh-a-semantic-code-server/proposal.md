@@ -1,8 +1,8 @@
 # Weigh a semantic code server
 
-**Readiness: desk research done 2026-09-12 (`research.md`); no trial run. The
-owner accepted its recommendation the same day: no Serena trial now; take the
-cheaper steps it lists, weighed against the case against each.** Several "not found" items below are answered there, and it
+**Readiness: done 2026-09-12.** The owner accepted `research.md`'s
+recommendation not to trial Serena, and three of its four cheaper steps landed.
+`findings.md` has the replay and the outcome; `ast-grep` is deferred. Several "not found" items below are answered there, and it
 supersedes them.
 
 Owner question, 2026-09-12:

@@ -23,6 +23,7 @@
     "metrics": "sh scripts/metrics.sh",
     "mutation": "rm -rf .stryker-tmp && stryker run scripts/stryker.config.mjs",
     "probe": "node scripts/feedback-probe.mjs",
+    "refs": "node scripts/refs.mjs",
     "dead-exports": "node scripts/checks/unused-exports.mjs"
   },
   "dependencies": {

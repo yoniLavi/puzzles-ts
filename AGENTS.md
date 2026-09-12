@@ -256,6 +256,17 @@ a constant means, search for what it *said*, not only for what it is called.
 `parseLeadingInt` declaration" held for months over four copies called `eatNum`
 and `readInt` and some forty inline loops, because a copy is never called by the
 name of the thing it copies. Write the scenario against the shape.
+**Take a symbol's population by reference, not by grep**: `npm run refs --
+<file> <Name | Type.member>` builds the whole program before answering and
+prints the files, lines and games — `tierNames(<digit>` found 21 tiered games
+where references find 29. The agent's LSP tool agrees once warm. On its default
+server, though, a query issued while the server loads comes back short with no
+error: 2 references against 72, and 2, 2, 2 for over three seconds. So an answer
+that has settled is not proof of a warm server; hand it a known positive first
+(`.claude/plugins/tsgo-lsp` has no such window). Neither sees a renamed copy, a
+typed-out value or source read through a `?raw` glob, and **"who references
+`Game.hint`" is not "who has a hint"** — the references include tests naming
+hintless games; the population is the implementations, or `HINT_GAMES`.
 
 **And a spec delta is a claim about code that is still moving.** A delta
 written mid-change states the signature the code had *that morning*;
@@ -383,7 +394,7 @@ Explained hints are a core deliberate-divergence product value of this fork, not
 
 **A non-deductive game is not exempt from the bar** — it is exempt only from *deduction*. Untangle has genuinely nothing to say and ships an empty explanation; **Inertia** (the non-deductive exemplar, `add-inertia-hint`, owner-endorsed 2026-07-13) shows the other pole: find the one thing the game can *prove* (there, "this gem can never be reached again") and lead with it, hold a stable subgoal and mark it when the game has no name for it, and narrate each move by the consequence it actually has.
 
-**A new game implementation ships with a hint** (owner, 2026-09-04). That is the forward-looking bar, and it is not retroactive: **27 of the 57 games are hintless today and are deliberately being left that way for now**, because implementing those hints is how the framework work gets assessed — a target contract is tested by writing real hints against it, not by re-reading the games that already have one. So a hintless game is not a defect to be swept up, and the corpus is characterized rather than closed — `characterize-the-hint-assessment-corpus`'s `audit.md` classifies all 27 into seven shapes, says per game what a hint there would press on, and recommends the order to take them in. **Pick from it rather than alphabetically**: the point of characterizing was to be able to choose the game that presses hardest on whatever is being tested, and the cheapest hint in the corpus is the worst assessment. Enrollment in the six cross-game hint guards is derived from the `hint()` declaration itself (`src/engine/testing/hint-games.ts`), so a game acquires every guard the moment it acquires a hint, and none before.
+**A new game implementation ships with a hint** (owner, 2026-09-04). That is the forward-looking bar, and it is not retroactive: **every game `HINT_GAMES` leaves out is hintless today and is deliberately being left that way for now** (25 of 57 on 2026-09-12), because implementing those hints is how the framework work gets assessed — a target contract is tested by writing real hints against it, not by re-reading the games that already have one. So a hintless game is not a defect to be swept up, and the corpus is characterized rather than closed — `characterize-the-hint-assessment-corpus`'s `audit.md` classified the 27 hintless on 2026-09-09 into seven shapes (Tracks and Bridges, its first two picks, have hints since), says per game what a hint there would press on, and recommends the order to take them in. **Pick from it rather than alphabetically**: the point of characterizing was to be able to choose the game that presses hardest on whatever is being tested, and the cheapest hint in the corpus is the worst assessment. Enrollment in the six cross-game hint guards is derived from the `hint()` declaration itself (`src/engine/testing/hint-games.ts`), so a game acquires every guard the moment it acquires a hint, and none before.
 
 Aspirational next step (owner-flagged 2026-06-15, not yet committed): lift Fifteen/Sixteen hints from "Slide tile 10 into the space" to a Palisade-grade *why* — does the move place a tile in its final home, or is it a helper/setup move toward sorting another tile? Inertia's stable-subgoal narration is the shape this wants.
 
@@ -698,7 +709,7 @@ Update `/help` when adding features that diverge from upstream.
 
   In order, blocking on any failure — `npm run gate` runs the lot, `npm run typecheck` runs just the two `tsgo` passes:
 
-  1. **`tsgo -b --noEmit`** — the browser project. `tsgo` (`@typescript/native-preview`), **not** `tsc`: it checks this tree in ~2.5 s against ~13 s, and the same binary backs the editor/agent language server, so the gate and the LSP agree on what a type error is. `typescript` 5.x is still installed for the ten packages needing its programmatic API.
+  1. **`tsgo -b --noEmit`** — the browser project. `tsgo` (`@typescript/native-preview`), **not** `tsc`: it checks this tree in ~2.5 s against ~13 s. The same binary can serve an editor's language server (`tsgo --lsp`), but the agent's LSP tool runs whatever its plugin names — `typescript-language-server` on `typescript` 5.9 by default — so the diagnostics it pushes after an edit are 5.9's, not the gate's, unless the session loads `.claude/plugins/tsgo-lsp` (its README says how). `typescript` 5.x is still installed for the ten packages needing its programmatic API.
   2. **`tsgo --noEmit -p tsconfig.node.json`** — the build-side project (`vite.config.ts`, `vitest.config.ts`, `vite-plugins/`, `scripts/checks/`). Separate because it runs in Node while `tsconfig.json` is deliberately browser-shaped. Not optional: the file that renders every help page went unchecked while it sat outside `include`.
   3. **biome** — the read-only form of `biome check` (lint rules, formatting, **and** import order — so a lint-clean-but-unformatted file can't land and re-open the drift that once made `npm run check` reformat ~150 untouched files). It is **scoped by role**: the per-commit hook checks only the *staged* files (`biome check --staged`, via `GATE_BIOME_STAGED=1`), while CI and a manual `npm run gate` check the *whole tree* (`biome ci .`) as the backstop for `--no-verify` bypasses and biome-upgrade restyles. `npm run check` remains the fixer.
   4. **`scripts/feedback-probe.mjs --verify`** (0.02 s) — the probe anchor. Fails when a refactor moves a line the local-feedback corpus quotes as an anchor; otherwise the harness measures a smaller corpus and *reports success*. Only that the corpus **applies** is gated; its rate never is.

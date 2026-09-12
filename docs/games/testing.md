@@ -526,7 +526,11 @@ is the `ts-engine` spec, "A shared mechanic is joined by having it".
    because a mention in prose is not a use: the check's first cut convicted Net
    for a comment explaining that it deliberately has no stylus branch. Key on
    the name and take the superset; narrowing the key is the error this repo
-   makes most (AGENTS.md, "A scan that keys on a name").
+   makes most (AGENTS.md, "A scan that keys on a name"). When the population is
+   *who uses a symbol*, skip the key altogether: `npm run refs -- <file> <Name |
+   Type.member>` answers by reference, including the `latinSolver<Ctx>(` calls a
+   grep misses. It is blind to source read as text, which is exactly what
+   `membersNotMentioning` reads, so the two answer different questions.
 6. **Ask a question the system is actually asked.** A guard that *synthesizes*
    its own inputs can pose one no code path ever poses, and then convict games of
    failing to answer it. `assert-that-tiers-bind`'s first cut asked "does a board

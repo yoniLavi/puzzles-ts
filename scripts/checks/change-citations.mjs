@@ -119,6 +119,8 @@ const NOT_A_LIVE_CHANGE = {
   "color-dark-check": "a test file, `scripts/checks/color-dark-check.test.ts`",
   "prefers-color-scheme": "a CSS media feature",
   "pre-ts-pivot": "a git tag bracketing the C in history",
+  "typescript-language-server":
+    "the npm tool the agent's default LSP plugin runs (AGENTS.md § Git)",
   "puzzle-key-unhandled": "a DOM event `view-interactive.ts` raises",
   // The seven `src/` brought with it, all named-as-things rather than used as
   // examples, so the backtick is right and the ledger is the answer.

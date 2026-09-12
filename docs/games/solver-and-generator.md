@@ -291,7 +291,7 @@ glanceable steps** — *not* by whether a trial or a search was involved.
 > narrated) and its header states what that cannot see; nothing anywhere reads a
 > rung and asks whether the tier holding it is named `Unreasonable`, because
 > "this rung is a Search" is a judgment about the code, not a property a test can
-> read off it. For the 27 hintless games the rule is therefore unguarded end to
+> read off it. For a game with no `hint()` the rule is therefore unguarded end to
 > end. So when you add or move a rung, decide its class from this table
 > deliberately and say so in the change — that decision is the whole enforcement
 > mechanism.
