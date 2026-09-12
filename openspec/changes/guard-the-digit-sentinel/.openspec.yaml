@@ -1,0 +1,6 @@
+# No delta yet: task 1.2 and design.md D3 decide where the invariant is stated,
+# and whether it earns a normative rule or stays a header plus a guard. The
+# requirement follows that decision rather than preceding it.
+schema: spec-driven
+created: 2026-09-12
+skip_specs: true
