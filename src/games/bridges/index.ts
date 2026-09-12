@@ -11,13 +11,16 @@ import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type GamePref,
+  type HintResult,
   type HintStep,
+  type HintTrackVerdict,
   type PresetMenu,
   type SolveResult,
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
 import { fromCoord } from "../../engine/geometry.ts";
+import { commonHintRefusal } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
@@ -43,6 +46,7 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { GameStatus, Point } from "../../engine/types.ts";
 import { newBridgesDesc } from "./generator.ts";
+import { type BridgesHighlights, bridgesHint, bridgesKeepTrack } from "./hint.ts";
 import {
   type BridgesDrawState,
   border,
@@ -94,19 +98,21 @@ function newUi(state: BridgesState): BridgesUi {
     dragIsNoline: false,
     nlines: 0,
     cursor: newCursor(first?.x ?? 0, first?.y ?? 0),
-    showHints: false,
+    showPossible: false,
     autoMark: true,
   };
 }
 
 const prefs: GamePref<BridgesUi>[] = [
   {
+    // `kw` is a stored preference key, so it keeps upstream's spelling even
+    // though the field it drives no longer shares the hint system's word.
     kw: "show-hints",
     name: "Show possible bridge locations",
     type: "boolean",
-    get: (ui) => ui.showHints,
+    get: (ui) => ui.showPossible,
     set: (ui, v) => {
-      ui.showHints = v;
+      ui.showPossible = v;
     },
   },
   {
@@ -375,9 +381,9 @@ function interpretMove(
     return null;
   }
 
-  // 'g'/'G' toggles the possible-bridge hint overlay.
+  // 'g'/'G' toggles the possible-bridge overlay.
   if (btn === 0x67 || btn === 0x47) {
-    ui.showHints = !ui.showHints;
+    ui.showPossible = !ui.showPossible;
     return UI_UPDATE;
   }
 
@@ -480,6 +486,16 @@ function findMistakes(state: BridgesState): readonly BridgesMistake[] {
     }
   }
   return out;
+}
+
+/**
+ * The explained hint: refuse the two refusals every deductive hint owes, then
+ * hand over to the recording projection ([`hint.ts`](./hint.ts)).
+ */
+function hint(state: BridgesState): HintResult<BridgesMove, BridgesHighlights> {
+  const refusal = commonHintRefusal(state.completed, findMistakes(state).length);
+  if (refusal) return refusal;
+  return bridgesHint(state);
 }
 
 /** Bridges' difficulty contract (`engine/difficulty.ts`). `solveFromScratch`
@@ -619,6 +635,14 @@ export const bridgesGame: Game<
   computeSize,
   setTileSize,
   newDrawState,
+  hint,
+  hintKeepTrack: (
+    m: BridgesMove,
+    step: HintStep<BridgesMove>,
+    state: BridgesState,
+  ): HintTrackVerdict =>
+    bridgesKeepTrack(m, step as HintStep<BridgesMove, BridgesHighlights>, state),
+
   redraw(
     dr,
     ds,
@@ -628,10 +652,19 @@ export const bridgesGame: Game<
     ui,
     _animTime,
     flashTime,
-    _hint?: HintStep<BridgesMove>,
+    hintStep?: HintStep<BridgesMove>,
     mistakes?: readonly BridgesMistake[],
   ): void {
-    redrawBridges(dr, ds, prev, s, ui, flashTime, mistakes);
+    redrawBridges(
+      dr,
+      ds,
+      prev,
+      s,
+      ui,
+      flashTime,
+      mistakes,
+      hintStep as HintStep<BridgesMove, BridgesHighlights> | undefined,
+    );
   },
   animLength: () => 0,
   flashLength(a: BridgesState, b: BridgesState): number {

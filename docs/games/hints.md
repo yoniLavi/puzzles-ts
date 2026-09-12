@@ -841,6 +841,17 @@ whole grid therefore fires many *independent* deductions in a single `run()`,
 and left alone they all land in one hint step — the exact defect § "Group one
 firing into one step" records from Towers, one level up.
 
+**This is not a property of fine ladders, and two measurements now say so.**
+Bridges has **3** rungs holding **7** narrated premises, and its recording
+projection costs the same per premise as Tracks' — 42 lines against 45 per
+distinct rule, on ladders whose rung counts differ by 2.7× (`add-bridges-hint`'s
+`findings.md` §3). So the cost of a recorder tracks **how many distinct premises
+a game's rungs hold**, not how many rungs hold them, and a coarse ladder needs
+the per-premise return at least as badly as a fine one. Bridges needs it at two
+levels: a stage sweeps every island before reporting, so the *sweep* returns at
+the first island that moved, and each of its two-rule stages returns again at
+the first rule that fired.
+
 The fix is the same one, and it is the single most repeated shape in a recording
 projection: **return at the first premise that changed something, gated on the
 recorder**, so the generator's accumulate-across-the-whole-grid path stays
@@ -1317,7 +1328,20 @@ to a similar game:
 | Crossing | the squares to write into, solid **green** `COL_HINT` (green, not the collection's blue — see below); a struck note keeps its normal `COL_PENCIL` digit + strikethrough on a *non*-target background | the run(s) reasoned over → pale-green `COL_HINT_CELL` shade; **and the still-fitting listed numbers → the same two shades as a patch behind their text in the clue panel** (§ "Off-board evidence") |
 | Spokes | the forced spoke, in `COL_HINT` — **a line** when the move draws a line, **a rim dot** when the move places a mark (§ "Echo the move's shape in the hint color") | the hubs whose clue/lines/connectivity are the argument → `COL_HINT_CELL` ring. A saturated hub forces several spokes as one multi-leg journey, all in the one color |
 | Sticks | the forced square drawn as a `COL_HINT` **bar in the forced orientation**; green `COL_LINE` stays the placed line, so the hint is never mistaken for the move | the run / span / clue-sides the argument counts → one `evidence` list, cue split by the square's own state: a **white** square is washed `COL_HINT_CELL`, a **black clue** is *ringed* the same color (a wash would hide the blackness the argument is about). The list's length equals the number the sentence states |
+| Bridges | the **span** the step decides, drawn as the game's own shape: the bridge bundle it would become with only the *added* bars in `COL_HINT`, or the game's pair of crosses in `COL_HINT` when the step blocks it. The island a sentence *names* has its own rim and clue digit recolored `COL_HINT` (an annulus, so it is already a ring) | the islands and bridges the argument counts → `COL_HINT_CELL` on the same shapes. A premise that counts a **group** marks every member alike, the acted-from island included, because the sentence counts them together |
 | Galaxies | the **deduced** cell, solid **purple** `COL_HINT` (not blue — see below); the 180° partner the same move claims, a `COL_HINT` **outline over the ordinary evidence shading** (same hue, they share a fate; far less weight, only one is what the words are about); the wall it draws, a `COL_HINT` bar drawn *whether or not the wall exists yet*; the dot it points at, a **filled `COL_HINT` halo with the dot repainted on top** — **unless the dot stands on a cell just filled**, where a mark in the fill's own color is invisible and the narration names the dot by position instead | the cells / walls / dots the argument reasons over → `COL_HINT_CELL` teal (a galaxy's reach, a cut-off piece, the partner across a dot, an already-drawn wall). One ring role at a time, so "the ringed dot" is never ambiguous |
+
+**Mark the premise element in the action color only where the sentence names
+it (Bridges).** Bridges recolors an island's rim and digit `COL_HINT` when the
+step says *"This 5 still needs two more bridges"*, and `COL_HINT_CELL` when it
+only counts it. Three of its seven premises count a **group** the acted-from
+island belongs to and never name it, and there the island is marked like the
+rest of the group: a sentence saying *"a bridge here would shut these 2 islands
+into a finished group"* has to point at two marks of one color, not at one mark
+of each. So the rule is narrower than "the subject of the deduction is the
+action color" — it is *the element the words name*, and a step whose words name
+none marks nothing that way. A mark the sentence never accounts for is one the
+player has to explain to themselves.
 
 **If the game has already spent the hint hue, the *hint* moves — and takes the
 board with it (Crossing).** `COL_HINT` blue is the collection's default, not a
@@ -1368,6 +1392,36 @@ premise type to disambiguate. The legend bites only when a hint narrates a
 evidence area is outlined unless the game can say that nothing is drawn on it.
 The mechanism is [`engine/hint-mark.ts`](../../src/engine/hint-mark.ts); this
 section is the rule and the reasoning.
+
+**Read "cell" literally: `hint-mark.ts` is for a mark on a *cell*, and it is
+the right tool exactly that often.** A `MarkBand` is a content box plus an
+outward and an inward reach, so every mark it draws is a band on a cell's
+border box. 24 of the 30 hinting games mark cells and use it. Where a game's
+decided element is something else, the mark comes from § "Echo the move's shape
+in the hint color" instead — the game's own shapes recolored — and that is a
+first-class answer rather than a gap:
+
+- **Tracks** decides squares *and the sides between them*. Its squares take the
+  band; its sides are drawn as the game's own rail stubs and edge crosses.
+- **Bridges** uses none of it. A bridge is a **span** between two islands and is
+  no cell's border; and an island is not a cell either, because its circle has a
+  radius of `12/20` of the tile, so it is wider than its own tile and a band on
+  that tile's border would cut across it. The span is drawn as the bridge bundle
+  it would become, with only the *added* bars in the action color; the island is
+  marked by recoloring its own rim and clue digit, which is already a ring
+  because `drawIsland` paints an annulus.
+
+Two games in a row have now needed the second answer for part of their marks and
+one for all of them, so ask **what shape the game already draws for this action**
+before reaching for the band.
+
+**And check the guard is looking at your colors.** `hint-mark.test.ts` finds a
+game's hint colors by reading the `COL_HINT` export out of its own `render.ts`.
+Bridges already exported that name, for upstream's *"show possible bridge
+locations"* bevel, so enrolling it would not have failed the guard — it would
+have pointed the guard at a color no hint ever paints. That constant is now
+`COL_POSSIBLE`. `AGENTS.md` § "A scan that keys on a name", from the end where
+the name was already taken.
 
 #### Why a fill cannot work, whatever color it is
 

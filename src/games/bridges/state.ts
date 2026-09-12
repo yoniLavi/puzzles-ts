@@ -175,7 +175,10 @@ export interface BridgesUi {
   dragIsNoline: boolean;
   nlines: number;
   cursor: GridCursor;
-  showHints: boolean;
+  /** Upstream's "show hints" preference: draw a bevel line along every span a
+   * bridge *could* run down. Not the hint system, whose colors and marks are
+   * `render.ts`'s `COL_HINT`. */
+  showPossible: boolean;
   /** Fork aid: gray an island once its bridge count is met. Purely visual:
    * unlike a manual mark, it does not lock the island's bridges. */
   autoMark: boolean;
