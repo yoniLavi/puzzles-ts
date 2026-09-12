@@ -12,10 +12,14 @@
 
 ## 2. The rest, one file at a time
 
-- [ ] 2.1 Delete or ledger the remainder. A type that documents a module's
-      surface and a Lit component class reached by tag (five in `src/dialogs/`)
-      are ledger entries, not deletions.
-- [ ] 2.2 Verify by shape, not by a green suite: every removed line is an export
+- [ ] 2.1 Sort each finding into the three answers to "who is meant to import
+      this?" — nobody ever (delete), only this file (un-export), or a consumer
+      the archive predicts (keep, ledgered with the change that predicts it).
+      `hint-mark.ts`'s four band constants are the second and third at once, and
+      the proposal says why.
+- [ ] 2.2 A type that documents a module's surface and a Lit component class
+      reached by tag (five in `src/dialogs/`) are ledger entries, not deletions.
+- [ ] 2.3 Verify by shape, not by a green suite: every removed line is an export
       the report named, and nothing else moved. The typechecker cannot help —
       that is the whole reason these survived.
 

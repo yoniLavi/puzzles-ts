@@ -38,6 +38,27 @@ describes.
   gate's fast prefix — one line in `scripts/gate.sh` — which is the act that
   closes this.
 
+## "Unused export" is not the same instruction as "delete this"
+
+`hint-mark.ts` exports `MARK_TOP`, `MARK_LEFT`, `MARK_BOTTOM`, `MARK_RIGHT`, and
+nothing outside the file imports any of them — but the file composes `MARK_ALL`
+and `drawBandedCell` out of them, so they are live *inside* it. The export is
+what is dead, and **un-exporting is the fix, not deleting**.
+
+That distinction is load-bearing here rather than pedantic:
+`characterize-the-hint-assessment-corpus`'s audit picks **Tracks** as the next
+hint and predicts it will band an individual edge by marking both cells that
+share it — `MARK_TOP | MARK_LEFT`, from outside the module. So these four are
+the vocabulary the next hint is expected to reach for. Deleting them would be
+correct today and wrong next week; un-exporting them is correct in both
+directions, because re-exporting is a one-word change and the check will then
+say so.
+
+**So read each finding as "who is meant to import this?", not "is this used?"**
+Three answers, and they are different work: nobody ever (delete), only this file
+(un-export), or a consumer the archive predicts (keep, and ledger it with the
+change that predicts it).
+
 ## What to check before deleting
 
 The check counts an export as used only if another file imports it by name, the
