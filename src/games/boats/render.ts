@@ -710,7 +710,10 @@ export function redraw(
 function dragBounds(
   ui: BoatsUi,
 ): { xmin: number; xmax: number; ymin: number; ymax: number } | null {
-  if (!ui.dragOk) return null;
+  // `drag.live` as well as `dragOk`: the engine ends a live drag when the board
+  // changes under it, and the preview must go with it — `dragOk` only says the
+  // pointer is over a valid cell.
+  if (!ui.drag.live || !ui.dragOk) return null;
   const { sx, sy, ex, ey } = ui.drag;
   return {
     xmin: Math.min(sx, ex),

@@ -762,7 +762,9 @@ export function redraw(
   }
 
   const board = stateToBoard(state);
-  const dragBoard = ui.painting ? copyAndApplyDrag(board, ui) : null;
+  // `drag.live` as well as `painting`: the engine ends a live drag when the
+  // board changes under it, and the preview must go with it.
+  const dragBoard = ui.drag.live && ui.painting ? copyAndApplyDrag(board, ui) : null;
 
   ds.wrong.packCells(mistakes, (x, y) => y * w + x);
 

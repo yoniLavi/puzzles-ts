@@ -116,11 +116,14 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  // Gated on `drag.live`, not on `dragButton >= 0`: the engine ends a live drag
-  // when the board changes under it, and only this question hears that. Keying
-  // off the button code instead would let a release commit a fill from an
-  // anchor the undo invalidated.
-  if ((isMouseDrag(button) || isMouseRelease(button)) && ui.drag.live) {
+  if ((isMouseDrag(button) || isMouseRelease(button)) && ui.dragButton >= 0) {
+    // The engine ends a live drag when the board changes under it. The gesture
+    // is still physically in progress, so finish the bookkeeping the frontend
+    // started — but commit nothing from an anchor the undo invalidated.
+    if (!ui.drag.live) {
+      if (isMouseRelease(button)) ui.dragButton = -1;
+      return UI_UPDATE;
+    }
     let x = fromCoord(p.x);
     let y = fromCoord(p.y);
     if (x < 0 || y < 0 || x >= w || y >= h) {

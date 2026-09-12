@@ -402,7 +402,10 @@ export function redraw(
   // Errors: transform only the drag's start cell (upstream — instant single-
   // click feedback without right-drag flicker).
   let errGrid = grid;
-  if (ui.dragButton >= 0) {
+  // `drag.live`, not `dragButton >= 0`: the engine ends a live drag when the
+  // board changes under it, and the preview must go with it — otherwise a
+  // canceled drag keeps painting phantom cells until the player lets go.
+  if (ui.drag.live) {
     const { sx, sy } = ui.drag;
     errGrid = Int8Array.from(grid);
     errGrid[sy * w + sx] = dragXform(ui, sx, sy, errGrid[sy * w + sx]);
@@ -418,7 +421,7 @@ export function redraw(
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       let v = grid[y * w + x];
-      if (ui.dragButton >= 0) v = dragXform(ui, x, y, v);
+      if (ui.drag.live) v = dragXform(ui, x, y, v);
       if (flashing && (v === TREE || v === TENT)) v = NONTENT;
       let packed = v | errors.cell[y * w + x];
       const isCur = x === cx && y === cy;

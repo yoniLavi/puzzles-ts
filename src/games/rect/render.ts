@@ -215,7 +215,16 @@ export function redraw(
   // Apply the in-progress drag preview to scratch edge copies.
   let hedge = state.hedge;
   let vedge = state.vedge;
-  if (ui.dragged && ui.x1 >= 0 && ui.y1 >= 0 && ui.x2 >= 0 && ui.y2 >= 0) {
+  // `drag.live` as well as `dragged`: the engine ends a live drag when the
+  // board changes under it, and the preview must go with it.
+  if (
+    ui.drag.live &&
+    ui.dragged &&
+    ui.x1 >= 0 &&
+    ui.y1 >= 0 &&
+    ui.x2 >= 0 &&
+    ui.y2 >= 0
+  ) {
     hedge = state.hedge.slice();
     vedge = state.vedge.slice();
     gridDrawRect(

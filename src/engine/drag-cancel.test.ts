@@ -148,6 +148,29 @@ describe("a drag does not survive a state replacement", () => {
     expect(exercised).toBeGreaterThan(0);
   });
 
+  // WITHDRAWN: a cross-game guard for the drag *preview*.
+  //
+  // The defect was real and is fixed — after an undo mid-drag, five of the six
+  // went on painting a preview of the canceled gesture until the player let go
+  // (Tents keyed its preview off `dragButton`, Tracks off `painting`, Bridges
+  // off the stored coordinates, Boats off `dragOk`, Rect off `dragged`, none of
+  // which the engine's cancel touches). It was found by playing the game, not
+  // by a test, and each fix was confirmed by planting the old gate back.
+  //
+  // What could not be built is a *collection-wide* version. Driving a press and
+  // a drag at generic probe points and diffing the frame works only when that
+  // particular pair happens to produce a preview, and which regressions it can
+  // then see moves with the board: ten probe points caught Tents' two gates and
+  // Boats; fourteen caught Tents' cell loop, Boats and Rect; exhausting the
+  // pairs over ten caught a third set. A guard whose reach shifts with the
+  // geometry reports coverage it does not have — this session's own recurring
+  // lesson — and closing the gap needs per-game gesture knowledge, which is the
+  // manifest this collection refuses.
+  //
+  // So the preview is guarded per game, where the board and the coordinates are
+  // known and the assertion is deterministic (`tents.test.ts`). The two guards
+  // above stay collection-wide because they need no such knowledge.
+
   it("a game with no Ui at all is not a crash", () => {
     // `newUi` is optional and two games genuinely have nothing to remember, so
     // the sweep has to treat "no object" as "nothing to cancel".

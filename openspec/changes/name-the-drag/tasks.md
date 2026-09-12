@@ -230,12 +230,69 @@ the other order only because the plants stood in for it.
       A weak guard ("the flag is false") is satisfied by all three broken games;
       a strong one ("the player's next action commits nothing") is not.
 
+- [x] 3.6 **The same rule applies to the preview, and only playing the game
+      found it.** Undoing mid-drag in the browser (the rail's Undo is reachable
+      with the button still down) left Tents painting the preview of a canceled
+      drag until the player let go. **Five of six** had it, each keyed off the
+      flag the engine does not touch: Tents `dragButton` (in two places), Tracks
+      `painting`, Bridges the stored coordinates, Boats `dragOk`, Rect
+      `dragged`. Only Pattern was already right. All six now ask `drag.live`.
+
+      **A collection-wide guard for this was attempted and withdrawn.** Driving
+      a press and a drag at generic probe points and diffing the frame only
+      works when that pair happens to produce a preview, and *which* regressions
+      it can then see moves with the board: ten probe points caught Tents' two
+      gates and Boats, fourteen caught Tents' cell loop plus Boats and Rect, and
+      exhausting the pairs over ten caught a third set. Closing the gap needs
+      per-game gesture knowledge, which is the manifest this collection refuses,
+      so it is a recorded no-go in `drag-cancel.test.ts` rather than a guard
+      that reports coverage it does not have.
+
+      Guarded per game instead, where the coordinates are known: `tents.test.ts`
+      covers the cell-loop gate (proven: reverting it fails the test). The
+      *second* Tents gate — the errGrid transform that gives instant "that would
+      be wrong" feedback — is fixed but **not** guarded, and the note at the
+      site says why: mutating it alone leaves the cell loop correct, so the cell
+      still renders blank and the stray error flag has nothing to show on. A
+      test that passes either way is decoration.
+
 ## 4. The three that are shaped differently
 
-- [ ] 4.1 Assess Pegs (grid anchor + pixel current), Sixteen (a pixel pair and a
-      cell pair) and Slide (single indices) against the contract the six
-      produced. Record the verdict per game — a conversion, or a no-go with its
-      reason — rather than leaving them unmentioned.
+- [x] 4.1 Assessed against the contract the six produced. **Two no-goes and one
+      deferral**, all three already protected or harmless, so none is urgent:
+
+      **Slide — no-go.** `grabAnchor` and `grabCurrpos` are single cell
+      *indices*, and so is everything around them: `reachable` is a `Uint8Array`
+      indexed the same way, and the slide planner works in indices throughout.
+      Converting would mean either rewriting that machinery in x/y or widening
+      `GridDrag` to carry an index — the first is a real refactor of logic that
+      is correct, the second bends a shared type for one game. Both are the
+      contortion the guardrail forbids. Slide already cancels its grab in
+      `changedState`, so it loses no protection.
+
+      **Sixteen — no-go.** Its drag is a *slide-follow*, which
+      `docs/games/input.md` § "Other drag shapes" already classifies apart: the
+      meaningful state is an **axis plus an offset** (`dragAxis`, `dragIndex`),
+      not two positions, and it keeps a pixel pair *and* a cell pair for
+      different jobs. There is no far end in cell space to put in `ex`/`ey`.
+      Sixteen carries no `changedState`, so it is unprotected — but its release
+      builds a row/column slide, which is legal on any board, so the exposure is
+      a slide the player may not have intended rather than an invalid move.
+      Worth a look if it ever grows a move that can be illegal.
+
+      **Pegs — deferred, not refused.** Its anchor is grid coordinates and its
+      far end is *pixels* (the dragged sprite's position); the release re-derives
+      the target cell from the pointer rather than reading a stored far end. So
+      a `GridDrag` here would carry an `ex`/`ey` that is either unused or in the
+      wrong unit. An anchor-only drag would be honest and would earn the
+      engine's cancel — but Pegs already has the `changedState` that started all
+      of this, so the gain is vocabulary alone.
+
+      **The natural next population is these plus the five whose `changedState`
+      exists only to put a gesture down** (Filling, Pegs, Signpost, Slide,
+      Untangle — §3.3). Doing them together is what would let the engine's
+      cancel replace those hooks rather than sit beside them; doing Pegs alone
+      would not.
 
 ## 5. Close
 

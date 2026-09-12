@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
 import {
+  cancelDrags,
   LEFT_BUTTON,
   LEFT_RELEASE,
   RIGHT_BUTTON,
@@ -14,6 +15,7 @@ import {
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
 import { newTentsDesc } from "./generator.ts";
 import { tentsGame } from "./index.ts";
 import { COL_MISTAKE, computeSize, newDrawState, redraw } from "./render.ts";
@@ -316,6 +318,49 @@ describe("tents input (drag model)", () => {
     expect(move).toBe(UI_UPDATE);
     expect(ui.drag.live).toBe(false);
   });
+
+  it("stops previewing a drag the board changed under", () => {
+    // Found by playing, not by a test: undo mid-drag (the rail's Undo is
+    // reachable with the button still down) and Tents went on painting the
+    // preview until the player let go, because `redraw` keyed it off
+    // `dragButton` — which the engine's cancel does not touch — rather than off
+    // `drag.live`, which it does.
+    //
+    // Deterministic here because the board and the coordinates are known. The
+    // collection-wide version of this was attempted and withdrawn; see
+    // `engine/drag-cancel.test.ts` for why.
+    const p = { w: 8, h: 8, diff: DIFF_EASY };
+    const { state } = genBoard(p, "preview-cancel");
+    const ui = tentsGame.newUi(state);
+    const ds = newDrawState(state);
+    tentsGame.setTileSize?.(ds, TS);
+    const at = (x: number, y: number) => ({ x: x * TS + 17, y: y * TS + 17 });
+
+    const frame = () => {
+      const dr = new RecordingDrawing(tentsGame.colors(DEFAULT_BACKGROUND));
+      tentsGame.redraw(dr, newDrawState(state), null, state, 1, ui, 0, 0);
+      return JSON.stringify(dr.ops);
+    };
+
+    const undragged = frame();
+    tentsGame.interpretMove(state, ui, ds, at(1, 3), RIGHT_BUTTON);
+    tentsGame.interpretMove(state, ui, ds, at(4, 3), RIGHT_DRAG);
+    expect(frame(), "the drag should preview something to lose").not.toBe(undragged);
+
+    // Exactly what the midend does when it replaces the state — Tents declares
+    // no `changedState`, so the engine's sweep is the whole of its protection.
+    expect(cancelDrags(ui)).toBe(1);
+    expect(ui.drag.live).toBe(false);
+    expect(frame(), "a canceled drag is still previewed").toBe(undragged);
+  });
+
+  // NOT GUARDED, deliberately: `redraw`'s *second* drag gate, which transforms
+  // the drag's start cell before computing errors so a press gives instant
+  // "that would be wrong" feedback. It is fixed the same way (it asks
+  // `drag.live` now), but a test for it could not be made to discriminate:
+  // mutating that gate alone leaves the cell loop correct, so the cell still
+  // renders blank and the stray error flag has nothing to show on. A test that
+  // passes either way is decoration, so there is a note here instead of one.
 
   it("leaves no drag running after a release", () => {
     // The engine will cancel a live drag on a state change; a drag that is

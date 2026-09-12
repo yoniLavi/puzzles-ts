@@ -823,7 +823,9 @@ export function redrawBridges(
 
   let dragSrc: { x: number; y: number } | null = null;
   let dragDst: { x: number; y: number } | null = null;
-  if (ui.drag.sx !== -1 && ui.drag.sy !== -1) {
+  // `drag.live` as well as the coordinates: the engine ends a live drag when
+  // the board changes under it, and the preview must go with it.
+  if (ui.drag.live && ui.drag.sx !== -1 && ui.drag.sy !== -1) {
     dragSrc = { x: ui.drag.sx, y: ui.drag.sy };
     if (ui.drag.ex !== -1 && ui.drag.ey !== -1) {
       dragDst = { x: ui.drag.ex, y: ui.drag.ey };
