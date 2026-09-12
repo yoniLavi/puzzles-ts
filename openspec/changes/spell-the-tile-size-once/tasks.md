@@ -27,6 +27,16 @@
       what catches a sweep that also rewrote prose in a doc comment, or
       swallowed a `describe` — the suite is green either way, with fewer tests
       in it.
+
+      **The capability snapshot is the instrument for the half a text diff is
+      worst at**, and it only became one on 2026-09-12
+      (`widen-the-capability-snapshot`): it now records every game's
+      draw-state field names, so this sweep's effect on the collection's
+      *vocabulary* is a single reviewable diff. Expect exactly **one line pair
+      per renamed game and nothing else** — a game missing from it is a game
+      the sweep skipped, and any other moved line is a field that was not meant
+      to change. That catches an omission, which scanning a diff of
+      substitutions cannot: a line that was never edited leaves no trace in it.
 - [ ] 2.4 **No recorded draw call moves.** A tile size is read by every
       `redraw`, so the tier-2.5 snapshots are the check; a rename that
       re-baselines one is not a rename. If one moves, stop and find out why.
