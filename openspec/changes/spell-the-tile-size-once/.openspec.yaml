@@ -1,0 +1,7 @@
+# A draw state's field names are nothing the specs speak about — the `ts-engine`
+# Game contract fixes `newDrawState`'s signature, never its object's shape — so
+# this change owes no delta unless it decides to *state* the convention, which
+# is a decision for its design rather than an assumption of its scaffold.
+schema: spec-driven
+created: 2026-09-12
+skip_specs: true

@@ -22,13 +22,37 @@ values, not types.
 
 `builtGames()` memoizes one board per game because generating 57 is the expensive
 part. `newDrawState(state)` is cheap by comparison and needs no tile size — every
-game's is a plain allocation — so it can join the same memoized pass.
+game's is a plain allocation — so it can join the same memoized pass. Measured:
+**2 ms for all 57**, sized and unsized both.
 
-**The one thing to check before trusting the output**: a draw state built without
-`setTileSize` may leave fields unset, and `Object.keys` on an object whose
-constructor assigns conditionally would then under-report. Sizing it first
-(`freshDrawState` pairs the two for exactly this reason) removes the question
-and costs nothing.
+### Size it first — and the reason that was wrong
+
+This section originally read: *"a draw state built without `setTileSize` may
+leave fields unset, and `Object.keys` on an object whose constructor assigns
+conditionally would then under-report. Sizing it first removes the question and
+costs nothing."* It was implemented that way, and then the "prove it fails" step
+below **passed** with a field deliberately deleted.
+
+The reasoning was one-sided. It asked what sizing might *reveal* and never asked
+what sizing **creates**: `setTileSize` assigns into the draw state, so sizing
+puts back every field it writes. Flood's whole body is `ds.tilesize = ts`, so a
+`tilesize` removed from `newDrawState`'s literal reappeared before `Object.keys`
+ever ran. **`tilesize` is what 55 of the 57 games' `setTileSize` writes**, so the
+blindness covered the single most widely held field in the collection — and the
+one whose spelling turns out to be the biggest divergence in the tree.
+
+So the snapshot reads the **unsized** draw state: the vocabulary the game's own
+constructor declares, which is also the text a change edits. The original worry
+does not disappear, it becomes an **assertion** — `capability-surface.test.ts`
+takes both readings of the same draw state and requires sizing to add no key for
+any game. A game that ever does assign a field only under a tile size then fails
+a test that names it, instead of being quietly absorbed. That is the difference
+between covering a hazard and checking for it, and the check costs the 2 ms it
+was already costing.
+
+**The general shape, for the next instrument here**: "build it the way production
+does" sounds like the conservative choice and is not, when a production step
+*writes*. Ask what the preparation adds as well as what it fills in.
 
 ## The three fixes, and which is not cosmetic
 

@@ -40,6 +40,20 @@ export interface BuiltGame {
   /** What this game's `newUi` actually returns — the thing to read a
    * capability off, rather than asking the game to announce one. */
   readonly ui: Record<string, unknown>;
+  /** The other half of what a game remembers: what its `newDrawState`
+   * returns, **unsized** — the vocabulary the game's own constructor declares.
+   *
+   * Not passed through `sizedDrawState`, and that is the whole point:
+   * `setTileSize` *assigns* into the draw state, so sizing puts back any field
+   * it writes. Flood's is `ds.tilesize = ts`, so a `tilesize` deleted from
+   * `newDrawState`'s literal reappears and the snapshot cannot see the loss —
+   * and `tilesize` is the field 55 of 57 games' `setTileSize` writes. Sizing
+   * was the first cut here; it passed with the field removed.
+   *
+   * The hazard sizing was meant to cover — a draw state that assigns
+   * conditionally on its tile size, and so under-reports unsized — is
+   * asserted against instead, in `capability-surface.test.ts`. */
+  readonly drawState: Record<string, unknown>;
 }
 
 let built: BuiltGame[] | null = null;
@@ -64,6 +78,7 @@ export function builtGames(): BuiltGame[] {
         game,
         state,
         ui: game.newUi(state) as Record<string, unknown>,
+        drawState: game.newDrawState(state) as Record<string, unknown>,
       };
     });
   return built;
@@ -133,10 +148,23 @@ export interface CapabilitySet {
   readonly members: string[];
   /** The fields its `newUi` actually returned, sorted. */
   readonly ui: string[];
+  /** The fields its `newDrawState` actually returned, sorted.
+   *
+   * **Names only, deliberately** — not sizes, values or types. A snapshot that
+   * moves for a reason other than a game's vocabulary is noise, and noise
+   * trains its readers to re-baseline without reading.
+   *
+   * The `Ui` half cannot see the whole of the drag or pencil vocabulary,
+   * because half of it is remembered by the renderer: nine private
+   * `drawPencilIndicator` copies shared `pencilModeShown` and no instrument in
+   * the tree could see them (`promote-the-pencil-indicator`). jscpd could not
+   * either, because each copy computed its own box. */
+  readonly drawState: string[];
 }
 
 /**
- * What every registered game can do, read off the game and its `Ui`.
+ * What every registered game can do, read off the game, its `Ui` and its draw
+ * state.
  *
  * The guard against *silent capability loss*: a refactored game that quietly
  * stops offering its keypad, its reference aid or its mistake checking still
@@ -152,6 +180,7 @@ export function capabilitySets(): CapabilitySet[] {
       Object.hasOwn(g.game as object, m),
     ).sort(),
     ui: Object.keys(g.ui).sort(),
+    drawState: Object.keys(g.drawState).sort(),
   }));
 }
 

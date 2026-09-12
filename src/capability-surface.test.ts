@@ -13,8 +13,12 @@
  *
  * WHY A SNAPSHOT AND NOT A LIST. The set is derived on every run — from
  * `Object.hasOwn` against the `Game` interface's own optional members, and from
- * the object `newUi` actually returned — so nothing here can be forgotten by a
- * game that changes. The snapshot is the *before* half of a diff, and its whole
+ * the objects `newUi` and `newDrawState` actually returned — so nothing here can
+ * be forgotten by a game that changes. Both halves of what a game remembers are
+ * in it: a `Ui` field and a draw-state field are equally part of a game's
+ * vocabulary, and the pencil indicator's nine-way divergence lived entirely in
+ * the half that went unread until `widen-the-capability-snapshot`.
+ * The snapshot is the *before* half of a diff, and its whole
  * job is to make a capability's disappearance a reviewable line in a text diff
  * rather than a silence. `vitest -u` re-baselines it, which is correct for an
  * intended change and is why the assertions below are not snapshots: a careless
@@ -32,6 +36,7 @@ import {
   capabilitySets,
   OPTIONAL_GAME_MEMBERS,
 } from "./engine/testing/enrollment.ts";
+import { sizedDrawState } from "./engine/testing/sized-draw-state.ts";
 import { registerAllGames } from "./games/index.ts";
 
 beforeAll(registerAllGames);
@@ -90,6 +95,54 @@ describe("capability surface", () => {
     for (const c of sets) {
       for (const m of c.members) expect(OPTIONAL_GAME_MEMBERS).toContain(m);
     }
+  });
+
+  it("reads a draw state off every game, not only a Ui", () => {
+    // The vacuity guard for the second half. Unlike the `Ui` — where two games
+    // genuinely have nothing to remember, hence the ledger above — *every* game
+    // draws, so an empty draw state here means the probe stopped reading rather
+    // than a game with nothing to draw. No ledger is needed because no
+    // exemption is possible.
+    const sets = capabilitySets();
+    expect(sets.filter((c) => c.drawState.length === 0).map((c) => c.id)).toEqual([]);
+
+    // And the anchor, on a population known independently of this file: the
+    // nine games whose renderer draws the pencil indicator all hold
+    // `pencilModeShown`, which is the divergence no instrument in the tree
+    // could see until the snapshot covered this half. A floor rather than a
+    // census — a tenth game acquiring a pencil is not a regression.
+    const has = (f: string) =>
+      sets.filter((c) => c.drawState.includes(f)).map((c) => c.id);
+    expect(has("pencilModeShown").length).toBeGreaterThan(5);
+    // `started` is the redraw doctrine's own "have I painted the ground yet"
+    // flag, so nearly every game carries it; a probe returning empty sets
+    // could not clear this.
+    expect(has("started").length).toBeGreaterThan(50);
+  });
+
+  it("loses nothing by reading the draw state before it is sized", () => {
+    // What licenses the snapshot to read the *unsized* draw state. It must,
+    // because `setTileSize` assigns into it and so puts back any field it
+    // writes: sizing first was this change's first cut, and deleting
+    // `tilesize` from Flood's `newDrawState` passed, because Flood's
+    // `setTileSize` is `ds.tilesize = ts`. The cost of reading unsized is the
+    // opposite blindness — a field a game assigns *only* under a tile size
+    // would go unrecorded — so that is asserted away here rather than paid
+    // for by sizing.
+    //
+    // Every game is in this check by construction: it compares the two
+    // readings of the same draw state, so a game cannot be missing from it
+    // without being missing from the collection.
+    const surprising = builtGames()
+      .map((g) => {
+        const before = Object.keys(g.drawState).sort();
+        const after = Object.keys(
+          sizedDrawState(g.game, g.state) as Record<string, unknown>,
+        ).sort();
+        return { id: g.id, added: after.filter((k) => !before.includes(k)) };
+      })
+      .filter((r) => r.added.length > 0);
+    expect(surprising).toEqual([]);
   });
 
   it("matches the recorded capability surface", () => {

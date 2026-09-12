@@ -3,6 +3,14 @@
 exports[`capability surface > matches the recorded capability surface 1`] = `
 [
   {
+    "drawState": [
+      "clueErr",
+      "pencilModeShown",
+      "started",
+      "tiles",
+      "tilesize",
+      "wrong",
+    ],
     "id": "abcd",
     "members": [
       "animLength",
@@ -28,6 +36,29 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "colors",
+      "h",
+      "mode",
+      "nexthints",
+      "offsetX",
+      "offsetY",
+      "oldcursor",
+      "oldmistake",
+      "oldnum",
+      "oldpath",
+      "oldpositions",
+      "path",
+      "prevhints",
+      "pxH",
+      "pxW",
+      "started",
+      "thickness",
+      "tileSize",
+      "userH",
+      "userW",
+      "w",
+    ],
     "id": "ascent",
     "members": [
       "changedState",
@@ -68,6 +99,17 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "ballRadius",
+      "flashLaserno",
+      "grid",
+      "isflash",
+      "reveal",
+      "ringRadius",
+      "started",
+      "tilesize",
+      "w",
+    ],
     "id": "blackbox",
     "members": [
       "animLength",
@@ -89,6 +131,17 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "border",
+      "fleet",
+      "fleetCount",
+      "h",
+      "started",
+      "tiles",
+      "tilesize",
+      "w",
+      "wrong",
+    ],
     "id": "boats",
     "members": [
       "animLength",
@@ -113,6 +166,11 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "started",
+      "tilesize",
+    ],
     "id": "bricks",
     "members": [
       "animLength",
@@ -135,6 +193,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "grid",
+      "hint",
+      "newgrid",
+      "started",
+      "tileSize",
+    ],
     "id": "bridges",
     "members": [
       "animLength",
@@ -163,6 +228,15 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "h",
+      "hint",
+      "marks",
+      "started",
+      "tilesize",
+      "w",
+    ],
     "id": "clusters",
     "members": [
       "animLength",
@@ -185,6 +259,16 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "hint",
+      "marks",
+      "numberState",
+      "pencilModeShown",
+      "started",
+      "tiles",
+      "tilesize",
+      "wrong",
+    ],
     "id": "crossing",
     "members": [
       "animLength",
@@ -218,6 +302,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "bbox",
+      "border",
+      "gridscale",
+      "ox",
+      "oy",
+    ],
     "id": "cube",
     "members": [
       "animLength",
@@ -232,6 +323,14 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     "ui": [],
   },
   {
+    "drawState": [
+      "h",
+      "marks",
+      "started",
+      "tilesize",
+      "visible",
+      "w",
+    ],
     "id": "dominosa",
     "members": [
       "describeParams",
@@ -256,6 +355,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "bgcolor",
+      "hintTile",
+      "started",
+      "tiles",
+      "tilesize",
+    ],
     "id": "fifteen",
     "members": [
       "animLength",
@@ -275,6 +381,14 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "h",
+      "marks",
+      "started",
+      "tilesize",
+      "w",
+    ],
     "id": "filling",
     "members": [
       "changedState",
@@ -297,6 +411,11 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "started",
+      "tileSize",
+      "tiles",
+    ],
     "id": "flip",
     "members": [
       "animLength",
@@ -315,6 +434,11 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "grid",
+      "started",
+      "tilesize",
+    ],
     "id": "flood",
     "members": [
       "animLength",
@@ -335,6 +459,18 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "dx",
+      "dy",
+      "h",
+      "hint",
+      "overlay",
+      "started",
+      "tileSize",
+      "w",
+      "wrongEdges",
+    ],
     "id": "galaxies",
     "members": [
       "animLength",
@@ -370,6 +506,21 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "errors",
+      "errtmp",
+      "hint",
+      "id",
+      "legend",
+      "marks",
+      "mistakes",
+      "pencil",
+      "sequence",
+      "started",
+      "tiles",
+      "tilesize",
+      "w",
+    ],
     "id": "group",
     "members": [
       "animLength",
@@ -407,6 +558,35 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "blitOx",
+      "blitOy",
+      "blitPeg",
+      "border",
+      "colorsCache",
+      "colx",
+      "coly",
+      "dragCol",
+      "gapsz",
+      "guessesCache",
+      "guessx",
+      "guessy",
+      "h",
+      "hintrad",
+      "hintsz",
+      "hintw",
+      "ncolors",
+      "nextGo",
+      "nguesses",
+      "npegs",
+      "pegrad",
+      "pegsz",
+      "solny",
+      "solutionCache",
+      "solved",
+      "started",
+      "w",
+    ],
     "id": "guess",
     "members": [
       "changedState",
@@ -431,6 +611,15 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "grid",
+      "pbgX",
+      "pbgY",
+      "playerBackground",
+      "playerBgSaved",
+      "started",
+      "tileSize",
+    ],
     "id": "inertia",
     "members": [
       "animLength",
@@ -456,6 +645,17 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "errors",
+      "hint",
+      "marks",
+      "pencilModeShown",
+      "started",
+      "tiles",
+      "tilesize",
+      "w",
+      "wrong",
+    ],
     "id": "keen",
     "members": [
       "animLength",
@@ -485,6 +685,12 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "crad",
+      "started",
+      "tilesize",
+    ],
     "id": "lightup",
     "members": [
       "animLength",
@@ -509,6 +715,11 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "clueError",
+      "clueSatisfied",
+      "tileSize",
+    ],
     "id": "loopy",
     "members": [
       "describeParams",
@@ -529,6 +740,15 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "colwhat",
+      "h",
+      "rowwhat",
+      "started",
+      "tilesize",
+      "w",
+      "what",
+    ],
     "id": "magnets",
     "members": [
       "changedState",
@@ -547,6 +767,17 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "bl",
+      "blTileSize",
+      "dragVisible",
+      "dragx",
+      "dragy",
+      "drawn",
+      "started",
+      "tileSize",
+      "todraw",
+    ],
     "id": "map",
     "members": [
       "describeParams",
@@ -573,6 +804,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "pencilModeShown",
+      "started",
+      "tiles",
+      "tilesize",
+      "wrong",
+    ],
     "id": "mathrax",
     "members": [
       "animLength",
@@ -597,6 +835,16 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "bg",
+      "curX",
+      "curY",
+      "grid",
+      "h",
+      "started",
+      "tileSize",
+      "w",
+    ],
     "id": "mines",
     "members": [
       "changedState",
@@ -625,6 +873,11 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "started",
+      "tilesize",
+    ],
     "id": "mosaic",
     "members": [
       "animLength",
@@ -646,6 +899,14 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "h",
+      "started",
+      "tilesize",
+      "toDraw",
+      "visible",
+      "w",
+    ],
     "id": "net",
     "members": [
       "animLength",
@@ -671,6 +932,17 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "curX",
+      "curY",
+      "h",
+      "hintArrowX",
+      "hintArrowY",
+      "started",
+      "tilesize",
+      "visible",
+      "w",
+    ],
     "id": "netslide",
     "members": [
       "animLength",
@@ -689,6 +961,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "h",
+      "started",
+      "tilesize",
+      "w",
+    ],
     "id": "palisade",
     "members": [
       "animLength",
@@ -709,6 +988,14 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "h",
+      "numColors",
+      "started",
+      "tilesize",
+      "visible",
+      "w",
+    ],
     "id": "pattern",
     "members": [
       "findMistakes",
@@ -731,6 +1018,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "h",
+      "lflags",
+      "started",
+      "tileSize",
+      "w",
+    ],
     "id": "pearl",
     "members": [
       "describeParams",
@@ -754,6 +1048,16 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "bgColor",
+      "dragBackground",
+      "dragX",
+      "dragY",
+      "dragging",
+      "grid",
+      "started",
+      "tileSize",
+    ],
     "id": "pegs",
     "members": [
       "changedState",
@@ -778,6 +1082,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "h",
+      "started",
+      "tilesize",
+      "w",
+    ],
     "id": "range",
     "members": [
       "animLength",
@@ -796,6 +1107,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "h",
+      "started",
+      "tileSize",
+      "visible",
+      "w",
+    ],
     "id": "rect",
     "members": [
       "describeParams",
@@ -821,6 +1139,12 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "mistakes",
+      "started",
+      "tilesize",
+    ],
     "id": "rome",
     "members": [
       "animLength",
@@ -844,6 +1168,21 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "borderDrawn",
+      "borderfs",
+      "colcount",
+      "drawn",
+      "gridfs",
+      "hint",
+      "marks",
+      "order",
+      "pencilModeShown",
+      "rowcount",
+      "started",
+      "tilesize",
+      "wrong",
+    ],
     "id": "salad",
     "members": [
       "animLength",
@@ -873,6 +1212,14 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "bgcolor",
+      "grid",
+      "started",
+      "tilegap",
+      "tileinner",
+      "tilesize",
+    ],
     "id": "samegame",
     "members": [
       "animLength",
@@ -892,6 +1239,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "pencilModeShown",
+      "started",
+      "tiles",
+      "tilesize",
+      "wrong",
+    ],
     "id": "seismic",
     "members": [
       "animLength",
@@ -917,6 +1271,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "h",
+      "started",
+      "tilesize",
+      "w",
+    ],
     "id": "separate",
     "members": [
       "animLength",
@@ -935,6 +1296,21 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "angleOffset",
+      "cache",
+      "dirp",
+      "dragBackground",
+      "dragX",
+      "dragY",
+      "dragging",
+      "h",
+      "n",
+      "nums",
+      "started",
+      "tileSize",
+      "w",
+    ],
     "id": "signpost",
     "members": [
       "animLength",
@@ -961,6 +1337,13 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "h",
+      "started",
+      "tilesize",
+      "w",
+    ],
     "id": "singles",
     "members": [
       "animLength",
@@ -984,6 +1367,21 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "bgcolor",
+      "curX",
+      "curY",
+      "h",
+      "hintArrowX",
+      "hintArrowY",
+      "hintTarget",
+      "hintTile",
+      "hintUltimate",
+      "started",
+      "tiles",
+      "tilesize",
+      "w",
+    ],
     "id": "sixteen",
     "members": [
       "animLength",
@@ -1004,6 +1402,12 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "grid",
+      "started",
+      "tilesize",
+      "todraw",
+    ],
     "id": "slant",
     "members": [
       "describeParams",
@@ -1026,6 +1430,11 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "grid",
+      "started",
+      "tilesize",
+    ],
     "id": "slide",
     "members": [
       "animLength",
@@ -1050,6 +1459,11 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "grid",
+      "started",
+      "tilesize",
+    ],
     "id": "sokoban",
     "members": [
       "animLength",
@@ -1062,6 +1476,18 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     "ui": [],
   },
   {
+    "drawState": [
+      "cr",
+      "hint",
+      "marks",
+      "pencil",
+      "pencilModeShown",
+      "started",
+      "tileSize",
+      "tiles",
+      "wrong",
+      "xtype",
+    ],
     "id": "solo",
     "members": [
       "animLength",
@@ -1090,6 +1516,24 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "colors",
+      "corners",
+      "cursorBlitter",
+      "cursorRadius",
+      "cursorSaved",
+      "cursorSize",
+      "cursorX",
+      "cursorY",
+      "h",
+      "hint",
+      "scratch",
+      "spokes",
+      "started",
+      "tilesize",
+      "w",
+      "wrong",
+    ],
     "id": "spokes",
     "members": [
       "animLength",
@@ -1115,6 +1559,12 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "mistakes",
+      "started",
+      "tilesize",
+    ],
     "id": "sticks",
     "members": [
       "animLength",
@@ -1141,6 +1591,17 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cellCache",
+      "hint",
+      "hintSets",
+      "mistakes",
+      "oldCounts",
+      "oldFlags",
+      "oldHintSets",
+      "started",
+      "tilesize",
+    ],
     "id": "subsets",
     "members": [
       "animLength",
@@ -1163,6 +1624,12 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "drawn",
+      "numbersDrawn",
+      "started",
+      "tilesize",
+    ],
     "id": "tents",
     "members": [
       "describeParams",
@@ -1183,6 +1650,17 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "drawn",
+      "errtmp",
+      "hint",
+      "marks",
+      "started",
+      "tiles",
+      "tilesize",
+      "w",
+      "wrong",
+    ],
     "id": "towers",
     "members": [
       "animLength",
@@ -1214,6 +1692,17 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "flags",
+      "flagsDrag",
+      "h",
+      "hint",
+      "numErrors",
+      "started",
+      "tileSize",
+      "w",
+      "wrong",
+    ],
     "id": "tracks",
     "members": [
       "describeParams",
@@ -1239,6 +1728,14 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "bgcolor",
+      "cache",
+      "curX",
+      "curY",
+      "started",
+      "tilesize",
+    ],
     "id": "twiddle",
     "members": [
       "animLength",
@@ -1255,6 +1752,32 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "ascii",
+      "cellErrors",
+      "countErrors",
+      "countFontsize",
+      "countGap",
+      "countPadding",
+      "countPlaced",
+      "countStyle",
+      "countW",
+      "cursor",
+      "h",
+      "hflash",
+      "hint",
+      "hintErrors",
+      "hintsDone",
+      "marks",
+      "monsters",
+      "pencil",
+      "pencilMode",
+      "pencilModeShown",
+      "started",
+      "tilesize",
+      "w",
+      "wrong",
+    ],
     "id": "undead",
     "members": [
       "animLength",
@@ -1286,6 +1809,22 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cursor",
+      "errFlags",
+      "flags",
+      "hflash",
+      "hint",
+      "hints",
+      "marks",
+      "nums",
+      "order",
+      "pencilMode",
+      "pencilModeShown",
+      "started",
+      "tilesize",
+      "wrong",
+    ],
     "id": "unequal",
     "members": [
       "animLength",
@@ -1316,6 +1855,11 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "cache",
+      "started",
+      "tilesize",
+    ],
     "id": "unruly",
     "members": [
       "animLength",
@@ -1336,6 +1880,18 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
   },
   {
+    "drawState": [
+      "bg",
+      "cursorPoint",
+      "dragPoint",
+      "hintTx",
+      "hintTy",
+      "hintVertex",
+      "started",
+      "tileSize",
+      "x",
+      "y",
+    ],
     "id": "untangle",
     "members": [
       "animLength",
