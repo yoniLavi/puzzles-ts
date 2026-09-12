@@ -389,9 +389,15 @@ function dotUnder(
   return null;
 }
 
-/** Enter a drag: from `src`, with the (tile, dot) pair held as `target` and
- * `dot`, steering the dot end when `toDot`. */
-function startDrag(
+/**
+ * Enter an association drag: from `src`, with the (tile, dot) pair held as
+ * `target` and `dot`, steering the dot end when `toDot`.
+ *
+ * Not the engine's `startDrag`, and deliberately not named like it: Galaxies'
+ * drag remembers a source, a dot and a target rather than an anchor and a
+ * current position, so it is not the shared `GridDrag` shape.
+ */
+function enterDrag(
   ui: GalaxiesUi,
   toDot: boolean,
   src: Point,
@@ -433,7 +439,7 @@ function beginDrag(
   const cell = { x: snapToTile(x, tile, border), y: snapToTile(y, tile, border) };
   const dot = dotUnder(s, x, y, tile, border);
   if (dot) {
-    startDrag(ui, false, dot, dot, cell);
+    enterDrag(ui, false, dot, dot, cell);
     return true;
   }
 
@@ -447,12 +453,12 @@ function beginDrag(
   if (s.flags[ti] & F_DOT) return false;
 
   if (s.flags[ti] & F_TILE_ASSOC) {
-    startDrag(ui, false, cell, { x: s.dotx[ti], y: s.doty[ti] }, cell);
+    enterDrag(ui, false, cell, { x: s.dotx[ti], y: s.doty[ti] }, cell);
     return true;
   }
 
   if (!allowReverse) return false;
-  startDrag(ui, true, cell, NO_DOT, cell);
+  enterDrag(ui, true, cell, NO_DOT, cell);
   aimAtDot(s, ui, x, y, tile, border);
   return true;
 }
@@ -640,11 +646,11 @@ function interpretMove(
     const ci = idx(s, cx, cy);
     const cell = { x: cx, y: cy };
     if (s.flags[ci] & F_DOT) {
-      startDrag(ui, false, cell, cell, cell);
+      enterDrag(ui, false, cell, cell, cell);
       return UI_UPDATE;
     }
     if (s.flags[ci] & F_TILE_ASSOC) {
-      startDrag(ui, false, cell, { x: s.dotx[ci], y: s.doty[ci] }, cell);
+      enterDrag(ui, false, cell, { x: s.dotx[ci], y: s.doty[ci] }, cell);
       return UI_UPDATE;
     }
     if (spaceTypeAt(cx, cy) === SpaceType.Edge && edgePlacementLegal(s, cx, cy)) {
@@ -654,7 +660,7 @@ function interpretMove(
     // cell→dot gesture the pointer has (the input-parity bar). The cursor
     // keys then pick the dot and a second select commits.
     if (spaceTypeAt(cx, cy) === SpaceType.Tile && inInterior(s, cx, cy)) {
-      startDrag(ui, true, cell, NO_DOT, cell);
+      enterDrag(ui, true, cell, NO_DOT, cell);
       return UI_UPDATE;
     }
   }

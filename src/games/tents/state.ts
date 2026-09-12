@@ -16,7 +16,7 @@ import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { matching } from "../../engine/latin.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import { choice, dims, paramsCodec } from "../../engine/params-codec.ts";
-import type { GridCursor } from "../../engine/pointer.ts";
+import type { GridCursor, GridDrag } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell values (upstream enum BLANK, TREE, TENT, NONTENT, MAGIC) ---------
@@ -73,14 +73,16 @@ export type TentsMove =
   | { type: "solve"; tents: readonly number[] };
 
 export interface TentsUi {
-  /** Drag start / end coords, `-1` when idle (upstream game_ui). */
-  dsx: number;
-  dsy: number;
-  dex: number;
-  dey: number;
-  /** `-1` for no drag, else the button code that started it. */
+  /** The drag's anchor and current cell, in grid coordinates. */
+  drag: GridDrag;
+  /** `-1` for no drag, else the button code that started it. Tents needs the
+   * button past the press — left paints tents, right paints grass — so this
+   * carries what the press picked, and `drag.live` says whether one is running. */
   dragButton: number;
-  /** False once the drag has left the window (cancels on release). */
+  /** Whether the pointer is over a valid cell **right now**. Not liveness: a
+   * line drag can leave the grid and come back, and a release while this is
+   * false commits nothing. Only the two games whose drag runs along a line
+   * (this and Boats) need it, which is why it is not in {@link GridDrag}. */
   dragOk: boolean;
   cursor: GridCursor;
 }

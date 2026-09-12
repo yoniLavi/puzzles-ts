@@ -4,6 +4,14 @@
  * a render-scenario snapshot in tents-render-scenario.test.ts.
  */
 import { describe, expect, it } from "vitest";
+import { UI_UPDATE } from "../../engine/game.ts";
+import {
+  LEFT_BUTTON,
+  LEFT_RELEASE,
+  RIGHT_BUTTON,
+  RIGHT_DRAG,
+  RIGHT_RELEASE,
+} from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { newTentsDesc } from "./generator.ts";
@@ -204,11 +212,6 @@ describe("tents input (drag model)", () => {
     const by = Math.floor((blank as number) / p.w);
     const px = { x: bx * 32 + 17, y: by * 32 + 17 };
 
-    const LEFT_BUTTON = 0x0200;
-    const LEFT_RELEASE = 0x0206;
-    const RIGHT_BUTTON = 0x0202;
-    const RIGHT_RELEASE = 0x0208;
-
     tentsGame.interpretMove(state, ui, ds, px, LEFT_BUTTON);
     const m1 = tentsGame.interpretMove(state, ui, ds, px, LEFT_RELEASE);
     expect(m1).toMatchObject({ type: "cells", cells: [{ x: bx, y: by, v: TENT }] });
@@ -221,6 +224,107 @@ describe("tents input (drag model)", () => {
     tentsGame.interpretMove(state, ui, ds, px, RIGHT_BUTTON);
     const m3 = tentsGame.interpretMove(state, ui, ds, px, RIGHT_RELEASE);
     expect(m3).toMatchObject({ type: "cells", cells: [{ x: bx, y: by, v: NONTENT }] });
+  });
+
+  // The tests below send drag *motion*. Until they were written nothing did:
+  // the press/release pair above never moves the pointer, so swapping the two
+  // arguments of the drag's anchor passed all 27 tents tests (measured while
+  // converting this game to the shared `GridDrag` — `name-the-drag`).
+  const TS = 32;
+
+  /** A board, its ui/ds, and a pixel point for a cell center. */
+  function dragRig(seed: string) {
+    const p = { w: 8, h: 8, diff: DIFF_EASY };
+    const { state } = genBoard(p, seed);
+    const ui = tentsGame.newUi(state);
+    const ds = newDrawState(state);
+    tentsGame.setTileSize?.(ds, TS);
+    const at = (x: number, y: number) => ({ x: x * TS + 17, y: y * TS + 17 });
+    return { p, state, ui, ds, at };
+  }
+
+  it("a right-drag along a row paints every blank it covers", () => {
+    const { p, state, ui, ds, at } = dragRig("drag-row");
+    // A row with at least three blanks in a row to sweep.
+    let row = -1;
+    let from = -1;
+    for (let y = 0; y < p.h && row < 0; y++) {
+      for (let x = 0; x + 2 < p.w; x++) {
+        if ([0, 1, 2].every((k) => state.grid[y * p.w + x + k] === BLANK)) {
+          row = y;
+          from = x;
+          break;
+        }
+      }
+    }
+    expect(row).toBeGreaterThanOrEqual(0);
+
+    tentsGame.interpretMove(state, ui, ds, at(from, row), RIGHT_BUTTON);
+    tentsGame.interpretMove(state, ui, ds, at(from + 2, row), RIGHT_DRAG);
+    const move = tentsGame.interpretMove(
+      state,
+      ui,
+      ds,
+      at(from + 2, row),
+      RIGHT_RELEASE,
+    );
+
+    expect(move).toMatchObject({ type: "cells" });
+    const cells = (move as { cells: readonly { x: number; y: number; v: number }[] })
+      .cells;
+    // Exactly the three swept cells, on the swept row, all turned to non-tent.
+    expect(cells.map((c) => `${c.x},${c.y}`).sort()).toEqual(
+      [from, from + 1, from + 2].map((x) => `${x},${row}`).sort(),
+    );
+    expect(cells.every((c) => c.v === NONTENT)).toBe(true);
+  });
+
+  it("snaps the drag to one axis, so a diagonal sweep stays in a line", () => {
+    // Upstream limits a drag to one row or column: whichever coordinate moved
+    // *less* is pulled back to the anchor. A diagonal that is mostly sideways
+    // is therefore a row drag, and touches no other row.
+    const { state, ui, ds, at } = dragRig("drag-snap");
+    tentsGame.interpretMove(state, ui, ds, at(1, 3), RIGHT_BUTTON);
+    // 4 across, 1 down — the vertical component is the smaller, so it snaps.
+    tentsGame.interpretMove(state, ui, ds, at(5, 4), RIGHT_DRAG);
+    expect(ui.drag.sy).toBe(3);
+    expect(ui.drag.ey).toBe(3);
+    expect(ui.drag.ex).toBe(5);
+
+    // And the other way round: mostly downward snaps the column.
+    tentsGame.interpretMove(state, ui, ds, at(1, 3), RIGHT_BUTTON);
+    tentsGame.interpretMove(state, ui, ds, at(2, 7), RIGHT_DRAG);
+    expect(ui.drag.sx).toBe(1);
+    expect(ui.drag.ex).toBe(1);
+    expect(ui.drag.ey).toBe(7);
+  });
+
+  it("commits nothing when the drag is released off the grid", () => {
+    // `dragOk` is not liveness — it says the pointer is over a valid cell right
+    // now. A release while it is false abandons the drag.
+    const { state, ui, ds, at } = dragRig("drag-off");
+    tentsGame.interpretMove(state, ui, ds, at(2, 2), RIGHT_BUTTON);
+    tentsGame.interpretMove(state, ui, ds, { x: -50, y: -50 }, RIGHT_DRAG);
+    expect(ui.dragOk).toBe(false);
+    const move = tentsGame.interpretMove(
+      state,
+      ui,
+      ds,
+      { x: -50, y: -50 },
+      RIGHT_RELEASE,
+    );
+    expect(move).toBe(UI_UPDATE);
+    expect(ui.drag.live).toBe(false);
+  });
+
+  it("leaves no drag running after a release", () => {
+    // The engine will cancel a live drag on a state change; a drag that is
+    // still marked live after its own release would be canceled spuriously.
+    const { state, ui, ds, at } = dragRig("drag-end");
+    tentsGame.interpretMove(state, ui, ds, at(2, 2), LEFT_BUTTON);
+    expect(ui.drag.live).toBe(true);
+    tentsGame.interpretMove(state, ui, ds, at(2, 2), LEFT_RELEASE);
+    expect(ui.drag.live).toBe(false);
   });
 });
 

@@ -221,15 +221,16 @@ export function findErrors(
  * pointer model delivers no `MOD_STYLUS`. */
 export function dragXform(ui: TentsUi, x: number, y: number, v: number): number {
   if (v === TREE) return v; // trees are inviolate
+  const { sx, sy, ex, ey } = ui.drag;
   if (ui.dragButton === LEFT_BUTTON) {
     // Left-dragging has no effect: it acts as a click at the drag start.
-    if (x !== ui.dsx || y !== ui.dsy) return v;
+    if (x !== sx || y !== sy) return v;
     return v === BLANK ? TENT : BLANK;
   }
   // The right button: a click toggles a non-tent, a drag paints blanks.
-  if (x < Math.min(ui.dsx, ui.dex) || x > Math.max(ui.dsx, ui.dex)) return v;
-  if (y < Math.min(ui.dsy, ui.dey) || y > Math.max(ui.dsy, ui.dey)) return v;
-  if (ui.dsx === ui.dex && ui.dsy === ui.dey) return v === BLANK ? NONTENT : BLANK;
+  if (x < Math.min(sx, ex) || x > Math.max(sx, ex)) return v;
+  if (y < Math.min(sy, ey) || y > Math.max(sy, ey)) return v;
+  if (sx === ex && sy === ey) return v === BLANK ? NONTENT : BLANK;
   return v === BLANK ? NONTENT : v;
 }
 
@@ -402,13 +403,9 @@ export function redraw(
   // click feedback without right-drag flicker).
   let errGrid = grid;
   if (ui.dragButton >= 0) {
+    const { sx, sy } = ui.drag;
     errGrid = Int8Array.from(grid);
-    errGrid[ui.dsy * w + ui.dsx] = dragXform(
-      ui,
-      ui.dsx,
-      ui.dsy,
-      errGrid[ui.dsy * w + ui.dsx],
-    );
+    errGrid[sy * w + sx] = dragXform(ui, sx, sy, errGrid[sy * w + sx]);
   }
   const errors = findErrors(w, h, errGrid, numbers);
 

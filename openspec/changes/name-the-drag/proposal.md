@@ -13,19 +13,27 @@ space**, and they spell it four ways:
 
 | game | the pair | space | "is a drag live" |
 | --- | --- | --- | --- |
-| boats | `dsx dsy dex dey` | grid cells | `dragOk` |
-| tents | `dsx dsy dex dey` | grid cells | `dragOk` |
+| boats | `dsx dsy dex dey` | grid cells | `dragFrom !== ""` — a payload sentinel |
+| tents | `dsx dsy dex dey` | grid cells | `dragButton >= 0` — a payload sentinel |
 | pattern | `dragStartX/Y` + `dragEndX/Y` | grid cells | `dragging` |
 | tracks | `dragSx dragSy dragEx dragEy` | grid cells | `dragging` |
 | bridges | `dragxSrc/ySrc` + `dragxDst/yDst` | grid cells | `dragging`, and a `-1` sentinel |
 | rect | `dragStartX/Y` + `dragEndX/Y` | half-grid | a `-1` sentinel alone |
 
-**Four spellings of the pair and three of liveness, and not one of those answers
+**Four spellings of the pair and four of liveness, and not one of those answers
 is about the puzzle.** That is the `adopt-conventional-tier-names` shape exactly:
 N games each answering a question N ways, where no game could say what it would
 legitimately want to do differently. The coordinate *space* is a genuine
 per-game decision — Rect's half-grid is its own business — and a shared type
 holding two pairs does not touch it.
+
+**What is *not* shared, and must not be:** Boats and Tents each carry a
+`dragOk`, which reads like liveness and is not. It means *"the pointer is over a
+valid cell right now"* — it goes false when the drag leaves the grid and true
+again when it comes back, and a release while it is false commits nothing. Only
+the two games whose drag runs along a line have it, because only they can leave
+the grid mid-drag and come back. That is a game legitimately differing, which is
+the test for leaving something where it is.
 
 ### The defect this prevents is not hypothetical
 
@@ -69,10 +77,21 @@ use it for nothing but "put the gesture down", and that half goes away.
   names are internal; the games that persist drag state persist it through their
   own `Move` types, which are untouched.
 
-## The number that was wrong first
+## Two corrections this proposal needed, and the one habit behind both
 
-The first cut of this said "9 games, 8 spellings", grouping by the *shape of the
-names* without checking the *unit* behind them. Three of those nine hold
-something else (above). The corrected figure is 6 and 4. Recording it because
-this repo's standing rule is that a number surviving into a proposal has still
-not been checked — and this one had not.
+**The count.** The first cut said "9 games, 8 spellings", grouping by the *shape
+of the names* without checking the *unit* behind them: Pegs' current position is
+in pixels, Sixteen has both a pixel pair and a cell pair, and Slide holds single
+indices. The corrected figure is 6 and 4.
+
+**The liveness column.** The second cut listed `dragOk` as Boats' and Tents'
+liveness flag, on the strength of its name. It is not — it is "the pointer is
+over a valid cell right now" (above), and their actual liveness is a sentinel in
+the payload each picked at press time. That was caught only by reading Tents'
+`interpretMove` line by line while converting it.
+
+Both are the same error: **a name-shaped scan over-groups**, and the tell is that
+it produces a clean table. `AGENTS.md` says to key on the shape rather than the
+name and then classify what that catches; the honest version of that here is that
+the shape *is* the code, and six `interpretMove` bodies is a readable population.
+A number surviving into a proposal has still not been checked — twice over.

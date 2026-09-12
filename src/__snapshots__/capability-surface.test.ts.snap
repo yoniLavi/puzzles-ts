@@ -1190,12 +1190,9 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
     ],
     "ui": [
       "cursor",
-      "dex",
-      "dey",
+      "drag",
       "dragButton",
       "dragOk",
-      "dsx",
-      "dsy",
     ],
   },
   {

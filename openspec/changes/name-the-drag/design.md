@@ -53,6 +53,17 @@ Rejected: a `Game.cancelsDragOnStateChange` flag. That is the manifest shape the
 collection has reversed three times (eighteen `needsRightButton` declarations
 deleted, the gesture table withdrawn, the hint list derived).
 
+**The assumption `instanceof` rests on, checked rather than assumed:** a class
+instance loses its prototype across a structured clone or a JSON round-trip, so
+this only works if a `Ui` is never replaced by a deserialized copy. Verified
+2026-09-12 — the `Ui` does not cross the Comlink worker boundary (neither
+`worker.ts` nor `worker-adapter.ts` mentions one), and the three games that
+persist Ui state (Ascent, Mines, Net) do it through `encodeUi`/`decodeUi`, where
+`decodeUi(ui, encoded)` **mutates the object the midend already holds** rather
+than returning a new one. If either of those ever changes, the midend's sweep
+goes silently blind, which is why `grid-drag.test.ts` asserts the `instanceof`
+directly.
+
 ## The midend's half, and the one behavior question in it
 
 After the pilot, `Midend`'s `changedState` path walks the `Ui`'s own enumerable

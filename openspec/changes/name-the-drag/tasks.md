@@ -1,20 +1,57 @@
 ## 1. The type and the pilot
 
-- [ ] 1.1 Add `GridDrag` (a class, so the midend can find one by `instanceof`)
+- [x] 1.1 Add `GridDrag` (a class, so the midend can find one by `instanceof`)
       and `newDrag` / `startDrag` / `moveDrag` / `endDrag` to
       `engine/pointer.ts`, beside `GridCursor`.
-- [ ] 1.2 Write its own test, and prove it fails: break each helper in turn
-      (`startDrag` not setting `live`, `moveDrag` always reporting a change,
-      `endDrag` not clearing) and record how many assertions go red for each.
-- [ ] 1.3 Convert **Tents** — the smallest of the six, and its spelling is
-      Boats' too. No draw call should move; verify against its snapshots.
-- [ ] 1.4 Say what the pilot taught before converting anything else: whether
-      `moveDrag`'s "did it change" predicate is the one Tents wanted, and
-      whether the four helpers are the right four.
+- [x] 1.2 Write its own test and prove it fails. Six mutations, all caught:
+      `startDrag` not setting `live` (5 failures), anchoring only the far end
+      (2), `moveDrag` always reporting a change (1), moving a drag that is not
+      running (1), `endDrag` not clearing (1), and `GridDrag` ceasing to be a
+      class (8 — the `instanceof` the midend will depend on).
+- [x] 1.3 Convert **Tents**. Nothing moved: typecheck clean, all snapshots
+      unchanged.
+- [x] 1.3a Two cross-game guards caught the rest, and both were right.
+      `capability-surface`'s snapshot records each game's `Ui` field names, so
+      Tents' four loose coordinates collapsing to one `drag` is a one-line diff
+      there — re-baselined, and the line reads exactly that, with `dragButton`
+      and `dragOk` correctly staying. And `emittable-keys` found that
+      **Galaxies already had a private `startDrag`**, which the new engine
+      export now shadows. It is a genuinely different function (it remembers a
+      source, a dot and a target, not an anchor and a current), so Galaxies is
+      rightly not in the six; it is renamed `enterDrag`, which is what its own
+      doc comment already called it. Expect this per batch: the engine claiming
+      a generic verb collides with whatever a game called its own.
+- [x] 1.4 **What the pilot taught, and it changes the plan.** Three things:
+
+      (a) **The drag path had no test at all.** Swapping the two arguments of
+      Tents' drag anchor passed all 27 of its tests. Its one "drag model" test
+      does press→release on a single cell and never moves the pointer, so no
+      motion, no axis snap and no off-grid release was exercised. So a drag
+      test is **part of** each conversion, not a nicety: without one, converting
+      a game's drag is a refactor with no net. Four plants in the converted
+      code are now caught (anchor axes swapped, `moveDrag` never called, release
+      not ending the drag, `dragOk` ignored).
+
+      (b) **`dragOk` is not liveness and must not move into `GridDrag`.** In
+      Tents and Boats it means "the pointer is over a valid cell right now" —
+      false when the drag leaves the grid, true again when it returns, and a
+      release while false commits nothing. Only the two line-drag games have it.
+      The proposal's table said otherwise and is corrected.
+
+      (c) **The four helpers are the right four, but `dragButton` stays.** Tents
+      needs the button past the press (left paints tents, right paints grass),
+      so the payload it picked at press time is its own; `drag.live` answers
+      liveness and nothing else moved.
 
 ## 2. The rest of the six
 
-- [ ] 2.1 Boats and Pattern (a `dragOk` and a `dragging`, both plain grid).
+**Each conversion ships a drag test, per 1.4(a), and each is checked by planting
+in the converted path rather than by a green suite.** Before converting a game,
+plant in its *existing* drag code first and record what survives — that number is
+what the batch is actually buying.
+
+- [ ] 2.1 Boats and Pattern (Boats has the `dragOk` shape Tents just proved;
+      Pattern is a plain `dragging`).
 - [ ] 2.2 Tracks and Rect — Rect's pair is **half-grid**, so this batch is the
       one that proves the type does not assume a coordinate space.
 - [ ] 2.3 Bridges last: it carries a boolean *and* a `-1` sentinel, so it is the

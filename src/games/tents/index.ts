@@ -18,6 +18,7 @@ import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  endDrag,
   hideCursor,
   isCursorMove,
   isMouseDrag,
@@ -26,9 +27,12 @@ import {
   MOD_CTRL,
   MOD_SHFT,
   moveCursor,
+  moveDrag,
   newCursor,
+  newDrag,
   RIGHT_BUTTON,
   showCursor,
+  startDrag,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -80,10 +84,7 @@ const KEY_b = "b".charCodeAt(0);
 
 function newUi(_state: TentsState): TentsUi {
   return {
-    dsx: -1,
-    dsy: -1,
-    dex: -1,
-    dey: -1,
+    drag: newDrag(),
     dragButton: -1,
     dragOk: false,
     cursor: newCursor(),
@@ -109,8 +110,7 @@ function interpretMove(
     const y = fromCoord(p.y);
     if (x < 0 || y < 0 || x >= w || y >= h) return null;
     ui.dragButton = button;
-    ui.dsx = ui.dex = x;
-    ui.dsy = ui.dey = y;
+    startDrag(ui.drag, x, y);
     ui.dragOk = true;
     hideCursor(ui.cursor);
     return UI_UPDATE;
@@ -124,10 +124,9 @@ function interpretMove(
     } else {
       // Drags are limited to one row or column: move the axis-nearer
       // coordinate back to the drag start.
-      if (Math.abs(x - ui.dsx) < Math.abs(y - ui.dsy)) x = ui.dsx;
-      else y = ui.dsy;
-      ui.dex = x;
-      ui.dey = y;
+      if (Math.abs(x - ui.drag.sx) < Math.abs(y - ui.drag.sy)) x = ui.drag.sx;
+      else y = ui.drag.sy;
+      moveDrag(ui.drag, x, y);
       ui.dragOk = true;
     }
 
@@ -136,12 +135,13 @@ function interpretMove(
     // Release — enact the drag.
     if (!ui.dragOk) {
       ui.dragButton = -1;
+      endDrag(ui.drag);
       return UI_UPDATE;
     }
-    const xmin = Math.min(ui.dsx, ui.dex);
-    const xmax = Math.max(ui.dsx, ui.dex);
-    const ymin = Math.min(ui.dsy, ui.dey);
-    const ymax = Math.max(ui.dsy, ui.dey);
+    const xmin = Math.min(ui.drag.sx, ui.drag.ex);
+    const xmax = Math.max(ui.drag.sx, ui.drag.ex);
+    const ymin = Math.min(ui.drag.sy, ui.drag.ey);
+    const ymax = Math.max(ui.drag.sy, ui.drag.ey);
     const cells: { x: number; y: number; v: number }[] = [];
     for (let yy = ymin; yy <= ymax; yy++) {
       for (let xx = xmin; xx <= xmax; xx++) {
@@ -150,6 +150,7 @@ function interpretMove(
       }
     }
     ui.dragButton = -1;
+    endDrag(ui.drag);
     if (cells.length === 0) return UI_UPDATE;
     return { type: "cells", cells };
   }

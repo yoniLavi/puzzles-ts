@@ -264,3 +264,72 @@ export function hideCursor(cursor: GridCursor): boolean {
   cursor.visible = false;
   return true;
 }
+
+/**
+ * Where a pointer drag started and where it is now, held under `ui.drag`.
+ *
+ * The **noun only**, exactly as {@link GridCursor} is. What the press picked,
+ * what the release commits and how the two positions are read stay in the game:
+ * Boats snaps the drag to an axis, Pattern fills the rectangle between them,
+ * Bridges resolves a target island from the direction. None of that is here.
+ *
+ * **The coordinate space is the game's.** Most of these hold grid cells; Rect
+ * works in half-grid coordinates (0..2w, 0..2h) because its rectangles are
+ * edge-aligned. A shared type holding two pairs has no opinion about that, and
+ * must not grow one.
+ *
+ * **A class rather than an interface**, which is the one place this diverges
+ * from `GridCursor`, and the reason is the midend. Nothing outside a game reads
+ * a cursor, but a drag has to be *cancelable by the engine* when the board
+ * changes under it — and the engine finds one by `instanceof` on the `Ui`'s own
+ * values. Recognizing it by its field names instead would be a scan keyed on a
+ * name, which is the failure this collection has hit most often. A game joins by
+ * **having** one; there is nothing to declare and nothing to forget.
+ */
+export class GridDrag {
+  /** Whether a drag is in progress. The one question every game asked its own
+   * way — a `dragOk`, a `dragging`, or a `-1` in a coordinate. */
+  live = false;
+  /** Where the drag started. Meaningless while `live` is false. */
+  sx = -1;
+  sy = -1;
+  /** Where the pointer is now, in the same space as the anchor. */
+  ex = -1;
+  ey = -1;
+}
+
+/** A drag that is not running. */
+export function newDrag(): GridDrag {
+  return new GridDrag();
+}
+
+/** Begin a drag at `(x, y)`: both ends start there. */
+export function startDrag(drag: GridDrag, x: number, y: number): void {
+  drag.live = true;
+  drag.sx = drag.ex = x;
+  drag.sy = drag.ey = y;
+}
+
+/**
+ * Move a live drag's near end to `(x, y)`, and report whether that changed
+ * anything.
+ *
+ * The return value is not decoration: several games already hand-roll this
+ * predicate to suppress a repaint for a drag event that landed on the cell it
+ * was already on, and it is the same predicate every time. `false` for a drag
+ * that is not running, so a stray move event cannot start one.
+ */
+export function moveDrag(drag: GridDrag, x: number, y: number): boolean {
+  if (!drag.live || (drag.ex === x && drag.ey === y)) return false;
+  drag.ex = x;
+  drag.ey = y;
+  return true;
+}
+
+/** End the drag. True iff one was running — the caller's cue that there is
+ * something to commit, or something to repaint. */
+export function endDrag(drag: GridDrag): boolean {
+  if (!drag.live) return false;
+  drag.live = false;
+  return true;
+}
