@@ -316,6 +316,46 @@ One more thing the per-character form cannot do, found while replacing it:
 only a vertical and `-` never appeared on the board. Asserting the whole
 rendering makes the omission visible; the test now places both line types.
 
+### A test whose every assertion is conditional says nothing when its case never arrives
+
+The commonest of the three shapes above, and the only one now guarded:
+`scripts/checks/vacuous-assertions.mjs` fails the gate on a test whose every
+`expect` sits behind an `if` — counting `if (…) continue;` and `if (…) return;`,
+which are the same guard written the other way round. The fix is always the
+same: count what the condition matched and assert the count outside it, so a
+fixture that stops producing the case fails instead of passing over nothing.
+
+**What it is worth, measured rather than estimated** (2026-09-12,
+`guard-tests-that-cannot-fail`). The thirteen tests `tidy-the-code-after-the-port`
+strengthened are the regression corpus; running each candidate shape over every
+one of those games' test files as they stood at the tidy commit's parent, and
+again at the commit:
+
+| shape | caught of 13 | sites at the time |
+| --- | --- | --- |
+| both sides of an assertion are one expression | 0 | 5, all sound |
+| a bound the type guarantees (`>= 0`, one-char `toContain`) | 0 | 11, reviewed above |
+| every assertion conditional | **5** | 53 |
+
+So two of the three shapes were **not built**, and the numbers are the reason.
+`expect(roots("same")).toBe(roots("same"))` is not a tautology — it is the
+assertion that a seed determines a result, with `.not.toBe(roots("different"))`
+on the next line — and all five of its hits are that. The proposal's estimate was
+"perhaps half of the thirteen"; it is five, and the confidence ordering its
+design gave the three shapes is exactly inverted. **The shape called "lowest
+confidence as a defect" is the only one that catches anything.**
+
+Two exemptions are derived from the syntax rather than ledgered: an `if`/`else`
+that asserts on both branches always runs one of them, and a scan whose last
+statement is a `throw` has written its own vacuity guard already. Widening the
+key from `if` alone to `if` plus early-out took the catch rate from 4 to 5 and
+the population from 24 to 53; widening it further to *loop bodies* reports
+**301**, nearly all table-driven cases over a literal array that cannot be empty
+— a wall, and a wall is a guard nobody keeps.
+
+The guard proves itself on every run against seven fixtures, because a guard
+about tests that cannot fail has no business being one.
+
 ### "The test passed" is not evidence the test *file* is well-formed
 
 Writing a "feed `decodeSave` some garbage" case put a literal **NUL byte** into

@@ -137,6 +137,7 @@ describe("undead hint plan", () => {
   });
 
   it("surfaces a naked single before any elimination, and populates before the first strike", () => {
+    let withStrikes = 0;
     for (let i = 0; i < 12; i++) {
       const st = gen({ w: 5, h: 5, diff: "normal" }, `order-${i}`);
       const steps = fullPlan(st);
@@ -149,11 +150,15 @@ describe("undead hint plan", () => {
           `seed ${i}: a strike before populate`,
         ).toBeGreaterThanOrEqual(0);
         expect(firstPopulate).toBeLessThan(firstStrike);
+        withStrikes++;
       }
     }
+    // Twelve plans that never strike would satisfy the loop and prove nothing.
+    expect(withStrikes, "no seed's plan struck a candidate").toBeGreaterThan(0);
   });
 
   it("a sightline-strike step's marks all lie on the narrated sightline (no bleed)", () => {
+    let checked = 0;
     for (let i = 0; i < 12; i++) {
       const st = gen({ w: 5, h: 5, diff: "normal" }, `bleed-${i}`);
       for (const step of fullPlan(st)) {
@@ -169,9 +174,12 @@ describe("undead hint plan", () => {
             area.has(`${m.x},${m.y}`),
             `seed ${i}: sightline mark off the path`,
           ).toBe(true);
+          checked++;
         }
       }
     }
+    // Keyed on the word "sightline", so a rewording would empty the scan.
+    expect(checked, "no step narrated a sightline strike").toBeGreaterThan(0);
   });
 
   it("narrates with the necessity voice and reads correctly at clue extremes", () => {

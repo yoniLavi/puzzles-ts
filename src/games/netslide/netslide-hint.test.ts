@@ -144,6 +144,7 @@ describe("the hint's idea of where a tile belongs", () => {
   // plan then contradicts, and the hint narrates the very slide that finishes the
   // board as "(setting up)".
   it("only claims a tile belongs somewhere the finished board wants its wires", () => {
+    let claims = 0;
     for (const seed of ["belong-a", "belong-b", "belong-c", "belong-d"]) {
       const { state, aux } = board(HARD_5X5, seed);
       const target = parseAux(aux, state.w * state.h) as Uint8Array;
@@ -157,10 +158,13 @@ describe("the hint's idea of where a tile belongs", () => {
         const marks = step.highlights as NetslideHint;
         if (marks.belongs) {
           expect(target[marks.destination]).toBe(at.tiles[marks.tile]);
+          claims++;
         }
         at = netslideGame.executeMove(at, step.move);
       }
     }
+    // A plan that stopped setting `belongs` would leave nothing to check.
+    expect(claims, "no step claimed a tile belongs anywhere").toBeGreaterThan(0);
   });
 
   it("says a slide that finishes the board puts a tile where it belongs", () => {
@@ -250,6 +254,7 @@ describe("netslide hint", () => {
     // the player has just made a move that took them further away, the shortest
     // way home really does start by undoing it, and saying so is honest advice —
     // it also cannot loop, because a shortest plan strictly shortens the way home.
+    let compared = 0;
     for (const seed of ["undo-a", "undo-b", "undo-c"]) {
       const { state, aux } = board(HARD_5X5, seed);
       const first = hintOf(state, aux);
@@ -272,7 +277,11 @@ describe("netslide hint", () => {
         undoesIt,
         `${seed}: the hint told the player to undo the slide it had just asked for`,
       ).toBe(false);
+      compared++;
     }
+    // Four `continue` guards stand between the seeds and the assertion; any one
+    // of them firing on every seed would leave this green over nothing.
+    expect(compared, "no seed reached a second hint to compare").toBeGreaterThan(0);
   });
 });
 
@@ -438,6 +447,7 @@ describe("netslide hintKeepTrack", () => {
   });
 
   it("drops the plan on any other slide", () => {
+    let others = 0;
     for (const other of legalMoves(state)) {
       if (
         other.type === "slide" &&
@@ -449,7 +459,10 @@ describe("netslide hintKeepTrack", () => {
         continue;
       }
       expect(netslideGame.hintKeepTrack?.(other, step, state)).toBe("off");
+      others++;
     }
+    // A board offering only the hinted slide would assert nothing.
+    expect(others, "no slide other than the hinted one").toBeGreaterThan(0);
   });
 });
 

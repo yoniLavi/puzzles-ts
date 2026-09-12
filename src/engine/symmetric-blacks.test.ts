@@ -190,10 +190,13 @@ describe("odd dimensions — where the region overlaps its own copy", () => {
 
   it("SYMM_ROT4 on an odd square is still quarter-turn symmetric off-center", () => {
     const { at } = place(7, 7, 40, SYMM_ROT4);
+    let checked = 0;
     for (let y = 0; y < 7; y++)
       for (let x = 0; x < 7; x++) {
         if (x === 3 && y === 3) continue; // the center is its own orbit
         expect(at(x, y)).toBe(at(6 - y, x));
+        checked++;
       }
+    expect(checked).toBe(48);
   });
 });

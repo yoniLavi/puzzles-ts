@@ -132,6 +132,7 @@ describe("narration", () => {
   });
 
   it("words and picture agree: 'ringed'/'shaded'/'highlighted clue' only when present", () => {
+    let checked = 0;
     for (const [params, seed] of [
       [EASY, "lh-wp-e"],
       [TRICKY, "lh-wp-t"],
@@ -142,15 +143,20 @@ describe("narration", () => {
         if (!hl) throw new Error("step without highlights");
         if (/ringed (dark )?square/.test(step.explanation)) {
           expect(hl.dark).toBeDefined();
+          checked++;
         }
         if (step.explanation.includes("shaded square")) {
           expect(hl.area.length).toBeGreaterThan(0);
+          checked++;
         }
         if (step.explanation.includes("highlighted clue")) {
           expect(hl.clue).toBeDefined();
+          checked++;
         }
       }
     }
+    // All three arms key on a phrase, so a rewording would empty the scan.
+    expect(checked, "no step used any of the three phrases").toBeGreaterThan(0);
   });
 });
 

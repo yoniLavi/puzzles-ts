@@ -212,6 +212,7 @@ describe("hints only rule out a spoke when it helps a hub still needing lines", 
     // (× 3 difficulties = 24 full plan walks) catch a systematic violation just
     // as surely as 60 did — at 238 s, this one test was **20% of the entire
     // suite**. `npm run test:slow` still scans all 60 for the rare case.
+    let ruleOuts = 0;
     for (let seed = 0; seed < seedBudget(8, 60); seed++) {
       for (const preset of [EASY, TRICKY, UNREASONABLE]) {
         const { desc } = newSpokesDesc(
@@ -241,11 +242,15 @@ describe("hints only rule out a spoke when it helps a hub still needing lines", 
               aNeeds || bNeeds,
               `${preset.diff}/${seed}: ${f.kind} rules out a spoke between two satisfied hubs`,
             ).toBe(true);
+            ruleOuts++;
           }
           applyForced(board, f.forced);
         }
       }
     }
+    // A deduction engine that emitted only connections would walk every board
+    // and assert nothing; this test is about rule-outs.
+    expect(ruleOuts, "no plan ruled out a single spoke").toBeGreaterThan(0);
   });
 });
 

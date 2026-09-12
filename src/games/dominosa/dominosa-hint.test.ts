@@ -37,8 +37,13 @@ describe("dominosa hint — refusal", () => {
 
   it("refuses on an Ambiguous (non-unique) board", () => {
     const state = freshState(6, DIFF_AMBIGUOUS, "hint-ambig");
-    // Only test the ones that are genuinely non-unique (Ambiguous usually is).
-    if (solveNumbers(6, state.numbers, DIFFCOUNT).result === 1) return;
+    // Ambiguous usually is genuinely non-unique — asserted rather than skipped,
+    // because a seed that happened to be unique would pass this test without
+    // ever calling `hint`.
+    expect(
+      solveNumbers(6, state.numbers, DIFFCOUNT).result,
+      "the Ambiguous seed generated a unique board",
+    ).not.toBe(1);
     const res = dominosaGame.hint?.(state);
     expect(res?.ok).toBe(false);
   });

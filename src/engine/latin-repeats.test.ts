@@ -107,12 +107,15 @@ describe("the cube with a repeated symbol", () => {
     const s = new LatinSolver(O, { times: TIMES });
     s.alloc(new Uint8Array(O * O));
     s.place(2, 2, 1);
+    let struck = 0;
     for (let i = 0; i < O; i++) {
       if (i !== 2) {
         expect(s.cubeGet(i, 2, 1)).toBe(false);
         expect(s.cubeGet(2, i, 1)).toBe(false);
+        struck++;
       }
     }
+    expect(struck).toBe(O - 1);
   });
 
   it("positional elimination places the repeated symbol when exactly `times` cells can take it", () => {

@@ -157,7 +157,9 @@ describe("Galaxies game flow", () => {
         }
       }
     }
-    if (ex < 0) return; // no candidate (very small grid)
+    // Asserted rather than skipped: a grid with no unset interior edge would
+    // make every assertion below unreachable and the test green over nothing.
+    expect(ex, "no unset interior edge to toggle").toBeGreaterThanOrEqual(0);
     const next = galaxiesGame.executeMove(s0, {
       ops: [{ kind: "edge", x: ex, y: ey }],
       solving: false,

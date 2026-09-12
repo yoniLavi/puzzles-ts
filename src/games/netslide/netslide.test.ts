@@ -235,15 +235,19 @@ describe("netslide generator", () => {
     const { desc, aux } = newDesc(EASY_5x5, randomNew("symmetry"));
     const s = newState(EASY_5x5, desc);
     const tiles = hexGrid(aux);
+    let wires = 0;
     for (let y = 0; y < s.h; y++) {
       for (let x = 0; x < s.w; x++) {
         for (const dir of DIRECTIONS) {
           if (!(tiles[y * s.w + x] & dir)) continue;
           const n = offset(x, y, dir, s.w, s.h);
           expect(tiles[n.y * s.w + n.x] & opposite(dir)).toBeTruthy();
+          wires++;
         }
       }
     }
+    // An all-blank grid — or a `hexGrid` returning zeros — would pass silently.
+    expect(wires, "the grid carried no wires at all").toBeGreaterThan(s.w * s.h);
   });
 
   it("more barriers on one seed keeps the same grid and only adds walls", () => {

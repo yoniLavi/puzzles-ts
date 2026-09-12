@@ -114,12 +114,18 @@ describe("sticks hint — narration", () => {
   it("a black 0's continuation never claims another line already runs into it", () => {
     // "As well" is true at every clue value except the one where the rule is
     // starkest: a black 0 has no line running into it at all.
+    let seen = 0;
     for (let seed = 0; seed < 12; seed++) {
       for (const s of stepsFor(seed)) {
-        if (/The black 0/.test(s.explanation))
+        if (/The black 0/.test(s.explanation)) {
           expect(s.explanation).not.toMatch(/as well|another/);
+          seen++;
+        }
       }
     }
+    expect(seen, "no step narrated a black 0 — the phrase has changed").toBeGreaterThan(
+      0,
+    );
   });
 
   it("says which orientation is being ruled out, and it is not the forced one", () => {
@@ -156,45 +162,68 @@ describe("sticks hint — evidence counts out against the words", () => {
   });
 
   it("a length argument shades exactly the run it narrates", () => {
+    let seen = 0;
     for (let seed = 0; seed < 12; seed++) {
       for (const r of reasons(seed)) {
-        if (r.kind === "tooLong") expect(r.segment.length).toBe(r.size);
+        if (r.kind === "tooLong") {
+          expect(r.segment.length).toBe(r.size);
+          seen++;
+        }
       }
     }
+    expect(seen, "no `tooLong` reason fired across twelve seeds").toBeGreaterThan(0);
   });
 
   it("a reachability argument shades exactly the span the walk covered", () => {
     // The span is the premise, so an approximated one would make the sentence
     // false. It is also the *quirked* walk's span, deliberately.
+    let seen = 0;
     for (let seed = 0; seed < 12; seed++) {
       for (const r of reasons(seed)) {
         if (r.kind === "unreachable") {
           expect(r.span.length).toBe(r.max);
           expect(r.max).toBeLessThan(r.value);
+          seen++;
         }
       }
     }
+    expect(seen, "no `unreachable` reason fired across twelve seeds").toBeGreaterThan(
+      0,
+    );
   });
 
   it("a black clue's argument marks as many sides as it claims", () => {
+    let seen = 0;
     for (let seed = 0; seed < 12; seed++) {
       for (const r of reasons(seed)) {
         // Counted on the trial board: over-connected has gained the offending
         // line (value + 1), starved has just lost one of its value open sides.
-        if (r.kind === "overConnected") expect(r.lines.length).toBe(r.value + 1);
-        if (r.kind === "starved") expect(r.open.length).toBe(r.value - 1);
+        if (r.kind === "overConnected") {
+          expect(r.lines.length).toBe(r.value + 1);
+          seen++;
+        }
+        if (r.kind === "starved") {
+          expect(r.open.length).toBe(r.value - 1);
+          seen++;
+        }
       }
     }
+    expect(seen, "neither black-clue reason fired across twelve seeds").toBeGreaterThan(
+      0,
+    );
   });
 
   it("a two-numbers argument names both numbers and shades the run holding them", () => {
+    let seen = 0;
     for (let seed = 0; seed < 12; seed++) {
       for (const r of reasons(seed)) {
         if (r.kind !== "twoClues") continue;
         expect(r.clues.length).toBeGreaterThanOrEqual(2);
         for (const c of r.clues) expect(r.segment).toContain(c);
+        seen++;
       }
     }
+    expect(seen, "no `twoClues` reason fired across twelve seeds").toBeGreaterThan(0);
   });
 });
 
@@ -308,6 +337,7 @@ describe("sticks hint — recording stays off the solve path", () => {
     // The generator's byte-identity rests on this, and the differential is the
     // other half of the check: `nextSticksFiring` is a parallel function, so
     // the only shared surface is `sticksValidate`'s extra out-param.
+    let compared = 0;
     for (let seed = 0; seed < 6; seed++) {
       const { state } = board(seed);
       const { w, h, numbers } = state;
@@ -320,10 +350,13 @@ describe("sticks hint — recording stays off the solve path", () => {
           const plain = sticksValidate(grid, numbers, w, h, scratch);
           const recorded = sticksValidate(grid, numbers, w, h, scratch, undefined, []);
           expect(recorded).toBe(plain);
+          compared++;
         }
         grid[i] = 0;
       }
     }
+    // Six all-block fixtures would compare nothing and pass.
+    expect(compared).toBeGreaterThan(100);
   });
 });
 

@@ -198,6 +198,7 @@ describe("moves and solve", () => {
         (p) => Number.isInteger(p.x) && Number.isInteger(p.y) && Number.isInteger(p.d),
       );
 
+    let committed = 0;
     for (let iter = 0; iter < 250; iter++) {
       ui.snapToGrid = rnd() < 0.5;
       const vi = Math.floor(rnd() * s.n);
@@ -219,8 +220,12 @@ describe("moves and solve", () => {
       if (move && move !== UI_UPDATE) {
         s = untangleGame.executeMove(s, move as UntangleMove); // must not throw
         expect(allIntegral()).toBe(true);
+        committed++;
       }
     }
+    // An input change that stopped producing a move would make the fuzz run
+    // 250 iterations and assert nothing.
+    expect(committed, "the fuzz committed no move at all").toBeGreaterThan(200);
   });
 
   it("a drag released far outside the area clamps to the boundary and commits (no cancel)", () => {

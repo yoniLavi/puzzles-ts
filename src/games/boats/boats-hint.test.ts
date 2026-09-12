@@ -379,6 +379,7 @@ describe("boats hint — one deduction is one hint", () => {
     // A `fill` rectangle sets every still-empty square in its span, so a step
     // whose span reaches past its own targets would silently decide squares the
     // narration never mentioned — and, worse, decide them wrongly.
+    let decided = 0;
     for (const [preset] of TIERS) {
       let state = board(preset, `span-${preset}`);
       for (let guard = 0; guard < 40 && !isSolved(state); guard++) {
@@ -399,10 +400,14 @@ describe("boats hint — one deduction is one hint", () => {
             `${preset}: changed ${i % w},${Math.floor(i / w)} un-asked`,
           ).toBeDefined();
           expect(isShip(after.grid[i])).toBe(t?.ship);
+          decided++;
         }
         state = after;
       }
     }
+    // A plan whose moves decided nothing would walk every tier and assert
+    // nothing — the comparison is on decidedness, so it is easy to empty.
+    expect(decided, "no hinted move decided a square").toBeGreaterThan(0);
   });
 });
 

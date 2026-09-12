@@ -111,6 +111,7 @@ describe("deduceHintPlan", () => {
   });
 
   it("is recompute-stable: applying the first firing leaves the rest of the plan", () => {
+    let compared = 0;
     for (let s = 0; s < 12; s++) {
       const state = gen(`stable-${s}`);
       const plan = deduceHintPlan(state);
@@ -118,7 +119,12 @@ describe("deduceHintPlan", () => {
       const next = applyFiring(state, plan.deductions[0]);
       const replan = deduceHintPlan(next);
       expect(replan.deductions).toEqual(plan.deductions.slice(1));
+      compared++;
     }
+    // A planner that stopped returning multi-firing plans would skip all twelve.
+    expect(compared, "no seed produced a plan of two or more firings").toBeGreaterThan(
+      0,
+    );
   });
 
   it("an arrowKnown firing propagates the subset's marked letters up the arrow", () => {

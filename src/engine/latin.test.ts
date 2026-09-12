@@ -351,6 +351,8 @@ describe("matching", () => {
       expect(seen.has(m[L])).toBe(false);
       seen.add(m[L]);
     }
+    // A matcher that assigned nothing would satisfy every assertion above.
+    expect(seen.size).toBe(3);
   });
 
   it("finds a maximum matching, checked against brute force", () => {

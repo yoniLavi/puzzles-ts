@@ -389,14 +389,15 @@ describe("towers hintKeepTrack", () => {
       pencil: true,
     };
     // Only off if (x,y,otherN) isn't itself one of the marks. `hintKeepTrack`
-    // sees the PRE-move state (`state`).
-    if (
-      !(step.move as Extract<TowersMove, { type: "pencilStrike" }>).marks.some(
-        (k) => k.x === m.x && k.y === m.y && k.n === otherN,
-      )
-    ) {
-      expect(towersGame.hintKeepTrack?.(nonTarget, step, state)).toBe("off");
-    }
+    // sees the PRE-move state (`state`). A step that struck every candidate in
+    // the cell would leave nothing to reject, so the branch is asserted taken.
+    const alsoStruck = (
+      step.move as Extract<TowersMove, { type: "pencilStrike" }>
+    ).marks.some((k) => k.x === m.x && k.y === m.y && k.n === otherN);
+    expect(alsoStruck, "the step struck every candidate — no non-target left").toBe(
+      false,
+    );
+    expect(towersGame.hintKeepTrack?.(nonTarget, step, state)).toBe("off");
   });
 
   it("a placement step matches the entered height", () => {

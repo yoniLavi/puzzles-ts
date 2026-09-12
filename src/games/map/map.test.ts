@@ -248,6 +248,8 @@ describe("map interpretMove", () => {
 
     const clue = firstClue(state);
     const clueCell = solidCellOf(state, clue);
+    // Asserted rather than skipped: no clue cell means no drop to check.
+    expect(clueCell, "the board has no solid cell in a clued region").toBeDefined();
     if (!clueCell) return;
     mapGame.interpretMove(state, ui, ds, centerOf(clueCell), LEFT_BUTTON);
     const rel = mapGame.interpretMove(state, ui, ds, centerOf(clueCell), LEFT_RELEASE);
@@ -261,9 +263,14 @@ describe("map interpretMove", () => {
     setTileSize(ds, TS);
 
     const found = findClueBlankPair(state);
+    // All three asserted rather than skipped: any one missing would leave the
+    // whole drag unexercised and the test green.
+    expect(found, "no clue/blank pair on this board").toBeDefined();
     if (!found) return;
     const clueCell = solidCellOf(state, found.clue);
     const blankCell = solidCellOf(state, found.blank);
+    expect(clueCell, "the clued region has no solid cell").toBeDefined();
+    expect(blankCell, "the blank region has no solid cell").toBeDefined();
     if (!clueCell || !blankCell) return;
 
     mapGame.interpretMove(state, ui, ds, centerOf(clueCell), RIGHT_BUTTON);

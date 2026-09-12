@@ -254,9 +254,15 @@ function sticksSolveGameFrom(
 describe("sticks solver", () => {
   it("deduces the fixture board to its unique complete solution", () => {
     const solution = fixtureSolution();
+    let lines = 0;
     for (let i = 0; i < solution.length; i++) {
-      if (!(solution[i] & F_BLOCK)) expect(solution[i] & (F_HOR | F_VER)).not.toBe(0);
+      if (!(solution[i] & F_BLOCK)) {
+        expect(solution[i] & (F_HOR | F_VER)).not.toBe(0);
+        lines++;
+      }
     }
+    // An all-block fixture would satisfy the loop and assert nothing.
+    expect(lines).toBeGreaterThan(0);
   });
 
   it("reports an over-long segment as invalid, flagging the clue cell", () => {

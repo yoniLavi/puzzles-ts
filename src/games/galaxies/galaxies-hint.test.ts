@@ -422,6 +422,7 @@ describe("the picture carries the argument", () => {
     // The per-game form of the visible-evidence rule: the four rungs whose
     // sentences say "the outlined cells" must have some.
     const shading = /outlined|outline shows/;
+    let checked = 0;
     for (const seed of SCAN_SEEDS.slice(0, 4)) {
       let s = board(UNREASONABLE_7, seed);
       for (let i = 0; i < 400 && galaxiesGame.status(s) === "ongoing"; i++) {
@@ -433,13 +434,20 @@ describe("the picture carries the argument", () => {
             step.highlights?.area.length ?? 0,
             `"${step.explanation}" says outlined and outlines nothing`,
           ).toBeGreaterThan(0);
+          checked++;
         }
         s = galaxiesGame.executeMove(s, step.move);
       }
     }
+    // The scan keys on the word, so a rewording would silently empty it.
+    expect(
+      checked,
+      "no step said 'outlined' — the regex has gone stale",
+    ).toBeGreaterThan(0);
   });
 
   it("a wall step points at a wall, an association step points at a dot", () => {
+    let checked = 0;
     for (const seed of ["role-a", "role-b"]) {
       let s = board(NORMAL_7, seed);
       for (let i = 0; i < 400 && galaxiesGame.status(s) === "ongoing"; i++) {
@@ -448,11 +456,14 @@ describe("the picture carries the argument", () => {
         if (!hl) continue;
         const isWall = hl.targetWalls.length > 0;
         expect(isWall ? hl.targets.length : hl.targetWalls.length).toBe(0);
+        checked++;
         // One ring role at a time, so "the ringed dot" is never ambiguous.
         if (hl.targetDot) expect(hl.refDots.length).toBe(0);
         s = galaxiesGame.executeMove(s, step.move);
       }
     }
+    // A plan that stopped carrying highlights would `continue` past everything.
+    expect(checked, "no step carried highlights").toBeGreaterThan(0);
   });
 });
 

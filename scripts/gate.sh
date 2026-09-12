@@ -138,6 +138,20 @@ node scripts/checks/engine-catalog.mjs
 # a vitest file from reading that root at all.
 node scripts/checks/change-citations.mjs
 
+# --- 1b-iv. No test's every assertion sits behind a condition. ~1s. ---
+#
+# A test that cannot fail passes forever while asserting nothing, and the suite
+# cannot tell it from a working one — a green test and a vacuous one are the same
+# observation. `tidy-the-code-after-the-port` found one in thirteen games, each
+# by planting a defect by hand, which is not a thing the gate can do.
+#
+# Unlike the three guards above this reads only `*.test.ts`, so it is not here
+# for the documentation-shortcut reason. It is here because it is cheap, it is
+# fail-fast, and a vacuity report should arrive before ten minutes of vitest
+# rather than after. It proves itself on every run (seven fixtures, ~1 ms): a
+# guard about tests that cannot fail may not be one.
+node scripts/checks/vacuous-assertions.mjs
+
 # --- 1c. The specs and every open change parse and validate. ~1s. ---
 #
 # This is the tool's own check, deliberately, and it replaces a hand-written one.

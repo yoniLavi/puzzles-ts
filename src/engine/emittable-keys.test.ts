@@ -367,6 +367,7 @@ describe("no game tests a button this frontend cannot send", () => {
     // char-code fallback rejects for being longer than one character), and a
     // laptop may have no numpad at all. So a keypad binding must never be the
     // *only* route to an input — which is what Inertia's diagonals were.
+    let binders = 0;
     for (const { path, text } of sources) {
       if (!/MOD_NUM_KEYPAD\s*\|/.test(text)) continue;
       // The bare form of the same key must be accepted somewhere in the file:
@@ -376,7 +377,11 @@ describe("no game tests a button this frontend cannot send", () => {
         /button === CURSOR_/.test(text) || /\bdigitOf\(/.test(text),
         `${path} binds MOD_NUM_KEYPAD with no bare-key route`,
       ).toBe(true);
+      binders++;
     }
+    // The scan keys on the constant's name; spelling the bit differently, or
+    // losing the last binder, would leave this green over nothing.
+    expect(binders, "no game binds MOD_NUM_KEYPAD at all").toBeGreaterThan(0);
   });
 });
 

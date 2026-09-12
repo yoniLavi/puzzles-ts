@@ -63,6 +63,7 @@ describe("the shared color vocabulary", () => {
     // contrast against the surface*, so they must be adapted by the scheme rather
     // than authored — which is exactly what a named color may not be.
     const exempt = new Set<Color>([roles.INK, roles.PAPER]);
+    let checked = 0;
     for (const [name, value] of Object.entries(roles)) {
       if (typeof value === "function") continue;
       const color = value as Color;
@@ -71,7 +72,10 @@ describe("the shared color vocabulary", () => {
         palette.has(color),
         `${name} holds a color value instead of referencing one from colors.ts`,
       ).toBe(true);
+      checked++;
     }
+    // A roles module of nothing but functions would satisfy the loop silently.
+    expect(checked, "no plain-color role was checked").toBeGreaterThan(10);
   });
 
   it("keeps ink and paper adapting", () => {
@@ -247,6 +251,7 @@ describe("the shared color vocabulary", () => {
     // happen.
     const distance = (a: Color, b: Color) =>
       Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    let checked = 0;
     for (const bg of [BG, [1, 1, 1] as Color]) {
       const { background, highlight } = mkhighlight(bg);
       for (const [name, value] of Object.entries(roles)) {
@@ -257,7 +262,11 @@ describe("the shared color vocabulary", () => {
           distance(derived, background),
           `${name} against ${bg.join(",")}`,
         ).toBeGreaterThan(0.05);
+        checked++;
       }
     }
+    // Two filters stand between the roles and the assertion, and either going
+    // empty would leave this green over nothing.
+    expect(checked, "no derived role reached the assertion").toBeGreaterThan(0);
   });
 });

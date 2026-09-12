@@ -361,11 +361,17 @@ describe("crossing generator", () => {
     const { desc } = newCrossingDesc(params, randomNew("sym-shape"));
     const { walls } = readDesc(params, desc);
     const size = 24;
+    let open = 0;
     for (let i = 0; i < size; i++) {
       // A cell opened by the symmetric arm opens its partner, so an *open* cell
       // always has an open partner (a wall may still be forced by checkPool).
-      if (!walls[i]) expect(walls[size - (i + 1)]).toBe(0);
+      if (!walls[i]) {
+        expect(walls[size - (i + 1)]).toBe(0);
+        open++;
+      }
     }
+    // A board of solid wall would satisfy the loop above and prove nothing.
+    expect(open).toBeGreaterThan(size / 2);
   });
 });
 
@@ -611,7 +617,9 @@ describe("crossing cursor auto-advance", () => {
     for (let i = 0; i < 25 && onlyDown < 0; i++) {
       if (puzzle.downRun[i] >= 0 && puzzle.acrossRun[i] < 0) onlyDown = i;
     }
-    if (onlyDown < 0) return; // fixture-dependent; the assertion below is the point
+    // Fixture-dependent, so it is asserted rather than skipped: a fixture with
+    // no vertical-only cell would make the assertion below unreachable.
+    expect(onlyDown, "the fixture has no vertical-only cell").toBeGreaterThanOrEqual(0);
     const ui = newUi();
     ui.dir = "across";
     const c = cellCenter(onlyDown % 5, Math.floor(onlyDown / 5));
@@ -677,6 +685,8 @@ describe("crossing number-list placement", () => {
     const state = newState(P5, FIX.desc);
     const { puzzle } = state;
     const run = puzzle.runs.find((r) => r.cells.length === 2);
+    // A fixture with no 2-cell run would skip both loops below in silence.
+    expect(run, "the fixture has no two-cell run").toBeDefined();
     if (!run) return;
     // On an empty board every 2-digit clue fits a 2-cell run.
     for (let l = 0; l < puzzle.numbers.length; l++) {

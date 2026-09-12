@@ -228,6 +228,7 @@ describe("the named colors", () => {
     // the chance, because yellow's base already sits near the top of its gamut —
     // and an inverted bold is not a weaker version of the step, it is the other
     // step wearing its name.
+    let checked = 0;
     for (const [name] of named) {
       if (!name.endsWith("_BOLD")) continue;
       const base = named.find(([n]) => n === name.replace("_BOLD", ""))?.[1];
@@ -235,7 +236,10 @@ describe("the named colors", () => {
       if (!base || !bold) throw new Error(`${name} has no base`);
       expect(light(bold)[0], `${name} in light`).toBeLessThan(light(base)[0] - 0.04);
       expect(dark(bold)[0], `${name} in dark`).toBeGreaterThan(dark(base)[0] + 0.04);
+      checked++;
     }
+    // The scan keys on the `_BOLD` suffix; a renaming would empty it silently.
+    expect(checked, "no _BOLD color found").toBeGreaterThan(0);
   });
 
   it("keeps a wash on the board's side of every scheme", () => {
@@ -243,11 +247,15 @@ describe("the named colors", () => {
     // enough for black text; in dark mode it means DARK enough for light text —
     // which is why the step is named for its role and not its appearance, and why
     // it cannot be derived from the light value by any per-color rule.
+    let checked = 0;
     for (const [name, c] of named) {
       if (!name.endsWith("_WASH")) continue;
       expect(light(c)[0], `${name} in light mode`).toBeGreaterThan(0.75);
       expect(dark(c)[0], `${name} in dark mode`).toBeLessThan(0.5);
+      checked++;
     }
+    // The scan keys on the `_WASH` suffix; a renaming would empty it silently.
+    expect(checked, "no _WASH color found").toBeGreaterThan(0);
   });
 
   it("matches the two dimension washes in lightness and chroma", () => {

@@ -169,10 +169,18 @@ describe("unequal moves", () => {
       pencil: false,
       autoElim: true,
     });
+    let checked = 0;
     for (let k = 0; k < o; k++) {
-      if (k !== x) expect(after.pencil[y * o + k] & (1 << 3)).toBeFalsy();
-      if (k !== y) expect(after.pencil[k * o + x] & (1 << 3)).toBeFalsy();
+      if (k !== x) {
+        expect(after.pencil[y * o + k] & (1 << 3)).toBeFalsy();
+        checked++;
+      }
+      if (k !== y) {
+        expect(after.pencil[k * o + x] & (1 << 3)).toBeFalsy();
+        checked++;
+      }
     }
+    expect(checked).toBe(2 * (o - 1));
   });
 
   it("toggles a clue's spent flag", () => {

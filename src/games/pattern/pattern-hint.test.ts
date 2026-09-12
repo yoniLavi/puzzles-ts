@@ -87,10 +87,12 @@ describe("pattern hint — plan correctness", () => {
 
 describe("pattern hint — narration", () => {
   it("leads with the indication and concludes in the necessity voice", () => {
+    let read = 0;
     for (const seed of SEEDS) {
       const res = doHint(freshBoard(seed));
       if (!res.ok) continue;
       for (const step of res.steps) {
+        read++;
         const t = step.explanation;
         // Opens by naming the board pattern (the row/column being reasoned over).
         expect(t, `bad opener: "${t}"`).toMatch(/^(This|No run|Whichever)\b/);
@@ -101,6 +103,8 @@ describe("pattern hint — narration", () => {
         );
       }
     }
+    // Every seed refusing would leave this walking no narration at all.
+    expect(read, "no seed produced a plan to read").toBeGreaterThan(0);
   });
 
   it("re-reads cleanly at the pinned (zero-slack) extreme", () => {
@@ -164,10 +168,12 @@ describe("pattern hint — narration", () => {
 
 describe("pattern hint — color legend", () => {
   it("target / black-ref / white-ref roles are disjoint", () => {
+    let read = 0;
     for (const seed of SEEDS) {
       const res = doHint(freshBoard(seed));
       if (!res.ok) continue;
       for (const step of res.steps) {
+        read++;
         const h = step.highlights as PatternHint;
         const targets = new Set(h.cells);
         for (const b of h.blackRefs) expect(targets.has(b)).toBe(false);
@@ -176,6 +182,7 @@ describe("pattern hint — color legend", () => {
         for (const w of h.whiteRefs) expect(blacks.has(w)).toBe(false);
       }
     }
+    expect(read, "no seed produced a plan to read").toBeGreaterThan(0);
   });
 
   it("a cited ref is an actually-placed mark of its own color", () => {

@@ -28,24 +28,43 @@ hand, which does not run in the gate.
 
 ## What changes
 
-A guard over test files that fails on the two shapes a machine can see:
+**The measurement came first, and it cut the proposal down to one shape.** Each
+candidate was run over every test file of the thirteen games as it stood at the
+tidy commit's *parent* and again at the commit; a finding present before and gone
+after is a catch.
 
-1. **An assertion whose two sides derive from the same expression.** `expect(f(x))
-   .toBe(f(x))`, and comparisons of a value against itself.
-2. **A bound that the type makes unconditional.** `expect(xs.length)
-   .toBeGreaterThanOrEqual(0)`, `expect(n).toBeGreaterThanOrEqual(0)` on a count,
-   and `toContain` of a single character, which § 3 already calls out.
+| shape | caught of 13 | sites at HEAD |
+| --- | --- | --- |
+| both sides of an assertion are one expression | 0 | 5, all sound |
+| a bound the type guarantees | 0 | 11, already reviewed |
+| every assertion conditional | **5** | 53 |
 
-Plus the shape that caught most of the thirteen: **an assertion reachable only
-inside a conditional, with no vacuity counter**. That one cannot be judged
-mechanically in general, so the guard asserts the cheaper half: a test whose
-assertions all sit inside an `if` or a loop body SHALL count what it examined and
-assert the count, which is the rule `AGENTS.md` already states for guards.
+So `scripts/checks/vacuous-assertions.mjs` implements the third shape only:
+a test whose every `expect` sits behind an `if` must also say how many cases it
+examined. `if (…) continue;` and `if (…) return;` count as the same guard, which
+is what took the catch rate from 4 to 5 — reading only the `if` spelling sees
+four of Sticks' five reason scans and misses the fifth.
+
+The first two shapes are **not built**, and the numbers are the reason rather
+than taste:
+
+- `expect(roots("same")).toBe(roots("same"))` is not a tautology. It is the
+  assertion that a seed determines a result, and `divvy.test.ts` writes
+  `.not.toBe(roots("different"))` on the very next line. All five hits are that.
+- The single-character `toContain` was already measured and settled by
+  `close-bulk-edit-blind-spots`'s follow-up, which found four of eighteen sites
+  were not the trap at all — vitest's `toContain` is *exact element* on an array
+  — fixed the two real ones and recorded the twelve it left. A guard there would
+  re-litigate a settled decision and need a sixteen-entry ledger on day one,
+  which is how a guard gets switched off.
+
+Fifty-one of the 53 sites are fixed rather than excused; the ledger is two
+entries, both in `difficulty-contract.test.ts`, both with the reason.
 
 ## What this does not claim
 
-A guard for these shapes would have caught perhaps half of the thirteen. The
-other half were vacuous for reasons only a reader or a planted defect can see, a
-fixture whose data made a branch unreachable. The honest framing is that this
-lowers the cost of the cheap half and leaves planting as the way to find the
-rest, which is what § 2 of the test-strength doc already recommends.
+This proposal estimated "perhaps half of the thirteen". **It is five**, and the
+confidence ordering its design gave the three shapes is exactly inverted: the one
+called "lowest confidence as a defect" is the only one that catches anything.
+Planting a defect by hand remains the way to find the other eight, which is what
+§ 2 of the test-strength doc already recommends.

@@ -227,6 +227,7 @@ describe("inertia hint narration", () => {
     // is not one place but eight, because the ball arrives still moving and
     // cannot turn — so "no slide from here reaches it" is a claim, and has to be
     // checked rather than assumed (docs/games/hints.md § "The premise must single out the conclusion").
+    let claims = 0;
     for (const seed of ["g-a", "g-b", "g-c", "g-d", "g-e", "g-f"]) {
       const params = { w: 10, h: 8 };
       const { desc } = newInertiaDesc(params, randomNew(seed));
@@ -245,16 +246,23 @@ describe("inertia hint narration", () => {
             grabbable,
             `${seed}: the hint said the marked gem was out of reach, and it wasn't`,
           ).toBe(false);
+          claims++;
         }
         s = inertiaGame.executeMove(s, step.move);
       }
     }
+    // Keyed on the sentence, so a rewording would empty the scan silently.
+    expect(
+      claims,
+      "no plan claimed a gem was out of reach — the phrase has changed",
+    ).toBeGreaterThan(0);
   });
 
   it("promises 'one more slide' only when the plan's own next move is the one", () => {
     // A promise the plan then breaks reads as a hint that has lost the plot —
     // and the route can reach a gem from a side no single slide from here can,
     // so "a slide exists" is not the claim to make.
+    let promises = 0;
     for (const seed of ["p-a", "p-b", "p-c", "p-d"]) {
       const params = { w: 10, h: 8 };
       const { desc } = newInertiaDesc(params, randomNew(seed));
@@ -276,10 +284,16 @@ describe("inertia hint narration", () => {
             slidePath(after.board, after.px, after.py, move.dir).gems,
             `${seed}: promised one more slide, and the plan's next move didn't take it`,
           ).toContain(goal);
+          promises++;
         }
         s = inertiaGame.executeMove(s, step.move);
       });
     }
+    // Keyed on the sentence, so a rewording would empty the scan silently.
+    expect(
+      promises,
+      "no plan promised 'one more slide' — the phrase has changed",
+    ).toBeGreaterThan(0);
   });
 
   it("warns when the gem could be grabbed now, and grabbing it would strand the ball", () => {

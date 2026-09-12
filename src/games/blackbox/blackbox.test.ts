@@ -126,11 +126,15 @@ describe("Black Box — laser tracer", () => {
       if (s.exits[i] !== LASER_EMPTY) continue;
       s = fire(s, i);
     }
+    let pairs = 0;
     for (let i = 0; i < s.nlasers; i++) {
       const e = s.exits[i];
       if (e === LASER_EMPTY || e === LASER_HIT || e === LASER_REFLECT) continue;
       expect(s.exits[e]).toBe(i);
+      pairs++;
     }
+    // A layout where every laser hit or reflected would assert nothing at all.
+    expect(pairs, "no laser came out the other side").toBeGreaterThan(0);
   });
 
   it("rejects firing an already-fired laser", () => {

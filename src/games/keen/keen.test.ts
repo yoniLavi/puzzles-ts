@@ -229,12 +229,15 @@ describe("keen moves", () => {
       autoElim: true,
     });
     // 3 struck from the rest of row 1 and column 1.
+    let checked = 0;
     for (let k = 0; k < 4; k++) {
       if (k !== 1) {
         expect(next.pencil[1 * 4 + k] & (1 << 3)).toBe(0);
         expect(next.pencil[k * 4 + 1] & (1 << 3)).toBe(0);
+        checked++;
       }
     }
+    expect(checked).toBe(3);
   });
 
   it("completes and flashes when the last correct digit lands (not on Solve)", () => {

@@ -175,12 +175,21 @@ describe("solo moves", () => {
     const y = (i / cr) | 0;
     me.playMoves([{ type: "set", x, y, n: 5, pencil: false, autoElim: true }]);
     const after = getState(me);
+    let checked = 0;
     for (let k = 0; k < cr; k++) {
       const row = y * cr + k;
       const col = k * cr + x;
-      if (k !== x && !after.grid[row]) expect(after.pencil[row] & (1 << 5)).toBe(0);
-      if (k !== y && !after.grid[col]) expect(after.pencil[col] & (1 << 5)).toBe(0);
+      if (k !== x && !after.grid[row]) {
+        expect(after.pencil[row] & (1 << 5)).toBe(0);
+        checked++;
+      }
+      if (k !== y && !after.grid[col]) {
+        expect(after.pencil[col] & (1 << 5)).toBe(0);
+        checked++;
+      }
     }
+    // A fixture whose row and column were already filled would assert nothing.
+    expect(checked).toBeGreaterThan(0);
   });
 });
 

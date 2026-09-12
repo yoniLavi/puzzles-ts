@@ -276,6 +276,7 @@ describe("solver", () => {
 
 describe("generation", () => {
   it("produces a soluble board at exactly the requested difficulty, for every preset", () => {
+    let swept = 0;
     for (const entry of presets().submenu ?? []) {
       const p = entry.params as RomeParams;
       // Only the small presets, so the sweep stays cheap; the differential
@@ -285,7 +286,11 @@ describe("generation", () => {
       expect(validateDesc(p, desc)).toBeNull();
       const at = board(p.w, p.h, desc);
       expect(romeSolve(at, p.diff)).toBe(STATUS_COMPLETE);
+      swept++;
     }
+    // A presets menu that flattened, or grew past the width filter, would
+    // sweep nothing and report health.
+    expect(swept, "no small preset to sweep").toBeGreaterThan(0);
   });
 
   it("never places more goals than upstream's cap allows", () => {

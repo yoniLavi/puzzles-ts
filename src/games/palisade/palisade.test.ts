@@ -182,7 +182,10 @@ describe("palisade findMistakes", () => {
     const p = { w: 5, h: 5, k: 5 };
     const s0 = newState(p, newDesc(p, randomNew("palisade-mark")).desc);
     const sol = solveToBorders(p, s0.clues);
-    if (!sol) return;
+    // A generated board that stops solving, or a solution with no interior wall,
+    // would leave every assertion below unreached — so both end the test rather
+    // than returning from it.
+    if (!sol) throw new Error("the generated board did not solve");
     // Find an interior edge that IS a wall in the solution; mark it no-wall.
     for (let y = 0; y < p.h; y++) {
       for (let x = 0; x + 1 < p.w; x++) {
@@ -200,6 +203,7 @@ describe("palisade findMistakes", () => {
         }
       }
     }
+    throw new Error("the solution had no interior wall to contradict");
   });
 });
 
@@ -244,7 +248,7 @@ describe("palisade win flash", () => {
     const p = { w: 5, h: 5, k: 5 };
     const s0 = newState(p, newDesc(p, randomNew("palisade-unstick")).desc);
     const sol = solveToBorders(p, s0.clues);
-    if (!sol) return;
+    if (!sol) throw new Error("the generated board did not solve");
     const solved = { ...s0, borders: sol.slice(), completed: true, cheated: true };
     // Remove an interior wall → no longer a valid division → completed false.
     let broke = false;
@@ -392,7 +396,7 @@ describe("palisade hint", () => {
   it("does not re-hint an edge the player already marked no-wall", () => {
     const s0 = newState(P, newDesc(P, randomNew("palisade-hint-mark")).desc);
     const r = palisadeGame.hint?.(s0);
-    if (!r?.ok) return;
+    if (!r?.ok) throw new Error("no hint on a fresh board");
     const nowall = r.steps.find((s) => hlOf(s).kind === "nowall");
     expect(nowall).toBeDefined();
     if (!nowall) return;
@@ -408,7 +412,7 @@ describe("palisade hint", () => {
   it("refuses on an already-solved board", () => {
     const s0 = newState(P, newDesc(P, randomNew("palisade-hint-solved")).desc);
     const sol = solveToBorders(P, s0.clues);
-    if (!sol) return;
+    if (!sol) throw new Error("the generated board did not solve");
     const solved: PalisadeState = { ...s0, borders: sol.slice(), completed: true };
     const r = palisadeGame.hint?.(solved);
     expect(r?.ok).toBe(false);
@@ -417,7 +421,7 @@ describe("palisade hint", () => {
   it("refuses when the board carries a wall the solution lacks", () => {
     const s0 = newState(P, newDesc(P, randomNew("palisade-hint-bad")).desc);
     const sol = solveToBorders(P, s0.clues);
-    if (!sol) return;
+    if (!sol) throw new Error("the generated board did not solve");
     // Draw a wall on an interior edge the solution does not have.
     for (let y = 0; y < P.h; y++) {
       for (let x = 0; x + 1 < P.w; x++) {
@@ -432,12 +436,13 @@ describe("palisade hint", () => {
         }
       }
     }
+    throw new Error("the solution walled every interior edge");
   });
 
   it("hintKeepTrack completes on the hinted edit and rejects the wrong one", () => {
     const s0 = newState(P, newDesc(P, randomNew("palisade-hint-track")).desc);
     const r = palisadeGame.hint?.(s0);
-    if (!r?.ok) return;
+    if (!r?.ok) throw new Error("no hint on a fresh board");
     const step = r.steps[0];
     const hl = hlOf(step);
 
