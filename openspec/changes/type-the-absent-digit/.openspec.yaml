@@ -1,0 +1,9 @@
+# The `ts-engine` requirements added by `share-the-desc-digit-fact` spell both
+# codecs' `-1` return, so this change owes a MODIFIED delta to two of them
+# ("The engine answers which character is a digit, once" and "The engine
+# provides the two desc value alphabets"). Written during implementation, once
+# the signatures are settled — and re-read against the code before archiving,
+# which is the trap that change itself hit.
+schema: spec-driven
+created: 2026-09-12
+skip_specs: true
