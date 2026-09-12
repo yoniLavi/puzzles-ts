@@ -95,4 +95,11 @@
       limit. Grep `docs/` and `AGENTS.md` for `setTileSize`, `sized`, `unsized`.
 - [ ] 6.2 Re-read the `ts-engine` delta against the code as built — it was
       written before implementation, and a delta is a claim about code that was
-      still moving (`AGENTS.md` § "Method"). Then the full gate, and archive.
+      still moving (`AGENTS.md` § "Method"). **Decide the capability-snapshot
+      requirement's shape while doing so**: its scenario "a game assigns a
+      draw-state field only once its tile size is known" was kept by name and
+      restated only because `validate` refuses a `MODIFIED` block that drops a
+      scenario, and its heading now names a case the contract makes impossible.
+      The honest retirement is `REMOVED` plus an `ADDED` requirement under a new
+      name (`AGENTS.md` § "Work management", on retiring a scenario). Then the
+      full gate, and archive.
