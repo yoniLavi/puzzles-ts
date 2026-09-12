@@ -33,6 +33,9 @@
 
 ## 3. Close
 
-- [ ] 3.1 Run the full gate, then open two of the nine in the running app (one
+- [x] 3.1 Run the full gate, then open two of the nine in the running app (one
       corner-placed, one board-edge-placed) and toggle pencil mode on and off.
-- [ ] 3.2 Archive the change.
+      Gate clean: 317 files, 9184 tests. Chrome, empty console: Seismic's strip
+      below the board and Keen's top-right border corner both paint on toggle-on
+      and erase on toggle-off, on a draw state that had already painted.
+- [x] 3.2 Archive the change.
