@@ -111,7 +111,7 @@ function newUi(state: BricksState): BricksUi {
   while (i < s && state.grid[i] === F_BOUND) i++;
   return {
     cursor: newCursor(i % state.w, (i / state.w) | 0),
-    dragtype: 0,
+    dragType: 0,
     drag: [],
   };
 }
@@ -202,7 +202,7 @@ function interpretMove(
   let hy = ui.cursor.y;
 
   if (isMouseDown(button)) {
-    ui.dragtype = 0;
+    ui.dragType = 0;
     ui.drag = [];
   }
 
@@ -220,24 +220,24 @@ function interpretMove(
     const i = hy * w + hx;
     const old = grid[i] & COL_MASK;
     if (button === LEFT_BUTTON)
-      ui.dragtype = old === F_UNSHADE ? F_EMPTY : old === F_SHADE ? F_UNSHADE : F_SHADE;
+      ui.dragType = old === F_UNSHADE ? F_EMPTY : old === F_SHADE ? F_UNSHADE : F_SHADE;
     else if (button === RIGHT_BUTTON)
-      ui.dragtype = old === F_UNSHADE ? F_SHADE : old === F_SHADE ? F_EMPTY : F_UNSHADE;
-    else ui.dragtype = F_EMPTY;
+      ui.dragType = old === F_UNSHADE ? F_SHADE : old === F_SHADE ? F_EMPTY : F_UNSHADE;
+    else ui.dragType = F_EMPTY;
     ui.drag = [i];
     return UI_UPDATE;
   }
 
-  if (isMouseDrag(button) && ui.dragtype) {
+  if (isMouseDrag(button) && ui.dragType) {
     const i = hy * w + hx;
-    if (grid[i] === ui.dragtype) return null;
+    if (grid[i] === ui.dragType) return null;
     if (ui.drag.includes(i)) return null;
     ui.drag.push(i);
     return UI_UPDATE;
   }
 
   if (isMouseRelease(button) && ui.drag.length > 0) {
-    const to = bitsColor(ui.dragtype);
+    const to = bitsColor(ui.dragType);
     const cells = ui.drag
       .filter((i) => (grid[i] & COL_MASK) !== 0)
       .map((index) => ({ index, to }));

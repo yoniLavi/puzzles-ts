@@ -292,11 +292,11 @@ export function redraw(
   const flash = flashTime > 0 && ((flashTime / FLASH_FRAME) | 0) & 1;
 
   // Apply the in-flight drag preview to a working grid.
-  const hasDrag = ui.drag.length > 0 && ui.dragtype !== 0;
+  const hasDrag = ui.drag.length > 0 && ui.dragType !== 0;
   const shown = hasDrag ? grid.slice() : grid;
   if (hasDrag) {
     for (const i of ui.drag) {
-      if (shown[i] & COL_MASK) shown[i] = ui.dragtype;
+      if (shown[i] & COL_MASK) shown[i] = ui.dragType;
     }
   }
 

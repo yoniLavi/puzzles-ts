@@ -559,7 +559,10 @@ drag by recoloring accreted cells in the cache key — put it in the diff key
 
 Exemplars: [`clusters/index.ts`](../../src/games/clusters/index.ts) (the
 reference); [`bricks/index.ts`](../../src/games/bricks/index.ts) (confirms the
-shape generalizes — a single uniform dragtype painted across accreted cells).
+shape generalizes — a single uniform `dragType` painted across accreted cells).
+All three spell the field `dragType`; Bricks spelled it `dragtype` until
+`widen-the-capability-snapshot`, which is the divergence the capability
+snapshot's `ui` diff exists to make visible.
 **A shared skeleton was evaluated twice and declined twice**: Sticks' drag
 machine differs materially (the press picks no paint value — orientation comes
 from the drag *axis* via a bounding-box test; each accreted cell stores its

@@ -315,7 +315,7 @@ describe("interpretMove", () => {
   it("never overwrites a given dot", () => {
     const st = makeState(2, 1, [F_COLOR_0 | F_SINGLE, 0]);
     const ui = newUi();
-    // A press on the given picks a dragtype but the release skips givens.
+    // A press on the given picks a dragType but the release skips givens.
     const move = clickMove(st, ui, 0, 0, LEFT_BUTTON, LEFT_RELEASE);
     // Either no move, or a move that changes nothing on the given.
     const next = move ? clustersGame.executeMove(st, move) : st;
