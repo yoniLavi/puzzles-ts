@@ -191,16 +191,44 @@ the other order only because the plants stood in for it.
 
 ## 3. The engine cancels it
 
-- [ ] 3.1 Have `Midend`'s `changedState` path cancel every `GridDrag` it finds
-      on the `Ui`, derived by `instanceof`, with no declaration anywhere.
-- [ ] 3.2 Settle the behavior question the design defers: for each of the six,
-      confirm canceling on *every* state replacement is what that game wants,
-      and record any game that justifies keeping its own `changedState` instead.
-- [ ] 3.3 Remove the `changedState` bodies that existed only to put a gesture
-      down, where the game is now covered by the engine.
-- [ ] 3.4 Add the cross-game guard: a game carrying a `GridDrag` has it canceled
-      across a committed move, driven through a real `Midend`. Prove it fails by
-      removing the midend's cancel.
+- [x] 3.1 `Midend.stateReplaced` cancels every `GridDrag` on the `Ui`, derived
+      by `instanceof`, with no declaration anywhere. The five `changedState`
+      call sites now go through it, so the engine's half and the game's half
+      cannot drift; the game's runs **after**, so a game that needs a drag to
+      survive can re-arm it. `cancelDrags` treats a missing `Ui` as nothing to
+      cancel — `newUi` is optional and two games have no state at all.
+- [x] 3.2 Settled: canceling on every state replacement is right for all six,
+      and none of them previously canceled at all (not one carried a
+      `changedState`). No game has justified an override.
+- [x] 3.3 **Not applicable, and worth saying why rather than ticking.** The five
+      games whose `changedState` exists only to put a gesture down — Filling,
+      Pegs, Signpost, Slide, Untangle — are all *outside* the converted six, so
+      none is covered by the engine yet and none can lose that half. They are
+      the natural next population (§4 already holds Pegs and Slide).
+- [x] 3.4 Cross-game guard added (`engine/drag-cancel.test.ts`), population
+      derived, vacuity floor asserted. Proven to fail three ways: the midend not
+      canceling, the sweep losing its `instanceof`, and `endDrag` not clearing.
+
+- [x] 3.5 **The guard was asserting the wrong thing, and fixing that found a
+      real defect this change had introduced.** The first version asserted
+      `drag.live === false` after a replacement, and passed everywhere — but
+      ending `live` only protects a game that *asks* `live`, and three of the
+      six did not: Tents gated its drag branch on `dragButton >= 0`, Tracks on
+      `painting`, Bridges on `aiming`. All three would have committed a move
+      from an anchor the undo invalidated, which is exactly the Pegs defect
+      `fix-stale-ui-and-cache-state` opened with.
+
+      The guard now drives a **real press**, replaces the state under it and
+      releases, asserting no move is committed — and that caught two further
+      layers after the first fix: Bridges' and Tracks' releases fall through
+      from the drag path to a **click** path that commits from the remembered
+      press point, so gating only the drag half was not enough. The whole
+      release is gated now.
+
+      **The rule this establishes:** a game carrying a `GridDrag` must gate
+      every committing path on `drag.live`, not on a secondary flag of its own.
+      A weak guard ("the flag is false") is satisfied by all three broken games;
+      a strong one ("the player's next action commits nothing") is not.
 
 ## 4. The three that are shaped differently
 

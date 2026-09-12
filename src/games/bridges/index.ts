@@ -252,6 +252,11 @@ function interpretMove(
   }
 
   if (btn === LEFT_RELEASE || btn === RIGHT_RELEASE) {
+    // The whole release is gated on `drag.live`, not just the bridge half: the
+    // engine ends a live drag when the board changes under it, and the *click*
+    // path below would otherwise still toggle the mark on the island this
+    // gesture pressed — a move committed from a board that no longer exists.
+    if (!ui.drag.live) return uiCancelDrag(ui);
     if (ui.aiming) return finishDrag(ui);
     if (!s.inGrid(ui.drag.sx, ui.drag.sy) || gx !== ui.drag.sx || gy !== ui.drag.sy) {
       return uiCancelDrag(ui);

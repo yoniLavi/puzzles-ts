@@ -333,3 +333,31 @@ export function endDrag(drag: GridDrag): boolean {
   drag.live = false;
   return true;
 }
+
+/**
+ * End every {@link GridDrag} a `Ui` carries, and report how many were running.
+ *
+ * This is how the midend cancels a drag the board changed under: a game joins
+ * by **having** a `GridDrag`, never by declaring that it does, which is the
+ * collection's enrollment rule. Finding one by `instanceof` rather than by its
+ * field names is the whole reason `GridDrag` is a class — a scan keyed on names
+ * is the failure this repo has hit most often, and it would fail *silently*,
+ * reporting that there was nothing to cancel.
+ *
+ * Only the `Ui`'s own enumerable values are looked at, one level deep. A drag
+ * nested inside another object is not found, which is deliberate: one level is
+ * where every game keeps it, and a deep walk would be a contract nobody asked
+ * for over data the engine does not own.
+ *
+ * A game need not have a `Ui` at all — `newUi` is optional and two games have
+ * genuinely nothing to remember — so anything that is not an object is simply
+ * nothing to cancel.
+ */
+export function cancelDrags(ui: unknown): number {
+  if (typeof ui !== "object" || ui === null) return 0;
+  let ended = 0;
+  for (const value of Object.values(ui)) {
+    if (value instanceof GridDrag && endDrag(value)) ended++;
+  }
+  return ended;
+}

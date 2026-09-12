@@ -38,7 +38,22 @@ acquires the protection by having a drag and a new game cannot forget to ask
 for it.
 
 A game that genuinely needs a drag to survive a state change SHALL say so in its
-own `changedState`, with its reason recorded.
+own `changedState`, with its reason recorded — the engine's cancel runs first,
+so the game's hook has the last word.
+
+**A game carrying a `GridDrag` SHALL gate every committing path on `drag.live`**,
+rather than on a secondary flag of its own. The engine can only end the drag it
+can see; a release that keys off "which button started this" or "has the drag
+left its anchor" does not hear the cancel, and commits a move from a board that
+no longer exists. That includes any *click* path a release falls through to when
+the drag half declines it.
+
+#### Scenario: a release arriving after the board changed
+
+- **GIVEN** a game whose drag is live, and a state replacement between the press
+  and the release
+- **WHEN** the player releases
+- **THEN** no move is committed, by any path the release can take
 
 #### Scenario: an undo lands while a drag is live
 

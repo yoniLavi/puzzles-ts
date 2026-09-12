@@ -116,7 +116,11 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  if ((isMouseDrag(button) || isMouseRelease(button)) && ui.dragButton >= 0) {
+  // Gated on `drag.live`, not on `dragButton >= 0`: the engine ends a live drag
+  // when the board changes under it, and only this question hears that. Keying
+  // off the button code instead would let a release commit a fill from an
+  // anchor the undo invalidated.
+  if ((isMouseDrag(button) || isMouseRelease(button)) && ui.drag.live) {
     let x = fromCoord(p.x);
     let y = fromCoord(p.y);
     if (x < 0 || y < 0 || x >= w || y >= h) {

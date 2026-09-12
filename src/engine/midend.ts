@@ -22,7 +22,7 @@ import {
   type PresetMenu,
   UI_UPDATE,
 } from "./game.ts";
-import { MOD_STYLUS } from "./pointer.ts";
+import { cancelDrags, MOD_STYLUS } from "./pointer.ts";
 import { randomNew } from "./random/index.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 import type {
@@ -322,7 +322,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.ui = this.game.newUi(initial);
     // Upstream `game_changed_state` with oldstate == NULL: let a game
     // whose Ui tracks the current state seed it from the fresh board.
-    this.game.changedState?.(this.ui, null, initial);
+    this.stateReplaced(null, initial);
     // `newUi` reset any preference fields to their defaults; re-apply the
     // player's choices (upstream keeps one `game_ui` across new games).
     this.applyPrefs();
@@ -354,7 +354,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     ];
     this.moveLog = [];
     this.pos = 0;
-    this.game.changedState?.(this.ui, prev, this.state);
+    this.stateReplaced(prev, this.state);
     this.cheated = false;
     this.clearHint();
     this.clearMistakes();
@@ -377,6 +377,24 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * makes `Game.interpretMove`'s promise true: `ds` is non-null *and* sized, so
    * a game reads `ds.tilesize` rather than guessing at the preferred size.
    */
+  /**
+   * The state was replaced — reconcile the `Ui` with it.
+   *
+   * Two steps, paired here rather than at each of the five callers so they
+   * cannot drift. First the engine's own: **every `GridDrag` the `Ui` carries
+   * is ended**, because a drag names a position on a board that no longer
+   * exists. Membership is derived — the sweep finds a drag by its type, so a
+   * game is protected by *having* one and a new game cannot forget to ask.
+   *
+   * Then the game's `changedState`, which runs **after**, so a game that
+   * genuinely needs a drag to survive a transition can re-arm it and say why.
+   * The convention ships with its override.
+   */
+  private stateReplaced(prev: State | null, next: State): void {
+    cancelDrags(this.ui);
+    this.game.changedState?.(this.ui, prev, next);
+  }
+
   private freshDrawState(s: State): DrawState {
     const ds = this.game.newDrawState(s);
     this.game.setTileSize?.(ds, this.currentTileSize);
@@ -489,7 +507,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.moveLog.push(move);
     this.pos = this.history.length - 1;
     this.applySupersede();
-    this.game.changedState?.(this.ui, prev, next);
+    this.stateReplaced(prev, next);
     this.setupAnimation(prev, next, 1);
     this.afterTransition();
     return true;
@@ -519,7 +537,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.clearHint();
     const prev = this.state;
     this.pos -= 1;
-    this.game.changedState?.(this.ui, prev, this.state);
+    this.stateReplaced(prev, this.state);
     this.setupAnimation(prev, this.state, -1);
     this.afterTransition();
   }
@@ -529,7 +547,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.clearHint();
     const prev = this.state;
     this.pos += 1;
-    this.game.changedState?.(this.ui, prev, this.state);
+    this.stateReplaced(prev, this.state);
     this.setupAnimation(prev, this.state, 1);
     this.afterTransition();
   }

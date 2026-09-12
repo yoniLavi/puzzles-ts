@@ -284,8 +284,8 @@ export const MODULES = [
       {
         within: "Midend.commitMove",
         why: "undo/restart adopt a superseded desc, un-generating Mines' first click",
-        find: "    this.applySupersede();\n    this.game.changedState?.(this.ui, prev, next);",
-        replace: "    this.game.changedState?.(this.ui, prev, next);",
+        find: "    this.applySupersede();\n    this.stateReplaced(prev, next);",
+        replace: "    this.stateReplaced(prev, next);",
       },
       {
         within: "Midend.loadGame",

@@ -195,6 +195,14 @@ function interpretMove(
   if (isMouseRelease(button)) {
     ui.cursor.visible = false;
     const { sx, sy, ex, ey } = ui.drag;
+    // The whole release is gated on `drag.live`: the engine ends a live drag
+    // when the board changes under it, and the click path below — which flips a
+    // square or lays a track segment from the remembered press point — would
+    // otherwise commit a move on a board that no longer exists.
+    if (!ui.drag.live) {
+      ui.painting = false;
+      return UI_UPDATE;
+    }
     if (ui.painting && (sx !== ex || sy !== ey)) {
       const dragged = copyAndApplyDrag(board, ui);
       const move = moveDiff(board, dragged, false);
