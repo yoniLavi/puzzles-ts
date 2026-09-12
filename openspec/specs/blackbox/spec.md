@@ -1,7 +1,10 @@
 # blackbox Specification
 
 ## Purpose
-TBD - created by archiving change add-blackbox-ts-port. Update Purpose after archive.
+Black Box, the puzzle of locating balls hidden in a square arena by firing
+lasers in from its edge and reading where each one emerges. This capability
+specifies its port to the TS engine, centered on the deterministic laser tracing
+that every reveal and every verdict on the player's guess rests on.
 ## Requirements
 ### Requirement: Black Box game implements the Game interface
 

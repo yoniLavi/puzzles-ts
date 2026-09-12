@@ -1,7 +1,11 @@
 # separate Specification
 
 ## Purpose
-TBD - created by archiving change add-separate-ts-port. Update Purpose after archive.
+Separate, the puzzle of dividing a lettered grid along its edges into regions
+that each contain exactly one of each letter. This capability specifies its port
+to the TS engine, with a three-valued wall model and half-grid cursor, shading
+of completed regions, and mistake-checking, on a border-marking mechanic it
+shares rather than owns.
 ## Requirements
 ### Requirement: Separate game implements the Game interface
 

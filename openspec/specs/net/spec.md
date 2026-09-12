@@ -1,7 +1,10 @@
 # net Specification
 
 ## Purpose
-TBD - created by archiving change add-net-ts-port. Update Purpose after archive.
+Net, the puzzle of rotating tiles until every wire joins one connected network
+with no loops. This capability specifies its port to the TS engine, with boards
+uniquely solvable without guessing, tile rotation and locking, a jumble that
+replays deterministically, and a movable source.
 ## Requirements
 ### Requirement: Net game implements the Game interface
 

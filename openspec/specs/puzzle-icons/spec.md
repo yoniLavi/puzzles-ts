@@ -1,7 +1,9 @@
 # puzzle-icons Specification
 
 ## Purpose
-TBD - created by archiving change drop-icon-generation. Update Purpose after archive.
+The per-puzzle thumbnail icons the catalog shows: committed PNGs rather than a
+generated asset, the manual screenshot workflow a new puzzle follows to add its
+pair, and the dev-only capture mode that workflow uses.
 ## Requirements
 ### Requirement: Per-puzzle thumbnail icons are committed PNGs
 

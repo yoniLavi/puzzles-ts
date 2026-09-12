@@ -1,7 +1,12 @@
 # seismic Specification
 
 ## Purpose
-TBD - created by archiving change add-seismic-ts-port. Update Purpose after archive.
+Seismic, the puzzle of numbering each area of size N with 1 to N, under either
+the Seismic rule that equal numbers N in a line have at least N cells between
+them or the Tectonic rule that equal numbers never touch. This capability
+specifies its port to the TS engine, with note-taking, mistake-checking against
+the unique solution, and an on-screen keypad offering only the digits a board
+can accept.
 
 ## Requirements
 

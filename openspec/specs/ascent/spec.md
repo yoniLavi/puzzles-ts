@@ -1,7 +1,11 @@
 # ascent Specification
 
 ## Purpose
-TBD - created by archiving change add-ascent-ts-port. Update Purpose after archive.
+Ascent, the puzzle of placing numbers so that each stands next to its successor
+and together they form one path from 1 to the highest, on square or hexagonal
+grids and in an Edges mode clued by arrows around the board. This capability
+specifies its port to the TS engine, with difficulty tiers graded honestly
+against its four-tier deductive solver.
 
 ## Requirements
 

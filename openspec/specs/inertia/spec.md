@@ -1,7 +1,11 @@
 # inertia Specification
 
 ## Purpose
-TBD - created by archiving change add-inertia-ts-port. Update Purpose after archive.
+Inertia, the puzzle of steering a ball that slides until a wall or stop halts
+it, collecting every gem without running onto a mine. This capability specifies
+its port to the TS engine, with eight-direction keyboard and swipe control, gems
+placed only where the ball can go and come back from, and a hint that heads for
+the nearest gem it can safely take and explains each move by it.
 ## Requirements
 ### Requirement: Inertia game implements the Game interface
 

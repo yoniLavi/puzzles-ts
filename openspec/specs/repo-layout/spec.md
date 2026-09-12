@@ -1,7 +1,12 @@
 # repo-layout Specification
 
 ## Purpose
-TBD - created by archiving change reorganize-repo-tooling. Update Purpose after archive.
+How this repository is organized and kept honest: where code, help, docs and
+tooling live, the in-process test tiers and the determinism they rely on, the
+developer guides under `docs/`, and the mechanical checks that hold module
+layering, test strength, bulk edits, comments and the openspec workflow to what
+they claim. It is the contract for working in the tree rather than for anything
+a player sees.
 
 ## Requirements
 

@@ -1,7 +1,10 @@
 # netslide Specification
 
 ## Purpose
-TBD - created by archiving change add-netslide-ts-port. Update Purpose after archive.
+Netslide, the puzzle of sliding whole rows and columns until the wires on the
+tiles join one connected network with no loops. This capability specifies its
+port to the TS engine, with a solver that works from any position without the
+generator's answer, and a hint that explains and draws each slide it proposes.
 ## Requirements
 ### Requirement: Netslide game implements the Game interface
 

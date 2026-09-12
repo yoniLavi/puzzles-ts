@@ -1,7 +1,10 @@
 # guess Specification
 
 ## Purpose
-TBD - created by archiving change add-guess-ts-port. Update Purpose after archive.
+Guess, the Mastermind puzzle of deducing a hidden combination of colors from the
+feedback each submitted row earns. This capability specifies its port to the TS
+engine: obfuscated solution descriptions, Knuth-style scoring, and drag, hold,
+keyboard and hint input.
 ## Requirements
 ### Requirement: Guess game implements the Game interface
 

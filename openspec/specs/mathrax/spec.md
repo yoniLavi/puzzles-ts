@@ -1,7 +1,10 @@
 # mathrax Specification
 
 ## Purpose
-TBD - created by archiving change add-mathrax-ts-port. Update Purpose after archive.
+Mathrax, the Latin-square puzzle whose clues sit on grid intersections and
+constrain the four digits around each. This capability specifies its port to the
+TS engine, with notes, mistake-checking against the unique solution, honestly
+graded difficulty tiers, and only the difficulties a given size can support.
 ## Requirements
 ### Requirement: Mathrax game implements the Game interface
 

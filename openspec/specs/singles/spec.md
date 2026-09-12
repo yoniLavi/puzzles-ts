@@ -1,7 +1,11 @@
 # singles Specification
 
 ## Purpose
-TBD - created by archiving change add-singles-ts-port. Update Purpose after archive.
+Singles (Hitori), the puzzle of blacking out squares so that no number repeats
+in a row or column, no two black squares touch, and the white squares stay
+connected. This capability specifies its port to the TS engine, with
+difficulty-graded unique generation, the show-black-numbers preference,
+mistake-checking, and an explained deduction hint with its own color legend.
 ## Requirements
 ### Requirement: Singles game implements the Game interface
 

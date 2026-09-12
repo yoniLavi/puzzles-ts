@@ -1,7 +1,10 @@
 # flip Specification
 
 ## Purpose
-TBD - created by archiving change add-flip-ts-port. Update Purpose after archive.
+Flip, the puzzle of lighting every square by flipping squares, where each flip
+also toggles a fixed pattern of neighbors. This capability specifies its port to
+the TS engine, with generation of solvable, non-trivial boards and a solver that
+finds a shortest set of flips by elimination over GF(2).
 ## Requirements
 ### Requirement: Flip is served by the native TS engine
 

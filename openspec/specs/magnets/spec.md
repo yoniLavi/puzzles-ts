@@ -1,7 +1,11 @@
 # magnets Specification
 
 ## Purpose
-TBD - created by archiving change add-magnets-ts-port. Update Purpose after archive.
+Magnets, the puzzle of filling each domino with a magnet or a neutral piece so
+that like poles never touch and each row and column meets its clued pole counts.
+This capability specifies its port to the TS engine, with input that cycles a
+domino's contents and marks clues done, and mistake-checking against the unique
+solution.
 ## Requirements
 ### Requirement: Magnets game implements the Game interface
 

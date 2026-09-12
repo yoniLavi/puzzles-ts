@@ -1,7 +1,10 @@
 # latin-solver Specification
 
 ## Purpose
-TBD - created by archiving change add-towers-ts-port. Update Purpose after archive.
+The shared Latin-square solver and generator, so that a game built on rows and
+columns of distinct symbols supplies only its own deductions rather than a whole
+solver. It specifies the generic deductions, the generator, and the support for
+a symbol, such as an empty square, that may repeat in a line.
 
 ## Requirements
 

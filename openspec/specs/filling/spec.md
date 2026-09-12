@@ -1,7 +1,10 @@
 # filling Specification
 
 ## Purpose
-TBD - created by archiving change add-filling-ts-port. Update Purpose after archive.
+Filling (Fillomino), the puzzle of writing numbers so that every connected group
+of equal numbers has exactly that many cells. This capability specifies its port
+to the TS engine, with uniquely solvable generation, mistake-checking, on-screen
+key labels, and an explained deduction hint with its own color legend.
 ## Requirements
 ### Requirement: Filling game implements the Game interface
 

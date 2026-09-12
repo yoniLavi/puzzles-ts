@@ -1,7 +1,11 @@
 # galaxies Specification
 
 ## Purpose
-TBD - created by archiving change add-galaxies-ts-port. Update Purpose after archive.
+Galaxies, the puzzle of dividing a grid along its edges into regions that each
+have two-way rotational symmetry about the one dot they contain. This capability
+specifies its port to the TS engine, with uniquely solvable boards at each
+difficulty, mistake highlighting, and a deduction hint narrated in terms of
+which dot a square belongs to.
 ## Requirements
 ### Requirement: Galaxies is served by the native TS engine
 

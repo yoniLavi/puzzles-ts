@@ -1,7 +1,11 @@
 # pearl Specification
 
 ## Purpose
-TBD - created by archiving change add-pearl-ts-port. Update Purpose after archive.
+Pearl (Masyu), the puzzle of drawing one closed loop through square centers that
+turns on every black pearl and passes straight through every white one. This
+capability specifies its port to the TS engine: the deductive solver and the
+generator gated on it, completion and mistake reporting, and its input and
+rendering.
 ## Requirements
 ### Requirement: Pearl game implements the Game interface
 

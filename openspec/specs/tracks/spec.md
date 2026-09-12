@@ -1,7 +1,10 @@
 # tracks Specification
 
 ## Purpose
-TBD - created by archiving change add-tracks-ts-port. Update Purpose after archive.
+Tracks, the puzzle of laying a single railway from A to B so that each row and
+column holds its clued number of track segments. This capability specifies its
+port to the TS engine, with live errors, mistake-checking, and a hint that
+explains the next deduction and marks it in the game's own vocabulary.
 
 ## Requirements
 

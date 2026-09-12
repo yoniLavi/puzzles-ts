@@ -1,7 +1,11 @@
 # grid Specification
 
 ## Purpose
-TBD - created by archiving change add-pearl-ts-port. Update Purpose after archive.
+The shared planar-grid layer for games played on the dots, edges and faces of an
+arbitrary tiling rather than a square array. It specifies the grid structure,
+the periodic and aperiodic tilings with their sizing, validation, description
+round-trip and patch trimming, the geometric queries that input and labels need,
+and the random loop generator built on it.
 ## Requirements
 ### Requirement: Shared planar-grid data structure and deterministic square tiling
 

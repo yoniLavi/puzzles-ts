@@ -1,7 +1,10 @@
 # untangle Specification
 
 ## Purpose
-TBD - created by archiving change add-untangle-ts-port. Update Purpose after archive.
+Untangle, the puzzle of dragging the points of a planar graph until none of its
+lines cross. This capability specifies its port to the TS engine: exact crossing
+detection, pointer and keyboard dragging, Solve through the recorded layout, and
+an animated move hint.
 ## Requirements
 ### Requirement: Untangle game implements the Game interface
 

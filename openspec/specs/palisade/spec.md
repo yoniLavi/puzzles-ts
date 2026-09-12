@@ -1,7 +1,11 @@
 # palisade Specification
 
 ## Purpose
-TBD - created by archiving change add-palisade-ts-port. Update Purpose after archive.
+Palisade, the puzzle of dividing a grid along its edges into regions of one
+given size, each numbered square having that many of its edges walled. This
+capability specifies its port to the TS engine, with three-valued shared edges,
+mistake-checking and shading of completed regions, and the deduction hint that
+sets this collection's bar for what an explained hint is.
 ## Requirements
 ### Requirement: Palisade game implements the Game interface
 

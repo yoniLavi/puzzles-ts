@@ -1,7 +1,10 @@
 # quick-save Specification
 
 ## Purpose
-TBD - created by archiving change add-quick-save-check-save. Update Purpose after archive.
+The one-slot quick save every puzzle offers, reached through a Check & Save that
+checkpoints only a board with no mistakes, with its keyboard shortcut and
+non-blocking confirmations. It exists so a player can mark a known-good position
+and come back to it without managing save files.
 ## Requirements
 ### Requirement: A single quick-save slot per puzzle
 

@@ -1,7 +1,12 @@
 # undead Specification
 
 ## Purpose
-TBD - created by archiving change add-undead-ts-port. Update Purpose after archive.
+Undead, the puzzle of filling a mirrored grid with ghosts, vampires and zombies
+to given totals so that each edge count matches the monsters visible along its
+sightline, ghosts showing only in mirrors and vampires only directly. This
+capability specifies its port to the TS engine, with sightline tracing through
+the mirrors, pencil and clue moves, live legality errors, mistake-checking,
+on-screen key labels, and an explained deduction hint.
 ## Requirements
 ### Requirement: Undead game implements the Game interface
 

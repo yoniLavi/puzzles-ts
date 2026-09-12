@@ -1,7 +1,11 @@
 # map Specification
 
 ## Purpose
-TBD - created by archiving change add-map-ts-port. Update Purpose after archive.
+Map, the puzzle of four-coloring a map so that no two regions sharing an edge
+have the same color, given a few regions already colored. This capability
+specifies its port to the TS engine: the graded solver and the generator gated
+on it, completion and mistake reporting, and its input, preferences and
+rendering.
 ## Requirements
 ### Requirement: Map game implements the Game interface
 

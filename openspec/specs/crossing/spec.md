@@ -1,7 +1,11 @@
 # crossing Specification
 
 ## Purpose
-TBD - created by archiving change add-crossing-ts-port. Update Purpose after archive.
+Crossing (Nansuke), the puzzle of writing a list of numbers into a grid
+crossword-fashion, so that each appears exactly once reading across or down.
+This capability specifies its port to the TS engine, with entry that places
+whole numbers and follows the one being filled, generation that leaves no cell a
+clue cannot reach, and a hint that explains one deduction at a time.
 
 ## Requirements
 

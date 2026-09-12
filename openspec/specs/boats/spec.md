@@ -1,7 +1,11 @@
 # boats Specification
 
 ## Purpose
-TBD - created by archiving change add-boats-ts-port. Update Purpose after archive.
+Boats, the battleships puzzle of placing a given fleet so that no two boats
+touch, even diagonally, and each row and column holds its clued number of boat
+cells. This capability specifies its port to the TS engine, with a hint that
+explains one deduction at a time and refuses a board it cannot honestly advise,
+and a fleet display that fits every legal fleet.
 ## Requirements
 ### Requirement: Boats game implements the Game interface
 

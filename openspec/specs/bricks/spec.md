@@ -1,7 +1,11 @@
 # bricks Specification
 
 ## Purpose
-TBD - created by archiving change add-bricks-ts-port. Update Purpose after archive.
+Bricks (Tawamurenga), the puzzle of shading cells of an offset brick grid so
+that every shaded cell rests on a shaded cell below, no three shaded cells run
+in a row, and each number counts the shaded cells around it. This capability
+specifies its port to the TS engine, with mistake-checking, an explained
+deduction hint, and only the difficulty tiers its solver can actually grade.
 ## Requirements
 ### Requirement: Bricks game implements the Game interface
 

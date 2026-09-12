@@ -1,7 +1,10 @@
 # dominosa Specification
 
 ## Purpose
-TBD - created by archiving change add-dominosa-ts-port. Update Purpose after archive.
+Dominosa, the puzzle of tiling a grid of numbers with dominoes so that every
+pairing, doubles included, appears exactly once. This capability specifies its
+port to the TS engine, with an explained deductive hint drawn distinctly and a
+domino reference that highlights where each pair can occur.
 ## Requirements
 ### Requirement: Dominosa game implements the Game interface
 

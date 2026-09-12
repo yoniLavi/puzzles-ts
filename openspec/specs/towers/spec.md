@@ -1,7 +1,11 @@
 # towers Specification
 
 ## Purpose
-TBD - created by archiving change add-towers-ts-port. Update Purpose after archive.
+Towers (Skyscrapers), the Latin-square puzzle whose edge clues count the towers
+visible from that side. This capability specifies its port to the TS engine,
+with 3D and 2D styles, a sticky pencil mode, automatic pencil eliminations on
+placement, clue striking, on-screen key labels, and a hint explained through
+pencil notes.
 ## Requirements
 ### Requirement: Towers game implements the Game interface
 

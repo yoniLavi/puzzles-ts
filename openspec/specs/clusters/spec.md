@@ -1,7 +1,11 @@
 # clusters Specification
 
 ## Purpose
-TBD - created by archiving change add-clusters-ts-port. Update Purpose after archive.
+Clusters, the puzzle of two-coloring a grid so that exactly the dotted tiles
+have a single same-colored neighbor and every other tile has at least two. This
+capability specifies its port to the TS engine, with its contradiction-based
+solver and generator, an explained deduction hint, and difficulty tiers laid
+over the solver's two levels of deduction.
 ## Requirements
 ### Requirement: Clusters game implements the Game interface
 

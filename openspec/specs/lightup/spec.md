@@ -1,7 +1,11 @@
 # lightup Specification
 
 ## Purpose
-TBD - created by archiving change add-lightup-ts-port. Update Purpose after archive.
+Light Up (Akari), the puzzle of placing bulbs to light every blank square
+without two bulbs lighting each other, meeting the counts on numbered walls.
+This capability specifies its port to the TS engine, with live errors,
+mistake-checking, an explained deductive hint drawn in the element-type legend,
+and no tier below Unreasonable that requires guessing.
 ## Requirements
 ### Requirement: Light Up game implements the Game interface
 

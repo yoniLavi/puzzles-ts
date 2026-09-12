@@ -1,7 +1,11 @@
 # bridges Specification
 
 ## Purpose
-TBD - created by archiving change add-bridges-ts-port. Update Purpose after archive.
+Bridges (Hashiwokakero), the puzzle of linking every island into one network
+with single or double bridges that never cross, each island carrying as many
+bridges as its number. This capability specifies its port to the TS engine, with
+live errors, auto-marking of satisfied islands, and a hint that explains the
+next deduction and marks it in the game's own vocabulary.
 
 ## Requirements
 

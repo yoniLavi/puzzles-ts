@@ -1,7 +1,11 @@
 # app-shell Specification
 
 ## Purpose
-TBD - created by archiving change fix-board-focus-after-command. Update Purpose after archive.
+The app's chrome around the puzzles — the puzzle screen's commands, keyboard and
+focus handling, and the home screen's navigation — as a design of this project's
+own. It exists so that every command has one home, the board keeps the keyboard,
+the layout holds at a phone width, and nothing in the chrome presses a player
+toward a hint.
 
 ## Requirements
 

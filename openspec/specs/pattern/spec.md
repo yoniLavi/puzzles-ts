@@ -1,7 +1,10 @@
 # pattern Specification
 
 ## Purpose
-TBD - created by archiving change add-pattern-ts-port. Update Purpose after archive.
+Pattern (Nonogram), the puzzle of shading a grid so that the runs of black
+squares in each row and column match its clue list. This capability specifies
+its port to the TS engine, with drag-to-fill and cursor input, an error overlay,
+and an explained deductive hint with its own color legend.
 ## Requirements
 ### Requirement: Pattern game implements the Game interface
 

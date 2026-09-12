@@ -1,7 +1,11 @@
 # rome Specification
 
 ## Purpose
-TBD - created by archiving change add-rome-ts-port. Update Purpose after archive.
+Rome, the puzzle of filling empty cells with arrows so that no outlined area
+repeats an arrow and following the arrows from anywhere leads to a goal. This
+capability specifies its port to the TS engine, with pencil marks and
+mistake-checking that also reports an arrow which breaks no rule but contradicts
+the unique solution.
 ## Requirements
 ### Requirement: Rome game implements the Game interface
 

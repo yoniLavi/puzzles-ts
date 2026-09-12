@@ -1,7 +1,11 @@
 # loopy Specification
 
 ## Purpose
-TBD - created by archiving change add-loopy-ts-port. Update Purpose after archive.
+Loopy (Slitherlink), the puzzle of drawing one closed loop along grid edges so
+that each numbered face has that many of its edges on the loop, on the square
+grid and many other tilings. This capability specifies its port to the TS
+engine, with the graded solver, recovery from a degenerate patch of an aperiodic
+tiling, and full play from the keyboard alone.
 
 ## Requirements
 

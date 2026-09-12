@@ -1,7 +1,10 @@
 # samegame Specification
 
 ## Purpose
-TBD - created by archiving change add-samegame-ts-port. Update Purpose after archive.
+Same Game, the puzzle of clearing the board by removing connected groups of one
+color, scoring more for larger groups. This capability specifies its port to the
+TS engine: guaranteed-soluble and random generation, removal with scoring and
+compaction, and two-click selection, keyboard input and a live score.
 ## Requirements
 ### Requirement: Same Game implements the Game interface
 

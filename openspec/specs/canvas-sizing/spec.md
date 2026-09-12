@@ -1,7 +1,9 @@
 # canvas-sizing Specification
 
 ## Purpose
-TBD - created by archiving change fix-canvas-sizing-race. Update Purpose after archive.
+The puzzle board's canvas fitting the space it is given as soon as a game loads,
+so that a player never has to resize the window before the board is drawn at its
+proper size.
 
 ## Requirements
 

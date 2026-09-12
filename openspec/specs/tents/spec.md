@@ -1,7 +1,11 @@
 # tents Specification
 
 ## Purpose
-TBD - created by archiving change add-tents-ts-port. Update Purpose after archive.
+Tents, the puzzle of placing tents so that each tree has its own neighboring
+tent, no two tents touch even diagonally, and each row and column holds its
+clued count. This capability specifies its port to the TS engine: the graded
+solver, live errors and completion, drag, cursor and direct-key input, and
+mistake-checking.
 ## Requirements
 ### Requirement: Tents game implements the Game interface
 

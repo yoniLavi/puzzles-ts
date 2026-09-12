@@ -1,7 +1,10 @@
 # flood Specification
 
 ## Purpose
-TBD - created by archiving change add-flood-ts-port. Update Purpose after archive.
+Flood, the puzzle of turning the whole grid one color within a move limit by
+repeatedly flood-filling from the top-left corner. This capability specifies its
+port to the TS engine: pure fill and solve moves, win and lose status, and a
+hint plan backed by the solver.
 ## Requirements
 ### Requirement: Flood game implements the Game interface
 

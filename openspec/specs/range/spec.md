@@ -1,7 +1,11 @@
 # range Specification
 
 ## Purpose
-TBD - created by archiving change add-range-ts-port. Update Purpose after archive.
+Range (Kurodoko), the puzzle of blacking out squares so that no two black
+squares touch, the white squares stay connected, and each number counts the
+white squares it sees in four directions, itself included. This capability
+specifies its port to the TS engine, with live error highlighting,
+mistake-checking, and an explained deduction hint with its own color legend.
 
 ## Requirements
 

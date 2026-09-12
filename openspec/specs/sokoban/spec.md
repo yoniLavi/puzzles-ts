@@ -1,7 +1,10 @@
 # sokoban Specification
 
 ## Purpose
-TBD - created by archiving change add-sokoban-ts-port. Update Purpose after archive.
+Sokoban, the puzzle of pushing every barrel onto a target without pushing one
+into a wall or another barrel. This capability specifies its port to the TS
+engine: movement and pushing, completion, deterministic generation, and
+rendering.
 ## Requirements
 ### Requirement: Sokoban game implements the Game interface
 

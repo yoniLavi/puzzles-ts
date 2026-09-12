@@ -1,7 +1,10 @@
 # pegs Specification
 
 ## Purpose
-TBD - created by archiving change refactor-pre-port-tidy. Update Purpose after archive.
+Pegs (peg solitaire), the puzzle of jumping pegs over one another, removing each
+peg jumped, until one remains. This capability specifies its port to the TS
+engine, including a palette derived through the shared highlight helper and a
+drag or armed jump that is discarded when the board changes beneath it.
 
 ## Requirements
 

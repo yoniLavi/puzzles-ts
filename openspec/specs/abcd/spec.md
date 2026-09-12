@@ -1,7 +1,11 @@
 # abcd Specification
 
 ## Purpose
-TBD - created by archiving change add-abcd-ts-port. Update Purpose after archive.
+ABCD, the puzzle of writing a letter in every cell so that no two identical
+letters touch horizontally or vertically and each edge number counts one letter
+in its row or column. This capability specifies its port to the TS engine,
+including the solver-gated generator and a refusal of the board sizes that
+generator cannot produce.
 ## Requirements
 ### Requirement: ABCD game implements the Game interface
 

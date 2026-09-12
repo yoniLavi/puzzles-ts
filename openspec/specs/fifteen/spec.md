@@ -1,7 +1,10 @@
 # fifteen Specification
 
 ## Purpose
-TBD - created by archiving change add-fifteen-ts-port. Update Purpose after archive.
+Fifteen, the sliding-tile puzzle of putting numbered tiles in order with the
+hole in the last corner. This capability specifies its port to the TS engine:
+pure slide and solve moves, the tiles and slide animation, and a hint that plays
+out a full greedy solution.
 
 ## Requirements
 

@@ -1,7 +1,11 @@
 # mosaic Specification
 
 ## Purpose
-TBD - created by archiving change add-mosaic-ts-port. Update Purpose after archive.
+Mosaic, the puzzle of coloring every square black or white so that each number
+counts the black squares in the three-by-three block centered on it. This
+capability specifies its port to the TS engine: generation of boards solvable by
+deduction, toggle and straight-line paint moves, and mistake-checking against
+the deduced solution.
 
 ## Requirements
 

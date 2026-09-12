@@ -1,7 +1,10 @@
 # keen Specification
 
 ## Purpose
-TBD - created by archiving change add-keen-ts-port. Update Purpose after archive.
+Keen (KenKen), the Latin-square puzzle whose cages each carry an arithmetic clue
+their digits must satisfy. This capability specifies its port to the TS engine
+on the shared Latin-square framework, with pencil marks and their preferences,
+mistake-checking, on-screen key labels, and an explained deduction hint.
 ## Requirements
 ### Requirement: Keen game implements the Game interface
 

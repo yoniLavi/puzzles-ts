@@ -1,7 +1,11 @@
 # unequal Specification
 
 ## Purpose
-TBD - created by archiving change add-unequal-ts-port. Update Purpose after archive.
+Unequal (Futoshiki), the Latin-square puzzle whose clues between squares
+constrain neighbors: greater-than signs in one mode, bars marking consecutive
+values in Adjacent mode. This capability specifies its port to the TS engine,
+with pencil marks and their preferences, mistake-checking, on-screen key labels,
+and an explained deduction hint.
 ## Requirements
 ### Requirement: Unequal game implements the Game interface
 

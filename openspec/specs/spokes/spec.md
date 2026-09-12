@@ -1,7 +1,12 @@
 # spokes Specification
 
 ## Purpose
-TBD - created by archiving change add-spokes-hint. Update Purpose after archive.
+Spokes, the puzzle of drawing lines between numbered hubs, never crossing, so
+that each hub starts as many lines as its number and all hubs join one connected
+group. This capability specifies its port to the TS engine, with honestly graded
+tiers, diagonals that rule out their crossing, and a hint that explains why each
+move is forced, stops at bounded reasoning, and refuses a position it cannot
+vouch for.
 ## Requirements
 ### Requirement: Spokes explains why each hinted move is forced
 

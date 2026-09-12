@@ -1,7 +1,11 @@
 # sixteen Specification
 
 ## Purpose
-TBD - created by archiving change refactor-pre-port-tidy. Update Purpose after archive.
+Sixteen, the puzzle of shifting whole rows and columns cyclically until the
+numbers read in order from the top left. This capability specifies its port to
+the TS engine, with direct row and column dragging and a heuristic hint that
+finishes the swapped-pair endgames, counts the tangles its distance measure
+cannot see, and refuses only by saying its search ran out.
 
 ## Requirements
 

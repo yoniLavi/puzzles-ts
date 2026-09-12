@@ -1,7 +1,10 @@
 # cube Specification
 
 ## Purpose
-TBD - created by archiving change add-cube-ts-port. Update Purpose after archive.
+Cube, the puzzle of rolling a solid across a grid to gather every painted square
+onto its faces in as few moves as possible. This capability specifies its port
+to the TS engine: how a roll turns the solid and exchanges paint with the grid,
+and how the solid and its rolling animation are drawn.
 ## Requirements
 ### Requirement: Cube game implements the Game interface
 

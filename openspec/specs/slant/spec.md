@@ -1,7 +1,11 @@
 # slant Specification
 
 ## Purpose
-TBD - created by archiving change add-slant-ts-port. Update Purpose after archive.
+Slant (Gokigen Naname), the puzzle of drawing a diagonal in every square so that
+no loop forms and each numbered point meets that many lines. This capability
+specifies its port to the TS engine, with live errors, its two preferences,
+mistake-checking, and an explained deductive hint drawn in the element-type
+legend.
 ## Requirements
 ### Requirement: Slant game implements the Game interface
 

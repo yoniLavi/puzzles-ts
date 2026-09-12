@@ -1,7 +1,11 @@
 # unruly Specification
 
 ## Purpose
-TBD - created by archiving change add-unruly-ts-port. Update Purpose after archive.
+Unruly (Takuzu), the puzzle of coloring every square black or white so that no
+three in a line match and each row and column is half of each. This capability
+specifies its port to the TS engine, with difficulty-gated deductive generation,
+live error highlighting, mistake-checking, and an explained deduction hint with
+a placement animation and its own color legend.
 ## Requirements
 ### Requirement: Unruly game implements the Game interface
 

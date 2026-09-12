@@ -1,7 +1,10 @@
 # slide Specification
 
 ## Purpose
-TBD - created by archiving change add-slide-ts-port. Update Purpose after archive.
+Slide, the sliding-block puzzle of moving blocks until the key block reaches the
+exit. This capability specifies its port to the TS engine, with the
+shortest-path solver, a board that reads by color and not by bevel alone, and
+full play from the keyboard.
 
 ## Requirements
 

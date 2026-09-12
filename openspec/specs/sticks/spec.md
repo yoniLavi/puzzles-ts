@@ -1,7 +1,11 @@
 # sticks Specification
 
 ## Purpose
-TBD - created by archiving change add-sticks-ts-port. Update Purpose after archive.
+Sticks (Tatebo-Yokobo), the puzzle of filling every blank cell with a horizontal
+or vertical line, where a number on a line gives its length and a number on a
+black cell counts the lines running into it. This capability specifies its port
+to the TS engine, with the solver-gated generator, mistake-checking, and an
+explained hint.
 ## Requirements
 ### Requirement: Sticks game implements the Game interface
 

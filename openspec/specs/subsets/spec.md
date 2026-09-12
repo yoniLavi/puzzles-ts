@@ -1,7 +1,11 @@
 # subsets Specification
 
 ## Purpose
-TBD - created by archiving change add-subsets-ts-port. Update Purpose after archive.
+Subsets, the puzzle of placing every set of letters into a grid once, so that
+the horseshoe symbols between neighbors state every superset relation there is.
+This capability specifies its port to the TS engine, with an explained hint and
+a two-way reference aid that shows, from the visible board alone, where a set
+can go and what a cell can hold.
 ## Requirements
 ### Requirement: Subsets game implements the Game interface
 

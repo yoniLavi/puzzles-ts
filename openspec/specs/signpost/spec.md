@@ -1,7 +1,10 @@
 # signpost Specification
 
 ## Purpose
-TBD - created by archiving change add-signpost-ts-port. Update Purpose after archive.
+Signpost, the puzzle of linking every square into one numbered sequence in which
+each square's arrow points toward the next. This capability specifies its port
+to the TS engine: the linked-chain state model, the deductive solver,
+mistake-checking, and a drag sprite drawn with a blitter.
 ## Requirements
 ### Requirement: Signpost game implements the Game interface
 

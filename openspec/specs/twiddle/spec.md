@@ -1,7 +1,10 @@
 # twiddle Specification
 
 ## Purpose
-TBD - created by archiving change add-twiddle-ts-port. Update Purpose after archive.
+Twiddle, the puzzle of rotating square sections of the grid until the tiles
+stand in order from the top left. This capability specifies its port to the TS
+engine: pure rotation and solve moves, and the tiles, cursor, rotation animation
+and completion flash.
 
 ## Requirements
 
