@@ -108,4 +108,4 @@
       nothing else. A requirement naming a field would have no consumer but a
       guard, and that guard is the manifest; the snapshot is where a third
       spelling would surface.*
-- [ ] 4.3 Archive.
+- [x] 4.3 Archive.
