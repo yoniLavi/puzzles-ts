@@ -584,6 +584,36 @@ Three rules, each learned by getting it wrong:
 3. **Know where your instruments clamp.** Biome's complexity counter saturates
    at 255 — a stable 255 does not mean "no regression"; it means unmeasured.
 
+### Timing anything under vitest: two things to know first
+
+**An imported constant costs real time under the test transform, and nothing in
+the production build.** Vite's module-runner transform rewrites `DR[i]` to
+`__vite_ssr_import_0__.DR[i]`, and it defines every export as a **getter**, so a
+table read inside a hot loop pays an accessor call per access. Measured
+2026-09-12 on Range's real generator, three arms rotated and interleaved, 21
+reps, four runs: **imported / local = 1.62–1.73×**, against an A/A control (a
+second, separately loaded copy that keeps its tables local) of **0.98–1.01**.
+That is why `range/solver.ts` keeps `DR`/`DC` beside the loops that read them.
+
+**It does not survive `vite build`.** Rolldown flattens both modules into one
+scope and the read compiles to a direct `var` access, byte-identical to the
+local form. So this is a fact about the suite, not about the game: it is a
+reason to be careful when *timing* a refactor that hoists a hot table, and not a
+reason to refuse the hoist. If the shared form is better, take it — and know
+that the suite will report a slowdown the player will never see.
+
+**A control does not need two module instances; it needs a warm-up.** It was
+reported, twice and independently, that an A/A control timing one loaded
+instance twice flatters itself (the second timing running an already-warm
+function), and that an instance polluted by an equivalence fuzz runs ~40%
+slower. Measured on the same harness: **one instance timed twice gives
+0.98–1.02, and a fuzz-polluted instance gives 0.94–1.05** — both indistinguishable
+from 1.00. What separates a tight control from a loose one here is not how many
+instances you load but whether **every arm is exercised once before the clock
+starts**; this harness warms all three, and the distinction vanishes. Warm every
+arm, rotate their order, and report the minimum beside the median — on a loaded
+box the minima are the least contended samples, and here the two agreed.
+
 Two calibration notes that recur: a raw madge cycle count is **not** a runtime
 cycle count here (`verbatimModuleSyntax` erases `import type`, which is the
 standard cycle *fix*, so madge reports the fix as the problem —

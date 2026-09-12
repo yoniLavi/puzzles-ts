@@ -26,9 +26,16 @@ import {
 } from "./state.ts";
 
 /** The four orthogonal steps, as row and column deltas. Defined here, not in
- * `state.ts`: the hot loops read them, and under vitest an imported binding is a
- * getter — importing them made generation 1.5x slower (paired timing,
- * 2026-09-11). */
+ * `state.ts`: the hot loops read them, and under vitest an imported binding
+ * compiles to a getter call per access, which measures **1.62–1.73× on this
+ * generator** against an A/A control of 0.98–1.01 (re-measured 2026-09-12 with
+ * both arms in one process, rotated and interleaved).
+ *
+ * **This buys nothing for a player** — `vite build` flattens the two modules
+ * into one scope and the read becomes a direct `var` access. Keeping them local
+ * is worth it only because it keeps the *suite* fast; do not read it as a rule
+ * against shared constants. `docs/games/testing.md` § "Timing anything under
+ * vitest: two things to know first". */
 export const DR = [1, 0, -1, 0];
 export const DC = [0, 1, 0, -1];
 

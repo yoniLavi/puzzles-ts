@@ -604,6 +604,8 @@ the variant to watch hardest, where the unit was right and the instrument was
 | **knip's "0 unused exports"** | its resolver does not follow this tree's `.ts` import specifiers, so its graph stops at each entry file | `--trace-export initSentry`, a symbol imported on line 1 of `main.ts`, answering "No export found" — the honest count is 373 |
 | **the complexity distribution** | read through biome's default `--max-diagnostics=20`, so *every* threshold from 15 to 100 reported exactly "20" | the flatness itself: a distribution that does not move is the cap, not the tree |
 | **"86.5% of specifiers resolved"** | counted bare package imports as failures to resolve | listing them: 11 of 4183 actually failed, all `?raw`/`?inline` assets |
+| **an import-cost micro-benchmark** | stubbed the module namespace as plain data properties, where vite defines exports as **getters**; V8 hoists the one and not the other | it measured the imported arm as *faster*, contradicting a mechanism already confirmed by reading the transform's output |
+| **"the A/A control flatters itself"** | the control's arms were not warmed before the clock started, so the first paid JIT warm-up and the second did not | warming every arm: one instance timed twice reads 0.98–1.02, the same as two separately loaded instances |
 
 Three habits fall out. **Give a table a total and assert the columns sum to it** —
 then a status cannot vanish by omission. **Validate a parser against the real
