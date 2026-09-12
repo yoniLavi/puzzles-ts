@@ -93,7 +93,7 @@ function newUi(state: BridgesState): BridgesUi {
   const first = state.islands[0];
   return {
     drag: newDrag(),
-    aiming: false,
+    dragged: false,
     todraw: 0,
     dragIsNoline: false,
     nlines: 0,
@@ -135,11 +135,11 @@ function uiCancelDrag(ui: BridgesUi): UiUpdate {
   ui.drag.sy = -1;
   ui.drag.ex = -1;
   ui.drag.ey = -1;
-  ui.aiming = false;
+  ui.dragged = false;
   return UI_UPDATE;
 }
 
-/** Work out which orthogonal island the drag from (dragxSrc,dragySrc) toward
+/** Work out which orthogonal island the drag from the anchor toward
  * pixel (nx,ny) targets, and how many bridges the release would set. Mutates
  * `ui` in place; null only when there is no drag. */
 function updateDragDst(
@@ -242,7 +242,7 @@ function interpretMove(
       (gx !== ui.drag.sx || gy !== ui.drag.sy) &&
       !(s.gridAt(ui.drag.sx, ui.drag.sy) & G_MARK)
     ) {
-      ui.aiming = true;
+      ui.dragged = true;
       ui.dragIsNoline = btn === RIGHT_DRAG;
       return updateDragDst(s, ui, ts, b, p.x, p.y);
     }
@@ -257,7 +257,7 @@ function interpretMove(
     // path below would otherwise still toggle the mark on the island this
     // gesture pressed — a move committed from a board that no longer exists.
     if (!ui.drag.live) return uiCancelDrag(ui);
-    if (ui.aiming) return finishDrag(ui);
+    if (ui.dragged) return finishDrag(ui);
     if (!s.inGrid(ui.drag.sx, ui.drag.sy) || gx !== ui.drag.sx || gy !== ui.drag.sy) {
       return uiCancelDrag(ui);
     }
@@ -270,10 +270,10 @@ function interpretMove(
     ui.cursor.visible = true;
     if (control || shift) {
       startDrag(ui.drag, ui.cursor.x, ui.cursor.y);
-      ui.aiming = true;
+      ui.dragged = true;
       ui.dragIsNoline = !control;
     }
-    if (ui.aiming) {
+    if (ui.dragged) {
       const moved = gridCursorMove(btn, ui.cursor.x, ui.cursor.y, s.w, s.h, false);
       if (!moved) return null;
       const half = Math.trunc(ts / 2);
@@ -322,14 +322,14 @@ function interpretMove(
       ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    if (ui.aiming || btn === CURSOR_SELECT2) {
+    if (ui.dragged || btn === CURSOR_SELECT2) {
       // ui_cancel_drag clears the far end, so C always toggles the island mark.
       uiCancelDrag(ui);
       return { ops: [{ op: "M", x: ui.cursor.x, y: ui.cursor.y }] };
     }
     const v = s.gridAt(ui.cursor.x, ui.cursor.y);
     if (v & G_ISLAND) {
-      ui.aiming = true;
+      ui.dragged = true;
       startDrag(ui.drag, ui.cursor.x, ui.cursor.y);
       ui.drag.ex = -1;
       ui.drag.ey = -1;

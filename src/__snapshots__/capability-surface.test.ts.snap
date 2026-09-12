@@ -217,11 +217,11 @@ exports[`capability surface > matches the recorded capability surface 1`] = `
       "textFormat",
     ],
     "ui": [
-      "aiming",
       "autoMark",
       "cursor",
       "drag",
       "dragIsNoline",
+      "dragged",
       "nlines",
       "showPossible",
       "todraw",

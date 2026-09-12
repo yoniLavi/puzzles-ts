@@ -652,6 +652,14 @@ Two things make it work, and neither is obvious:
 - **Claim the press anyway** — see the next section, which is where this cost
   a session.
 
+**Where a game does keep a flag for it, the flag is `dragged`** (Bridges,
+Rect): *set once the gesture moved off its start, so a returning drag is still
+a drag and a bare click is still a click*. It is not liveness and must not be
+confused with `GridDrag.live`, which a press sets immediately — that
+distinction is the whole reason the flag exists. Do not spell it `aiming`:
+Bridges did briefly, and Inertia's `aiming`/`aimDir` mean the *aimed direction*
+of an aim drag, which is a different thing. One name, one concept.
+
 ## A press you do not act on must still be consumed
 
 **Returning `null` from a press is not "nothing to repaint" — it is "I don't

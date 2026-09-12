@@ -190,7 +190,7 @@ describe("bridges input model (drag → move)", () => {
     expect(ui.drag.sx).toBe(-1);
 
     bridgesGame.interpretMove(s, ui, ds, { x: center(2), y: center(1) }, LEFT_DRAG);
-    expect(ui.aiming).toBe(false);
+    expect(ui.dragged).toBe(false);
     const move = bridgesGame.interpretMove(
       s,
       ui,
@@ -227,7 +227,7 @@ describe("bridges input model (drag → move)", () => {
     bridgesGame.interpretMove(s, ui, ds, { x: center(0), y: center(1) }, LEFT_BUTTON);
     bridgesGame.interpretMove(s, ui, ds, { x: center(2), y: center(1) }, LEFT_DRAG);
     bridgesGame.interpretMove(s, ui, ds, { x: center(2), y: center(1) }, LEFT_RELEASE);
-    expect(ui.aiming).toBe(false);
+    expect(ui.dragged).toBe(false);
     expect(ui.drag.live).toBe(false);
     expect(ui.drag.sx).toBe(-1);
     expect(ui.drag.sy).toBe(-1);

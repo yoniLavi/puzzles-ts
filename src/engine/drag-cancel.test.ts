@@ -111,7 +111,7 @@ describe("a drag does not survive a state replacement", () => {
     // The assertion that matters, and the one an earlier version of this file
     // missed. Ending `drag.live` only protects a game that *asks* `drag.live`:
     // Tents gated its drag branch on `dragButton >= 0`, Tracks on `painting`
-    // and Bridges on `aiming`, and all three would have committed a move from
+    // and Bridges on `dragged`, and all three would have committed a move from
     // an anchor the undo invalidated — the same defect `changedState` was added
     // to Pegs for. So this drives a real press, replaces the state under it,
     // and releases.

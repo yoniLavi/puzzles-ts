@@ -175,10 +175,15 @@ export interface BridgesUi {
    * game understands it*.
    */
   drag: GridDrag;
-  /** Whether the pointer has **left the source island**, making this a bridge
-   * drag rather than a click that toggles the island's mark. Not liveness: a
-   * press on an island is live immediately, and only moving off it aims. */
-  aiming: boolean;
+  /** Set once the pointer has **left the source island**, making this a bridge
+   * drag rather than a click that toggles the island's mark. Distinct from
+   * `drag.live`: a press on an island is live immediately, but has not yet
+   * *dragged*. The keyboard arm sets it at the press, because Ctrl/Shift+arrow
+   * is a drag from the outset.
+   *
+   * The name is the collection's — `docs/games/input.md` § "A button with two
+   * meanings resolves on the release". */
+  dragged: boolean;
   todraw: number;
   dragIsNoline: boolean;
   nlines: number;
