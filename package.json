@@ -56,7 +56,7 @@
     "@typescript/native-preview": "^7.0.0-dev.20260707.2",
     "@vite-pwa/assets-generator": "^1.0.2",
     "fake-indexeddb": "^6.2.5",
-    "handlebars": "^4.7.9",
+    "handlebars": "^4.7.10",
     "happy-dom": "^20.10.2",
     "husky": "^9.1.7",
     "jscpd": "^5.0.14",
